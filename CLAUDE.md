@@ -1,0 +1,126 @@
+# CLAUDE.md — Agent Working Rules
+
+You are the lead engineer on a production B2B SaaS platform. Read this file fully at the start of every session. The complete product specification is in `docs/PROJECT_SPEC.md` — it is the source of truth for WHAT to build. This file defines HOW to build it.
+
+## 1. Project in one paragraph
+
+A multi-tenant inventory and B2B ordering platform. Our company (Super Admin) owns the platform. Distributors/dealers (Tenants) subscribe and manage products, stock, retailers, orders, GST invoices, payments and a ledger. Retailers (end clients, non-technical shop owners) belong to exactly one distributor, see only that distributor's catalog, and place orders (including backorders) from a mobile-first web app (PWA), and later an Android app.
+
+## 2. Locked technology stack (do not change without an ADR in docs/DECISIONS.md)
+
+- Backend: Python 3.12+, Django 5.x, Django REST Framework, drf-spectacular (OpenAPI), Celery + Redis, Django Channels, PostgreSQL 16 (+ pg_trgm, later pgvector)
+- Frontend: Next.js (App Router) + TypeScript (strict) + Tailwind CSS + shadcn/ui, TanStack Query, React Hook Form + Zod, next-intl
+- API client: generated from the OpenAPI schema (never hand-write API types)
+- Mobile (later phase): React Native (Expo) using the same generated client
+- Local dev: Docker Compose (postgres, redis, mailpit, backend, worker, beat, web)
+- Monitoring: Sentry (backend + frontend), structured JSON logging
+- Tests: pytest + pytest-django + factory_boy (backend), Vitest + Testing Library (frontend), Playwright (E2E)
+
+## 3. How you work
+
+1. **Plan before coding.** For every phase or non-trivial task, first write a short plan (files to create/change, models, endpoints, tests) and wait for approval if the user is present. Then implement.
+2. **One phase at a time.** Follow the roadmap in `docs/PROJECT_SPEC.md` section 12. Do not start features from later phases. If something from a later phase is needed as a dependency, build the minimal stub and note it.
+3. **Small, working increments.** Each commit leaves the app runnable with passing tests. Use conventional commits (`feat(orders): ...`, `fix(inventory): ...`).
+4. **Keep docs current.** After each task update `docs/PROGRESS.md` (done / in progress / next / known issues). Record any significant design decision as an ADR in `docs/DECISIONS.md`.
+5. **Ask, don't guess, on business rules.** If the spec is ambiguous about money, tax, stock or permissions, stop and ask. For purely technical choices, choose the simplest robust option and document it.
+6. **Verify before claiming done.** Run migrations, the test suite, linters and type checks. Never say "done" with failing tests or unrun code.
+7. **Never fabricate** external API details (GST/GSP, WhatsApp, payment gateways). Implement behind an adapter interface with a mock/sandbox implementation and leave a clearly marked TODO with what must be verified against official docs.
+
+## 4. Non-negotiable engineering rules
+
+### Tenant isolation (highest priority)
+- Every tenant-owned model inherits `TenantScopedModel` (has `tenant` FK, indexed) and uses a manager that auto-filters by the current tenant.
+- The current tenant is resolved once per request (from the authenticated user; subdomain only for branding/public pages) and stored in a context variable. Celery tasks receive `tenant_id` explicitly and set the context.
+- PostgreSQL Row-Level Security is enabled on tenant tables as a backstop, using `SET LOCAL app.current_tenant`.
+- Every API endpoint has a test proving a user from tenant A cannot read or modify tenant B data.
+- Super Admin cross-tenant access goes through explicit, audited code paths only.
+
+### Money and tax
+- Use `Decimal` everywhere (`DecimalField(max_digits=14, decimal_places=2)`, quantities `decimal_places=3`). Never use float for money, tax or quantity.
+- Rounding rules live in ONE module (`apps/billing/tax.py`) and are unit tested exhaustively.
+- Ledger entries and stock movements are append-only. Corrections are new reversing entries, never edits or deletes.
+
+### Stock correctness
+- All stock changes go through `apps/inventory/services.py` inside `transaction.atomic()` with `select_for_update()` on the affected stock rows, locked in a consistent order (by product id) to avoid deadlocks.
+- `quantity_on_hand` and `quantity_reserved` have DB check constraints (`>= 0`).
+- Every change writes a `StockMovement` row in the same transaction.
+- Include a concurrency test: two simultaneous orders for the last unit must never both reserve it.
+
+### Reliability
+- Order placement and payment endpoints require an `Idempotency-Key` header; duplicates return the original result.
+- Anything calling an external service (email, WhatsApp, SMS, GSP, payment gateway, PDF storage) runs in a Celery task with retries + exponential backoff, and never blocks or rolls back the core business transaction. Use `transaction.on_commit()` to enqueue.
+- Every external integration sits behind an adapter interface with at least a `mock` implementation used in dev and tests.
+- Payment status changes only from verified gateway webhooks (signature checked), never from client callbacks alone.
+- Feature flags (per tenant) gate optional modules: payments, subscriptions enforcement, e-invoice, e-way bill, WhatsApp, batches/expiry, multi-warehouse, AI features.
+
+### Thin client
+- ALL business logic (pricing, discounts, credit checks, tax, stock availability, backorder split, permissions) is computed on the server. Frontends only render server results and send user intent. Never compute a price or tax in the frontend.
+
+### Security
+- RBAC checked on the server for every endpoint (DRF permission classes). Frontend hiding is cosmetic only.
+- Secrets from environment / secrets manager only. Tenant credentials (payment gateway keys, GSP credentials) are encrypted at rest (field-level encryption).
+- Rate limiting on auth/OTP endpoints. Validate all input with serializers. Restrict uploads by type and size.
+- Audit log for sensitive actions (price changes, stock adjustments, credit limit changes, order accept/reject, impersonation, settings changes).
+
+## 5. Backend code structure
+
+```
+backend/
+  config/                 settings (base/dev/test/prod), urls, asgi, celery
+  apps/<module>/
+    models.py             data only, no business logic
+    services.py           ALL write/business logic (functions, typed, transactional)
+    selectors.py          read/query logic
+    api/serializers.py    validation + representation only
+    api/views.py          thin: permission -> serializer -> service/selector -> response
+    api/urls.py
+    tasks.py              Celery tasks (thin, call services)
+    adapters/             external integrations (interface + implementations)
+    events.py             domain events emitted by services
+    tests/
+  common/                 base models, tenant context, permissions, pagination, exceptions, money utils
+```
+- Type hints on all service/selector functions. Views never touch the ORM for writes.
+- Consistent error format: `{ "error": { "code": "CREDIT_LIMIT_EXCEEDED", "message": "...", "details": {...} } }` with stable machine-readable codes the frontend maps to translated messages.
+- All list endpoints are paginated, filterable and use `select_related`/`prefetch_related`. Add DB indexes starting with `tenant_id` for tenant queries.
+- Store timestamps in UTC; display in Asia/Kolkata.
+- API versioned under `/api/v1/`.
+
+## 6. Frontend code structure and UX rules
+
+```
+web/
+  app/(auth)/  app/(platform)/  app/(distributor)/  app/(retailer)/
+  components/ui/          shadcn primitives (design system)
+  components/shared/      app-level components (DataTable, EmptyState, StatusBadge, MoneyText...)
+  lib/api/                GENERATED client + TanStack Query hooks
+  lib/i18n/  messages/en.json hi.json mr.json
+```
+- Build the design system first (tokens, typography, spacing, components) and reuse it everywhere. Tenant branding is applied via CSS variables loaded from the server.
+- Every data screen has loading (skeleton), empty, and error states. Users never see raw technical errors or stack traces.
+- Retailer UI: mobile-first, large touch targets (min 44px), plain language (no "SKU", "tenant", "payload"), max ~3 taps from search to placed order, clear availability badges, "Repeat last order".
+- Distributor UI: dashboard opens on "what needs action today". Tables support search, filters, bulk actions and export.
+- All user-facing strings go through i18n keys from day one (English first; Hindi and Marathi files added later).
+- Accessibility: semantic HTML, keyboard navigable, sufficient contrast, labelled inputs.
+- Regenerate the API client after any backend API change; never edit generated files.
+
+## 7. Definition of done (every task)
+
+- [ ] Matches the spec; ambiguities raised, not guessed
+- [ ] Migrations created and applied cleanly
+- [ ] Unit tests for services (happy path + edge cases + permission + tenant isolation)
+- [ ] API documented via drf-spectacular; client regenerated
+- [ ] UI has loading/empty/error states, i18n keys, works at 360px width
+- [ ] Lint, format, type checks pass (ruff, mypy, eslint, tsc)
+- [ ] `docs/PROGRESS.md` updated
+
+## 8. Commands (keep this section updated as the project evolves)
+
+```
+make up          # docker compose up
+make migrate     # run migrations
+make test        # backend + frontend tests
+make lint        # ruff, mypy, eslint, tsc
+make api-client  # export OpenAPI schema and regenerate web/lib/api
+make seed        # load demo data: 1 super admin, 2 distributors, 20 retailers, 200 products
+```
