@@ -68,6 +68,10 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     # Lockout (ADR-030): consecutive failures; reset on success or password reset.
     failed_login_count = models.PositiveSmallIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
+    # RETAILER users only: the distributor this login belongs to (ADR-015: one user per tenant).
+    tenant = models.ForeignKey(
+        "platform.Tenant", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
     # PLATFORM users only: their platform-level role (e.g. PLATFORM_ADMIN).
     platform_role = models.ForeignKey(
         "accounts.Role", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
@@ -95,6 +99,20 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
             models.CheckConstraint(
                 condition=models.Q(user_type="RETAILER") | models.Q(email__isnull=False),
                 name="user_staff_and_platform_have_email",
+            ),
+            # ADR-015: retailer logins belong to one tenant and are unique by phone within it;
+            # staff and platform users never carry a tenant.
+            models.CheckConstraint(
+                condition=(
+                    models.Q(user_type="RETAILER", tenant__isnull=False, phone__isnull=False)
+                    | (~models.Q(user_type="RETAILER") & models.Q(tenant__isnull=True))
+                ),
+                name="user_tenant_only_for_retailers",
+            ),
+            models.UniqueConstraint(
+                fields=["tenant", "phone"],
+                condition=models.Q(user_type="RETAILER"),
+                name="uniq_retailer_user_phone_per_tenant",
             ),
         ]
 
@@ -256,3 +274,40 @@ class RecoveryCode(BaseModel):
 
     def __str__(self) -> str:
         return f"recovery:{self.user_id}"
+
+
+class OTPRequest(BaseModel):
+    """A one-time code sent to a retailer's mobile (spec 5.2).
+
+    RLS (ADR-026): rows requested on a tenant subdomain belong to that tenant; rows requested on the
+    generic domain have no tenant. Only a hash of the code is stored. A row is created for every
+    request, whether or not the number is known, so responses never reveal registration.
+    """
+
+    class Purpose(models.TextChoices):
+        LOGIN = "LOGIN", "Sign in"
+
+    class Channel(models.TextChoices):
+        SMS = "SMS", "SMS"
+        WHATSAPP = "WHATSAPP", "WhatsApp"
+
+    tenant = models.ForeignKey(
+        "platform.Tenant", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    phone = models.CharField(max_length=16)
+    purpose = models.CharField(max_length=10, choices=Purpose.choices, default=Purpose.LOGIN)
+    channel = models.CharField(max_length=10, choices=Channel.choices, default=Channel.SMS)
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["phone", "-created_at"], name="otp_phone_created_idx"),
+            models.Index(fields=["expires_at"], name="otp_expiry_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"otp:{self.phone}"

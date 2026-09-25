@@ -122,6 +122,7 @@
     "SESSION_EXPIRED": "Your session has ended. Please sign in again.",
     "MFA_INVALID_CODE": "That code didn't work. Check your authenticator app and try again.",
     "MFA_REQUIRED_BY_POLICY": "Two-step verification is required for your account and can't be turned off.",
+    "OTP_INVALID": "That code is wrong or has expired. Please ask for a new code.",
     "NETWORK_ERROR": "You seem to be offline. Check your connection and try again.",
     "UNKNOWN_ERROR": "Something went wrong. Please try again."
   },

@@ -6,7 +6,7 @@ from django.db import IntegrityError, connection, transaction
 from django.db.utils import ProgrammingError
 from django.urls import URLPattern, URLResolver, get_resolver
 
-from apps.accounts.models import Membership, Permission, Role, User
+from apps.accounts.models import Membership, Permission, Role
 from apps.accounts.permissions import (
     ALL_PERMISSIONS,
     PLATFORM_PERMISSIONS,
@@ -15,6 +15,7 @@ from apps.accounts.permissions import (
 )
 from apps.accounts.tests.factories import (
     make_membership,
+    make_retailer_login,
     make_staff,
     make_staff_in,
     make_super_admin,
@@ -144,9 +145,7 @@ def test_super_admin_gets_platform_permissions_only(tenant_a):
 
 
 def test_retailer_users_have_no_staff_permissions(tenant_a):
-    retailer = User.objects.create_user(
-        None, None, user_type=User.UserType.RETAILER, phone="9876543210"
-    )
+    retailer = make_retailer_login(tenant_a)
     with tenant_context(tenant_a.id):
         assert retailer.permission_codes() == frozenset()
 

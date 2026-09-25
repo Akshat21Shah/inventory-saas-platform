@@ -8,4 +8,7 @@ class AccountsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self) -> None:
-        from apps.accounts import schema  # noqa: F401  (registers the OpenAPI extension)
+        from apps.accounts import (  # noqa: F401  (register check and OpenAPI extension)
+            checks,
+            schema,
+        )

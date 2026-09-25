@@ -10,6 +10,7 @@
  * * `authenticated` - authenticated
  * * `handoff` - handoff
  * * `choose_tenant` - choose_tenant
+ * * `choose_account` - choose_account
  * * `mfa_required` - mfa_required
  * * `mfa_setup_required` - mfa_setup_required
  */
@@ -20,6 +21,7 @@ export const StatusEnum = {
   authenticated: 'authenticated',
   handoff: 'handoff',
   choose_tenant: 'choose_tenant',
+  choose_account: 'choose_account',
   mfa_required: 'mfa_required',
   mfa_setup_required: 'mfa_setup_required',
 } as const;

@@ -1,5 +1,6 @@
-"""Read-side queries for accounts: permission resolution, memberships."""
+"""Read-side queries for accounts: permission resolution, memberships, retailer logins."""
 
+from dataclasses import dataclass
 from uuid import UUID
 
 from django.db import transaction
@@ -68,3 +69,71 @@ def has_membership_in_suspended_tenant(user: User) -> bool:
         .filter(pk__in=list(tenant_ids), status=Tenant.Status.SUSPENDED)
         .exists()
     )
+
+
+@dataclass(frozen=True)
+class RetailerAccount:
+    user: User
+    tenant: Tenant
+    shop_name: str
+    distributor_name: str
+
+
+def retailer_accounts_for_verified_phone(phone: str) -> list[RetailerAccount]:
+    """Active retailer logins for ``phone`` in active tenants, for the generic-domain chooser.
+
+    ADR-026: the second cross-tenant login lookup. Call only after the OTP for ``phone`` was
+    verified; the result is shown only to that phone's owner, never to any distributor.
+    """
+    from apps.platform.models import TenantBranding
+    from apps.retailers.models import RetailerUser
+
+    alias = platform_db("accounts.retailer_accounts_for_verified_phone")
+    users = list(
+        User.objects.using(alias)
+        .filter(
+            user_type=User.UserType.RETAILER,
+            phone=phone,
+            is_active=True,
+            tenant__status=Tenant.Status.ACTIVE,
+        )
+        .select_related("tenant")
+    )
+    links = {
+        link.user_id: link
+        for link in RetailerUser.objects.unscoped()
+        .using(alias)
+        .filter(user__in=users, retailer__is_active=True)
+        .select_related("retailer")
+    }
+    brand_names = dict(
+        TenantBranding.objects.unscoped()
+        .using(alias)
+        .filter(tenant_id__in=[u.tenant_id for u in users])
+        .values_list("tenant_id", "display_name")
+    )
+    accounts = [
+        RetailerAccount(
+            user=u,
+            tenant=u.tenant,  # type: ignore[arg-type]
+            shop_name=links[u.pk].retailer.shop_name,
+            distributor_name=brand_names.get(u.tenant_id) or u.tenant.name,  # type: ignore[union-attr]
+        )
+        for u in users
+        if u.pk in links
+    ]
+    return sorted(accounts, key=lambda a: a.distributor_name.lower())
+
+
+def retailer_login_for_tenant(phone: str, tenant_id: UUID) -> User | None:
+    """The active retailer login for ``phone`` in this tenant (subdomain sign-in)."""
+    from apps.retailers.models import RetailerUser
+
+    user: User | None = User.objects.filter(
+        user_type=User.UserType.RETAILER, phone=phone, tenant_id=tenant_id, is_active=True
+    ).first()
+    if user is None:
+        return None
+    with transaction.atomic(), tenant_context(tenant_id):
+        active = RetailerUser.objects.filter(user=user, retailer__is_active=True).exists()
+    return user if active else None

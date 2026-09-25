@@ -27,4 +27,19 @@ urlpatterns = [
     path("password/forgot/", views.PasswordForgotView.as_view(), name="auth-password-forgot"),
     path("password/reset/", views.PasswordResetView.as_view(), name="auth-password-reset"),
     path("password/change/", views.PasswordChangeView.as_view(), name="auth-password-change"),
+    path(
+        "retailer/otp/request/",
+        views.RetailerOtpRequestView.as_view(),
+        name="auth-retailer-otp-request",
+    ),
+    path(
+        "retailer/otp/verify/",
+        views.RetailerOtpVerifyView.as_view(),
+        name="auth-retailer-otp-verify",
+    ),
+    path(
+        "retailer/choose-account/",
+        views.RetailerChooseAccountView.as_view(),
+        name="auth-retailer-choose-account",
+    ),
 ]

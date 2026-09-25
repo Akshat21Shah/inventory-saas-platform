@@ -50,3 +50,15 @@ def enable_totp(user: User) -> str:
     User.objects.filter(pk=user.pk).update(totp_secret=secret, totp_enabled=True)
     user.refresh_from_db()
     return secret
+
+
+def make_retailer_login(
+    tenant: Tenant, phone: str = "9876543210", shop_name: str = "Ganesh Kirana"
+) -> User:
+    """A retailer of ``tenant`` with its RETAILER login; returns the login user."""
+    from apps.retailers.services import create_retailer
+
+    with tenant_context(tenant.id):
+        retailer = create_retailer(shop_name=shop_name, phone=phone)
+    user: User = User.objects.get(tenant=tenant, phone=retailer.phone)
+    return user

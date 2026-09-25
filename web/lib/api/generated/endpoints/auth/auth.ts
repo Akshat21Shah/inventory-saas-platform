@@ -38,6 +38,10 @@ import type {
   PatchedMeUpdateRequest,
   RecoveryCodes,
   RefreshInputRequest,
+  RetailerChooseAccountInputRequest,
+  RetailerOtpRequestInputRequest,
+  RetailerOtpRequestResponse,
+  RetailerOtpVerifyInputRequest,
   StaffLoginInputRequest,
   TokenResponse
 } from '../../model';
@@ -1357,6 +1361,375 @@ export function useAuthPasswordReset<TData = Awaited<ReturnType<typeof authPassw
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAuthPasswordResetQueryOptions(passwordResetInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authRetailerChooseAccountResponse200 = {
+  data: LoginResponse
+  status: 200
+}
+
+export type authRetailerChooseAccountResponseSuccess = (authRetailerChooseAccountResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authRetailerChooseAccountResponse = (authRetailerChooseAccountResponseSuccess)
+
+export const getAuthRetailerChooseAccountUrl = () => {
+
+
+
+
+  return `/api/v1/auth/retailer/choose-account/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authRetailerChooseAccount = async (retailerChooseAccountInputRequest: RetailerChooseAccountInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authRetailerChooseAccountResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authRetailerChooseAccountResponse>(getAuthRetailerChooseAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(retailerChooseAccountInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthRetailerChooseAccountQueryKey = (retailerChooseAccountInputRequest?: RetailerChooseAccountInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/retailer/choose-account/`, retailerChooseAccountInputRequest
+    ] as const;
+    }
+
+
+export const getAuthRetailerChooseAccountQueryOptions = <TData = Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError = unknown>(retailerChooseAccountInputRequest: RetailerChooseAccountInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthRetailerChooseAccountQueryKey(retailerChooseAccountInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authRetailerChooseAccount>>> = ({ signal }) => authRetailerChooseAccount(retailerChooseAccountInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthRetailerChooseAccountQueryResult = NonNullable<Awaited<ReturnType<typeof authRetailerChooseAccount>>>
+export type AuthRetailerChooseAccountQueryError = unknown
+
+
+export function useAuthRetailerChooseAccount<TData = Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError = unknown>(
+ retailerChooseAccountInputRequest: RetailerChooseAccountInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authRetailerChooseAccount>>,
+          TError,
+          Awaited<ReturnType<typeof authRetailerChooseAccount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthRetailerChooseAccount<TData = Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError = unknown>(
+ retailerChooseAccountInputRequest: RetailerChooseAccountInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authRetailerChooseAccount>>,
+          TError,
+          Awaited<ReturnType<typeof authRetailerChooseAccount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthRetailerChooseAccount<TData = Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError = unknown>(
+ retailerChooseAccountInputRequest: RetailerChooseAccountInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthRetailerChooseAccount<TData = Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError = unknown>(
+ retailerChooseAccountInputRequest: RetailerChooseAccountInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerChooseAccount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthRetailerChooseAccountQueryOptions(retailerChooseAccountInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authRetailerOtpRequestResponse202 = {
+  data: RetailerOtpRequestResponse
+  status: 202
+}
+
+export type authRetailerOtpRequestResponseSuccess = (authRetailerOtpRequestResponse202) & {
+  headers: Headers;
+};
+;
+
+export type authRetailerOtpRequestResponse = (authRetailerOtpRequestResponseSuccess)
+
+export const getAuthRetailerOtpRequestUrl = () => {
+
+
+
+
+  return `/api/v1/auth/retailer/otp/request/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authRetailerOtpRequest = async (retailerOtpRequestInputRequest: RetailerOtpRequestInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authRetailerOtpRequestResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authRetailerOtpRequestResponse>(getAuthRetailerOtpRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(retailerOtpRequestInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthRetailerOtpRequestQueryKey = (retailerOtpRequestInputRequest?: RetailerOtpRequestInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/retailer/otp/request/`, retailerOtpRequestInputRequest
+    ] as const;
+    }
+
+
+export const getAuthRetailerOtpRequestQueryOptions = <TData = Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError = unknown>(retailerOtpRequestInputRequest: RetailerOtpRequestInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthRetailerOtpRequestQueryKey(retailerOtpRequestInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authRetailerOtpRequest>>> = ({ signal }) => authRetailerOtpRequest(retailerOtpRequestInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthRetailerOtpRequestQueryResult = NonNullable<Awaited<ReturnType<typeof authRetailerOtpRequest>>>
+export type AuthRetailerOtpRequestQueryError = unknown
+
+
+export function useAuthRetailerOtpRequest<TData = Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError = unknown>(
+ retailerOtpRequestInputRequest: RetailerOtpRequestInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authRetailerOtpRequest>>,
+          TError,
+          Awaited<ReturnType<typeof authRetailerOtpRequest>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthRetailerOtpRequest<TData = Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError = unknown>(
+ retailerOtpRequestInputRequest: RetailerOtpRequestInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authRetailerOtpRequest>>,
+          TError,
+          Awaited<ReturnType<typeof authRetailerOtpRequest>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthRetailerOtpRequest<TData = Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError = unknown>(
+ retailerOtpRequestInputRequest: RetailerOtpRequestInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthRetailerOtpRequest<TData = Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError = unknown>(
+ retailerOtpRequestInputRequest: RetailerOtpRequestInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpRequest>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthRetailerOtpRequestQueryOptions(retailerOtpRequestInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authRetailerOtpVerifyResponse200 = {
+  data: LoginResponse
+  status: 200
+}
+
+export type authRetailerOtpVerifyResponseSuccess = (authRetailerOtpVerifyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authRetailerOtpVerifyResponse = (authRetailerOtpVerifyResponseSuccess)
+
+export const getAuthRetailerOtpVerifyUrl = () => {
+
+
+
+
+  return `/api/v1/auth/retailer/otp/verify/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authRetailerOtpVerify = async (retailerOtpVerifyInputRequest: RetailerOtpVerifyInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authRetailerOtpVerifyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authRetailerOtpVerifyResponse>(getAuthRetailerOtpVerifyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(retailerOtpVerifyInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthRetailerOtpVerifyQueryKey = (retailerOtpVerifyInputRequest?: RetailerOtpVerifyInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/retailer/otp/verify/`, retailerOtpVerifyInputRequest
+    ] as const;
+    }
+
+
+export const getAuthRetailerOtpVerifyQueryOptions = <TData = Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError = unknown>(retailerOtpVerifyInputRequest: RetailerOtpVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthRetailerOtpVerifyQueryKey(retailerOtpVerifyInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authRetailerOtpVerify>>> = ({ signal }) => authRetailerOtpVerify(retailerOtpVerifyInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthRetailerOtpVerifyQueryResult = NonNullable<Awaited<ReturnType<typeof authRetailerOtpVerify>>>
+export type AuthRetailerOtpVerifyQueryError = unknown
+
+
+export function useAuthRetailerOtpVerify<TData = Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError = unknown>(
+ retailerOtpVerifyInputRequest: RetailerOtpVerifyInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authRetailerOtpVerify>>,
+          TError,
+          Awaited<ReturnType<typeof authRetailerOtpVerify>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthRetailerOtpVerify<TData = Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError = unknown>(
+ retailerOtpVerifyInputRequest: RetailerOtpVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authRetailerOtpVerify>>,
+          TError,
+          Awaited<ReturnType<typeof authRetailerOtpVerify>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthRetailerOtpVerify<TData = Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError = unknown>(
+ retailerOtpVerifyInputRequest: RetailerOtpVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthRetailerOtpVerify<TData = Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError = unknown>(
+ retailerOtpVerifyInputRequest: RetailerOtpVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authRetailerOtpVerify>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthRetailerOtpVerifyQueryOptions(retailerOtpVerifyInputRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -7,6 +7,7 @@ a failed-attempt counter is committed even though the response is an error.
 from typing import Any
 from uuid import UUID
 
+from django.conf import settings
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -14,7 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts import services
+from apps.accounts import retailer_login, services
 from apps.accounts.api import serializers as s
 from apps.accounts.api.cookies import (
     clear_refresh_cookie,
@@ -25,6 +26,7 @@ from apps.accounts.api.cookies import (
 from apps.accounts.models import User
 from apps.accounts.tokens import IssuedTokens, SessionExpired
 from apps.platform.selectors import effective_features, tenant_info
+from apps.retailers.models import RetailerUser
 from common.authentication import (
     IMPERSONATION_MODE_CLAIM,
     IMPERSONATION_SESSION_CLAIM,
@@ -71,8 +73,18 @@ def _login_response(outcome: services.LoginOutcome) -> Response:
         body["enrolment_token"] = outcome.enrolment_token
     if outcome.recovery_codes:
         body["recovery_codes"] = outcome.recovery_codes
+    if outcome.accounts:
+        body["accounts"] = [
+            {
+                "choice_id": a.user.pk,
+                "distributor_name": a.distributor_name,
+                "shop_name": a.shop_name,
+            }
+            for a in outcome.accounts
+        ]
     if outcome.tokens is not None:
         body.update(_token_body(outcome.tokens))
+        body["user_type"] = outcome.user.user_type
     response = Response(s.LoginResponseSerializer(body).data)
     if outcome.tokens is not None:
         set_refresh_cookie(response, outcome.tokens)
@@ -264,6 +276,65 @@ class LogoutView(PublicAuthView):
         return response
 
 
+class RetailerOtpRequestView(PublicAuthView):
+    @extend_schema(
+        request=s.RetailerOtpRequestInputSerializer,
+        responses={202: s.RetailerOtpRequestResponseSerializer},
+        operation_id="auth_retailer_otp_request",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.RetailerOtpRequestInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        retailer_login.request_otp(data.validated_data["phone"], _host(request), _client_ip())
+        body = {
+            "expires_in": settings.OTP_TTL_SECONDS,
+            "resend_after": settings.OTP_RESEND_AFTER_SECONDS,
+        }
+        # Identical whether or not the number belongs to anyone (ADR-015).
+        return Response(s.RetailerOtpRequestResponseSerializer(body).data, status=202)
+
+
+class RetailerOtpVerifyView(PublicAuthView):
+    @extend_schema(
+        request=s.RetailerOtpVerifyInputSerializer,
+        responses=s.LoginResponseSerializer,
+        operation_id="auth_retailer_otp_verify",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.RetailerOtpVerifyInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return _login_response(
+            retailer_login.verify_otp(
+                data.validated_data["phone"],
+                data.validated_data["code"],
+                _host(request),
+                _client_ip(),
+            )
+        )
+
+
+class RetailerChooseAccountView(PublicAuthView):
+    @extend_schema(
+        request=s.RetailerChooseAccountInputSerializer,
+        responses=s.LoginResponseSerializer,
+        operation_id="auth_retailer_choose_account",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.RetailerChooseAccountInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        handoff = retailer_login.choose_account(
+            data.validated_data["choice_token"], data.validated_data["choice_id"]
+        )
+        body = {
+            "status": "handoff",
+            "handoff": {"code": handoff.code, "tenant_slug": handoff.tenant_slug},
+        }
+        return Response(s.LoginResponseSerializer(body).data)
+
+
 def _token_tenant_id(request: Request) -> UUID | None:
     token: Any = request.auth
     raw = token.get(TENANT_CLAIM) if token is not None else None
@@ -423,9 +494,17 @@ def _me(request: Request) -> dict[str, Any]:
         "role": (
             {"code": membership.role.code, "name": membership.role.name} if membership else None
         ),
+        "retailer": _retailer_summary(user) if tenant_id else None,
         "permissions": sorted(user.permission_codes()),
         "features": effective_features(tenant_id) if tenant_id else {},
         "impersonation": impersonation,
         "mfa_enabled": user.totp_enabled,
         "mfa_required": services.mfa_required_for(user, tenant_id),
     }
+
+
+def _retailer_summary(user: User) -> dict[str, Any] | None:
+    if user.user_type != User.UserType.RETAILER:
+        return None
+    link = RetailerUser.objects.filter(user=user).select_related("retailer").first()
+    return {"id": link.retailer.pk, "shop_name": link.retailer.shop_name} if link else None

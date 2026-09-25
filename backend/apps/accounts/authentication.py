@@ -2,7 +2,8 @@
 
 On top of the signed token (``common.authentication``), every request re-checks:
 - the token's tenant still exists and is ACTIVE (a suspension takes effect at once);
-- a staff user still has an active membership in that tenant (deactivation takes effect at once);
+- a staff user still has an active membership in that tenant, and a retailer login still belongs
+  to that tenant and an active retailer (deactivation takes effect at once);
 - the token matches the host: tenant tokens only on their own subdomain, platform tokens only on
   the admin host. Generic and unknown hosts (server-side calls, future mobile API) are allowed.
 """
@@ -14,7 +15,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request
 
 from apps.accounts.models import User
-from apps.accounts.selectors import active_membership, role_codes
+from apps.accounts.selectors import active_membership, retailer_login_for_tenant, role_codes
 from apps.accounts.services import TenantSuspended
 from apps.platform.models import Tenant
 from apps.platform.selectors import tenant_info
@@ -51,6 +52,11 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
             raise AuthenticationFailed("This session is not valid here.", code="wrong_host")
         if host is not None and host.kind == HostKind.TENANT and host.tenant_slug != info.slug:
             raise AuthenticationFailed("This session is not valid here.", code="wrong_host")
+        if user.user_type == User.UserType.RETAILER and (
+            user.tenant_id != tenant_id
+            or retailer_login_for_tenant(user.phone or "", tenant_id) is None
+        ):
+            raise AuthenticationFailed("You no longer have access.", code="retailer_inactive")
         if user.user_type == User.UserType.STAFF:
             membership = active_membership(user, tenant_id)
             if membership is None:

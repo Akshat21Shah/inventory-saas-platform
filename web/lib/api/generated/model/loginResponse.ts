@@ -6,14 +6,17 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Handoff } from './handoff';
+import type { RetailerAccountChoice } from './retailerAccountChoice';
 import type { StatusEnum } from './statusEnum';
 import type { TenantChoice } from './tenantChoice';
+import type { UserTypeEnum } from './userTypeEnum';
 
 /**
  * One shape for every sign-in step; ``status`` says what the client does next.
  */
 export interface LoginResponse {
   status: StatusEnum;
+  user_type?: UserTypeEnum;
   access?: string;
   access_expires_at?: string;
   handoff?: Handoff;
@@ -23,4 +26,5 @@ export interface LoginResponse {
   enrolment_token?: string;
   /** Shown once, right after set-up. */
   recovery_codes?: string[];
+  accounts?: RetailerAccountChoice[];
 }

@@ -202,6 +202,72 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/auth/retailer/choose-account/:
+    post:
+      operationId: auth_retailer_choose_account
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerChooseAccountInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/retailer/otp/request/:
+    post:
+      operationId: auth_retailer_otp_request
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerOtpRequestInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerOtpRequestResponse'
+          description: ''
+  /api/v1/auth/retailer/otp/verify/:
+    post:
+      operationId: auth_retailer_otp_verify
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerOtpVerifyInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
   /api/v1/auth/staff/choose-tenant/:
     post:
       operationId: auth_staff_choose_tenant
@@ -411,6 +477,8 @@ components:
       properties:
         status:
           $ref: '#/components/schemas/StatusEnum'
+        user_type:
+          $ref: '#/components/schemas/UserTypeEnum'
         access:
           type: string
         access_expires_at:
@@ -433,6 +501,10 @@ components:
           items:
             type: string
           description: Shown once, right after set-up.
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetailerAccountChoice'
       required:
       - status
     Me:
@@ -462,6 +534,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/MeRole'
           nullable: true
+        retailer:
+          allOf:
+          - $ref: '#/components/schemas/MeRetailer'
+          nullable: true
         permissions:
           type: array
           items:
@@ -490,6 +566,7 @@ components:
       - permissions
       - phone
       - preferred_language
+      - retailer
       - role
       - tenant
       - user_type
@@ -508,6 +585,17 @@ components:
       - impersonator_id
       - mode
       - session_id
+    MeRetailer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        shop_name:
+          type: string
+      required:
+      - id
+      - shop_name
     MeRole:
       type: object
       properties:
@@ -698,6 +786,69 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
+    RetailerAccountChoice:
+      type: object
+      description: One of the verified phone owner's distributors (ADR-015).
+      properties:
+        choice_id:
+          type: string
+          format: uuid
+        distributor_name:
+          type: string
+        shop_name:
+          type: string
+      required:
+      - choice_id
+      - distributor_name
+      - shop_name
+    RetailerChooseAccountInputRequest:
+      type: object
+      properties:
+        choice_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        choice_id:
+          type: string
+          format: uuid
+      required:
+      - choice_id
+      - choice_token
+    RetailerOtpRequestInputRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+      - phone
+    RetailerOtpRequestResponse:
+      type: object
+      properties:
+        expires_in:
+          type: integer
+          description: Seconds the code stays valid.
+        resend_after:
+          type: integer
+          description: Seconds before offering 'send again'.
+      required:
+      - expires_in
+      - resend_after
+    RetailerOtpVerifyInputRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+      required:
+      - code
+      - phone
     StaffLoginInputRequest:
       type: object
       properties:
@@ -717,6 +868,7 @@ components:
       - authenticated
       - handoff
       - choose_tenant
+      - choose_account
       - mfa_required
       - mfa_setup_required
       type: string
@@ -724,6 +876,7 @@ components:
         * `authenticated` - authenticated
         * `handoff` - handoff
         * `choose_tenant` - choose_tenant
+        * `choose_account` - choose_account
         * `mfa_required` - mfa_required
         * `mfa_setup_required` - mfa_setup_required
     TenantChoice:

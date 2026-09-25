@@ -81,6 +81,7 @@ class LoginStatus(StrEnum):
     CHOOSE_TENANT = "choose_tenant"
     MFA_REQUIRED = "mfa_required"
     MFA_SETUP_REQUIRED = "mfa_setup_required"
+    CHOOSE_ACCOUNT = "choose_account"  # retailer: pick a distributor (ADR-015)
 
 
 @dataclass(frozen=True)
@@ -100,6 +101,7 @@ class LoginOutcome:
     mfa_token: str | None = None
     enrolment_token: str | None = None
     recovery_codes: list[str] = field(default_factory=list)
+    accounts: list[Any] = field(default_factory=list)  # selectors.RetailerAccount
 
 
 def token_hash(raw: str) -> str:
@@ -221,6 +223,8 @@ def _mfa_enrolment_required(user: User, target: dict[str, Any]) -> bool:
         return False
     if user.user_type == User.UserType.PLATFORM:
         return True
+    if user.user_type != User.UserType.STAFF:
+        return False  # retailers sign in with a one-time code; the staff policy is not theirs
     tenant_id = target.get("tenant_id")
     return bool(tenant_id) and bool(get_setting("security.require_staff_2fa", UUID(tenant_id)))
 
@@ -370,6 +374,11 @@ def exchange_handoff(code: str, host: HostContext, ip: str | None) -> LoginOutco
     if (
         user.user_type == User.UserType.STAFF
         and selectors.active_membership(user, tenant.id) is None
+    ):
+        raise TokenInvalid()
+    if user.user_type == User.UserType.RETAILER and (
+        user.tenant_id != tenant.id
+        or selectors.retailer_login_for_tenant(user.phone or "", tenant.id) is None
     ):
         raise TokenInvalid()
     # The second factor (if enabled) was verified on the generic domain before the handoff; the

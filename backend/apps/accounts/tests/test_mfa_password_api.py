@@ -14,6 +14,7 @@ from apps.accounts.models import LoginChallenge, RecoveryCode, User
 from apps.accounts.tests.factories import (
     enable_totp,
     make_membership,
+    make_retailer_login,
     make_staff_in,
     make_super_admin,
 )
@@ -342,9 +343,7 @@ def test_regenerating_recovery_codes_replaces_the_old_ones(tenant_a):
 
 
 def test_retailers_cannot_use_staff_security_endpoints(tenant_a):
-    retailer = User.objects.create_user(
-        None, None, user_type=User.UserType.RETAILER, phone="9876543210"
-    )
+    retailer = make_retailer_login(tenant_a)
     access = issue_tokens(retailer, tenant_a.pk).access
     assert _post("/api/v1/auth/mfa/setup/", {}, "alpha.localhost", access).status_code == 403
 

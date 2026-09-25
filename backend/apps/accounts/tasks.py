@@ -74,3 +74,17 @@ def send_password_reset_email(user_id: str) -> None:
         from_email=None,
         recipient_list=[user.email],
     )
+
+
+@shared_task(
+    name="accounts.send_login_otp_sms",
+    autoretry_for=(Exception,),
+    retry_backoff=5,
+    retry_backoff_max=60,
+    max_retries=3,
+)
+def send_login_otp_sms(phone: str, code: str, sender_name: str) -> None:
+    """Short retries only: a code is useless after a few minutes (OTP_TTL_SECONDS)."""
+    from apps.accounts.adapters.sms import get_sms_sender
+
+    get_sms_sender().send_otp(phone, code, sender_name=sender_name)

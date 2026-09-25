@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.platform",
     "apps.accounts",
     "apps.audit",
+    "apps.retailers",
 ]
 
 MIDDLEWARE = [
@@ -213,6 +214,16 @@ AUTH_HANDOFF_TTL_SECONDS = 60
 AUTH_CHALLENGE_TTL_SECONDS = 300
 TENANT_STATUS_CACHE_SECONDS = 30
 TOTP_ISSUER = env("TOTP_ISSUER", default="Inventory Platform")
+OTP_TTL_SECONDS = 300
+OTP_RESEND_AFTER_SECONDS = 30
+
+# --- Integrations (CLAUDE.md §4: adapters with mock implementations) ------------------------------
+# Mock adapters are refused unless explicitly allowed (dev/test); `manage.py check --deploy` fails
+# when a mock is configured without the allowance.
+ALLOW_MOCK_INTEGRATIONS = env.bool("ALLOW_MOCK_INTEGRATIONS", default=False)
+SMS_PROVIDER = env("SMS_PROVIDER", default="mock")
+# Dev only: every OTP is this code (honoured only with ALLOW_MOCK_INTEGRATIONS).
+OTP_FIXED_CODE: str | None = env("OTP_FIXED_CODE", default=None)
 # Links in emails point at the web app: "{host}" is e.g. "admin.<domain>" or "<slug>.<domain>".
 WEB_URL_TEMPLATE = env("WEB_URL_TEMPLATE", default="https://{host}")
 

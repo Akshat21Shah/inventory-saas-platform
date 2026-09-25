@@ -2,9 +2,11 @@
 
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.accounts.models import User
+from common.phone import normalize_indian_mobile
 
 
 class StaffLoginInputSerializer(serializers.Serializer[Any]):
@@ -23,12 +25,28 @@ class HandoffSerializer(serializers.Serializer[Any]):
     tenant_slug = serializers.CharField()
 
 
+class RetailerAccountChoiceSerializer(serializers.Serializer[Any]):
+    """One of the verified phone owner's distributors (ADR-015)."""
+
+    choice_id = serializers.UUIDField()
+    distributor_name = serializers.CharField()
+    shop_name = serializers.CharField()
+
+
 class LoginResponseSerializer(serializers.Serializer[Any]):
     """One shape for every sign-in step; ``status`` says what the client does next."""
 
     status = serializers.ChoiceField(
-        choices=["authenticated", "handoff", "choose_tenant", "mfa_required", "mfa_setup_required"]
+        choices=[
+            "authenticated",
+            "handoff",
+            "choose_tenant",
+            "choose_account",
+            "mfa_required",
+            "mfa_setup_required",
+        ]
     )
+    user_type = serializers.ChoiceField(choices=User.UserType.choices, required=False)
     access = serializers.CharField(required=False)
     access_expires_at = serializers.DateTimeField(required=False)
     handoff = HandoffSerializer(required=False)
@@ -39,6 +57,7 @@ class LoginResponseSerializer(serializers.Serializer[Any]):
     recovery_codes = serializers.ListField(
         child=serializers.CharField(), required=False, help_text="Shown once, right after set-up."
     )
+    accounts = RetailerAccountChoiceSerializer(many=True, required=False)
 
 
 class MfaVerifyInputSerializer(serializers.Serializer[Any]):
@@ -137,6 +156,11 @@ class MeImpersonationSerializer(serializers.Serializer[Any]):
     mode = serializers.CharField()
 
 
+class MeRetailerSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    shop_name = serializers.CharField()
+
+
 class MeSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     user_type = serializers.ChoiceField(choices=User.UserType.choices)
@@ -146,6 +170,7 @@ class MeSerializer(serializers.Serializer[Any]):
     preferred_language = serializers.CharField()
     tenant = MeTenantSerializer(allow_null=True)
     role = MeRoleSerializer(allow_null=True)
+    retailer = MeRetailerSerializer(allow_null=True)
     permissions = serializers.ListField(child=serializers.CharField())
     features = serializers.DictField(child=serializers.BooleanField())
     impersonation = MeImpersonationSerializer(allow_null=True)
@@ -157,3 +182,35 @@ class MeUpdateSerializer(serializers.ModelSerializer[User]):
     class Meta:
         model = User
         fields = ["full_name", "preferred_language"]
+
+
+def _normalized_mobile(value: str) -> str:
+    try:
+        return normalize_indian_mobile(value)
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError(exc.messages) from exc
+
+
+class RetailerOtpRequestInputSerializer(serializers.Serializer[Any]):
+    phone = serializers.CharField(max_length=20)
+
+    def validate_phone(self, value: str) -> str:
+        return _normalized_mobile(value)
+
+
+class RetailerOtpRequestResponseSerializer(serializers.Serializer[Any]):
+    expires_in = serializers.IntegerField(help_text="Seconds the code stays valid.")
+    resend_after = serializers.IntegerField(help_text="Seconds before offering 'send again'.")
+
+
+class RetailerOtpVerifyInputSerializer(serializers.Serializer[Any]):
+    phone = serializers.CharField(max_length=20)
+    code = serializers.CharField(max_length=10)
+
+    def validate_phone(self, value: str) -> str:
+        return _normalized_mobile(value)
+
+
+class RetailerChooseAccountInputSerializer(serializers.Serializer[Any]):
+    choice_token = serializers.CharField(max_length=200)
+    choice_id = serializers.UUIDField()

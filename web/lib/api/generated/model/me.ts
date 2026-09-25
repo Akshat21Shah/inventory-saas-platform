@@ -7,6 +7,7 @@
  */
 import type { MeFeatures } from './meFeatures';
 import type { MeImpersonation } from './meImpersonation';
+import type { MeRetailer } from './meRetailer';
 import type { MeRole } from './meRole';
 import type { MeTenant } from './meTenant';
 import type { UserTypeEnum } from './userTypeEnum';
@@ -22,6 +23,7 @@ export interface Me {
   preferred_language: string;
   tenant: MeTenant | null;
   role: MeRole | null;
+  retailer: MeRetailer | null;
   permissions: string[];
   features: MeFeatures;
   impersonation: MeImpersonation | null;

@@ -13,7 +13,12 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from apps.accounts import services
 from apps.accounts.models import HandoffCode, LoginChallenge, Membership, User
-from apps.accounts.tests.factories import make_membership, make_staff_in, make_super_admin
+from apps.accounts.tests.factories import (
+    make_membership,
+    make_retailer_login,
+    make_staff_in,
+    make_super_admin,
+)
 from apps.accounts.tokens import issue_tokens
 from apps.audit.models import AuditLog
 from apps.platform import services as platform_services
@@ -368,9 +373,7 @@ def test_staff_session_does_not_slide_but_retailer_session_does(tenant_a):
     assert RefreshToken(rotated["refresh"])["exp"] == original["exp"]
     assert started.session_expires_at is not None
 
-    retailer = User.objects.create_user(
-        None, None, user_type=User.UserType.RETAILER, phone="9876543210"
-    )
+    retailer = make_retailer_login(tenant_a)
     first = issue_tokens(retailer, tenant_a.pk)
     assert first.session_expires_at is None
     assert first.refresh_expires_at - timezone.now() > timedelta(days=29)
