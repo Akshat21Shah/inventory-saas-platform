@@ -1,0 +1,134 @@
+name: inventory
+
+x-backend: &backend
+  build:
+    context: ../backend
+    dockerfile: ../infra/backend.Dockerfile
+    target: dev
+  env_file: ../.env
+  environment: &backend-env
+    DATABASE_URL: postgres://app_user:app_user@postgres:5432/inventory
+    MIGRATION_DATABASE_URL: postgres://app_owner:app_owner@postgres:5432/inventory
+    PLATFORM_DATABASE_URL: postgres://app_platform:app_platform@postgres:5432/inventory
+    REDIS_URL: redis://redis:6379/0
+    EMAIL_HOST: mailpit
+    S3_ENDPOINT_URL: http://s3:8333
+    LOG_FORMAT: json
+  volumes:
+    - ../backend:/app
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: inventory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inventory"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["8025:8025", "1025:1025"]
+
+  # S3-compatible object storage for dev/CI (ADR-024: SeaweedFS replaces MinIO, whose public
+  # images are no longer available). Only reached through the storage adapter.
+  s3:
+    image: chrislusf/seaweedfs:latest
+    command: server -ip.bind=0.0.0.0 -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=256
+    ports: ["8333:8333"]
+    volumes:
+      - s3data:/data
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9333/cluster/status && wget -q -O /dev/null http://127.0.0.1:8888/"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  s3-init:
+    image: chrislusf/seaweedfs:latest
+    depends_on:
+      s3: { condition: service_healthy }
+    # Idempotent and race-free: retries until the filer is up and the bucket is listed.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        for i in $$(seq 1 30); do
+          if echo 's3.bucket.list' | weed shell -master=s3:9333 2>/dev/null | grep -q inventory-dev; then
+            echo "bucket ready"; exit 0
+          fi
+          echo 's3.bucket.create -name inventory-dev' | weed shell -master=s3:9333 >/dev/null 2>&1
+          sleep 2
+        done
+        echo "bucket init failed"; exit 1
+    restart: "no"
+
+  migrate:
+    <<: *backend
+    command: ["sh", "-c", "DATABASE_URL=$$MIGRATION_DATABASE_URL python manage.py migrate --noinput"]
+    restart: "no"
+
+  backend:
+    <<: *backend
+    ports: ["8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency", "2"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  beat:
+    <<: *backend
+    command: ["celery", "-A", "config", "beat", "-l", "info", "--schedule", "/tmp/celerybeat-schedule"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build:
+      context: ../web
+      dockerfile: ../infra/web.Dockerfile
+      target: dev
+    environment:
+      API_INTERNAL_URL: http://backend:8000
+      PLATFORM_DOMAIN: localhost
+      WATCHPACK_POLLING: "true"
+    ports: ["3000:3000"]
+    volumes:
+      - ../web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      backend: { condition: service_started }
+
+volumes:
+  pgdata:
+  s3data:
