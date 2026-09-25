@@ -64,7 +64,7 @@ e2e: ## Playwright (starts the web dev server if not running)
 	cd web && npx playwright test
 
 e2e-stack: ## Acceptance E2E against the running stack (after make up + make seed)
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts
 
 lint: lint-backend lint-frontend ## ruff, mypy, eslint, tsc, prettier
 

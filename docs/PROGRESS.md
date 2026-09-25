@@ -300,6 +300,13 @@
     - Shop pricing page (`/manage/pricing/report`): customised or all shops, counts linking to the shop's special prices and discount grid, free products in a dialog, Excel export.
     - Export and import buttons for special prices, price-list prices and discounts.
     - The "When several discounts apply" setting is on the Pricing settings page (from the registry).
+  - E2E `e2e/pricing-tools.spec.ts` (in `make e2e-stack` and CI). Passed locally with the other two specs (17 passed).
+    - A new distributor imports 20 products and 4 shops.
+    - The grid previews ₹10.35 for 10% off ₹11.50 and saves; a special price is set in place.
+    - Pricing is copied (Replace) after a preview.
+    - At 360 px the second shop sees "You save ₹1.15 each (10%)" and the ₹9.00 special price.
+    - Gold gets +5% for one brand with the missing products added (5 prices), and the report lists both shops.
+  - **Phase 2 review additions complete; waiting for review.**
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.
