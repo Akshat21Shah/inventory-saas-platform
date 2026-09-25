@@ -11,35 +11,43 @@ Rules that matter for security:
 import hashlib
 import logging
 import secrets
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import update_last_login
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
-from apps.accounts import selectors
-from apps.accounts.models import HandoffCode, LoginChallenge, User
+from apps.accounts import mfa, selectors
+from apps.accounts.models import HandoffCode, LoginChallenge, RecoveryCode, User
 from apps.accounts.tokens import (
     IssuedTokens,
     SessionExpired,
     consume_refresh,
     issue_tokens,
+    revoke_all_refresh_tokens,
     revoke_refresh,
     session_expiry_from,
 )
 from apps.audit import services as audit
 from apps.platform.models import Tenant
-from apps.platform.selectors import get_platform_setting, tenant_by_slug
+from apps.platform.selectors import get_platform_setting, get_setting, tenant_by_slug
 from common import ratelimit
 from common.authentication import TENANT_CLAIM
+from common.context import Actor
 from common.error_codes import ErrorCode
-from common.errors import DomainError
-from common.hosts import HostContext, HostKind
+from common.errors import DomainError, InvalidFields
+from common.hosts import HostContext, HostKind, web_url
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +79,8 @@ class LoginStatus(StrEnum):
     AUTHENTICATED = "authenticated"
     HANDOFF = "handoff"
     CHOOSE_TENANT = "choose_tenant"
+    MFA_REQUIRED = "mfa_required"
+    MFA_SETUP_REQUIRED = "mfa_setup_required"
 
 
 @dataclass(frozen=True)
@@ -87,6 +97,9 @@ class LoginOutcome:
     handoff: Handoff | None = None
     choice_token: str | None = None
     tenants: list[Tenant] = field(default_factory=list)
+    mfa_token: str | None = None
+    enrolment_token: str | None = None
+    recovery_codes: list[str] = field(default_factory=list)
 
 
 def token_hash(raw: str) -> str:
@@ -161,34 +174,94 @@ def verify_password_login(email: str, password: str, ip: str | None) -> User:
 
 
 # --- Staff login (ADR-020) ----------------------------------------------------------------------
+#
+# After the password check the login continues to a *target*: tokens for this host's tenant (or
+# for the platform on the admin host), or the generic-domain handoff/chooser. A second factor
+# (verification, or enrolment where it is required) sits between the password and the target.
+# The target travels in the challenge payload, bound to the host that started the login.
 
 
-def _login_admin_host(user: User) -> LoginOutcome:
-    if user.user_type != User.UserType.PLATFORM:
-        raise InvalidCredentials()
-    return _authenticated(user, None)
+def _tokens_target(
+    host: HostContext, tenant_id: UUID | None, session_expires_at: datetime | None = None
+) -> dict[str, Any]:
+    return {
+        "next": "tokens",
+        "tenant_id": str(tenant_id) if tenant_id else None,
+        "host_kind": host.kind.value,
+        "host_slug": host.tenant_slug,
+        "session_expires_at": session_expires_at.isoformat() if session_expires_at else None,
+    }
 
 
-def _login_tenant_host(user: User, slug: str) -> LoginOutcome:
-    if user.user_type != User.UserType.STAFF:
-        raise InvalidCredentials()
-    tenant = tenant_by_slug(slug)
-    if tenant is None or selectors.active_membership(user, tenant.id) is None:
-        raise InvalidCredentials()
-    if tenant.status == Tenant.Status.SUSPENDED:
-        raise TenantSuspended()
-    if tenant.status != Tenant.Status.ACTIVE:
-        raise InvalidCredentials()
-    return _authenticated(user, tenant.id)
+def _target_for_host(user: User, host: HostContext) -> dict[str, Any]:
+    """Apply the host rules; raise the generic error when this host is not for this account."""
+    if host.kind == HostKind.ADMIN and user.user_type == User.UserType.PLATFORM:
+        return _tokens_target(host, None)
+    if host.kind == HostKind.TENANT and host.tenant_slug and user.user_type == User.UserType.STAFF:
+        tenant = tenant_by_slug(host.tenant_slug)
+        if tenant is None or selectors.active_membership(user, tenant.id) is None:
+            raise InvalidCredentials()
+        if tenant.status == Tenant.Status.SUSPENDED:
+            raise TenantSuspended()
+        if tenant.status != Tenant.Status.ACTIVE:
+            raise InvalidCredentials()
+        return _tokens_target(host, tenant.id)
+    if host.kind == HostKind.GENERIC and user.user_type == User.UserType.STAFF:
+        if not selectors.staff_memberships_for_login(user):
+            if selectors.has_membership_in_suspended_tenant(user):
+                raise TenantSuspended()
+            raise InvalidCredentials()
+        return {"next": "generic", "host_kind": host.kind.value, "host_slug": None}
+    raise InvalidCredentials()
 
 
-def _login_generic_host(user: User) -> LoginOutcome:
-    if user.user_type != User.UserType.STAFF:
-        raise InvalidCredentials()
+def _mfa_enrolment_required(user: User, target: dict[str, Any]) -> bool:
+    """Super admins always need 2FA; staff when the target tenant requires it (ADR-030)."""
+    if user.totp_enabled:
+        return False
+    if user.user_type == User.UserType.PLATFORM:
+        return True
+    tenant_id = target.get("tenant_id")
+    return bool(tenant_id) and bool(get_setting("security.require_staff_2fa", UUID(tenant_id)))
+
+
+def _challenge(kind: str, user: User, target: dict[str, Any]) -> str:
+    raw = _new_secret()
+    LoginChallenge.objects.create(
+        kind=kind,
+        token_hash=token_hash(raw),
+        user=user,
+        payload=target,
+        expires_at=timezone.now() + timedelta(seconds=settings.AUTH_CHALLENGE_TTL_SECONDS),
+    )
+    return raw
+
+
+def _continue_login(
+    user: User, target: dict[str, Any], *, factor_verified: bool = False
+) -> LoginOutcome:
+    if user.totp_enabled and not factor_verified:
+        raw = _challenge(LoginChallenge.Kind.MFA, user, target)
+        return LoginOutcome(status=LoginStatus.MFA_REQUIRED, user=user, mfa_token=raw)
+    if _mfa_enrolment_required(user, target):
+        raw = _challenge(LoginChallenge.Kind.MFA_ENROLMENT, user, target)
+        return LoginOutcome(status=LoginStatus.MFA_SETUP_REQUIRED, user=user, enrolment_token=raw)
+    return _complete_login(user, target)
+
+
+def _complete_login(user: User, target: dict[str, Any]) -> LoginOutcome:
+    if target["next"] == "generic":
+        return _generic_outcome(user)
+    tenant_id = UUID(target["tenant_id"]) if target.get("tenant_id") else None
+    raw_expiry = target.get("session_expires_at")
+    return _authenticated(
+        user, tenant_id, datetime.fromisoformat(raw_expiry) if raw_expiry else None
+    )
+
+
+def _generic_outcome(user: User) -> LoginOutcome:
     tenants = selectors.staff_memberships_for_login(user)
     if not tenants:
-        if selectors.has_membership_in_suspended_tenant(user):
-            raise TenantSuspended()
         raise InvalidCredentials()
     if len(tenants) == 1:
         return LoginOutcome(
@@ -220,13 +293,13 @@ def staff_login(email: str, password: str, host: HostContext, ip: str | None) ->
     """Email + password sign-in for staff and super admins, following the host rules."""
     user = verify_password_login(email, password, ip)
     with transaction.atomic():
-        if host.kind == HostKind.ADMIN:
-            return _login_admin_host(user)
-        if host.kind == HostKind.TENANT and host.tenant_slug:
-            return _login_tenant_host(user, host.tenant_slug)
-        if host.kind == HostKind.GENERIC:
-            return _login_generic_host(user)
-    raise InvalidCredentials()
+        return _continue_login(user, _target_for_host(user, host))
+
+
+def _check_challenge_host(target: dict[str, Any], host: HostContext) -> None:
+    """A login continues only on the host that started it (cookies are host-scoped)."""
+    if target.get("host_kind") != host.kind.value or target.get("host_slug") != host.tenant_slug:
+        raise TokenInvalid()
 
 
 # --- Tenant chooser & handoff ------------------------------------------------------------------
@@ -299,7 +372,10 @@ def exchange_handoff(code: str, host: HostContext, ip: str | None) -> LoginOutco
         and selectors.active_membership(user, tenant.id) is None
     ):
         raise TokenInvalid()
-    return _authenticated(user, tenant.id, handoff.session_expires_at)
+    # The second factor (if enabled) was verified on the generic domain before the handoff; the
+    # tenant's own 2FA policy is applied here, where the tenant is known.
+    target = _tokens_target(host, tenant.id, handoff.session_expires_at)
+    return _continue_login(user, target, factor_verified=True)
 
 
 # --- Refresh & logout -------------------------------------------------------------------------
@@ -358,3 +434,242 @@ def update_profile(
     if fields:
         user.save(update_fields=fields)
     return user
+
+
+# --- Second factor (spec 5.2, ADR-030) ---------------------------------------------------------
+
+
+class MfaInvalidCode(DomainError):
+    status_code = 400
+    code = ErrorCode.MFA_INVALID_CODE
+    default_message = "That code didn't work. Check your authenticator app and try again."
+
+
+class MfaRequiredByPolicy(DomainError):
+    status_code = 400
+    code = ErrorCode.MFA_REQUIRED_BY_POLICY
+    default_message = "Two-step verification is required for your account and can't be turned off."
+
+
+def _open_challenge(raw: str, kinds: tuple[str, ...]) -> LoginChallenge:
+    challenge: LoginChallenge | None = (
+        LoginChallenge.objects.select_related("user")
+        .filter(
+            token_hash=token_hash(raw or ""),
+            kind__in=kinds,
+            used_at__isnull=True,
+            expires_at__gt=timezone.now(),
+        )
+        .first()
+    )
+    if challenge is None or challenge.user is None or not challenge.user.is_active:
+        raise TokenInvalid()
+    return challenge
+
+
+def _failed_code(challenge: LoginChallenge) -> None:
+    """Count a wrong code (committed); the challenge dies after the allowed attempts."""
+    limit = get_platform_setting("platform.otp_max_verify_attempts")
+    with transaction.atomic():
+        attempts = challenge.attempts + 1
+        LoginChallenge.objects.filter(pk=challenge.pk).update(
+            attempts=attempts, used_at=timezone.now() if attempts >= limit else None
+        )
+    raise MfaInvalidCode()
+
+
+def _mark_used(challenge: LoginChallenge) -> None:
+    if (
+        LoginChallenge.objects.filter(pk=challenge.pk, used_at__isnull=True).update(
+            used_at=timezone.now()
+        )
+        != 1
+    ):
+        raise TokenInvalid()
+
+
+def verify_login_mfa(
+    mfa_token: str, code: str | None, recovery_code: str | None, host: HostContext, ip: str | None
+) -> LoginOutcome:
+    """Second step of a sign-in with 2FA enabled (TOTP code or a recovery code)."""
+    ratelimit.hit("mfa:ip", ip, get_platform_setting("platform.login_rate_per_ip_per_minute"), 60)
+    challenge = _open_challenge(mfa_token, (LoginChallenge.Kind.MFA,))
+    _check_challenge_host(challenge.payload, host)
+    user = challenge.user
+    assert user is not None
+    if not mfa.verify_second_factor(user, code, recovery_code):
+        _failed_code(challenge)
+    with transaction.atomic():
+        _mark_used(challenge)
+        if recovery_code and not code:
+            audit.record("auth.recovery_code_used", target=user, tenant_id=None, actor=_actor(user))
+        return _complete_login(user, challenge.payload)
+
+
+def _actor(user: User) -> Actor:
+    return Actor(user_id=user.pk, actor_type=user.user_type)
+
+
+def begin_enrolment(enrolment_token: str) -> tuple[str, str]:
+    """Sign-in enrolment: a new TOTP secret for the user to add to their authenticator app."""
+    challenge = _open_challenge(
+        enrolment_token, (LoginChallenge.Kind.MFA_ENROLMENT, LoginChallenge.Kind.MFA_SETUP)
+    )
+    secret = mfa.new_secret()
+    LoginChallenge.objects.filter(pk=challenge.pk).update(secret=secret)  # encrypted at rest
+    user = challenge.user
+    assert user is not None
+    return secret, mfa.provisioning_uri(secret, user.email or str(user.pk))
+
+
+def begin_mfa_setup(user: User) -> tuple[str, str, str]:
+    """Account security page: returns ``(setup_token, secret, otpauth_uri)``."""
+    if user.totp_enabled:
+        raise InvalidFields({"code": ["Two-step verification is already on."]})
+    raw = _challenge(LoginChallenge.Kind.MFA_SETUP, user, {})
+    secret, uri = begin_enrolment(raw)
+    return raw, secret, uri
+
+
+def confirm_enrolment(token: str, code: str, host: HostContext | None) -> LoginOutcome:
+    """Turn 2FA on with the first code from the app. At sign-in this also finishes the login."""
+    challenge = _open_challenge(
+        token, (LoginChallenge.Kind.MFA_ENROLMENT, LoginChallenge.Kind.MFA_SETUP)
+    )
+    at_sign_in = challenge.kind == LoginChallenge.Kind.MFA_ENROLMENT
+    if at_sign_in:
+        if host is None:
+            raise TokenInvalid()
+        _check_challenge_host(challenge.payload, host)
+    step = mfa.matching_step(challenge.secret, code)
+    if step is None:
+        _failed_code(challenge)
+    user = challenge.user
+    assert user is not None
+    with transaction.atomic():
+        _mark_used(challenge)
+        User.objects.filter(pk=user.pk).update(
+            totp_secret=challenge.secret, totp_enabled=True, totp_last_step=step
+        )
+        user.refresh_from_db()
+        codes = mfa.replace_recovery_codes(user)
+        audit.record("auth.mfa_enabled", target=user, tenant_id=None, actor=_actor(user))
+        if not at_sign_in:
+            return LoginOutcome(status=LoginStatus.AUTHENTICATED, user=user, recovery_codes=codes)
+        outcome = _complete_login(user, challenge.payload)
+    return replace(outcome, recovery_codes=codes)
+
+
+def limit_mfa_management(user: User) -> None:
+    """Managing 2FA needs a session; still cap guesses at the second factor per account."""
+    ratelimit.hit("mfa-manage:user", str(user.pk), 5, 60)
+
+
+def mfa_required_for(user: User, tenant_id: UUID | None) -> bool:
+    if user.user_type == User.UserType.PLATFORM:
+        return True
+    return tenant_id is not None and bool(get_setting("security.require_staff_2fa", tenant_id))
+
+
+def _check_password_and_factor(
+    user: User, password: str, code: str | None, recovery_code: str | None
+) -> None:
+    if not user.check_password(password):
+        raise InvalidFields({"password": ["The password is incorrect."]})
+    if not mfa.verify_second_factor(user, code, recovery_code):
+        raise MfaInvalidCode()
+
+
+@transaction.atomic
+def disable_mfa(
+    user: User, password: str, code: str | None, recovery_code: str | None, tenant_id: UUID | None
+) -> None:
+    if mfa_required_for(user, tenant_id):
+        raise MfaRequiredByPolicy()
+    if not user.totp_enabled:
+        return
+    _check_password_and_factor(user, password, code, recovery_code)
+    User.objects.filter(pk=user.pk).update(totp_secret="", totp_enabled=False, totp_last_step=None)
+    RecoveryCode.objects.filter(user=user).delete()
+    audit.record("auth.mfa_disabled", target=user, tenant_id=None)
+
+
+@transaction.atomic
+def regenerate_recovery_codes(
+    user: User, password: str, code: str | None, recovery_code: str | None
+) -> list[str]:
+    if not user.totp_enabled:
+        raise InvalidFields({"code": ["Two-step verification is off."]})
+    _check_password_and_factor(user, password, code, recovery_code)
+    codes = mfa.replace_recovery_codes(user)
+    audit.record("auth.recovery_codes_regenerated", target=user, tenant_id=None)
+    return codes
+
+
+# --- Passwords -----------------------------------------------------------------------------------
+
+PASSWORD_RESET_PER_EMAIL_PER_HOUR = 3
+
+
+def request_password_reset(email: str, ip: str | None) -> None:
+    """Email a reset link if an active staff/super-admin account exists. Always looks the same."""
+    from apps.accounts.tasks import send_password_reset_email
+
+    email = (email or "").strip().lower()
+    ratelimit.hit("reset:ip", ip, get_platform_setting("platform.login_rate_per_ip_per_minute"), 60)
+    ratelimit.hit("reset:email", email, PASSWORD_RESET_PER_EMAIL_PER_HOUR, 3600)
+    user = User.objects.filter(
+        email=email,
+        is_active=True,
+        user_type__in=[User.UserType.STAFF, User.UserType.PLATFORM],
+    ).first()
+    if user is not None:
+        transaction.on_commit(lambda: send_password_reset_email.delay(str(user.pk)))
+
+
+def _validated_new_password(user: User, new_password: str) -> None:
+    try:
+        validate_password(new_password, user)
+    except DjangoValidationError as exc:
+        raise InvalidFields({"new_password": list(exc.messages)}) from exc
+
+
+@transaction.atomic
+def reset_password(uidb64: str, token: str, new_password: str) -> None:
+    """Set a new password from an emailed link. Unlocks the account and ends every session."""
+    try:
+        user_id = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.select_for_update().get(pk=user_id, is_active=True)
+    except (ValueError, TypeError, OverflowError, User.DoesNotExist, DjangoValidationError) as exc:
+        raise TokenInvalid() from exc
+    if user.user_type == User.UserType.RETAILER or not default_token_generator.check_token(
+        user, token
+    ):
+        raise TokenInvalid()
+    _validated_new_password(user, new_password)
+    user.set_password(new_password)
+    user.failed_login_count, user.locked_until = 0, None
+    user.save(update_fields=["password", "failed_login_count", "locked_until"])
+    revoke_all_refresh_tokens(user)
+    audit.record("auth.password_reset", target=user, tenant_id=None, actor=_actor(user))
+
+
+@transaction.atomic
+def change_password(
+    user: User, current_password: str, new_password: str, tenant_id: UUID | None
+) -> IssuedTokens:
+    """Change the password; every other session ends, this one continues with new tokens."""
+    if not user.check_password(current_password):
+        raise InvalidFields({"current_password": ["The current password is incorrect."]})
+    _validated_new_password(user, new_password)
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    revoke_all_refresh_tokens(user)
+    audit.record("auth.password_changed", target=user, tenant_id=None)
+    return issue_tokens(user, tenant_id)
+
+
+def password_reset_link(user: User) -> str:
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    return web_url(f"/reset-password/{uid}/{token}", admin=user.user_type == User.UserType.PLATFORM)

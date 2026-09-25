@@ -25,4 +25,7 @@ export interface Me {
   permissions: string[];
   features: MeFeatures;
   impersonation: MeImpersonation | null;
+  mfa_enabled: boolean;
+  /** 2FA can't be turned off for this account. */
+  mfa_required: boolean;
 }

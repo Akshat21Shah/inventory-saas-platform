@@ -7,6 +7,8 @@
  */
 
 export * from './chooseTenantInputRequest';
+export * from './enrolmentConfirmInputRequest';
+export * from './enrolmentTokenInputRequest';
 export * from './handoff';
 export * from './handoffExchangeInputRequest';
 export * from './loginResponse';
@@ -16,8 +18,17 @@ export * from './meImpersonation';
 export * from './meRole';
 export * from './meta';
 export * from './meTenant';
+export * from './mfaSecret';
+export * from './mfaSetupConfirmInputRequest';
+export * from './mfaSetupResponse';
+export * from './mfaVerifyInputRequest';
+export * from './passwordAndFactorInputRequest';
+export * from './passwordChangeInputRequest';
+export * from './passwordForgotInputRequest';
+export * from './passwordResetInputRequest';
 export * from './patchedMeUpdateRequest';
 export * from './preferredLanguageEnum';
+export * from './recoveryCodes';
 export * from './refreshInputRequest';
 export * from './staffLoginInputRequest';
 export * from './statusEnum';

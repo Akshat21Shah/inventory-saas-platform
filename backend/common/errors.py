@@ -28,3 +28,14 @@ class DomainError(Exception):
             self.status_code = status_code
         self.details = details or {}
         super().__init__(self.message)
+
+
+class InvalidFields(DomainError):
+    """Field-level validation failure raised by services: ``{"fields": {name: [messages]}}``."""
+
+    status_code = 400
+    code = ErrorCode.VALIDATION_ERROR
+    default_message = "Some fields need attention."
+
+    def __init__(self, fields: dict[str, list[str]], message: str | None = None) -> None:
+        super().__init__(message, details={"fields": fields})

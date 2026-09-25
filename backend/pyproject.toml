@@ -20,6 +20,7 @@ dependencies = [
     "python-json-logger>=3.3",
     "sentry-sdk>=2.25",
     "cryptography>=45",
+    "pyotp>=2.9",
 ]
 
 [dependency-groups]

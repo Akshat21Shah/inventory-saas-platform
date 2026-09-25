@@ -10,6 +10,8 @@
  * * `authenticated` - authenticated
  * * `handoff` - handoff
  * * `choose_tenant` - choose_tenant
+ * * `mfa_required` - mfa_required
+ * * `mfa_setup_required` - mfa_setup_required
  */
 export type StatusEnum = typeof StatusEnum[keyof typeof StatusEnum];
 
@@ -18,4 +20,6 @@ export const StatusEnum = {
   authenticated: 'authenticated',
   handoff: 'handoff',
   choose_tenant: 'choose_tenant',
+  mfa_required: 'mfa_required',
+  mfa_setup_required: 'mfa_setup_required',
 } as const;

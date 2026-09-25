@@ -9,6 +9,9 @@ import type { Handoff } from './handoff';
 import type { StatusEnum } from './statusEnum';
 import type { TenantChoice } from './tenantChoice';
 
+/**
+ * One shape for every sign-in step; ``status`` says what the client does next.
+ */
 export interface LoginResponse {
   status: StatusEnum;
   access?: string;
@@ -16,4 +19,8 @@ export interface LoginResponse {
   handoff?: Handoff;
   choice_token?: string;
   tenants?: TenantChoice[];
+  mfa_token?: string;
+  enrolment_token?: string;
+  /** Shown once, right after set-up. */
+  recovery_codes?: string[];
 }

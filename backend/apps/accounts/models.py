@@ -14,6 +14,7 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 
 from common.context import tenant_id_var
+from common.crypto import EncryptedTextField
 from common.models import BaseModel, TenantScopedModel
 
 
@@ -60,6 +61,10 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     preferred_language = models.CharField(
         max_length=5, choices=[("en", "English"), ("hi", "हिन्दी"), ("mr", "मराठी")], default="en"
     )
+    # TOTP second factor (spec 5.2): secret encrypted at rest (ADR-031); each time step used once.
+    totp_secret = EncryptedTextField(blank=True, default="")
+    totp_enabled = models.BooleanField(default=False)
+    totp_last_step = models.BigIntegerField(null=True, blank=True)
     # Lockout (ADR-030): consecutive failures; reset on success or password reset.
     failed_login_count = models.PositiveSmallIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
@@ -194,7 +199,8 @@ class LoginChallenge(BaseModel):
         STAFF_TENANT_CHOICE = "STAFF_TENANT_CHOICE", "Staff: choose a tenant"
         RETAILER_ACCOUNT_CHOICE = "RETAILER_ACCOUNT_CHOICE", "Retailer: choose a distributor"
         MFA = "MFA", "Second factor"
-        MFA_ENROLMENT = "MFA_ENROLMENT", "Second factor set-up required"
+        MFA_ENROLMENT = "MFA_ENROLMENT", "Second factor set-up required at sign-in"
+        MFA_SETUP = "MFA_SETUP", "Second factor set-up from account security"
 
     kind = models.CharField(max_length=30, choices=Kind.choices)
     token_hash = models.CharField(max_length=64, unique=True)
@@ -206,6 +212,8 @@ class LoginChallenge(BaseModel):
         "platform.Tenant", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
     )
     candidates = models.JSONField(default=list, blank=True)
+    payload = models.JSONField(default=dict, blank=True)  # where the login continues; never secrets
+    secret = EncryptedTextField(blank=True, default="")  # e.g. a TOTP secret pending confirmation
     attempts = models.PositiveSmallIntegerField(default=0)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
@@ -232,3 +240,19 @@ class HandoffCode(BaseModel):
 
     def __str__(self) -> str:
         return f"handoff:{self.user_id}->{self.tenant_id}"
+
+
+class RecoveryCode(BaseModel):
+    """Single-use 2FA recovery code. Only a SHA-256 is stored (the code has 80 bits of entropy)."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recovery_codes")
+    code_hash = models.CharField(max_length=64)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "code_hash"], name="uniq_recovery_code"),
+        ]
+
+    def __str__(self) -> str:
+        return f"recovery:{self.user_id}"

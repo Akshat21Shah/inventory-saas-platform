@@ -212,6 +212,9 @@ AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=True)
 AUTH_HANDOFF_TTL_SECONDS = 60
 AUTH_CHALLENGE_TTL_SECONDS = 300
 TENANT_STATUS_CACHE_SECONDS = 30
+TOTP_ISSUER = env("TOTP_ISSUER", default="Inventory Platform")
+# Links in emails point at the web app: "{host}" is e.g. "admin.<domain>" or "<slug>.<domain>".
+WEB_URL_TEMPLATE = env("WEB_URL_TEMPLATE", default="https://{host}")
 
 CORS_ALLOWED_ORIGIN_REGEXES = env.list(
     "CORS_ALLOWED_ORIGIN_REGEXES", default=[r"^https?://([a-z0-9-]+\.)?localhost(:\d+)?$"]

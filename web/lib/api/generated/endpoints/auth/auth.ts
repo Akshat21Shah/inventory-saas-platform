@@ -22,10 +22,21 @@ import type {
 
 import type {
   ChooseTenantInputRequest,
+  EnrolmentConfirmInputRequest,
+  EnrolmentTokenInputRequest,
   HandoffExchangeInputRequest,
   LoginResponse,
   Me,
+  MfaSecret,
+  MfaSetupConfirmInputRequest,
+  MfaSetupResponse,
+  MfaVerifyInputRequest,
+  PasswordAndFactorInputRequest,
+  PasswordChangeInputRequest,
+  PasswordForgotInputRequest,
+  PasswordResetInputRequest,
   PatchedMeUpdateRequest,
+  RecoveryCodes,
   RefreshInputRequest,
   StaffLoginInputRequest,
   TokenResponse
@@ -525,6 +536,838 @@ export function useAuthMeUpdate<TData = Awaited<ReturnType<typeof authMeUpdate>>
 
 
 
+export type authMfaConfirmResponse200 = {
+  data: RecoveryCodes
+  status: 200
+}
+
+export type authMfaConfirmResponseSuccess = (authMfaConfirmResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authMfaConfirmResponse = (authMfaConfirmResponseSuccess)
+
+export const getAuthMfaConfirmUrl = () => {
+
+
+
+
+  return `/api/v1/auth/mfa/confirm/`
+}
+
+export const authMfaConfirm = async (mfaSetupConfirmInputRequest: MfaSetupConfirmInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authMfaConfirmResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authMfaConfirmResponse>(getAuthMfaConfirmUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mfaSetupConfirmInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthMfaConfirmQueryKey = (mfaSetupConfirmInputRequest?: MfaSetupConfirmInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/mfa/confirm/`, mfaSetupConfirmInputRequest
+    ] as const;
+    }
+
+
+export const getAuthMfaConfirmQueryOptions = <TData = Awaited<ReturnType<typeof authMfaConfirm>>, TError = unknown>(mfaSetupConfirmInputRequest: MfaSetupConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaConfirm>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthMfaConfirmQueryKey(mfaSetupConfirmInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authMfaConfirm>>> = ({ signal }) => authMfaConfirm(mfaSetupConfirmInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authMfaConfirm>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthMfaConfirmQueryResult = NonNullable<Awaited<ReturnType<typeof authMfaConfirm>>>
+export type AuthMfaConfirmQueryError = unknown
+
+
+export function useAuthMfaConfirm<TData = Awaited<ReturnType<typeof authMfaConfirm>>, TError = unknown>(
+ mfaSetupConfirmInputRequest: MfaSetupConfirmInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaConfirm>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaConfirm>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaConfirm>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaConfirm<TData = Awaited<ReturnType<typeof authMfaConfirm>>, TError = unknown>(
+ mfaSetupConfirmInputRequest: MfaSetupConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaConfirm>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaConfirm>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaConfirm>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaConfirm<TData = Awaited<ReturnType<typeof authMfaConfirm>>, TError = unknown>(
+ mfaSetupConfirmInputRequest: MfaSetupConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaConfirm>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthMfaConfirm<TData = Awaited<ReturnType<typeof authMfaConfirm>>, TError = unknown>(
+ mfaSetupConfirmInputRequest: MfaSetupConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaConfirm>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthMfaConfirmQueryOptions(mfaSetupConfirmInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authMfaDisableResponse204 = {
+  data: void
+  status: 204
+}
+
+export type authMfaDisableResponseSuccess = (authMfaDisableResponse204) & {
+  headers: Headers;
+};
+;
+
+export type authMfaDisableResponse = (authMfaDisableResponseSuccess)
+
+export const getAuthMfaDisableUrl = () => {
+
+
+
+
+  return `/api/v1/auth/mfa/disable/`
+}
+
+export const authMfaDisable = async (passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authMfaDisableResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authMfaDisableResponse>(getAuthMfaDisableUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passwordAndFactorInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthMfaDisableQueryKey = (passwordAndFactorInputRequest?: PasswordAndFactorInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/mfa/disable/`, passwordAndFactorInputRequest
+    ] as const;
+    }
+
+
+export const getAuthMfaDisableQueryOptions = <TData = Awaited<ReturnType<typeof authMfaDisable>>, TError = unknown>(passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaDisable>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthMfaDisableQueryKey(passwordAndFactorInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authMfaDisable>>> = ({ signal }) => authMfaDisable(passwordAndFactorInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authMfaDisable>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthMfaDisableQueryResult = NonNullable<Awaited<ReturnType<typeof authMfaDisable>>>
+export type AuthMfaDisableQueryError = unknown
+
+
+export function useAuthMfaDisable<TData = Awaited<ReturnType<typeof authMfaDisable>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaDisable>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaDisable>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaDisable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaDisable<TData = Awaited<ReturnType<typeof authMfaDisable>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaDisable>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaDisable>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaDisable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaDisable<TData = Awaited<ReturnType<typeof authMfaDisable>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaDisable>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthMfaDisable<TData = Awaited<ReturnType<typeof authMfaDisable>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaDisable>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthMfaDisableQueryOptions(passwordAndFactorInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authMfaRecoveryCodesResponse200 = {
+  data: RecoveryCodes
+  status: 200
+}
+
+export type authMfaRecoveryCodesResponseSuccess = (authMfaRecoveryCodesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authMfaRecoveryCodesResponse = (authMfaRecoveryCodesResponseSuccess)
+
+export const getAuthMfaRecoveryCodesUrl = () => {
+
+
+
+
+  return `/api/v1/auth/mfa/recovery-codes/`
+}
+
+export const authMfaRecoveryCodes = async (passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authMfaRecoveryCodesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authMfaRecoveryCodesResponse>(getAuthMfaRecoveryCodesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passwordAndFactorInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthMfaRecoveryCodesQueryKey = (passwordAndFactorInputRequest?: PasswordAndFactorInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/mfa/recovery-codes/`, passwordAndFactorInputRequest
+    ] as const;
+    }
+
+
+export const getAuthMfaRecoveryCodesQueryOptions = <TData = Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError = unknown>(passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthMfaRecoveryCodesQueryKey(passwordAndFactorInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authMfaRecoveryCodes>>> = ({ signal }) => authMfaRecoveryCodes(passwordAndFactorInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthMfaRecoveryCodesQueryResult = NonNullable<Awaited<ReturnType<typeof authMfaRecoveryCodes>>>
+export type AuthMfaRecoveryCodesQueryError = unknown
+
+
+export function useAuthMfaRecoveryCodes<TData = Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaRecoveryCodes>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaRecoveryCodes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaRecoveryCodes<TData = Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaRecoveryCodes>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaRecoveryCodes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaRecoveryCodes<TData = Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthMfaRecoveryCodes<TData = Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError = unknown>(
+ passwordAndFactorInputRequest: PasswordAndFactorInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaRecoveryCodes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthMfaRecoveryCodesQueryOptions(passwordAndFactorInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authMfaSetupResponse200 = {
+  data: MfaSetupResponse
+  status: 200
+}
+
+export type authMfaSetupResponseSuccess = (authMfaSetupResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authMfaSetupResponse = (authMfaSetupResponseSuccess)
+
+export const getAuthMfaSetupUrl = () => {
+
+
+
+
+  return `/api/v1/auth/mfa/setup/`
+}
+
+export const authMfaSetup = async ( options?: Parameters<typeof apiFetch>[1]): Promise<authMfaSetupResponse> => {
+
+  return apiFetch<authMfaSetupResponse>(getAuthMfaSetupUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAuthMfaSetupQueryKey = () => {
+    return [
+    'POST', `/api/v1/auth/mfa/setup/`
+    ] as const;
+    }
+
+
+export const getAuthMfaSetupQueryOptions = <TData = Awaited<ReturnType<typeof authMfaSetup>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaSetup>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthMfaSetupQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authMfaSetup>>> = ({ signal }) => authMfaSetup({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authMfaSetup>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthMfaSetupQueryResult = NonNullable<Awaited<ReturnType<typeof authMfaSetup>>>
+export type AuthMfaSetupQueryError = unknown
+
+
+export function useAuthMfaSetup<TData = Awaited<ReturnType<typeof authMfaSetup>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaSetup>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaSetup>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaSetup>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaSetup<TData = Awaited<ReturnType<typeof authMfaSetup>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaSetup>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authMfaSetup>>,
+          TError,
+          Awaited<ReturnType<typeof authMfaSetup>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthMfaSetup<TData = Awaited<ReturnType<typeof authMfaSetup>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaSetup>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthMfaSetup<TData = Awaited<ReturnType<typeof authMfaSetup>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authMfaSetup>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthMfaSetupQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authPasswordChangeResponse200 = {
+  data: TokenResponse
+  status: 200
+}
+
+export type authPasswordChangeResponseSuccess = (authPasswordChangeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authPasswordChangeResponse = (authPasswordChangeResponseSuccess)
+
+export const getAuthPasswordChangeUrl = () => {
+
+
+
+
+  return `/api/v1/auth/password/change/`
+}
+
+export const authPasswordChange = async (passwordChangeInputRequest: PasswordChangeInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authPasswordChangeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authPasswordChangeResponse>(getAuthPasswordChangeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passwordChangeInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthPasswordChangeQueryKey = (passwordChangeInputRequest?: PasswordChangeInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/password/change/`, passwordChangeInputRequest
+    ] as const;
+    }
+
+
+export const getAuthPasswordChangeQueryOptions = <TData = Awaited<ReturnType<typeof authPasswordChange>>, TError = unknown>(passwordChangeInputRequest: PasswordChangeInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordChange>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthPasswordChangeQueryKey(passwordChangeInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authPasswordChange>>> = ({ signal }) => authPasswordChange(passwordChangeInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authPasswordChange>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthPasswordChangeQueryResult = NonNullable<Awaited<ReturnType<typeof authPasswordChange>>>
+export type AuthPasswordChangeQueryError = unknown
+
+
+export function useAuthPasswordChange<TData = Awaited<ReturnType<typeof authPasswordChange>>, TError = unknown>(
+ passwordChangeInputRequest: PasswordChangeInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordChange>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authPasswordChange>>,
+          TError,
+          Awaited<ReturnType<typeof authPasswordChange>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthPasswordChange<TData = Awaited<ReturnType<typeof authPasswordChange>>, TError = unknown>(
+ passwordChangeInputRequest: PasswordChangeInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordChange>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authPasswordChange>>,
+          TError,
+          Awaited<ReturnType<typeof authPasswordChange>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthPasswordChange<TData = Awaited<ReturnType<typeof authPasswordChange>>, TError = unknown>(
+ passwordChangeInputRequest: PasswordChangeInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordChange>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthPasswordChange<TData = Awaited<ReturnType<typeof authPasswordChange>>, TError = unknown>(
+ passwordChangeInputRequest: PasswordChangeInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordChange>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthPasswordChangeQueryOptions(passwordChangeInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authPasswordForgotResponse202 = {
+  data: void
+  status: 202
+}
+
+export type authPasswordForgotResponseSuccess = (authPasswordForgotResponse202) & {
+  headers: Headers;
+};
+;
+
+export type authPasswordForgotResponse = (authPasswordForgotResponseSuccess)
+
+export const getAuthPasswordForgotUrl = () => {
+
+
+
+
+  return `/api/v1/auth/password/forgot/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authPasswordForgot = async (passwordForgotInputRequest: PasswordForgotInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authPasswordForgotResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authPasswordForgotResponse>(getAuthPasswordForgotUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passwordForgotInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthPasswordForgotQueryKey = (passwordForgotInputRequest?: PasswordForgotInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/password/forgot/`, passwordForgotInputRequest
+    ] as const;
+    }
+
+
+export const getAuthPasswordForgotQueryOptions = <TData = Awaited<ReturnType<typeof authPasswordForgot>>, TError = unknown>(passwordForgotInputRequest: PasswordForgotInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordForgot>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthPasswordForgotQueryKey(passwordForgotInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authPasswordForgot>>> = ({ signal }) => authPasswordForgot(passwordForgotInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authPasswordForgot>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthPasswordForgotQueryResult = NonNullable<Awaited<ReturnType<typeof authPasswordForgot>>>
+export type AuthPasswordForgotQueryError = unknown
+
+
+export function useAuthPasswordForgot<TData = Awaited<ReturnType<typeof authPasswordForgot>>, TError = unknown>(
+ passwordForgotInputRequest: PasswordForgotInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordForgot>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authPasswordForgot>>,
+          TError,
+          Awaited<ReturnType<typeof authPasswordForgot>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthPasswordForgot<TData = Awaited<ReturnType<typeof authPasswordForgot>>, TError = unknown>(
+ passwordForgotInputRequest: PasswordForgotInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordForgot>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authPasswordForgot>>,
+          TError,
+          Awaited<ReturnType<typeof authPasswordForgot>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthPasswordForgot<TData = Awaited<ReturnType<typeof authPasswordForgot>>, TError = unknown>(
+ passwordForgotInputRequest: PasswordForgotInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordForgot>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthPasswordForgot<TData = Awaited<ReturnType<typeof authPasswordForgot>>, TError = unknown>(
+ passwordForgotInputRequest: PasswordForgotInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordForgot>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthPasswordForgotQueryOptions(passwordForgotInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authPasswordResetResponse204 = {
+  data: void
+  status: 204
+}
+
+export type authPasswordResetResponseSuccess = (authPasswordResetResponse204) & {
+  headers: Headers;
+};
+;
+
+export type authPasswordResetResponse = (authPasswordResetResponseSuccess)
+
+export const getAuthPasswordResetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/password/reset/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authPasswordReset = async (passwordResetInputRequest: PasswordResetInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authPasswordResetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authPasswordResetResponse>(getAuthPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passwordResetInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthPasswordResetQueryKey = (passwordResetInputRequest?: PasswordResetInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/password/reset/`, passwordResetInputRequest
+    ] as const;
+    }
+
+
+export const getAuthPasswordResetQueryOptions = <TData = Awaited<ReturnType<typeof authPasswordReset>>, TError = unknown>(passwordResetInputRequest: PasswordResetInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordReset>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthPasswordResetQueryKey(passwordResetInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authPasswordReset>>> = ({ signal }) => authPasswordReset(passwordResetInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authPasswordReset>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthPasswordResetQueryResult = NonNullable<Awaited<ReturnType<typeof authPasswordReset>>>
+export type AuthPasswordResetQueryError = unknown
+
+
+export function useAuthPasswordReset<TData = Awaited<ReturnType<typeof authPasswordReset>>, TError = unknown>(
+ passwordResetInputRequest: PasswordResetInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordReset>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authPasswordReset>>,
+          TError,
+          Awaited<ReturnType<typeof authPasswordReset>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthPasswordReset<TData = Awaited<ReturnType<typeof authPasswordReset>>, TError = unknown>(
+ passwordResetInputRequest: PasswordResetInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordReset>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authPasswordReset>>,
+          TError,
+          Awaited<ReturnType<typeof authPasswordReset>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthPasswordReset<TData = Awaited<ReturnType<typeof authPasswordReset>>, TError = unknown>(
+ passwordResetInputRequest: PasswordResetInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordReset>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthPasswordReset<TData = Awaited<ReturnType<typeof authPasswordReset>>, TError = unknown>(
+ passwordResetInputRequest: PasswordResetInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authPasswordReset>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthPasswordResetQueryOptions(passwordResetInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type authStaffChooseTenantResponse200 = {
   data: LoginResponse
   status: 200
@@ -760,6 +1603,375 @@ export function useAuthStaffLogin<TData = Awaited<ReturnType<typeof authStaffLog
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAuthStaffLoginQueryOptions(staffLoginInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authStaffMfaEnrolConfirmResponse200 = {
+  data: LoginResponse
+  status: 200
+}
+
+export type authStaffMfaEnrolConfirmResponseSuccess = (authStaffMfaEnrolConfirmResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authStaffMfaEnrolConfirmResponse = (authStaffMfaEnrolConfirmResponseSuccess)
+
+export const getAuthStaffMfaEnrolConfirmUrl = () => {
+
+
+
+
+  return `/api/v1/auth/staff/mfa/enrol/confirm/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authStaffMfaEnrolConfirm = async (enrolmentConfirmInputRequest: EnrolmentConfirmInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authStaffMfaEnrolConfirmResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authStaffMfaEnrolConfirmResponse>(getAuthStaffMfaEnrolConfirmUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(enrolmentConfirmInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthStaffMfaEnrolConfirmQueryKey = (enrolmentConfirmInputRequest?: EnrolmentConfirmInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/staff/mfa/enrol/confirm/`, enrolmentConfirmInputRequest
+    ] as const;
+    }
+
+
+export const getAuthStaffMfaEnrolConfirmQueryOptions = <TData = Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError = unknown>(enrolmentConfirmInputRequest: EnrolmentConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthStaffMfaEnrolConfirmQueryKey(enrolmentConfirmInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>> = ({ signal }) => authStaffMfaEnrolConfirm(enrolmentConfirmInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthStaffMfaEnrolConfirmQueryResult = NonNullable<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>>
+export type AuthStaffMfaEnrolConfirmQueryError = unknown
+
+
+export function useAuthStaffMfaEnrolConfirm<TData = Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError = unknown>(
+ enrolmentConfirmInputRequest: EnrolmentConfirmInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>,
+          TError,
+          Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthStaffMfaEnrolConfirm<TData = Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError = unknown>(
+ enrolmentConfirmInputRequest: EnrolmentConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>,
+          TError,
+          Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthStaffMfaEnrolConfirm<TData = Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError = unknown>(
+ enrolmentConfirmInputRequest: EnrolmentConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthStaffMfaEnrolConfirm<TData = Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError = unknown>(
+ enrolmentConfirmInputRequest: EnrolmentConfirmInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolConfirm>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthStaffMfaEnrolConfirmQueryOptions(enrolmentConfirmInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authStaffMfaEnrolStartResponse200 = {
+  data: MfaSecret
+  status: 200
+}
+
+export type authStaffMfaEnrolStartResponseSuccess = (authStaffMfaEnrolStartResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authStaffMfaEnrolStartResponse = (authStaffMfaEnrolStartResponseSuccess)
+
+export const getAuthStaffMfaEnrolStartUrl = () => {
+
+
+
+
+  return `/api/v1/auth/staff/mfa/enrol/start/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authStaffMfaEnrolStart = async (enrolmentTokenInputRequest: EnrolmentTokenInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authStaffMfaEnrolStartResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authStaffMfaEnrolStartResponse>(getAuthStaffMfaEnrolStartUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(enrolmentTokenInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthStaffMfaEnrolStartQueryKey = (enrolmentTokenInputRequest?: EnrolmentTokenInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/staff/mfa/enrol/start/`, enrolmentTokenInputRequest
+    ] as const;
+    }
+
+
+export const getAuthStaffMfaEnrolStartQueryOptions = <TData = Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError = unknown>(enrolmentTokenInputRequest: EnrolmentTokenInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthStaffMfaEnrolStartQueryKey(enrolmentTokenInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>> = ({ signal }) => authStaffMfaEnrolStart(enrolmentTokenInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthStaffMfaEnrolStartQueryResult = NonNullable<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>>
+export type AuthStaffMfaEnrolStartQueryError = unknown
+
+
+export function useAuthStaffMfaEnrolStart<TData = Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError = unknown>(
+ enrolmentTokenInputRequest: EnrolmentTokenInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authStaffMfaEnrolStart>>,
+          TError,
+          Awaited<ReturnType<typeof authStaffMfaEnrolStart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthStaffMfaEnrolStart<TData = Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError = unknown>(
+ enrolmentTokenInputRequest: EnrolmentTokenInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authStaffMfaEnrolStart>>,
+          TError,
+          Awaited<ReturnType<typeof authStaffMfaEnrolStart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthStaffMfaEnrolStart<TData = Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError = unknown>(
+ enrolmentTokenInputRequest: EnrolmentTokenInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthStaffMfaEnrolStart<TData = Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError = unknown>(
+ enrolmentTokenInputRequest: EnrolmentTokenInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaEnrolStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthStaffMfaEnrolStartQueryOptions(enrolmentTokenInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authStaffMfaVerifyResponse200 = {
+  data: LoginResponse
+  status: 200
+}
+
+export type authStaffMfaVerifyResponseSuccess = (authStaffMfaVerifyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authStaffMfaVerifyResponse = (authStaffMfaVerifyResponseSuccess)
+
+export const getAuthStaffMfaVerifyUrl = () => {
+
+
+
+
+  return `/api/v1/auth/staff/mfa/verify/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authStaffMfaVerify = async (mfaVerifyInputRequest: MfaVerifyInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authStaffMfaVerifyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authStaffMfaVerifyResponse>(getAuthStaffMfaVerifyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mfaVerifyInputRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthStaffMfaVerifyQueryKey = (mfaVerifyInputRequest?: MfaVerifyInputRequest,) => {
+    return [
+    'POST', `/api/v1/auth/staff/mfa/verify/`, mfaVerifyInputRequest
+    ] as const;
+    }
+
+
+export const getAuthStaffMfaVerifyQueryOptions = <TData = Awaited<ReturnType<typeof authStaffMfaVerify>>, TError = unknown>(mfaVerifyInputRequest: MfaVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaVerify>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthStaffMfaVerifyQueryKey(mfaVerifyInputRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authStaffMfaVerify>>> = ({ signal }) => authStaffMfaVerify(mfaVerifyInputRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaVerify>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthStaffMfaVerifyQueryResult = NonNullable<Awaited<ReturnType<typeof authStaffMfaVerify>>>
+export type AuthStaffMfaVerifyQueryError = unknown
+
+
+export function useAuthStaffMfaVerify<TData = Awaited<ReturnType<typeof authStaffMfaVerify>>, TError = unknown>(
+ mfaVerifyInputRequest: MfaVerifyInputRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaVerify>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authStaffMfaVerify>>,
+          TError,
+          Awaited<ReturnType<typeof authStaffMfaVerify>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthStaffMfaVerify<TData = Awaited<ReturnType<typeof authStaffMfaVerify>>, TError = unknown>(
+ mfaVerifyInputRequest: MfaVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaVerify>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authStaffMfaVerify>>,
+          TError,
+          Awaited<ReturnType<typeof authStaffMfaVerify>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthStaffMfaVerify<TData = Awaited<ReturnType<typeof authStaffMfaVerify>>, TError = unknown>(
+ mfaVerifyInputRequest: MfaVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaVerify>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthStaffMfaVerify<TData = Awaited<ReturnType<typeof authStaffMfaVerify>>, TError = unknown>(
+ mfaVerifyInputRequest: MfaVerifyInputRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authStaffMfaVerify>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthStaffMfaVerifyQueryOptions(mfaVerifyInputRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

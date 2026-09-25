@@ -3,7 +3,7 @@
 from drf_spectacular.contrib.rest_framework_simplejwt import SimpleJWTScheme
 
 
-class SessionJWTScheme(SimpleJWTScheme):  # type: ignore[misc]
+class SessionJWTScheme(SimpleJWTScheme):  # type: ignore[no-untyped-call]
     target_class = "apps.accounts.authentication.SessionJWTAuthentication"
     match_subclasses = True
     name = "jwtAuth"

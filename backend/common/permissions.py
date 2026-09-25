@@ -49,3 +49,15 @@ class IsTenantStaff(_UserTypePermission):
 
 class IsRetailer(_UserTypePermission):
     user_type = "RETAILER"
+
+
+class IsStaffOrPlatformUser(BasePermission):
+    """Email + password accounts (distributor staff and super admins), not retailers."""
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and getattr(user, "user_type", None) in ("STAFF", "PLATFORM")
+        )

@@ -114,7 +114,7 @@ def test_super_admin_signs_in_only_on_admin_host(tenant_a):
     admin = make_super_admin("root@platform.example.com")
     ok = _login(APIClient(), admin.email, host="admin.localhost")
     assert ok.status_code == 200
-    assert "tid" not in _claims(ok.json()["access"])
+    assert ok.json()["status"] == "mfa_setup_required"  # 2FA is mandatory for super admins
     for host in (_host(tenant_a), "localhost", "evil.example.com"):
         refused = _login(APIClient(), admin.email, host=host)
         assert refused.json()["error"]["code"] == "INVALID_CREDENTIALS", host

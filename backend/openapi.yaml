@@ -76,6 +76,132 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+  /api/v1/auth/mfa/confirm/:
+    post:
+      operationId: auth_mfa_confirm
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MfaSetupConfirmInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryCodes'
+          description: ''
+  /api/v1/auth/mfa/disable/:
+    post:
+      operationId: auth_mfa_disable
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordAndFactorInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/mfa/recovery-codes/:
+    post:
+      operationId: auth_mfa_recovery_codes
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordAndFactorInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryCodes'
+          description: ''
+  /api/v1/auth/mfa/setup/:
+    post:
+      operationId: auth_mfa_setup
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaSetupResponse'
+          description: ''
+  /api/v1/auth/password/change/:
+    post:
+      operationId: auth_password_change
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+          description: ''
+  /api/v1/auth/password/forgot/:
+    post:
+      operationId: auth_password_forgot
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordForgotInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          description: No response body
+  /api/v1/auth/password/reset/:
+    post:
+      operationId: auth_password_reset
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
   /api/v1/auth/staff/choose-tenant/:
     post:
       operationId: auth_staff_choose_tenant
@@ -110,6 +236,72 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StaffLoginInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/staff/mfa/enrol/confirm/:
+    post:
+      operationId: auth_staff_mfa_enrol_confirm
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrolmentConfirmInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/staff/mfa/enrol/start/:
+    post:
+      operationId: auth_staff_mfa_enrol_start
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrolmentTokenInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaSecret'
+          description: ''
+  /api/v1/auth/staff/mfa/verify/:
+    post:
+      operationId: auth_staff_mfa_verify
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MfaVerifyInputRequest'
         required: true
       security:
       - {}
@@ -170,6 +362,29 @@ components:
       required:
       - choice_token
       - tenant_id
+    EnrolmentConfirmInputRequest:
+      type: object
+      properties:
+        enrolment_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+      required:
+      - code
+      - enrolment_token
+    EnrolmentTokenInputRequest:
+      type: object
+      properties:
+        enrolment_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - enrolment_token
     Handoff:
       type: object
       properties:
@@ -191,6 +406,8 @@ components:
       - code
     LoginResponse:
       type: object
+      description: One shape for every sign-in step; ``status`` says what the client
+        does next.
       properties:
         status:
           $ref: '#/components/schemas/StatusEnum'
@@ -207,6 +424,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TenantChoice'
+        mfa_token:
+          type: string
+        enrolment_token:
+          type: string
+        recovery_codes:
+          type: array
+          items:
+            type: string
+          description: Shown once, right after set-up.
       required:
       - status
     Me:
@@ -248,12 +474,19 @@ components:
           allOf:
           - $ref: '#/components/schemas/MeImpersonation'
           nullable: true
+        mfa_enabled:
+          type: boolean
+        mfa_required:
+          type: boolean
+          description: 2FA can't be turned off for this account.
       required:
       - email
       - features
       - full_name
       - id
       - impersonation
+      - mfa_enabled
+      - mfa_required
       - permissions
       - phone
       - preferred_language
@@ -318,6 +551,119 @@ components:
       - display_time_zone
       - environment
       - platform_domain
+    MfaSecret:
+      type: object
+      properties:
+        secret:
+          type: string
+          description: Base32 secret, for manual entry.
+        otpauth_uri:
+          type: string
+          description: Render as a QR code.
+      required:
+      - otpauth_uri
+      - secret
+    MfaSetupConfirmInputRequest:
+      type: object
+      properties:
+        setup_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+      required:
+      - code
+      - setup_token
+    MfaSetupResponse:
+      type: object
+      properties:
+        secret:
+          type: string
+          description: Base32 secret, for manual entry.
+        otpauth_uri:
+          type: string
+          description: Render as a QR code.
+        setup_token:
+          type: string
+      required:
+      - otpauth_uri
+      - secret
+      - setup_token
+    MfaVerifyInputRequest:
+      type: object
+      properties:
+        mfa_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          maxLength: 10
+        recovery_code:
+          type: string
+          maxLength: 40
+      required:
+      - mfa_token
+    PasswordAndFactorInputRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+        code:
+          type: string
+          maxLength: 10
+        recovery_code:
+          type: string
+          maxLength: 40
+      required:
+      - password
+    PasswordChangeInputRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+          maxLength: 256
+        new_password:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - current_password
+      - new_password
+    PasswordForgotInputRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+          maxLength: 254
+      required:
+      - email
+    PasswordResetInputRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          minLength: 1
+          maxLength: 100
+        token:
+          type: string
+          minLength: 1
+          maxLength: 100
+        new_password:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - new_password
+      - token
+      - uid
     PatchedMeUpdateRequest:
       type: object
       properties:
@@ -336,6 +682,15 @@ components:
         * `en` - English
         * `hi` - हिन्दी
         * `mr` - मराठी
+    RecoveryCodes:
+      type: object
+      properties:
+        recovery_codes:
+          type: array
+          items:
+            type: string
+      required:
+      - recovery_codes
     RefreshInputRequest:
       type: object
       properties:
@@ -362,11 +717,15 @@ components:
       - authenticated
       - handoff
       - choose_tenant
+      - mfa_required
+      - mfa_setup_required
       type: string
       description: |-
         * `authenticated` - authenticated
         * `handoff` - handoff
         * `choose_tenant` - choose_tenant
+        * `mfa_required` - mfa_required
+        * `mfa_setup_required` - mfa_setup_required
     TenantChoice:
       type: object
       properties:

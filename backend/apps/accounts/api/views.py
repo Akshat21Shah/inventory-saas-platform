@@ -32,6 +32,8 @@ from common.authentication import (
     TENANT_CLAIM,
 )
 from common.context import request_meta_var
+from common.hosts import HostContext
+from common.permissions import IsStaffOrPlatformUser
 
 
 def _client_ip() -> str | None:
@@ -55,6 +57,33 @@ class PublicAuthView(APIView):
         return transaction.non_atomic_requests(super().as_view(**initkwargs))
 
 
+def _login_response(outcome: services.LoginOutcome) -> Response:
+    """Serialize any sign-in step; sets the refresh cookie when the step issued a session."""
+    body: dict[str, Any] = {"status": outcome.status.value}
+    if outcome.handoff is not None:
+        body["handoff"] = {"code": outcome.handoff.code, "tenant_slug": outcome.handoff.tenant_slug}
+    if outcome.choice_token is not None:
+        body["choice_token"] = outcome.choice_token
+        body["tenants"] = [{"id": t.pk, "name": t.name, "slug": t.slug} for t in outcome.tenants]
+    if outcome.mfa_token is not None:
+        body["mfa_token"] = outcome.mfa_token
+    if outcome.enrolment_token is not None:
+        body["enrolment_token"] = outcome.enrolment_token
+    if outcome.recovery_codes:
+        body["recovery_codes"] = outcome.recovery_codes
+    if outcome.tokens is not None:
+        body.update(_token_body(outcome.tokens))
+    response = Response(s.LoginResponseSerializer(body).data)
+    if outcome.tokens is not None:
+        set_refresh_cookie(response, outcome.tokens)
+    return response
+
+
+def _host(request: Request) -> HostContext:
+    host: HostContext = request.host_context  # type: ignore[attr-defined]
+    return host
+
+
 class StaffLoginView(PublicAuthView):
     @extend_schema(
         request=s.StaffLoginInputSerializer,
@@ -65,29 +94,14 @@ class StaffLoginView(PublicAuthView):
     def post(self, request: Request) -> Response:
         data = s.StaffLoginInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        outcome = services.staff_login(
-            data.validated_data["email"],
-            data.validated_data["password"],
-            request.host_context,  # type: ignore[attr-defined]
-            _client_ip(),
+        return _login_response(
+            services.staff_login(
+                data.validated_data["email"],
+                data.validated_data["password"],
+                _host(request),
+                _client_ip(),
+            )
         )
-        body: dict[str, Any] = {"status": outcome.status.value}
-        if outcome.handoff is not None:
-            body["handoff"] = {
-                "code": outcome.handoff.code,
-                "tenant_slug": outcome.handoff.tenant_slug,
-            }
-        if outcome.choice_token is not None:
-            body["choice_token"] = outcome.choice_token
-            body["tenants"] = [
-                {"id": t.pk, "name": t.name, "slug": t.slug} for t in outcome.tenants
-            ]
-        if outcome.tokens is not None:
-            body.update(_token_body(outcome.tokens))
-        response = Response(s.LoginResponseSerializer(body).data)
-        if outcome.tokens is not None:
-            set_refresh_cookie(response, outcome.tokens)
-        return response
 
 
 class ChooseTenantView(PublicAuthView):
@@ -121,19 +135,88 @@ class HandoffExchangeView(PublicAuthView):
         require_same_origin(request)  # it sets a cookie for this host
         data = s.HandoffExchangeInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        outcome = services.exchange_handoff(
-            data.validated_data["code"],
-            request.host_context,  # type: ignore[attr-defined]
-            _client_ip(),
+        return _login_response(
+            services.exchange_handoff(data.validated_data["code"], _host(request), _client_ip())
         )
-        assert outcome.tokens is not None
-        response = Response(
-            s.LoginResponseSerializer(
-                {"status": "authenticated", **_token_body(outcome.tokens)}
-            ).data
+
+
+class StaffMfaVerifyView(PublicAuthView):
+    @extend_schema(
+        request=s.MfaVerifyInputSerializer,
+        responses=s.LoginResponseSerializer,
+        operation_id="auth_staff_mfa_verify",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.MfaVerifyInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        return _login_response(
+            services.verify_login_mfa(
+                v["mfa_token"], v.get("code"), v.get("recovery_code"), _host(request), _client_ip()
+            )
         )
-        set_refresh_cookie(response, outcome.tokens)
-        return response
+
+
+class StaffMfaEnrolStartView(PublicAuthView):
+    @extend_schema(
+        request=s.EnrolmentTokenInputSerializer,
+        responses=s.MfaSecretSerializer,
+        operation_id="auth_staff_mfa_enrol_start",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.EnrolmentTokenInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        secret, uri = services.begin_enrolment(data.validated_data["enrolment_token"])
+        return Response(s.MfaSecretSerializer({"secret": secret, "otpauth_uri": uri}).data)
+
+
+class StaffMfaEnrolConfirmView(PublicAuthView):
+    @extend_schema(
+        request=s.EnrolmentConfirmInputSerializer,
+        responses=s.LoginResponseSerializer,
+        operation_id="auth_staff_mfa_enrol_confirm",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.EnrolmentConfirmInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return _login_response(
+            services.confirm_enrolment(
+                data.validated_data["enrolment_token"], data.validated_data["code"], _host(request)
+            )
+        )
+
+
+class PasswordForgotView(PublicAuthView):
+    @extend_schema(
+        request=s.PasswordForgotInputSerializer,
+        responses={202: None},
+        operation_id="auth_password_forgot",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.PasswordForgotInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        with transaction.atomic():
+            services.request_password_reset(data.validated_data["email"], _client_ip())
+        return Response(status=202)  # identical whether or not the account exists
+
+
+class PasswordResetView(PublicAuthView):
+    @extend_schema(
+        request=s.PasswordResetInputSerializer,
+        responses={204: None},
+        operation_id="auth_password_reset",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.PasswordResetInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        services.reset_password(v["uid"], v["token"], v["new_password"])
+        return Response(status=204)
 
 
 class TokenRefreshView(PublicAuthView):
@@ -178,6 +261,116 @@ class LogoutView(PublicAuthView):
         services.logout(from_body or read_refresh_cookie(request))
         response = Response(status=204)
         clear_refresh_cookie(response)
+        return response
+
+
+def _token_tenant_id(request: Request) -> UUID | None:
+    token: Any = request.auth
+    raw = token.get(TENANT_CLAIM) if token is not None else None
+    return UUID(str(raw)) if raw else None
+
+
+class MfaSetupView(APIView):
+    permission_classes = [IsStaffOrPlatformUser]
+
+    @extend_schema(
+        request=None,
+        responses=s.MfaSetupResponseSerializer,
+        operation_id="auth_mfa_setup",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        token, secret, uri = services.begin_mfa_setup(request.user)  # type: ignore[arg-type]
+        body = {"setup_token": token, "secret": secret, "otpauth_uri": uri}
+        return Response(s.MfaSetupResponseSerializer(body).data)
+
+
+class MfaConfirmView(APIView):
+    permission_classes = [IsStaffOrPlatformUser]
+
+    @extend_schema(
+        request=s.MfaSetupConfirmInputSerializer,
+        responses=s.RecoveryCodesSerializer,
+        operation_id="auth_mfa_confirm",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.MfaSetupConfirmInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        services.limit_mfa_management(request.user)  # type: ignore[arg-type]
+        outcome = services.confirm_enrolment(
+            data.validated_data["setup_token"], data.validated_data["code"], None
+        )
+        return Response(s.RecoveryCodesSerializer({"recovery_codes": outcome.recovery_codes}).data)
+
+
+class MfaDisableView(APIView):
+    permission_classes = [IsStaffOrPlatformUser]
+
+    @extend_schema(
+        request=s.PasswordAndFactorInputSerializer,
+        responses={204: None},
+        operation_id="auth_mfa_disable",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.PasswordAndFactorInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        services.limit_mfa_management(request.user)  # type: ignore[arg-type]
+        services.disable_mfa(
+            request.user,  # type: ignore[arg-type]
+            v["password"],
+            v.get("code"),
+            v.get("recovery_code"),
+            _token_tenant_id(request),
+        )
+        return Response(status=204)
+
+
+class RecoveryCodesView(APIView):
+    permission_classes = [IsStaffOrPlatformUser]
+
+    @extend_schema(
+        request=s.PasswordAndFactorInputSerializer,
+        responses=s.RecoveryCodesSerializer,
+        operation_id="auth_mfa_recovery_codes",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.PasswordAndFactorInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        services.limit_mfa_management(request.user)  # type: ignore[arg-type]
+        codes = services.regenerate_recovery_codes(
+            request.user,  # type: ignore[arg-type]
+            v["password"],
+            v.get("code"),
+            v.get("recovery_code"),
+        )
+        return Response(s.RecoveryCodesSerializer({"recovery_codes": codes}).data)
+
+
+class PasswordChangeView(APIView):
+    permission_classes = [IsStaffOrPlatformUser]
+
+    @extend_schema(
+        request=s.PasswordChangeInputSerializer,
+        responses=s.TokenResponseSerializer,
+        operation_id="auth_password_change",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.PasswordChangeInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        tokens = services.change_password(
+            request.user,  # type: ignore[arg-type]
+            data.validated_data["current_password"],
+            data.validated_data["new_password"],
+            _token_tenant_id(request),
+        )
+        response = Response(s.TokenResponseSerializer(_token_body(tokens)).data)
+        set_refresh_cookie(response, tokens)
         return response
 
 
@@ -233,4 +426,6 @@ def _me(request: Request) -> dict[str, Any]:
         "permissions": sorted(user.permission_codes()),
         "features": effective_features(tenant_id) if tenant_id else {},
         "impersonation": impersonation,
+        "mfa_enabled": user.totp_enabled,
+        "mfa_required": services.mfa_required_for(user, tenant_id),
     }

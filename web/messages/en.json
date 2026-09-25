@@ -120,6 +120,8 @@
     "TENANT_SUSPENDED": "This account is on hold. Please contact the platform support team.",
     "TOKEN_INVALID": "This link or code has expired or was already used. Please start again.",
     "SESSION_EXPIRED": "Your session has ended. Please sign in again.",
+    "MFA_INVALID_CODE": "That code didn't work. Check your authenticator app and try again.",
+    "MFA_REQUIRED_BY_POLICY": "Two-step verification is required for your account and can't be turned off.",
     "NETWORK_ERROR": "You seem to be offline. Check your connection and try again.",
     "UNKNOWN_ERROR": "Something went wrong. Please try again."
   },

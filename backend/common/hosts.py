@@ -45,3 +45,11 @@ def classify_host(host: str, platform_domain: str | None = None) -> HostContext:
         if "." not in label and label not in RESERVED_SUBDOMAINS and SLUG_RE.match(label):
             return HostContext(HostKind.TENANT, label)
     return HostContext(HostKind.UNKNOWN)
+
+
+def web_url(path: str, *, tenant_slug: str | None = None, admin: bool = False) -> str:
+    """Absolute URL of a page on the admin host, a tenant subdomain or the generic domain."""
+    domain = settings.PLATFORM_DOMAIN
+    host = f"admin.{domain}" if admin else f"{tenant_slug}.{domain}" if tenant_slug else domain
+    base: str = settings.WEB_URL_TEMPLATE.format(host=host)
+    return base.rstrip("/") + "/" + path.lstrip("/")

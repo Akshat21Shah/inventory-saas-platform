@@ -40,3 +40,13 @@ def make_super_admin(email: str | None = None) -> User:
     return User.objects.create_superuser(
         email or f"admin{next(_seq)}@platform.example.com", "a-strong-password"
     )
+
+
+def enable_totp(user: User) -> str:
+    """Turn 2FA on for ``user`` and return the secret (tests generate codes with pyotp)."""
+    import pyotp
+
+    secret = pyotp.random_base32()
+    User.objects.filter(pk=user.pk).update(totp_secret=secret, totp_enabled=True)
+    user.refresh_from_db()
+    return secret
