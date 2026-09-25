@@ -11,7 +11,8 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import Role, User
+from apps.accounts.permissions import PLATFORM_ADMIN_ROLE
 from apps.platform.models import Plan, Subscription, Tenant, TenantBranding, TenantProfile
 from apps.platform.validators import gstin_check_char
 from common.tenancy import tenant_context
@@ -64,11 +65,15 @@ class Command(BaseCommand):
         if not settings.DEBUG:
             raise CommandError("seed only runs with DEBUG=True")
         email = options["admin_email"]
-        if not User.objects.filter(email=email).exists():
+        admin = User.objects.filter(email=email).first()
+        if admin is None:
             User.objects.create_superuser(
                 email, options["admin_password"], full_name="Platform Admin"
             )
             self.stdout.write(f"created super admin {email}")
+        elif admin.platform_role_id is None:  # created before platform roles existed
+            admin.platform_role = Role.objects.get(tenant__isnull=True, code=PLATFORM_ADMIN_ROLE)
+            admin.save(update_fields=["platform_role"])
 
         beta = Plan.objects.get(is_default=True)
         for demo in DEMO_TENANTS:

@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.accounts.models import User
+from apps.accounts.permissions import sync_permissions
 from apps.platform.models import Tenant
 from apps.platform.reference_data import seed_reference_data
 from apps.platform.tests.factories import TenantFactory
@@ -23,11 +24,13 @@ def _is_transactional(item: pytest.Item) -> bool:
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> Any:
     """Transactional tests flush every table, including migration-seeded reference data (states,
-    tax rates, plans, flags). Re-seed after all fixture teardowns (i.e. after the flush)."""
+    tax rates, plans, flags, permissions, system roles). Re-seed after all fixture teardowns (i.e.
+    after the flush)."""
     result = yield
     if _is_transactional(item):
         with item.config.stash[blocking_manager_key].unblock():
             seed_reference_data(django_apps)
+            sync_permissions(django_apps)
     return result
 
 
