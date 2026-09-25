@@ -665,12 +665,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getSettingsBrandingAssetUploadMutationOptions(options), queryClient);
     }
-    export type settingsBrandingAssetDeleteResponse204 = {
-  data: void
-  status: 204
+    export type settingsBrandingAssetDeleteResponse200 = {
+  data: Branding
+  status: 200
 }
 
-export type settingsBrandingAssetDeleteResponseSuccess = (settingsBrandingAssetDeleteResponse204) & {
+export type settingsBrandingAssetDeleteResponseSuccess = (settingsBrandingAssetDeleteResponse200) & {
   headers: Headers;
 };
 ;
@@ -1455,12 +1455,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getSettingsValuesUpdateMutationOptions(options), queryClient);
     }
-    export type settingsValueResetResponse204 = {
-  data: void
-  status: 204
+    export type settingsValueResetResponse200 = {
+  data: Setting[]
+  status: 200
 }
 
-export type settingsValueResetResponseSuccess = (settingsValueResetResponse204) & {
+export type settingsValueResetResponseSuccess = (settingsValueResetResponse200) & {
   headers: Headers;
 };
 ;

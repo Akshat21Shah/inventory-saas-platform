@@ -182,7 +182,7 @@ class TenantSettingResetView(APIView):
 
     @extend_schema(
         request=None,
-        responses=SettingSerializer(many=True),
+        responses={200: SettingSerializer(many=True)},
         operation_id="settings_value_reset",
         tags=["settings"],
     )
@@ -263,7 +263,7 @@ class BrandingAssetView(APIView):
 
     @extend_schema(
         request=None,
-        responses=s.BrandingSerializer,
+        responses={200: s.BrandingSerializer},
         operation_id="settings_branding_asset_delete",
         tags=["settings"],
     )

@@ -923,5 +923,113 @@
     "useAppCode": "Use a code from the app",
     "cancel": "Cancel",
     "blockedInSupport": "Password and two-step verification cannot be changed during a support session."
+  },
+  "distributorSettings": {
+    "nav": {
+      "label": "Settings sections",
+      "business": "Business details",
+      "branding": "Branding",
+      "policies": {
+        "tax": "Tax",
+        "invoicing": "Invoicing",
+        "orders": "Orders",
+        "stock": "Stock",
+        "credit_payments": "Credit & payments",
+        "security": "Security"
+      },
+      "features": "Modules",
+      "staff": "Staff",
+      "roles": "Roles",
+      "audit": "Audit log"
+    },
+    "policyBodies": {
+      "tax": "How GST is applied to your products and invoices.",
+      "invoicing": "Numbering and what appears on your invoices.",
+      "orders": "Rules for orders your shops place.",
+      "stock": "How stock is counted and reserved.",
+      "credit_payments": "Credit limits and how payments are handled.",
+      "security": "Sign-in rules for your staff."
+    },
+    "unknownGroup": "This settings page does not exist.",
+    "noSettings": "Nothing to set here yet",
+    "noSettingsBody": "Settings for this area arrive with its module.",
+    "business": {
+      "title": "Business details",
+      "body": "Your registered details. They appear on invoices and documents.",
+      "details": "Registered details",
+      "detailsBody": "Change these only when your GST registration changes.",
+      "pan": "PAN: {pan}",
+      "webAddress": "Web address: {slug} (ask support to change it)",
+      "invoice": "On your invoices",
+      "invoiceBody": "Terms, footer and the person who signs.",
+      "invoiceTerms": "Terms and conditions",
+      "invoiceFooter": "Footer line",
+      "signatoryName": "Authorised signatory",
+      "signatorySet": "Signature image uploaded.",
+      "signatoryNone": "No signature image yet.",
+      "uploadSignatory": "Upload signature",
+      "signatoryUploaded": "Signature image uploaded.",
+      "remove": "Remove",
+      "removeSignatory": "Remove the signature image?",
+      "imageRules": "PNG, JPEG or WebP, up to 2 MB. The signature is never shown publicly.",
+      "save": "Save changes",
+      "saved": "Business details saved.",
+      "readOnly": "Only the owner can change these details."
+    },
+    "bank": {
+      "title": "Bank details",
+      "body": "Printed on invoices so shops can pay you. Only owners see and change these.",
+      "accountName": "Account holder name",
+      "accountNumber": "Account number",
+      "accountNumberHint": "Saved: {masked}. Type a new number only to change it.",
+      "ifsc": "IFSC",
+      "bankName": "Bank",
+      "branch": "Branch",
+      "upi": "UPI ID",
+      "save": "Save bank details",
+      "saved": "Bank details saved."
+    },
+    "branding": {
+      "title": "Branding",
+      "body": "Your name, colour and logo, as your staff and shops see them.",
+      "identity": "Name and colour",
+      "displayName": "Display name",
+      "displayNameHint": "Shown on the sign-in page and in the shop app.",
+      "color": "Brand colour",
+      "colorHint": "Used for buttons and highlights. We adjust shades so text stays readable.",
+      "colorHex": "Colour code",
+      "save": "Save",
+      "saved": "Branding saved. Others see it within a minute.",
+      "discard": "Discard changes",
+      "readOnly": "Only the owner can change branding.",
+      "images": "Logo and icons",
+      "assets": {
+        "logo": "Logo",
+        "favicon": "Browser tab icon",
+        "app_icon": "App icon"
+      },
+      "assetHints": {
+        "logo": "Shown on the sign-in page and at the top of the shop app. A wide or square image works.",
+        "favicon": "A small square image shown in browser tabs.",
+        "app_icon": "A square image (at least 512 × 512) used when shops install the app."
+      },
+      "upload": "Upload",
+      "replace": "Replace",
+      "uploaded": "{asset} uploaded.",
+      "remove": "Remove",
+      "removeTitle": "Remove the {asset}?",
+      "imageRules": "PNG, JPEG or WebP, up to 2 MB and 4096 px.",
+      "preview": "Preview",
+      "previewButton": "Send code",
+      "previewLink": "Repeat last order",
+      "previewNote": "The preview updates as you type. Nothing changes for others until you save."
+    },
+    "features": {
+      "title": "Modules",
+      "body": "Optional parts of the app you can switch on or off.",
+      "managedByPlatform": "Set by the platform. Contact support to change it.",
+      "turnedOn": "Module switched on.",
+      "turnedOff": "Module switched off."
+    }
   }
 }

@@ -131,6 +131,13 @@
       - Shared: `FieldsDialog`, `ReasonDialog`, `KpiCard`, `AuditTable` with a before/after viewer, `RegistrySettingsForm`, `useCursor`. `ConfirmDialog` now shows failures and stays open.
       - Tests render with a strict i18n provider (a missing message fails the test) and a query client; `tests/mock-api.ts` stubs the API by method and path.
       - Checked live on desktop and at 360px (no horizontal scroll; the phone header now truncates the title and account name).
+    - Seed (dev only, refuses without DEBUG): `<role>@<slug>.example.com` for OWNER, MANAGER, SALES, WAREHOUSE and ACCOUNTS in both demo tenants (password `staff-dev-password`); one shop each (98765 00001 / 00002) and a shop number registered with both (98765 00000) for the sign-in chooser. The super admin gets a fixed dev 2FA key when it has none, so E2E can sign in; an existing key is kept.
+    - Frontend: distributor settings (commit 15).
+      - Settings layout with its own section list (side list on wide screens, chips on phones), filtered by permission.
+      - Business details (read-only unless `settings.manage`), invoice terms/footer/signatory with signature image upload; bank details for owners only and never during a support session; only changed fields are sent and the account number only when typed.
+      - Branding: name and colour with a live preview of the shop sign-in (buttons, badges, link), logo / favicon / app icon upload and removal. A saved colour applies at once in the current tab; the server copy is cached for a minute.
+      - Policies: one page per registry group (tax, invoicing, orders, stock, credit & payments, security) built from the settings registry, with reset to default; Modules page (only the ones the platform lets tenants switch).
+      - Schema fix: asset delete and setting reset return 200 with a body (they were documented as 204).
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
