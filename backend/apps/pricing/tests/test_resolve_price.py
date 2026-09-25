@@ -431,10 +431,14 @@ def test_preview_and_price_sheet(tenant_a, tenant_b, w):
         result["discounts"][0]["amount"],
         result["net_unit_price"],
     ) == ("9.00", "PRICE_LIST", "Bulk", "5.40", "8.55")
+    with tenant_context(tenant_a.pk):
+        special = RetailerPrice.objects.create(retailer=w.s, product=w.q, price=D("19.00"))
     sheet = owner.get(f"/api/v1/retailers/{w.s.pk}/prices/").json()["results"]
+    by_code = {row["product"]["code"]: row["special"] for row in sheet}
+    assert by_code == {"P": None, "Q": {"id": str(special.pk), "price": "19.00"}}
     assert {row["product"]["code"]: row["result"]["unit_price"] for row in sheet} == {
         "P": "9.00",
-        "Q": "20.00",
+        "Q": "19.00",
     }
 
     other = _client(tenant_b)

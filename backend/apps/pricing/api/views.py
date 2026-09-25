@@ -400,7 +400,16 @@ class RetailerPriceSheetView(PricingView, generics.ListAPIView[Product]):
         retailer = self._retailer
         assert retailer is not None  # set by get_queryset (404 otherwise)
         results = resolve.resolve_prices(retailer, [(p, p.min_order_qty) for p in page])
-        rows = [{"product": p, "result": r} for p, r in zip(page, results, strict=True)]
+        specials = {
+            row.product_id: row
+            for row in RetailerPrice.objects.filter(
+                retailer=retailer, product_id__in=[p.pk for p in page]
+            )
+        }
+        rows = [
+            {"product": p, "result": r, "special": specials.get(p.pk)}
+            for p, r in zip(page, results, strict=True)
+        ]
         return self.get_paginated_response(s.PriceSheetRowSerializer(rows, many=True).data)
 
     @extend_schema(operation_id="retailers_price_sheet", tags=["pricing"])

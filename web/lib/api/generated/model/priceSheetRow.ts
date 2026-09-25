@@ -7,8 +7,11 @@
  */
 import type { PriceResult } from './priceResult';
 import type { ProductRef } from './productRef';
+import type { SpecialRef } from './specialRef';
 
 export interface PriceSheetRow {
   product: ProductRef;
   result: PriceResult;
+  /** The shop's special price for the product, to edit in place. */
+  special: SpecialRef | null;
 }

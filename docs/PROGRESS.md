@@ -289,6 +289,12 @@
       - The preview shows names, not ids, and highlights discount changes. A 100% discount warns.
     - Exports use the template columns, so a file can go out and come back with no changes; tested for all three.
     - The wizard offers the three new kinds. Shared test fixtures moved to `apps/dataio/tests/conftest.py` and `helpers.py`.
+  - 2.28a: frontend, retailer page.
+    - "What this shop pays" edits the special price in place (the price sheet now returns each row's special price); clearing it removes the price.
+    - A "Pricing for this shop" card with:
+      - "Discounts by product": the discount grid at `/manage/retailers/{id}/discounts`. Server-priced net prices update as you type, and "Save N changes" saves them. Slab or dated rules show as "Also: …" links. Read-only without `pricing.manage`.
+      - "Add a discount for this shop": the rule editor, pre-filled for the shop.
+      - "Copy pricing from another shop": pick a shop, choose Replace or Add (no default), preview, then "Copy N changes".
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.

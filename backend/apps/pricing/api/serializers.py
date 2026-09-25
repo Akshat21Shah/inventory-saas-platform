@@ -256,6 +256,14 @@ class PreviewRowSerializer(serializers.Serializer[Any]):
     problem = serializers.CharField(allow_blank=True)
 
 
+class SpecialRefSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    price = money()
+
+
 class PriceSheetRowSerializer(serializers.Serializer[Any]):
     product = ProductRefSerializer()
     result = PriceResultSerializer()
+    special = SpecialRefSerializer(
+        allow_null=True, help_text="The shop's special price for the product, to edit in place."
+    )

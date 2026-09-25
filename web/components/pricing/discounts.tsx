@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ import {
   useDiscountRulesList,
   useDiscountRulesRetrieve,
 } from "@/lib/api/generated/endpoints/pricing/pricing";
+import { useRetailersRetrieve } from "@/lib/api/generated/endpoints/retailers/retailers";
 import type {
   AudienceTypeEnum,
   DiscountRule,
@@ -185,7 +186,7 @@ interface SlabRow {
   value: string;
 }
 
-function RuleForm({ rule }: { rule?: DiscountRule }) {
+function RuleForm({ rule, forShop }: { rule?: DiscountRule; forShop?: Picked }) {
   const t = useTranslations("pricing.discounts");
   const tc = useTranslations("common");
   const errors = useErrorText();
@@ -211,12 +212,14 @@ function RuleForm({ rule }: { rule?: DiscountRule }) {
   );
   const [category, setCategory] = useState(rule?.category?.id ?? "");
   const [brand, setBrand] = useState(rule?.brand?.id ?? "");
-  const [audience, setAudience] = useState<AudienceTypeEnum>(rule?.audience_type ?? "ALL");
+  const [audience, setAudience] = useState<AudienceTypeEnum>(
+    rule?.audience_type ?? (forShop ? "RETAILER" : "ALL"),
+  );
   const [priceList, setPriceList] = useState(rule?.price_list?.id ?? "");
   const [shop, setShop] = useState<Picked | null>(
     rule?.retailer
       ? { id: rule.retailer.id, label: `${rule.retailer.shop_name} (${rule.retailer.code})` }
-      : null,
+      : (forShop ?? null),
   );
   const [validFrom, setValidFrom] = useState(rule?.valid_from ?? "");
   const [validTo, setValidTo] = useState(rule?.valid_to ?? "");
@@ -508,11 +511,17 @@ function BackLink() {
 
 export function NewDiscountRulePage() {
   const t = useTranslations("pricing.discounts");
+  const params = useSearchParams();
+  const retailerId = params.get("retailer") ?? "";
+  const shop = useRetailersRetrieve(retailerId, { query: { enabled: Boolean(retailerId) } });
+  if (retailerId && shop.isLoading) return <PageSkeleton />;
+  const found = shop.data?.data;
+  const forShop = found ? { id: found.id, label: `${found.shop_name} (${found.code})` } : undefined;
   return (
     <>
       <BackLink />
-      <PageHeader title={t("newTitle")} />
-      <RuleForm />
+      <PageHeader title={forShop ? t("newTitleFor", { shop: found!.shop_name }) : t("newTitle")} />
+      <RuleForm forShop={forShop} />
     </>
   );
 }

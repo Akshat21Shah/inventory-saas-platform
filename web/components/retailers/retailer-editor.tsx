@@ -12,6 +12,8 @@ import { z } from "zod";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import type { Option } from "@/components/catalog/options";
+import { WarningList } from "@/components/catalog/product-editor";
+import { CopyPricingDialog } from "@/components/pricing/copy-pricing";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ErrorState } from "@/components/shared/error-state";
@@ -28,7 +30,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useRetailersPriceSheet } from "@/lib/api/generated/endpoints/pricing/pricing";
+import {
+  retailerPricesCreate,
+  retailerPricesDelete,
+  retailerPricesUpdate,
+  useRetailersPriceSheet,
+} from "@/lib/api/generated/endpoints/pricing/pricing";
 import {
   retailersAddressesCreate,
   retailersAddressesDelete,
@@ -48,6 +55,7 @@ import type {
   PriceSheetRow,
   RetailerDetail,
   RetailerWritePreferredLanguageEnum,
+  Warning,
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
@@ -563,10 +571,85 @@ function AddressesCard({
   );
 }
 
+/** The shop's special price for one product, edited in place (empty removes it). */
+function SpecialPriceCell({
+  retailerId,
+  row,
+  onSaved,
+}: {
+  retailerId: string;
+  row: PriceSheetRow;
+  onSaved: (warnings: readonly Warning[]) => void;
+}) {
+  const t = useTranslations("retailers.prices");
+  const errors = useErrorText();
+  const [value, setValue] = useState(row.special?.price ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const typed = value.trim().replaceAll(",", "");
+  const changed = typed !== (row.special?.price ?? "");
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      if (!typed && row.special) {
+        await retailerPricesDelete(row.special.id);
+        onSaved([]);
+      } else if (row.special) {
+        onSaved((await retailerPricesUpdate(row.special.id, { price: typed })).data.warnings);
+      } else {
+        const created = await retailerPricesCreate({
+          retailer: retailerId,
+          product: row.product.id,
+          price: typed,
+        });
+        onSaved(created.data.warnings);
+      }
+      toast.success(t("specialSaved"));
+    } catch (err) {
+      setError(errors.fields(err).price ?? errors.message(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <form
+      className="flex items-center justify-end gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (changed) void save();
+      }}
+    >
+      <Input
+        inputMode="decimal"
+        value={value}
+        placeholder="—"
+        onChange={(e) => setValue(e.target.value)}
+        aria-label={t("specialFor", { name: row.product.name })}
+        aria-invalid={Boolean(error)}
+        title={error ?? undefined}
+        className="h-9 w-24 text-right tabular-nums"
+      />
+      {changed ? (
+        <Button type="submit" size="sm" className="min-h-9" disabled={busy}>
+          {t("save")}
+        </Button>
+      ) : null}
+      {error ? (
+        <span role="alert" className="text-destructive text-xs">
+          {error}
+        </span>
+      ) : null}
+    </form>
+  );
+}
+
 /** What this shop pays for each product today, from the server's price resolution. */
 function PriceSheet({ retailerId }: { retailerId: string }) {
   const t = useTranslations("retailers.prices");
+  const { can } = useAuth();
   const cursor = useCursor();
+  const [warnings, setWarnings] = useState<readonly Warning[]>([]);
   const query = useRetailersPriceSheet(retailerId, { cursor: cursor.cursor });
   const page = query.data?.data;
   const columns: DataTableColumn<PriceSheetRow>[] = [
@@ -627,6 +710,25 @@ function PriceSheet({ retailerId }: { retailerId: string }) {
         <MoneyText value={row.original.result.net_unit_price} className="font-medium" />
       ),
     },
+    ...(can("pricing.manage")
+      ? [
+          {
+            id: "special",
+            header: t("special"),
+            cell: ({ row }) => (
+              <SpecialPriceCell
+                key={`${row.original.product.id}-${row.original.special?.price ?? ""}`}
+                retailerId={retailerId}
+                row={row.original}
+                onSaved={(next) => {
+                  setWarnings(next);
+                  void query.refetch();
+                }}
+              />
+            ),
+          } satisfies DataTableColumn<PriceSheetRow>,
+        ]
+      : []),
   ];
   return (
     <section className="space-y-3">
@@ -634,6 +736,7 @@ function PriceSheet({ retailerId }: { retailerId: string }) {
         <h2 className="text-lg font-semibold">{t("title")}</h2>
         <p className="text-muted-foreground text-sm">{t("description")}</p>
       </div>
+      <WarningList warnings={warnings} keys={{ FREE_GOODS: "FREE_GOODS_SPECIAL" }} />
       <DataTable
         columns={columns}
         data={page?.results ?? []}
@@ -641,7 +744,7 @@ function PriceSheet({ retailerId }: { retailerId: string }) {
         isLoading={query.isLoading}
         error={query.error}
         onRetry={() => void query.refetch()}
-        numericColumns={["qty", "base", "price", "discount", "net"]}
+        numericColumns={["qty", "base", "price", "discount", "net", "special"]}
         pagination={cursor.pagination(page)}
         empty={{ title: t("emptyTitle"), description: t("emptyBody") }}
       />
@@ -793,11 +896,37 @@ export function RetailerDetailPage({ retailerId }: { retailerId: string }) {
           <CreditCard retailer={retailer} onChanged={refresh} />
           <AddressesCard retailer={retailer} onChanged={refresh} />
           {can("pricing.view") ? (
-            <Button asChild variant="outline" className="min-h-10 w-full">
-              <Link href={`/manage/pricing/special-prices?retailer=${retailer.id}`}>
-                {t("specialPrices")}
-              </Link>
-            </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{t("pricingTitle")}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <Button asChild variant="outline" className="min-h-10">
+                  <Link href={`/manage/retailers/${retailer.id}/discounts`}>
+                    {t("discountGrid")}
+                  </Link>
+                </Button>
+                {can("pricing.manage") ? (
+                  <>
+                    <Button asChild variant="outline" className="min-h-10">
+                      <Link href={`/manage/pricing/discounts/new?retailer=${retailer.id}`}>
+                        {t("addDiscount")}
+                      </Link>
+                    </Button>
+                    <CopyPricingDialog
+                      retailerId={retailer.id}
+                      shopName={retailer.shop_name}
+                      onCopied={refresh}
+                    />
+                  </>
+                ) : null}
+                <Button asChild variant="ghost" className="min-h-10">
+                  <Link href={`/manage/pricing/special-prices?retailer=${retailer.id}`}>
+                    {t("specialPrices")}
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           ) : null}
         </div>
       </div>

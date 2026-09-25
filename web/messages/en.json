@@ -1180,7 +1180,8 @@
       "HSN_RATE_DIFFERS": "HSN {hsn_prefix} usually has {suggested_rate}% GST. Check the rate.",
       "FREE_GOODS": "This rule makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet.",
       "FREE_GOODS_SPECIAL": "This special price makes this product free for this retailer. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_PRICE_LIST": "This price list makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet."
+      "FREE_GOODS_PRICE_LIST": "This price list makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet.",
+      "FREE_GOODS_GRID": "These discounts make {products, plural, one {# product} other {# products}} free for this shop. Free-goods schemes are not supported yet."
     },
     "products": {
       "title": "Products",
@@ -1566,7 +1567,10 @@
       "deleted": "Retailer deleted.",
       "welcomeSent": "Welcome message sent",
       "welcomeNotSent": "Welcome message not sent yet",
-      "specialPrices": "Special prices for this shop"
+      "specialPrices": "Special prices for this shop",
+      "pricingTitle": "Pricing for this shop",
+      "discountGrid": "Discounts by product",
+      "addDiscount": "Add a discount for this shop"
     },
     "credit": {
       "title": "Credit",
@@ -1618,7 +1622,11 @@
         "BASE": "Standard price"
       },
       "emptyTitle": "No products the shop can buy yet",
-      "emptyBody": "Products need to be active and have a GST rate in effect."
+      "emptyBody": "Products need to be active and have a GST rate in effect.",
+      "special": "Special price",
+      "specialFor": "Special price of {name}",
+      "save": "Save",
+      "specialSaved": "Special price saved."
     }
   },
   "pricing": {
@@ -1754,7 +1762,68 @@
       "create": "Add discount",
       "saved": "Discount saved.",
       "delete": "Delete",
-      "deleteTitle": "Delete {name}?"
+      "deleteTitle": "Delete {name}?",
+      "newTitleFor": "Add a discount for {shop}"
+    },
+    "grid": {
+      "back": "Back",
+      "title": "Discounts for {shop}",
+      "titlePlain": "Discounts by product",
+      "description": "Set this shop's own discount on each product. The net price comes from the server as you type; nothing changes until you save.",
+      "product": "Product",
+      "shopPrice": "Shop's price",
+      "discount": "Shop discount",
+      "net": "Net each",
+      "source": {
+        "SPECIAL": "Special price",
+        "PRICE_LIST": "Price list",
+        "BASE": "Standard price"
+      },
+      "off": "{percent}% off",
+      "flat": "₹ each",
+      "typeFor": "Discount type for {name}",
+      "valueFor": "Discount for {name}",
+      "otherRule": "Also: {name}",
+      "search": "Search products",
+      "category": "Category",
+      "brand": "Brand",
+      "allCategories": "All categories",
+      "allBrands": "All brands",
+      "emptyTitle": "No products to price",
+      "emptyBody": "Products need to be active and have a GST rate in effect.",
+      "unsaved": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+      "discard": "Discard",
+      "save": "{count, plural, one {Save # change} other {Save # changes}}",
+      "saved": "{count, plural, one {# discount saved} other {# discounts saved}}.",
+      "note": "Empty or 0 removes the shop's discount on a product. Discounts with quantity slabs or dates are shown as “Also:” and edited on their own page."
+    },
+    "copy": {
+      "open": "Copy pricing from another shop",
+      "title": "Copy pricing to {shop}",
+      "description": "Copies the price list, special prices and this-shop-only discounts. You'll see every change before anything is copied.",
+      "from": "Copy from",
+      "modeTitle": "What happens to this shop's own pricing?",
+      "mode": {
+        "REPLACE": "Replace",
+        "ADD": "Add"
+      },
+      "modeHint": {
+        "REPLACE": "This shop's special prices and shop-only discounts are removed first, so it ends up exactly like the other shop.",
+        "ADD": "The other shop's pricing is added. Where both have a special price for a product, the other shop's is used."
+      },
+      "preview": "Preview of the copy",
+      "previewButton": "Preview",
+      "nothing": "Nothing would change.",
+      "standard": "standard prices",
+      "priceList": "Price list: {from} → {to}",
+      "pricesAdd": "Special prices added",
+      "pricesUpdate": "Special prices changed",
+      "pricesRemove": "Special prices removed",
+      "rulesAdd": "Discounts added",
+      "rulesReplace": "Discounts replaced",
+      "rulesRemove": "Discounts removed",
+      "apply": "{count, plural, one {Copy # change} other {Copy # changes}}",
+      "done": "Pricing copied."
     }
   },
   "shop": {

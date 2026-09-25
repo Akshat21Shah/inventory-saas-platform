@@ -7893,9 +7893,15 @@ components:
           $ref: '#/components/schemas/ProductRef'
         result:
           $ref: '#/components/schemas/PriceResult'
+        special:
+          allOf:
+          - $ref: '#/components/schemas/SpecialRef'
+          nullable: true
+          description: The shop's special price for the product, to edit in place.
       required:
       - product
       - result
+      - special
     PriceSourceEnum:
       enum:
       - SPECIAL
@@ -9478,6 +9484,19 @@ components:
       required:
       - available
       - slug
+    SpecialRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - id
+      - price
     StaffLoginInputRequest:
       type: object
       properties:

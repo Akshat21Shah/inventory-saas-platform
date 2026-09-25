@@ -276,6 +276,7 @@ export * from './slabInputRequest';
 export * from './slugAvailability';
 export * from './specialPricesExportFileType';
 export * from './specialPricesExportParams';
+export * from './specialRef';
 export * from './staffInvitationsListParams';
 export * from './staffListParams';
 export * from './staffLoginInputRequest';
