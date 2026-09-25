@@ -16,6 +16,8 @@ from apps.accounts import staff_services
 from apps.accounts.models import Invitation, Membership, User
 from apps.accounts.permissions import OWNER_ROLE
 from apps.audit import services as audit
+from apps.catalog.defaults import ensure_default_units
+from apps.catalog.models import Unit
 from apps.platform.models import (
     DEFAULT_BRAND_COLOR,
     FeatureFlag,
@@ -151,6 +153,7 @@ def onboard_tenant(data: OnboardingInput, *, by: User) -> Tenant:
             created_by=by,
         )
         Subscription.objects.create(plan=plan, starts_at=timezone.now(), created_by=by)
+        ensure_default_units(Unit)
         audit.record(
             "tenant.created",
             target=tenant,
