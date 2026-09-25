@@ -221,6 +221,12 @@
     - Job page: polls while the file is checked or imported. Shows the counts, skipped columns, and row errors with row and column.
     - Change preview: old → new values, with price and MRP changes highlighted. Confirm with "Import N rows". Then the result, with any rows skipped at commit.
     - Full xlsx report download and an import history.
+  - Commit 13: retailer screens.
+    - List: search; filters for status, salesperson and price list; bulk assign salesperson or price list, put on hold (with a reason) or remove the hold; export; import.
+    - Create form: profile, GSTIN, state, language, salesperson, price list, and an optional billing address. The welcome message is sent on create.
+    - Detail page: edit, resend the welcome message, hold or remove the hold, delete.
+    - Credit card: editable only with `credit.manage`. Addresses: add, edit, remove.
+    - "What this shop pays": the server's price sheet at each product's minimum quantity, showing the price source and discount.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
