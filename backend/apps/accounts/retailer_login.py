@@ -24,6 +24,7 @@ from apps.accounts.services import (
     Handoff,
     LoginOutcome,
     LoginStatus,
+    TenantUnavailable,
     TokenInvalid,
     _authenticated,
     _consume_challenge,
@@ -61,6 +62,8 @@ def _scope(host: HostContext) -> Tenant | None:
         tenant = tenant_by_slug(host.tenant_slug)
         if tenant is None:
             raise OtpInvalid()
+        if tenant.status != Tenant.Status.ACTIVE:
+            raise TenantUnavailable()  # the same neutral answer the pre-login page shows
         return tenant
     if host.kind == HostKind.GENERIC:
         return None
@@ -69,11 +72,10 @@ def _scope(host: HostContext) -> Tenant | None:
 
 def _has_account(phone: str, tenant: Tenant | None) -> bool:
     if tenant is not None:
-        return (
-            tenant.status == Tenant.Status.ACTIVE
-            and selectors.retailer_login_for_tenant(phone, tenant.pk) is not None
-        )
-    return bool(selectors.retailer_accounts_for_verified_phone(phone))
+        return selectors.retailer_login_for_tenant(phone, tenant.pk) is not None
+    # Generic domain: also for distributors that are unavailable, so the phone's owner learns
+    # (after verifying) that the account is unavailable rather than seeing "wrong code".
+    return bool(selectors.retailer_accounts_for_verified_phone(phone, active_only=False))
 
 
 def request_otp(phone: str, host: HostContext, ip: str | None) -> None:
@@ -140,11 +142,13 @@ def verify_otp(phone: str, code: str, host: HostContext, ip: str | None) -> Logi
     with transaction.atomic():
         if tenant is not None:
             user = selectors.retailer_login_for_tenant(phone, tenant.pk)
-            if user is None or tenant.status != Tenant.Status.ACTIVE:
+            if user is None:
                 raise OtpInvalid()  # indistinguishable from a wrong code
             return _authenticated(user, tenant.pk)
         accounts = selectors.retailer_accounts_for_verified_phone(phone)
         if not accounts:
+            if selectors.retailer_accounts_for_verified_phone(phone, active_only=False):
+                raise TenantUnavailable()
             raise OtpInvalid()
         if len(accounts) == 1:
             only = accounts[0]

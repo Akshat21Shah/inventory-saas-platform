@@ -22,11 +22,9 @@ ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS", default=[PLATFORM_DOMAIN, f".{PLATFORM_DOMAIN}", "backend"]
 )
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
-# How many trusted proxies APPEND the client address to X-Forwarded-For. Next.js does not append:
-# it only sets X-Forwarded-For when the header is absent. Dev: 1 (Next sets it from the socket; a
-# client can spoof it in dev). Prod: 1 (the load balancer appends; Next passes it through).
-# Per-IP rate limits and audit IPs depend on this (see PROGRESS "Pre-production verification").
-TRUSTED_PROXY_HOPS = env.int("TRUSTED_PROXY_HOPS", default=1)
+# Addresses (IPs or CIDRs) of the proxies allowed to set X-Forwarded-* headers: the Next.js
+# server(s) in every environment (ADR-032). Forwarded headers from anyone else are discarded.
+TRUSTED_PROXIES: list[str] = env.list("TRUSTED_PROXIES", default=[])
 
 INSTALLED_APPS = [
     "common.admin_apps.PlatformAdminConfig",  # django.contrib.admin, locked down (PLAN 1.13)
@@ -50,6 +48,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "common.net.TrustedProxyMiddleware",  # first: forwarded headers only from trusted proxies
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "common.middleware.RequestContextMiddleware",

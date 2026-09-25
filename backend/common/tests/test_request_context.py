@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from django.http import HttpResponse
 from django.test import RequestFactory
@@ -12,30 +14,55 @@ from common.authentication import (
 )
 from common.context import actor_var, request_meta_var, tenant_id_var, user_id_var
 from common.middleware import RequestContextMiddleware
-from common.net import client_ip
+from common.net import TrustedProxyMiddleware, client_ip
 
 
 @pytest.mark.parametrize(
-    ("hops", "xff", "remote", "expected"),
+    ("trusted", "xff", "remote", "expected"),
     [
-        (0, "198.51.100.1", "10.0.0.2", "10.0.0.2"),  # no proxies trusted: header ignored
-        (1, "", "10.0.0.2", "10.0.0.2"),  # no header: socket address
-        (1, "198.51.100.1", "10.0.0.2", "198.51.100.1"),
-        (1, "6.6.6.6, 198.51.100.1", "10.0.0.2", "198.51.100.1"),  # spoofed left entry ignored
-        (2, "6.6.6.6, 198.51.100.1, 10.0.0.9", "10.0.0.2", "198.51.100.1"),
-        (2, "198.51.100.1", "10.0.0.2", "10.0.0.2"),  # fewer entries than hops: not trusted
-        (1, "not-an-ip", "10.0.0.2", "10.0.0.2"),
-        (1, "2001:db8::1", "10.0.0.2", "2001:db8::1"),
+        ([], "198.51.100.1", "10.0.0.2", "10.0.0.2"),  # no trusted proxy: header ignored
+        (["10.0.0.2"], "", "10.0.0.2", "10.0.0.2"),  # no header: socket address
+        (["10.0.0.2"], "198.51.100.1", "10.0.0.2", "198.51.100.1"),
+        (["10.0.0.0/8"], "198.51.100.1, 10.0.0.9", "10.0.0.2", "198.51.100.1"),  # skip our proxies
+        (["10.0.0.2"], "198.51.100.1", "203.0.113.9", "203.0.113.9"),  # peer not trusted
+        (["10.0.0.2"], "not-an-ip", "10.0.0.2", "10.0.0.2"),
+        (["10.0.0.2"], "2001:db8::1", "10.0.0.2", "2001:db8::1"),
+        (["127.0.0.1"], "198.51.100.1", "::ffff:127.0.0.1", "198.51.100.1"),  # mapped IPv4
     ],
 )
-def test_client_ip(settings, hops, xff, remote, expected):
-    settings.TRUSTED_PROXY_HOPS = hops
+def test_client_ip(settings, trusted, xff, remote, expected):
+    settings.TRUSTED_PROXIES = trusted
     request = RequestFactory().get("/", HTTP_X_FORWARDED_FOR=xff, REMOTE_ADDR=remote)
     assert client_ip(request) == expected
 
 
+def test_forwarded_headers_from_untrusted_peers_are_discarded(settings):
+    settings.TRUSTED_PROXIES = ["10.0.0.2"]
+    seen: dict[str, str | None] = {}
+
+    def view(request):
+        seen.update(
+            xff=request.META.get("HTTP_X_FORWARDED_FOR"),
+            xfh=request.headers.get("X-Forwarded-Host"),
+            xfp=request.META.get("HTTP_X_FORWARDED_PROTO"),
+            fwd=request.META.get("HTTP_FORWARDED"),
+        )
+        return HttpResponse("ok")
+
+    spoof: dict[str, Any] = {
+        "HTTP_X_FORWARDED_FOR": "1.2.3.4",
+        "HTTP_X_FORWARDED_HOST": "admin.localhost",
+        "HTTP_X_FORWARDED_PROTO": "https",
+        "HTTP_FORWARDED": "for=1.2.3.4",
+    }
+    TrustedProxyMiddleware(view)(RequestFactory().get("/", REMOTE_ADDR="203.0.113.9", **spoof))
+    assert seen == {"xff": None, "xfh": None, "xfp": None, "fwd": None}
+    TrustedProxyMiddleware(view)(RequestFactory().get("/", REMOTE_ADDR="10.0.0.2", **spoof))
+    assert seen["xff"] == "1.2.3.4" and seen["xfh"] == "admin.localhost"
+
+
 def test_middleware_sets_and_resets_request_meta(settings):
-    settings.TRUSTED_PROXY_HOPS = 1
+    settings.TRUSTED_PROXIES = ["127.0.0.1"]
     seen = {}
 
     def view(request):

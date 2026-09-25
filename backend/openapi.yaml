@@ -3580,8 +3580,10 @@ components:
           type: string
         primary_color:
           type: string
-        status:
-          $ref: '#/components/schemas/TenantStatusEnum'
+        available:
+          type: boolean
+          description: 'False for any state other than active: show the neutral ''unavailable''
+            message.'
         logo_url:
           type: string
           nullable: true
@@ -3593,12 +3595,12 @@ components:
           nullable: true
       required:
       - app_icon_url
+      - available
       - display_name
       - favicon_url
       - logo_url
       - primary_color
       - slug
-      - status
     ReasonRequest:
       type: object
       properties:

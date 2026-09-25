@@ -139,14 +139,24 @@ def test_inactive_membership_or_user_cannot_sign_in(tenant_a):
     assert _login(APIClient(), "owner@example.com", host=_host(tenant_a)).status_code == 400
 
 
-def test_suspended_tenant_gets_a_friendly_message_after_valid_credentials(tenant_a):
+NEUTRAL = "This account is currently unavailable. Please contact your distributor."
+
+
+@pytest.mark.parametrize("status", [Tenant.Status.SUSPENDED, Tenant.Status.ONBOARDING])
+def test_unavailable_tenant_gets_one_neutral_answer_for_every_attempt(tenant_a, status):
     make_staff_in(tenant_a, "OWNER", email="owner@example.com")
-    Tenant.objects.filter(pk=tenant_a.pk).update(status=Tenant.Status.SUSPENDED)
-    response = _login(APIClient(), "owner@example.com", host=_host(tenant_a))
-    assert response.status_code == 403
-    assert response.json()["error"]["code"] == "TENANT_SUSPENDED"
-    wrong = _login(APIClient(), "owner@example.com", "nope-nope-nope", host=_host(tenant_a))
-    assert wrong.json()["error"]["code"] == "INVALID_CREDENTIALS"  # no status leak without creds
+    Tenant.objects.filter(pk=tenant_a.pk).update(status=status)
+    for password in (PASSWORD, "wrong-password-1"):
+        response = _login(APIClient(), "owner@example.com", password, host=_host(tenant_a))
+        assert response.status_code == 403
+        assert response.json()["error"] == {
+            "code": "TENANT_UNAVAILABLE",
+            "message": NEUTRAL,
+            "details": {},
+        }
+    body = APIClient().get(f"/api/v1/public/tenants/{tenant_a.slug}/branding/").json()
+    assert body["available"] is False
+    assert "status" not in body  # the specific state is never disclosed
 
 
 # --- Lockout & rate limits (ADR-030) ------------------------------------------------------------
@@ -309,10 +319,10 @@ def test_multi_tenant_staff_choose_among_their_active_tenants_only(tenant_a, ten
     assert reused.json()["error"]["code"] == "TOKEN_INVALID"
 
 
-def test_generic_domain_with_only_suspended_tenants_says_so(tenant_a):
+def test_generic_domain_with_only_unavailable_tenants_says_so(tenant_a):
     make_staff_in(tenant_a, "OWNER", email="owner@example.com")
     Tenant.objects.filter(pk=tenant_a.pk).update(status=Tenant.Status.SUSPENDED)
-    assert _login(APIClient(), "owner@example.com").json()["error"]["code"] == "TENANT_SUSPENDED"
+    assert _login(APIClient(), "owner@example.com").json()["error"]["code"] == "TENANT_UNAVAILABLE"
 
 
 # --- Refresh, logout (ADR-025) ------------------------------------------------------------------
@@ -390,7 +400,7 @@ def test_refresh_fails_after_membership_deactivated_or_tenant_suspended(tenant_a
     tokens = issue_tokens(user, tenant_a.pk)
     Tenant.objects.filter(pk=tenant_a.pk).update(status=Tenant.Status.SUSPENDED)
     response = APIClient().post(REFRESH, {"refresh": tokens.refresh}, format="json")
-    assert response.json()["error"]["code"] == "TENANT_SUSPENDED"
+    assert response.json()["error"]["code"] == "TENANT_UNAVAILABLE"
 
 
 @pytest.mark.django_db(transaction=True)
@@ -495,7 +505,7 @@ def test_deactivation_and_suspension_take_effect_on_the_next_request(tenant_a):
     cache.clear()  # the suspension service invalidates the cached tenant status
     suspended = client.get(ME)
     assert suspended.status_code == 403
-    assert suspended.json()["error"]["code"] == "TENANT_SUSPENDED"
+    assert suspended.json()["error"]["code"] == "TENANT_UNAVAILABLE"
 
 
 def test_password_change_revokes_existing_access_tokens(tenant_a):
@@ -518,3 +528,47 @@ def test_purge_removes_old_login_records(tenant_a):
     LoginChallenge.objects.create(kind="MFA", token_hash="a" * 64, user=user, expires_at=old)
     HandoffCode.objects.create(code_hash="b" * 64, user=user, tenant=tenant_a, expires_at=old)
     assert services.purge_expired_login_records() == 2
+
+
+# --- Forwarded headers (ADR-032) ------------------------------------------------------------------
+
+
+def test_spoofed_x_forwarded_for_does_not_change_the_rate_limited_ip(tenant_a):
+    """A browser talking to Django directly (not through the trusted Next.js proxy) cannot pick
+    its own IP: 30 attempts with 30 different spoofed addresses still share one per-IP bucket."""
+    for i in range(30):
+        response = APIClient().post(
+            LOGIN,
+            {"email": f"user{i}@example.com", "password": "x"},
+            format="json",
+            REMOTE_ADDR="203.0.113.50",
+            HTTP_X_FORWARDED_FOR=f"198.51.100.{i}",
+            HTTP_X_FORWARDED_HOST="alpha.localhost",
+        )
+        assert response.status_code == 400
+    blocked = APIClient().post(
+        LOGIN,
+        {"email": "late@example.com", "password": "x"},
+        format="json",
+        REMOTE_ADDR="203.0.113.50",
+        HTTP_X_FORWARDED_FOR="192.0.2.77",
+    )
+    assert blocked.status_code == 429
+
+
+def test_forwarded_ip_from_the_trusted_proxy_is_used(tenant_a):
+    """Through the Next.js proxy (trusted), each real client gets its own bucket."""
+    for _ in range(30):
+        APIClient().post(
+            LOGIN,
+            {"email": "a@example.com", "password": "x"},
+            format="json",
+            HTTP_X_FORWARDED_FOR="198.51.100.1",
+        )
+    other_client = APIClient().post(
+        LOGIN,
+        {"email": "b@example.com", "password": "x"},
+        format="json",
+        HTTP_X_FORWARDED_FOR="198.51.100.2",
+    )
+    assert other_client.status_code == 400  # not limited by the first client's attempts

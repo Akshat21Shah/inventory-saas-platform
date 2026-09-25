@@ -19,7 +19,7 @@ from apps.accounts.models import Invitation, Membership, Role, User
 from apps.accounts.permissions import OWNER_ROLE
 from apps.accounts.services import (
     LoginOutcome,
-    TenantSuspended,
+    TenantUnavailable,
     TokenInvalid,
     _continue_login,
     _tokens_target,
@@ -182,8 +182,9 @@ def _tenant_for_link(host: HostContext) -> Tenant:
     tenant = tenant_by_slug(host.tenant_slug or "") if host.kind == HostKind.TENANT else None
     if tenant is None:
         raise TokenInvalid()
-    if tenant.status == Tenant.Status.SUSPENDED:
-        raise TenantSuspended()
+    if tenant.status not in (Tenant.Status.ACTIVE, Tenant.Status.ONBOARDING):
+        # Onboarding stays open: accepting the owner's invitation is what activates the tenant.
+        raise TenantUnavailable()
     return tenant
 
 

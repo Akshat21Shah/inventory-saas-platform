@@ -63,10 +63,13 @@ class InvalidCredentials(DomainError):
     )
 
 
-class TenantSuspended(DomainError):
+class TenantUnavailable(DomainError):
+    """One neutral answer for every tenant that is not ACTIVE (onboarding, suspended, ...): the
+    specific state is never disclosed outside the platform team."""
+
     status_code = 403
-    code = ErrorCode.TENANT_SUSPENDED
-    default_message = "This account is on hold. Please contact the platform support team."
+    code = ErrorCode.TENANT_UNAVAILABLE
+    default_message = "This account is currently unavailable. Please contact your distributor."
 
 
 class TokenInvalid(DomainError):
@@ -151,10 +154,13 @@ def _clear_failures(user: User) -> None:
         user.failed_login_count, user.locked_until = 0, None
 
 
-def verify_password_login(email: str, password: str, ip: str | None) -> User:
+def verify_password_login(
+    email: str, password: str, ip: str | None, *, rate_limited: bool = False
+) -> User:
     """Check email + password with rate limits and lockout. Raises ``InvalidCredentials``."""
     email = (email or "").strip().lower()
-    _limit_login(email, ip)
+    if not rate_limited:
+        _limit_login(email, ip)
     user = (
         User.objects.filter(
             email=email, user_type__in=[User.UserType.STAFF, User.UserType.PLATFORM]
@@ -203,15 +209,13 @@ def _target_for_host(user: User, host: HostContext) -> dict[str, Any]:
         tenant = tenant_by_slug(host.tenant_slug)
         if tenant is None or selectors.active_membership(user, tenant.id) is None:
             raise InvalidCredentials()
-        if tenant.status == Tenant.Status.SUSPENDED:
-            raise TenantSuspended()
         if tenant.status != Tenant.Status.ACTIVE:
-            raise InvalidCredentials()
+            raise TenantUnavailable()
         return _tokens_target(host, tenant.id)
     if host.kind == HostKind.GENERIC and user.user_type == User.UserType.STAFF:
         if not selectors.staff_memberships_for_login(user):
-            if selectors.has_membership_in_suspended_tenant(user):
-                raise TenantSuspended()
+            if selectors.has_membership_in_unavailable_tenant(user):
+                raise TenantUnavailable()
             raise InvalidCredentials()
         return {"next": "generic", "host_kind": host.kind.value, "host_slug": None}
     raise InvalidCredentials()
@@ -293,9 +297,20 @@ def _authenticated(
     return LoginOutcome(status=LoginStatus.AUTHENTICATED, user=user, tokens=tokens)
 
 
+def ensure_host_tenant_available(host: HostContext) -> None:
+    """On a tenant subdomain whose tenant is not ACTIVE, every sign-in attempt gets the same
+    neutral answer, before any credential is checked (the pre-login page shows it too)."""
+    if host.kind == HostKind.TENANT and host.tenant_slug:
+        tenant = tenant_by_slug(host.tenant_slug)
+        if tenant is not None and tenant.status != Tenant.Status.ACTIVE:
+            raise TenantUnavailable()
+
+
 def staff_login(email: str, password: str, host: HostContext, ip: str | None) -> LoginOutcome:
     """Email + password sign-in for staff and super admins, following the host rules."""
-    user = verify_password_login(email, password, ip)
+    _limit_login((email or "").strip().lower(), ip)
+    ensure_host_tenant_available(host)
+    user = verify_password_login(email, password, ip, rate_limited=True)
     with transaction.atomic():
         return _continue_login(user, _target_for_host(user, host))
 
@@ -371,10 +386,8 @@ def exchange_handoff(code: str, host: HostContext, ip: str | None) -> LoginOutco
     user, tenant = handoff.user, handoff.tenant
     if host.kind != HostKind.TENANT or host.tenant_slug != tenant.slug or not user.is_active:
         raise TokenInvalid()
-    if tenant.status == Tenant.Status.SUSPENDED and handoff.impersonation_session_id is None:
-        raise TenantSuspended()  # ADR-018: support may still look at a suspended tenant
-    if tenant.status == Tenant.Status.ONBOARDING:
-        raise TokenInvalid()
+    if tenant.status != Tenant.Status.ACTIVE and handoff.impersonation_session_id is None:
+        raise TenantUnavailable()  # ADR-018: support may still look at a suspended tenant
     if (
         user.user_type == User.UserType.STAFF
         and selectors.active_membership(user, tenant.id) is None
@@ -410,8 +423,8 @@ def refresh_session(raw_refresh: str) -> tuple[User, IssuedTokens]:
         tenant = Tenant.objects.filter(pk=tenant_id).first()  # tenant registry: no RLS
         if tenant is None:
             raise SessionExpired()
-        if tenant.status == Tenant.Status.SUSPENDED:
-            raise TenantSuspended()
+        if tenant.status != Tenant.Status.ACTIVE:
+            raise TenantUnavailable()
         if (
             user.user_type == User.UserType.STAFF
             and selectors.active_membership(user, tenant_id) is None
@@ -625,8 +638,6 @@ def regenerate_recovery_codes(
 
 # --- Passwords ----------------------------------------------------------------------------------
 
-PASSWORD_RESET_PER_EMAIL_PER_HOUR = 3
-
 
 def request_password_reset(email: str, ip: str | None) -> None:
     """Email a reset link if an active staff/super-admin account exists. Always looks the same."""
@@ -634,7 +645,12 @@ def request_password_reset(email: str, ip: str | None) -> None:
 
     email = (email or "").strip().lower()
     ratelimit.hit("reset:ip", ip, get_platform_setting("platform.login_rate_per_ip_per_minute"), 60)
-    ratelimit.hit("reset:email", email, PASSWORD_RESET_PER_EMAIL_PER_HOUR, 3600)
+    ratelimit.hit(
+        "reset:email",
+        email,
+        get_platform_setting("platform.password_reset_per_email_per_hour"),
+        3600,
+    )
     user = User.objects.filter(
         email=email,
         is_active=True,

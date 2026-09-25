@@ -4,8 +4,6 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.platform.models import Tenant
-
 
 class BusinessSerializer(serializers.Serializer[Any]):
     name = serializers.CharField(max_length=200)
@@ -59,7 +57,9 @@ class PublicBrandingSerializer(serializers.Serializer[Any]):
     slug = serializers.CharField()
     display_name = serializers.CharField()
     primary_color = serializers.CharField()
-    status = serializers.ChoiceField(choices=Tenant.Status.choices)
+    available = serializers.BooleanField(
+        help_text="False for any state other than active: show the neutral 'unavailable' message."
+    )
     logo_url = serializers.CharField(allow_null=True)
     favicon_url = serializers.CharField(allow_null=True)
     app_icon_url = serializers.CharField(allow_null=True)

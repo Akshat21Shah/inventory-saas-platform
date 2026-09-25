@@ -312,6 +312,9 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _platform("platform.otp_rate_per_ip_per_hour", Group.SECURITY, SettingType.INT, 100,
               "OTP codes that can be requested from one IP address per hour (generous: many mobile "
               "users share an IP).", min_value=10, max_value=5000),
+    _platform("platform.password_reset_per_email_per_hour", Group.SECURITY, SettingType.INT, 3,
+              "Password reset emails that can be requested for one email address per hour.",
+              min_value=1, max_value=20),
     _platform("platform.otp_max_verify_attempts", Group.SECURITY, SettingType.INT, 5,
               "Wrong codes allowed before an OTP stops working.", min_value=3, max_value=10),
 )

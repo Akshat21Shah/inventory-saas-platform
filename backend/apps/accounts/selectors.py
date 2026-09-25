@@ -57,8 +57,9 @@ def staff_memberships_for_login(user: User) -> list[Tenant]:
     )
 
 
-def has_membership_in_suspended_tenant(user: User) -> bool:
-    alias = platform_db("accounts.has_membership_in_suspended_tenant")
+def has_membership_in_unavailable_tenant(user: User) -> bool:
+    """Whether the user's only way in is through tenants that are not ACTIVE."""
+    alias = platform_db("accounts.has_membership_in_unavailable_tenant")
     tenant_ids = (
         Membership.objects.unscoped()
         .using(alias)
@@ -67,7 +68,8 @@ def has_membership_in_suspended_tenant(user: User) -> bool:
     )
     return (
         Tenant.objects.using(alias)
-        .filter(pk__in=list(tenant_ids), status=Tenant.Status.SUSPENDED)
+        .filter(pk__in=list(tenant_ids))
+        .exclude(status=Tenant.Status.ACTIVE)
         .exists()
     )
 
@@ -80,8 +82,11 @@ class RetailerAccount:
     distributor_name: str
 
 
-def retailer_accounts_for_verified_phone(phone: str) -> list[RetailerAccount]:
-    """Active retailer logins for ``phone`` in active tenants, for the generic-domain chooser.
+def retailer_accounts_for_verified_phone(
+    phone: str, *, active_only: bool = True
+) -> list[RetailerAccount]:
+    """Active retailer logins for ``phone`` in active tenants, for the generic-domain chooser
+    (``active_only=False`` also counts tenants that are currently unavailable).
 
     ADR-026: the second cross-tenant login lookup. Call only after the OTP for ``phone`` was
     verified; the result is shown only to that phone's owner, never to any distributor.
@@ -92,12 +97,8 @@ def retailer_accounts_for_verified_phone(phone: str) -> list[RetailerAccount]:
     alias = platform_db("accounts.retailer_accounts_for_verified_phone")
     users = list(
         User.objects.using(alias)
-        .filter(
-            user_type=User.UserType.RETAILER,
-            phone=phone,
-            is_active=True,
-            tenant__status=Tenant.Status.ACTIVE,
-        )
+        .filter(user_type=User.UserType.RETAILER, phone=phone, is_active=True)
+        .filter(**({"tenant__status": Tenant.Status.ACTIVE} if active_only else {}))
         .select_related("tenant")
     )
     links = {

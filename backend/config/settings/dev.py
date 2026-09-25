@@ -12,3 +12,6 @@ AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=False)  # dev runs o
 WEB_URL_TEMPLATE = env("WEB_URL_TEMPLATE", default="http://{host}:3000")
 ALLOW_MOCK_INTEGRATIONS = env.bool("ALLOW_MOCK_INTEGRATIONS", default=True)
 OTP_FIXED_CODE = env("OTP_FIXED_CODE", default="123456")  # mock SMS: sign in with 123456
+# Host-run web server (npm run dev on the host) reaches Django from localhost; Compose sets the
+# web container's fixed address instead.
+TRUSTED_PROXIES = env.list("TRUSTED_PROXIES", default=["127.0.0.1", "::1"])

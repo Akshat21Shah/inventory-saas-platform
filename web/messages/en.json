@@ -117,7 +117,7 @@
     "INVALID_STATE_TRANSITION": "This can't be done at the current stage.",
     "INVALID_CREDENTIALS": "The email or password is incorrect. After several failed attempts, sign-in is paused for a few minutes.",
     "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
-    "TENANT_SUSPENDED": "This account is on hold. Please contact the platform support team.",
+    "TENANT_UNAVAILABLE": "This account is currently unavailable. Please contact your distributor.",
     "TOKEN_INVALID": "This link or code has expired or was already used. Please start again.",
     "SESSION_EXPIRED": "Your session has ended. Please sign in again.",
     "MFA_INVALID_CODE": "That code didn't work. Check your authenticator app and try again.",

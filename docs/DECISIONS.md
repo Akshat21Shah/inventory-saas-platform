@@ -36,6 +36,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 | 029 | Impersonation: read-only by default, audited "act" mode | Accepted (amends PLAN T7) |
 | 030 | Login protection, staff 2FA, owners, subdomain & tenant lifecycle | Accepted |
 | 031 | Field-level encryption | Accepted |
+| 032 | Neutral "unavailable" tenant state, reset limit setting, trusted proxies | Accepted (amends 018, 025, 030) |
 
 ---
 
@@ -359,3 +360,23 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   - Encrypted fields cannot be searched or indexed. They are masked in API responses (for example `••••1234`) and in audit diffs.
   - Encrypted in Phase 1: the bank account number and the TOTP secret. Phase 7 adds gateway and GSP credentials.
 - **Consequences:** A database dump alone doesn't reveal secrets. Losing all keys loses the data, so keys go in the secrets manager with a backup (runbook in Phase 10).
+
+## ADR-032 — Neutral "unavailable" tenant state, reset limit setting, trusted proxies
+- **Status:** Accepted — 2026-09-25 (product owner, Phase 1 backend checkpoint). Amends ADR-018 (message), ADR-025 (public branding) and ADR-030 (limits).
+- **Decision:**
+  1. **Neutral tenant state.**
+     - Outside the platform team, a tenant is only *available* (ACTIVE) or *unavailable* (any other state: onboarding, suspended, or anything added later). The specific status is never disclosed.
+     - Public branding returns `available: true|false` instead of the status.
+     - Every sign-in attempt for an unavailable tenant gets one answer, `TENANT_UNAVAILABLE`: "This account is currently unavailable. Please contact your distributor." That covers staff login on its subdomain (before any credential check), retailer OTP request and verify, the generic-domain choosers (for a verified owner), handoff exchange, refresh, and every authenticated request.
+     - Exceptions: invitation links stay usable while ONBOARDING (accepting the owner's invitation activates the tenant), and support impersonation (ADR-018).
+  2. **Reset limit.** The forgot-password limit (default 3 per email address per hour) is the platform setting `platform.password_reset_per_email_per_hour`.
+  3. **Forwarded headers.**
+     - The web server (`web/server.mjs`, a custom Node server in front of Next.js) discards every client-supplied `X-Forwarded-For`/`-Host`/`-Proto`/`-Port`, `Forwarded` and `X-Real-IP`, and sets them from the connection.
+     - Only when the connecting peer is in the web server's `TRUSTED_PROXIES` (the production load balancer) is its `X-Forwarded-For` consulted, taking the rightmost address that is not a trusted proxy.
+     - Django trusts forwarded headers only from its own `TRUSTED_PROXIES` (the web server's addresses). `TrustedProxyMiddleware`, first in the chain, removes them from every other peer. This applies in dev and prod.
+     - uvicorn runs with `--no-proxy-headers` in both images.
+     - In Compose, the web container has a fixed address (172.30.0.10) that Django trusts. Direct requests to port 8000 cannot choose their IP.
+- **Consequences:**
+  - Per-IP rate limits and audit IPs cannot be spoofed from the browser, and only the load balancer set-up remains to verify before launch.
+  - `next dev`/`next start` are replaced by `node server.mjs` (Turbopack and HMR still work).
+

@@ -110,6 +110,11 @@
       - Every successful write in a session is audited (`impersonation.write`), in addition to the domain entry that records the impersonator. Start, ACT, end and expiry go to the tenant's own log (the owner sees them); a beat task records expiries. Support can open a suspended tenant (ADR-018).
     - Django admin (PLAN 1.13): super admins only, admin host only; sign-in needs password + TOTP and uses the same lockout and rate limits. Read-only, through the platform alias. Third-party editable registrations (groups, token blacklist) removed; password, TOTP secret and webhook token never shown.
     - Role matrix (PLAN 1.17): a generic test walks every permission-guarded tenant endpoint and checks each system role gets 403 exactly when it lacks the code.
+    - Checkpoint changes (ADR-032):
+      - Neutral `TENANT_UNAVAILABLE` for every non-active tenant; public branding returns only `available`.
+      - Forgot-password limit is a platform setting.
+      - The web server (`web/server.mjs`) sets forwarded headers itself; Django trusts them only from `TRUSTED_PROXIES`; uvicorn proxy headers are off.
+      - Checked live: 30 attempts with spoofed `X-Forwarded-For`, through Next.js and directly to Django, share one per-IP bucket (the 31st is 429). HMR still works through the custom server.
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
@@ -130,13 +135,13 @@
   17. Seed, E2E and docs
 
 ## Pre-production verification
-Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/lib web/app web/components`.
+Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
 
 | # | Item | Where | Verify against | Owner | Status |
 |---|---|---|---|---|---|
 | 1 | GST state code list: names and codes, and legacy codes 25 (Daman & Diu, pre-2020) and 28 (Andhra Pradesh, pre-2014) kept inactive | `backend/apps/platform/reference_data.py` (`STATES`) | GST portal state code list | Product owner | Open |
 | 2 | GSTIN format for regular taxpayers (`[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]`) and the mod-36 check character. Other registration kinds (TDS/TCS, UN bodies, NRTP) are out of scope in v1 | `backend/apps/platform/validators.py`, `Tenant` check constraint `tenant_gstin_format` | GST portal / GSTN GSTIN format specification | Product owner | Open |
-| 3 | Client IP and host behind proxies. The production load balancer must **append** the client IP to `X-Forwarded-For` and overwrite any client-supplied `X-Forwarded-Host`, and `TRUSTED_PROXY_HOPS` must match the number of appending proxies (1 with a load balancer in front of Next.js). Next.js itself only sets these headers when they are absent. Per-IP rate limits (ADR-030) and audit IPs depend on this | `backend/config/settings/base.py`, `backend/common/net.py`, infra (Phase 10) | Deployment topology and load-balancer documentation | Lead engineer | Open (before staging) |
+| 3 | Production load balancer configuration. It must append the client IP to `X-Forwarded-For` and set `X-Forwarded-Proto`. The web server's `TRUSTED_PROXIES` must list the load balancer's addresses, and Django's `TRUSTED_PROXIES` must list the web servers' addresses (ADR-032; our own code already discards client-supplied forwarded headers) | infra (Phase 10), `web/server.mjs`, `backend/config/settings/base.py` | Load balancer documentation and the deployment topology | Lead engineer | Open (before staging) |
 | 4 | SMS provider for retailer OTP: implement a real adapter against the provider's official API, with a DLT-registered sender ID and OTP template (required in India). Only the mock exists; deployed environments refuse it (`check --deploy`: accounts.E001/E002) | `backend/apps/accounts/adapters/sms.py` | Chosen provider's API docs; TRAI DLT registration | Product owner (provider choice) + lead engineer | Open (before staging) |
 | 5 | ADR-009 tax engine & rounding rules | `docs/DECISIONS.md` ADR-009 | Chartered accountant | Product owner | Open (before Phase 5) |
 

@@ -317,7 +317,7 @@ def test_public_branding_for_pre_login_pages(tenant_a, tenant_b, owner, run):
         "slug": tenant_a.slug,
         "display_name": "Alpha",
         "primary_color": "#0f766e",
-        "status": "ACTIVE",
+        "available": True,
         "logo_url": None,
         "favicon_url": None,
         "app_icon_url": None,

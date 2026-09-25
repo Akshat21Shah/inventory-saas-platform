@@ -248,7 +248,7 @@ def test_support_can_look_at_a_suspended_tenant(admin_api, tenant_a, owner):
     cache.clear()
     owner_client = APIClient()
     owner_client.credentials(HTTP_AUTHORIZATION=f"Bearer {issue_tokens(owner, tenant_a.pk).access}")
-    assert owner_client.get("/api/v1/auth/me/").json()["error"]["code"] == "TENANT_SUSPENDED"
+    assert owner_client.get("/api/v1/auth/me/").json()["error"]["code"] == "TENANT_UNAVAILABLE"
     client, _, _ = _enter(admin_api, tenant_a, owner)
     assert client.get("/api/v1/auth/me/").status_code == 200
 

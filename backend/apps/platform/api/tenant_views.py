@@ -384,7 +384,9 @@ class PublicBrandingView(APIView):
             raise NotFound()
         with tenant_context(tenant.pk):
             branding = TenantBranding.objects.first() or TenantBranding(display_name=tenant.name)
-        body = {"slug": tenant.slug, "status": tenant.status, **_branding_body(tenant, branding)}
+        # Never the specific status (onboarding, suspended, ...): only whether sign-in is open.
+        available = tenant.status == Tenant.Status.ACTIVE
+        body = {"slug": tenant.slug, "available": available, **_branding_body(tenant, branding)}
         return Response(s.PublicBrandingSerializer(body).data)
 
 

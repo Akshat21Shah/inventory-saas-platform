@@ -60,7 +60,7 @@ def test_required_permissions_follow_scope():
 
 def test_registry_covers_plan_catalogue():
     assert len(TENANT_KEYS) == 28  # PLAN §9.1 (27) + security.require_staff_2fa (ADR-030)
-    assert len(PLATFORM_KEYS) == 10  # PLAN §9.2 (3) + 7 login/OTP protection keys (ADR-030)
+    assert len(PLATFORM_KEYS) == 11  # PLAN §9.2 (3) + 7 login/OTP limits (ADR-030) + reset limit
     assert "security.require_staff_2fa" in TENANT_KEYS
 
 
@@ -84,6 +84,7 @@ def test_spec_defaults():
     assert d["security.require_staff_2fa"] is False
     assert d["platform.login_rate_per_ip_per_minute"] == 30
     assert d["platform.otp_rate_per_ip_per_hour"] == 100
+    assert d["platform.password_reset_per_email_per_hour"] == 3
 
 
 # --- Validation ---------------------------------------------------------------------------------

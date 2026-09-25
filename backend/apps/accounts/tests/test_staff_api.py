@@ -287,7 +287,7 @@ def test_suspended_tenant_invitations_are_on_hold(tenant_a, invite):
         _public("/api/v1/auth/invitations/preview/", {"token": token}, "alpha.localhost").json()[
             "error"
         ]["code"]
-        == "TENANT_SUSPENDED"
+        == "TENANT_UNAVAILABLE"
     )
 
 

@@ -18,7 +18,7 @@ from rest_framework.request import Request
 from apps.accounts.impersonation import ImpersonationBlocked, ImpersonationReadOnly, open_session
 from apps.accounts.models import ImpersonationSession, User
 from apps.accounts.selectors import active_membership, retailer_login_for_tenant, role_codes
-from apps.accounts.services import TenantSuspended
+from apps.accounts.services import TenantUnavailable
 from apps.platform.models import Tenant
 from apps.platform.selectors import tenant_info
 from common.authentication import (
@@ -82,10 +82,8 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
         info = tenant_info(tenant_id)
         if info is None:
             raise AuthenticationFailed("This session is not valid.", code="token_not_valid")
-        if info.status == Tenant.Status.SUSPENDED and not impersonating:
-            raise TenantSuspended()  # ADR-018: support may still look at a suspended tenant
-        if info.status == Tenant.Status.ONBOARDING:
-            raise AuthenticationFailed("This session is not valid.", code="token_not_valid")
+        if info.status != Tenant.Status.ACTIVE and not impersonating:
+            raise TenantUnavailable()  # ADR-018: support may still look at a suspended tenant
         if host is not None and host.kind == HostKind.ADMIN:
             raise AuthenticationFailed("This session is not valid here.", code="wrong_host")
         if host is not None and host.kind == HostKind.TENANT and host.tenant_slug != info.slug:

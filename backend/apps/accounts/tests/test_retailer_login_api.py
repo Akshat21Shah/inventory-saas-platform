@@ -329,3 +329,24 @@ def test_deploy_check_refuses_mock_sms_and_fixed_code(settings):
     settings.ALLOW_MOCK_INTEGRATIONS = False
     settings.OTP_FIXED_CODE = "123456"
     assert {e.id for e in mock_integrations_check(None)} == {"accounts.E001", "accounts.E002"}
+
+
+@pytest.mark.parametrize("status", [Tenant.Status.SUSPENDED, Tenant.Status.ONBOARDING])
+def test_unavailable_distributor_gives_the_neutral_answer_on_its_subdomain(tenant_a, post, status):
+    make_retailer_login(tenant_a, PHONE)
+    Tenant.objects.filter(pk=tenant_a.pk).update(status=status)
+    for path, body in ((REQUEST, {"phone": PHONE}), (VERIFY, {"phone": PHONE, "code": "123456"})):
+        response = post(path, body, "alpha.localhost")
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "TENANT_UNAVAILABLE"
+    assert MockSmsSender.outbox == []
+
+
+def test_generic_domain_tells_the_verified_owner_their_distributor_is_unavailable(tenant_a, post):
+    make_retailer_login(tenant_a, PHONE)
+    Tenant.objects.filter(pk=tenant_a.pk).update(status=Tenant.Status.SUSPENDED)
+    post(REQUEST, {"phone": PHONE}, "localhost")
+    response = post(VERIFY, {"phone": PHONE, "code": _last_code()}, "localhost")
+    assert response.json()["error"]["code"] == "TENANT_UNAVAILABLE"
+    wrong = post(VERIFY, {"phone": "9123456780", "code": "000000"}, "localhost")
+    assert wrong.json()["error"]["code"] == "OTP_INVALID"  # unknown numbers learn nothing

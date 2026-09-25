@@ -434,7 +434,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 |---|---|---|---|
 | `/health/live`, `/health/ready` | GET | 🌐 | liveness; readiness (DB, Redis, Celery ping) |
 | `/api/v1/schema/`, `/api/v1/docs/` | GET | 🌐 (dev) / staff (prod) | OpenAPI schema and Swagger UI |
-| `/api/v1/public/tenants/{slug}/branding` | GET | 🌐 | pre-login branding (name, logo, palette, favicon) |
+| `/api/v1/public/tenants/{slug}/branding` | GET | 🌐 | pre-login branding (name, logo, colour, favicon) and `available` (never the specific status, ADR-032) |
 | `/api/v1/public/states` | GET | 🌐 | GST state list |
 | `/api/v1/auth/staff/login` | POST | 🌐 rate-limited | email + password (+ host context) → tokens, or `{"mfa_required": true, "mfa_token"}`. Host rules: admin host → PLATFORM users only; tenant subdomain → STAFF with an active membership there; generic host → STAFF → tokens if one membership, else `{choose_tenant: [...], choice_token}` |
 | `/api/v1/auth/staff/choose-tenant` | POST | 🌐 (choice_token) | `{choice_token, tenant_id}` → single-use `handoff_code` + subdomain URL (exchanged via `auth/handoff/exchange`) |
@@ -1591,6 +1591,7 @@ Later phases add keys through the same registry (e.g. notification channels in P
 | Security | `platform.otp_rate_per_phone_per_10_minutes` | int | `3` | 1–20 | OTP codes that can be requested for one phone number in 10 minutes. |
 | Security | `platform.otp_rate_per_ip_per_hour` | int | `100` | 10–5000 | OTP codes that can be requested from one IP address per hour (generous: many mobile users share an IP). |
 | Security | `platform.otp_max_verify_attempts` | int | `5` | 3–10 | Wrong codes allowed before an OTP stops working. |
+| Security | `platform.password_reset_per_email_per_hour` | int | `3` | 1–20 | Password reset emails that can be requested for one email address per hour (ADR-032). |
 | Invoicing | `platform.default_invoice_prefix` | string | `INV` | `[A-Z0-9]{1,6}` | Prefix proposed when a tenant's first invoice series is created. |
 
 Platform **master data** (managed by super admin, not registry keys): `TaxRate`, `CessType`, `HsnRateHint`, default `NotificationTemplate`s, `Plan`s, `FeatureFlag`s.
@@ -1640,6 +1641,7 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 029 | Impersonation read-only by default, audited ACT mode, always-blocked actions, visible to tenant owners (2026-09-25) |
 | 030 | Lockout 5/15 min + email, CGNAT-aware rate limits as platform settings, `security.require_staff_2fa`, multiple owners, super-admin-only slug change, ONBOARDING → ACTIVE on owner acceptance (2026-09-25) |
 | 031 | Field-level encryption with MultiFernet and rotatable keys (2026-09-25) |
+| 032 | Neutral "unavailable" tenant state (public `available` flag, one `TENANT_UNAVAILABLE` answer), reset limit as a platform setting, forwarded headers set by our web server and trusted by Django only from configured proxies (2026-09-25) |
 
 ### 10.2 Follow-up answers (2026-09-25)
 | # | Question | Answer |

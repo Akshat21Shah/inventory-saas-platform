@@ -5,13 +5,13 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { TenantStatusEnum } from './tenantStatusEnum';
 
 export interface PublicBranding {
   slug: string;
   display_name: string;
   primary_color: string;
-  status: TenantStatusEnum;
+  /** False for any state other than active: show the neutral 'unavailable' message. */
+  available: boolean;
   /** @nullable */
   logo_url: string | null;
   /** @nullable */

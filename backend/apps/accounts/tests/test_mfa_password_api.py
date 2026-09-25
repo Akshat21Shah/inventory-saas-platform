@@ -482,3 +482,21 @@ def test_change_password_keeps_this_session_and_ends_others(tenant_a):
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
     assert client.get("/api/v1/auth/me/").status_code == 401  # old access token revoked too
+
+
+def test_reset_limit_is_a_platform_setting(django_capture_on_commit_callbacks):
+    from apps.platform import services as platform_services
+
+    admin = make_super_admin()
+    with django_capture_on_commit_callbacks(execute=True):
+        platform_services.set_platform_settings(
+            {"platform.password_reset_per_email_per_hour": 1}, user=admin
+        )
+    assert (
+        _post("/api/v1/auth/password/forgot/", {"email": "b@example.com"}, "localhost").status_code
+        == 202
+    )
+    assert (
+        _post("/api/v1/auth/password/forgot/", {"email": "b@example.com"}, "localhost").status_code
+        == 429
+    )

@@ -16,7 +16,7 @@ RUN uv sync --frozen --no-install-project
 COPY . .
 USER app
 EXPOSE 8000
-CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--reload", "--no-proxy-headers"]
 
 FROM base AS prod
 COPY pyproject.toml uv.lock ./
@@ -28,4 +28,5 @@ RUN DJANGO_SECRET_KEY=build-time-only-key-for-collectstatic-0000 DATABASE_URL=po
     python manage.py collectstatic --noinput --settings=config.settings.prod
 USER app
 EXPOSE 8000
-CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# No --proxy-headers: Django's TrustedProxyMiddleware decides which forwarded headers to trust.
+CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]
