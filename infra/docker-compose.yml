@@ -71,16 +71,19 @@ services:
     image: chrislusf/seaweedfs:latest
     depends_on:
       s3: { condition: service_healthy }
-    # Idempotent and race-free: retries until the filer is up and the bucket is listed.
+    # Idempotent and race-free: retries until the filer is up and both buckets are listed.
     entrypoint:
       - /bin/sh
       - -c
       - |
         for i in $$(seq 1 30); do
-          if echo 's3.bucket.list' | weed shell -master=s3:9333 2>/dev/null | grep -q inventory-dev; then
-            echo "bucket ready"; exit 0
+          list=$$(echo 's3.bucket.list' | weed shell -master=s3:9333 2>/dev/null)
+          if echo "$$list" | grep -q inventory-dev && echo "$$list" | grep -q inventory-public-dev; then
+            echo "buckets ready"; exit 0
           fi
-          echo 's3.bucket.create -name inventory-dev' | weed shell -master=s3:9333 >/dev/null 2>&1
+          for b in inventory-dev inventory-public-dev; do
+            echo "s3.bucket.create -name $$b" | weed shell -master=s3:9333 >/dev/null 2>&1
+          done
           sleep 2
         done
         echo "bucket init failed"; exit 1

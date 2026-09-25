@@ -26,12 +26,18 @@ class ValidImage:
     height: int
 
 
-def validate_image(upload: "UploadedFile[bytes]", field: str = "file") -> ValidImage:
+def validate_image(
+    upload: "UploadedFile[bytes]",
+    field: str = "file",
+    *,
+    max_bytes: int = MAX_IMAGE_BYTES,
+    max_side: int = MAX_IMAGE_SIDE,
+) -> ValidImage:
     """PNG, JPEG or WebP only, judged by content (never by name). SVG is refused: it can carry
-    scripts. At most 2 MB and 4096 px on either side."""
-    data = upload.read(MAX_IMAGE_BYTES + 1)
-    if len(data) > MAX_IMAGE_BYTES:
-        raise InvalidFields({field: ["The image is larger than 2 MB."]})
+    scripts. At most ``max_bytes`` (2 MB) and ``max_side`` (4096 px) on either side."""
+    data = upload.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise InvalidFields({field: [f"The image is larger than {max_bytes // (1024 * 1024)} MB."]})
     try:
         with Image.open(io.BytesIO(data)) as probe:
             fmt = probe.format or ""
@@ -41,9 +47,7 @@ def validate_image(upload: "UploadedFile[bytes]", field: str = "file") -> ValidI
         raise InvalidFields({field: ["Upload a PNG, JPEG or WebP image."]}) from exc
     if fmt not in _FORMATS:
         raise InvalidFields({field: ["Upload a PNG, JPEG or WebP image."]})
-    if width > MAX_IMAGE_SIDE or height > MAX_IMAGE_SIDE:
-        raise InvalidFields(
-            {field: [f"The image must be at most {MAX_IMAGE_SIDE} px wide and high."]}
-        )
+    if width > max_side or height > max_side:
+        raise InvalidFields({field: [f"The image must be at most {max_side} px wide and high."]})
     content_type, extension = _FORMATS[fmt]
     return ValidImage(data, content_type, extension, width, height)

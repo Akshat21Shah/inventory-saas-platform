@@ -5,12 +5,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from django.db import IntegrityError, transaction
+from django.db.models import Max
 from django.utils import timezone
 from django.utils.text import slugify
+from PIL import Image
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -21,6 +23,7 @@ from apps.catalog.models import (
     Category,
     Product,
     ProductBarcode,
+    ProductImage,
     ProductTaxRate,
     Unit,
 )
@@ -29,7 +32,12 @@ from apps.platform.selectors import get_setting
 from common.dates import today_ist
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
-from common.tenancy import require_tenant_id
+from common.storage import get_storage
+from common.tenancy import require_tenant_id, tenant_transaction
+from common.uploads import validate_image
+
+if TYPE_CHECKING:
+    from django.core.files.uploadedfile import UploadedFile
 
 
 class InUse(DomainError):
@@ -340,6 +348,21 @@ def _cess(cess_type_id: UUID | None, cess_rate: Decimal) -> tuple[CessType | Non
     return cess, cess_rate
 
 
+def _normalize_numbers(product: Product) -> None:
+    """Model defaults are plain ints; the rules below work on Decimals."""
+    for name in (
+        "min_order_qty",
+        "order_multiple",
+        "reorder_level",
+        "pack_size",
+        "mrp",
+        "base_price",
+    ):
+        value = getattr(product, name)
+        if value is not None and not isinstance(value, Decimal):
+            setattr(product, name, Decimal(str(value)))
+
+
 def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:
     min_digits = int(get_setting("tax.hsn_min_digits", require_tenant_id()))
     hsn = product.hsn_code
@@ -454,6 +477,7 @@ def create_product(
     product.name = " ".join((product.name or "").split())
     product.hsn_code = "".join((product.hsn_code or "").split())
     product.tags = _clean_tags(product.tags or [])
+    _normalize_numbers(product)
     errors: dict[str, list[str]] = {}
     _validate_product(product, errors)
     try:
@@ -502,6 +526,7 @@ def update_product(
     product.name = " ".join(product.name.split())
     product.hsn_code = "".join(product.hsn_code.split())
     product.tags = _clean_tags(product.tags or [])
+    _normalize_numbers(product)
     errors: dict[str, list[str]] = {}
     _validate_product(product, errors)
     if errors:
@@ -802,3 +827,126 @@ def commit_rate_schedule(
         },
     )
     return len(targets)
+
+
+# --- Product images (ADR-034) -------------------------------------------------------------------
+
+MAX_IMAGES_PER_PRODUCT = 10
+
+
+@transaction.atomic
+def upload_image(
+    product_id: UUID, upload: "UploadedFile[bytes]", *, alt_text: str = "", by: User
+) -> ProductImage:
+    """Store the validated original privately and resize it in the background."""
+    from apps.catalog import images
+    from apps.catalog.tasks import process_product_image
+
+    product = selectors.products().filter(pk=product_id).first()
+    if product is None:
+        raise NotFound()
+    if product.images.count() >= MAX_IMAGES_PER_PRODUCT:
+        raise InvalidFields(
+            {"file": [f"A product can have at most {MAX_IMAGES_PER_PRODUCT} images."]}
+        )
+    valid = validate_image(
+        upload, max_bytes=images.PRODUCT_IMAGE_MAX_BYTES, max_side=images.PRODUCT_IMAGE_MAX_SIDE
+    )
+    image = ProductImage(
+        product=product,
+        alt_text=alt_text.strip()[:200],
+        created_by=by,
+        sort_order=(product.images.aggregate(m=Max("sort_order"))["m"] or 0) + 1,
+    )
+    tenant_id = require_tenant_id()
+    image.original_key = images.original_key(tenant_id, product.pk, image.pk, valid.extension)
+    # Stored before the row; if the transaction then fails the file is an unreferenced orphan.
+    get_storage().put(image.original_key, valid.data, valid.content_type)
+    image.save()
+    audit.record(
+        "catalog.image_uploaded",
+        target=product,
+        target_repr=f"{product.code} {product.name}",
+        metadata={"image_id": str(image.pk), "bytes": len(valid.data)},
+    )
+    image_id, tenant = str(image.pk), str(tenant_id)
+    transaction.on_commit(lambda: process_product_image.delay(image_id=image_id, tenant_id=tenant))
+    return image
+
+
+def process_image(image_id: str) -> None:
+    """Resize (no transaction held), then record the variants in a short transaction. Runs in a
+    task that has set the tenant, but no transaction."""
+    from apps.catalog import images
+
+    tenant_id = require_tenant_id()
+    with tenant_transaction(tenant_id):
+        image = ProductImage.objects.filter(pk=image_id).first()
+        if image is None or image.status == ProductImage.Status.READY:
+            return
+        key, product_id = image.original_key, image.product_id
+    original = get_storage().get(key)
+    try:
+        rendered = images.render_variants(original)
+    except (OSError, ValueError, Image.DecompressionBombError):
+        mark_image_failed(image_id)
+        return
+    stored = images.store_variants(images.variant_prefix(tenant_id, product_id, original), rendered)
+    with tenant_transaction(tenant_id):
+        updated = ProductImage.objects.filter(pk=image_id).update(
+            variants=stored, status=ProductImage.Status.READY, updated_at=timezone.now()
+        )
+    if not updated:  # deleted while processing: remove what was just written
+        for variant in stored.values():
+            get_storage().delete_public(variant["key"])
+
+
+def mark_image_failed(image_id: str) -> None:
+    with tenant_transaction(require_tenant_id()):
+        ProductImage.objects.filter(pk=image_id).update(
+            status=ProductImage.Status.FAILED, updated_at=timezone.now()
+        )
+
+
+@transaction.atomic
+def update_image(
+    product_id: UUID, image_id: UUID, *, sort_order: int | None, alt_text: str | None, by: User
+) -> ProductImage:
+    image: ProductImage | None = ProductImage.objects.filter(
+        pk=image_id, product_id=product_id, product__deleted_at__isnull=True
+    ).first()
+    if image is None:
+        raise NotFound()
+    if sort_order is not None:
+        image.sort_order = sort_order
+    if alt_text is not None:
+        image.alt_text = alt_text.strip()[:200]
+    image.save(update_fields=["sort_order", "alt_text", "updated_at"])
+    return image
+
+
+@transaction.atomic
+def delete_image(product_id: UUID, image_id: UUID, *, by: User) -> None:
+    from apps.catalog.tasks import delete_image_objects
+
+    image = (
+        ProductImage.objects.filter(
+            pk=image_id, product_id=product_id, product__deleted_at__isnull=True
+        )
+        .select_related("product")
+        .first()
+    )
+    if image is None:
+        raise NotFound()
+    original, public = image.original_key, [v["key"] for v in image.variants.values()]
+    product = image.product
+    image.delete()
+    audit.record(
+        "catalog.image_deleted",
+        target=product,
+        target_repr=f"{product.code} {product.name}",
+        metadata={"image_id": str(image_id)},
+    )
+    transaction.on_commit(
+        lambda: delete_image_objects.delay(original_key=original, public_keys=public)
+    )

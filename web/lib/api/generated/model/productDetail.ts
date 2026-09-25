@@ -7,6 +7,7 @@
  */
 import type { Barcode } from './barcode';
 import type { HsnSuggestion } from './hsnSuggestion';
+import type { ProductImage } from './productImage';
 import type { ProductTaxRate } from './productTaxRate';
 import type { Ref } from './ref';
 import type { Unit } from './unit';
@@ -45,6 +46,7 @@ export interface ProductDetail {
   readonly show_in_shop: boolean;
   readonly is_active: boolean;
   readonly barcodes: readonly Barcode[];
+  readonly images: readonly ProductImage[];
   readonly current_rate: ProductTaxRate | null;
   readonly tax_rates: readonly ProductTaxRate[];
   readonly hsn_hint: HsnSuggestion | null;

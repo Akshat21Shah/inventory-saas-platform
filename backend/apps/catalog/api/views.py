@@ -8,6 +8,7 @@ from django.db.models import QuerySet
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
+from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -251,7 +252,7 @@ class ProductListCreateView(CatalogView, generics.ListAPIView[Product]):
         f = s.ProductFilterSerializer(data=self.request.query_params)
         f.is_valid(raise_exception=True)
         v = f.validated_data
-        return selectors.products(
+        return selectors.product_list(
             selectors.ProductFilters(
                 search=v["search"],
                 category_id=v.get("category"),
@@ -496,3 +497,65 @@ class HsnHintView(CatalogView):
     def get(self, request: Request) -> Response:
         hint = selectors.hsn_hint("".join(request.query_params.get("hsn", "").split())[:8])
         return Response({"hint": s.HsnSuggestionSerializer(hint).data if hint else None})
+
+
+class ProductImagesView(CatalogView):
+    parser_classes = [MultiPartParser]
+
+    @extend_schema(
+        responses=s.ProductImageSerializer(many=True),
+        operation_id="catalog_product_images_list",
+        tags=["catalog"],
+    )
+    def get(self, request: Request, product_id: UUID) -> Response:
+        product = selectors.product(product_id)
+        if product is None:
+            raise NotFound()
+        return Response(s.ProductImageSerializer(product.images.all(), many=True).data)
+
+    @extend_schema(
+        request={"multipart/form-data": s.ImageUploadSerializer},
+        responses={201: s.ProductImageSerializer},
+        operation_id="catalog_product_images_upload",
+        tags=["catalog"],
+    )
+    def post(self, request: Request, product_id: UUID) -> Response:
+        data = s.ImageUploadSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        image = services.upload_image(
+            product_id,
+            data.validated_data["file"],
+            alt_text=data.validated_data["alt_text"],
+            by=_user(request),
+        )
+        return Response(s.ProductImageSerializer(image).data, status=201)
+
+
+class ProductImageDetailView(CatalogView):
+    @extend_schema(
+        request=s.ImageUpdateSerializer,
+        responses=s.ProductImageSerializer,
+        operation_id="catalog_product_images_update",
+        tags=["catalog"],
+    )
+    def patch(self, request: Request, product_id: UUID, image_id: UUID) -> Response:
+        data = s.ImageUpdateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        image = services.update_image(
+            product_id,
+            image_id,
+            sort_order=data.validated_data.get("sort_order"),
+            alt_text=data.validated_data.get("alt_text"),
+            by=_user(request),
+        )
+        return Response(s.ProductImageSerializer(image).data)
+
+    @extend_schema(
+        request=None,
+        responses={204: None},
+        operation_id="catalog_product_images_delete",
+        tags=["catalog"],
+    )
+    def delete(self, request: Request, product_id: UUID, image_id: UUID) -> Response:
+        services.delete_image(product_id, image_id, by=_user(request))
+        return Response(status=204)

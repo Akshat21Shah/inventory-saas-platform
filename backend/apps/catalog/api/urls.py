@@ -37,6 +37,16 @@ urlpatterns = [
         name="catalog-product-barcode-detail",
     ),
     path(
+        "products/<uuid:product_id>/images/",
+        v.ProductImagesView.as_view(),
+        name="catalog-product-images",
+    ),
+    path(
+        "products/<uuid:product_id>/images/<uuid:image_id>/",
+        v.ProductImageDetailView.as_view(),
+        name="catalog-product-image-detail",
+    ),
+    path(
         "products/<uuid:product_id>/tax-rates/",
         v.ProductTaxRatesView.as_view(),
         name="catalog-product-tax-rates",

@@ -44,15 +44,18 @@ import type {
   CategoryTreeNode,
   CategoryWriteRequest,
   HsnHintResult,
+  ImageUploadRequest,
   PaginatedBrandList,
   PaginatedCategoryList,
   PaginatedProductListList,
   PaginatedUnitList,
   PatchedBrandRequest,
   PatchedCategoryUpdateRequest,
+  PatchedImageUpdateRequest,
   PatchedProductUpdateRequest,
   PatchedUnitWriteRequest,
   ProductDetail,
+  ProductImage,
   ProductTaxRate,
   ProductWriteRequest,
   ScheduleRateRequest,
@@ -1711,6 +1714,374 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCatalogProductBarcodesDeleteMutationOptions(options), queryClient);
+    }
+    export type catalogProductImagesListResponse200 = {
+  data: ProductImage[]
+  status: 200
+}
+
+export type catalogProductImagesListResponseSuccess = (catalogProductImagesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type catalogProductImagesListResponse = (catalogProductImagesListResponseSuccess)
+
+export const getCatalogProductImagesListUrl = (productId: string,) => {
+
+
+
+
+  return `/api/v1/products/${productId}/images/`
+}
+
+export const catalogProductImagesList = async (productId: string, options?: Parameters<typeof apiFetch>[1]): Promise<catalogProductImagesListResponse> => {
+
+  return apiFetch<catalogProductImagesListResponse>(getCatalogProductImagesListUrl(productId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCatalogProductImagesListQueryKey = (productId: string,) => {
+    return [
+    `/api/v1/products/${productId}/images/`
+    ] as const;
+    }
+
+
+export const getCatalogProductImagesListQueryOptions = <TData = Awaited<ReturnType<typeof catalogProductImagesList>>, TError = unknown>(productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductImagesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCatalogProductImagesListQueryKey(productId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof catalogProductImagesList>>> = ({ signal }) => catalogProductImagesList(productId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: productId !== null && productId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof catalogProductImagesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CatalogProductImagesListQueryResult = NonNullable<Awaited<ReturnType<typeof catalogProductImagesList>>>
+export type CatalogProductImagesListQueryError = unknown
+
+
+export function useCatalogProductImagesList<TData = Awaited<ReturnType<typeof catalogProductImagesList>>, TError = unknown>(
+ productId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductImagesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof catalogProductImagesList>>,
+          TError,
+          Awaited<ReturnType<typeof catalogProductImagesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCatalogProductImagesList<TData = Awaited<ReturnType<typeof catalogProductImagesList>>, TError = unknown>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductImagesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof catalogProductImagesList>>,
+          TError,
+          Awaited<ReturnType<typeof catalogProductImagesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCatalogProductImagesList<TData = Awaited<ReturnType<typeof catalogProductImagesList>>, TError = unknown>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductImagesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCatalogProductImagesList<TData = Awaited<ReturnType<typeof catalogProductImagesList>>, TError = unknown>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductImagesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCatalogProductImagesListQueryOptions(productId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type catalogProductImagesUploadResponse201 = {
+  data: ProductImage
+  status: 201
+}
+
+export type catalogProductImagesUploadResponseSuccess = (catalogProductImagesUploadResponse201) & {
+  headers: Headers;
+};
+;
+
+export type catalogProductImagesUploadResponse = (catalogProductImagesUploadResponseSuccess)
+
+export const getCatalogProductImagesUploadUrl = (productId: string,) => {
+
+
+
+
+  return `/api/v1/products/${productId}/images/`
+}
+
+export const catalogProductImagesUpload = async (productId: string,
+    imageUploadRequest: ImageUploadRequest, options?: Parameters<typeof apiFetch>[1]): Promise<catalogProductImagesUploadResponse> => {
+    const formData = new FormData();
+formData.append(`file`, imageUploadRequest.file);
+if(imageUploadRequest.alt_text !== undefined) {
+ formData.append(`alt_text`, imageUploadRequest.alt_text);
+ }
+
+  return apiFetch<catalogProductImagesUploadResponse>(getCatalogProductImagesUploadUrl(productId),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getCatalogProductImagesUploadMutationKey = () => ['catalogProductImagesUpload'] as const;
+
+export const getCatalogProductImagesUploadMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesUpload>>, TError,CatalogProductImagesUploadMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesUpload>>, TError,CatalogProductImagesUploadMutationVariables, TContext> => {
+
+const mutationKey = getCatalogProductImagesUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof catalogProductImagesUpload>>, CatalogProductImagesUploadMutationVariables> = (props) => {
+          const {productId,data} = props ?? {};
+
+          return  catalogProductImagesUpload(productId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CatalogProductImagesUploadMutationResult = NonNullable<Awaited<ReturnType<typeof catalogProductImagesUpload>>>
+    export type CatalogProductImagesUploadMutationBody = ImageUploadRequest
+    export type CatalogProductImagesUploadMutationError = unknown
+    export type CatalogProductImagesUploadMutationVariables = {productId: string;data: ImageUploadRequest}
+
+    export const useCatalogProductImagesUpload = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesUpload>>, TError,CatalogProductImagesUploadMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof catalogProductImagesUpload>>,
+        TError,
+        CatalogProductImagesUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCatalogProductImagesUploadMutationOptions(options), queryClient);
+    }
+    export type catalogProductImagesUpdateResponse200 = {
+  data: ProductImage
+  status: 200
+}
+
+export type catalogProductImagesUpdateResponseSuccess = (catalogProductImagesUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type catalogProductImagesUpdateResponse = (catalogProductImagesUpdateResponseSuccess)
+
+export const getCatalogProductImagesUpdateUrl = (productId: string,
+    imageId: string,) => {
+
+
+
+
+  return `/api/v1/products/${productId}/images/${imageId}/`
+}
+
+export const catalogProductImagesUpdate = async (productId: string,
+    imageId: string,
+    patchedImageUpdateRequest?: PatchedImageUpdateRequest, options?: Parameters<typeof apiFetch>[1]): Promise<catalogProductImagesUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<catalogProductImagesUpdateResponse>(getCatalogProductImagesUpdateUrl(productId,imageId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(patchedImageUpdateRequest)
+  }
+);}
+
+
+
+
+
+export const getCatalogProductImagesUpdateMutationKey = () => ['catalogProductImagesUpdate'] as const;
+
+export const getCatalogProductImagesUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesUpdate>>, TError,CatalogProductImagesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesUpdate>>, TError,CatalogProductImagesUpdateMutationVariables, TContext> => {
+
+const mutationKey = getCatalogProductImagesUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof catalogProductImagesUpdate>>, CatalogProductImagesUpdateMutationVariables> = (props) => {
+          const {productId,imageId,data} = props ?? {};
+
+          return  catalogProductImagesUpdate(productId,imageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CatalogProductImagesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof catalogProductImagesUpdate>>>
+    export type CatalogProductImagesUpdateMutationBody = PatchedImageUpdateRequest | undefined
+    export type CatalogProductImagesUpdateMutationError = unknown
+    export type CatalogProductImagesUpdateMutationVariables = {productId: string;imageId: string;data?: PatchedImageUpdateRequest}
+
+    export const useCatalogProductImagesUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesUpdate>>, TError,CatalogProductImagesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof catalogProductImagesUpdate>>,
+        TError,
+        CatalogProductImagesUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCatalogProductImagesUpdateMutationOptions(options), queryClient);
+    }
+    export type catalogProductImagesDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type catalogProductImagesDeleteResponseSuccess = (catalogProductImagesDeleteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type catalogProductImagesDeleteResponse = (catalogProductImagesDeleteResponseSuccess)
+
+export const getCatalogProductImagesDeleteUrl = (productId: string,
+    imageId: string,) => {
+
+
+
+
+  return `/api/v1/products/${productId}/images/${imageId}/`
+}
+
+export const catalogProductImagesDelete = async (productId: string,
+    imageId: string, options?: Parameters<typeof apiFetch>[1]): Promise<catalogProductImagesDeleteResponse> => {
+
+  return apiFetch<catalogProductImagesDeleteResponse>(getCatalogProductImagesDeleteUrl(productId,imageId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getCatalogProductImagesDeleteMutationKey = () => ['catalogProductImagesDelete'] as const;
+
+export const getCatalogProductImagesDeleteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesDelete>>, TError,CatalogProductImagesDeleteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesDelete>>, TError,CatalogProductImagesDeleteMutationVariables, TContext> => {
+
+const mutationKey = getCatalogProductImagesDeleteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof catalogProductImagesDelete>>, CatalogProductImagesDeleteMutationVariables> = (props) => {
+          const {productId,imageId} = props ?? {};
+
+          return  catalogProductImagesDelete(productId,imageId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CatalogProductImagesDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof catalogProductImagesDelete>>>
+
+    export type CatalogProductImagesDeleteMutationError = unknown
+    export type CatalogProductImagesDeleteMutationVariables = {productId: string;imageId: string}
+
+    export const useCatalogProductImagesDelete = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catalogProductImagesDelete>>, TError,CatalogProductImagesDeleteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof catalogProductImagesDelete>>,
+        TError,
+        CatalogProductImagesDeleteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCatalogProductImagesDeleteMutationOptions(options), queryClient);
     }
     export type catalogProductTaxRatesListResponse200 = {
   data: ProductTaxRate[]

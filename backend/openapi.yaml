@@ -1929,6 +1929,109 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/products/{product_id}/images/:
+    get:
+      operationId: catalog_product_images_list
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductImage'
+          description: ''
+    post:
+      operationId: catalog_product_images_upload
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImageUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+  /api/v1/products/{product_id}/images/{image_id}/:
+    patch:
+      operationId: catalog_product_images_update
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedImageUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+    delete:
+      operationId: catalog_product_images_delete
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/products/{product_id}/tax-rates/:
     get:
       operationId: catalog_product_tax_rates_list
@@ -3483,6 +3586,34 @@ components:
       - description
       - gst_rate
       - hsn_prefix
+    ImageUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        alt_text:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - file
+    ImageUrls:
+      type: object
+      properties:
+        thumb:
+          type: string
+          format: uri
+        medium:
+          type: string
+          format: uri
+        large:
+          type: string
+          format: uri
+      required:
+      - large
+      - medium
+      - thumb
     ImpersonationReasonRequest:
       type: object
       properties:
@@ -4391,6 +4522,14 @@ components:
         description:
           type: string
           maxLength: 255
+    PatchedImageUpdateRequest:
+      type: object
+      properties:
+        sort_order:
+          type: integer
+        alt_text:
+          type: string
+          maxLength: 200
     PatchedMeUpdateRequest:
       type: object
       properties:
@@ -4797,6 +4936,11 @@ components:
           items:
             $ref: '#/components/schemas/Barcode'
           readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
         current_rate:
           allOf:
           - $ref: '#/components/schemas/ProductTaxRate'
@@ -4837,6 +4981,7 @@ components:
       - hsn_code
       - hsn_hint
       - id
+      - images
       - is_active
       - min_order_qty
       - mrp
@@ -4851,6 +4996,49 @@ components:
       - unit
       - updated_at
       - warnings
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ProductImageStatusEnum'
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+        alt_text:
+          type: string
+          readOnly: true
+        urls:
+          allOf:
+          - $ref: '#/components/schemas/ImageUrls'
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - alt_text
+      - created_at
+      - id
+      - sort_order
+      - status
+      - urls
+    ProductImageStatusEnum:
+      enum:
+      - PROCESSING
+      - READY
+      - FAILED
+      type: string
+      description: |-
+        * `PROCESSING` - Processing
+        * `READY` - Ready
+        * `FAILED` - Failed
     ProductList:
       type: object
       properties:
@@ -4903,6 +5091,11 @@ components:
         show_in_shop:
           type: boolean
           readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
       required:
       - base_price
       - brand
@@ -4915,6 +5108,7 @@ components:
       - mrp
       - name
       - show_in_shop
+      - thumbnail_url
       - unit
     ProductTaxRate:
       type: object

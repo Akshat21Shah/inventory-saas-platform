@@ -403,3 +403,26 @@ def test_category_filter_covers_descendants(tenant_a):
         mid = Category.objects.create(name="B", slug="b", parent=top, level=2)
         low = Category.objects.create(name="C", slug="c", parent=mid, level=3)
         assert selectors.descendant_ids(top.pk) == {top.pk, mid.pk, low.pk}
+
+
+def test_service_accepts_model_defaults_for_quantities(tenant_a):
+    """Imports and the seed call the service without every field; defaults must validate."""
+    from apps.accounts.models import User
+    from apps.catalog import services
+
+    owner = User.objects.create_user(
+        "svc@example.com", "a-strong-password", user_type=User.UserType.STAFF
+    )
+    with tenant_context(tenant_a.pk):
+        product, _ = services.create_product(
+            {
+                "code": "SVC-1",
+                "name": "Service default",
+                "unit_id": _unit(tenant_a).pk,
+                "hsn_code": "3401",
+                "base_price": Decimal("5"),
+            },
+            gst_rate=Decimal("18"),
+            by=owner,
+        )
+        assert product.min_order_qty == Decimal("1")

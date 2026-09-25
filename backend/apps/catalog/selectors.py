@@ -8,7 +8,7 @@ from uuid import UUID
 
 from django.db.models import Prefetch, Q, QuerySet
 
-from apps.catalog.models import Brand, Category, Product, ProductTaxRate, Unit
+from apps.catalog.models import Brand, Category, Product, ProductImage, ProductTaxRate, Unit
 from apps.platform.models import HsnRateHint
 from apps.platform.selectors import get_platform_setting
 from common.dates import today_ist
@@ -93,12 +93,24 @@ def products(filters: ProductFilters | None = None) -> QuerySet[Product]:
     return qs
 
 
+def product_list(filters: ProductFilters | None = None) -> QuerySet[Product]:
+    """``products`` plus each product's ready images in order (for list thumbnails)."""
+    return products(filters).prefetch_related(
+        Prefetch(
+            "images",
+            queryset=ProductImage.objects.filter(status=ProductImage.Status.READY).order_by(
+                "sort_order", "created_at"
+            ),
+        )
+    )
+
+
 def product(product_id: UUID) -> Product | None:
     found: Product | None = (
         products()
         .prefetch_related(
             "barcodes",
-            "images",
+            Prefetch("images", queryset=ProductImage.objects.order_by("sort_order", "created_at")),
             Prefetch("tax_rates", queryset=ProductTaxRate.objects.select_related("cess_type")),
         )
         .filter(pk=product_id)

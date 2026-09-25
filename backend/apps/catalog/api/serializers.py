@@ -7,7 +7,8 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.catalog import selectors
-from apps.catalog.models import Brand, Category, Product, ProductTaxRate, Unit
+from apps.catalog.images import variant_urls
+from apps.catalog.models import Brand, Category, Product, ProductImage, ProductTaxRate, Unit
 from common.dates import today_ist
 
 
@@ -123,11 +124,52 @@ class ProductTaxRateSerializer(serializers.ModelSerializer[ProductTaxRate]):
         return "SCHEDULED" if row.effective_from > self.context["today"] else "PAST"
 
 
+class ImageUrlsSerializer(serializers.Serializer[Any]):
+    thumb = serializers.URLField()
+    medium = serializers.URLField()
+    large = serializers.URLField()
+
+
+class ProductImageSerializer(serializers.ModelSerializer[ProductImage]):
+    urls = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = ("id", "status", "sort_order", "alt_text", "urls", "created_at")
+        read_only_fields = fields
+
+    @extend_schema_field(ImageUrlsSerializer(allow_null=True))
+    def get_urls(self, image: ProductImage) -> dict[str, str] | None:
+        """Stable, long-cached URLs; present only once the resized versions are ready."""
+        if image.status != ProductImage.Status.READY:
+            return None
+        return variant_urls(image.variants)
+
+
+class ImageUploadSerializer(serializers.Serializer[Any]):
+    file = serializers.FileField()
+    alt_text = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
+class ImageUpdateSerializer(serializers.Serializer[Any]):
+    sort_order = serializers.IntegerField(required=False)
+    alt_text = serializers.CharField(max_length=200, required=False, allow_blank=True)
+
+
+def first_ready_thumb(product: Product) -> str | None:
+    """From prefetched images (list views prefetch the ready ones in order)."""
+    for image in product.images.all():
+        if image.status == ProductImage.Status.READY and image.variants.get("thumb"):
+            return variant_urls({"thumb": image.variants["thumb"]})["thumb"]
+    return None
+
+
 class ProductListSerializer(serializers.ModelSerializer[Product]):
     category = RefSerializer(allow_null=True, read_only=True)
     brand = RefSerializer(allow_null=True, read_only=True)
     unit = serializers.CharField(source="unit.code", read_only=True)
     gst_rate = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -144,8 +186,13 @@ class ProductListSerializer(serializers.ModelSerializer[Product]):
             "base_price",
             "is_active",
             "show_in_shop",
+            "thumbnail_url",
         )
         read_only_fields = fields
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_thumbnail_url(self, product: Product) -> str | None:
+        return first_ready_thumb(product)
 
     @extend_schema_field(rate_field(allow_null=True))
     def get_gst_rate(self, product: Product) -> str | None:
@@ -177,6 +224,7 @@ class ProductDetailSerializer(serializers.ModelSerializer[Product]):
     unit = UnitSerializer(read_only=True)
     pack_unit = UnitSerializer(read_only=True, allow_null=True)
     barcodes = BarcodeSerializer(many=True, read_only=True)
+    images = ProductImageSerializer(many=True, read_only=True)
     current_rate = serializers.SerializerMethodField()
     tax_rates = serializers.SerializerMethodField()
     hsn_hint = serializers.SerializerMethodField()
@@ -204,6 +252,7 @@ class ProductDetailSerializer(serializers.ModelSerializer[Product]):
             "show_in_shop",
             "is_active",
             "barcodes",
+            "images",
             "current_rate",
             "tax_rates",
             "hsn_hint",

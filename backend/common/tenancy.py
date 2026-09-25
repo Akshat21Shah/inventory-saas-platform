@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from uuid import UUID
 
-from django.db import DatabaseError, connections
+from django.db import DatabaseError, connections, transaction
 
 from common.context import tenant_id_var
 from common.error_codes import ErrorCode
@@ -81,3 +81,12 @@ def tenant_context(tenant_id: UUID) -> Iterator[None]:
                 # SET LOCAL anyway. Never mask the original error with the restore failure.
                 if not failed:
                     raise
+
+
+@contextmanager
+def tenant_transaction(tenant_id: UUID) -> Iterator[None]:
+    """A transaction with the RLS tenant set. Use this, not ``tenant_context`` alone, to open a
+    transaction inside a non-atomic task: ``tenant_context`` only reaches PostgreSQL when a
+    transaction is already open, and without it RLS hides every tenant row from ``app_user``."""
+    with transaction.atomic(), tenant_context(tenant_id):
+        yield

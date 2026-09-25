@@ -29,4 +29,6 @@ export interface ProductList {
   readonly base_price: string;
   readonly is_active: boolean;
   readonly show_in_shop: boolean;
+  /** @nullable */
+  readonly thumbnail_url: string | null;
 }
