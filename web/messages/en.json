@@ -175,7 +175,7 @@
   "status": {
     "PLACED": "Placed",
     "ON_HOLD": "On hold",
-    "ACCEPTED": "Accepted",
+    "ACCEPTED": "Joined",
     "PACKED": "Packed",
     "DISPATCHED": "Dispatched",
     "DELIVERED": "Delivered",
@@ -194,7 +194,9 @@
     "ONBOARDING": "Onboarding",
     "INACTIVE": "Inactive",
     "ENDED": "Ended",
-    "EXPIRED": "Expired"
+    "EXPIRED": "Expired",
+    "PENDING": "Waiting",
+    "REVOKED": "Cancelled"
   },
   "table": {
     "emptyTitle": "No records yet",
@@ -648,7 +650,28 @@
     },
     "title": "Audit log",
     "platformBody": "Every sensitive action across all distributors, including support sessions.",
-    "tenantBody": "Who changed what in your business, including any support sessions by our team."
+    "tenantBody": "Who changed what in your business, including any support sessions by our team.",
+    "targets": {
+      "tenant": "Business",
+      "tenantbranding": "Branding",
+      "tenantprofile": "Business details",
+      "tenantsetting": "Settings",
+      "user": "User account",
+      "membership": "Staff member",
+      "invitation": "Invitation",
+      "role": "Role",
+      "plan": "Plan",
+      "subscription": "Plan",
+      "featureflag": "Module",
+      "tenantfeature": "Module",
+      "taxrate": "GST rate",
+      "cesstype": "Cess type",
+      "hsnratehint": "HSN hint",
+      "impersonationsession": "Support session",
+      "platformsetting": "Platform settings",
+      "retailer": "Shop",
+      "other": "Record"
+    }
   },
   "platform": {
     "dashboard": {
@@ -922,7 +945,9 @@
     "useRecoveryCode": "Use a recovery code instead",
     "useAppCode": "Use a code from the app",
     "cancel": "Cancel",
-    "blockedInSupport": "Password and two-step verification cannot be changed during a support session."
+    "blockedInSupport": "Password and two-step verification cannot be changed during a support session.",
+    "signOut": "Sign out",
+    "bodyShop": "Your name and the language of the app."
   },
   "distributorSettings": {
     "nav": {
@@ -1030,6 +1055,76 @@
       "managedByPlatform": "Set by the platform. Contact support to change it.",
       "turnedOn": "Module switched on.",
       "turnedOff": "Module switched off."
+    }
+  },
+  "staff": {
+    "title": "Staff",
+    "body": "People who work in your business and what they can do.",
+    "invite": "Invite staff",
+    "inviteTitle": "Invite a staff member",
+    "inviteBody": "They get an email with a link to set their password. The link works for 7 days.",
+    "sendInvite": "Send invitation",
+    "invited": "Invitation sent to {email}.",
+    "inviteNote": "Invitation emails come from the platform on your behalf.",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "roleFor": "Role for {name}",
+    "twoStep": "2-step",
+    "mfaOn": "On",
+    "mfaOff": "Off",
+    "lastSignIn": "Last sign-in",
+    "never": "Never",
+    "status": "Status",
+    "you": "you",
+    "noStaff": "No staff yet. Invite your team.",
+    "roleChanged": "Role changed.",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "deactivateTitle": "Deactivate {name}?",
+    "deactivateBody": "They lose access to your business at once and can't sign in to it until reactivated. Their past actions stay in the audit log.",
+    "reactivateTitle": "Reactivate {name}?",
+    "deactivated": "Staff member deactivated.",
+    "reactivated": "Staff member reactivated.",
+    "invitations": "Invitations",
+    "sent": "Sent",
+    "resend": "Resend",
+    "resendTitle": "Send a new invitation to {email}?",
+    "resendBody": "The earlier link stops working.",
+    "resent": "A new invitation was sent.",
+    "revoke": "Cancel invitation",
+    "revokeTitle": "Cancel the invitation for {email}?",
+    "revoked": "Invitation cancelled.",
+    "rolesTitle": "Roles",
+    "rolesBody": "What each role can do. Custom roles come later.",
+    "permission": "Can…",
+    "allowed": "Allowed",
+    "notAllowed": "Not allowed",
+    "roles": {
+      "OWNER": "Owner",
+      "MANAGER": "Manager",
+      "SALES": "Sales",
+      "WAREHOUSE": "Warehouse",
+      "ACCOUNTS": "Accounts"
+    },
+    "modules": {
+      "settings": "Settings",
+      "branding": "Branding",
+      "staff": "Staff",
+      "audit": "Audit",
+      "products": "Products",
+      "pricing": "Pricing",
+      "retailers": "Shops",
+      "credit": "Credit",
+      "stock": "Stock",
+      "orders": "Orders",
+      "invoices": "Invoices",
+      "compliance": "GST compliance",
+      "payments": "Payments",
+      "ledger": "Ledger",
+      "reports": "Reports",
+      "notifications": "Notifications",
+      "dashboard": "Dashboard"
     }
   }
 }

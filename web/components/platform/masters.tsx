@@ -44,7 +44,12 @@ import { ApiError } from "@/lib/api/errors";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 
-import { FieldsDialog, intOrNull, type FieldSpec, type FieldValue } from "./fields-dialog";
+import {
+  FieldsDialog,
+  intOrNull,
+  type FieldSpec,
+  type FieldValue,
+} from "@/components/shared/fields-dialog";
 
 const s = (value: FieldValue | undefined) => String(value ?? "").trim();
 

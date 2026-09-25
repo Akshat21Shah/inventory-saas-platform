@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound, ShieldCheck } from "lucide-react";
+import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ import {
 } from "@/lib/api/generated/endpoints/auth/auth";
 import type { MfaSetupResponse, PreferredLanguageEnum } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { formatIndianMobile } from "@/lib/utils";
 
 import { useAuth } from "./auth-provider";
 import { OtpInput } from "./otp-input";
@@ -103,7 +104,7 @@ function Profile() {
           </Select>
         </FormField>
         <p className="text-muted-foreground text-sm sm:col-span-2">
-          {t("email")}: {me?.email ?? me?.phone ?? "—"}
+          {t("email")}: {me?.email ?? (me?.phone ? formatIndianMobile(me.phone) : "—")}
         </p>
         <div className="sm:col-span-2">
           <Button type="submit" disabled={busy} className="min-h-10">
@@ -432,14 +433,14 @@ function TwoStep() {
 /** "My account": profile, password and two-step verification (staff and super admins). */
 export function AccountSecurity() {
   const t = useTranslations("account");
-  const { me } = useAuth();
+  const { me, signOut } = useAuth();
   const staff = me?.user_type === "STAFF" || me?.user_type === "PLATFORM";
   // Password and 2FA are never changeable during a support session (ADR-029); the server
   // refuses too.
   const supportSession = Boolean(me?.impersonation);
   return (
     <>
-      <PageHeader title={t("title")} description={t("body")} />
+      <PageHeader title={t("title")} description={staff ? t("body") : t("bodyShop")} />
       <div className="space-y-6">
         <Profile />
         {supportSession ? (
@@ -447,6 +448,15 @@ export function AccountSecurity() {
         ) : null}
         {staff && !supportSession ? <PasswordChange /> : null}
         {staff && !supportSession ? <TwoStep /> : null}
+        {/* Phones have no sidebar account menu in the shop, so sign-out lives here too. */}
+        <Button
+          variant="outline"
+          className="min-h-11 w-full sm:w-auto"
+          onClick={() => void signOut()}
+        >
+          <LogOut aria-hidden />
+          {t("signOut")}
+        </Button>
       </div>
     </>
   );

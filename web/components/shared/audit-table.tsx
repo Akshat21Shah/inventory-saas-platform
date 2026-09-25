@@ -71,6 +71,17 @@ function actionLabel(t: ReturnType<typeof useTranslations>, action: string): str
   return t.has(`actions.${action}`) ? t(`actions.${action}`) : action;
 }
 
+const UUID_IN_TEXT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/** What was changed, in plain words: internal ids are replaced by the kind of record. */
+function targetLabel(t: ReturnType<typeof useTranslations>, row: AuditLog): string {
+  const repr = row.target_repr ?? "";
+  if (repr && !UUID_IN_TEXT.test(repr)) return repr;
+  const kind = (row.target_type ?? "").split(".").pop() ?? "";
+  if (kind && t.has(`targets.${kind}`)) return t(`targets.${kind}`);
+  return kind ? t("targets.other") : "—";
+}
+
 interface AuditTableProps {
   rows: AuditLog[];
   isLoading: boolean;
@@ -184,7 +195,7 @@ export function AuditTable({
                         </span>
                       ) : null}
                     </TableCell>
-                    <TableCell className="max-w-64 truncate">{row.target_repr || "—"}</TableCell>
+                    <TableCell className="max-w-64 truncate">{targetLabel(t, row)}</TableCell>
                   </TableRow>
                   {expanded ? (
                     <TableRow>

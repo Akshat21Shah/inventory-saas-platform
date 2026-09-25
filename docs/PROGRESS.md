@@ -138,6 +138,12 @@
       - Branding: name and colour with a live preview of the shop sign-in (buttons, badges, link), logo / favicon / app icon upload and removal. A saved colour applies at once in the current tab; the server copy is cached for a minute.
       - Policies: one page per registry group (tax, invoicing, orders, stock, credit & payments, security) built from the settings registry, with reset to default; Modules page (only the ones the platform lets tenants switch).
       - Schema fix: asset delete and setting reset return 200 with a body (they were documented as 204).
+    - Frontend: staff, roles, audit and accounts (commit 16).
+      - Staff: list with inline role change, 2FA status, last sign-in, deactivate/reactivate after confirmation (never yourself; the last-owner rule is the server's); invite with a role (server field errors inline); invitations with resend and cancel.
+      - Roles: read-only matrix of every tenant permission (grouped by area) against every role.
+      - `/manage/audit` (owners): the tenant's audit log, support sessions included; record ids are shown as the kind of record, never raw ids.
+      - `/manage/account` and `/shop/account` reuse "My account"; shop owners get profile and sign-out only.
+      - `DataTable` now calls cell templates as functions instead of mounting them as components, so inline column definitions no longer remount cells (and in-cell controls keep focus and state) on every render.
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
