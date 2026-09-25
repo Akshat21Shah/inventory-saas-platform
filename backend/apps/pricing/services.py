@@ -13,7 +13,8 @@ from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.catalog import selectors as catalog
 from apps.catalog.models import Product
-from apps.catalog.services import InUse
+from apps.catalog.services import InUse, Warning
+from apps.pricing import free_goods
 from apps.pricing.models import DiscountRule, DiscountSlab, PriceList, PriceListItem, RetailerPrice
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
@@ -179,7 +180,7 @@ def save_retailer_price(
     price: Decimal,
     note: str = "",
     by: User,
-) -> RetailerPrice:
+) -> tuple[RetailerPrice, list[Warning]]:
     if price < 0:
         raise InvalidFields({"price": ["Enter 0 or more."]})
     if price_id is None:
@@ -223,7 +224,7 @@ def save_retailer_price(
                 row.product.code: [_money(old) if old is not None else None, _money(row.price)]
             },
         )
-    return row
+    return row, free_goods.special_price_warnings(row)
 
 
 @transaction.atomic
@@ -302,7 +303,7 @@ def _check_targets(rule: DiscountRule, errors: dict[str, list[str]]) -> None:
 @transaction.atomic
 def save_discount_rule(
     rule_id: UUID | None, data: dict[str, Any], slabs: list[SlabInput] | None, *, by: User
-) -> DiscountRule:
+) -> tuple[DiscountRule, list[Warning]]:
     """``slabs=None`` keeps the rule's slabs; a list replaces them ([] removes them)."""
     if rule_id is None:
         rule = DiscountRule(created_by=by)
@@ -376,7 +377,7 @@ def save_discount_rule(
         target_repr=rule.name,
         changes=changes,
     )
-    return rule
+    return rule, free_goods.rule_warnings(rule)
 
 
 @transaction.atomic

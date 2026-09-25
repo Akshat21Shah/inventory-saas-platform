@@ -17,12 +17,14 @@ class ShopDiscountSerializer(serializers.Serializer[Any]):
     discount_type = serializers.ChoiceField(choices=DiscountRule.Type.choices)
     value = money(help_text="The percentage, or rupees off each unit.")
     slab_min_qty = qty(allow_null=True, help_text="Set when a quantity slab gave the discount.")
+    amount = money(help_text="The discount on the quoted quantity (``qty`` of the price).")
 
 
 class ShopPriceSerializer(serializers.Serializer[Any]):
     qty = qty(help_text="The quantity this price is for (the minimum order quantity).")
     unit_price = money()
     discount = ShopDiscountSerializer(allow_null=True)
+    discount_per_unit = money(help_text="Rupees off each unit; 0.00 without a discount.")
     net_unit_price = money(help_text="After the discount; for display only.")
     gst_rate = serializers.DecimalField(max_digits=6, decimal_places=3)
     prices_include_gst = serializers.BooleanField()

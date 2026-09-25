@@ -7,6 +7,7 @@
  */
 import type { ProductRef } from './productRef';
 import type { ShopRef } from './shopRef';
+import type { Warning } from './warning';
 
 export interface RetailerPrice {
   readonly id: string;
@@ -18,4 +19,5 @@ export interface RetailerPrice {
   readonly price: string;
   readonly note: string;
   readonly updated_at: string;
+  readonly warnings: readonly Warning[];
 }

@@ -52,6 +52,16 @@ def descendant_ids(category_id: UUID) -> set[UUID]:
     return found
 
 
+def ancestor_ids(category_id: UUID) -> list[UUID]:
+    """The category and the categories above it (at most 3 levels)."""
+    found: list[UUID] = []
+    current: UUID | None = category_id
+    while current is not None and len(found) < 3:
+        found.append(current)
+        current = Category.objects.filter(pk=current).values_list("parent_id", flat=True).first()
+    return found
+
+
 def brands() -> QuerySet[Brand]:
     return Brand.objects.filter(deleted_at__isnull=True)
 

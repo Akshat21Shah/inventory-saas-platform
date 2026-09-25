@@ -4813,6 +4813,11 @@ components:
           type: string
           format: date-time
           readOnly: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
       required:
       - audience_type
       - brand
@@ -4831,6 +4836,7 @@ components:
       - valid_from
       - valid_to
       - value
+      - warnings
     DiscountRuleWriteRequest:
       type: object
       properties:
@@ -7889,6 +7895,11 @@ components:
           type: string
           format: date-time
           readOnly: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
       required:
       - base_price
       - id
@@ -7897,6 +7908,7 @@ components:
       - product
       - retailer
       - updated_at
+      - warnings
     RetailerPriceWriteRequest:
       type: object
       properties:
@@ -8282,7 +8294,13 @@ components:
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           nullable: true
           description: Set when a quantity slab gave the discount.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: The discount on the quoted quantity (``qty`` of the price).
       required:
+      - amount
       - discount_type
       - slab_min_qty
       - value
@@ -8318,6 +8336,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/ShopDiscount'
           nullable: true
+        discount_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Rupees off each unit; 0.00 without a discount.
         net_unit_price:
           type: string
           format: decimal
@@ -8331,6 +8354,7 @@ components:
           type: boolean
       required:
       - discount
+      - discount_per_unit
       - gst_rate
       - net_unit_price
       - prices_include_gst

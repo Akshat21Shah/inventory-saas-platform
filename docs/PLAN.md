@@ -1515,6 +1515,13 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 11.7 | Offline caching, retry, connectivity UX | M |
 | 11.8 | Play Store release checklist + build | S |
 
+### Backlog (not scheduled)
+Requested features with no phase yet. Each needs a spec and an ADR before it is scheduled.
+
+| Item | Notes |
+|---|---|
+| Free-goods schemes ("buy X get Y free") | Until then, a discount rule or special price that brings a net price to zero hides the product from those shops (ADR-034). Saving such a rule or price shows the `FREE_GOODS` warning (ADR-036). |
+
 ---
 
 ## 9. Settings catalogue

@@ -12,6 +12,7 @@ import type { Ref } from './ref';
 import type { ScopeTypeEnum } from './scopeTypeEnum';
 import type { ShopRef } from './shopRef';
 import type { Slab } from './slab';
+import type { Warning } from './warning';
 
 export interface DiscountRule {
   readonly id: string;
@@ -34,4 +35,5 @@ export interface DiscountRule {
   readonly slabs: readonly Slab[];
   readonly created_at: string;
   readonly updated_at: string;
+  readonly warnings: readonly Warning[];
 }

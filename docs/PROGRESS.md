@@ -204,6 +204,11 @@
     - A page costs a fixed number of queries.
     - Isolation tests: the other distributor's shops, staff, and staff routes. Shops on hold follow `retailers.blocked_can_sign_in`.
   - **Backend checkpoint reached.**
+  - Checkpoint follow-ups (approved 2026-09-25):
+    - The shop price now includes the discount amount and `discount_per_unit`, alongside the MRP.
+    - Free-goods warning (`FREE_GOODS`) when saving a discount rule or special price that makes products free. Added to ADR-036, and free-goods schemes are on the PLAN backlog.
+    - The search performance test uses the median of 5 runs (limit still 200 ms).
+    - New test: MRP changes are highlighted in the import change preview.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.

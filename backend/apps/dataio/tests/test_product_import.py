@@ -427,6 +427,28 @@ def test_update_import_previews_old_and_new_values_and_only_changes_given_cells(
     assert price_change.changes == {"base_price": ["9.00", "9.50"]}  # audited like a manual edit
 
 
+def test_update_preview_highlights_price_and_mrp_changes_only(owner, run):
+    _seed(owner, run)
+    job = upload(
+        owner,
+        run,
+        xlsx(
+            [
+                ["Product code", "Price", "MRP", "Product name"],
+                ["PG-100", "", "11.00", ""],  # MRP only
+                ["MG-70", "13.00", "15.00", "Maggi 70g pack"],  # price, MRP and name
+            ]
+        ),
+        mode="ADD_OR_UPDATE",
+    )
+    by_key = {row["key"]: row for row in job["changes"]}
+    assert by_key["PG-100"]["changes"] == {"MRP": ["10.00", "11.00"]}
+    assert by_key["PG-100"]["highlight"] == ["MRP"]
+    assert by_key["MG-70"]["changes"]["Product name"] == ["Maggi 70g", "Maggi 70g pack"]
+    assert sorted(by_key["MG-70"]["highlight"]) == ["MRP", "Price"]  # the name isn't highlighted
+    assert job["counts"]["changes"] == 2
+
+
 def test_update_import_never_changes_gst_silently(owner, run):
     _seed(owner, run)
     job = upload(

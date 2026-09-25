@@ -69,6 +69,11 @@ class PriceResult:
     on: date
 
     @property
+    def discount_per_unit(self) -> Decimal:
+        """Unit price minus net unit price (informational, like ``net_unit_price``)."""
+        return self.unit_price - self.net_unit_price
+
+    @property
     def valid(self) -> bool:
         """A shop sees a product only with a real price (ADR-034)."""
         return self.net_unit_price > 0

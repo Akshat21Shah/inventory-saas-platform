@@ -20,4 +20,9 @@ export interface ShopDiscount {
      * @pattern ^-?\d{0,11}(?:\.\d{0,3})?$
      */
   slab_min_qty: string | null;
+  /**
+     * The discount on the quoted quantity (``qty`` of the price).
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  amount: string;
 }

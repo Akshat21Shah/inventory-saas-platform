@@ -209,7 +209,7 @@ class RetailerPriceListCreateView(PricingView, generics.ListAPIView[RetailerPric
         v = data.validated_data
         if retailer_for(_user(request), v["retailer"]) is None:
             v["retailer"] = None  # another tenant's or a hidden shop: "choose an existing shop"
-        row = services.save_retailer_price(
+        row, warnings = services.save_retailer_price(
             None,
             retailer_id=v["retailer"],
             product_id=v["product"],
@@ -217,7 +217,9 @@ class RetailerPriceListCreateView(PricingView, generics.ListAPIView[RetailerPric
             note=v["note"],
             by=_user(request),
         )
-        return Response(s.RetailerPriceSerializer(row).data, status=201)
+        return Response(
+            s.RetailerPriceSerializer(row, context={"warnings": warnings}).data, status=201
+        )
 
 
 class RetailerPriceDetailView(PricingView):
@@ -237,13 +239,13 @@ class RetailerPriceDetailView(PricingView):
         self._row(request, price_id)
         data = s.RetailerPriceUpdateSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        row = services.save_retailer_price(
+        row, warnings = services.save_retailer_price(
             price_id,
             price=data.validated_data["price"],
             note=data.validated_data["note"],
             by=_user(request),
         )
-        return Response(s.RetailerPriceSerializer(row).data)
+        return Response(s.RetailerPriceSerializer(row, context={"warnings": warnings}).data)
 
     @extend_schema(
         request=None, responses={204: None}, operation_id="retailer_prices_delete", tags=["pricing"]
@@ -288,14 +290,15 @@ class DiscountRuleListCreateView(PricingView, generics.ListAPIView[DiscountRule]
     def post(self, request: Request) -> Response:
         data = s.DiscountRuleWriteSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        rule = services.save_discount_rule(
+        rule, warnings = services.save_discount_rule(
             None,
             s.rule_fields(dict(data.validated_data)),
             _slabs(data.validated_data),
             by=_user(request),
         )
+        saved = selectors.discount_rules().get(pk=rule.pk)
         return Response(
-            s.DiscountRuleSerializer(selectors.discount_rules().get(pk=rule.pk)).data, status=201
+            s.DiscountRuleSerializer(saved, context={"warnings": warnings}).data, status=201
         )
 
 
@@ -319,10 +322,11 @@ class DiscountRuleDetailView(PricingView):
         data = s.DiscountRuleWriteSerializer(data=request.data, partial=True)
         data.is_valid(raise_exception=True)
         slabs = _slabs(data.validated_data) if "slabs" in request.data else None
-        services.save_discount_rule(
+        _, warnings = services.save_discount_rule(
             rule_id, s.rule_fields(dict(data.validated_data)), slabs, by=_user(request)
         )
-        return Response(s.DiscountRuleSerializer(selectors.discount_rules().get(pk=rule_id)).data)
+        saved = selectors.discount_rules().get(pk=rule_id)
+        return Response(s.DiscountRuleSerializer(saved, context={"warnings": warnings}).data)
 
     @extend_schema(
         request=None, responses={204: None}, operation_id="discount_rules_delete", tags=["pricing"]

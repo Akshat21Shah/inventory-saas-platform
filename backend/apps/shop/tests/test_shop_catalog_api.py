@@ -149,6 +149,7 @@ def test_what_a_shop_sees_and_isolation(tenant_a, tenant_b, catalog):
         "qty": "1.000",
         "unit_price": "10.00",
         "discount": None,
+        "discount_per_unit": "0.00",
         "net_unit_price": "10.00",
         "gst_rate": "18.000",
         "prices_include_gst": False,
@@ -217,8 +218,18 @@ def test_detail_with_images_and_slab_hints(tenant_a, catalog):
         "6.000",
         "12.00",
     )
-    assert juice["price"]["discount"]["value"] == "1.00"  # the 3+ slab applies at 6
-    assert juice["price"]["net_unit_price"] == "9.90"
+    assert juice["mrp"] == "12.00"
+    assert juice["price"]["unit_price"] == "10.00"
+    assert juice["price"]["discount"] == {  # the 3+ slab applies at 6
+        "discount_type": "PERCENT",
+        "value": "1.00",
+        "slab_min_qty": "3.000",
+        "amount": "0.60",
+    }
+    assert (juice["price"]["discount_per_unit"], juice["price"]["net_unit_price"]) == (
+        "0.10",
+        "9.90",
+    )
     assert juice["slab_hints"] == [
         {"min_qty": "24.000", "net_unit_price": "9.50"},
         {"min_qty": "48.000", "net_unit_price": "9.00"},

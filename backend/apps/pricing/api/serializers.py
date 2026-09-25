@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.catalog.api.serializers import RefSerializer
+from apps.catalog.api.serializers import RefSerializer, WarningSerializer
 from apps.pricing.models import DiscountRule, DiscountSlab, PriceList, PriceListItem, RetailerPrice
 
 
@@ -76,8 +77,27 @@ class RetailerPriceSerializer(serializers.ModelSerializer[RetailerPrice]):
 
     class Meta:
         model = RetailerPrice
-        fields = ("id", "retailer", "product", "base_price", "price", "note", "updated_at")
+        fields = (
+            "id",
+            "retailer",
+            "product",
+            "base_price",
+            "price",
+            "note",
+            "updated_at",
+            "warnings",
+        )
         read_only_fields = fields
+
+    warnings = serializers.SerializerMethodField()
+
+    @extend_schema_field(WarningSerializer(many=True))
+    def get_warnings(self, obj: Any) -> list[Any]:
+        """Only after a save (e.g. FREE_GOODS); empty when reading."""
+        return [
+            {"code": w.code, "message": w.message, "details": w.details}
+            for w in self.context.get("warnings", [])
+        ]
 
 
 class RetailerPriceWriteSerializer(serializers.Serializer[Any]):
@@ -131,8 +151,19 @@ class DiscountRuleSerializer(serializers.ModelSerializer[DiscountRule]):
             "slabs",
             "created_at",
             "updated_at",
+            "warnings",
         )
         read_only_fields = fields
+
+    warnings = serializers.SerializerMethodField()
+
+    @extend_schema_field(WarningSerializer(many=True))
+    def get_warnings(self, obj: Any) -> list[Any]:
+        """Only after a save (e.g. FREE_GOODS); empty when reading."""
+        return [
+            {"code": w.code, "message": w.message, "details": w.details}
+            for w in self.context.get("warnings", [])
+        ]
 
 
 class SlabInputSerializer(serializers.Serializer[Any]):

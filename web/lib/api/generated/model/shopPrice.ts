@@ -17,6 +17,11 @@ export interface ShopPrice {
   unit_price: string;
   discount: ShopDiscount | null;
   /**
+     * Rupees off each unit; 0.00 without a discount.
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  discount_per_unit: string;
+  /**
      * After the discount; for display only.
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
      */
