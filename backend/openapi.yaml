@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Inventory Platform API
+  version: 1.0.0
+  description: Multi-tenant B2B inventory & ordering platform. All money values are
+    decimal strings.
+paths:
+  /api/v1/meta/:
+    get:
+      operationId: meta_retrieve
+      tags:
+      - meta
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meta'
+          description: ''
+components:
+  schemas:
+    Meta:
+      type: object
+      properties:
+        api_version:
+          type: string
+        environment:
+          type: string
+        platform_domain:
+          type: string
+        display_time_zone:
+          type: string
+      required:
+      - api_version
+      - display_time_zone
+      - environment
+      - platform_domain

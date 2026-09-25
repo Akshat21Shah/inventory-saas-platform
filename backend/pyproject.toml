@@ -1,0 +1,83 @@
+[project]
+name = "inventory-platform-backend"
+version = "0.1.0"
+description = "Multi-tenant B2B inventory & ordering platform — backend"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<6",
+    "djangorestframework>=3.16",
+    "drf-spectacular>=0.28",
+    "djangorestframework-simplejwt>=5.5",
+    "django-environ>=0.12",
+    "django-cors-headers>=4.7",
+    "django-filter>=25.1",
+    "celery[redis]>=5.5",
+    "redis>=5.2",
+    "channels>=4.2",
+    "channels-redis>=4.2",
+    "uvicorn[standard]>=0.34",
+    "psycopg[binary]>=3.2",
+    "python-json-logger>=3.3",
+    "sentry-sdk>=2.25",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.11",
+    "pytest-cov>=6.1",
+    "factory-boy>=3.3",
+    "ruff>=0.11",
+    "mypy>=1.15",
+    "django-stubs[compatible-mypy]>=5.2",
+    "djangorestframework-stubs[compatible-mypy]>=3.16",
+    "celery-types>=0.23",
+    "pre-commit>=4.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["**/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "S", "C4", "SIM", "RUF", "TID"]
+ignore = ["S101", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106", "S311"]
+"config/settings/*.py" = ["F405", "F403"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"platform".msg = "Ambiguous with apps.platform (ADR-001): use `import platform as stdlib_platform` only outside apps/, or import apps.platform explicitly."
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+strict = true
+warn_unused_ignores = true
+exclude = ["migrations/", "\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["*.tests.*", "tests.*", "conftest"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers"
+markers = [
+    "concurrency: tests that use real concurrent DB transactions (transaction=True)",
+]

@@ -26,3 +26,14 @@ coverage/
 # Local data
 media/
 *.log
+
+# Build / test artefacts
+backend/staticfiles/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+celerybeat-schedule*
+
+# Claude Code local settings
+.claude/settings.local.json

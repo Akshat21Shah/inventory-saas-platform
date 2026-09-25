@@ -117,10 +117,29 @@ web/
 ## 8. Commands (keep this section updated as the project evolves)
 
 ```
-make up          # docker compose up
-make migrate     # run migrations
-make test        # backend + frontend tests
-make lint        # ruff, mypy, eslint, tsc
-make api-client  # export OpenAPI schema and regenerate web/lib/api
-make seed        # load demo data: 1 super admin, 2 distributors, 20 retailers, 200 products
+make setup       # local toolchains: backend/.venv (uv sync) + web/node_modules (npm ci)
+make up          # docker compose up: postgres, redis, mailpit, s3 (SeaweedFS), migrate, backend, worker, beat, web
+make down        # stop the stack            make logs / make ps   # logs / status
+make db-up       # only postgres + redis (for host-run tests)
+make migrate     # run migrations (as the schema-owner DB role)
+make makemigrations
+make test        # backend (pytest, needs postgres) + frontend (vitest)
+make e2e         # Playwright (desktop + 360px)
+make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
+make fmt         # auto-format backend + frontend
+make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
+make check-schema # fail if backend/openapi.yaml is stale
+make seed        # demo data (Phase 0: super admin + 2 demo tenants; full set from Phase 2)
 ```
+
+URLs in dev:
+- web: http://localhost:3000 (tenant: http://{slug}.localhost:3000; admin: http://admin.localhost:3000)
+- API docs: http://localhost:8000/api/v1/docs/
+- health: http://localhost:8000/health/ready
+- mailpit: http://localhost:8025
+- S3: http://localhost:8333
+
+Database roles:
+- `app_user` is the runtime role, with RLS enforced.
+- `app_owner` runs migrations and tests.
+- `app_platform` has BYPASSRLS and is reserved for audited platform paths.
