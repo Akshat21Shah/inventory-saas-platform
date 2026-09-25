@@ -227,6 +227,12 @@
     - Detail page: edit, resend the welcome message, hold or remove the hold, delete.
     - Credit card: editable only with `credit.manage`. Addresses: add, edit, remove.
     - "What this shop pays": the server's price sheet at each product's minimum quantity, showing the price source and discount.
+  - Commit 14: pricing screens (`/manage/pricing/...`).
+    - Price lists: create, rename, delete; a list's products with inline price edits and add or remove.
+    - Special prices: all shops, or one shop from its page; shop and product pickers that search as you type.
+    - Discount rules: list with status filter. Editor for percentage or rupees per unit, quantity slabs, scope (all products, category with sub-categories, brand, one product), audience (all, price list, one shop), dates and on/off.
+    - The `FREE_GOODS` warning shows with the product owner's wording. After a create that warns, the editor stays open and later saves update the same rule.
+    - Settings groups "Pricing" (`pricing.discounts_on_special_prices`) and "Shops" (`retailers.blocked_can_sign_in`).
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.

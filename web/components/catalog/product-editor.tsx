@@ -177,7 +177,14 @@ function detailArgs(details: Record<string, unknown>): Record<string, string | n
   );
 }
 
-export function WarningList({ warnings }: { warnings: readonly Warning[] }) {
+export function WarningList({
+  warnings,
+  keys = {},
+}: {
+  warnings: readonly Warning[];
+  /** Message key per warning code, where a screen words a warning its own way. */
+  keys?: Record<string, string>;
+}) {
   const t = useTranslations("catalog.warnings");
   if (warnings.length === 0) return null;
   return (
@@ -185,7 +192,11 @@ export function WarningList({ warnings }: { warnings: readonly Warning[] }) {
       {warnings.map((w) => (
         <p key={w.code} className="flex gap-2">
           <TriangleAlert aria-hidden className="text-warning-strong mt-0.5 size-4 shrink-0" />
-          <span>{t.has(w.code) ? t(w.code, detailArgs(w.details)) : w.message}</span>
+          <span>
+            {t.has(keys[w.code] ?? w.code)
+              ? t(keys[w.code] ?? w.code, detailArgs(w.details))
+              : w.message}
+          </span>
         </p>
       ))}
     </div>

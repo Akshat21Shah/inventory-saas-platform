@@ -12,6 +12,8 @@ export const POLICY_GROUPS = [
   "tax",
   "invoicing",
   "orders",
+  "pricing",
+  "retailers",
   "stock",
   "credit_payments",
   "security",

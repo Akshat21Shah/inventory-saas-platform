@@ -22,7 +22,16 @@ import type { Setting } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { omitKey } from "@/lib/utils";
 
-export const GROUP_ORDER = ["tax", "invoicing", "orders", "stock", "credit_payments", "security"];
+export const GROUP_ORDER = [
+  "tax",
+  "invoicing",
+  "orders",
+  "pricing",
+  "retailers",
+  "stock",
+  "credit_payments",
+  "security",
+];
 
 type Draft = Record<string, unknown>;
 
