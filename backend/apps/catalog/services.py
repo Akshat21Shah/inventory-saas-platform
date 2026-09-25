@@ -322,6 +322,11 @@ def _clean_tags(tags: Iterable[str]) -> list[str]:
     return seen[:20]
 
 
+def active_rates() -> list[Decimal]:
+    rates = TaxRate.objects.filter(is_active=True).order_by("rate")
+    return list(rates.values_list("rate", flat=True))
+
+
 def _active_rate(value: Decimal) -> Decimal:
     rate = TaxRate.objects.filter(rate=value).first()
     if rate is None or not rate.is_active:
@@ -361,6 +366,14 @@ def _normalize_numbers(product: Product) -> None:
         value = getattr(product, name)
         if value is not None and not isinstance(value, Decimal):
             setattr(product, name, Decimal(str(value)))
+
+
+def validate_product(product: Product) -> dict[str, list[str]]:
+    """The product rules, without saving (imports check every row before anything is saved)."""
+    _normalize_numbers(product)
+    errors: dict[str, list[str]] = {}
+    _validate_product(product, errors)
+    return errors
 
 
 def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:

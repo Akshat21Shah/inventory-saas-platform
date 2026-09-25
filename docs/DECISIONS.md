@@ -426,6 +426,14 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   2. **Mode chosen explicitly for every import** (no default): *Add new only* (existing codes/mobiles are reported as errors) or *Add new and update existing* (only columns present in the file change; a blank cell means "no change"; a retailer's mobile number and login are never changed).
   3. **Change preview** for update imports: old and new value for every changed field, with price and MRP changes highlighted, and the total number of rows that will change. Price changes via import are audited exactly like manual changes.
   4. **Messy files are normal.** Blank rows and columns are skipped; merged or padded header cells, trailing spaces, numbers stored as text, prices with commas and the ₹ symbol, and CSV files in UTF-8 (with or without BOM), UTF-16 or Windows-1252 are handled. Duplicate keys within one file, missing required columns, wrong GST rates and invalid HSN codes are errors. Every error names the row (as numbered in the file) and the column, in plain language.
+  5. **Implementation choices (lead engineer).**
+     - The uploaded file stays the source of truth: commit re-reads and re-checks it, so rows changed since validation are reported, and a retried commit never applies a row twice.
+     - Each valid row is applied in its own transaction through the normal services (audited as manual changes).
+     - Missing brands and categories (up to 3 levels, written `Food > Biscuits`) are created and shown in the preview.
+     - An update import never changes a GST rate: that needs a start date, so it is scheduled under GST rates.
+     - HSN codes of odd length are read with the leading zero Excel drops (`402` → `0402`, noted on the row).
+     - The error report is an authenticated xlsx download, not a public link.
+     - Exports use the template's columns, so a file can go out, be edited and come back.
 - **Consequences:** Imports are never partially applied by accident: nothing is saved until the distributor confirms a validated file.
 
 ## ADR-036 — Pricing resolution and retailer settings

@@ -6,14 +6,13 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export type ImportsListParams = {
 /**
- * * `READ_ONLY` - READ_ONLY
- * * `ACT` - ACT
+ * The pagination cursor value.
  */
-export type ModeEnum = typeof ModeEnum[keyof typeof ModeEnum];
-
-
-export const ModeEnum = {
-  READ_ONLY: 'READ_ONLY',
-  ACT: 'ACT',
-} as const;
+cursor?: string;
+/**
+ * Number of results to return per page.
+ */
+page_size?: number;
+};

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.retailers",
     "apps.catalog",
     "apps.billing",
+    "apps.dataio",
 ]
 
 MIDDLEWARE = [
@@ -188,6 +189,9 @@ SPECTACULAR_SETTINGS = {
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",
+        "ImportModeEnum": "apps.dataio.models.ImportJob.Mode",
+        "ImportStatusEnum": "apps.dataio.models.ImportJob.Status",
+        "ImportKindEnum": "apps.dataio.models.ImportJob.Kind",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

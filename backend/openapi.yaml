@@ -768,6 +768,137 @@ paths:
                 items:
                   $ref: '#/components/schemas/CategoryTreeNode'
           description: ''
+  /api/v1/imports/:
+    get:
+      operationId: imports_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedImportJobListList'
+          description: ''
+    post:
+      operationId: imports_create
+      tags:
+      - imports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+          description: ''
+  /api/v1/imports/{job_id}/:
+    get:
+      operationId: imports_retrieve
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+          description: ''
+  /api/v1/imports/{job_id}/commit/:
+    post:
+      operationId: imports_commit
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+          description: ''
+  /api/v1/imports/{job_id}/report/:
+    get:
+      operationId: imports_report
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/imports/templates/{kind}/:
+    get:
+      operationId: imports_template
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/meta/:
     get:
       operationId: meta_retrieve
@@ -2134,6 +2265,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/BulkResult'
           description: ''
+  /api/v1/products/export/:
+    get:
+      operationId: products_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/products/hsn-hint/:
     get:
       operationId: catalog_hsn_hint
@@ -3734,6 +3895,163 @@ components:
       - session_id
       - target_type
       - tenant_slug
+    ImportJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ImportKindEnum'
+          readOnly: true
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/ImportModeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ImportStatusEnum'
+          readOnly: true
+        file_name:
+          type: string
+          readOnly: true
+        problem:
+          type: string
+          readOnly: true
+        counts:
+          readOnly: true
+        notes:
+          readOnly: true
+        errors:
+          readOnly: true
+        changes:
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        validated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        committed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - changes
+      - committed_at
+      - counts
+      - created_at
+      - created_by
+      - errors
+      - file_name
+      - id
+      - kind
+      - mode
+      - notes
+      - problem
+      - status
+      - validated_at
+    ImportJobList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ImportKindEnum'
+          readOnly: true
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/ImportModeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ImportStatusEnum'
+          readOnly: true
+        file_name:
+          type: string
+          readOnly: true
+        counts:
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        committed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - committed_at
+      - counts
+      - created_at
+      - created_by
+      - file_name
+      - id
+      - kind
+      - mode
+      - status
+    ImportKindEnum:
+      enum:
+      - PRODUCTS
+      - RETAILERS
+      type: string
+      description: |-
+        * `PRODUCTS` - Products
+        * `RETAILERS` - Retailers
+    ImportModeEnum:
+      enum:
+      - ADD_ONLY
+      - ADD_OR_UPDATE
+      type: string
+      description: |-
+        * `ADD_ONLY` - Add new only
+        * `ADD_OR_UPDATE` - Add new and update existing
+    ImportStatusEnum:
+      enum:
+      - VALIDATING
+      - VALIDATED
+      - FAILED
+      - COMMITTING
+      - COMMITTED
+      type: string
+      description: |-
+        * `VALIDATING` - Checking the file
+        * `VALIDATED` - Ready to import
+        * `FAILED` - Can't be imported
+        * `COMMITTING` - Importing
+        * `COMMITTED` - Imported
+    ImportUploadRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ImportKindEnum'
+        mode:
+          $ref: '#/components/schemas/ImportModeEnum'
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+      - kind
+      - mode
     Invitation:
       type: object
       properties:
@@ -3959,7 +4277,7 @@ components:
           type: string
           format: uuid
         mode:
-          $ref: '#/components/schemas/ModeEnum'
+          $ref: '#/components/schemas/MeImpersonationModeEnum'
         expires_at:
           type: string
           format: date-time
@@ -3968,6 +4286,14 @@ components:
       - impersonator_id
       - mode
       - session_id
+    MeImpersonationModeEnum:
+      enum:
+      - READ_ONLY
+      - ACT
+      type: string
+      description: |-
+        * `READ_ONLY` - READ_ONLY
+        * `ACT` - ACT
     MeRetailer:
       type: object
       properties:
@@ -4100,14 +4426,6 @@ components:
           maxLength: 40
       required:
       - mfa_token
-    ModeEnum:
-      enum:
-      - READ_ONLY
-      - ACT
-      type: string
-      description: |-
-        * `READ_ONLY` - READ_ONLY
-        * `ACT` - ACT
     OnboardingRequest:
       type: object
       properties:
@@ -4280,6 +4598,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ImpersonationSession'
+    PaginatedImportJobListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportJobList'
     PaginatedInvitationList:
       type: object
       required:
