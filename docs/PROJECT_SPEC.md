@@ -1,6 +1,17 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.0. This is the source of truth for what to build. Working rules are in `CLAUDE.md`.
+Version 1.1. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+
+**Changelog**
+- **1.1 (2026-09-24)** — Product-owner decisions applied:
+  - per-shipment fulfilment model and the COMPLETED status;
+  - invoice timing setting (default at dispatch) and the Order Confirmation document;
+  - GST rate master (GST 2.0) with effective-dated product rates;
+  - fixed tax/credit/numbering rules;
+  - retailer mobile unique **per tenant** (was platform-wide) with a generic-domain account chooser;
+  - configurability principle and settings registry (§13);
+  - payments (advances, cheques);
+  - backorder FIFO policy.
 
 ---
 
@@ -18,6 +29,8 @@ A SaaS platform owned by our company. Distributors/dealers subscribe to run thei
 | Staff | Users working for a distributor (admin, manager, sales, warehouse, accounts). |
 | Backorder | Ordered quantity that cannot be fulfilled from current available stock. |
 | Available stock | on_hand − reserved. |
+| Shipment (Fulfilment) | A packed-and-dispatched part of an order: the initial one, or one per backorder allocation. Each has its own status and invoice. |
+| Setting | A configurable business rule with a safe default (see §13). |
 
 ### Scale targets (design for these from day one)
 - 300+ distributors, up to ~500 retailers each (~150,000 retailers total)
@@ -104,7 +117,12 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
 
 ### 5.2 Accounts & authentication
 - Retailers: login with mobile number + OTP (SMS; WhatsApp OTP as optional channel). Dev/test uses a mock OTP provider.
+  - Retailers normally log in on their distributor's subdomain.
+  - On the generic platform domain, if the verified number belongs to retailer accounts under more than one distributor, a "choose your distributor" screen is shown after OTP verification.
+  - Responses never reveal whether a number is registered.
 - Staff & super admin: email + password, optional TOTP 2FA (mandatory for super admin), password reset via email.
+  - Distributor staff log in on their tenant subdomain, or on the generic `<domain>/login` (tenant resolved from their memberships, with a chooser if they belong to more than one tenant).
+  - Super admin logs in only at `admin.<domain>`.
 - Tokens: short-lived access JWT + refresh token (httpOnly secure cookie for web; secure storage on mobile). Logout revokes refresh token.
 - Rate limit OTP requests and login attempts. Lockout with cooldown.
 - Staff invitation by email; distributor admin assigns role.
@@ -112,12 +130,27 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
 ### 5.3 Tenant settings & branding (distributor admin only)
 - Branding: display name, logo, primary colour (derive full palette), favicon/app icon, subdomain.
 - Business: legal name, GSTIN, PAN, state (state code), addresses, bank details (printed on invoice), invoice terms & footer, authorised signatory image.
-- Commercial settings: prices GST-inclusive or exclusive (default exclusive), credit-limit behaviour (`BLOCK` or `REQUIRE_APPROVAL`), show exact stock quantity to retailers (yes/no), allow backorders (default yes), minimum order value (optional), order acceptance mode (manual default; auto-accept optional).
+- Commercial settings are defined by the settings registry (§13) and edited on generated settings pages grouped as Tax, Invoicing, Orders, Stock, and Credit & Payments. Key defaults:
+  - prices GST-exclusive;
+  - credit breach → require approval;
+  - exact stock hidden from retailers;
+  - backorders on, with allocation confirmed by the distributor;
+  - no minimum order value;
+  - manual order acceptance;
+  - invoice at dispatch.
+- GST registration type: only "regular" in v1 (GSTIN mandatory for every distributor); "composition / bill of supply" is reserved for later.
 - Invoice series configuration (prefix per financial year).
 
 ### 5.4 Catalog
 - Categories (nested, max 3 levels), brands, units (pcs, box, kg, litre…, with optional pack conversion e.g. 1 box = 12 pcs).
-- Product: name, code (unique per tenant), barcode(s), description, images (multiple, resized), category, brand, unit, HSN code, GST rate (0/5/12/18/28 and configurable), cess (optional, later), MRP, base selling price, min order qty, order multiple, active/inactive, tags.
+- Product: name, code (unique per tenant), barcode(s), description, images (multiple, resized), category, brand, unit, HSN code, GST rate + optional cess (**effective-dated**, see below), MRP, base selling price, min order qty, order multiple, active/inactive, tags.
+- GST rates come from a platform-managed rate table (super admin):
+  - seeded active 0, 0.25, 3, 5, 18, 40 (GST 2.0, effective 22-Sep-2025);
+  - seeded inactive 12, 28, which remain valid on historical invoices and their credit notes.
+- Cess types and an optional HSN → rate hint table are also platform-managed.
+- A product's rate is a history of (rate, cess, effective-from date). Changes can be scheduled in advance, individually or in bulk by HSN/category.
+  - Distributors are warned 7 days before a scheduled change (dashboard card + notification).
+  - With GST-inclusive prices, the inclusive price stays the same and the taxable value changes.
 - Variants: out of scope for v1 (model products flatly; revisit later).
 - Bulk import/export via Excel/CSV with validation report (row-level errors), and a downloadable template.
 - Search: PostgreSQL full-text + trigram similarity on name, code, barcode, brand, tags. Target < 200 ms.
@@ -125,7 +158,7 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
 ### 5.5 Retailers
 - Profile: shop name, owner name, mobile (login), email, GSTIN (optional but validated if present; unregistered retailers supported), state (required for tax), billing & shipping addresses, assigned price list, credit limit, payment terms (days), status (active/blocked), assigned salesperson, notes.
 - Create one-by-one or bulk import. On creation, retailer receives a welcome message with login link.
-- A retailer belongs to exactly one tenant (unique constraint on mobile per tenant; the same mobile cannot exist under two tenants in v1).
+- A retailer account belongs to exactly one tenant. The mobile number is unique **per tenant**. The same person/shop may have separate retailer accounts under different distributors, with fully separate data. A distributor is never told that a number exists under another tenant.
 
 ### 5.6 Pricing & discounts
 - Price lists (e.g. "Standard", "Gold retailers") with per-product prices; each retailer assigned one price list (default: base price).
@@ -150,11 +183,16 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
 ### 5.8 Cart & orders
 **Cart** (server-side, per retailer): add/update/remove lines; server returns resolved prices, tax estimate, availability and backorder split per line, totals, credit status.
 
-**Placing an order** (single transactional service, idempotent):
-1. Re-resolve prices and validate min order qty / multiples / min order value.
-2. Lock stock rows; for each line reserve `min(requested, available)`; the remainder becomes backordered quantity (if backorders allowed, otherwise reject the line with a clear message).
-3. Credit check: outstanding balance + order value vs credit limit. If exceeded → `BLOCK` (reject with code `CREDIT_LIMIT_EXCEEDED`) or `REQUIRE_APPROVAL` (order status `ON_HOLD`).
-4. Create order with number (per tenant sequence, e.g. `ORD-2026-000123`), lines with price snapshot, reserved qty and backordered qty.
+**Placing an order** (single transactional service, idempotent; placed by the retailer or, if enabled, by staff on the retailer's behalf, and `placed_by` is recorded):
+1. Re-resolve prices and validate min order qty / multiples / min order value (optional setting; basis incl. or excl. GST is a setting; backordered items count).
+2. Lock stock rows; for each line reserve `min(requested, available)`; the remainder becomes backordered quantity.
+   - If backorders are off, the setting decides: **fail** the order and show which items are short, with a one-tap "reduce to available" (default); or **place the in-stock part** and cancel the rest with a clear message.
+3. Credit check (fixed formula): ledger balance + value of open not-yet-invoiced orders + this order, vs the credit limit.
+   - Empty limit = unlimited; 0 = no credit.
+   - Optionally, invoices overdue beyond N days count as a breach (setting, default off).
+   - On breach, the setting decides: require approval (`ON_HOLD`, default) or block (`CREDIT_LIMIT_EXCEEDED`).
+   - Orders on hold reserve stock by default (setting).
+4. Create order with number (per tenant sequence, e.g. `ORD-2026-000123`), lines with price snapshot, reserved qty and backordered qty, and a **snapshot of the settings in effect**.
 5. On commit: emit `OrderPlaced` → real-time push + notification to distributor; confirmation to retailer.
 
 **Order statuses**
@@ -164,8 +202,14 @@ PLACED ──accept──► ACCEPTED ──► PACKED ──► DISPATCHED ─�
    ├─reject─► REJECTED (reservations released)
    ├─cancel─► CANCELLED (by retailer before acceptance, or by distributor; reservations released)
 ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject──► REJECTED
+... ──► COMPLETED (all shipments delivered and no open backorder quantity)
 ```
-- Distributor can modify quantities/remove lines before accepting; retailer is notified of changes.
+- Every shipment (the initial one and each backorder allocation) has its own packing, dispatch, invoice and status. After acceptance the order status follows its shipments. **COMPLETED** = all shipments delivered and no open backorder quantity.
+- At acceptance, an **Order Confirmation** document (items, prices, tax estimate) is sent through the normal notification channels (setting, default on). It carries the line "This is not a tax invoice."
+- With "full edit", an edit that would exceed the retailer's credit limit is refused unless a user with credit permission applies an audited override in the same flow.
+- Before accepting, the distributor can reduce/remove lines (default), or also add lines and increase quantities if the "full edit" setting is on (credit re-checked). The retailer is always notified of changes.
+- Sales staff see all orders by default; a setting restricts them to their assigned retailers.
+- Unaccepted orders never expire; a dashboard alert appears after N hours (setting, default 24).
 - Auto-accept is an optional tenant setting.
 - Order lines track: ordered, reserved, backordered, invoiced, dispatched quantities.
 - Distributor views: separate tabs for New, On hold, Backorders, In progress, Completed; filters by retailer, date, salesperson, status.
@@ -174,14 +218,32 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 
 ### 5.9 Backorders
 - Backordered quantities appear in a dedicated distributor queue, grouped by product, showing total demand and waiting retailers (oldest first).
-- On stock inward, the allocation service proposes allocation FIFO by order time (tenant setting: auto-allocate or suggest-and-confirm).
-- Allocation moves quantity from backordered to reserved and creates a fulfilment that is invoiced separately.
+- On stock inward, the allocation service allocates FIFO by order time **in the same transaction as the inward**, so older backorders are served before new orders.
+  - Only accepted orders are eligible.
+  - Credit is re-checked, and retailers over their limit are skipped and flagged.
+  - Tenant setting: confirm each allocation (default) or auto-allocate. Proposals awaiting confirmation hold the stock.
+- Allocation moves quantity from backordered to reserved and creates a shipment that is invoiced separately. The billing price is the original order price (default) or the current price (setting).
+  - With current pricing, if the price has **increased**, the retailer is notified and may cancel that quantity themselves until the shipment is packed.
+  - If the price is unchanged or lower, the retailer only gets a notification.
+- Permission `orders.allocate_backorder` is granted by default to Owner/Admin, Manager and Warehouse.
 - Retailer is notified when backordered items are allocated. Retailer or distributor can cancel remaining backorder quantity.
 
 ### 5.10 Billing & GST
-- Invoice generated when an order (or backorder fulfilment) is accepted/allocated. One order can have multiple invoices.
+- Invoice timing is a tenant setting (snapshotted per order):
+  - **At dispatch (default).** The invoice covers the packed quantity when the warehouse confirms packing and dispatches. A short-packed remainder becomes backorder (if backorders are on) or is cancelled, and the retailer is notified.
+  - **At acceptance / allocation.** Short packs are corrected with a credit note.
+  - One order can have multiple invoices (one per shipment).
+  - The e-way bill is generated from the invoice at dispatch in both modes.
+- The tax rate applied is the one **valid on the invoice date** (fixed rule). The distributor sees a warning when it differs from the order-time rate.
+- Issued invoices are never edited or cancelled; corrections are always via credit notes. The only exception is e-invoice (IRN) cancellation within the permitted window.
 - Invoice numbering: per tenant, per financial year (April–March), configurable prefix, sequential and gapless, max 16 characters, unique within the FY. Generate numbers inside a locked sequence row.
-- Tax: compare tenant state code with retailer's place of supply state. Same state → CGST + SGST (rate split equally); different → IGST. Tax computed per line on taxable value (after discount). Invoice total rounded to nearest rupee with a separate round-off line. All logic in `billing/tax.py` with exhaustive tests.
+- Tax (fixed rules):
+  - Compare the tenant state code with the place of supply.
+  - Place of supply = the shipping address state, defaulting to the retailer's registered state.
+  - Same state → CGST + SGST (rate split equally); different → IGST.
+  - Tax is computed per line on the taxable value (after discount).
+- Rounding defaults (pending CA confirmation): each tax component rounded half-up to the paisa, and the invoice total rounded to the nearest rupee with a separate round-off line. Rounding to the rupee on/off and the rounding methods are tenant settings, limited to a vetted list.
+- Every invoice reconciles to the paisa. All logic lives in `billing/tax.py`, with exhaustive tests covering every setting value.
 - Invoice content: tenant legal details + GSTIN, retailer details + GSTIN (if any), invoice no/date, place of supply, lines with HSN, qty, unit, rate, discount, taxable value, tax breakup, totals in figures and words, bank details, terms, signatory, and e-invoice IRN + QR code when applicable.
 - PDF generated asynchronously (HTML template → PDF), stored in S3, accessible via signed URL.
 - Credit notes for returns/cancellations after invoicing (append to ledger as credits).
@@ -198,6 +260,8 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - Ledger per retailer (append-only): debit on invoice; credit on payment, credit note, or opening balance adjustment. Maintained running balance on a `RetailerAccount` row updated in the same transaction.
 - Outstanding, overdue (by payment terms), ageing buckets (0–30, 31–60, 61–90, 90+).
 - **Cash / offline payments**: recorded by staff (amount, mode: cash/cheque/bank transfer/UPI-offline, reference, date, collected by), allocated to invoices (FIFO default or manual).
+- Advances/overpayments are held as credit and applied to future invoices (setting, default on). When off, overpayments are refused; a credit note exceeding the invoice balance still leaves a credit balance for the next invoice.
+- Cheques are credited on receipt (default, with an automatic reversing entry if the cheque bounces) or only on clearance (setting).
 - **Online payments** (feature-flagged, OFF by default): tenant connects its own gateway account (Razorpay first; adapter interface allows Cashfree etc.). Money settles to the distributor. Retailer can pay an invoice, the outstanding amount, or a custom amount via UPI, cards, net banking. Payment confirmed only via verified webhook; reconciliation job for missed webhooks. Sandbox keys in non-production.
 - Receipts generated for every payment.
 
@@ -232,9 +296,9 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 
 ## 6. Data model outline (starting point, refine in Phase 0 plan)
 
-Platform: `Tenant`, `TenantSettings`, `TenantBranding`, `Plan`, `Subscription`, `FeatureFlag`, `TenantFeature`
+Platform: `Tenant`, `TenantProfile`, `TenantSetting` (overrides of the settings registry), `PlatformSetting`, `TenantBranding`, `Plan`, `Subscription`, `FeatureFlag`, `TenantFeature`, `TaxRate`, `CessType`, `HsnRateHint`
 Accounts: `User`, `Role`, `Permission`, `Membership` (user↔tenant↔role), `OTPRequest`, `Invitation`
-Catalog: `Category`, `Brand`, `Unit`, `Product`, `ProductImage`, `ProductBarcode`
+Catalog: `Category`, `Brand`, `Unit`, `Product`, `ProductTaxRate` (effective-dated), `ProductImage`, `ProductBarcode`
 Pricing: `PriceList`, `PriceListItem`, `RetailerPrice`, `DiscountRule`, `DiscountSlab`
 Retailers: `Retailer`, `RetailerAddress`, `RetailerUser`
 Inventory: `Warehouse`, `StockLevel`, `StockMovement`, `StockInward`, `StockInwardLine`, `StockAlert`
@@ -302,7 +366,7 @@ All tenant-owned tables: `tenant_id`, `created_at`, `updated_at`, `created_by`; 
 ---
 
 ## 11. Out of scope for v1
-Product variants, multi-currency, iOS app, marketplace across distributors, retailer belonging to multiple distributors, accounting software sync (Tally etc.), logistics partner APIs. Keep the design open to these.
+Product variants, multi-currency, iOS app, marketplace across distributors, a single shared retailer account spanning multiple distributors (separate per-distributor accounts for the same mobile ARE supported), composition-scheme distributors / bill of supply, accounting software sync (Tally etc.), logistics partner APIs. Keep the design open to these.
 
 ---
 
@@ -355,3 +419,42 @@ Hindi/Marathi translations, accessibility pass, performance/load testing, securi
 
 ### Phase 11 — Android app
 Expo app for retailers (and later distributor staff) using the generated API client: OTP login, catalog, cart, orders, invoices, payments, push notifications (FCM), tenant branding applied at runtime from the server. Single app on Play Store; branded builds per tenant as a future option.
+
+---
+
+## 13. Configurability principle
+
+Business rules that are not firm are configurable; legal and data-integrity guarantees are fixed.
+
+**Fixed in code (never configurable):**
+- CGST+SGST vs IGST determination from the supplier state and place of supply.
+- Gapless, per-financial-year invoice numbering, max 16 characters (the prefix/format is configurable, the rules are not).
+- Issued invoices are immutable; corrections via credit notes.
+- Ledger entries and stock movements are append-only.
+- The credit exposure formula (ledger balance + open not-yet-invoiced orders + this order).
+- Decimal money; every invoice reconciles to the paisa.
+
+**Configurable:**
+- **Platform level (super admin):** master GST rate table, cess types, optional HSN-to-rate mapping, default notification templates.
+- **Product level:** GST rate and cess with effective-from dates.
+- **Tenant level:** every setting in `docs/PLAN.md` §9 (Settings catalogue). Defaults:
+  - prices GST-exclusive;
+  - exact stock hidden;
+  - backorders on, with allocation confirmed by the distributor;
+  - credit breach → approval;
+  - invoice at dispatch;
+  - rounding half-up to the paisa and nearest rupee;
+  - Order Confirmation on acceptance on;
+  - backorders billed at the original price;
+  - staff can order on behalf;
+  - sales staff see all orders;
+  - holds reserve stock;
+  - advances held;
+  - cheques credited on receipt.
+
+**Implementation requirements:**
+- A typed settings registry in code: key, type, default, allowed values, scope (platform/tenant), permission required to edit, and a plain-language description. The settings UI is generated from the registry, grouped by area (Tax, Invoicing, Orders, Stock, Credit & Payments), with the description shown beside each setting.
+- Orders, invoices and credit notes snapshot the settings in effect when they are created. Changing a setting later never alters existing documents.
+- Every setting change is written to the audit log (who, old value, new value, when).
+- Tax engine and order/credit tests cover every value of every relevant setting, not only the defaults.
+- A newly created tenant works correctly without changing any setting.
