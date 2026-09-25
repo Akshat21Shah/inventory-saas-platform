@@ -52,7 +52,7 @@
 - The status line in `PLAN.md` now says Phase 0 is complete.
 
 ## In progress
-- **Phase 1 — Tenancy, auth, platform admin** (branch `phase-1`, draft PR #2; plan approved 2026-09-25, including the wider PLAN §8 scope). **All 17 commits done; waiting for the end-of-phase review.**
+- **Phase 1 — Tenancy, auth, platform admin** (branch `phase-1`, draft PR #2; plan approved 2026-09-25, including the wider PLAN §8 scope). **Merged to main (PR #2, 2026-09-25).**
   - Decisions recorded: ADR-025 … ADR-031; PLAN v1.3 (§1.2 T7, §2.2, §2.3, §3.2, §9.1/§9.2 Security keys, §10).
   - Done so far:
     - Field-level encryption (ADR-031).
@@ -158,8 +158,20 @@
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
-- End-of-phase review of Phase 1 (PR #2), then merge.
-- Phase 2 — Catalog, retailers, pricing (after review). The retailer model and its OTP login are already in place as a stub.
+- Phase 2 — Catalog, retailers, pricing (branch `phase-2`; plan approved 2026-09-25 with ADR-034 … ADR-036). Commits in order:
+  0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
+  1. Catalog models
+  2. `billing/tax.py` line math
+  3. Catalog services and APIs (incl. effective-dated GST rates)
+  4. Product images
+  5. Product search
+  6. Import framework + product import/export
+  7. Retailers (+ import, welcome message)
+  8. Price lists, special prices, discount rules
+  9. `resolve_price`
+  10. Shop catalog APIs — backend checkpoint
+  11–15. Frontend (catalog, import wizard, retailers, pricing, shop + sign-out fix)
+  16. Seed, E2E acceptance, docs
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
@@ -171,11 +183,9 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 | 3 | Production load balancer configuration. It must append the client IP to `X-Forwarded-For` and set `X-Forwarded-Proto`. The web server's `TRUSTED_PROXIES` must list the load balancer's addresses, and Django's `TRUSTED_PROXIES` must list the web servers' addresses (ADR-032; our own code already discards client-supplied forwarded headers) | infra (Phase 10), `web/server.mjs`, `backend/config/settings/base.py` | Load balancer documentation and the deployment topology | Lead engineer | Open (before staging) |
 | 4 | SMS provider for retailer OTP: implement a real adapter against the provider's official API, with a DLT-registered sender ID and OTP template (required in India). Only the mock exists; deployed environments refuse it (`check --deploy`: accounts.E001/E002) | `backend/apps/accounts/adapters/sms.py` | Chosen provider's API docs; TRAI DLT registration | Product owner (provider choice) + lead engineer | Open (before staging) |
 | 5 | ADR-009 tax engine & rounding rules | `docs/DECISIONS.md` ADR-009 | Chartered accountant | Product owner | Open (before Phase 5) |
-| 6 | PAN holder types accepted as the 4th PAN character (6th of the GSTIN): currently A, B, C, F, G, H, J, L, P, T; anything else is rejected | `backend/apps/platform/validators.py` (`PAN_HOLDER_TYPES`) | Income Tax Department PAN documentation | Product owner | Open |
 
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
 - Production domain to be supplied before staging (ADR-019).
-- Decision pending (product owner): GST state code 97 (Other Territory) is active and accepted today.
 - Signing out from `/shop/account` lands on `/shop/login?next=/shop/account`, so the next sign-in returns to the account page instead of home. Harmless; tidy up in Phase 2 with the shop home.
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.

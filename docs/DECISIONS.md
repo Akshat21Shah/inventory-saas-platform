@@ -400,7 +400,8 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
      - Prod settings also refuse the dev field-encryption key (ADR-031).
   4. **GSTIN rules.**
      - Spaces are removed and letters uppercased before validation.
-     - The state code must be an active GST state, and the PAN holder type (6th character) must be valid (list to verify, pre-production item 6).
+     - The state code must be an active GST state, including 97 (Other Territory, accepted by the product owner on 2026-09-25).
+     - The PAN holder type (6th character) must be one of A, B, C, F (firms, including LLPs), G, H, J, L, P, T. Source: the Income Tax Department's official list of PAN holder types, verified by the product owner on 2026-09-25.
      - Character 13 is 1–9 or a letter, character 14 is Z, and the check character must match (the error adds "Check for mix-ups like O/0, I/1 or S/5.").
      - Every error names the wrong part.
      - A GSTIN is unique across tenants; the same PAN in another state is a separate tenant.
@@ -408,3 +409,29 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
      - The same rules apply to onboarding, super admin edits and the distributor's business settings.
   5. **E2E repeatability.** `manage.py reset_e2e_limits` (DEBUG only) clears rate-limit counters for the test accounts and all per-IP counters, and resets their lockout and 2FA replay state. Playwright runs it in global set-up and before each sign-in step, so no test waits for a time window.
 - **Consequences:** Phase 5 adds the GST identity lock after the first invoice (PLAN task 5.13).
+
+## ADR-034 — Catalog: search, product visibility and product images
+- **Status:** Accepted — 2026-09-25 (product owner, Phase 2 plan).
+- **Decision:**
+  1. **Search.** Products carry a `search_vector` maintained by a database trigger (name and codes/barcodes weight A, brand and tags B, category C), with GIN indexes starting with the tenant. Trigram similarity on name and code catches typos. One selector ranks full-text matches, then trigram similarity. Target < 200 ms on 20,000 products, checked by a CI test.
+  2. **What retailers see.** A product appears in the shop only if it is active, not deleted, has "Show in shop" on (a per-product switch, default on, independent of active/inactive, for internal items), has a GST rate in effect today, and `resolve_price` returns a valid price for that retailer. Products whose only rate is in the future stay hidden until it takes effect.
+  3. **Scheduled GST-rate changes.** Rate history is append-only. A change dated in the future can be cancelled before it takes effect: it is marked cancelled (audited), never deleted. Rates in effect can never be changed retroactively; a correction is a new future-dated change.
+  4. **Product images.** JPEG/PNG/WebP up to 5 MB, validated like brand images (ADR-027). A background task makes thumbnail, medium and large WebP variants. Variants are stored under unguessable, content-versioned keys (`…/products/<product>/<random token>-<content hash>/<size>.webp`) with `Cache-Control: public, max-age=31536000, immutable`, and served through the storage/CDN layer at a stable URL. A new URL is generated only when the image changes, so browsers and CDNs cache images indefinitely (important on mobile data). Keys are never listed publicly. Originals stay private.
+- **Consequences:** Product image URLs are public-but-unguessable (like most CDNs); anyone holding a URL can view that image, which is acceptable for catalog photos. Production CDN configuration is on the pre-production list.
+
+## ADR-035 — Data import framework
+- **Status:** Accepted — 2026-09-25 (product owner, Phase 2 plan).
+- **Decision:**
+  1. **Flow.** Upload (xlsx or csv) → background validation of every row without saving (dry run) → report with counts (new, updated, unchanged, errors) and a downloadable row-level error report (xlsx) → the distributor commits → valid rows are applied in the background. Templates (xlsx) per kind.
+  2. **Mode chosen explicitly for every import** (no default): *Add new only* (existing codes/mobiles are reported as errors) or *Add new and update existing* (only columns present in the file change; a blank cell means "no change"; a retailer's mobile number and login are never changed).
+  3. **Change preview** for update imports: old and new value for every changed field, with price and MRP changes highlighted, and the total number of rows that will change. Price changes via import are audited exactly like manual changes.
+  4. **Messy files are normal.** Blank rows and columns are skipped; merged or padded header cells, trailing spaces, numbers stored as text, prices with commas and the ₹ symbol, and CSV files in UTF-8 (with or without BOM), UTF-16 or Windows-1252 are handled. Duplicate keys within one file, missing required columns, wrong GST rates and invalid HSN codes are errors. Every error names the row (as numbered in the file) and the column, in plain language.
+- **Consequences:** Imports are never partially applied by accident: nothing is saved until the distributor confirms a validated file.
+
+## ADR-036 — Pricing resolution and retailer settings
+- **Status:** Accepted — 2026-09-25 (product owner, Phase 2 plan).
+- **Decision:**
+  1. `pricing.services.resolve_price(retailer, product, qty, on)` implements spec 5.6 with PLAN M1–M6: unit price = retailer special price → retailer's price list → base price; discount = the single best active rule (highest amount, then audience retailer > price list > all, then scope product > deeper category > brand > all, then newest); category rules cover sub-categories; flat discounts are per unit, capped at the line gross; the highest slab reached by the line quantity applies (a rule with slabs and no reached slab does not apply). Line math comes from `apps/billing/tax.py`.
+  2. New tenant setting `pricing.discounts_on_special_prices` (default **true**): when false, a retailer-specific price is the final net price and no discount rule applies to it.
+  3. New tenant setting `retailers.blocked_can_sign_in` (default **true**): when true, blocked retailers can sign in, browse and see their account with the notice "Your account is on hold. Please contact your distributor."; ordering is blocked (Phase 4). When false, sign-in is refused with the same neutral message.
+- **Consequences:** Both settings are evaluated live (no snapshot) until orders exist; Phase 4 snapshots the price basis on the order line.

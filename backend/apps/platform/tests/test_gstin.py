@@ -143,9 +143,11 @@ def test_onboarding_rejects_with_a_specific_message(api, run, gstin, field, expe
     assert not Tenant.objects.filter(slug="gst-test").exists()
 
 
-def test_other_territory_97_is_currently_accepted(api, run):
-    """PENDING PRODUCT DECISION: 97 (Other Territory) is an active state code today."""
-    assert onboard(api, run, "97AAGFK7315R1ZI").status_code == 201
+def test_other_territory_97_is_accepted(api, run):
+    """97 (Other Territory) is an active official state code (product owner, 2026-09-25)."""
+    response = onboard(api, run, "97AAGFK7315R1ZI")
+    assert response.status_code == 201, response.json()
+    assert Tenant.objects.get(slug="gst-test").state_id == "97"
 
 
 def test_state_must_match_the_gstin(api, run):
