@@ -181,7 +181,19 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v1",
     "COMPONENT_SPLIT_REQUEST": True,
     "SERVE_INCLUDE_SCHEMA": False,
-    "ENUM_NAME_OVERRIDES": {},
+    "ENUM_NAME_OVERRIDES": {
+        "TenantStatusEnum": "apps.platform.models.Tenant.Status",
+        "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
+        "UserTypeEnum": "apps.accounts.models.User.UserType",
+        "LoginStatusEnum": [
+            "authenticated",
+            "handoff",
+            "choose_tenant",
+            "choose_account",
+            "mfa_required",
+            "mfa_setup_required",
+        ],
+    },
 }
 
 SIMPLE_JWT = {

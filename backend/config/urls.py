@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import URLPattern, URLResolver, include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.platform.api.views import PublicStatesView
 from common import health
 from common.api import MetaView
 
@@ -11,6 +12,8 @@ api_v1: list[URLPattern | URLResolver] = [
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
     path("auth/", include("apps.accounts.api.urls")),
     path("", include("apps.accounts.api.staff_urls")),
+    path("platform/", include("apps.platform.api.urls")),
+    path("public/states/", PublicStatesView.as_view(), name="public-states"),
 ]
 
 urlpatterns = [

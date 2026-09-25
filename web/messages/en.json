@@ -126,6 +126,7 @@
     "PLAN_LIMIT_REACHED": "Your plan's limit has been reached. Please contact the platform team to upgrade.",
     "LAST_OWNER": "Every business needs at least one active owner. Make someone else an owner first.",
     "ALREADY_A_MEMBER": "This person is already on your team.",
+    "SLUG_CHANGE_NOT_CONFIRMED": "Changing the web address breaks saved links, installed apps and current sign-ins. Confirm the change to continue.",
     "NETWORK_ERROR": "You seem to be offline. Check your connection and try again.",
     "UNKNOWN_ERROR": "Something went wrong. Please try again."
   },

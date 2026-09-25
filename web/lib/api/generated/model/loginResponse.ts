@@ -6,8 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Handoff } from './handoff';
+import type { LoginStatusEnum } from './loginStatusEnum';
 import type { RetailerAccountChoice } from './retailerAccountChoice';
-import type { StatusEnum } from './statusEnum';
 import type { TenantChoice } from './tenantChoice';
 import type { UserTypeEnum } from './userTypeEnum';
 
@@ -15,7 +15,7 @@ import type { UserTypeEnum } from './userTypeEnum';
  * One shape for every sign-in step; ``status`` says what the client does next.
  */
 export interface LoginResponse {
-  status: StatusEnum;
+  status: LoginStatusEnum;
   user_type?: UserTypeEnum;
   access?: string;
   access_expires_at?: string;

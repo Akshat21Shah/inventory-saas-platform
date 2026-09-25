@@ -486,6 +486,905 @@ paths:
                 items:
                   $ref: '#/components/schemas/Permission'
           description: ''
+  /api/v1/platform/audit-logs/:
+    get:
+      operationId: platform_audit_logs
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+      - in: query
+        name: actor_id
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: since
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: target_id
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+      - in: query
+        name: target_type
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+      - in: query
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: until
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/v1/platform/cess-types/:
+    get:
+      operationId: platform_cess_types_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CessType'
+          description: ''
+    post:
+      operationId: platform_cess_types_create
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CessTypeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CessType'
+          description: ''
+  /api/v1/platform/cess-types/{cess_id}/:
+    patch:
+      operationId: platform_cess_types_update
+      parameters:
+      - in: path
+        name: cess_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCessTypeUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CessType'
+          description: ''
+  /api/v1/platform/dashboard/:
+    get:
+      operationId: platform_dashboard
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+  /api/v1/platform/feature-flags/:
+    get:
+      operationId: platform_feature_flags_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeatureFlag'
+          description: ''
+  /api/v1/platform/feature-flags/{code}/:
+    patch:
+      operationId: platform_feature_flags_update
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFeatureFlagRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlag'
+          description: ''
+  /api/v1/platform/hsn-rate-hints/:
+    get:
+      operationId: platform_hsn_hints_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: prefix
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHsnHintList'
+          description: ''
+    post:
+      operationId: platform_hsn_hints_create
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HsnHintRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsnHint'
+          description: ''
+  /api/v1/platform/hsn-rate-hints/{hint_id}/:
+    patch:
+      operationId: platform_hsn_hints_update
+      parameters:
+      - in: path
+        name: hint_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHsnHintUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsnHint'
+          description: ''
+    delete:
+      operationId: platform_hsn_hints_delete
+      parameters:
+      - in: path
+        name: hint_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/platform/hsn-rate-hints/import/:
+    post:
+      operationId: platform_hsn_hints_import
+      tags:
+      - platform
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HsnImportRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsnImportResult'
+          description: ''
+  /api/v1/platform/plans/:
+    get:
+      operationId: platform_plans_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plan'
+          description: ''
+    post:
+      operationId: platform_plans_create
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+          description: ''
+  /api/v1/platform/plans/{plan_id}/:
+    patch:
+      operationId: platform_plans_update
+      parameters:
+      - in: path
+        name: plan_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPlanUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+          description: ''
+  /api/v1/platform/settings/registry/:
+    get:
+      operationId: platform_settings_registry
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Setting'
+          description: ''
+  /api/v1/platform/settings/values/:
+    patch:
+      operationId: platform_settings_update
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingValuesRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Setting'
+          description: ''
+  /api/v1/platform/tax-rates/:
+    get:
+      operationId: platform_tax_rates_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaxRate'
+          description: ''
+    post:
+      operationId: platform_tax_rates_create
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaxRateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxRate'
+          description: ''
+  /api/v1/platform/tax-rates/{tax_rate_id}/:
+    patch:
+      operationId: platform_tax_rates_update
+      parameters:
+      - in: path
+        name: tax_rate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTaxRateUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxRate'
+          description: ''
+  /api/v1/platform/tenants/:
+    get:
+      operationId: platform_tenants_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - ONBOARDING
+          - SUSPENDED
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTenantListList'
+          description: ''
+    post:
+      operationId: platform_tenants_create
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDetail'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/:
+    get:
+      operationId: platform_tenants_retrieve
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDetail'
+          description: ''
+    patch:
+      operationId: platform_tenants_update
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDetail'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/features/:
+    get:
+      operationId: platform_tenant_features
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: boolean
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/features/{code}/:
+    put:
+      operationId: platform_tenant_feature_set
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureToggleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureToggle'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/owner/resend-invite/:
+    post:
+      operationId: platform_tenant_owner_resend_invite
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          description: No response body
+  /api/v1/platform/tenants/{tenant_id}/reactivate/:
+    post:
+      operationId: platform_tenants_reactivate
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDetail'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/subscription/:
+    get:
+      operationId: platform_tenant_subscription
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+    put:
+      operationId: platform_tenant_subscription_update
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/suspend/:
+    post:
+      operationId: platform_tenants_suspend
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDetail'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/users/:
+    get:
+      operationId: platform_tenant_users
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMembershipList'
+          description: ''
+  /api/v1/platform/tenants/slug-available/:
+    get:
+      operationId: platform_tenants_slug_available
+      parameters:
+      - in: query
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlugAvailability'
+          description: ''
+  /api/v1/public/states/:
+    get:
+      operationId: public_states_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/State'
+          description: ''
   /api/v1/roles/:
     get:
       operationId: roles_list
@@ -702,6 +1601,137 @@ paths:
           description: ''
 components:
   schemas:
+    ActorTypeEnum:
+      enum:
+      - PLATFORM
+      - STAFF
+      - RETAILER
+      - SYSTEM
+      type: string
+      description: |-
+        * `PLATFORM` - Platform
+        * `STAFF` - Staff
+        * `RETAILER` - Retailer
+        * `SYSTEM` - System
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        tenant:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        actor:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        actor_type:
+          $ref: '#/components/schemas/ActorTypeEnum'
+        impersonator:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        impersonation_session_id:
+          type: string
+          format: uuid
+          nullable: true
+        action:
+          type: string
+          maxLength: 80
+        target_type:
+          type: string
+          maxLength: 80
+        target_id:
+          type: string
+          maxLength: 64
+        target_repr:
+          type: string
+          maxLength: 200
+        changes: {}
+        metadata: {}
+        ip:
+          type: string
+          nullable: true
+        user_agent:
+          type: string
+          maxLength: 500
+        request_id:
+          type: string
+          maxLength: 64
+      required:
+      - action
+      - actor
+      - actor_type
+      - created_at
+      - id
+      - impersonator
+      - tenant
+    CalcMethodEnum:
+      enum:
+      - PERCENT
+      - SPECIFIC_PER_UNIT
+      type: string
+      description: |-
+        * `PERCENT` - Percentage of taxable value
+        * `SPECIFIC_PER_UNIT` - Fixed amount per unit (reserved)
+    CessType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 40
+        name:
+          type: string
+          maxLength: 120
+        calc_method:
+          $ref: '#/components/schemas/CalcMethodEnum'
+        is_active:
+          type: boolean
+      required:
+      - code
+      - id
+      - name
+    CessTypeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        calc_method:
+          $ref: '#/components/schemas/CalcMethodEnum'
+        is_active:
+          type: boolean
+      required:
+      - code
+      - name
+    ChangePlanRequest:
+      type: object
+      properties:
+        plan_code:
+          type: string
+          minLength: 1
+          maxLength: 40
+      required:
+      - plan_code
     ChooseTenantInputRequest:
       type: object
       properties:
@@ -715,6 +1745,35 @@ components:
       required:
       - choice_token
       - tenant_id
+    Dashboard:
+      type: object
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        onboarding:
+          type: integer
+        suspended:
+          type: integer
+      required:
+      - active
+      - onboarding
+      - suspended
+      - total
+    DependsOn:
+      type: object
+      properties:
+        key:
+          type: string
+        equals:
+          nullable: true
+        not_null:
+          type: boolean
+      required:
+      - equals
+      - key
+      - not_null
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -738,6 +1797,37 @@ components:
           maxLength: 200
       required:
       - enrolment_token
+    FeatureFlag:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+        default_enabled:
+          type: boolean
+        tenant_toggleable:
+          type: boolean
+      required:
+      - code
+    FeatureToggle:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+      required:
+      - enabled
+    FeatureToggleRequest:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+      required:
+      - enabled
     Handoff:
       type: object
       properties:
@@ -757,6 +1847,70 @@ components:
           maxLength: 200
       required:
       - code
+    HsnHint:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        hsn_prefix:
+          type: string
+          maxLength: 8
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        effective_from:
+          type: string
+          format: date
+        description:
+          type: string
+          maxLength: 255
+      required:
+      - effective_from
+      - gst_rate
+      - hsn_prefix
+      - id
+    HsnHintRequest:
+      type: object
+      properties:
+        hsn_prefix:
+          type: string
+          minLength: 1
+          maxLength: 8
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        effective_from:
+          type: string
+          format: date
+        description:
+          type: string
+          maxLength: 255
+      required:
+      - effective_from
+      - gst_rate
+      - hsn_prefix
+    HsnImportRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+    HsnImportResult:
+      type: object
+      properties:
+        created:
+          type: integer
+        updated:
+          type: integer
+      required:
+      - created
+      - updated
     Invitation:
       type: object
       properties:
@@ -862,7 +2016,7 @@ components:
         does next.
       properties:
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/LoginStatusEnum'
         user_type:
           $ref: '#/components/schemas/UserTypeEnum'
         access:
@@ -893,6 +2047,22 @@ components:
             $ref: '#/components/schemas/RetailerAccountChoice'
       required:
       - status
+    LoginStatusEnum:
+      enum:
+      - authenticated
+      - handoff
+      - choose_tenant
+      - choose_account
+      - mfa_required
+      - mfa_setup_required
+      type: string
+      description: |-
+        * `authenticated` - authenticated
+        * `handoff` - handoff
+        * `choose_tenant` - choose_tenant
+        * `choose_account` - choose_account
+        * `mfa_required` - mfa_required
+        * `mfa_setup_required` - mfa_setup_required
     Me:
       type: object
       properties:
@@ -1103,6 +2273,121 @@ components:
           maxLength: 40
       required:
       - mfa_token
+    OnboardingRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        legal_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          minLength: 1
+          maxLength: 15
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        address_line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        address_line2:
+          type: string
+          default: ''
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 6
+        email:
+          type: string
+          format: email
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 16
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 30
+        owner_email:
+          type: string
+          format: email
+          minLength: 1
+        owner_name:
+          type: string
+          default: ''
+          maxLength: 150
+        plan_code:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 40
+        primary_color:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 7
+      required:
+      - address_line1
+      - city
+      - email
+      - gstin
+      - legal_name
+      - name
+      - owner_email
+      - phone
+      - pincode
+      - slug
+      - state_code
+    PaginatedAuditLogList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+    PaginatedHsnHintList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HsnHint'
     PaginatedInvitationList:
       type: object
       required:
@@ -1141,6 +2426,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Membership'
+    PaginatedTenantListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantList'
     PasswordAndFactorInputRequest:
       type: object
       properties:
@@ -1198,6 +2502,40 @@ components:
       - new_password
       - token
       - uid
+    PatchedCessTypeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        calc_method:
+          $ref: '#/components/schemas/CalcMethodEnum'
+        is_active:
+          type: boolean
+    PatchedFeatureFlagRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+        default_enabled:
+          type: boolean
+        tenant_toggleable:
+          type: boolean
+    PatchedHsnHintUpdateRequest:
+      type: object
+      properties:
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        description:
+          type: string
+          maxLength: 255
     PatchedMeUpdateRequest:
       type: object
       properties:
@@ -1215,6 +2553,104 @@ components:
           maxLength: 40
         is_active:
           type: boolean
+    PatchedPlanUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        price_monthly:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        max_retailers:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_staff:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_products:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        features: {}
+        is_default:
+          type: boolean
+        is_active:
+          type: boolean
+    PatchedSettingValuesRequest:
+      type: object
+      properties:
+        values:
+          type: object
+          additionalProperties:
+            nullable: true
+    PatchedTaxRateUpdateRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        notes:
+          type: string
+        is_active:
+          type: boolean
+    PatchedTenantUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        legal_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          minLength: 1
+          maxLength: 15
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        address_line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 6
+        email:
+          type: string
+          format: email
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 16
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 30
+        confirm_slug_change:
+          type: boolean
+          default: false
     Permission:
       type: object
       properties:
@@ -1228,6 +2664,97 @@ components:
       - code
       - description
       - module
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 40
+        name:
+          type: string
+          maxLength: 120
+        price_monthly:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        max_retailers:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_staff:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_products:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        features: {}
+        is_default:
+          type: boolean
+        is_active:
+          type: boolean
+      required:
+      - code
+      - id
+      - name
+    PlanRef:
+      type: object
+      properties:
+        code:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+      required:
+      - code
+      - name
+    PlanRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        price_monthly:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        max_retailers:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_staff:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_products:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        features: {}
+        is_default:
+          type: boolean
+        is_active:
+          type: boolean
+      required:
+      - code
+      - name
     PreferredLanguageEnum:
       enum:
       - en
@@ -1238,6 +2765,15 @@ components:
         * `en` - English
         * `hi` - हिन्दी
         * `mr` - मराठी
+    ReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
     RecoveryCodes:
       type: object
       properties:
@@ -1254,6 +2790,14 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
+    RegistrationTypeEnum:
+      enum:
+      - REGULAR
+      - COMPOSITION
+      type: string
+      description: |-
+        * `REGULAR` - Regular
+        * `COMPOSITION` - Composition (reserved)
     RetailerAccountChoice:
       type: object
       description: One of the verified phone owner's distributors (ADR-015).
@@ -1352,6 +2896,86 @@ components:
       required:
       - code
       - name
+    Setting:
+      type: object
+      description: A registry definition with the current value; the settings UI is
+        generated from this.
+      properties:
+        key:
+          type: string
+        group:
+          type: string
+        type:
+          type: string
+        default:
+          nullable: true
+        value:
+          nullable: true
+        is_default:
+          type: boolean
+        allowed:
+          type: array
+          items: {}
+        reserved_values:
+          type: array
+          items: {}
+        min_value:
+          nullable: true
+        max_value:
+          nullable: true
+        pattern:
+          type: string
+          nullable: true
+        nullable:
+          type: boolean
+        description:
+          type: string
+        i18n_key:
+          type: string
+        edit_permission:
+          type: string
+        can_edit:
+          type: boolean
+        snapshot_on:
+          type: array
+          items:
+            type: string
+        depends_on:
+          allOf:
+          - $ref: '#/components/schemas/DependsOn'
+          nullable: true
+        status:
+          type: string
+      required:
+      - allowed
+      - can_edit
+      - default
+      - depends_on
+      - description
+      - edit_permission
+      - group
+      - i18n_key
+      - is_default
+      - key
+      - max_value
+      - min_value
+      - nullable
+      - pattern
+      - reserved_values
+      - snapshot_on
+      - status
+      - type
+      - value
+    SlugAvailability:
+      type: object
+      properties:
+        slug:
+          type: string
+        available:
+          type: boolean
+      required:
+      - available
+      - slug
     StaffLoginInputRequest:
       type: object
       properties:
@@ -1389,22 +3013,74 @@ components:
       - id
       - last_login
       - mfa_enabled
-    StatusEnum:
-      enum:
-      - authenticated
-      - handoff
-      - choose_tenant
-      - choose_account
-      - mfa_required
-      - mfa_setup_required
-      type: string
-      description: |-
-        * `authenticated` - authenticated
-        * `handoff` - handoff
-        * `choose_tenant` - choose_tenant
-        * `choose_account` - choose_account
-        * `mfa_required` - mfa_required
-        * `mfa_setup_required` - mfa_setup_required
+    State:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 2
+        name:
+          type: string
+          maxLength: 80
+        is_union_territory:
+          type: boolean
+      required:
+      - code
+      - name
+    Subscription:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/PlanRef'
+        status:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+      required:
+      - plan
+      - starts_at
+      - status
+    TaxRate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        label:
+          type: string
+          maxLength: 40
+        is_active:
+          type: boolean
+        notes:
+          type: string
+      required:
+      - id
+      - label
+      - rate
+    TaxRateRequest:
+      type: object
+      properties:
+        rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        is_active:
+          type: boolean
+        notes:
+          type: string
+      required:
+      - label
+      - rate
     TenantChoice:
       type: object
       properties:
@@ -1419,6 +3095,150 @@ components:
       - id
       - name
       - slug
+    TenantDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 30
+        status:
+          $ref: '#/components/schemas/TenantStatusEnum'
+        gstin:
+          type: string
+          maxLength: 15
+        state_code:
+          type: string
+        city:
+          type: string
+          maxLength: 100
+        plan:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        legal_name:
+          type: string
+          maxLength: 200
+        pan:
+          type: string
+          maxLength: 10
+        registration_type:
+          $ref: '#/components/schemas/RegistrationTypeEnum'
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        pincode:
+          type: string
+          maxLength: 6
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 16
+        suspended_reason:
+          type: string
+        suspended_at:
+          type: string
+          format: date-time
+          nullable: true
+        usage:
+          type: object
+          additionalProperties:
+            type: integer
+          readOnly: true
+        owner:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+          readOnly: true
+      required:
+      - address_line1
+      - city
+      - created_at
+      - email
+      - features
+      - gstin
+      - id
+      - legal_name
+      - name
+      - owner
+      - pan
+      - phone
+      - pincode
+      - plan
+      - slug
+      - state_code
+      - usage
+    TenantList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 30
+        status:
+          $ref: '#/components/schemas/TenantStatusEnum'
+        gstin:
+          type: string
+          maxLength: 15
+        state_code:
+          type: string
+        city:
+          type: string
+          maxLength: 100
+        plan:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - city
+      - created_at
+      - gstin
+      - id
+      - name
+      - plan
+      - slug
+      - state_code
+    TenantStatusEnum:
+      enum:
+      - ONBOARDING
+      - ACTIVE
+      - SUSPENDED
+      type: string
+      description: |-
+        * `ONBOARDING` - Onboarding
+        * `ACTIVE` - Active
+        * `SUSPENDED` - Suspended
     TokenResponse:
       type: object
       properties:

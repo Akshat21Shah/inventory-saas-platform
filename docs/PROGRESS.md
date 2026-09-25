@@ -85,6 +85,12 @@
       - When the Owner accepts an ONBOARDING tenant's invitation, the tenant becomes ACTIVE (ADR-030).
       - Owner rules (ADR-030): the last active owner can't be demoted or deactivated, and nobody can deactivate themselves.
       - The plan staff limit counts active members plus pending invitations, and applies only when enforcement is on.
+    - Onboarding and platform APIs (`/api/v1/platform/`, `platform.*` permissions, admin host only):
+      - Onboarding: `tenants/` POST in one transaction: tenant (ONBOARDING, GSTIN/PAN/state checked), profile, branding, Beta subscription and the Owner invitation email, audited in the tenant's log.
+      - Tenant endpoints: list (status/search), detail (usage, owner, flags), edit (a slug change needs `confirm_slug_change`), suspend (reason required; takes effect at once), reactivate (ACTIVE, or ONBOARDING if no owner yet), per-tenant flags, subscription, users, owner resend-invite while ONBOARDING, slug-available, dashboard counts.
+      - Masters: `plans/` (default switch), `feature-flags/` (a default change reaches every tenant), `tax-rates/` (rate immutable; activate/deactivate), `cess-types/`, `hsn-rate-hints/` (+ all-or-nothing CSV import).
+      - Platform settings `settings/registry|values/`, the all-tenant `audit-logs/`, and public `public/states/`.
+      - Cross-tenant reads go through `platform_db()`. The default warehouse stub stays in Phase 3 (not needed before inventory).
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
