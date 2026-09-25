@@ -21,6 +21,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  PublicBranding,
   PublicStatesListParams,
   State
 } from '../../model';
@@ -149,6 +150,229 @@ export function usePublicStatesList<TData = Awaited<ReturnType<typeof publicStat
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicStatesListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type publicTenantAssetResponse302 = {
+  data: void
+  status: 302
+}
+
+;
+export type publicTenantAssetResponseError = (publicTenantAssetResponse302) & {
+  headers: Headers;
+};
+
+export type publicTenantAssetResponse = (publicTenantAssetResponseError)
+
+export const getPublicTenantAssetUrl = (slug: string,
+    kind: string,) => {
+
+
+
+
+  return `/api/v1/public/tenants/${slug}/assets/${kind}/`
+}
+
+/**
+ * Stable URL for a brand image that redirects to a short-lived link (ADR-027).
+ */
+export const publicTenantAsset = async (slug: string,
+    kind: string, options?: Parameters<typeof apiFetch>[1]): Promise<publicTenantAssetResponse> => {
+
+  return apiFetch<publicTenantAssetResponse>(getPublicTenantAssetUrl(slug,kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPublicTenantAssetQueryKey = (slug: string,
+    kind: string,) => {
+    return [
+    `/api/v1/public/tenants/${slug}/assets/${kind}/`
+    ] as const;
+    }
+
+
+export const getPublicTenantAssetQueryOptions = <TData = Awaited<ReturnType<typeof publicTenantAsset>>, TError = void>(slug: string,
+    kind: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantAsset>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicTenantAssetQueryKey(slug,kind);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicTenantAsset>>> = ({ signal }) => publicTenantAsset(slug,kind, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined && kind !== null && kind !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicTenantAsset>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicTenantAssetQueryResult = NonNullable<Awaited<ReturnType<typeof publicTenantAsset>>>
+export type PublicTenantAssetQueryError = void
+
+
+export function usePublicTenantAsset<TData = Awaited<ReturnType<typeof publicTenantAsset>>, TError = void>(
+ slug: string,
+    kind: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantAsset>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicTenantAsset>>,
+          TError,
+          Awaited<ReturnType<typeof publicTenantAsset>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicTenantAsset<TData = Awaited<ReturnType<typeof publicTenantAsset>>, TError = void>(
+ slug: string,
+    kind: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantAsset>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicTenantAsset>>,
+          TError,
+          Awaited<ReturnType<typeof publicTenantAsset>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicTenantAsset<TData = Awaited<ReturnType<typeof publicTenantAsset>>, TError = void>(
+ slug: string,
+    kind: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantAsset>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePublicTenantAsset<TData = Awaited<ReturnType<typeof publicTenantAsset>>, TError = void>(
+ slug: string,
+    kind: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantAsset>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPublicTenantAssetQueryOptions(slug,kind,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type publicTenantBrandingResponse200 = {
+  data: PublicBranding
+  status: 200
+}
+
+export type publicTenantBrandingResponseSuccess = (publicTenantBrandingResponse200) & {
+  headers: Headers;
+};
+;
+
+export type publicTenantBrandingResponse = (publicTenantBrandingResponseSuccess)
+
+export const getPublicTenantBrandingUrl = (slug: string,) => {
+
+
+
+
+  return `/api/v1/public/tenants/${slug}/branding/`
+}
+
+export const publicTenantBranding = async (slug: string, options?: Parameters<typeof apiFetch>[1]): Promise<publicTenantBrandingResponse> => {
+
+  return apiFetch<publicTenantBrandingResponse>(getPublicTenantBrandingUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPublicTenantBrandingQueryKey = (slug: string,) => {
+    return [
+    `/api/v1/public/tenants/${slug}/branding/`
+    ] as const;
+    }
+
+
+export const getPublicTenantBrandingQueryOptions = <TData = Awaited<ReturnType<typeof publicTenantBranding>>, TError = unknown>(slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantBranding>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicTenantBrandingQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicTenantBranding>>> = ({ signal }) => publicTenantBranding(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicTenantBranding>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicTenantBrandingQueryResult = NonNullable<Awaited<ReturnType<typeof publicTenantBranding>>>
+export type PublicTenantBrandingQueryError = unknown
+
+
+export function usePublicTenantBranding<TData = Awaited<ReturnType<typeof publicTenantBranding>>, TError = unknown>(
+ slug: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantBranding>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicTenantBranding>>,
+          TError,
+          Awaited<ReturnType<typeof publicTenantBranding>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicTenantBranding<TData = Awaited<ReturnType<typeof publicTenantBranding>>, TError = unknown>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantBranding>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicTenantBranding>>,
+          TError,
+          Awaited<ReturnType<typeof publicTenantBranding>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicTenantBranding<TData = Awaited<ReturnType<typeof publicTenantBranding>>, TError = unknown>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantBranding>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePublicTenantBranding<TData = Awaited<ReturnType<typeof publicTenantBranding>>, TError = unknown>(
+ slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTenantBranding>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPublicTenantBrandingQueryOptions(slug,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

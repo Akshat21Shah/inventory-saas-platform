@@ -21,6 +21,8 @@ dependencies = [
     "sentry-sdk>=2.25",
     "cryptography>=45",
     "pyotp>=2.9",
+    "boto3>=1.40",
+    "pillow>=11.3",
 ]
 
 [dependency-groups]
@@ -64,7 +66,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "\\.venv/"]
 
 [[tool.mypy.overrides]]
-module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*"]
+module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*", "boto3.*", "botocore.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

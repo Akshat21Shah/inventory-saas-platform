@@ -5,6 +5,83 @@ info:
   description: Multi-tenant B2B inventory & ordering platform. All money values are
     decimal strings.
 paths:
+  /api/v1/audit-logs/:
+    get:
+      operationId: audit_logs_list
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+      - in: query
+        name: actor_id
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: since
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: target_id
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+      - in: query
+        name: target_type
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+      - in: query
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: until
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
   /api/v1/auth/handoff/exchange/:
     post:
       operationId: auth_handoff_exchange
@@ -1385,6 +1462,49 @@ paths:
                 items:
                   $ref: '#/components/schemas/State'
           description: ''
+  /api/v1/public/tenants/{slug}/assets/{kind}/:
+    get:
+      operationId: public_tenant_asset
+      description: Stable URL for a brand image that redirects to a short-lived link
+        (ADR-027).
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '302':
+          description: Redirect to a short-lived download link
+  /api/v1/public/tenants/{slug}/branding/:
+    get:
+      operationId: public_tenant_branding
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicBranding'
+          description: ''
   /api/v1/roles/:
     get:
       operationId: roles_list
@@ -1414,6 +1534,258 @@ paths:
                 items:
                   $ref: '#/components/schemas/Role'
           description: ''
+  /api/v1/settings/bank-details/:
+    get:
+      operationId: settings_bank_details
+      description: Bank details are never changed during impersonation (ADR-029).
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankDetails'
+          description: ''
+    put:
+      operationId: settings_bank_details_update
+      description: Bank details are never changed during impersonation (ADR-029).
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankDetailsInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankDetails'
+          description: ''
+  /api/v1/settings/branding/:
+    get:
+      operationId: settings_branding
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branding'
+          description: ''
+    patch:
+      operationId: settings_branding_update
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBrandingRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branding'
+          description: ''
+  /api/v1/settings/branding/assets/{kind}/:
+    post:
+      operationId: settings_branding_asset_upload
+      description: |-
+        Upload or remove a logo, favicon, app icon (``branding.manage``) or the authorised
+        signatory's image (``settings.manage``).
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssetUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branding'
+          description: ''
+    delete:
+      operationId: settings_branding_asset_delete
+      description: |-
+        Upload or remove a logo, favicon, app icon (``branding.manage``) or the authorised
+        signatory's image (``settings.manage``).
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/settings/business/:
+    get:
+      operationId: settings_business
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+          description: ''
+    patch:
+      operationId: settings_business_update
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBusinessRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+          description: ''
+  /api/v1/settings/features/:
+    get:
+      operationId: settings_features
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantFeature'
+          description: ''
+  /api/v1/settings/features/{code}/:
+    put:
+      operationId: settings_feature_toggle
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureToggleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantFeature'
+          description: ''
+  /api/v1/settings/registry/:
+    get:
+      operationId: settings_registry
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Setting'
+          description: ''
+  /api/v1/settings/signatory-image/:
+    get:
+      operationId: settings_signatory_image
+      description: 'The signatory image is never public: staff with ``settings.manage``
+        get a short link.'
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '302':
+          description: Redirect to a short-lived download link
+  /api/v1/settings/values/:
+    patch:
+      operationId: settings_values_update
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingValuesRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Setting'
+          description: ''
+  /api/v1/settings/values/{key}/:
+    delete:
+      operationId: settings_value_reset
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/staff/:
     get:
       operationId: staff_list
@@ -1613,6 +1985,14 @@ components:
         * `STAFF` - Staff
         * `RETAILER` - Retailer
         * `SYSTEM` - System
+    AssetUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required:
+      - file
     AuditLog:
       type: object
       properties:
@@ -1676,6 +2056,155 @@ components:
       - id
       - impersonator
       - tenant
+    BankDetails:
+      type: object
+      properties:
+        bank_account_name:
+          type: string
+          maxLength: 200
+        bank_account_number_masked:
+          type: string
+          readOnly: true
+        bank_ifsc:
+          type: string
+          maxLength: 11
+        bank_name:
+          type: string
+          maxLength: 120
+        bank_branch:
+          type: string
+          maxLength: 120
+        upi_id:
+          type: string
+          maxLength: 320
+      required:
+      - bank_account_name
+      - bank_account_number_masked
+      - bank_branch
+      - bank_ifsc
+      - bank_name
+      - upi_id
+    BankDetailsInputRequest:
+      type: object
+      properties:
+        bank_account_name:
+          type: string
+          maxLength: 200
+        bank_account_number:
+          type: string
+          writeOnly: true
+          maxLength: 20
+        bank_ifsc:
+          type: string
+          maxLength: 11
+        bank_name:
+          type: string
+          maxLength: 120
+        bank_branch:
+          type: string
+          maxLength: 120
+        upi_id:
+          type: string
+          maxLength: 320
+    Branding:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 120
+        primary_color:
+          type: string
+          maxLength: 7
+        logo_url:
+          type: string
+          readOnly: true
+          nullable: true
+        favicon_url:
+          type: string
+          readOnly: true
+          nullable: true
+        app_icon_url:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - app_icon_url
+      - display_name
+      - favicon_url
+      - logo_url
+      - primary_color
+    Business:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        legal_name:
+          type: string
+          maxLength: 200
+        gstin:
+          type: string
+          maxLength: 15
+        pan:
+          type: string
+          readOnly: true
+          maxLength: 10
+        state_code:
+          type: string
+          maxLength: 2
+        registration_type:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          description: Changed only by the platform team.
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        pincode:
+          type: string
+          maxLength: 6
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          maxLength: 16
+        invoice_terms:
+          type: string
+        invoice_footer:
+          type: string
+        signatory_name:
+          type: string
+          maxLength: 150
+        has_signatory_image:
+          type: boolean
+          readOnly: true
+      required:
+      - address_line1
+      - address_line2
+      - city
+      - email
+      - gstin
+      - has_signatory_image
+      - invoice_footer
+      - invoice_terms
+      - legal_name
+      - name
+      - pan
+      - phone
+      - pincode
+      - registration_type
+      - signatory_name
+      - slug
+      - state_code
     CalcMethodEnum:
       enum:
       - PERCENT
@@ -2502,6 +3031,65 @@ components:
       - new_password
       - token
       - uid
+    PatchedBrandingRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 120
+        primary_color:
+          type: string
+          minLength: 1
+          maxLength: 7
+    PatchedBusinessRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        legal_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          minLength: 1
+          maxLength: 15
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        address_line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 6
+        email:
+          type: string
+          format: email
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 16
+        invoice_terms:
+          type: string
+        invoice_footer:
+          type: string
+        signatory_name:
+          type: string
+          maxLength: 150
     PatchedCessTypeUpdateRequest:
       type: object
       properties:
@@ -2765,6 +3353,34 @@ components:
         * `en` - English
         * `hi` - हिन्दी
         * `mr` - मराठी
+    PublicBranding:
+      type: object
+      properties:
+        slug:
+          type: string
+        display_name:
+          type: string
+        primary_color:
+          type: string
+        status:
+          $ref: '#/components/schemas/TenantStatusEnum'
+        logo_url:
+          type: string
+          nullable: true
+        favicon_url:
+          type: string
+          nullable: true
+        app_icon_url:
+          type: string
+          nullable: true
+      required:
+      - app_icon_url
+      - display_name
+      - favicon_url
+      - logo_url
+      - primary_color
+      - slug
+      - status
     ReasonRequest:
       type: object
       properties:
@@ -3189,6 +3805,25 @@ components:
       - slug
       - state_code
       - usage
+    TenantFeature:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        tenant_toggleable:
+          type: boolean
+      required:
+      - code
+      - description
+      - enabled
+      - name
+      - tenant_toggleable
     TenantList:
       type: object
       properties:

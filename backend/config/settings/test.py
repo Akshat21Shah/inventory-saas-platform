@@ -26,3 +26,4 @@ LOGGING["handlers"]["default"]["formatter"] = "console"
 LOGGING["root"]["level"] = "WARNING"
 ALLOW_MOCK_INTEGRATIONS = True
 OTP_FIXED_CODE = None  # tests read real random codes from the mock SMS outbox
+STORAGE_BACKEND = "memory"

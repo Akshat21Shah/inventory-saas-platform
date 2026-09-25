@@ -13,6 +13,7 @@ api_v1: list[URLPattern | URLResolver] = [
     path("auth/", include("apps.accounts.api.urls")),
     path("", include("apps.accounts.api.staff_urls")),
     path("platform/", include("apps.platform.api.urls")),
+    path("", include("apps.platform.api.tenant_urls")),
     path("public/states/", PublicStatesView.as_view(), name="public-states"),
 ]
 

@@ -235,6 +235,14 @@ OTP_RESEND_AFTER_SECONDS = 30
 # when a mock is configured without the allowance.
 ALLOW_MOCK_INTEGRATIONS = env.bool("ALLOW_MOCK_INTEGRATIONS", default=False)
 SMS_PROVIDER = env("SMS_PROVIDER", default="mock")
+# Object storage (ADR-027): "s3" (AWS in prod, SeaweedFS in dev) or "memory" (tests).
+STORAGE_BACKEND = env("STORAGE_BACKEND", default="s3")
+S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", default="")  # empty = AWS
+S3_PUBLIC_ENDPOINT_URL = env("S3_PUBLIC_ENDPOINT_URL", default="")  # what browsers reach
+S3_BUCKET = env("S3_BUCKET", default="inventory-dev")
+S3_ACCESS_KEY = env("S3_ACCESS_KEY", default="")
+S3_SECRET_KEY = env("S3_SECRET_KEY", default="")
+S3_REGION = env("S3_REGION", default="ap-south-1")
 # Dev only: every OTP is this code (honoured only with ALLOW_MOCK_INTEGRATIONS).
 OTP_FIXED_CODE: str | None = env("OTP_FIXED_CODE", default=None)
 # Links in emails point at the web app: "{host}" is e.g. "admin.<domain>" or "<slug>.<domain>".

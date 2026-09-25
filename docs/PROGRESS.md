@@ -91,6 +91,19 @@
       - Masters: `plans/` (default switch), `feature-flags/` (a default change reaches every tenant), `tax-rates/` (rate immutable; activate/deactivate), `cess-types/`, `hsn-rate-hints/` (+ all-or-nothing CSV import).
       - Platform settings `settings/registry|values/`, the all-tenant `audit-logs/`, and public `public/states/`.
       - Cross-tenant reads go through `platform_db()`. The default warehouse stub stays in Phase 3 (not needed before inventory).
+    - Tenant settings and branding:
+      - Storage adapter (ADR-027): S3 via boto3 (SeaweedFS in dev) or in-memory (tests). Uploads go to the internal endpoint; download links are signed for `S3_PUBLIC_ENDPOINT_URL`. Keys are prefixed by tenant, and replaced files are deleted by a Celery task.
+      - Image uploads: PNG/JPEG/WebP judged by content (Pillow), at most 2 MB and 4096 px; SVG refused.
+      - Endpoints:
+        - `settings/business/`: any staff reads, `settings.manage` changes; the slug is read-only.
+        - `settings/bank-details/`: account number encrypted and masked, masked in the audit log, `impersonation_blocked`.
+        - `settings/registry/` and `values/`: per-key edit permission, plus reset.
+        - `settings/branding/` and `branding/assets/{logo|favicon|app_icon|signatory}/`.
+        - `settings/signatory-image/`: private, via a presigned redirect.
+        - `settings/features/`: tenant-toggleable flags only.
+        - `audit-logs/`: `audit.view`, own tenant only.
+        - Public `public/tenants/{slug}/branding/` and `.../assets/{kind}/` (a stable URL that 302s to a presigned link; never the signatory).
+      - Checked against the running stack: logo upload to SeaweedFS and download through the public redirect.
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
