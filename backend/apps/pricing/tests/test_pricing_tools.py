@@ -47,8 +47,14 @@ def w(tenant_a):
         lays = Brand.objects.create(name="Lays")
 
         def product(code, price, **extra):
-            p = Product.objects.create(code=code, name=f"Item {code}", unit=unit, hsn_code="1905",
-                                       base_price=D(price), **extra)
+            p = Product.objects.create(
+                code=code,
+                name=f"Item {code}",
+                unit=unit,
+                hsn_code="1905",
+                base_price=D(price),
+                **extra,
+            )
             ProductTaxRate.objects.create(product=p, gst_rate=D("5"), effective_from=today_ist())
             return p
 
@@ -58,12 +64,29 @@ def w(tenant_a):
         gold = PriceList.objects.create(name="Gold")
         PriceListItem.objects.create(price_list=gold, product=a, price=D("9.00"))
         silver = PriceList.objects.create(name="Silver")
-        src = create_retailer(shop_name="Source", phone="9876500001", send_welcome=False,
-                              extra={"price_list_id": gold.pk})
-        dst = create_retailer(shop_name="Target", phone="9876500002", send_welcome=False,
-                              extra={"price_list_id": silver.pk})
-    return {"a": a, "b": b, "c": c, "food": food, "lays": lays, "gold": gold, "silver": silver,
-            "src": src, "dst": dst}
+        src = create_retailer(
+            shop_name="Source",
+            phone="9876500001",
+            send_welcome=False,
+            extra={"price_list_id": gold.pk},
+        )
+        dst = create_retailer(
+            shop_name="Target",
+            phone="9876500002",
+            send_welcome=False,
+            extra={"price_list_id": silver.pk},
+        )
+    return {
+        "a": a,
+        "b": b,
+        "c": c,
+        "food": food,
+        "lays": lays,
+        "gold": gold,
+        "silver": silver,
+        "src": src,
+        "dst": dst,
+    }
 
 
 # --- Discount grid -----------------------------------------------------------------------------
@@ -75,8 +98,13 @@ def test_discount_grid(tenant_a, tenant_b, w):
     shop = w["dst"]
     with tenant_context(tenant_a.pk):
         dated = DiscountRule.objects.create(
-            name="Dated", discount_type="PERCENT", value=D("3"), scope_type="PRODUCT",
-            product=w["a"], audience_type="RETAILER", retailer=shop,
+            name="Dated",
+            discount_type="PERCENT",
+            value=D("3"),
+            scope_type="PRODUCT",
+            product=w["a"],
+            audience_type="RETAILER",
+            retailer=shop,
             valid_to=today_ist() + timedelta(days=5),
         )
     url = f"{API}/retailers/{shop.pk}/discount-grid/"
@@ -84,57 +112,101 @@ def test_discount_grid(tenant_a, tenant_b, w):
     assert set(rows) == {"A", "B", "C"}
     assert rows["A"]["simple"] is None and [o["name"] for o in rows["A"]["others"]] == ["Dated"]
     assert rows["B"]["price"]["net_unit_price"] == "20.00"
-    assert [r["product"]["code"] for r in owner.get(url, {"brand": str(w["lays"].pk)}).json()[
-        "results"]] == ["A", "B"]
+    assert [
+        r["product"]["code"] for r in owner.get(url, {"brand": str(w["lays"].pk)}).json()["results"]
+    ] == ["A", "B"]
 
     # Live preview: nothing is saved.
-    preview = owner.post(f"{url}preview/", {"items": [
-        {"product": str(w["b"].pk), "discount_type": "PERCENT", "value": "10"},
-    ]}, format="json").json()
+    preview = owner.post(
+        f"{url}preview/",
+        {
+            "items": [
+                {"product": str(w["b"].pk), "discount_type": "PERCENT", "value": "10"},
+            ]
+        },
+        format="json",
+    ).json()
     assert preview[0]["price"]["net_unit_price"] == "18.00"
     assert preview[0]["price"]["discount_percent"] == "10.00"
     with tenant_context(tenant_a.pk):
         assert DiscountRule.objects.count() == 1
 
-    saved = owner.put(url, {"items": [
-        {"product": str(w["b"].pk), "discount_type": "PERCENT", "value": "10"},
-        {"product": str(w["c"].pk), "discount_type": "FLAT_PER_UNIT", "value": "1.50"},
-    ]}, format="json").json()
+    saved = owner.put(
+        url,
+        {
+            "items": [
+                {"product": str(w["b"].pk), "discount_type": "PERCENT", "value": "10"},
+                {"product": str(w["c"].pk), "discount_type": "FLAT_PER_UNIT", "value": "1.50"},
+            ]
+        },
+        format="json",
+    ).json()
     assert saved == {"changed": 2, "warnings": []}
-    changed = owner.put(url, {"items": [
-        {"product": str(w["b"].pk), "discount_type": "PERCENT", "value": "12.5"},
-        {"product": str(w["c"].pk), "discount_type": "FLAT_PER_UNIT", "value": None},
-    ]}, format="json").json()
+    changed = owner.put(
+        url,
+        {
+            "items": [
+                {"product": str(w["b"].pk), "discount_type": "PERCENT", "value": "12.5"},
+                {"product": str(w["c"].pk), "discount_type": "FLAT_PER_UNIT", "value": None},
+            ]
+        },
+        format="json",
+    ).json()
     assert changed["changed"] == 2
     entry = AuditLog.objects.filter(action="pricing.shop_discounts_changed").last()
     assert entry is not None and entry.changes == {"B": ["10%", "12.5%"], "C": ["₹1.50 each", None]}
     with tenant_context(tenant_a.pk):
         simple = DiscountRule.objects.get(product=w["b"])
         assert (simple.name, simple.value, simple.retailer_id) == (
-            f"{shop.code} · B", D("12.50"), shop.pk)
+            f"{shop.code} · B",
+            D("12.50"),
+            shop.pk,
+        )
         assert not DiscountRule.objects.filter(product=w["c"]).exists()
         assert DiscountRule.objects.filter(pk=dated.pk).exists()  # the dated rule is untouched
     rows = {r["product"]["code"]: r for r in owner.get(url).json()["results"]}
     assert rows["B"]["simple"]["value"] == "12.50"
     assert rows["B"]["price"]["net_unit_price"] == "17.50"
 
-    free = owner.put(url, {"items": [
-        {"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "100"},
-    ]}, format="json").json()
+    free = owner.put(
+        url,
+        {
+            "items": [
+                {"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "100"},
+            ]
+        },
+        format="json",
+    ).json()
     assert free["warnings"][0]["message"].startswith("These discounts make 1 product free")
-    bad = owner.put(url, {"items": [
-        {"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "120"},
-    ]}, format="json")
+    bad = owner.put(
+        url,
+        {
+            "items": [
+                {"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "120"},
+            ]
+        },
+        format="json",
+    )
     assert "items.0.value" in bad.json()["error"]["details"]["fields"]
 
     other = _client(tenant_b)
     assert other.get(url).status_code == 404
-    assert other.put(url, {"items": [
-        {"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "5"}]},
-        format="json").status_code == 404
-    assert other.post(f"{url}preview/", {"items": [
-        {"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "5"}]},
-        format="json").status_code == 404
+    assert (
+        other.put(
+            url,
+            {"items": [{"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "5"}]},
+            format="json",
+        ).status_code
+        == 404
+    )
+    assert (
+        other.post(
+            f"{url}preview/",
+            {"items": [{"product": str(w["a"].pk), "discount_type": "PERCENT", "value": "5"}]},
+            format="json",
+        ).status_code
+        == 404
+    )
     sales = _client(tenant_a, "SALES")  # pricing.view: may look, may not save
     assert sales.get(url).status_code == 200
     assert sales.put(url, {"items": []}, format="json").status_code == 403
@@ -162,15 +234,32 @@ def two_shops(tenant_a, w):
         RetailerPrice.objects.create(retailer=dst, product=w["b"], price=D("19.00"))
         RetailerPrice.objects.create(retailer=dst, product=w["c"], price=D("30.00"))
         slabbed = DiscountRule.objects.create(
-            name=f"{src.code} bulk", discount_type="PERCENT", value=D("0"), scope_type="CATEGORY",
-            category=w["food"], audience_type="RETAILER", retailer=src)
+            name=f"{src.code} bulk",
+            discount_type="PERCENT",
+            value=D("0"),
+            scope_type="CATEGORY",
+            category=w["food"],
+            audience_type="RETAILER",
+            retailer=src,
+        )
         DiscountSlab.objects.create(rule=slabbed, min_qty=D("12"), value=D("4"))
         DiscountRule.objects.create(
-            name=f"{src.code} · A", discount_type="PERCENT", value=D("5"), scope_type="PRODUCT",
-            product=w["a"], audience_type="RETAILER", retailer=src)
+            name=f"{src.code} · A",
+            discount_type="PERCENT",
+            value=D("5"),
+            scope_type="PRODUCT",
+            product=w["a"],
+            audience_type="RETAILER",
+            retailer=src,
+        )
         DiscountRule.objects.create(
-            name="Target's own", discount_type="PERCENT", value=D("2"), scope_type="ALL",
-            audience_type="RETAILER", retailer=dst)
+            name="Target's own",
+            discount_type="PERCENT",
+            value=D("2"),
+            scope_type="ALL",
+            audience_type="RETAILER",
+            retailer=dst,
+        )
     return src, dst
 
 
@@ -185,7 +274,8 @@ def test_copy_pricing(tenant_a, tenant_b, w, two_shops, mode):
     assert (plan["price_list_from"], plan["price_list_to"]) == ("Silver", "Gold")
     assert [p["code"] for p in plan["prices_add"]] == ["A"]
     assert [(p["code"], p["old"], p["new"]) for p in plan["prices_update"]] == [
-        ("B", "19.00", "18.00")]
+        ("B", "19.00", "18.00")
+    ]
     if mode == "REPLACE":
         assert [p["code"] for p in plan["prices_remove"]] == ["C"]
         assert plan["rules_remove"] == ["Target's own"]
@@ -227,15 +317,25 @@ def test_copy_in_add_mode_replaces_a_shop_and_product_simple_rule(tenant_a, w, t
     src, dst = two_shops
     with tenant_context(tenant_a.pk):
         DiscountRule.objects.create(
-            name=f"{dst.code} · A", discount_type="PERCENT", value=D("1"), scope_type="PRODUCT",
-            product=w["a"], audience_type="RETAILER", retailer=dst)
+            name=f"{dst.code} · A",
+            discount_type="PERCENT",
+            value=D("1"),
+            scope_type="PRODUCT",
+            product=w["a"],
+            audience_type="RETAILER",
+            retailer=dst,
+        )
     owner = _client(tenant_a)
     base = f"{API}/retailers/{dst.pk}/copy-pricing/"
-    plan = owner.post(f"{base}preview/", {"copy_from": str(src.pk), "mode": "ADD"},
-                      format="json").json()
+    plan = owner.post(
+        f"{base}preview/", {"copy_from": str(src.pk), "mode": "ADD"}, format="json"
+    ).json()
     assert plan["rules_replace"] == [f"{dst.code} · A"]
-    owner.post(base, {"copy_from": str(src.pk), "mode": "ADD",
-                      "expected_changes": plan["changes"]}, format="json")
+    owner.post(
+        base,
+        {"copy_from": str(src.pk), "mode": "ADD", "expected_changes": plan["changes"]},
+        format="json",
+    )
     with tenant_context(tenant_a.pk):
         [rule] = DiscountRule.objects.filter(retailer=dst, product=w["a"])
         assert rule.value == D("5.00")  # one simple rule per shop and product
@@ -254,15 +354,22 @@ def test_bulk_percentage_change(tenant_a, tenant_b, w):
     body = {"percent": "5", "brand": str(w["lays"].pk)}
     preview = owner.post(f"{base}preview/", body, format="json").json()
     assert [(r["code"], r["old"], r["new"]) for r in preview["rows"]] == [
-        ("A", "9.00", "9.45"), ("B", "19.99", "20.99")]  # 20.9895 → 20.99
+        ("A", "9.00", "9.45"),
+        ("B", "19.99", "20.99"),
+    ]  # 20.9895 → 20.99
     rupees = owner.post(f"{base}preview/", {**body, "rounding": "RUPEE"}, format="json").json()
     # 9.45 → 9 (no change, so not listed); 20.99 → 21
     assert [(r["code"], r["new"]) for r in rupees["rows"]] == [("B", "21.00")]
     assert rupees["count"] == 1
-    more = owner.post(f"{base}preview/", {"percent": "-10", "category": str(w["food"].pk),
-                                          "include_missing": True}, format="json").json()
+    more = owner.post(
+        f"{base}preview/",
+        {"percent": "-10", "category": str(w["food"].pk), "include_missing": True},
+        format="json",
+    ).json()
     assert [(r["code"], r["old"], r["new"]) for r in more["rows"]] == [
-        ("A", "9.00", "8.10"), ("C", None, "30.00")]  # C starts from the standard 33.33
+        ("A", "9.00", "8.10"),
+        ("C", None, "30.00"),
+    ]  # C starts from the standard 33.33
     assert more["added"] == 1
 
     stale = owner.post(base, {**body, "expected_count": 5}, format="json")
@@ -270,8 +377,9 @@ def test_bulk_percentage_change(tenant_a, tenant_b, w):
     done = owner.post(base, {**body, "expected_count": 2}, format="json").json()
     assert done == {"changed": 2, "warnings": []}
     with tenant_context(tenant_a.pk):
-        prices = dict(PriceListItem.objects.filter(price_list=gold).values_list(
-            "product__code", "price"))
+        prices = dict(
+            PriceListItem.objects.filter(price_list=gold).values_list("product__code", "price")
+        )
     assert prices == {"A": D("9.45"), "B": D("20.99")}
     assert AuditLog.objects.get(action="pricing.price_list_adjusted").metadata["percent"] == "5"
     assert AuditLog.objects.filter(action="pricing.price_list_prices_changed").exists()
@@ -293,8 +401,14 @@ def test_shop_pricing_report(tenant_a, tenant_b, w, two_shops):
         plain = create_retailer(shop_name="Plain", phone="9876500003", send_welcome=False)
         RetailerPrice.objects.create(retailer=dst, product=w["a"], price=D("0"))  # free
         DiscountRule.objects.create(  # makes B free for the source shop (18 - 100%)
-            name="B free", discount_type="PERCENT", value=D("100"), scope_type="PRODUCT",
-            product=w["b"], audience_type="RETAILER", retailer=src)
+            name="B free",
+            discount_type="PERCENT",
+            value=D("100"),
+            scope_type="PRODUCT",
+            product=w["b"],
+            audience_type="RETAILER",
+            retailer=src,
+        )
     owner = _client(tenant_a)
     report = owner.get(f"{API}/pricing/shop-report/").json()["results"]
     rows = {r["shop_name"]: r for r in report}
@@ -328,10 +442,17 @@ def test_free_products_follow_the_combination_setting(tenant_a, w, combination, 
 
     with tenant_context(tenant_a.pk):
         TenantSetting.objects.update_or_create(
-            key="pricing.discount_combination", defaults={"value": combination})
+            key="pricing.discount_combination", defaults={"value": combination}
+        )
         for value in ("60", "40"):
-            DiscountRule.objects.create(name=value, discount_type="PERCENT", value=D(value),
-                                        scope_type="PRODUCT", product=w["c"], audience_type="ALL")
+            DiscountRule.objects.create(
+                name=value,
+                discount_type="PERCENT",
+                value=D(value),
+                scope_type="PRODUCT",
+                product=w["c"],
+                audience_type="ALL",
+            )
     cache.clear()
     with tenant_context(tenant_a.pk):
         found = [p.code for p in free_products(w["dst"])]
