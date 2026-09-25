@@ -1,4 +1,5 @@
 export * from './auth/auth';
+export * from './catalog/catalog';
 export * from './meta/meta';
 export * from './platform/platform';
 export * from './public/public';

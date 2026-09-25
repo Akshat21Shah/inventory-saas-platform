@@ -552,6 +552,222 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
           description: ''
+  /api/v1/brands/:
+    get:
+      operationId: catalog_brands_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBrandList'
+          description: ''
+    post:
+      operationId: catalog_brands_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+  /api/v1/brands/{brand_id}/:
+    patch:
+      operationId: catalog_brands_update
+      parameters:
+      - in: path
+        name: brand_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBrandRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+    delete:
+      operationId: catalog_brands_delete
+      parameters:
+      - in: path
+        name: brand_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/categories/:
+    get:
+      operationId: catalog_categories_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: catalog_categories_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/categories/{category_id}/:
+    get:
+      operationId: catalog_categories_retrieve
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: catalog_categories_update
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    delete:
+      operationId: catalog_categories_delete
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/categories/tree/:
+    get:
+      operationId: catalog_categories_tree
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryTreeNode'
+          description: ''
   /api/v1/meta/:
     get:
       operationId: meta_retrieve
@@ -1523,6 +1739,365 @@ paths:
               schema:
                 $ref: '#/components/schemas/SlugAvailability'
           description: ''
+  /api/v1/products/:
+    get:
+      operationId: catalog_products_list
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: hsn_prefix
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          pattern: ^[0-9]{1,8}$
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+          nullable: true
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: show_in_shop
+        schema:
+          type: boolean
+          nullable: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+    post:
+      operationId: catalog_products_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/{product_id}/:
+    get:
+      operationId: catalog_products_retrieve
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+    patch:
+      operationId: catalog_products_update
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+    delete:
+      operationId: catalog_products_delete
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/{product_id}/barcodes/:
+    post:
+      operationId: catalog_product_barcodes_create
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BarcodeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Barcode'
+          description: ''
+  /api/v1/products/{product_id}/barcodes/{barcode_id}/:
+    delete:
+      operationId: catalog_product_barcodes_delete
+      parameters:
+      - in: path
+        name: barcode_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/{product_id}/tax-rates/:
+    get:
+      operationId: catalog_product_tax_rates_list
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductTaxRate'
+          description: ''
+    post:
+      operationId: catalog_product_tax_rates_schedule
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/{product_id}/tax-rates/{rate_id}/cancel/:
+    post:
+      operationId: catalog_product_tax_rates_cancel
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: rate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/bulk/:
+    post:
+      operationId: catalog_products_bulk
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkResult'
+          description: ''
+  /api/v1/products/hsn-hint/:
+    get:
+      operationId: catalog_hsn_hint
+      parameters:
+      - in: query
+        name: hsn
+        schema:
+          type: string
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsnHintResult'
+          description: ''
+  /api/v1/products/lookup/:
+    get:
+      operationId: catalog_products_lookup
+      parameters:
+      - in: query
+        name: barcode
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/tax-rates/schedule/:
+    post:
+      operationId: catalog_tax_rates_bulk_schedule
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkScheduleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkScheduleResult'
+          description: ''
   /api/v1/public/states/:
     get:
       operationId: public_states_list
@@ -2071,8 +2646,112 @@ paths:
               schema:
                 $ref: '#/components/schemas/Invitation'
           description: ''
+  /api/v1/units/:
+    get:
+      operationId: catalog_units_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUnitList'
+          description: ''
+    post:
+      operationId: catalog_units_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+  /api/v1/units/{unit_id}/:
+    patch:
+      operationId: catalog_units_update
+      parameters:
+      - in: path
+        name: unit_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+    delete:
+      operationId: catalog_units_delete
+      parameters:
+      - in: path
+        name: unit_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
+    ActionEnum:
+      enum:
+      - activate
+      - deactivate
+      - show_in_shop
+      - hide_from_shop
+      - set_category
+      - set_brand
+      type: string
+      description: |-
+        * `activate` - activate
+        * `deactivate` - deactivate
+        * `show_in_shop` - show_in_shop
+        * `hide_from_shop` - hide_from_shop
+        * `set_category` - set_category
+        * `set_brand` - set_brand
     ActorTypeEnum:
       enum:
       - PLATFORM
@@ -2232,6 +2911,50 @@ components:
         upi_id:
           type: string
           maxLength: 320
+    Barcode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        barcode:
+          type: string
+          maxLength: 64
+      required:
+      - barcode
+      - id
+    BarcodeRequest:
+      type: object
+      properties:
+        barcode:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+      - barcode
+    Brand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+      required:
+      - id
+      - name
+    BrandRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+      - name
     Branding:
       type: object
       properties:
@@ -2259,6 +2982,95 @@ components:
       - favicon_url
       - logo_url
       - primary_color
+    BulkRequest:
+      type: object
+      properties:
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        value:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - action
+      - product_ids
+    BulkResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
+    BulkScheduleRequest:
+      type: object
+      properties:
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_type:
+          type: string
+          format: uuid
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          default: '0.000'
+        effective_from:
+          type: string
+          format: date
+        reason:
+          type: string
+          default: ''
+          maxLength: 200
+        hsn_prefix:
+          type: string
+          minLength: 1
+          default: ''
+          pattern: ^[0-9]{2,8}$
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 5000
+        preview:
+          type: boolean
+          default: true
+        expected_count:
+          type: integer
+          minimum: 0
+      required:
+      - effective_from
+      - gst_rate
+    BulkScheduleResult:
+      type: object
+      properties:
+        count:
+          type: integer
+        skipped:
+          type: integer
+        sample:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        committed:
+          type: boolean
+      required:
+      - committed
+      - count
     Business:
       type: object
       properties:
@@ -2339,6 +3151,87 @@ components:
       description: |-
         * `PERCENT` - Percentage of taxable value
         * `SPECIFIC_PER_UNIT` - Fixed amount per unit (reserved)
+    CancelRateRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - reason
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        parent_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        level:
+          type: integer
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - level
+      - name
+      - parent_id
+      - slug
+      - sort_order
+    CategoryTreeNode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        level:
+          type: integer
+        sort_order:
+          type: integer
+        children:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - children
+      - id
+      - level
+      - name
+      - sort_order
+    CategoryWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        sort_order:
+          type: integer
+          default: 0
+      required:
+      - name
     CessType:
       type: object
       properties:
@@ -2548,6 +3441,15 @@ components:
       - effective_from
       - gst_rate
       - hsn_prefix
+    HsnHintResult:
+      type: object
+      properties:
+        hint:
+          allOf:
+          - $ref: '#/components/schemas/HsnSuggestion'
+          nullable: true
+      required:
+      - hint
     HsnImportRequest:
       type: object
       properties:
@@ -2566,6 +3468,21 @@ components:
       required:
       - created
       - updated
+    HsnSuggestion:
+      type: object
+      properties:
+        hsn_prefix:
+          type: string
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        description:
+          type: string
+      required:
+      - description
+      - gst_rate
+      - hsn_prefix
     ImpersonationReasonRequest:
       type: object
       properties:
@@ -3133,6 +4050,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditLog'
+    PaginatedBrandList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Brand'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
     PaginatedHsnHintList:
       type: object
       required:
@@ -3209,6 +4164,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Membership'
+    PaginatedProductListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
     PaginatedTenantListList:
       type: object
       required:
@@ -3228,6 +4202,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TenantList'
+    PaginatedUnitList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Unit'
     PasswordAndFactorInputRequest:
       type: object
       properties:
@@ -3285,6 +4278,13 @@ components:
       - new_password
       - token
       - uid
+    PatchedBrandRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
     PatchedBrandingRequest:
       type: object
       properties:
@@ -3344,6 +4344,19 @@ components:
         signatory_name:
           type: string
           maxLength: 150
+    PatchedCategoryUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        sort_order:
+          type: integer
     PatchedCessTypeUpdateRequest:
       type: object
       properties:
@@ -3426,6 +4439,75 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedProductUpdateRequest:
+      type: object
+      description: Edits; the GST rate changes only through a scheduled rate change.
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        unit:
+          type: string
+          format: uuid
+        pack_unit:
+          type: string
+          format: uuid
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        hsn_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        show_in_shop:
+          type: boolean
+        is_active:
+          type: boolean
     PatchedSettingValuesRequest:
       type: object
       properties:
@@ -3493,6 +4575,27 @@ components:
         confirm_slug_change:
           type: boolean
           default: false
+    PatchedUnitWriteRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        allows_decimal:
+          type: boolean
+          default: false
+        uqc:
+          type: string
+          minLength: 1
+          maxLength: 10
+        is_active:
+          type: boolean
+          default: true
     Permission:
       type: object
       properties:
@@ -3607,6 +4710,370 @@ components:
         * `en` - English
         * `hi` - हिन्दी
         * `mr` - मराठी
+    ProductDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/Unit'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/Unit'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        hsn_code:
+          type: string
+          readOnly: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          readOnly: true
+        show_in_shop:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        barcodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Barcode'
+          readOnly: true
+        current_rate:
+          allOf:
+          - $ref: '#/components/schemas/ProductTaxRate'
+          nullable: true
+          readOnly: true
+        tax_rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductTaxRate'
+          readOnly: true
+        hsn_hint:
+          allOf:
+          - $ref: '#/components/schemas/HsnSuggestion'
+          nullable: true
+          readOnly: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - barcodes
+      - base_price
+      - brand
+      - category
+      - code
+      - created_at
+      - current_rate
+      - description
+      - hsn_code
+      - hsn_hint
+      - id
+      - is_active
+      - min_order_qty
+      - mrp
+      - name
+      - order_multiple
+      - pack_size
+      - pack_unit
+      - reorder_level
+      - show_in_shop
+      - tags
+      - tax_rates
+      - unit
+      - updated_at
+      - warnings
+    ProductList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        unit:
+          type: string
+          readOnly: true
+        hsn_code:
+          type: string
+          readOnly: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          nullable: true
+          readOnly: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        show_in_shop:
+          type: boolean
+          readOnly: true
+      required:
+      - base_price
+      - brand
+      - category
+      - code
+      - gst_rate
+      - hsn_code
+      - id
+      - is_active
+      - mrp
+      - name
+      - show_in_shop
+      - unit
+    ProductTaxRate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        cess_type:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        effective_from:
+          type: string
+          format: date
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        state:
+          type: string
+          description: CANCELLED, SCHEDULED (future), CURRENT or PAST.
+          readOnly: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancel_reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cancel_reason
+      - cancelled_at
+      - cess_rate
+      - cess_type
+      - created_at
+      - effective_from
+      - gst_rate
+      - id
+      - reason
+      - state
+    ProductWriteRequest:
+      type: object
+      description: 'Create: code, name, unit, hsn_code, base_price and gst_rate are
+        required.'
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          default: ''
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        unit:
+          type: string
+          format: uuid
+        pack_unit:
+          type: string
+          format: uuid
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        hsn_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          default: '1.000'
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          default: '1.000'
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          default: '0.000'
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        show_in_shop:
+          type: boolean
+          default: true
+        is_active:
+          type: boolean
+          default: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_type:
+          type: string
+          format: uuid
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          default: '0.000'
+        barcodes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+      - base_price
+      - code
+      - gst_rate
+      - hsn_code
+      - name
+      - unit
     PublicBranding:
       type: object
       properties:
@@ -3655,6 +5122,17 @@ components:
             type: string
       required:
       - recovery_codes
+    Ref:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
     RefreshInputRequest:
       type: object
       properties:
@@ -3768,6 +5246,32 @@ components:
       required:
       - code
       - name
+    ScheduleRateRequest:
+      type: object
+      properties:
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_type:
+          type: string
+          format: uuid
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          default: '0.000'
+        effective_from:
+          type: string
+          format: date
+        reason:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - effective_from
+      - gst_rate
     SessionPerson:
       type: object
       properties:
@@ -4220,6 +5724,56 @@ components:
       required:
       - access
       - access_expires_at
+    Unit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 10
+        name:
+          type: string
+          maxLength: 60
+        allows_decimal:
+          type: boolean
+        uqc:
+          type: string
+          maxLength: 10
+        is_active:
+          type: boolean
+      required:
+      - code
+      - id
+      - name
+      - uqc
+    UnitWriteRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        allows_decimal:
+          type: boolean
+          default: false
+        uqc:
+          type: string
+          minLength: 1
+          maxLength: 10
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - code
+      - name
+      - uqc
     UserTypeEnum:
       enum:
       - PLATFORM
@@ -4230,6 +5784,20 @@ components:
         * `PLATFORM` - Platform
         * `STAFF` - Distributor staff
         * `RETAILER` - Retailer
+    Warning:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+      required:
+      - code
+      - details
+      - message
   securitySchemes:
     jwtAuth:
       type: http

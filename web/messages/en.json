@@ -238,7 +238,11 @@
     "IMPERSONATION_READ_ONLY": "This support session is view-only. Switch to act mode (with a reason) to make changes.",
     "IMPERSONATION_BLOCKED": "This can't be done in a support session, even in act mode.",
     "NETWORK_ERROR": "You seem to be offline. Check your connection and try again.",
-    "UNKNOWN_ERROR": "Something went wrong. Please try again."
+    "UNKNOWN_ERROR": "Something went wrong. Please try again.",
+    "IN_USE": "This is still in use, so it can't be deleted.",
+    "CATEGORY_TOO_DEEP": "Categories can be at most 3 levels deep.",
+    "TAX_RATE_NOT_CANCELLABLE": "Only a GST change that hasn't started yet can be cancelled.",
+    "PREVIEW_OUT_OF_DATE": "The matching products changed since the preview. Preview again before confirming."
   },
   "designSystem": {
     "title": "Design system",
