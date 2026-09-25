@@ -380,3 +380,31 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   - Per-IP rate limits and audit IPs cannot be spoofed from the browser, and only the load balancer set-up remains to verify before launch.
   - `next dev`/`next start` are replaced by `node server.mjs` (Turbopack and HMR still work).
 
+
+## ADR-033 — Phase 1 review follow-ups: platform-alias reads, branding cache, dev 2FA key, GSTIN rules
+- **Status:** Accepted — 2026-09-25 (product owner, end-of-phase review).
+- **Decision:**
+  1. **Platform alias reads after writes.**
+     - The `platform` alias is a separate connection, so it cannot see the current request's uncommitted rows.
+     - A view whose write handler reads through it opts out of the request transaction, commits its write in its own `atomic()` block, then reads (`CommitThenReadView`).
+     - `common/tests/test_platform_alias_reads.py` finds every function that reaches `platform_db(...)` (directly or through module-level helpers) and fails if a write handler reaches one inside the request transaction.
+  2. **Public branding cache.**
+     - The pre-login branding response is cached per tenant slug in Redis (`public_branding:<slug>`, 10-minute safety TTL).
+     - It is invalidated on commit by every change that affects it: branding and brand images, business name, web address (old and new), status (suspend, reactivate, owner activation).
+     - Unknown slugs are not cached. Brand image URLs carry a version (`?v=`) that changes with the stored object.
+     - The web server does not cache it (every page gets the current state from Redis).
+  3. **Dev 2FA key.** The public key that `manage.py seed` sets (`DEV_TOTP_SECRET`) is guarded in three places:
+     - The seed and `reset_e2e_limits` refuse to run unless DEBUG is on.
+     - `mfa.matching_step` never accepts the key when DEBUG is off.
+     - The production image runs `check --deploy --database default --fail-level ERROR` before starting uvicorn. `accounts.E003` fails if any account has the key. `accounts.E004` fails if 2FA secrets cannot be decrypted (for example a development database). The image also sets `DJANGO_SETTINGS_MODULE=config.settings.prod`.
+     - Prod settings also refuse the dev field-encryption key (ADR-031).
+  4. **GSTIN rules.**
+     - Spaces are removed and letters uppercased before validation.
+     - The state code must be an active GST state, and the PAN holder type (6th character) must be valid (list to verify, pre-production item 6).
+     - Character 13 is 1–9 or a letter, character 14 is Z, and the check character must match (the error adds "Check for mix-ups like O/0, I/1 or S/5.").
+     - Every error names the wrong part.
+     - A GSTIN is unique across tenants; the same PAN in another state is a separate tenant.
+     - The PAN is never an input: it is characters 3–12 of the GSTIN.
+     - The same rules apply to onboarding, super admin edits and the distributor's business settings.
+  5. **E2E repeatability.** `manage.py reset_e2e_limits` (DEBUG only) clears rate-limit counters for the test accounts and all per-IP counters, and resets their lockout and 2FA replay state. Playwright runs it in global set-up and before each sign-in step, so no test waits for a time window.
+- **Consequences:** Phase 5 adds the GST identity lock after the first invoice (PLAN task 5.13).

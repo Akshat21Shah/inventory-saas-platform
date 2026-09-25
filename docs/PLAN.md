@@ -1436,6 +1436,7 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 5.10 | Reconciliation property test (random scenarios) | M |
 | 5.11 | FE distributor: invoices, credit notes, record payment, ledger statement, receivables ageing, hold approvals | L |
 | 5.12 | FE retailer: invoices, statement, outstanding | M |
+| 5.13 | Lock the tenant's GST identity after its first invoice (product-owner note, 2026-09-25): once a tenant has issued an invoice, GSTIN, legal name and state are read-only for the distributor and in the normal super admin edit. Changing them needs a separate super admin action with a reason, recorded in the audit log, and never alters invoices already issued (they keep their snapshot) | M |
 
 ### Phase 6 — Notifications
 | # | Task | Size |
@@ -1642,6 +1643,7 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 030 | Lockout 5/15 min + email, CGNAT-aware rate limits as platform settings, `security.require_staff_2fa`, multiple owners, super-admin-only slug change, ONBOARDING → ACTIVE on owner acceptance (2026-09-25) |
 | 031 | Field-level encryption with MultiFernet and rotatable keys (2026-09-25) |
 | 032 | Neutral "unavailable" tenant state (public `available` flag, one `TENANT_UNAVAILABLE` answer), reset limit as a platform setting, forwarded headers set by our web server and trusted by Django only from configured proxies (2026-09-25) |
+| 033 | Phase 1 review follow-ups: commit before platform-alias reads (static test), Redis public-branding cache with on-commit invalidation, dev 2FA key guard + production startup check, GSTIN rules, repeatable E2E (2026-09-25) |
 
 ### 10.2 Follow-up answers (2026-09-25)
 | # | Question | Answer |

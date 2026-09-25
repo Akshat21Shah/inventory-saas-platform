@@ -149,6 +149,12 @@
       - Bug found by the E2E and fixed: creating, editing, suspending or reactivating a tenant read the response through the platform connection before the request committed, so a new tenant came back "not found" (and the request rolled back) and edits came back unchanged. Those views now commit first (`CommitThenReadView`). Unit tests could not catch it because test settings mirror the platform alias onto the default connection; a structural test now guards the four views.
       - Public branding is no longer cached by the web server (it was for 60 s): a tenant activated by its owner no longer looks unavailable for a minute, and branding changes show on the next page load.
       - `seed --reset-admin-2fa` puts the dev super admin back on the dev 2FA key (`DEVSEEDADMINTOTPKEYDEVSEEDADMIN2`, dev only). Local dev admin was reset to it.
+    - End-of-phase review follow-ups (ADR-033):
+      - Public branding is cached per tenant in Redis again and invalidated on commit by branding, brand images, business name, web address and status changes; tests prove each change shows on the very next request. Brand image URLs are versioned.
+      - The dev 2FA key is refused whenever DEBUG is off. The production image now runs `check --deploy --database default` before starting (accounts.E003 dev key present, accounts.E004 undecryptable 2FA secrets) and sets `DJANGO_SETTINGS_MODULE=config.settings.prod` (it fell back to dev settings before). Checked live: the prod container refuses to start against the dev database.
+      - `reset_e2e_limits` (DEBUG only) is run by Playwright before each run and each sign-in step: `make e2e-stack` passed three times in a row.
+      - Platform-alias audit: only the four tenant write views had the bug (fixed earlier). A static test now covers every view. The one other hit, 2FA set-up confirmation, was split into a sign-in path (commits before reading memberships) and an account-page path (never reads through the alias).
+      - GSTIN: parameterised suite (78 cases) over the validator, onboarding, super admin edit and the distributor's business settings.
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
@@ -165,10 +171,11 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 | 3 | Production load balancer configuration. It must append the client IP to `X-Forwarded-For` and set `X-Forwarded-Proto`. The web server's `TRUSTED_PROXIES` must list the load balancer's addresses, and Django's `TRUSTED_PROXIES` must list the web servers' addresses (ADR-032; our own code already discards client-supplied forwarded headers) | infra (Phase 10), `web/server.mjs`, `backend/config/settings/base.py` | Load balancer documentation and the deployment topology | Lead engineer | Open (before staging) |
 | 4 | SMS provider for retailer OTP: implement a real adapter against the provider's official API, with a DLT-registered sender ID and OTP template (required in India). Only the mock exists; deployed environments refuse it (`check --deploy`: accounts.E001/E002) | `backend/apps/accounts/adapters/sms.py` | Chosen provider's API docs; TRAI DLT registration | Product owner (provider choice) + lead engineer | Open (before staging) |
 | 5 | ADR-009 tax engine & rounding rules | `docs/DECISIONS.md` ADR-009 | Chartered accountant | Product owner | Open (before Phase 5) |
+| 6 | PAN holder types accepted as the 4th PAN character (6th of the GSTIN): currently A, B, C, F, G, H, J, L, P, T; anything else is rejected | `backend/apps/platform/validators.py` (`PAN_HOLDER_TYPES`) | Income Tax Department PAN documentation | Product owner | Open |
 
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
 - Production domain to be supplied before staging (ADR-019).
-- Shop sign-in E2E sends one OTP per demo phone per run; the per-phone limit is 3 per 10 minutes, so rerun `make e2e-stack` at most three times in 10 minutes (or clear the rate-limit keys in Redis).
+- Decision pending (product owner): GST state code 97 (Other Territory) is active and accepted today.
 - Signing out from `/shop/account` lands on `/shop/login?next=/shop/account`, so the next sign-in returns to the account page instead of home. Harmless; tidy up in Phase 2 with the shop home.
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.
