@@ -1,5 +1,6 @@
 """Demo data loader: the super admin, two demo distributors with complete business details, one
-staff login per role in each, and demo shops. Phase 2 adds catalog, retailers and pricing.
+staff login per role in each, demo shops, and (Phase 2, ``common.demo``) each distributor's
+catalog of 200 products with photos, 20 shops, price lists, special prices and discounts.
 
 Refuses to run unless DEBUG is on. Idempotent. Every password, phone number and the super admin's
 2FA key below are public demo values for local development and E2E only.
@@ -21,6 +22,7 @@ from apps.platform.models import Plan, Subscription, Tenant, TenantBranding, Ten
 from apps.platform.validators import gstin_check_char
 from apps.retailers.models import Retailer
 from apps.retailers.services import create_retailer
+from common.demo import seed_catalog
 from common.tenancy import tenant_context
 
 STAFF_ROLES = ("OWNER", "MANAGER", "SALES", "WAREHOUSE", "ACCOUNTS")
@@ -79,6 +81,9 @@ class Command(BaseCommand):
             action="store_true",
             help="Put the dev super admin back on the fixed dev 2FA key (clears recovery codes).",
         )
+        parser.add_argument(
+            "--no-photos", action="store_true", help="Skip product photos (faster)."
+        )
 
     @transaction.atomic
     def handle(self, *args: Any, **options: Any) -> None:
@@ -120,7 +125,13 @@ class Command(BaseCommand):
                 self._staff(tenant, options["staff_password"])
                 for shop in [*DEMO_SHOPS[tenant.slug], SHARED_SHOP]:
                     self._shop(*shop)
-            self.stdout.write(f"{'created' if created else 'updated'} tenant {tenant.slug}")
+                owner = User.objects.get(email=f"owner@{tenant.slug}.example.com")
+                summary = seed_catalog(tenant, owner, photos=not options["no_photos"])
+            self.stdout.write(
+                f"{'created' if created else 'updated'} tenant {tenant.slug}: "
+                f"+{summary.products} products, +{summary.images} photos, "
+                f"+{summary.shops} shops, +{summary.rules} discounts"
+            )
         self.stdout.write(self.style.SUCCESS("seed complete"))
 
     def _staff(self, tenant: Tenant, password: str) -> None:

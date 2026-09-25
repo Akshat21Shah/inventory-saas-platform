@@ -158,7 +158,7 @@
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
-- Phase 2 — Catalog, retailers, pricing (branch `phase-2`; plan approved 2026-09-25 with ADR-034 … ADR-036). Commits in order:
+- Phase 2 — Catalog, retailers, pricing (branch `phase-2`, draft PR #3; plan approved 2026-09-25 with ADR-034 … ADR-036). **All commits done; waiting for the end-of-phase review.** Then Phase 3 (inventory). Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
   1. Catalog models
   2. `billing/tax.py` line math
@@ -239,6 +239,21 @@
     - Minimum quantity and order steps are shown in plain words. The on-hold notice appears on every catalog page.
     - Ordering arrives in Phase 4; the product page says so.
     - Sign-out fix: after signing out, the next sign-in lands on the shop home page, not the page the person left.
+  - Commit 16: seed, E2E acceptance, docs.
+    - `make seed` adds, per distributor (`common/demo.py`):
+      - a 3-level category tree, 12 brands and 200 products with photos (a few hidden or inactive);
+      - "Gold" and "Wholesale" price lists;
+      - 20 shops (some with a GSTIN, on price lists, with salespeople; one on hold) and 5 special prices;
+      - 5 discount rules: category slabs, a brand week, a price-list rule, a future Diwali offer and a switched-off rule.
+    - The seed goes through the normal services, is idempotent, and takes about 18 s locally. `--no-photos` skips the photos.
+    - `e2e_workbook` (DEBUG only) makes real .xlsx import files for the browser test.
+    - `e2e/support/flows.ts` holds the onboarding steps shared by both acceptance specs.
+    - The full-stack specs run one at a time (`--workers=1`), because the super admin's 2FA codes are single-use.
+- **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
+  - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
+  - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.
+  - Neither shop finds the other distributor's seeded products. Pages don't scroll sideways, and signing out leads to plain sign-in.
+  - The same run passed `acceptance.spec.ts` (Phase 1) after the flows were shared.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.

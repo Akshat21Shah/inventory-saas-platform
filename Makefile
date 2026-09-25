@@ -46,7 +46,7 @@ migrate: ## Apply migrations (as the schema owner role)
 makemigrations: ## Create migrations (host venv, owner role)
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py makemigrations
 
-seed: ## Load demo data (super admin, 2 tenants, staff per role, shops)
+seed: ## Load demo data (super admin, 2 tenants: staff, 20 shops, 200 products, prices each)
 	$(COMPOSE) exec backend python manage.py seed
 
 shell: ## Django shell inside the backend container
@@ -64,7 +64,7 @@ e2e: ## Playwright (starts the web dev server if not running)
 	cd web && npx playwright test
 
 e2e-stack: ## Acceptance E2E against the running stack (after make up + make seed)
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test e2e/acceptance.spec.ts
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts
 
 lint: lint-backend lint-frontend ## ruff, mypy, eslint, tsc, prettier
 

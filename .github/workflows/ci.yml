@@ -141,13 +141,14 @@ jobs:
           docker compose -f infra/docker-compose.yml ps
           exit 1
       - name: Load demo data
-        run: docker compose -f infra/docker-compose.yml exec -T backend python manage.py seed
+        run: docker compose -f infra/docker-compose.yml exec -T backend python manage.py seed --no-photos
       - name: Acceptance tests
         working-directory: web
         env:
           E2E_FULL_STACK: "1"
           E2E_BASE_URL: http://localhost:3000
-        run: npx playwright test e2e/acceptance.spec.ts
+        # One at a time: the specs share the super admin, whose 2FA codes are single-use.
+        run: npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts
       - name: Service logs
         if: failure()
         run: docker compose -f infra/docker-compose.yml logs --tail=200 backend worker web
