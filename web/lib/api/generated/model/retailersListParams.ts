@@ -16,6 +16,7 @@ cursor?: string;
  * Number of results to return per page.
  */
 page_size?: number;
+price_list?: string;
 salesperson?: string;
 search?: string;
 /**

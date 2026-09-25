@@ -768,6 +768,119 @@ paths:
                 items:
                   $ref: '#/components/schemas/CategoryTreeNode'
           description: ''
+  /api/v1/discount-rules/:
+    get:
+      operationId: discount_rules_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+          nullable: true
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDiscountRuleList'
+          description: ''
+    post:
+      operationId: discount_rules_create
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscountRuleWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountRule'
+          description: ''
+  /api/v1/discount-rules/{rule_id}/:
+    get:
+      operationId: discount_rules_retrieve
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountRule'
+          description: ''
+    patch:
+      operationId: discount_rules_update
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDiscountRuleWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountRule'
+          description: ''
+    delete:
+      operationId: discount_rules_delete
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/imports/:
     get:
       operationId: imports_list
@@ -1870,6 +1983,200 @@ paths:
               schema:
                 $ref: '#/components/schemas/SlugAvailability'
           description: ''
+  /api/v1/price-lists/:
+    get:
+      operationId: price_lists_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPriceListList'
+          description: ''
+    post:
+      operationId: price_lists_create
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceListWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+          description: ''
+  /api/v1/price-lists/{price_list_id}/:
+    get:
+      operationId: price_lists_retrieve
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+          description: ''
+    patch:
+      operationId: price_lists_update
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPriceListWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+          description: ''
+    delete:
+      operationId: price_lists_delete
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/price-lists/{price_list_id}/items/:
+    get:
+      operationId: price_list_items_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPriceListItemList'
+          description: ''
+    put:
+      operationId: price_list_items_upsert
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemsUpsertRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemsUpsertResult'
+          description: ''
+  /api/v1/price-lists/{price_list_id}/items/{product_id}/:
+    delete:
+      operationId: price_list_items_delete
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/products/:
     get:
       operationId: catalog_products_list
@@ -2457,6 +2764,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicBranding'
           description: ''
+  /api/v1/retailer-prices/:
+    get:
+      operationId: retailer_prices_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRetailerPriceList'
+          description: ''
+    post:
+      operationId: retailer_prices_create
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerPriceWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerPrice'
+          description: ''
+  /api/v1/retailer-prices/{price_id}/:
+    patch:
+      operationId: retailer_prices_update
+      parameters:
+      - in: path
+        name: price_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRetailerPriceUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerPrice'
+          description: ''
+    delete:
+      operationId: retailer_prices_delete
+      parameters:
+      - in: path
+        name: price_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/retailers/:
     get:
       operationId: retailers_list
@@ -2473,6 +2878,11 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: price_list
+        schema:
+          type: string
+          format: uuid
       - in: query
         name: salesperson
         schema:
@@ -3521,6 +3931,16 @@ components:
           format: binary
       required:
       - file
+    AudienceTypeEnum:
+      enum:
+      - ALL
+      - PRICE_LIST
+      - RETAILER
+      type: string
+      description: |-
+        * `ALL` - All shops
+        * `PRICE_LIST` - Shops on a price list
+        * `RETAILER` - One shop
     AuditActor:
       type: object
       properties:
@@ -4128,6 +4548,168 @@ components:
       - equals
       - key
       - not_null
+    DiscountRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        discount_type:
+          allOf:
+          - $ref: '#/components/schemas/DiscountTypeEnum'
+          readOnly: true
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        scope_type:
+          allOf:
+          - $ref: '#/components/schemas/ScopeTypeEnum'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        audience_type:
+          allOf:
+          - $ref: '#/components/schemas/AudienceTypeEnum'
+          readOnly: true
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        retailer:
+          allOf:
+          - $ref: '#/components/schemas/ShopRef'
+          readOnly: true
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        slabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slab'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - audience_type
+      - brand
+      - category
+      - created_at
+      - discount_type
+      - id
+      - is_active
+      - name
+      - price_list
+      - product
+      - retailer
+      - scope_type
+      - slabs
+      - updated_at
+      - valid_from
+      - valid_to
+      - value
+    DiscountRuleWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          default: '0.00'
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        product:
+          type: string
+          format: uuid
+          nullable: true
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        audience_type:
+          $ref: '#/components/schemas/AudienceTypeEnum'
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        retailer:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+        slabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlabInputRequest'
+      required:
+      - audience_type
+      - discount_type
+      - name
+      - scope_type
+    DiscountTypeEnum:
+      enum:
+      - PERCENT
+      - FLAT_PER_UNIT
+      type: string
+      description: |-
+        * `PERCENT` - Percentage
+        * `FLAT_PER_UNIT` - Rupees off per unit
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -4670,6 +5252,35 @@ components:
           maxLength: 200
       required:
       - token
+    ItemInputRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - price
+      - product
+    ItemsUpsertRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemInputRequest'
+      required:
+      - items
+    ItemsUpsertResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
     LoginResponse:
       type: object
       description: One shape for every sign-in step; ``status`` says what the client
@@ -5085,6 +5696,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Category'
+    PaginatedDiscountRuleList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscountRule'
     PaginatedHsnHintList:
       type: object
       required:
@@ -5180,6 +5810,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Membership'
+    PaginatedPriceListItemList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceListItem'
+    PaginatedPriceListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceList'
     PaginatedProductListList:
       type: object
       required:
@@ -5218,6 +5886,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RetailerList'
+    PaginatedRetailerPriceList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetailerPrice'
     PaginatedTenantListList:
       type: object
       required:
@@ -5451,6 +6138,59 @@ components:
           type: integer
           maximum: 365
           minimum: 0
+    PatchedDiscountRuleWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          default: '0.00'
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        product:
+          type: string
+          format: uuid
+          nullable: true
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        audience_type:
+          $ref: '#/components/schemas/AudienceTypeEnum'
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        retailer:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+        slabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlabInputRequest'
     PatchedFeatureFlagRequest:
       type: object
       properties:
@@ -5530,6 +6270,21 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedPriceListWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        code:
+          type: string
+          default: ''
+          maxLength: 30
+        description:
+          type: string
+          default: ''
+          maxLength: 300
     PatchedProductUpdateRequest:
       type: object
       description: Edits; the GST rate changes only through a scheduled rate change.
@@ -5599,6 +6354,17 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedRetailerPriceUpdateRequest:
+      type: object
+      properties:
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+          maxLength: 200
     PatchedRetailerUpdateRequest:
       type: object
       properties:
@@ -5627,6 +6393,10 @@ components:
           minLength: 1
           maxLength: 2
         salesperson:
+          type: string
+          format: uuid
+          nullable: true
+        price_list:
           type: string
           format: uuid
           nullable: true
@@ -5853,6 +6623,98 @@ components:
         * `en` - English
         * `hi` - हिन्दी
         * `mr` - मराठी
+    PriceList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        code:
+          type: string
+          maxLength: 30
+        description:
+          type: string
+          maxLength: 300
+        item_count:
+          type: integer
+          readOnly: true
+          default: 0
+        shop_count:
+          type: integer
+          readOnly: true
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - item_count
+      - name
+      - shop_count
+    PriceListItem:
+      type: object
+      properties:
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+        unit:
+          type: string
+          readOnly: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - base_price
+      - price
+      - product
+      - unit
+      - updated_at
+    PriceListRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    PriceListWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        code:
+          type: string
+          default: ''
+          maxLength: 30
+        description:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - name
     ProductDetail:
       type: object
       properties:
@@ -6114,6 +6976,20 @@ components:
       - show_in_shop
       - thumbnail_url
       - unit
+    ProductRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
     ProductTaxRate:
       type: object
       properties:
@@ -6364,11 +7240,13 @@ components:
     RetailerBulkActionEnum:
       enum:
       - assign_salesperson
+      - assign_price_list
       - block
       - unblock
       type: string
       description: |-
         * `assign_salesperson` - assign_salesperson
+        * `assign_price_list` - assign_price_list
         * `block` - block
         * `unblock` - unblock
     RetailerBulkRequest:
@@ -6453,6 +7331,11 @@ components:
           - $ref: '#/components/schemas/PersonRef'
           readOnly: true
           nullable: true
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/PriceListRef'
+          readOnly: true
+          nullable: true
         credit_limit:
           type: string
           format: decimal
@@ -6507,6 +7390,7 @@ components:
       - pan
       - payment_terms_days
       - preferred_language
+      - price_list
       - salesperson
       - shop_name
       - state_code
@@ -6549,6 +7433,11 @@ components:
           - $ref: '#/components/schemas/PersonRef'
           readOnly: true
           nullable: true
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/PriceListRef'
+          readOnly: true
+          nullable: true
         credit_limit:
           type: string
           format: decimal
@@ -6572,6 +7461,7 @@ components:
       - mobile
       - owner_name
       - payment_terms_days
+      - price_list
       - salesperson
       - shop_name
       - state_code
@@ -6612,6 +7502,67 @@ components:
       required:
       - code
       - phone
+    RetailerPrice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer:
+          allOf:
+          - $ref: '#/components/schemas/ShopRef'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - base_price
+      - id
+      - note
+      - price
+      - product
+      - retailer
+      - updated_at
+    RetailerPriceWriteRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        product:
+          type: string
+          format: uuid
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - price
+      - product
+      - retailer
     RetailerStatusEnum:
       enum:
       - ACTIVE
@@ -6661,6 +7612,10 @@ components:
           default: ''
           maxLength: 2
         salesperson:
+          type: string
+          format: uuid
+          nullable: true
+        price_list:
           type: string
           format: uuid
           nullable: true
@@ -6760,6 +7715,18 @@ components:
       required:
       - effective_from
       - gst_rate
+    ScopeTypeEnum:
+      enum:
+      - ALL
+      - PRODUCT
+      - CATEGORY
+      - BRAND
+      type: string
+      description: |-
+        * `ALL` - All products
+        * `PRODUCT` - One product
+        * `CATEGORY` - A category (and its sub-categories)
+        * `BRAND` - A brand
     SearchResult:
       type: object
       description: Type-ahead row (PLAN §3.5). Stock availability joins in Phase 3.
@@ -6908,6 +7875,48 @@ components:
       - snapshot_on
       - status
       - type
+      - value
+    ShopRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        shop_name:
+          type: string
+      required:
+      - code
+      - id
+      - shop_name
+    Slab:
+      type: object
+      properties:
+        min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - min_qty
+      - value
+    SlabInputRequest:
+      type: object
+      properties:
+        min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - min_qty
       - value
     SlugAvailability:
       type: object

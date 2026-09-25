@@ -71,6 +71,7 @@ class RetailerListCreateView(RetailerView, generics.ListAPIView[Retailer]):
                 salesperson_id=v.get("salesperson"),
                 state=v["state"],
                 tag=v["tag"],
+                price_list_id=v.get("price_list"),
             ),
         )
 
@@ -111,6 +112,7 @@ class RetailerListCreateView(RetailerView, generics.ListAPIView[Retailer]):
             else None,
             extra={
                 "salesperson_id": v["salesperson"],
+                "price_list_id": v["price_list"],
                 "notes": v["notes"],
                 "tags": v["tags"],
                 "preferred_language": v["preferred_language"],
@@ -137,7 +139,11 @@ class RetailerDetailView(RetailerView):
         data = s.RetailerUpdateSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         changes = dict(data.validated_data)
-        for api, field in (("state_code", "state_id"), ("salesperson", "salesperson_id")):
+        for api, field in (
+            ("state_code", "state_id"),
+            ("salesperson", "salesperson_id"),
+            ("price_list", "price_list_id"),
+        ):
             if api in changes:
                 changes[field] = changes.pop(api)
         if "gstin" in changes:

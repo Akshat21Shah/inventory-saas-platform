@@ -30,6 +30,8 @@ export interface PatchedRetailerUpdateRequest {
   state_code?: string;
   /** @nullable */
   salesperson?: string | null;
+  /** @nullable */
+  price_list?: string | null;
   notes?: string;
   /**
      * @items.minLength 1

@@ -29,11 +29,14 @@ class RetailerFilters:
     salesperson_id: UUID | None = None
     state: str = ""
     tag: str = ""
+    price_list_id: UUID | None = None
 
 
 def retailers_for(user: User, filters: RetailerFilters | None = None) -> QuerySet[Retailer]:
     f = filters or RetailerFilters()
-    qs = Retailer.objects.filter(deleted_at__isnull=True).select_related("state", "salesperson")
+    qs = Retailer.objects.filter(deleted_at__isnull=True).select_related(
+        "state", "salesperson", "price_list"
+    )
     if sees_own_retailers_only(user):
         qs = qs.filter(salesperson=user)
     if f.status:
@@ -44,6 +47,8 @@ def retailers_for(user: User, filters: RetailerFilters | None = None) -> QuerySe
         qs = qs.filter(state_id=f.state)
     if f.tag:
         qs = qs.filter(tags__contains=[f.tag.lower()])
+    if f.price_list_id:
+        qs = qs.filter(price_list_id=f.price_list_id)
     term = " ".join(f.search.split())
     if term:
         digits = "".join(ch for ch in term if ch.isdigit())

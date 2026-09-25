@@ -25,6 +25,9 @@ class Retailer(SoftDeleteMixin, TenantScopedModel):
     gstin = models.CharField(max_length=15, null=True, blank=True)  # noqa: DJ001
     pan = models.CharField(max_length=10, blank=True, default="")
     state = models.ForeignKey("platform.State", on_delete=models.PROTECT, related_name="+")
+    price_list = models.ForeignKey(
+        "pricing.PriceList", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )  # none = the product base price (spec 5.6)
     credit_limit = MoneyField(null=True, blank=True)  # empty = no limit; 0 = no credit (PLAN C2)
     payment_terms_days = models.PositiveSmallIntegerField(default=30)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)

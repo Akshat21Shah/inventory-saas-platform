@@ -17,6 +17,7 @@ from apps.platform.gst import gstin_problem
 from apps.platform.models import State
 from apps.platform.selectors import get_setting
 from apps.platform.validators import normalize_gstin
+from apps.pricing.models import PriceList
 from apps.retailers.models import Retailer, RetailerAddress, RetailerUser
 from common.errors import InvalidFields, NotFound
 from common.phone import normalize_indian_mobile
@@ -31,6 +32,7 @@ PROFILE_FIELDS = (
     "gstin",
     "state_id",
     "salesperson_id",
+    "price_list_id",
     "notes",
     "tags",
     "preferred_language",
@@ -116,6 +118,13 @@ def _check_profile(retailer: Retailer, errors: dict[str, list[str]]) -> None:
         errors.setdefault("salesperson", []).append("Choose an active staff member.")
     if retailer.preferred_language not in LANGUAGES:
         errors.setdefault("preferred_language", []).append("Choose English, Hindi or Marathi.")
+    if (
+        retailer.price_list_id
+        and not PriceList.objects.filter(
+            pk=retailer.price_list_id, deleted_at__isnull=True
+        ).exists()
+    ):
+        errors.setdefault("price_list", []).append("Choose an existing price list.")
 
 
 def _is_staff(user_id: UUID) -> bool:
@@ -500,7 +509,21 @@ def delete_address(retailer_id: UUID, address_id: UUID, *, by: User) -> None:
 
 # --- Bulk -------------------------------------------------------------------------------------
 
-BULK_ACTIONS = ("assign_salesperson", "block", "unblock")
+BULK_ACTIONS = ("assign_salesperson", "assign_price_list", "block", "unblock")
+
+
+def _bulk_price_list(retailer: Retailer, price_list: UUID | None, by: User) -> bool:
+    if retailer.price_list_id == price_list:
+        return False
+    audit.record(
+        "retailer.updated",
+        target=retailer,
+        target_repr=f"{retailer.code} {retailer.shop_name}",
+        changes={"price_list_id": [str(retailer.price_list_id or ""), str(price_list or "")]},
+    )
+    retailer.price_list_id = price_list
+    retailer.save(update_fields=["price_list", "updated_at"])
+    return True
 
 
 def _bulk_salesperson(retailer: Retailer, salesperson: UUID | None) -> bool:
@@ -522,6 +545,9 @@ def bulk_update(
     salesperson = UUID(value) if action == "assign_salesperson" and value else None
     if salesperson and not _is_staff(salesperson):
         raise InvalidFields({"value": ["Choose an active staff member."]})
+    price_list = UUID(value) if action == "assign_price_list" and value else None
+    if price_list and not PriceList.objects.filter(pk=price_list, deleted_at__isnull=True).exists():
+        raise InvalidFields({"value": ["Choose an existing price list."]})
     retailers = list(
         Retailer.objects.filter(pk__in=retailer_ids, deleted_at__isnull=True).select_for_update()
     )
@@ -529,6 +555,8 @@ def bulk_update(
     for retailer in retailers:
         if action == "assign_salesperson":
             changed += _bulk_salesperson(retailer, salesperson)
+        elif action == "assign_price_list":
+            changed += _bulk_price_list(retailer, price_list, by)
         elif action == "block" and retailer.status != Retailer.Status.BLOCKED:
             block_retailer(retailer.pk, reason=value or "Put on hold in bulk", by=by)
             changed += 1

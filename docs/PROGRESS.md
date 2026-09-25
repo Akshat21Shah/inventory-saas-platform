@@ -187,6 +187,7 @@
     - Shops on hold: new setting `retailers.blocked_can_sign_in` (default on). When it is off, sign-in, hand-off and every request say "Your account is on hold. Please contact your distributor." (`RETAILER_ON_HOLD`); the code is still sent, so the request looks the same for every number. `/auth/me` reports `on_hold` for the shop's notice.
     - Welcome message through the SMS adapter (mock; DLT template on the pre-production list).
     - Retailer import and export (matched by mobile; the number and sign-in never change on update; credit columns need the credit permission).
+  - Commit 8: price lists (deletion refused while shops or rules use one; shop counts), bulk price upsert (one audit entry with old → new per product code), retailer special prices (audited; sales staff limited to their shops), discount rules with quantity slabs and validity dates. Rules are validated in plain words (targets exist in this tenant, percentage ≤ 100, slabs unique) and backed by check constraints. Price lists can be assigned per shop, in bulk or by import.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.

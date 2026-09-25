@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { PersonRef } from './personRef';
+import type { PriceListRef } from './priceListRef';
 import type { RetailerStatusEnum } from './retailerStatusEnum';
 
 export interface RetailerList {
@@ -19,6 +20,7 @@ export interface RetailerList {
   readonly state_code: string;
   readonly status: RetailerStatusEnum;
   readonly salesperson: PersonRef | null;
+  readonly price_list: PriceListRef | null;
   /**
      * @nullable
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$

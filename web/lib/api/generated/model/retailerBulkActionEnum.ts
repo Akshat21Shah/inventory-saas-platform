@@ -8,6 +8,7 @@
 
 /**
  * * `assign_salesperson` - assign_salesperson
+ * * `assign_price_list` - assign_price_list
  * * `block` - block
  * * `unblock` - unblock
  */
@@ -16,6 +17,7 @@ export type RetailerBulkActionEnum = typeof RetailerBulkActionEnum[keyof typeof 
 
 export const RetailerBulkActionEnum = {
   assign_salesperson: 'assign_salesperson',
+  assign_price_list: 'assign_price_list',
   block: 'block',
   unblock: 'unblock',
 } as const;

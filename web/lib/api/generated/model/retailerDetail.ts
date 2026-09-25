@@ -7,6 +7,7 @@
  */
 import type { Address } from './address';
 import type { PersonRef } from './personRef';
+import type { PriceListRef } from './priceListRef';
 import type { RetailerStatusEnum } from './retailerStatusEnum';
 
 export interface RetailerDetail {
@@ -23,6 +24,7 @@ export interface RetailerDetail {
   readonly status: RetailerStatusEnum;
   readonly blocked_reason: string;
   readonly salesperson: PersonRef | null;
+  readonly price_list: PriceListRef | null;
   /**
      * @nullable
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$

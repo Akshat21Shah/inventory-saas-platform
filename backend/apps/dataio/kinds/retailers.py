@@ -15,6 +15,7 @@ from apps.dataio.parsing import Sheet, parse_decimal, split_list
 from apps.platform.gst import gstin_problem
 from apps.platform.models import State
 from apps.platform.validators import normalize_gstin
+from apps.pricing.models import PriceList
 from apps.retailers import services
 from apps.retailers.models import Retailer, RetailerAddress
 from common.phone import normalize_indian_mobile
@@ -83,6 +84,14 @@ COLUMNS: tuple[Column, ...] = (
         "sales@yourfirm.com",
     ),
     C(
+        "price_list",
+        "Price list",
+        ("price list name", "rate list"),
+        False,
+        "Name of one of your price lists. Empty = your normal prices.",
+        "Gold retailers",
+    ),
+    C(
         "credit_limit",
         "Credit limit",
         ("credit", "limit"),
@@ -119,6 +128,7 @@ class RetailersKind:
     key_label = LABEL["mobile"]
     columns = COLUMNS
     _emails: dict[Any, str]
+    _lists: dict[Any, str]
 
     def reference_lists(self) -> dict[str, list[str]]:
         return {"States": [f"{s.code} {s.name}" for s in State.objects.filter(is_active=True)]}
@@ -147,8 +157,11 @@ class RetailersKind:
             .prefetch_related("addresses")
         }
         self._emails = {user_id: email for email, user_id in staff.items()}
+        lists = PriceList.objects.filter(deleted_at__isnull=True)
+        self._lists = {p.pk: p.name for p in lists}
+        price_lists = {p.name.lower(): p.pk for p in lists}
         can_credit = by.has_permission_code("credit.manage")
-        ref = {"states": states, "staff": staff}
+        ref = {"states": states, "staff": staff, "price_lists": price_lists}
         seen: dict[str, int] = {}
         plans: list[RowPlan] = []
         for row in sheet.rows:
@@ -235,6 +248,12 @@ class RetailersKind:
                 )
             else:
                 out["salesperson_id"] = person
+        if v.get("price_list"):
+            found = ref["price_lists"].get(v["price_list"].strip().lower())
+            if found is None:
+                plan.error(LABEL["price_list"], f"{v['price_list']} isn't one of your price lists.")
+            else:
+                out["price_list_id"] = found
         if v.get("credit_limit"):
             try:
                 limit = parse_decimal(v["credit_limit"], places=2)
@@ -316,6 +335,7 @@ class RetailersKind:
             "state": r.state_id,
             "notes": r.notes,
             "salesperson": (r.salesperson.email or "") if r.salesperson else "",
+            "price_list": r.price_list.name if r.price_list else "",
             "credit_limit": f"{r.credit_limit:.2f}" if r.credit_limit is not None else "",
             "payment_terms_days": str(r.payment_terms_days),
             "tags": ", ".join(r.tags),
@@ -389,7 +409,7 @@ class RetailersKind:
     def export_rows(self) -> Iterable[dict[str, str]]:
         retailers = (
             Retailer.objects.filter(deleted_at__isnull=True)
-            .select_related("salesperson")
+            .select_related("salesperson", "price_list")
             .prefetch_related("addresses")
             .order_by("code")
         )
@@ -416,6 +436,7 @@ class RetailersKind:
                 "district": billing.district if billing else "",
                 "pincode": billing.pincode if billing else "",
                 "salesperson": (r.salesperson.email or "") if r.salesperson else "",
+                "price_list": r.price_list.name if r.price_list else "",
                 "credit_limit": f"{r.credit_limit:.2f}" if r.credit_limit is not None else "",
                 "payment_terms_days": str(r.payment_terms_days),
                 "tags": ", ".join(r.tags),

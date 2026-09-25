@@ -55,9 +55,15 @@ class BillingAddressSerializer(serializers.Serializer[Any]):
     state_code = serializers.CharField(max_length=2)
 
 
+class PriceListRefSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+
+
 class RetailerListSerializer(serializers.ModelSerializer[Retailer]):
     state_code = serializers.CharField(source="state_id", read_only=True)
     salesperson = PersonRefSerializer(allow_null=True, read_only=True)
+    price_list = PriceListRefSerializer(allow_null=True, read_only=True)
 
     class Meta:
         model = Retailer
@@ -71,6 +77,7 @@ class RetailerListSerializer(serializers.ModelSerializer[Retailer]):
             "state_code",
             "status",
             "salesperson",
+            "price_list",
             "credit_limit",
             "payment_terms_days",
             "tags",
@@ -81,6 +88,7 @@ class RetailerListSerializer(serializers.ModelSerializer[Retailer]):
 class RetailerDetailSerializer(serializers.ModelSerializer[Retailer]):
     state_code = serializers.CharField(source="state_id", read_only=True)
     salesperson = PersonRefSerializer(allow_null=True, read_only=True)
+    price_list = PriceListRefSerializer(allow_null=True, read_only=True)
     addresses = AddressSerializer(many=True, read_only=True)
 
     class Meta:
@@ -98,6 +106,7 @@ class RetailerDetailSerializer(serializers.ModelSerializer[Retailer]):
             "status",
             "blocked_reason",
             "salesperson",
+            "price_list",
             "credit_limit",
             "payment_terms_days",
             "notes",
@@ -119,6 +128,7 @@ class RetailerWriteSerializer(serializers.Serializer[Any]):
     gstin = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
     state_code = serializers.CharField(max_length=2, required=False, allow_blank=True, default="")
     salesperson = serializers.UUIDField(required=False, allow_null=True, default=None)
+    price_list = serializers.UUIDField(required=False, allow_null=True, default=None)
     notes = serializers.CharField(required=False, allow_blank=True, default="")
     tags = serializers.ListField(
         child=serializers.CharField(max_length=40), required=False, default=list
@@ -137,6 +147,7 @@ class RetailerUpdateSerializer(serializers.Serializer[Any]):
     gstin = serializers.CharField(max_length=30, required=False, allow_blank=True)
     state_code = serializers.CharField(max_length=2, required=False)
     salesperson = serializers.UUIDField(required=False, allow_null=True)
+    price_list = serializers.UUIDField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_blank=True)
     tags = serializers.ListField(child=serializers.CharField(max_length=40), required=False)
     preferred_language = serializers.ChoiceField(choices=LANGUAGES, required=False)
@@ -157,11 +168,14 @@ class RetailerFilterSerializer(serializers.Serializer[Any]):
     salesperson = serializers.UUIDField(required=False)
     state = serializers.CharField(max_length=2, required=False, default="")
     tag = serializers.CharField(max_length=40, required=False, default="")
+    price_list = serializers.UUIDField(required=False)
 
 
 class RetailerBulkSerializer(serializers.Serializer[Any]):
     retailer_ids = serializers.ListField(child=serializers.UUIDField(), max_length=1000)
-    action = serializers.ChoiceField(choices=["assign_salesperson", "block", "unblock"])
+    action = serializers.ChoiceField(
+        choices=["assign_salesperson", "assign_price_list", "block", "unblock"]
+    )
     value = serializers.CharField(required=False, allow_null=True, allow_blank=True, default=None)
 
 
