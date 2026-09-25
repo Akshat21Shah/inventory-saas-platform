@@ -11,6 +11,7 @@ class DomainError(Exception):
     status_code: int = 400
     code: str = ErrorCode.VALIDATION_ERROR
     default_message: str = "The request could not be completed."
+    headers: dict[str, str] | None = None  # extra response headers (e.g. Retry-After)
 
     def __init__(
         self,

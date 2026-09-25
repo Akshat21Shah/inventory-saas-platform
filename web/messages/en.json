@@ -115,6 +115,11 @@
     "IDEMPOTENCY_KEY_INVALID": "Please try again.",
     "IDEMPOTENCY_KEY_REUSED": "This request was already sent with different details. Please start again.",
     "INVALID_STATE_TRANSITION": "This can't be done at the current stage.",
+    "INVALID_CREDENTIALS": "The email or password is incorrect. After several failed attempts, sign-in is paused for a few minutes.",
+    "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
+    "TENANT_SUSPENDED": "This account is on hold. Please contact the platform support team.",
+    "TOKEN_INVALID": "This link or code has expired or was already used. Please start again.",
+    "SESSION_EXPIRED": "Your session has ended. Please sign in again.",
     "NETWORK_ERROR": "You seem to be offline. Check your connection and try again.",
     "UNKNOWN_ERROR": "Something went wrong. Please try again."
   },

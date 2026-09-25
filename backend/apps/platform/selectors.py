@@ -1,5 +1,6 @@
 """Read-side queries for the platform app (tenants, feature flags, plans, settings)."""
 
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
@@ -14,6 +15,7 @@ from apps.platform.models import (
     Plan,
     PlatformSetting,
     Subscription,
+    Tenant,
     TenantFeature,
     TenantSetting,
 )
@@ -21,6 +23,51 @@ from apps.platform.registry import Scope, SnapshotOn
 from common.tenancy import require_tenant_id, tenant_context
 
 FEATURES_CACHE_TTL = 300
+
+
+# --- Tenants -------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TenantInfo:
+    id: UUID
+    slug: str
+    name: str
+    status: str
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == Tenant.Status.ACTIVE
+
+
+def _tenant_info_key(tenant_id: UUID) -> str:
+    return f"tenant:info:{tenant_id}"
+
+
+def tenant_info(tenant_id: UUID) -> TenantInfo | None:
+    """Slug and status of a tenant, cached briefly: checked on every authenticated request so a
+    suspension takes effect at once (the status-changing service invalidates this entry)."""
+    key = _tenant_info_key(tenant_id)
+    cached: TenantInfo | None = cache.get(key)
+    if cached is not None:
+        return cached
+    row = Tenant.objects.filter(pk=tenant_id).values_list("slug", "name", "status").first()
+    if row is None:
+        return None
+    info = TenantInfo(id=tenant_id, slug=row[0], name=row[1], status=row[2])
+    cache.set(key, info, settings.TENANT_STATUS_CACHE_SECONDS)
+    return info
+
+
+def invalidate_tenant_info(tenant_id: UUID) -> None:
+    cache.delete(_tenant_info_key(tenant_id))
+
+
+def tenant_by_slug(slug: str) -> Tenant | None:
+    tenant: Tenant | None = Tenant.objects.filter(slug=slug).first()
+    return tenant
+
+
 _FLAGS_VERSION_KEY = "features:version"
 
 

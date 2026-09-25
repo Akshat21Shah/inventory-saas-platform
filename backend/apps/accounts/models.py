@@ -5,10 +5,13 @@ known. Tenant-owned identity data (memberships) is tenant-scoped with RLS. Later
 add the retailer tenant FK, per-tenant phone uniqueness (ADR-015), TOTP and lockout fields.
 """
 
+from datetime import datetime
 from typing import Any, ClassVar
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.db.models.functions import Lower
+from django.utils import timezone
 
 from common.context import tenant_id_var
 from common.models import BaseModel, TenantScopedModel
@@ -54,6 +57,12 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Django admin access: super admins only
+    preferred_language = models.CharField(
+        max_length=5, choices=[("en", "English"), ("hi", "हिन्दी"), ("mr", "मराठी")], default="en"
+    )
+    # Lockout (ADR-030): consecutive failures; reset on success or password reset.
+    failed_login_count = models.PositiveSmallIntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
     # PLATFORM users only: their platform-level role (e.g. PLATFORM_ADMIN).
     platform_role = models.ForeignKey(
         "accounts.Role", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
@@ -73,7 +82,19 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
                 condition=models.Q(platform_role__isnull=True) | models.Q(user_type="PLATFORM"),
                 name="user_platform_role_only_for_platform_users",
             ),
+            # Emails are stored lower-cased, so uniqueness is case-insensitive.
+            models.CheckConstraint(
+                condition=models.Q(email__isnull=True) | models.Q(email=Lower("email")),
+                name="user_email_lowercase",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(user_type="RETAILER") | models.Q(email__isnull=False),
+                name="user_staff_and_platform_have_email",
+            ),
         ]
+
+    def is_locked(self, now: datetime | None = None) -> bool:
+        return self.locked_until is not None and self.locked_until > (now or timezone.now())
 
     def permission_codes(self) -> frozenset[str]:
         """Permission codes in the current context (cached on the instance for the request).
@@ -158,3 +179,56 @@ class Membership(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.user_id}@{self.tenant_id}:{self.role_id}"
+
+
+# --- Login flow tables (identity data, no RLS: used before a tenant is known; ADR-026) ------------
+
+
+class LoginChallenge(BaseModel):
+    """A short-lived, single-use step in a login flow, referenced by an opaque token.
+
+    Only the SHA-256 of the token is stored. ``candidates`` holds the ids offered in a chooser.
+    """
+
+    class Kind(models.TextChoices):
+        STAFF_TENANT_CHOICE = "STAFF_TENANT_CHOICE", "Staff: choose a tenant"
+        RETAILER_ACCOUNT_CHOICE = "RETAILER_ACCOUNT_CHOICE", "Retailer: choose a distributor"
+        MFA = "MFA", "Second factor"
+        MFA_ENROLMENT = "MFA_ENROLMENT", "Second factor set-up required"
+
+    kind = models.CharField(max_length=30, choices=Kind.choices)
+    token_hash = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    phone = models.CharField(max_length=16, blank=True, default="")
+    tenant = models.ForeignKey(
+        "platform.Tenant", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    candidates = models.JSONField(default=list, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["expires_at"], name="login_challenge_expiry_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.kind}:{self.user_id or self.phone}"
+
+
+class HandoffCode(BaseModel):
+    """Single-use, 60-second code moving a verified login to the tenant subdomain (ADR-020)."""
+
+    code_hash = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
+    tenant = models.ForeignKey("platform.Tenant", on_delete=models.CASCADE, related_name="+")
+    session_expires_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["expires_at"], name="handoff_expiry_idx")]
+
+    def __str__(self) -> str:
+        return f"handoff:{self.user_id}->{self.tenant_id}"

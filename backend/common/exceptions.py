@@ -7,9 +7,12 @@ error response can never commit partial writes.
 """
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
+from django.db import connection, transaction
 from django.http import Http404
 from rest_framework import exceptions as drf_exceptions
 from rest_framework import status
@@ -49,9 +52,34 @@ def _code_for(exc: drf_exceptions.APIException) -> str:
 
 
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    view = context.get("view")
+    if getattr(view, "atomic_request", True):
+        return _handle(exc, context)
+    # Views that opted out of the request transaction manage their own (e.g. login, which must
+    # commit a failed-attempt counter). DRF's set_rollback() must not mark an outer transaction
+    # they do not own (only possible when the test framework wraps the request in one).
+    with _preserve_rollback_flag():
+        return _handle(exc, context)
+
+
+@contextmanager
+def _preserve_rollback_flag() -> Iterator[None]:
+    saved = transaction.get_rollback() if connection.in_atomic_block else None
+    try:
+        yield
+    finally:
+        if saved is not None and connection.in_atomic_block:
+            transaction.set_rollback(saved)
+
+
+def _handle(exc: Exception, context: dict[str, Any]) -> Response | None:
     if isinstance(exc, DomainError):
         set_rollback()
-        return Response(error_body(exc.code, exc.message, exc.details), status=exc.status_code)
+        return Response(
+            error_body(exc.code, exc.message, exc.details),
+            status=exc.status_code,
+            headers=exc.headers,
+        )
 
     if isinstance(exc, Http404):
         exc = drf_exceptions.NotFound()

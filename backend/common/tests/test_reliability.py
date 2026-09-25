@@ -89,8 +89,10 @@ def test_concurrent_duplicates_execute_once(api_client_for, staff_user, tenant_a
     barrier = threading.Barrier(4)
     statuses: list[int] = []
 
-    def worker() -> None:
-        client = api_client_for(staff_user, tenant_a)
+    # Build clients (and the membership they need) before the threads start.
+    clients = [api_client_for(staff_user, tenant_a) for _ in range(4)]
+
+    def worker(client) -> None:
         barrier.wait()
         response = client.post(
             "/test-api/idempotent/",
@@ -101,7 +103,7 @@ def test_concurrent_duplicates_execute_once(api_client_for, staff_user, tenant_a
         statuses.append(response.status_code)
         connection.close()
 
-    threads = [threading.Thread(target=worker) for _ in range(4)]
+    threads = [threading.Thread(target=worker, args=(client,)) for client in clients]
     for t in threads:
         t.start()
     for t in threads:

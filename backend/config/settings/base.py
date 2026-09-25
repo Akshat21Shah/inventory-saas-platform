@@ -143,6 +143,7 @@ CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
     "outbox-sweeper": {"task": "common.outbox.sweep_outbox", "schedule": 60.0},
     "idempotency-purge": {"task": "common.idempotency.purge_expired", "schedule": 3600.0},
+    "login-records-purge": {"task": "accounts.purge_expired_login_records", "schedule": 3600.0},
 }
 
 CHANNEL_LAYERS = {
@@ -154,7 +155,7 @@ CHANNEL_LAYERS = {
 
 # --- DRF / OpenAPI / JWT ---------------------------------------------------------------------
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["common.authentication.TenantJWTAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.SessionJWTAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "common.pagination.DefaultCursorPagination",
     "DEFAULT_FILTER_BACKENDS": [
@@ -192,7 +193,25 @@ SIMPLE_JWT = {
     "SIGNING_KEY": env("JWT_SIGNING_KEY", default=SECRET_KEY),
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_CLAIM": "sub",
+    # Tokens carry a hash of the password: changing or resetting it revokes every token at once.
+    "CHECK_REVOKE_TOKEN": True,
 }
+
+# --- Auth sessions (ADR-025) ---------------------------------------------------------------------
+# Refresh lifetime per user type. Retailer sessions slide (each rotation restarts the window);
+# staff and super admin sessions end at a fixed time after sign-in.
+AUTH_REFRESH_LIFETIMES = {
+    "RETAILER": timedelta(days=30),
+    "STAFF": timedelta(days=7),
+    "PLATFORM": timedelta(hours=12),
+}
+AUTH_SLIDING_USER_TYPES = frozenset({"RETAILER"})
+AUTH_REFRESH_COOKIE_NAME = "rt"
+AUTH_REFRESH_COOKIE_PATH = "/api/v1/auth/"
+AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=True)
+AUTH_HANDOFF_TTL_SECONDS = 60
+AUTH_CHALLENGE_TTL_SECONDS = 300
+TENANT_STATUS_CACHE_SECONDS = 30
 
 CORS_ALLOWED_ORIGIN_REGEXES = env.list(
     "CORS_ALLOWED_ORIGIN_REGEXES", default=[r"^https?://([a-z0-9-]+\.)?localhost(:\d+)?$"]
@@ -251,6 +270,8 @@ if SENTRY_DSN:
         traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
         send_default_pii=False,
     )
+
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Inventory Platform <no-reply@localhost>")
 
 # --- App settings --------------------------------------------------------------------------------
 IDEMPOTENCY_TTL_SECONDS = 24 * 3600

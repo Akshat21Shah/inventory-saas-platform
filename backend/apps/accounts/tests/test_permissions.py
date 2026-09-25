@@ -246,4 +246,6 @@ def test_has_permission_allows_the_role_in_its_tenant_only(api_client_for, tenan
     warehouse = make_staff_in(tenant_a, WH)
     assert api_client_for(owner, tenant_a).get("/test-api/guarded/").status_code == 200
     assert api_client_for(warehouse, tenant_a).get("/test-api/guarded/").status_code == 403
-    assert api_client_for(owner, tenant_b).get("/test-api/guarded/").status_code == 403
+    # No membership in tenant B: the session itself is rejected there.
+    cross = api_client_for(owner, tenant_b, ensure_membership=False).get("/test-api/guarded/")
+    assert cross.status_code == 401

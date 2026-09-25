@@ -15,8 +15,10 @@ def test_jwt_tid_claim_activates_tenant_in_context_and_database(
     assert body == {"tenant": str(tenant_a.id), "db_tenant": str(tenant_a.id)}
 
 
-def test_token_without_tenant_claim_has_no_tenant(api_client_for, staff_user):
-    body = api_client_for(staff_user).get("/test-api/whoami/").json()
+def test_token_without_tenant_claim_has_no_tenant(api_client_for):
+    from apps.accounts.tests.factories import make_super_admin
+
+    body = api_client_for(make_super_admin()).get("/test-api/whoami/").json()
     assert body == {"tenant": None, "db_tenant": None}
 
 
@@ -72,8 +74,11 @@ def test_success_commits(api_client_for, staff_user, tenant_a):
     assert Widget.objects.unscoped().count() == 1
 
 
-def test_has_permission_fails_closed(api_client_for, staff_user, tenant_a):
-    response = api_client_for(staff_user, tenant_a).get("/test-api/guarded/")
+def test_has_permission_fails_closed(api_client_for, tenant_a):
+    from apps.accounts.tests.factories import make_staff_in
+
+    warehouse = make_staff_in(tenant_a, "WAREHOUSE")  # holds no orders.manage
+    response = api_client_for(warehouse, tenant_a).get("/test-api/guarded/")
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "PERMISSION_DENIED"
 
@@ -100,8 +105,10 @@ def test_health_endpoints(client):
 
 
 @override_settings(ROOT_URLCONF="config.urls")
-def test_openapi_schema_generates(client, staff_user, api_client_for):
-    response = api_client_for(staff_user).get("/api/v1/schema/")
+def test_openapi_schema_generates(api_client_for):
+    from apps.accounts.tests.factories import make_super_admin
+
+    response = api_client_for(make_super_admin()).get("/api/v1/schema/")
     assert response.status_code == 200
     assert b"Inventory Platform API" in response.content
 

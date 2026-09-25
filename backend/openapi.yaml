@@ -5,6 +5,142 @@ info:
   description: Multi-tenant B2B inventory & ordering platform. All money values are
     decimal strings.
 paths:
+  /api/v1/auth/handoff/exchange/:
+    post:
+      operationId: auth_handoff_exchange
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandoffExchangeInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshInputRequest'
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+    patch:
+      operationId: auth_me_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMeUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/v1/auth/staff/choose-tenant/:
+    post:
+      operationId: auth_staff_choose_tenant
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChooseTenantInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/staff/login/:
+    post:
+      operationId: auth_staff_login
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffLoginInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshInputRequest'
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+          description: ''
   /api/v1/meta/:
     get:
       operationId: meta_retrieve
@@ -21,6 +157,151 @@ paths:
           description: ''
 components:
   schemas:
+    ChooseTenantInputRequest:
+      type: object
+      properties:
+        choice_token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        tenant_id:
+          type: string
+          format: uuid
+      required:
+      - choice_token
+      - tenant_id
+    Handoff:
+      type: object
+      properties:
+        code:
+          type: string
+        tenant_slug:
+          type: string
+      required:
+      - code
+      - tenant_slug
+    HandoffExchangeInputRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - code
+    LoginResponse:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        access:
+          type: string
+        access_expires_at:
+          type: string
+          format: date-time
+        handoff:
+          $ref: '#/components/schemas/Handoff'
+        choice_token:
+          type: string
+        tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantChoice'
+      required:
+      - status
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_type:
+          $ref: '#/components/schemas/UserTypeEnum'
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        full_name:
+          type: string
+        preferred_language:
+          type: string
+        tenant:
+          allOf:
+          - $ref: '#/components/schemas/MeTenant'
+          nullable: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/MeRole'
+          nullable: true
+        permissions:
+          type: array
+          items:
+            type: string
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+        impersonation:
+          allOf:
+          - $ref: '#/components/schemas/MeImpersonation'
+          nullable: true
+      required:
+      - email
+      - features
+      - full_name
+      - id
+      - impersonation
+      - permissions
+      - phone
+      - preferred_language
+      - role
+      - tenant
+      - user_type
+    MeImpersonation:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        impersonator_id:
+          type: string
+          format: uuid
+        mode:
+          type: string
+      required:
+      - impersonator_id
+      - mode
+      - session_id
+    MeRole:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
+    MeTenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        status:
+          type: string
+      required:
+      - id
+      - name
+      - slug
+      - status
     Meta:
       type: object
       properties:
@@ -37,3 +318,95 @@ components:
       - display_time_zone
       - environment
       - platform_domain
+    PatchedMeUpdateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 150
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
+    PreferredLanguageEnum:
+      enum:
+      - en
+      - hi
+      - mr
+      type: string
+      description: |-
+        * `en` - English
+        * `hi` - हिन्दी
+        * `mr` - मराठी
+    RefreshInputRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    StaffLoginInputRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - email
+      - password
+    StatusEnum:
+      enum:
+      - authenticated
+      - handoff
+      - choose_tenant
+      type: string
+      description: |-
+        * `authenticated` - authenticated
+        * `handoff` - handoff
+        * `choose_tenant` - choose_tenant
+    TenantChoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+      required:
+      - id
+      - name
+      - slug
+    TokenResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        access_expires_at:
+          type: string
+          format: date-time
+        refresh:
+          type: string
+          description: Only when the request sent one.
+      required:
+      - access
+      - access_expires_at
+    UserTypeEnum:
+      enum:
+      - PLATFORM
+      - STAFF
+      - RETAILER
+      type: string
+      description: |-
+        * `PLATFORM` - Platform
+        * `STAFF` - Distributor staff
+        * `RETAILER` - Retailer
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

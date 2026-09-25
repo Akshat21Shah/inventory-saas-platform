@@ -3,12 +3,14 @@ from typing import Any
 
 import pytest
 from django.apps import apps as django_apps
+from django.db import connections
 from pytest_django.plugin import blocking_manager_key
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
-from apps.accounts.models import User
+from apps.accounts.models import Membership, User
 from apps.accounts.permissions import sync_permissions
+from apps.accounts.tests.factories import make_membership
 from apps.platform.models import Tenant
 from apps.platform.reference_data import seed_reference_data
 from apps.platform.tests.factories import TenantFactory
@@ -32,6 +34,22 @@ def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> 
             seed_reference_data(django_apps)
             sync_permissions(django_apps)
     return result
+
+
+@pytest.fixture(autouse=True)
+def _platform_alias_in_test_transaction(request: pytest.FixtureRequest) -> Any:
+    """In non-transactional tests, route the platform (BYPASSRLS) alias through the default
+    connection so it sees the test's uncommitted data. Transactional tests keep the real, separate
+    platform connection, which covers that path end to end."""
+    if _is_transactional(request.node):
+        yield
+        return
+    original = connections["platform"]
+    connections["platform"] = connections["default"]
+    try:
+        yield
+    finally:
+        connections["platform"] = original
 
 
 @pytest.fixture
@@ -60,13 +78,35 @@ def staff_user(db: Any) -> User:
 
 
 @pytest.fixture
-def api_client_for() -> Callable[[User, Tenant | None], APIClient]:
-    def factory(user: User, tenant: Tenant | None = None) -> APIClient:
+def api_client_for() -> Callable[..., APIClient]:
+    """An API client authenticated as ``user`` in ``tenant``.
+
+    Staff get an OWNER membership in ``tenant`` if they have none (most tests only need access);
+    pass ``ensure_membership=False`` to test what happens without one. ``host`` sets the
+    X-Forwarded-Host the backend classifies (e.g. "alpha.localhost").
+    """
+
+    def factory(
+        user: User,
+        tenant: Tenant | None = None,
+        *,
+        ensure_membership: bool = True,
+        host: str | None = None,
+    ) -> APIClient:
+        if (
+            tenant is not None
+            and ensure_membership
+            and user.user_type == User.UserType.STAFF
+            and not Membership.objects.unscoped().filter(user=user, tenant=tenant).exists()
+        ):
+            make_membership(user, tenant, "OWNER")
         token = AccessToken.for_user(user)
         if tenant is not None:
             token[TENANT_CLAIM] = str(tenant.id)
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        if host:
+            client.defaults["HTTP_X_FORWARDED_HOST"] = host
         return client
 
     return factory

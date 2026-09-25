@@ -6,3 +6,6 @@ class AccountsConfig(AppConfig):
     label = "accounts"
     verbose_name = "Accounts"
     default_auto_field = "django.db.models.BigAutoField"
+
+    def ready(self) -> None:
+        from apps.accounts import schema  # noqa: F401  (registers the OpenAPI extension)
