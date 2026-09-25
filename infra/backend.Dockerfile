@@ -22,7 +22,9 @@ FROM base AS prod
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 COPY . .
+# Build-time-only values so prod settings load for collectstatic; runtime values come from the env.
 RUN DJANGO_SECRET_KEY=build-time-only-key-for-collectstatic-0000 DATABASE_URL=postgres://x@localhost/x \
+    FIELD_ENCRYPTION_KEYS=YnVpbGQtdGltZS1vbmx5LW5vdC1hLXJlYWwta2V5MDA= \
     python manage.py collectstatic --noinput --settings=config.settings.prod
 USER app
 EXPOSE 8000
