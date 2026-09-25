@@ -248,3 +248,14 @@ if SENTRY_DSN:
 # --- App settings --------------------------------------------------------------------------------
 IDEMPOTENCY_TTL_SECONDS = 24 * 3600
 OUTBOX_SWEEP_AFTER_SECONDS = 60
+
+# --- Field-level encryption (ADR-031) ------------------------------------------------------------
+# Comma-separated Fernet keys: the first encrypts, all decrypt (rotation). Prod refuses the dev key,
+# which is base64("dev-only-insecure-fernet-key-000").
+DEV_FIELD_ENCRYPTION_KEY = "ZGV2LW9ubHktaW5zZWN1cmUtZmVybmV0LWtleS0wMDA="
+FIELD_ENCRYPTION_KEYS: list[str] = env.list("FIELD_ENCRYPTION_KEYS", default=[]) or [
+    DEV_FIELD_ENCRYPTION_KEY
+]
+
+# --- Plans (spec 5.1): limits are defined but not enforced until this is switched on ------------
+PLAN_ENFORCEMENT_ENABLED = env.bool("PLAN_ENFORCEMENT_ENABLED", default=False)

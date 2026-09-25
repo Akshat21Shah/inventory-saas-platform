@@ -2,6 +2,7 @@
 
 from django.db import models
 
+from common.crypto import EncryptedTextField
 from common.fields import MoneyField, QtyField
 from common.models import BaseModel, TenantScopedModel
 
@@ -14,3 +15,8 @@ class Widget(TenantScopedModel):
 
 class LedgerLike(BaseModel):
     note = models.CharField(max_length=50)
+
+
+class SecretHolder(BaseModel):
+    secret = EncryptedTextField(blank=True, default="")
+    optional_secret = EncryptedTextField(null=True, blank=True)
