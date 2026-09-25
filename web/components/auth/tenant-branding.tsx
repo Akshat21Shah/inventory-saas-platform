@@ -14,7 +14,7 @@ interface HostBranding {
 }
 
 interface HostBrandingContextValue extends HostBranding {
-  /** Apply freshly saved branding in this tab; the server copy is cached for up to a minute. */
+  /** Apply freshly saved branding in this tab without waiting for a reload. */
   applyBranding: (changes: Partial<PublicBranding>) => void;
 }
 

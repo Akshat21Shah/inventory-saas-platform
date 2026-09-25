@@ -8,7 +8,7 @@ PY := .venv/bin
 OWNER_DB_URL := postgres://app_owner:app_owner@localhost:5432/inventory
 
 .DEFAULT_GOAL := help
-.PHONY: help setup up down logs ps migrate makemigrations seed shell test test-backend test-frontend \
+.PHONY: help setup up down logs ps migrate makemigrations seed shell test test-backend test-frontend e2e-stack \
         e2e lint lint-backend lint-frontend fmt api-client db-up check-schema
 
 help: ## Show this help
@@ -62,6 +62,9 @@ test-frontend: ## vitest
 
 e2e: ## Playwright (starts the web dev server if not running)
 	cd web && npx playwright test
+
+e2e-stack: ## Acceptance E2E against the running stack (after make up + make seed)
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test e2e/acceptance.spec.ts
 
 lint: lint-backend lint-frontend ## ruff, mypy, eslint, tsc, prettier
 

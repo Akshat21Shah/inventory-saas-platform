@@ -73,6 +73,11 @@ class Command(BaseCommand):
         parser.add_argument("--admin-email", default="admin@platform.local")
         parser.add_argument("--admin-password", default="admin-dev-password")
         parser.add_argument("--staff-password", default="staff-dev-password")
+        parser.add_argument(
+            "--reset-admin-2fa",
+            action="store_true",
+            help="Put the dev super admin back on the fixed dev 2FA key (clears recovery codes).",
+        )
 
     @transaction.atomic
     def handle(self, *args: Any, **options: Any) -> None:
@@ -89,9 +94,11 @@ class Command(BaseCommand):
         elif admin.platform_role_id is None:  # created before platform roles existed
             admin.platform_role = Role.objects.get(tenant__isnull=True, code=PLATFORM_ADMIN_ROLE)
             admin.save(update_fields=["platform_role"])
-        if not admin.totp_enabled:
+        if not admin.totp_enabled or options["reset_admin_2fa"]:
             admin.totp_secret, admin.totp_enabled = DEV_ADMIN_TOTP_SECRET, True
-            admin.save(update_fields=["totp_secret", "totp_enabled"])
+            admin.totp_last_step = None
+            admin.save(update_fields=["totp_secret", "totp_enabled", "totp_last_step"])
+            admin.recovery_codes.all().delete()
             self.stdout.write(f"super admin 2FA key (dev only): {DEV_ADMIN_TOTP_SECRET}")
 
         beta = Plan.objects.get(is_default=True)

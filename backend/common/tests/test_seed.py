@@ -46,3 +46,14 @@ def test_seed_refuses_without_debug(settings):
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("seed")
+
+
+def test_seed_can_put_the_admin_back_on_the_dev_2fa_key(settings):
+    settings.DEBUG = True
+    call_command("seed")
+    admin = User.objects.get(email="admin@platform.local")
+    admin.totp_secret = pyotp.random_base32()
+    admin.save(update_fields=["totp_secret"])
+    call_command("seed", "--reset-admin-2fa")
+    admin.refresh_from_db()
+    assert admin.totp_secret == "DEVSEEDADMINTOTPKEYDEVSEEDADMIN2"

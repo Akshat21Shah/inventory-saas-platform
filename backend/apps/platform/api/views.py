@@ -7,6 +7,7 @@ authentication layer also refuses platform tokens outside the admin host (ADR-02
 from typing import Any
 from uuid import UUID
 
+from django.db import transaction
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
@@ -40,6 +41,19 @@ class PlatformView(APIView):
     permission_classes = [HasPermission]
 
 
+# For writes whose response is read through the platform alias: that is a separate database
+# connection, so it cannot see rows this request has not committed yet (a new tenant would be
+# "not found", an edited one would come back unchanged). These views skip the request-wide
+# transaction, run the write in their own ``atomic()`` block and read after it commits.
+# (A comment, not a docstring: drf-spectacular would publish a docstring in the API docs.)
+class CommitThenReadView(PlatformView):
+    atomic_request = False  # read by the exception handler
+
+    @classmethod
+    def as_view(cls, **initkwargs: Any) -> Any:
+        return transaction.non_atomic_requests(super().as_view(**initkwargs))
+
+
 # --- Public reference data ----------------------------------------------------------------------
 
 
@@ -58,7 +72,7 @@ class PublicStatesView(generics.ListAPIView[State]):
 # --- Tenants ------------------------------------------------------------------------------------
 
 
-class TenantListCreateView(PlatformView, generics.ListAPIView[Tenant]):
+class TenantListCreateView(CommitThenReadView, generics.ListAPIView[Tenant]):
     required_permission = "platform.tenants.manage"
     serializer_class = s.TenantListSerializer
 
@@ -90,7 +104,8 @@ class TenantListCreateView(PlatformView, generics.ListAPIView[Tenant]):
         data.is_valid(raise_exception=True)
         v = dict(data.validated_data)
         v["state_id"] = v.pop("state_code")
-        tenant = tenant_services.onboard_tenant(OnboardingInput(**v), by=_user(request))
+        with transaction.atomic():
+            tenant = tenant_services.onboard_tenant(OnboardingInput(**v), by=_user(request))
         return Response(_tenant_detail(tenant.pk), status=201)
 
 
@@ -106,7 +121,7 @@ def _tenant_detail(tenant_id: UUID) -> Any:
     return s.TenantDetailSerializer(tenant, context=context).data
 
 
-class TenantDetailView(PlatformView):
+class TenantDetailView(CommitThenReadView):
     required_permission = "platform.tenants.manage"
 
     @extend_schema(
@@ -130,9 +145,10 @@ class TenantDetailView(PlatformView):
         confirm = changes.pop("confirm_slug_change", False)
         if "state_code" in changes:
             changes["state_id"] = changes.pop("state_code")
-        tenant_services.update_tenant(
-            tenant_id, changes, by=_user(request), confirm_slug_change=confirm
-        )
+        with transaction.atomic():
+            tenant_services.update_tenant(
+                tenant_id, changes, by=_user(request), confirm_slug_change=confirm
+            )
         return Response(_tenant_detail(tenant_id))
 
 
@@ -150,7 +166,7 @@ class SlugAvailabilityView(PlatformView):
         return Response({"slug": slug, "available": tenant_services.slug_available(slug)})
 
 
-class TenantSuspendView(PlatformView):
+class TenantSuspendView(CommitThenReadView):
     required_permission = "platform.tenants.manage"
 
     @extend_schema(
@@ -162,13 +178,14 @@ class TenantSuspendView(PlatformView):
     def post(self, request: Request, tenant_id: UUID) -> Response:
         data = s.ReasonSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        tenant_services.suspend_tenant(
-            tenant_id, reason=data.validated_data["reason"], by=_user(request)
-        )
+        with transaction.atomic():
+            tenant_services.suspend_tenant(
+                tenant_id, reason=data.validated_data["reason"], by=_user(request)
+            )
         return Response(_tenant_detail(tenant_id))
 
 
-class TenantReactivateView(PlatformView):
+class TenantReactivateView(CommitThenReadView):
     required_permission = "platform.tenants.manage"
 
     @extend_schema(
@@ -178,7 +195,8 @@ class TenantReactivateView(PlatformView):
         tags=["platform"],
     )
     def post(self, request: Request, tenant_id: UUID) -> Response:
-        tenant_services.reactivate_tenant(tenant_id, by=_user(request))
+        with transaction.atomic():
+            tenant_services.reactivate_tenant(tenant_id, by=_user(request))
         return Response(_tenant_detail(tenant_id))
 
 

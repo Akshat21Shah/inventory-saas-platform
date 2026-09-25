@@ -52,7 +52,7 @@
 - The status line in `PLAN.md` now says Phase 0 is complete.
 
 ## In progress
-- **Phase 1 — Tenancy, auth, platform admin** (branch `phase-1`; plan approved 2026-09-25, including the wider PLAN §8 scope).
+- **Phase 1 — Tenancy, auth, platform admin** (branch `phase-1`, draft PR #2; plan approved 2026-09-25, including the wider PLAN §8 scope). **All 17 commits done; waiting for the end-of-phase review.**
   - Decisions recorded: ADR-025 … ADR-031; PLAN v1.3 (§1.2 T7, §2.2, §2.3, §3.2, §9.1/§9.2 Security keys, §10).
   - Done so far:
     - Field-level encryption (ADR-031).
@@ -144,24 +144,16 @@
       - `/manage/audit` (owners): the tenant's audit log, support sessions included; record ids are shown as the kind of record, never raw ids.
       - `/manage/account` and `/shop/account` reuse "My account"; shop owners get profile and sign-out only.
       - `DataTable` now calls cell templates as functions instead of mounting them as components, so inline column definitions no longer remount cells (and in-cell controls keep focus and state) on every render.
+    - Seed, E2E and docs (commit 17).
+      - Acceptance E2E (`web/e2e/acceptance.spec.ts`, `make e2e-stack`, CI job `e2e-stack` on the docker compose stack): super admin signs in with 2FA and creates a distributor through the wizard → the owner's invitation is read from Mailpit → owner accepts on the tenant subdomain → sets branding (colour applies at once) → invites staff (email checked) → the tenant sign-in page shows the new name and the owner signs in. Shop owners: OTP sign-in on a subdomain, and on the main address choosing between two distributors (360px).
+      - Bug found by the E2E and fixed: creating, editing, suspending or reactivating a tenant read the response through the platform connection before the request committed, so a new tenant came back "not found" (and the request rolled back) and edits came back unchanged. Those views now commit first (`CommitThenReadView`). Unit tests could not catch it because test settings mirror the platform alias onto the default connection; a structural test now guards the four views.
+      - Public branding is no longer cached by the web server (it was for 60 s): a tenant activated by its owner no longer looks unavailable for a minute, and branding changes show on the next page load.
+      - `seed --reset-admin-2fa` puts the dev super admin back on the dev 2FA key (`DEVSEEDADMINTOTPKEYDEVSEEDADMIN2`, dev only). Local dev admin was reset to it.
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
-- Phase 1 commits, in order:
-  1. ~~Encryption~~, ~~platform models and masters~~ (done)
-  2. Storage adapter (moved next to branding assets)
-  3. Audit log
-  4. Settings registry
-  5. Permissions and roles
-  6. Staff auth
-  7. 2FA and passwords
-  8. Retailer OTP
-  9. Invitations
-  10. Onboarding and platform APIs
-  11. Tenant settings and branding
-  12. Impersonation and Django admin
-  13–16. Frontend
-  17. Seed, E2E and docs
+- End-of-phase review of Phase 1 (PR #2), then merge.
+- Phase 2 — Catalog, retailers, pricing (after review). The retailer model and its OTP login are already in place as a stub.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
@@ -177,4 +169,6 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
 - Production domain to be supplied before staging (ADR-019).
+- Shop sign-in E2E sends one OTP per demo phone per run; the per-phone limit is 3 per 10 minutes, so rerun `make e2e-stack` at most three times in 10 minutes (or clear the rate-limit keys in Redis).
+- Signing out from `/shop/account` lands on `/shop/login?next=/shop/account`, so the next sign-in returns to the account page instead of home. Harmless; tidy up in Phase 2 with the shop home.
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.

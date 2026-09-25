@@ -111,6 +111,50 @@ jobs:
           name: playwright-report
           path: web/playwright-report
 
+  # Phase acceptance flows against the real stack (docker compose, as `make up`): super admin,
+  # owner invitation through Mailpit, branding, staff invite, shop sign-in with the dev OTP.
+  e2e-stack:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Start the stack
+        run: cp .env.example .env && docker compose -f infra/docker-compose.yml up -d --build
+      - name: Wait for the API and the web server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://localhost:8000/health/ready \
+              && curl -fsS -o /dev/null http://localhost:3000/login; then exit 0; fi
+            sleep 5
+          done
+          docker compose -f infra/docker-compose.yml ps
+          exit 1
+      - name: Load demo data
+        run: docker compose -f infra/docker-compose.yml exec -T backend python manage.py seed
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - name: Acceptance tests
+        working-directory: web
+        env:
+          E2E_FULL_STACK: "1"
+          E2E_BASE_URL: http://localhost:3000
+        run: npx playwright test e2e/acceptance.spec.ts
+      - name: Service logs
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml logs --tail=200 backend worker web
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-stack
+          path: web/playwright-report
+
   images:
     runs-on: ubuntu-latest
     needs: [backend, frontend]

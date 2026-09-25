@@ -1024,7 +1024,7 @@
       "colorHint": "Used for buttons and highlights. We adjust shades so text stays readable.",
       "colorHex": "Colour code",
       "save": "Save",
-      "saved": "Branding saved. Others see it within a minute.",
+      "saved": "Branding saved. Everyone sees it on their next page load.",
       "discard": "Discard changes",
       "readOnly": "Only the owner can change branding.",
       "images": "Logo and icons",

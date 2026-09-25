@@ -169,7 +169,7 @@ function BrandingEditor({ branding }: { branding: Branding }) {
   const [busy, setBusy] = useState(false);
   const dirty = name !== branding.display_name || color !== branding.primary_color;
 
-  // The root layout renders the brand on the server (cached for a minute); apply it here now.
+  // The root layout renders the brand on the server; apply it in this tab now, without a reload.
   const applied = (next: Branding) => {
     queryClient.setQueryData(getSettingsBrandingQueryKey(), { data: next, status: 200 });
     applyBranding(next);

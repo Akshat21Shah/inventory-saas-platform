@@ -562,3 +562,17 @@ def test_onboarded_tenant_owner_joins_and_tenant_becomes_active(api, run):
     assert Membership.objects.unscoped().get(tenant_id=tenant_id).role.code == "OWNER"
     assert Invitation.objects.unscoped().get(tenant_id=tenant_id).status == "ACCEPTED"
     assert TaxRate.objects.count() == 8
+
+
+@pytest.mark.parametrize(
+    "view",
+    ["TenantListCreateView", "TenantDetailView", "TenantSuspendView", "TenantReactivateView"],
+)
+def test_tenant_writes_commit_before_the_platform_alias_reads_the_response(view):
+    """The platform alias is a separate connection in production (tests mirror it onto the default
+    one, so they cannot show the problem): a write read back through it must commit first."""
+    from apps.platform.api import views
+
+    cls = getattr(views, view)
+    assert cls.atomic_request is False
+    assert "default" in cls.as_view()._non_atomic_requests
