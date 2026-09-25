@@ -37,6 +37,7 @@ dev = [
     "djangorestframework-stubs[compatible-mypy]>=3.16",
     "celery-types>=0.23",
     "pre-commit>=4.2",
+    "hypothesis>=6.130",
 ]
 
 [tool.uv]
