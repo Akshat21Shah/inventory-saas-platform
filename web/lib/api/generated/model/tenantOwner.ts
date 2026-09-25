@@ -6,7 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
-/**
- * @nullable
- */
-export type TenantDetailOwner = {[key: string]: unknown} | null;
+export interface TenantOwner {
+  email: string;
+  full_name: string;
+  status: string;
+}

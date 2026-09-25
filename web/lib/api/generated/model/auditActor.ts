@@ -6,4 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type ImpersonationSessionTenant = {[key: string]: unknown};
+export interface AuditActor {
+  id: string;
+  full_name: string;
+  /** @nullable */
+  email: string | null;
+}

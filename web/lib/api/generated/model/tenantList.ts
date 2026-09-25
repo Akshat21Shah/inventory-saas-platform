@@ -5,21 +5,17 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { TenantListPlan } from './tenantListPlan';
+import type { PlanRef } from './planRef';
 import type { TenantStatusEnum } from './tenantStatusEnum';
 
 export interface TenantList {
   readonly id: string;
-  /** @maxLength 200 */
-  name: string;
-  /** @maxLength 30 */
-  slug: string;
-  status?: TenantStatusEnum;
-  /** @maxLength 15 */
-  gstin: string;
-  state_code: string;
-  /** @maxLength 100 */
-  city: string;
-  readonly plan: TenantListPlan;
+  readonly name: string;
+  readonly slug: string;
+  readonly status: TenantStatusEnum;
+  readonly gstin: string;
+  readonly state_code: string;
+  readonly city: string;
+  readonly plan: PlanRef;
   readonly created_at: string;
 }

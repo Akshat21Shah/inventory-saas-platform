@@ -151,7 +151,8 @@
     "catalog": "Catalog",
     "cart": "Cart",
     "account": "Account",
-    "mainNavigation": "Main navigation"
+    "mainNavigation": "Main navigation",
+    "impersonations": "Support sessions"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -189,7 +190,11 @@
     "PARTIAL": "Partly paid",
     "PAID": "Paid",
     "ACTIVE": "Active",
-    "SUSPENDED": "Suspended"
+    "SUSPENDED": "Suspended",
+    "ONBOARDING": "Onboarding",
+    "INACTIVE": "Inactive",
+    "ENDED": "Ended",
+    "EXPIRED": "Expired"
   },
   "table": {
     "emptyTitle": "No records yet",
@@ -284,5 +289,639 @@
     "reason": "Reason for making changes",
     "cancel": "Cancel",
     "confirmAct": "Switch to act mode"
+  },
+  "settings": {
+    "tax": {
+      "registration_type": {
+        "label": "GST registration type",
+        "description": "Your GST registration type. Only regular registration is supported now.",
+        "options": {
+          "REGULAR": "Regular",
+          "COMPOSITION": "Composition (coming later)"
+        }
+      },
+      "prices_include_gst": {
+        "label": "Prices include GST",
+        "description": "Turn on if the prices you enter already include GST."
+      },
+      "component_rounding": {
+        "label": "Rounding of tax amounts",
+        "description": "How each tax amount is rounded to the paisa.",
+        "options": {
+          "HALF_UP": "Round half up",
+          "HALF_EVEN": "Round half to even"
+        }
+      },
+      "hsn_min_digits": {
+        "label": "Minimum HSN code length",
+        "description": "Minimum HSN code length required on products.",
+        "options": {
+          "4": "4 digits",
+          "6": "6 digits",
+          "8": "8 digits"
+        }
+      }
+    },
+    "invoicing": {
+      "timing": {
+        "label": "When to create the tax invoice",
+        "description": "When the tax invoice is created: when goods are dispatched (for the packed quantity), or when the order or backorder is accepted.",
+        "options": {
+          "ON_DISPATCH": "When goods are dispatched",
+          "ON_ACCEPTANCE": "When the order is accepted"
+        }
+      },
+      "round_to_rupee": {
+        "label": "Round invoice totals to the rupee",
+        "description": "Round invoice totals to the nearest rupee with a round-off line."
+      },
+      "round_off_method": {
+        "label": "How to round to the rupee",
+        "description": "How the invoice total is rounded to the rupee.",
+        "options": {
+          "NEAREST": "Nearest rupee",
+          "UP": "Always up",
+          "DOWN": "Always down"
+        }
+      },
+      "default_payment_terms_days": {
+        "label": "Default credit days",
+        "description": "Default credit days for new retailers (each retailer can differ)."
+      }
+    },
+    "orders": {
+      "acceptance_mode": {
+        "label": "Order acceptance",
+        "description": "Accept new orders yourself, or automatically when they pass all checks.",
+        "options": {
+          "MANUAL": "I accept each order",
+          "AUTO": "Automatically"
+        }
+      },
+      "send_confirmation_on_accept": {
+        "label": "Send Order Confirmation on acceptance",
+        "description": "Send the retailer an Order Confirmation (items, prices, tax estimate) when you accept an order."
+      },
+      "min_order_value": {
+        "label": "Minimum order value",
+        "description": "Smallest order value a retailer can place. Backordered items count."
+      },
+      "min_order_value_basis": {
+        "label": "Minimum order value includes GST?",
+        "description": "Whether the minimum order value includes GST.",
+        "options": {
+          "INCL_GST": "Including GST",
+          "EXCL_GST": "Excluding GST"
+        }
+      },
+      "pre_acceptance_edit_mode": {
+        "label": "Changes before acceptance",
+        "description": "What your team can change before accepting: only reduce or remove items, or also add items and increase quantities. The retailer is always notified.",
+        "options": {
+          "REDUCE_ONLY": "Only reduce or remove items",
+          "FULL_EDIT": "Also add items and increase quantities"
+        }
+      },
+      "staff_can_place_on_behalf": {
+        "label": "Staff can order for retailers",
+        "description": "Allow your staff (for example salesmen) to place orders for retailers."
+      },
+      "sales_visibility": {
+        "label": "What sales staff can see",
+        "description": "Which orders and retailers sales staff can see.",
+        "options": {
+          "ALL": "All orders and retailers",
+          "ASSIGNED_RETAILERS": "Only their assigned retailers"
+        }
+      },
+      "pending_alert_hours": {
+        "label": "Alert for orders waiting (hours)",
+        "description": "Show a dashboard alert for orders not accepted within this many hours."
+      },
+      "insufficient_stock_action": {
+        "label": "When stock runs short (backorders off)",
+        "description": "When backorders are off and stock runs short at checkout: stop the order and show what's short, or place only the in-stock part.",
+        "options": {
+          "FAIL": "Stop the order and show what's short",
+          "PLACE_AVAILABLE": "Place only the in-stock part"
+        }
+      }
+    },
+    "stock": {
+      "show_exact_quantity": {
+        "label": "Show exact stock to retailers",
+        "description": "Show retailers the exact quantity in stock (otherwise only \"In stock\" or \"Low stock\")."
+      },
+      "show_low_stock_label": {
+        "label": "Show a \"Low stock\" label",
+        "description": "Show a \"Low stock\" label to retailers when stock is at or below the reorder level."
+      }
+    },
+    "backorders": {
+      "enabled": {
+        "label": "Allow backorders",
+        "description": "Let retailers order more than is in stock; the rest is sent when stock arrives."
+      },
+      "allocation_mode": {
+        "label": "Allocating arriving stock to backorders",
+        "description": "When stock arrives, confirm each backorder allocation yourself, or allocate automatically (oldest orders first).",
+        "options": {
+          "CONFIRM": "I confirm each allocation",
+          "AUTO": "Automatically"
+        }
+      },
+      "billing_price": {
+        "label": "Price for backordered items",
+        "description": "Price for backordered items sent later: the price when ordered, or today's price.",
+        "options": {
+          "ORIGINAL": "Price when ordered",
+          "CURRENT": "Today's price"
+        }
+      }
+    },
+    "credit": {
+      "breach_action": {
+        "label": "When a credit limit would be exceeded",
+        "description": "When an order would exceed a retailer's credit limit: hold it for approval, or refuse it.",
+        "options": {
+          "REQUIRE_APPROVAL": "Hold the order for approval",
+          "BLOCK": "Refuse the order"
+        }
+      },
+      "hold_reserves_stock": {
+        "label": "Reserve stock for orders on credit hold",
+        "description": "Keep stock reserved for orders waiting for credit approval."
+      },
+      "block_overdue_after_days": {
+        "label": "Treat as over limit when overdue by (days)",
+        "description": "Treat a retailer as over limit when any invoice is overdue by more than this many days."
+      }
+    },
+    "payments": {
+      "hold_advances": {
+        "label": "Keep extra payments as credit",
+        "description": "Keep extra money paid by a retailer as credit and use it for their next invoices."
+      },
+      "cheque_credit_timing": {
+        "label": "When a cheque counts as paid",
+        "description": "Credit a cheque to the retailer's account when received (reversed automatically if it bounces) or only when it clears.",
+        "options": {
+          "ON_RECEIPT": "When the cheque is received",
+          "ON_CLEARANCE": "When the cheque clears"
+        }
+      }
+    },
+    "security": {
+      "require_staff_2fa": {
+        "label": "Require two-step verification for staff",
+        "description": "Require every staff member to set up two-step verification (an authenticator app) before they can sign in."
+      }
+    },
+    "platform": {
+      "hsn_rate_hints_enabled": {
+        "label": "Suggest GST rates from HSN codes",
+        "description": "Suggest GST rates from the HSN hint table on product forms and imports."
+      },
+      "default_invoice_prefix": {
+        "label": "Default invoice prefix",
+        "description": "Prefix proposed when a tenant's first invoice series is created."
+      },
+      "impersonation_session_minutes": {
+        "label": "Support session length (minutes)",
+        "description": "Maximum length of a support impersonation session."
+      },
+      "login_lockout_threshold": {
+        "label": "Failed sign-ins before locking",
+        "description": "Consecutive failed sign-ins before an account is locked."
+      },
+      "login_lockout_minutes": {
+        "label": "Lock duration (minutes)",
+        "description": "How long a locked account stays locked."
+      },
+      "login_rate_per_ip_per_minute": {
+        "label": "Sign-in attempts per IP per minute",
+        "description": "Sign-in attempts allowed per minute from one IP address (generous: many mobile users share an IP)."
+      },
+      "login_rate_per_email_per_minute": {
+        "label": "Sign-in attempts per email per minute",
+        "description": "Sign-in attempts allowed per minute for one email address."
+      },
+      "otp_rate_per_phone_per_10_minutes": {
+        "label": "Codes per phone per 10 minutes",
+        "description": "OTP codes that can be requested for one phone number in 10 minutes."
+      },
+      "otp_rate_per_ip_per_hour": {
+        "label": "Codes per IP per hour",
+        "description": "OTP codes that can be requested from one IP address per hour (generous: many mobile users share an IP)."
+      },
+      "password_reset_per_email_per_hour": {
+        "label": "Password reset emails per address per hour",
+        "description": "Password reset emails that can be requested for one email address per hour."
+      },
+      "otp_max_verify_attempts": {
+        "label": "Wrong codes allowed",
+        "description": "Wrong codes allowed before an OTP stops working."
+      }
+    }
+  },
+  "settingsForm": {
+    "groups": {
+      "tax": "Tax",
+      "invoicing": "Invoicing",
+      "orders": "Orders",
+      "stock": "Stock",
+      "credit_payments": "Credit & payments",
+      "security": "Security"
+    },
+    "default": "Default",
+    "reset": "Reset to default",
+    "save": "Save changes",
+    "saved": "Settings saved",
+    "unsaved": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+    "discard": "Discard",
+    "snapshotNote": "Applies to orders and documents created from now on; existing ones keep their settings.",
+    "dependsOn": "Only used when \"{setting}\" is {value}.",
+    "dependsOnSet": "Only used when \"{setting}\" is set.",
+    "readOnly": "Only people with permission can change this.",
+    "none": "Not set",
+    "on": "On",
+    "off": "Off",
+    "reserved": "coming later",
+    "noneOption": "No limit"
+  },
+  "audit": {
+    "when": "When",
+    "who": "Who",
+    "action": "What happened",
+    "target": "On",
+    "details": "Details",
+    "via": "via support ({name})",
+    "system": "System",
+    "field": "Field",
+    "before": "Before",
+    "after": "After",
+    "noChanges": "No field changes recorded.",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "filterAll": "All activity",
+    "filters": {
+      "settings": "Settings",
+      "staff": "Staff",
+      "tenant": "Business",
+      "auth": "Sign-in & security",
+      "impersonation": "Support sessions",
+      "feature": "Modules",
+      "subscription": "Plan"
+    },
+    "emptyTitle": "No activity yet",
+    "emptyBody": "Changes and sign-in events will appear here.",
+    "actions": {
+      "settings": {
+        "changed": "Changed a setting",
+        "reset": "Reset a setting to default",
+        "business_profile_changed": "Changed business details",
+        "bank_details_changed": "Changed bank details",
+        "branding_changed": "Changed branding",
+        "asset_uploaded": "Uploaded an image",
+        "asset_removed": "Removed an image"
+      },
+      "staff": {
+        "invited": "Invited a staff member",
+        "invitation_resent": "Resent an invitation",
+        "invitation_revoked": "Cancelled an invitation",
+        "invitation_accepted": "Accepted an invitation",
+        "role_changed": "Changed a role",
+        "deactivated": "Deactivated a staff member",
+        "reactivated": "Reactivated a staff member"
+      },
+      "tenant": {
+        "created": "Business created",
+        "updated": "Business details changed",
+        "slug_changed": "Web address changed",
+        "activated": "Business activated",
+        "suspended": "Business suspended",
+        "reactivated": "Business reactivated"
+      },
+      "feature": {
+        "changed": "Module switched"
+      },
+      "feature_flag": {
+        "updated": "Module defaults changed"
+      },
+      "subscription": {
+        "plan_changed": "Plan changed"
+      },
+      "plan": {
+        "created": "Plan created",
+        "updated": "Plan changed"
+      },
+      "tax_rate": {
+        "created": "GST rate added",
+        "updated": "GST rate changed"
+      },
+      "cess_type": {
+        "created": "Cess type added",
+        "updated": "Cess type changed"
+      },
+      "hsn_hint": {
+        "created": "HSN hint added",
+        "updated": "HSN hint changed",
+        "deleted": "HSN hint removed",
+        "imported": "HSN hints imported"
+      },
+      "auth": {
+        "account_locked": "Sign-in paused after failed attempts",
+        "mfa_enabled": "Turned on two-step verification",
+        "mfa_disabled": "Turned off two-step verification",
+        "recovery_code_used": "Used a recovery code",
+        "recovery_codes_regenerated": "Made new recovery codes",
+        "password_reset": "Reset the password",
+        "password_changed": "Changed the password"
+      },
+      "impersonation": {
+        "started": "Support session started",
+        "act_enabled": "Support switched to act mode",
+        "ended": "Support session ended",
+        "expired": "Support session expired",
+        "write": "Change made in a support session"
+      }
+    },
+    "title": "Audit log",
+    "platformBody": "Every sensitive action across all distributors, including support sessions.",
+    "tenantBody": "Who changed what in your business, including any support sessions by our team."
+  },
+  "platform": {
+    "dashboard": {
+      "title": "Dashboard",
+      "body": "Distributors on the platform at a glance.",
+      "total": "All distributors",
+      "active": "Active",
+      "onboarding": "Waiting for owner",
+      "suspended": "Suspended"
+    },
+    "tenants": {
+      "title": "Distributors",
+      "body": "Distributors using the platform.",
+      "new": "Add distributor",
+      "searchPlaceholder": "Search name, GSTIN or web address",
+      "allStatuses": "All statuses",
+      "name": "Distributor",
+      "slug": "Web address",
+      "gstin": "GSTIN",
+      "city": "City",
+      "plan": "Plan",
+      "status": "Status",
+      "created": "Added",
+      "emptyTitle": "No distributors yet",
+      "emptyBody": "Add the first distributor to get started.",
+      "statuses": {
+        "ACTIVE": "Active",
+        "ONBOARDING": "Onboarding",
+        "SUSPENDED": "Suspended"
+      }
+    },
+    "onboarding": {
+      "title": "Add a distributor",
+      "body": "Set up a distributor in a few steps. The owner gets an email invitation to finish sign-up.",
+      "progress": "Progress",
+      "steps": {
+        "company": "Company",
+        "gst": "GST & address",
+        "owner": "Owner",
+        "address": "Web address",
+        "plan": "Plan",
+        "review": "Review"
+      },
+      "fields": {
+        "name": "Business name",
+        "legal_name": "Legal name (as on GST registration)",
+        "email": "Business email",
+        "phone": "Business phone",
+        "gstin": "GSTIN",
+        "state_code": "State",
+        "address_line1": "Address line 1",
+        "address_line2": "Address line 2 (optional)",
+        "city": "City",
+        "pincode": "PIN code",
+        "owner_name": "Owner's name (optional)",
+        "owner_email": "Owner's email",
+        "slug": "Web address",
+        "primary_color": "Brand colour",
+        "plan_code": "Plan"
+      },
+      "hints": {
+        "name": "The name customers see.",
+        "gstin": "15 characters. The state is filled in from it.",
+        "owner_email": "We send the invitation to this address.",
+        "slug": "Customers sign in at this address followed by .{domain}. Only super admins can change it later.",
+        "primary_color": "Used for buttons and highlights. The owner can change it later.",
+        "plan_code": "Plan limits are not enforced yet."
+      },
+      "invalid": {
+        "email": "Enter a valid email address.",
+        "owner_email": "Enter a valid email address.",
+        "gstin": "Enter a valid 15-character GSTIN.",
+        "pincode": "Enter a valid 6-digit PIN code.",
+        "slug": "Use 3–30 lowercase letters, numbers or hyphens.",
+        "phone": "Enter a valid phone number."
+      },
+      "required": "This is required.",
+      "slugTaken": "This web address is already taken.",
+      "slugFree": "This web address is available.",
+      "defaultPlan": "Default plan (Beta)",
+      "choose": "Choose…",
+      "create": "Create distributor",
+      "created": "{name} was added and the owner has been invited.",
+      "back": "Back",
+      "next": "Next"
+    },
+    "detail": {
+      "tabs": {
+        "overview": "Overview",
+        "modules": "Modules",
+        "plan": "Plan",
+        "users": "Users",
+        "audit": "Audit log"
+      },
+      "edit": "Edit details",
+      "editTitle": "Edit distributor details",
+      "saveChanges": "Save changes",
+      "saved": "Changes saved.",
+      "slugWarning": "I understand that changing the web address breaks existing links, bookmarks and installed apps for this distributor.",
+      "address": "Address",
+      "business": "Business details",
+      "owner": "Owner",
+      "ownerStatus": {
+        "JOINED": "Signed up",
+        "INVITATION_PENDING": "Invitation sent, not accepted yet",
+        "INVITATION_EXPIRED": "Invitation expired",
+        "INVITATION_REVOKED": "Invitation cancelled",
+        "INVITATION_ACCEPTED": "Invitation accepted",
+        "NONE": "No owner yet"
+      },
+      "resendInvite": "Resend owner invitation",
+      "resendTitle": "Send a new invitation to {email}?",
+      "resendBody": "The earlier invitation link stops working.",
+      "inviteResent": "A new invitation was sent.",
+      "suspend": "Suspend",
+      "suspendTitle": "Suspend {name}?",
+      "suspendBody": "Nobody from this distributor, including its shops, can sign in until it is reactivated. They see a neutral \"account unavailable\" message.",
+      "suspended": "Distributor suspended.",
+      "suspendedBecause": "Suspended: {reason}",
+      "reactivate": "Reactivate",
+      "reactivateTitle": "Reactivate {name}?",
+      "reactivated": "Distributor reactivated.",
+      "reason": "Reason",
+      "staff": "Staff",
+      "retailers": "Shops",
+      "pendingInvitations": "Pending invitations",
+      "modulesNote": "Turning a module off hides it for this distributor. Their data is kept.",
+      "currentPlan": "Current plan",
+      "since": "since",
+      "changePlan": "Change plan",
+      "planChanged": "Plan changed.",
+      "planNote": "Plan limits are not enforced yet (Beta).",
+      "person": "Name",
+      "role": "Role",
+      "noStaff": "No users yet.",
+      "actAs": "Support session",
+      "actAsTitle": "Start a support session as {name}?",
+      "actAsBody": "A new tab opens in their account in view-only mode. The session is recorded, visible to the distributor's owners, and ends automatically.",
+      "startSession": "Start session"
+    },
+    "plans": {
+      "title": "Plans",
+      "body": "Subscription plans offered to distributors.",
+      "enforcementOff": "Plan limits are not enforced during Beta. Every distributor can use every enabled module.",
+      "new": "New plan",
+      "edit": "Edit plan",
+      "create": "Create plan",
+      "saved": "Plan saved.",
+      "code": "Code",
+      "codeHint": "A short unique code. It cannot be changed later.",
+      "name": "Name",
+      "price": "Price per month",
+      "maxRetailers": "Max shops",
+      "maxStaff": "Max staff",
+      "maxProducts": "Max products",
+      "limitHint": "Leave blank for no limit.",
+      "unlimited": "No limit",
+      "isDefault": "Default plan for new distributors",
+      "isActive": "Available",
+      "default": "Default",
+      "inactive": "Not available"
+    },
+    "flags": {
+      "title": "Feature flags",
+      "body": "Optional modules and whether businesses start with them on.",
+      "module": "Module",
+      "defaultOn": "On for new distributors",
+      "tenantToggleable": "Distributor can switch it"
+    },
+    "tax": {
+      "title": "GST rates",
+      "body": "GST rates, cess types and HSN rate hints shared by every distributor.",
+      "tabs": {
+        "rates": "GST rates",
+        "cess": "Cess types",
+        "hsn": "HSN hints"
+      },
+      "rate": "Rate",
+      "label": "Name",
+      "notes": "Notes",
+      "active": "In use",
+      "newRate": "Add GST rate",
+      "rateHint": "Rates can be retired but never edited, because issued invoices refer to them.",
+      "add": "Add",
+      "saved": "Saved.",
+      "edit": "Edit",
+      "save": "Save",
+      "code": "Code",
+      "method": "Calculation",
+      "methods": {
+        "PERCENT": "Percentage of value",
+        "SPECIFIC_PER_UNIT": "Fixed amount per unit"
+      },
+      "newCess": "Add cess type",
+      "yes": "Yes",
+      "no": "No",
+      "hsnBody": "Suggested GST rates by HSN code prefix. Distributors see these as hints only; they always confirm the rate.",
+      "hsnPrefix": "HSN prefix",
+      "effectiveFrom": "Effective from",
+      "description": "Description",
+      "newHint": "Add hint",
+      "searchPrefix": "Filter by prefix",
+      "hsnEmpty": "No HSN hints.",
+      "delete": "Delete",
+      "deleteTitle": "Delete the hint for {prefix}?",
+      "importCsv": "Import CSV",
+      "imported": "Import finished: {created} added, {updated} updated.",
+      "importFailed": "Nothing was imported. Fix these rows and try again:",
+      "csvFormat": "CSV columns: hsn_prefix, gst_rate, effective_from (YYYY-MM-DD), description. UTF-8, up to 1 MB."
+    },
+    "settingsPage": {
+      "title": "Platform settings",
+      "body": "Security limits and defaults that apply to every distributor."
+    },
+    "sessions": {
+      "title": "Support sessions",
+      "body": "Every time a super admin used a distributor's account for support.",
+      "started": "Started",
+      "by": "By",
+      "as": "Signed in as",
+      "reason": "Reason",
+      "actReason": "Changes allowed because: {reason}",
+      "mode": "Mode",
+      "modes": {
+        "READ_ONLY": "View only",
+        "ACT": "Can make changes"
+      },
+      "status": "Status",
+      "empty": "No support sessions yet.",
+      "search": "Search reason or person"
+    }
+  },
+  "account": {
+    "title": "My account",
+    "body": "Your profile, password and two-step verification.",
+    "profile": "Profile",
+    "fullName": "Full name",
+    "language": "Language",
+    "languages": {
+      "en": "English",
+      "hi": "हिन्दी (Hindi)",
+      "mr": "मराठी (Marathi)"
+    },
+    "email": "Signed in as",
+    "save": "Save",
+    "saved": "Profile saved.",
+    "password": "Password",
+    "passwordBody": "Changing your password signs you out everywhere else.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordMismatch": "The passwords do not match.",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed. Other devices were signed out.",
+    "twoStep": "Two-step verification",
+    "twoStepBody": "A code from an authenticator app is needed each time you sign in.",
+    "on": "On",
+    "off": "Off",
+    "setUp": "Set up two-step verification",
+    "stepScan": "Scan the QR code with an authenticator app (for example Google Authenticator).",
+    "stepCode": "Enter the 6-digit code it shows.",
+    "qrLabel": "QR code for your authenticator app",
+    "manualKey": "Can't scan? Enter this key instead",
+    "code": "6-digit code",
+    "turnOn": "Turn on",
+    "newCodes": "Get new recovery codes",
+    "turnOff": "Turn off",
+    "turnedOff": "Two-step verification is off.",
+    "requiredNote": "Two-step verification is required for your account.",
+    "recoveryCode": "Recovery code",
+    "useRecoveryCode": "Use a recovery code instead",
+    "useAppCode": "Use a code from the app",
+    "cancel": "Cancel",
+    "blockedInSupport": "Password and two-step verification cannot be changed during a support session."
   }
 }

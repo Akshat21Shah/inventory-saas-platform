@@ -123,6 +123,14 @@
       - Tenant branding (colour, name, favicon) is applied on the server in the root layout.
       - Orval now generates mutations for writes. `qrcode` added (web image rebuilt).
       - Checked live: super admin sign-in with 2FA enrolment and recovery codes, reload keeps the session, 2FA verify on the next sign-in, branded tenant login.
+    - Frontend: super admin area (commit 14).
+      - Dashboard (tenant counts), distributor list (search, status filter, cursor pages) and a six-step onboarding wizard (state filled from the GSTIN, live web-address check, one create call at the end).
+      - Distributor detail: edit (web-address change needs an explicit confirmation), suspend with a reason, reactivate, resend the owner invitation while onboarding, modules, plan, users with "Support session" (reason → handoff to the subdomain in a new tab), and the tenant's audit log.
+      - Plans, feature flags, GST rates / cess types / HSN hints (with CSV import that lists every rejected row), platform settings from the registry, the audit log across tenants, and support sessions.
+      - "My account" (shared with /manage later): profile, password change (this session continues with new tokens), 2FA set-up, new recovery codes and turn-off (hidden when 2FA is required); password and 2FA hidden during a support session.
+      - Shared: `FieldsDialog`, `ReasonDialog`, `KpiCard`, `AuditTable` with a before/after viewer, `RegistrySettingsForm`, `useCursor`. `ConfirmDialog` now shows failures and stays open.
+      - Tests render with a strict i18n provider (a missing message fails the test) and a query client; `tests/mock-api.ts` stubs the API by method and path.
+      - Checked live on desktop and at 360px (no horizontal scroll; the phone header now truncates the title and account name).
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next

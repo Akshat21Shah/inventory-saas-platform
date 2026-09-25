@@ -123,8 +123,8 @@ export function SidebarShell({
                 </nav>
               </SheetContent>
             </Sheet>
-            <span className="flex-1 font-semibold">{title}</span>
-            {account}
+            <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
+            {account ? <div className="max-w-[50%] min-w-0">{account}</div> : null}
           </header>
           <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8">
             {children}

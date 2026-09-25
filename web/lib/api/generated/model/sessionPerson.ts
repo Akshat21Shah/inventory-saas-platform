@@ -6,4 +6,12 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type ImpersonationSessionTarget = {[key: string]: unknown};
+export interface SessionPerson {
+  id: string;
+  full_name: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  phone?: string | null;
+  user_type?: string;
+}

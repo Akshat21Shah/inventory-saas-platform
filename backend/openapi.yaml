@@ -2083,6 +2083,21 @@ components:
           format: binary
       required:
       - file
+    AuditActor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          nullable: true
+      required:
+      - email
+      - full_name
+      - id
     AuditLog:
       type: object
       properties:
@@ -2095,20 +2110,20 @@ components:
           format: date-time
           readOnly: true
         tenant:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/AuditTenant'
           nullable: true
           readOnly: true
         actor:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/AuditActor'
           nullable: true
           readOnly: true
         actor_type:
           $ref: '#/components/schemas/ActorTypeEnum'
         impersonator:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/AuditActor'
           nullable: true
           readOnly: true
         impersonation_session_id:
@@ -2146,6 +2161,17 @@ components:
       - id
       - impersonator
       - tenant
+    AuditTenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
     BankDetails:
       type: object
       properties:
@@ -2546,16 +2572,16 @@ components:
           type: string
           format: uuid
         tenant:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/SessionTenant'
           readOnly: true
         impersonator:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/SessionPerson'
           readOnly: true
         target:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/SessionPerson'
           readOnly: true
         reason:
           type: string
@@ -3732,6 +3758,40 @@ components:
       required:
       - code
       - name
+    SessionPerson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        user_type:
+          type: string
+      required:
+      - email
+      - full_name
+      - id
+    SessionTenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+      required:
+      - id
+      - name
+      - slug
     Setting:
       type: object
       description: A registry definition with the current value; the settings UI is
@@ -3940,23 +4000,26 @@ components:
           readOnly: true
         name:
           type: string
-          maxLength: 200
+          readOnly: true
         slug:
           type: string
-          maxLength: 30
+          readOnly: true
         status:
-          $ref: '#/components/schemas/TenantStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/TenantStatusEnum'
+          readOnly: true
         gstin:
           type: string
-          maxLength: 15
+          readOnly: true
         state_code:
           type: string
+          readOnly: true
         city:
           type: string
-          maxLength: 100
+          readOnly: true
         plan:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/PlanRef'
           readOnly: true
         created_at:
           type: string
@@ -3964,42 +4027,45 @@ components:
           readOnly: true
         legal_name:
           type: string
-          maxLength: 200
+          readOnly: true
         pan:
           type: string
-          maxLength: 10
+          readOnly: true
         registration_type:
-          $ref: '#/components/schemas/RegistrationTypeEnum'
+          allOf:
+          - $ref: '#/components/schemas/RegistrationTypeEnum'
+          readOnly: true
         address_line1:
           type: string
-          maxLength: 200
+          readOnly: true
         address_line2:
           type: string
-          maxLength: 200
+          readOnly: true
         pincode:
           type: string
-          maxLength: 6
+          readOnly: true
         email:
           type: string
           format: email
-          maxLength: 254
+          readOnly: true
         phone:
           type: string
-          maxLength: 16
+          readOnly: true
         suspended_reason:
           type: string
+          readOnly: true
         suspended_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
         usage:
-          type: object
-          additionalProperties:
-            type: integer
+          allOf:
+          - $ref: '#/components/schemas/TenantUsage'
           readOnly: true
         owner:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/TenantOwner'
           nullable: true
           readOnly: true
         features:
@@ -4009,6 +4075,7 @@ components:
           readOnly: true
       required:
       - address_line1
+      - address_line2
       - city
       - created_at
       - email
@@ -4022,8 +4089,12 @@ components:
       - phone
       - pincode
       - plan
+      - registration_type
       - slug
       - state_code
+      - status
+      - suspended_at
+      - suspended_reason
       - usage
     TenantFeature:
       type: object
@@ -4053,23 +4124,26 @@ components:
           readOnly: true
         name:
           type: string
-          maxLength: 200
+          readOnly: true
         slug:
           type: string
-          maxLength: 30
+          readOnly: true
         status:
-          $ref: '#/components/schemas/TenantStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/TenantStatusEnum'
+          readOnly: true
         gstin:
           type: string
-          maxLength: 15
+          readOnly: true
         state_code:
           type: string
+          readOnly: true
         city:
           type: string
-          maxLength: 100
+          readOnly: true
         plan:
-          type: object
-          additionalProperties: {}
+          allOf:
+          - $ref: '#/components/schemas/PlanRef'
           readOnly: true
         created_at:
           type: string
@@ -4084,6 +4158,21 @@ components:
       - plan
       - slug
       - state_code
+      - status
+    TenantOwner:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        status:
+          type: string
+      required:
+      - email
+      - full_name
+      - status
     TenantStatusEnum:
       enum:
       - ONBOARDING
@@ -4094,6 +4183,19 @@ components:
         * `ONBOARDING` - Onboarding
         * `ACTIVE` - Active
         * `SUSPENDED` - Suspended
+    TenantUsage:
+      type: object
+      properties:
+        staff:
+          type: integer
+        retailers:
+          type: integer
+        pending_invitations:
+          type: integer
+      required:
+      - pending_invitations
+      - retailers
+      - staff
     TokenResponse:
       type: object
       properties:

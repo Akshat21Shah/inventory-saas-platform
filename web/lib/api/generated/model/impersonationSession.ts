@@ -5,15 +5,14 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { ImpersonationSessionImpersonator } from './impersonationSessionImpersonator';
-import type { ImpersonationSessionTarget } from './impersonationSessionTarget';
-import type { ImpersonationSessionTenant } from './impersonationSessionTenant';
+import type { SessionPerson } from './sessionPerson';
+import type { SessionTenant } from './sessionTenant';
 
 export interface ImpersonationSession {
   id: string;
-  readonly tenant: ImpersonationSessionTenant;
-  readonly impersonator: ImpersonationSessionImpersonator;
-  readonly target: ImpersonationSessionTarget;
+  readonly tenant: SessionTenant;
+  readonly impersonator: SessionPerson;
+  readonly target: SessionPerson;
   reason: string;
   mode: string;
   act_reason: string;

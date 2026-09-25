@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.audit.models import AuditLog
@@ -11,6 +12,11 @@ class AuditActorSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     full_name = serializers.CharField()
     email = serializers.CharField(allow_null=True)
+
+
+class AuditTenantSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
 
 
 class AuditLogSerializer(serializers.ModelSerializer[AuditLog]):
@@ -45,12 +51,15 @@ class AuditLogSerializer(serializers.ModelSerializer[AuditLog]):
             return None
         return {"id": user.pk, "full_name": user.full_name, "email": user.email}
 
+    @extend_schema_field(AuditActorSerializer(allow_null=True))
     def get_actor(self, obj: AuditLog) -> dict[str, Any] | None:
         return self._person(obj.actor)
 
+    @extend_schema_field(AuditActorSerializer(allow_null=True))
     def get_impersonator(self, obj: AuditLog) -> dict[str, Any] | None:
         return self._person(obj.impersonator)
 
+    @extend_schema_field(AuditTenantSerializer(allow_null=True))
     def get_tenant(self, obj: AuditLog) -> dict[str, Any] | None:
         if obj.tenant_id is None or "tenant" not in obj._state.fields_cache:
             return {"id": obj.tenant_id, "name": ""} if obj.tenant_id else None

@@ -6,7 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
-/**
- * @nullable
- */
-export type AuditLogImpersonator = {[key: string]: unknown} | null;
+export interface TenantUsage {
+  staff: number;
+  retailers: number;
+  pending_invitations: number;
+}

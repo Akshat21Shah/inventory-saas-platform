@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 
-/**
- * @nullable
- */
-export type AuditLogTenant = {[key: string]: unknown} | null;
+export interface AuditTenant {
+  id: string;
+  name: string;
+}

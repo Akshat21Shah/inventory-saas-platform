@@ -5,47 +5,35 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { PlanRef } from './planRef';
 import type { RegistrationTypeEnum } from './registrationTypeEnum';
 import type { TenantDetailFeatures } from './tenantDetailFeatures';
-import type { TenantDetailOwner } from './tenantDetailOwner';
-import type { TenantDetailPlan } from './tenantDetailPlan';
-import type { TenantDetailUsage } from './tenantDetailUsage';
+import type { TenantOwner } from './tenantOwner';
 import type { TenantStatusEnum } from './tenantStatusEnum';
+import type { TenantUsage } from './tenantUsage';
 
 export interface TenantDetail {
   readonly id: string;
-  /** @maxLength 200 */
-  name: string;
-  /** @maxLength 30 */
-  slug: string;
-  status?: TenantStatusEnum;
-  /** @maxLength 15 */
-  gstin: string;
-  state_code: string;
-  /** @maxLength 100 */
-  city: string;
-  readonly plan: TenantDetailPlan;
+  readonly name: string;
+  readonly slug: string;
+  readonly status: TenantStatusEnum;
+  readonly gstin: string;
+  readonly state_code: string;
+  readonly city: string;
+  readonly plan: PlanRef;
   readonly created_at: string;
-  /** @maxLength 200 */
-  legal_name: string;
-  /** @maxLength 10 */
-  pan: string;
-  registration_type?: RegistrationTypeEnum;
-  /** @maxLength 200 */
-  address_line1: string;
-  /** @maxLength 200 */
-  address_line2?: string;
-  /** @maxLength 6 */
-  pincode: string;
-  /** @maxLength 254 */
-  email: string;
-  /** @maxLength 16 */
-  phone: string;
-  suspended_reason?: string;
+  readonly legal_name: string;
+  readonly pan: string;
+  readonly registration_type: RegistrationTypeEnum;
+  readonly address_line1: string;
+  readonly address_line2: string;
+  readonly pincode: string;
+  readonly email: string;
+  readonly phone: string;
+  readonly suspended_reason: string;
   /** @nullable */
-  suspended_at?: string | null;
-  readonly usage: TenantDetailUsage;
-  /** @nullable */
-  readonly owner: TenantDetailOwner;
+  readonly suspended_at: string | null;
+  readonly usage: TenantUsage;
+  readonly owner: TenantOwner | null;
   readonly features: TenantDetailFeatures;
 }

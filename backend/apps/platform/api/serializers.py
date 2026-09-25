@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.platform import registry
@@ -21,7 +22,7 @@ class PlanRefSerializer(serializers.Serializer[Any]):
 
 class TenantListSerializer(serializers.ModelSerializer[Tenant]):
     plan = serializers.SerializerMethodField()
-    state_code = serializers.CharField(source="state_id")
+    state_code = serializers.CharField(source="state_id", read_only=True)
 
     class Meta:
         model = Tenant
@@ -36,7 +37,9 @@ class TenantListSerializer(serializers.ModelSerializer[Tenant]):
             "plan",
             "created_at",
         ]
+        read_only_fields = fields  # output only: every field is always present
 
+    @extend_schema_field(PlanRefSerializer)
     def get_plan(self, obj: Tenant) -> dict[str, Any]:
         return {"code": getattr(obj, "plan_code", None), "name": getattr(obj, "plan_name", None)}
 
@@ -75,14 +78,18 @@ class TenantDetailSerializer(TenantListSerializer):
             "owner",
             "features",
         ]
+        read_only_fields = fields
 
+    @extend_schema_field(TenantUsageSerializer)
     def get_usage(self, obj: Tenant) -> dict[str, int]:
         return dict(self.context["usage"])
 
+    @extend_schema_field(TenantOwnerSerializer(allow_null=True))
     def get_owner(self, obj: Tenant) -> dict[str, Any] | None:
         owner: dict[str, Any] | None = self.context["owner"]
         return owner
 
+    @extend_schema_field(serializers.DictField(child=serializers.BooleanField()))
     def get_features(self, obj: Tenant) -> dict[str, bool]:
         return dict(self.context["features"])
 
@@ -340,6 +347,20 @@ class ImpersonationStartedSerializer(serializers.Serializer[Any]):
     expires_at = serializers.DateTimeField()
 
 
+class SessionTenantSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    slug = serializers.CharField()
+
+
+class SessionPersonSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    full_name = serializers.CharField()
+    email = serializers.CharField(allow_null=True)
+    phone = serializers.CharField(allow_null=True, required=False)
+    user_type = serializers.CharField(required=False)
+
+
 class ImpersonationSessionSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     tenant = serializers.SerializerMethodField()
@@ -353,9 +374,11 @@ class ImpersonationSessionSerializer(serializers.Serializer[Any]):
     ended_at = serializers.DateTimeField(allow_null=True)
     end_reason = serializers.CharField()
 
+    @extend_schema_field(SessionTenantSerializer)
     def get_tenant(self, obj: Any) -> dict[str, Any]:
         return {"id": obj.tenant_id, "name": obj.tenant.name, "slug": obj.tenant.slug}
 
+    @extend_schema_field(SessionPersonSerializer)
     def get_impersonator(self, obj: Any) -> dict[str, Any]:
         return {
             "id": obj.impersonator_id,
@@ -363,6 +386,7 @@ class ImpersonationSessionSerializer(serializers.Serializer[Any]):
             "email": obj.impersonator.email,
         }
 
+    @extend_schema_field(SessionPersonSerializer)
     def get_target(self, obj: Any) -> dict[str, Any]:
         t = obj.target_user
         return {

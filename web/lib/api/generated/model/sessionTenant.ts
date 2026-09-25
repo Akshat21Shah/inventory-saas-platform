@@ -6,4 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type TenantDetailUsage = {[key: string]: number};
+export interface SessionTenant {
+  id: string;
+  name: string;
+  slug: string;
+}

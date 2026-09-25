@@ -6,20 +6,16 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ActorTypeEnum } from './actorTypeEnum';
-import type { AuditLogActor } from './auditLogActor';
-import type { AuditLogImpersonator } from './auditLogImpersonator';
-import type { AuditLogTenant } from './auditLogTenant';
+import type { AuditActor } from './auditActor';
+import type { AuditTenant } from './auditTenant';
 
 export interface AuditLog {
   readonly id: string;
   readonly created_at: string;
-  /** @nullable */
-  readonly tenant: AuditLogTenant;
-  /** @nullable */
-  readonly actor: AuditLogActor;
+  readonly tenant: AuditTenant | null;
+  readonly actor: AuditActor | null;
   actor_type: ActorTypeEnum;
-  /** @nullable */
-  readonly impersonator: AuditLogImpersonator;
+  readonly impersonator: AuditActor | null;
   /** @nullable */
   impersonation_session_id?: string | null;
   /** @maxLength 80 */

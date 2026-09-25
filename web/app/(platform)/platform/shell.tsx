@@ -1,6 +1,15 @@
 "use client";
 
-import { Building, Flag, LayoutDashboard, Percent, ScrollText, Settings, Tags } from "lucide-react";
+import {
+  Building,
+  Flag,
+  Headset,
+  LayoutDashboard,
+  Percent,
+  ScrollText,
+  Settings,
+  Tags,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { AccountMenu } from "@/components/auth/account-menu";
@@ -13,6 +22,7 @@ const ITEMS: NavItem[] = [
   { href: "/platform/plans", labelKey: "plans", icon: Tags },
   { href: "/platform/feature-flags", labelKey: "featureFlags", icon: Flag },
   { href: "/platform/tax-rates", labelKey: "taxRates", icon: Percent },
+  { href: "/platform/impersonations", labelKey: "impersonations", icon: Headset },
   { href: "/platform/audit", labelKey: "audit", icon: ScrollText },
   { href: "/platform/settings", labelKey: "settings", icon: Settings },
 ];
