@@ -6,16 +6,20 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -366,78 +370,51 @@ return apiFetch<platformCessTypesCreateResponse>(getPlatformCessTypesCreateUrl()
 
 
 
-export const getPlatformCessTypesCreateQueryKey = (cessTypeRequest?: CessTypeRequest,) => {
-    return [
-    'POST', `/api/v1/platform/cess-types/`, cessTypeRequest
-    ] as const;
+export const getPlatformCessTypesCreateMutationKey = () => ['platformCessTypesCreate'] as const;
+
+export const getPlatformCessTypesCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError,PlatformCessTypesCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError,PlatformCessTypesCreateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformCessTypesCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformCessTypesCreate>>, PlatformCessTypesCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformCessTypesCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformCessTypesCreateMutationResult = NonNullable<Awaited<ReturnType<typeof platformCessTypesCreate>>>
+    export type PlatformCessTypesCreateMutationBody = CessTypeRequest
+    export type PlatformCessTypesCreateMutationError = unknown
+    export type PlatformCessTypesCreateMutationVariables = {data: CessTypeRequest}
+
+    export const usePlatformCessTypesCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError,PlatformCessTypesCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformCessTypesCreate>>,
+        TError,
+        PlatformCessTypesCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformCessTypesCreateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformCessTypesCreateQueryOptions = <TData = Awaited<ReturnType<typeof platformCessTypesCreate>>, TError = unknown>(cessTypeRequest: CessTypeRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformCessTypesCreateQueryKey(cessTypeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformCessTypesCreate>>> = ({ signal }) => platformCessTypesCreate(cessTypeRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformCessTypesCreateQueryResult = NonNullable<Awaited<ReturnType<typeof platformCessTypesCreate>>>
-export type PlatformCessTypesCreateQueryError = unknown
-
-
-export function usePlatformCessTypesCreate<TData = Awaited<ReturnType<typeof platformCessTypesCreate>>, TError = unknown>(
- cessTypeRequest: CessTypeRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformCessTypesCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformCessTypesCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformCessTypesCreate<TData = Awaited<ReturnType<typeof platformCessTypesCreate>>, TError = unknown>(
- cessTypeRequest: CessTypeRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformCessTypesCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformCessTypesCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformCessTypesCreate<TData = Awaited<ReturnType<typeof platformCessTypesCreate>>, TError = unknown>(
- cessTypeRequest: CessTypeRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformCessTypesCreate<TData = Awaited<ReturnType<typeof platformCessTypesCreate>>, TError = unknown>(
- cessTypeRequest: CessTypeRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformCessTypesCreateQueryOptions(cessTypeRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformCessTypesUpdateResponse200 = {
+    export type platformCessTypesUpdateResponse200 = {
   data: CessType
   status: 200
 }
@@ -487,84 +464,51 @@ return apiFetch<platformCessTypesUpdateResponse>(getPlatformCessTypesUpdateUrl(c
 
 
 
-export const getPlatformCessTypesUpdateQueryKey = (cessId: string,
-    patchedCessTypeUpdateRequest?: PatchedCessTypeUpdateRequest,) => {
-    return [
-    'PATCH', `/api/v1/platform/cess-types/${cessId}/`, patchedCessTypeUpdateRequest
-    ] as const;
+export const getPlatformCessTypesUpdateMutationKey = () => ['platformCessTypesUpdate'] as const;
+
+export const getPlatformCessTypesUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError,PlatformCessTypesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError,PlatformCessTypesUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformCessTypesUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformCessTypesUpdate>>, PlatformCessTypesUpdateMutationVariables> = (props) => {
+          const {cessId,data} = props ?? {};
+
+          return  platformCessTypesUpdate(cessId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformCessTypesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformCessTypesUpdate>>>
+    export type PlatformCessTypesUpdateMutationBody = PatchedCessTypeUpdateRequest | undefined
+    export type PlatformCessTypesUpdateMutationError = unknown
+    export type PlatformCessTypesUpdateMutationVariables = {cessId: string;data?: PatchedCessTypeUpdateRequest}
+
+    export const usePlatformCessTypesUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError,PlatformCessTypesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformCessTypesUpdate>>,
+        TError,
+        PlatformCessTypesUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformCessTypesUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformCessTypesUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError = unknown>(cessId: string,
-    patchedCessTypeUpdateRequest?: PatchedCessTypeUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformCessTypesUpdateQueryKey(cessId,patchedCessTypeUpdateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformCessTypesUpdate>>> = ({ signal }) => platformCessTypesUpdate(cessId,patchedCessTypeUpdateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: cessId !== null && cessId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformCessTypesUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformCessTypesUpdate>>>
-export type PlatformCessTypesUpdateQueryError = unknown
-
-
-export function usePlatformCessTypesUpdate<TData = Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError = unknown>(
- cessId: string,
-    patchedCessTypeUpdateRequest: undefined |  PatchedCessTypeUpdateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformCessTypesUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformCessTypesUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformCessTypesUpdate<TData = Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError = unknown>(
- cessId: string,
-    patchedCessTypeUpdateRequest?: PatchedCessTypeUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformCessTypesUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformCessTypesUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformCessTypesUpdate<TData = Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError = unknown>(
- cessId: string,
-    patchedCessTypeUpdateRequest?: PatchedCessTypeUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformCessTypesUpdate<TData = Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError = unknown>(
- cessId: string,
-    patchedCessTypeUpdateRequest?: PatchedCessTypeUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformCessTypesUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformCessTypesUpdateQueryOptions(cessId,patchedCessTypeUpdateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformDashboardResponse200 = {
+    export type platformDashboardResponse200 = {
   data: Dashboard
   status: 200
 }
@@ -833,84 +777,51 @@ return apiFetch<platformFeatureFlagsUpdateResponse>(getPlatformFeatureFlagsUpdat
 
 
 
-export const getPlatformFeatureFlagsUpdateQueryKey = (code: string,
-    patchedFeatureFlagRequest?: PatchedFeatureFlagRequest,) => {
-    return [
-    'PATCH', `/api/v1/platform/feature-flags/${code}/`, patchedFeatureFlagRequest
-    ] as const;
+export const getPlatformFeatureFlagsUpdateMutationKey = () => ['platformFeatureFlagsUpdate'] as const;
+
+export const getPlatformFeatureFlagsUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError,PlatformFeatureFlagsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError,PlatformFeatureFlagsUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformFeatureFlagsUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, PlatformFeatureFlagsUpdateMutationVariables> = (props) => {
+          const {code,data} = props ?? {};
+
+          return  platformFeatureFlagsUpdate(code,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformFeatureFlagsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>>
+    export type PlatformFeatureFlagsUpdateMutationBody = PatchedFeatureFlagRequest | undefined
+    export type PlatformFeatureFlagsUpdateMutationError = unknown
+    export type PlatformFeatureFlagsUpdateMutationVariables = {code: string;data?: PatchedFeatureFlagRequest}
+
+    export const usePlatformFeatureFlagsUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError,PlatformFeatureFlagsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>,
+        TError,
+        PlatformFeatureFlagsUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformFeatureFlagsUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformFeatureFlagsUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError = unknown>(code: string,
-    patchedFeatureFlagRequest?: PatchedFeatureFlagRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformFeatureFlagsUpdateQueryKey(code,patchedFeatureFlagRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>> = ({ signal }) => platformFeatureFlagsUpdate(code,patchedFeatureFlagRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformFeatureFlagsUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>>
-export type PlatformFeatureFlagsUpdateQueryError = unknown
-
-
-export function usePlatformFeatureFlagsUpdate<TData = Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError = unknown>(
- code: string,
-    patchedFeatureFlagRequest: undefined |  PatchedFeatureFlagRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformFeatureFlagsUpdate<TData = Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError = unknown>(
- code: string,
-    patchedFeatureFlagRequest?: PatchedFeatureFlagRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformFeatureFlagsUpdate<TData = Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError = unknown>(
- code: string,
-    patchedFeatureFlagRequest?: PatchedFeatureFlagRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformFeatureFlagsUpdate<TData = Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError = unknown>(
- code: string,
-    patchedFeatureFlagRequest?: PatchedFeatureFlagRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformFeatureFlagsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformFeatureFlagsUpdateQueryOptions(code,patchedFeatureFlagRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformHsnHintsListResponse200 = {
+    export type platformHsnHintsListResponse200 = {
   data: PaginatedHsnHintList
   status: 200
 }
@@ -1072,78 +983,51 @@ return apiFetch<platformHsnHintsCreateResponse>(getPlatformHsnHintsCreateUrl(),
 
 
 
-export const getPlatformHsnHintsCreateQueryKey = (hsnHintRequest?: HsnHintRequest,) => {
-    return [
-    'POST', `/api/v1/platform/hsn-rate-hints/`, hsnHintRequest
-    ] as const;
+export const getPlatformHsnHintsCreateMutationKey = () => ['platformHsnHintsCreate'] as const;
+
+export const getPlatformHsnHintsCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError,PlatformHsnHintsCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError,PlatformHsnHintsCreateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformHsnHintsCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformHsnHintsCreate>>, PlatformHsnHintsCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformHsnHintsCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformHsnHintsCreateMutationResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsCreate>>>
+    export type PlatformHsnHintsCreateMutationBody = HsnHintRequest
+    export type PlatformHsnHintsCreateMutationError = unknown
+    export type PlatformHsnHintsCreateMutationVariables = {data: HsnHintRequest}
+
+    export const usePlatformHsnHintsCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError,PlatformHsnHintsCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformHsnHintsCreate>>,
+        TError,
+        PlatformHsnHintsCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformHsnHintsCreateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformHsnHintsCreateQueryOptions = <TData = Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError = unknown>(hsnHintRequest: HsnHintRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformHsnHintsCreateQueryKey(hsnHintRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformHsnHintsCreate>>> = ({ signal }) => platformHsnHintsCreate(hsnHintRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformHsnHintsCreateQueryResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsCreate>>>
-export type PlatformHsnHintsCreateQueryError = unknown
-
-
-export function usePlatformHsnHintsCreate<TData = Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError = unknown>(
- hsnHintRequest: HsnHintRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsCreate<TData = Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError = unknown>(
- hsnHintRequest: HsnHintRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsCreate<TData = Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError = unknown>(
- hsnHintRequest: HsnHintRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformHsnHintsCreate<TData = Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError = unknown>(
- hsnHintRequest: HsnHintRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformHsnHintsCreateQueryOptions(hsnHintRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformHsnHintsUpdateResponse200 = {
+    export type platformHsnHintsUpdateResponse200 = {
   data: HsnHint
   status: 200
 }
@@ -1193,84 +1077,51 @@ return apiFetch<platformHsnHintsUpdateResponse>(getPlatformHsnHintsUpdateUrl(hin
 
 
 
-export const getPlatformHsnHintsUpdateQueryKey = (hintId: string,
-    patchedHsnHintUpdateRequest?: PatchedHsnHintUpdateRequest,) => {
-    return [
-    'PATCH', `/api/v1/platform/hsn-rate-hints/${hintId}/`, patchedHsnHintUpdateRequest
-    ] as const;
+export const getPlatformHsnHintsUpdateMutationKey = () => ['platformHsnHintsUpdate'] as const;
+
+export const getPlatformHsnHintsUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError,PlatformHsnHintsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError,PlatformHsnHintsUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformHsnHintsUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, PlatformHsnHintsUpdateMutationVariables> = (props) => {
+          const {hintId,data} = props ?? {};
+
+          return  platformHsnHintsUpdate(hintId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformHsnHintsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsUpdate>>>
+    export type PlatformHsnHintsUpdateMutationBody = PatchedHsnHintUpdateRequest | undefined
+    export type PlatformHsnHintsUpdateMutationError = unknown
+    export type PlatformHsnHintsUpdateMutationVariables = {hintId: string;data?: PatchedHsnHintUpdateRequest}
+
+    export const usePlatformHsnHintsUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError,PlatformHsnHintsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformHsnHintsUpdate>>,
+        TError,
+        PlatformHsnHintsUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformHsnHintsUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformHsnHintsUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError = unknown>(hintId: string,
-    patchedHsnHintUpdateRequest?: PatchedHsnHintUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformHsnHintsUpdateQueryKey(hintId,patchedHsnHintUpdateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformHsnHintsUpdate>>> = ({ signal }) => platformHsnHintsUpdate(hintId,patchedHsnHintUpdateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: hintId !== null && hintId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformHsnHintsUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsUpdate>>>
-export type PlatformHsnHintsUpdateQueryError = unknown
-
-
-export function usePlatformHsnHintsUpdate<TData = Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError = unknown>(
- hintId: string,
-    patchedHsnHintUpdateRequest: undefined |  PatchedHsnHintUpdateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsUpdate<TData = Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError = unknown>(
- hintId: string,
-    patchedHsnHintUpdateRequest?: PatchedHsnHintUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsUpdate<TData = Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError = unknown>(
- hintId: string,
-    patchedHsnHintUpdateRequest?: PatchedHsnHintUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformHsnHintsUpdate<TData = Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError = unknown>(
- hintId: string,
-    patchedHsnHintUpdateRequest?: PatchedHsnHintUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformHsnHintsUpdateQueryOptions(hintId,patchedHsnHintUpdateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformHsnHintsDeleteResponse204 = {
+    export type platformHsnHintsDeleteResponse204 = {
   data: void
   status: 204
 }
@@ -1305,78 +1156,51 @@ export const platformHsnHintsDelete = async (hintId: string, options?: Parameter
 
 
 
-export const getPlatformHsnHintsDeleteQueryKey = (hintId: string,) => {
-    return [
-    'DELETE', `/api/v1/platform/hsn-rate-hints/${hintId}/`
-    ] as const;
+export const getPlatformHsnHintsDeleteMutationKey = () => ['platformHsnHintsDelete'] as const;
+
+export const getPlatformHsnHintsDeleteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError,PlatformHsnHintsDeleteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError,PlatformHsnHintsDeleteMutationVariables, TContext> => {
+
+const mutationKey = getPlatformHsnHintsDeleteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformHsnHintsDelete>>, PlatformHsnHintsDeleteMutationVariables> = (props) => {
+          const {hintId} = props ?? {};
+
+          return  platformHsnHintsDelete(hintId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformHsnHintsDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsDelete>>>
+
+    export type PlatformHsnHintsDeleteMutationError = unknown
+    export type PlatformHsnHintsDeleteMutationVariables = {hintId: string}
+
+    export const usePlatformHsnHintsDelete = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError,PlatformHsnHintsDeleteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformHsnHintsDelete>>,
+        TError,
+        PlatformHsnHintsDeleteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformHsnHintsDeleteMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformHsnHintsDeleteQueryOptions = <TData = Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError = unknown>(hintId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformHsnHintsDeleteQueryKey(hintId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformHsnHintsDelete>>> = ({ signal }) => platformHsnHintsDelete(hintId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: hintId !== null && hintId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformHsnHintsDeleteQueryResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsDelete>>>
-export type PlatformHsnHintsDeleteQueryError = unknown
-
-
-export function usePlatformHsnHintsDelete<TData = Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError = unknown>(
- hintId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsDelete>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsDelete>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsDelete<TData = Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError = unknown>(
- hintId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsDelete>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsDelete>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsDelete<TData = Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError = unknown>(
- hintId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformHsnHintsDelete<TData = Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError = unknown>(
- hintId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsDelete>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformHsnHintsDeleteQueryOptions(hintId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformHsnHintsImportResponse200 = {
+    export type platformHsnHintsImportResponse200 = {
   data: HsnImportResult
   status: 200
 }
@@ -1413,78 +1237,51 @@ formData.append(`file`, hsnImportRequest.file);
 
 
 
-export const getPlatformHsnHintsImportQueryKey = (hsnImportRequest?: HsnImportRequest,) => {
-    return [
-    'POST', `/api/v1/platform/hsn-rate-hints/import/`, hsnImportRequest
-    ] as const;
+export const getPlatformHsnHintsImportMutationKey = () => ['platformHsnHintsImport'] as const;
+
+export const getPlatformHsnHintsImportMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError,PlatformHsnHintsImportMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError,PlatformHsnHintsImportMutationVariables, TContext> => {
+
+const mutationKey = getPlatformHsnHintsImportMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformHsnHintsImport>>, PlatformHsnHintsImportMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformHsnHintsImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformHsnHintsImportMutationResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsImport>>>
+    export type PlatformHsnHintsImportMutationBody = HsnImportRequest
+    export type PlatformHsnHintsImportMutationError = unknown
+    export type PlatformHsnHintsImportMutationVariables = {data: HsnImportRequest}
+
+    export const usePlatformHsnHintsImport = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError,PlatformHsnHintsImportMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformHsnHintsImport>>,
+        TError,
+        PlatformHsnHintsImportMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformHsnHintsImportMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformHsnHintsImportQueryOptions = <TData = Awaited<ReturnType<typeof platformHsnHintsImport>>, TError = unknown>(hsnImportRequest: HsnImportRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformHsnHintsImportQueryKey(hsnImportRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformHsnHintsImport>>> = ({ signal }) => platformHsnHintsImport(hsnImportRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformHsnHintsImportQueryResult = NonNullable<Awaited<ReturnType<typeof platformHsnHintsImport>>>
-export type PlatformHsnHintsImportQueryError = unknown
-
-
-export function usePlatformHsnHintsImport<TData = Awaited<ReturnType<typeof platformHsnHintsImport>>, TError = unknown>(
- hsnImportRequest: HsnImportRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsImport>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsImport>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsImport<TData = Awaited<ReturnType<typeof platformHsnHintsImport>>, TError = unknown>(
- hsnImportRequest: HsnImportRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformHsnHintsImport>>,
-          TError,
-          Awaited<ReturnType<typeof platformHsnHintsImport>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformHsnHintsImport<TData = Awaited<ReturnType<typeof platformHsnHintsImport>>, TError = unknown>(
- hsnImportRequest: HsnImportRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformHsnHintsImport<TData = Awaited<ReturnType<typeof platformHsnHintsImport>>, TError = unknown>(
- hsnImportRequest: HsnImportRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformHsnHintsImport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformHsnHintsImportQueryOptions(hsnImportRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformImpersonationsListResponse200 = {
+    export type platformImpersonationsListResponse200 = {
   data: PaginatedImpersonationSessionList
   status: 200
 }
@@ -1646,78 +1443,51 @@ return apiFetch<platformImpersonationsStartResponse>(getPlatformImpersonationsSt
 
 
 
-export const getPlatformImpersonationsStartQueryKey = (impersonationStartRequest?: ImpersonationStartRequest,) => {
-    return [
-    'POST', `/api/v1/platform/impersonations/`, impersonationStartRequest
-    ] as const;
+export const getPlatformImpersonationsStartMutationKey = () => ['platformImpersonationsStart'] as const;
+
+export const getPlatformImpersonationsStartMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError,PlatformImpersonationsStartMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError,PlatformImpersonationsStartMutationVariables, TContext> => {
+
+const mutationKey = getPlatformImpersonationsStartMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformImpersonationsStart>>, PlatformImpersonationsStartMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformImpersonationsStart(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformImpersonationsStartMutationResult = NonNullable<Awaited<ReturnType<typeof platformImpersonationsStart>>>
+    export type PlatformImpersonationsStartMutationBody = ImpersonationStartRequest
+    export type PlatformImpersonationsStartMutationError = unknown
+    export type PlatformImpersonationsStartMutationVariables = {data: ImpersonationStartRequest}
+
+    export const usePlatformImpersonationsStart = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError,PlatformImpersonationsStartMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformImpersonationsStart>>,
+        TError,
+        PlatformImpersonationsStartMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformImpersonationsStartMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformImpersonationsStartQueryOptions = <TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformImpersonationsStartQueryKey(impersonationStartRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformImpersonationsStart>>> = ({ signal }) => platformImpersonationsStart(impersonationStartRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformImpersonationsStartQueryResult = NonNullable<Awaited<ReturnType<typeof platformImpersonationsStart>>>
-export type PlatformImpersonationsStartQueryError = unknown
-
-
-export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
- impersonationStartRequest: ImpersonationStartRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformImpersonationsStart>>,
-          TError,
-          Awaited<ReturnType<typeof platformImpersonationsStart>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
- impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformImpersonationsStart>>,
-          TError,
-          Awaited<ReturnType<typeof platformImpersonationsStart>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
- impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
- impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformImpersonationsStartQueryOptions(impersonationStartRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformPlansListResponse200 = {
+    export type platformPlansListResponse200 = {
   data: Plan[]
   status: 200
 }
@@ -1879,78 +1649,51 @@ return apiFetch<platformPlansCreateResponse>(getPlatformPlansCreateUrl(),
 
 
 
-export const getPlatformPlansCreateQueryKey = (planRequest?: PlanRequest,) => {
-    return [
-    'POST', `/api/v1/platform/plans/`, planRequest
-    ] as const;
+export const getPlatformPlansCreateMutationKey = () => ['platformPlansCreate'] as const;
+
+export const getPlatformPlansCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError,PlatformPlansCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError,PlatformPlansCreateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformPlansCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformPlansCreate>>, PlatformPlansCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformPlansCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformPlansCreateMutationResult = NonNullable<Awaited<ReturnType<typeof platformPlansCreate>>>
+    export type PlatformPlansCreateMutationBody = PlanRequest
+    export type PlatformPlansCreateMutationError = unknown
+    export type PlatformPlansCreateMutationVariables = {data: PlanRequest}
+
+    export const usePlatformPlansCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError,PlatformPlansCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformPlansCreate>>,
+        TError,
+        PlatformPlansCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformPlansCreateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformPlansCreateQueryOptions = <TData = Awaited<ReturnType<typeof platformPlansCreate>>, TError = unknown>(planRequest: PlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformPlansCreateQueryKey(planRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformPlansCreate>>> = ({ signal }) => platformPlansCreate(planRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformPlansCreateQueryResult = NonNullable<Awaited<ReturnType<typeof platformPlansCreate>>>
-export type PlatformPlansCreateQueryError = unknown
-
-
-export function usePlatformPlansCreate<TData = Awaited<ReturnType<typeof platformPlansCreate>>, TError = unknown>(
- planRequest: PlanRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformPlansCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformPlansCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformPlansCreate<TData = Awaited<ReturnType<typeof platformPlansCreate>>, TError = unknown>(
- planRequest: PlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformPlansCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformPlansCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformPlansCreate<TData = Awaited<ReturnType<typeof platformPlansCreate>>, TError = unknown>(
- planRequest: PlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformPlansCreate<TData = Awaited<ReturnType<typeof platformPlansCreate>>, TError = unknown>(
- planRequest: PlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformPlansCreateQueryOptions(planRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformPlansUpdateResponse200 = {
+    export type platformPlansUpdateResponse200 = {
   data: Plan
   status: 200
 }
@@ -2000,84 +1743,51 @@ return apiFetch<platformPlansUpdateResponse>(getPlatformPlansUpdateUrl(planId),
 
 
 
-export const getPlatformPlansUpdateQueryKey = (planId: string,
-    patchedPlanUpdateRequest?: PatchedPlanUpdateRequest,) => {
-    return [
-    'PATCH', `/api/v1/platform/plans/${planId}/`, patchedPlanUpdateRequest
-    ] as const;
+export const getPlatformPlansUpdateMutationKey = () => ['platformPlansUpdate'] as const;
+
+export const getPlatformPlansUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError,PlatformPlansUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError,PlatformPlansUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformPlansUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformPlansUpdate>>, PlatformPlansUpdateMutationVariables> = (props) => {
+          const {planId,data} = props ?? {};
+
+          return  platformPlansUpdate(planId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformPlansUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformPlansUpdate>>>
+    export type PlatformPlansUpdateMutationBody = PatchedPlanUpdateRequest | undefined
+    export type PlatformPlansUpdateMutationError = unknown
+    export type PlatformPlansUpdateMutationVariables = {planId: string;data?: PatchedPlanUpdateRequest}
+
+    export const usePlatformPlansUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError,PlatformPlansUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformPlansUpdate>>,
+        TError,
+        PlatformPlansUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformPlansUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformPlansUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformPlansUpdate>>, TError = unknown>(planId: string,
-    patchedPlanUpdateRequest?: PatchedPlanUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformPlansUpdateQueryKey(planId,patchedPlanUpdateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformPlansUpdate>>> = ({ signal }) => platformPlansUpdate(planId,patchedPlanUpdateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: planId !== null && planId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformPlansUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformPlansUpdate>>>
-export type PlatformPlansUpdateQueryError = unknown
-
-
-export function usePlatformPlansUpdate<TData = Awaited<ReturnType<typeof platformPlansUpdate>>, TError = unknown>(
- planId: string,
-    patchedPlanUpdateRequest: undefined |  PatchedPlanUpdateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformPlansUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformPlansUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformPlansUpdate<TData = Awaited<ReturnType<typeof platformPlansUpdate>>, TError = unknown>(
- planId: string,
-    patchedPlanUpdateRequest?: PatchedPlanUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformPlansUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformPlansUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformPlansUpdate<TData = Awaited<ReturnType<typeof platformPlansUpdate>>, TError = unknown>(
- planId: string,
-    patchedPlanUpdateRequest?: PatchedPlanUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformPlansUpdate<TData = Awaited<ReturnType<typeof platformPlansUpdate>>, TError = unknown>(
- planId: string,
-    patchedPlanUpdateRequest?: PatchedPlanUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformPlansUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformPlansUpdateQueryOptions(planId,patchedPlanUpdateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformSettingsRegistryResponse200 = {
+    export type platformSettingsRegistryResponse200 = {
   data: Setting[]
   status: 200
 }
@@ -2232,78 +1942,51 @@ return apiFetch<platformSettingsUpdateResponse>(getPlatformSettingsUpdateUrl(),
 
 
 
-export const getPlatformSettingsUpdateQueryKey = (patchedSettingValuesRequest?: PatchedSettingValuesRequest,) => {
-    return [
-    'PATCH', `/api/v1/platform/settings/values/`, patchedSettingValuesRequest
-    ] as const;
+export const getPlatformSettingsUpdateMutationKey = () => ['platformSettingsUpdate'] as const;
+
+export const getPlatformSettingsUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError,PlatformSettingsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError,PlatformSettingsUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformSettingsUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformSettingsUpdate>>, PlatformSettingsUpdateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformSettingsUpdate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformSettingsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformSettingsUpdate>>>
+    export type PlatformSettingsUpdateMutationBody = PatchedSettingValuesRequest | undefined
+    export type PlatformSettingsUpdateMutationError = unknown
+    export type PlatformSettingsUpdateMutationVariables = {data?: PatchedSettingValuesRequest}
+
+    export const usePlatformSettingsUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError,PlatformSettingsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformSettingsUpdate>>,
+        TError,
+        PlatformSettingsUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformSettingsUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformSettingsUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformSettingsUpdate>>, TError = unknown>(patchedSettingValuesRequest?: PatchedSettingValuesRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformSettingsUpdateQueryKey(patchedSettingValuesRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformSettingsUpdate>>> = ({ signal }) => platformSettingsUpdate(patchedSettingValuesRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformSettingsUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformSettingsUpdate>>>
-export type PlatformSettingsUpdateQueryError = unknown
-
-
-export function usePlatformSettingsUpdate<TData = Awaited<ReturnType<typeof platformSettingsUpdate>>, TError = unknown>(
- patchedSettingValuesRequest: undefined |  PatchedSettingValuesRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformSettingsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformSettingsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformSettingsUpdate<TData = Awaited<ReturnType<typeof platformSettingsUpdate>>, TError = unknown>(
- patchedSettingValuesRequest?: PatchedSettingValuesRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformSettingsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformSettingsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformSettingsUpdate<TData = Awaited<ReturnType<typeof platformSettingsUpdate>>, TError = unknown>(
- patchedSettingValuesRequest?: PatchedSettingValuesRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformSettingsUpdate<TData = Awaited<ReturnType<typeof platformSettingsUpdate>>, TError = unknown>(
- patchedSettingValuesRequest?: PatchedSettingValuesRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformSettingsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformSettingsUpdateQueryOptions(patchedSettingValuesRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTaxRatesListResponse200 = {
+    export type platformTaxRatesListResponse200 = {
   data: TaxRate[]
   status: 200
 }
@@ -2465,78 +2148,51 @@ return apiFetch<platformTaxRatesCreateResponse>(getPlatformTaxRatesCreateUrl(),
 
 
 
-export const getPlatformTaxRatesCreateQueryKey = (taxRateRequest?: TaxRateRequest,) => {
-    return [
-    'POST', `/api/v1/platform/tax-rates/`, taxRateRequest
-    ] as const;
+export const getPlatformTaxRatesCreateMutationKey = () => ['platformTaxRatesCreate'] as const;
+
+export const getPlatformTaxRatesCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError,PlatformTaxRatesCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError,PlatformTaxRatesCreateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTaxRatesCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTaxRatesCreate>>, PlatformTaxRatesCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformTaxRatesCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTaxRatesCreateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTaxRatesCreate>>>
+    export type PlatformTaxRatesCreateMutationBody = TaxRateRequest
+    export type PlatformTaxRatesCreateMutationError = unknown
+    export type PlatformTaxRatesCreateMutationVariables = {data: TaxRateRequest}
+
+    export const usePlatformTaxRatesCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError,PlatformTaxRatesCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTaxRatesCreate>>,
+        TError,
+        PlatformTaxRatesCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTaxRatesCreateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTaxRatesCreateQueryOptions = <TData = Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError = unknown>(taxRateRequest: TaxRateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTaxRatesCreateQueryKey(taxRateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTaxRatesCreate>>> = ({ signal }) => platformTaxRatesCreate(taxRateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTaxRatesCreateQueryResult = NonNullable<Awaited<ReturnType<typeof platformTaxRatesCreate>>>
-export type PlatformTaxRatesCreateQueryError = unknown
-
-
-export function usePlatformTaxRatesCreate<TData = Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError = unknown>(
- taxRateRequest: TaxRateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTaxRatesCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTaxRatesCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTaxRatesCreate<TData = Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError = unknown>(
- taxRateRequest: TaxRateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTaxRatesCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTaxRatesCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTaxRatesCreate<TData = Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError = unknown>(
- taxRateRequest: TaxRateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTaxRatesCreate<TData = Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError = unknown>(
- taxRateRequest: TaxRateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTaxRatesCreateQueryOptions(taxRateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTaxRatesUpdateResponse200 = {
+    export type platformTaxRatesUpdateResponse200 = {
   data: TaxRate
   status: 200
 }
@@ -2586,84 +2242,51 @@ return apiFetch<platformTaxRatesUpdateResponse>(getPlatformTaxRatesUpdateUrl(tax
 
 
 
-export const getPlatformTaxRatesUpdateQueryKey = (taxRateId: string,
-    patchedTaxRateUpdateRequest?: PatchedTaxRateUpdateRequest,) => {
-    return [
-    'PATCH', `/api/v1/platform/tax-rates/${taxRateId}/`, patchedTaxRateUpdateRequest
-    ] as const;
+export const getPlatformTaxRatesUpdateMutationKey = () => ['platformTaxRatesUpdate'] as const;
+
+export const getPlatformTaxRatesUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError,PlatformTaxRatesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError,PlatformTaxRatesUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTaxRatesUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, PlatformTaxRatesUpdateMutationVariables> = (props) => {
+          const {taxRateId,data} = props ?? {};
+
+          return  platformTaxRatesUpdate(taxRateId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTaxRatesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTaxRatesUpdate>>>
+    export type PlatformTaxRatesUpdateMutationBody = PatchedTaxRateUpdateRequest | undefined
+    export type PlatformTaxRatesUpdateMutationError = unknown
+    export type PlatformTaxRatesUpdateMutationVariables = {taxRateId: string;data?: PatchedTaxRateUpdateRequest}
+
+    export const usePlatformTaxRatesUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError,PlatformTaxRatesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTaxRatesUpdate>>,
+        TError,
+        PlatformTaxRatesUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTaxRatesUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTaxRatesUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError = unknown>(taxRateId: string,
-    patchedTaxRateUpdateRequest?: PatchedTaxRateUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTaxRatesUpdateQueryKey(taxRateId,patchedTaxRateUpdateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTaxRatesUpdate>>> = ({ signal }) => platformTaxRatesUpdate(taxRateId,patchedTaxRateUpdateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: taxRateId !== null && taxRateId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTaxRatesUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformTaxRatesUpdate>>>
-export type PlatformTaxRatesUpdateQueryError = unknown
-
-
-export function usePlatformTaxRatesUpdate<TData = Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError = unknown>(
- taxRateId: string,
-    patchedTaxRateUpdateRequest: undefined |  PatchedTaxRateUpdateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTaxRatesUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTaxRatesUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTaxRatesUpdate<TData = Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError = unknown>(
- taxRateId: string,
-    patchedTaxRateUpdateRequest?: PatchedTaxRateUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTaxRatesUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTaxRatesUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTaxRatesUpdate<TData = Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError = unknown>(
- taxRateId: string,
-    patchedTaxRateUpdateRequest?: PatchedTaxRateUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTaxRatesUpdate<TData = Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError = unknown>(
- taxRateId: string,
-    patchedTaxRateUpdateRequest?: PatchedTaxRateUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTaxRatesUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTaxRatesUpdateQueryOptions(taxRateId,patchedTaxRateUpdateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantsListResponse200 = {
+    export type platformTenantsListResponse200 = {
   data: PaginatedTenantListList
   status: 200
 }
@@ -2825,78 +2448,51 @@ return apiFetch<platformTenantsCreateResponse>(getPlatformTenantsCreateUrl(),
 
 
 
-export const getPlatformTenantsCreateQueryKey = (onboardingRequest?: OnboardingRequest,) => {
-    return [
-    'POST', `/api/v1/platform/tenants/`, onboardingRequest
-    ] as const;
+export const getPlatformTenantsCreateMutationKey = () => ['platformTenantsCreate'] as const;
+
+export const getPlatformTenantsCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError,PlatformTenantsCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError,PlatformTenantsCreateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantsCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantsCreate>>, PlatformTenantsCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformTenantsCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantsCreateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantsCreate>>>
+    export type PlatformTenantsCreateMutationBody = OnboardingRequest
+    export type PlatformTenantsCreateMutationError = unknown
+    export type PlatformTenantsCreateMutationVariables = {data: OnboardingRequest}
+
+    export const usePlatformTenantsCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError,PlatformTenantsCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantsCreate>>,
+        TError,
+        PlatformTenantsCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantsCreateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTenantsCreateQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantsCreate>>, TError = unknown>(onboardingRequest: OnboardingRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantsCreateQueryKey(onboardingRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantsCreate>>> = ({ signal }) => platformTenantsCreate(onboardingRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTenantsCreateQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantsCreate>>>
-export type PlatformTenantsCreateQueryError = unknown
-
-
-export function usePlatformTenantsCreate<TData = Awaited<ReturnType<typeof platformTenantsCreate>>, TError = unknown>(
- onboardingRequest: OnboardingRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsCreate<TData = Awaited<ReturnType<typeof platformTenantsCreate>>, TError = unknown>(
- onboardingRequest: OnboardingRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsCreate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsCreate<TData = Awaited<ReturnType<typeof platformTenantsCreate>>, TError = unknown>(
- onboardingRequest: OnboardingRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTenantsCreate<TData = Awaited<ReturnType<typeof platformTenantsCreate>>, TError = unknown>(
- onboardingRequest: OnboardingRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTenantsCreateQueryOptions(onboardingRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantsRetrieveResponse200 = {
+    export type platformTenantsRetrieveResponse200 = {
   data: TenantDetail
   status: 200
 }
@@ -3052,84 +2648,51 @@ return apiFetch<platformTenantsUpdateResponse>(getPlatformTenantsUpdateUrl(tenan
 
 
 
-export const getPlatformTenantsUpdateQueryKey = (tenantId: string,
-    patchedTenantUpdateRequest?: PatchedTenantUpdateRequest,) => {
-    return [
-    'PATCH', `/api/v1/platform/tenants/${tenantId}/`, patchedTenantUpdateRequest
-    ] as const;
+export const getPlatformTenantsUpdateMutationKey = () => ['platformTenantsUpdate'] as const;
+
+export const getPlatformTenantsUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError,PlatformTenantsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError,PlatformTenantsUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantsUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantsUpdate>>, PlatformTenantsUpdateMutationVariables> = (props) => {
+          const {tenantId,data} = props ?? {};
+
+          return  platformTenantsUpdate(tenantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantsUpdate>>>
+    export type PlatformTenantsUpdateMutationBody = PatchedTenantUpdateRequest | undefined
+    export type PlatformTenantsUpdateMutationError = unknown
+    export type PlatformTenantsUpdateMutationVariables = {tenantId: string;data?: PatchedTenantUpdateRequest}
+
+    export const usePlatformTenantsUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError,PlatformTenantsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantsUpdate>>,
+        TError,
+        PlatformTenantsUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantsUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTenantsUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantsUpdate>>, TError = unknown>(tenantId: string,
-    patchedTenantUpdateRequest?: PatchedTenantUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantsUpdateQueryKey(tenantId,patchedTenantUpdateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantsUpdate>>> = ({ signal }) => platformTenantsUpdate(tenantId,patchedTenantUpdateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTenantsUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantsUpdate>>>
-export type PlatformTenantsUpdateQueryError = unknown
-
-
-export function usePlatformTenantsUpdate<TData = Awaited<ReturnType<typeof platformTenantsUpdate>>, TError = unknown>(
- tenantId: string,
-    patchedTenantUpdateRequest: undefined |  PatchedTenantUpdateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsUpdate<TData = Awaited<ReturnType<typeof platformTenantsUpdate>>, TError = unknown>(
- tenantId: string,
-    patchedTenantUpdateRequest?: PatchedTenantUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsUpdate<TData = Awaited<ReturnType<typeof platformTenantsUpdate>>, TError = unknown>(
- tenantId: string,
-    patchedTenantUpdateRequest?: PatchedTenantUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTenantsUpdate<TData = Awaited<ReturnType<typeof platformTenantsUpdate>>, TError = unknown>(
- tenantId: string,
-    patchedTenantUpdateRequest?: PatchedTenantUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTenantsUpdateQueryOptions(tenantId,patchedTenantUpdateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantFeaturesResponse200 = {
+    export type platformTenantFeaturesResponse200 = {
   data: PlatformTenantFeatures200
   status: 200
 }
@@ -3287,90 +2850,51 @@ return apiFetch<platformTenantFeatureSetResponse>(getPlatformTenantFeatureSetUrl
 
 
 
-export const getPlatformTenantFeatureSetQueryKey = (tenantId: string,
-    code: string,
-    featureToggleRequest?: FeatureToggleRequest,) => {
-    return [
-    'PUT', `/api/v1/platform/tenants/${tenantId}/features/${code}/`, featureToggleRequest
-    ] as const;
+export const getPlatformTenantFeatureSetMutationKey = () => ['platformTenantFeatureSet'] as const;
+
+export const getPlatformTenantFeatureSetMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError,PlatformTenantFeatureSetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError,PlatformTenantFeatureSetMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantFeatureSetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantFeatureSet>>, PlatformTenantFeatureSetMutationVariables> = (props) => {
+          const {tenantId,code,data} = props ?? {};
+
+          return  platformTenantFeatureSet(tenantId,code,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantFeatureSetMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantFeatureSet>>>
+    export type PlatformTenantFeatureSetMutationBody = FeatureToggleRequest
+    export type PlatformTenantFeatureSetMutationError = unknown
+    export type PlatformTenantFeatureSetMutationVariables = {tenantId: string;code: string;data: FeatureToggleRequest}
+
+    export const usePlatformTenantFeatureSet = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError,PlatformTenantFeatureSetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantFeatureSet>>,
+        TError,
+        PlatformTenantFeatureSetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantFeatureSetMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTenantFeatureSetQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError = unknown>(tenantId: string,
-    code: string,
-    featureToggleRequest: FeatureToggleRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantFeatureSetQueryKey(tenantId,code,featureToggleRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantFeatureSet>>> = ({ signal }) => platformTenantFeatureSet(tenantId,code,featureToggleRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined && code !== null && code !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTenantFeatureSetQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantFeatureSet>>>
-export type PlatformTenantFeatureSetQueryError = unknown
-
-
-export function usePlatformTenantFeatureSet<TData = Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError = unknown>(
- tenantId: string,
-    code: string,
-    featureToggleRequest: FeatureToggleRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantFeatureSet>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantFeatureSet>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantFeatureSet<TData = Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError = unknown>(
- tenantId: string,
-    code: string,
-    featureToggleRequest: FeatureToggleRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantFeatureSet>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantFeatureSet>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantFeatureSet<TData = Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError = unknown>(
- tenantId: string,
-    code: string,
-    featureToggleRequest: FeatureToggleRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTenantFeatureSet<TData = Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError = unknown>(
- tenantId: string,
-    code: string,
-    featureToggleRequest: FeatureToggleRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantFeatureSet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTenantFeatureSetQueryOptions(tenantId,code,featureToggleRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantOwnerResendInviteResponse202 = {
+    export type platformTenantOwnerResendInviteResponse202 = {
   data: void
   status: 202
 }
@@ -3405,78 +2929,51 @@ export const platformTenantOwnerResendInvite = async (tenantId: string, options?
 
 
 
-export const getPlatformTenantOwnerResendInviteQueryKey = (tenantId: string,) => {
-    return [
-    'POST', `/api/v1/platform/tenants/${tenantId}/owner/resend-invite/`
-    ] as const;
+export const getPlatformTenantOwnerResendInviteMutationKey = () => ['platformTenantOwnerResendInvite'] as const;
+
+export const getPlatformTenantOwnerResendInviteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError,PlatformTenantOwnerResendInviteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError,PlatformTenantOwnerResendInviteMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantOwnerResendInviteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, PlatformTenantOwnerResendInviteMutationVariables> = (props) => {
+          const {tenantId} = props ?? {};
+
+          return  platformTenantOwnerResendInvite(tenantId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantOwnerResendInviteMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>>
+
+    export type PlatformTenantOwnerResendInviteMutationError = unknown
+    export type PlatformTenantOwnerResendInviteMutationVariables = {tenantId: string}
+
+    export const usePlatformTenantOwnerResendInvite = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError,PlatformTenantOwnerResendInviteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>,
+        TError,
+        PlatformTenantOwnerResendInviteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantOwnerResendInviteMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTenantOwnerResendInviteQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError = unknown>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantOwnerResendInviteQueryKey(tenantId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>> = ({ signal }) => platformTenantOwnerResendInvite(tenantId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTenantOwnerResendInviteQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>>
-export type PlatformTenantOwnerResendInviteQueryError = unknown
-
-
-export function usePlatformTenantOwnerResendInvite<TData = Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError = unknown>(
- tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantOwnerResendInvite<TData = Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError = unknown>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantOwnerResendInvite<TData = Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError = unknown>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTenantOwnerResendInvite<TData = Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError = unknown>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantOwnerResendInvite>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTenantOwnerResendInviteQueryOptions(tenantId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantsReactivateResponse200 = {
+    export type platformTenantsReactivateResponse200 = {
   data: TenantDetail
   status: 200
 }
@@ -3511,78 +3008,51 @@ export const platformTenantsReactivate = async (tenantId: string, options?: Para
 
 
 
-export const getPlatformTenantsReactivateQueryKey = (tenantId: string,) => {
-    return [
-    'POST', `/api/v1/platform/tenants/${tenantId}/reactivate/`
-    ] as const;
+export const getPlatformTenantsReactivateMutationKey = () => ['platformTenantsReactivate'] as const;
+
+export const getPlatformTenantsReactivateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError,PlatformTenantsReactivateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError,PlatformTenantsReactivateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantsReactivateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantsReactivate>>, PlatformTenantsReactivateMutationVariables> = (props) => {
+          const {tenantId} = props ?? {};
+
+          return  platformTenantsReactivate(tenantId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantsReactivateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantsReactivate>>>
+
+    export type PlatformTenantsReactivateMutationError = unknown
+    export type PlatformTenantsReactivateMutationVariables = {tenantId: string}
+
+    export const usePlatformTenantsReactivate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError,PlatformTenantsReactivateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantsReactivate>>,
+        TError,
+        PlatformTenantsReactivateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantsReactivateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTenantsReactivateQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantsReactivate>>, TError = unknown>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantsReactivateQueryKey(tenantId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantsReactivate>>> = ({ signal }) => platformTenantsReactivate(tenantId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTenantsReactivateQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantsReactivate>>>
-export type PlatformTenantsReactivateQueryError = unknown
-
-
-export function usePlatformTenantsReactivate<TData = Awaited<ReturnType<typeof platformTenantsReactivate>>, TError = unknown>(
- tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsReactivate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsReactivate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsReactivate<TData = Awaited<ReturnType<typeof platformTenantsReactivate>>, TError = unknown>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsReactivate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsReactivate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsReactivate<TData = Awaited<ReturnType<typeof platformTenantsReactivate>>, TError = unknown>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTenantsReactivate<TData = Awaited<ReturnType<typeof platformTenantsReactivate>>, TError = unknown>(
- tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsReactivate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTenantsReactivateQueryOptions(tenantId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantSubscriptionResponse200 = {
+    export type platformTenantSubscriptionResponse200 = {
   data: Subscription
   status: 200
 }
@@ -3738,84 +3208,51 @@ return apiFetch<platformTenantSubscriptionUpdateResponse>(getPlatformTenantSubsc
 
 
 
-export const getPlatformTenantSubscriptionUpdateQueryKey = (tenantId: string,
-    changePlanRequest?: ChangePlanRequest,) => {
-    return [
-    'PUT', `/api/v1/platform/tenants/${tenantId}/subscription/`, changePlanRequest
-    ] as const;
+export const getPlatformTenantSubscriptionUpdateMutationKey = () => ['platformTenantSubscriptionUpdate'] as const;
+
+export const getPlatformTenantSubscriptionUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError,PlatformTenantSubscriptionUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError,PlatformTenantSubscriptionUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantSubscriptionUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, PlatformTenantSubscriptionUpdateMutationVariables> = (props) => {
+          const {tenantId,data} = props ?? {};
+
+          return  platformTenantSubscriptionUpdate(tenantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantSubscriptionUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>>
+    export type PlatformTenantSubscriptionUpdateMutationBody = ChangePlanRequest
+    export type PlatformTenantSubscriptionUpdateMutationError = unknown
+    export type PlatformTenantSubscriptionUpdateMutationVariables = {tenantId: string;data: ChangePlanRequest}
+
+    export const usePlatformTenantSubscriptionUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError,PlatformTenantSubscriptionUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>,
+        TError,
+        PlatformTenantSubscriptionUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantSubscriptionUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTenantSubscriptionUpdateQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError = unknown>(tenantId: string,
-    changePlanRequest: ChangePlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantSubscriptionUpdateQueryKey(tenantId,changePlanRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>> = ({ signal }) => platformTenantSubscriptionUpdate(tenantId,changePlanRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTenantSubscriptionUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>>
-export type PlatformTenantSubscriptionUpdateQueryError = unknown
-
-
-export function usePlatformTenantSubscriptionUpdate<TData = Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError = unknown>(
- tenantId: string,
-    changePlanRequest: ChangePlanRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantSubscriptionUpdate<TData = Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError = unknown>(
- tenantId: string,
-    changePlanRequest: ChangePlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantSubscriptionUpdate<TData = Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError = unknown>(
- tenantId: string,
-    changePlanRequest: ChangePlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTenantSubscriptionUpdate<TData = Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError = unknown>(
- tenantId: string,
-    changePlanRequest: ChangePlanRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantSubscriptionUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTenantSubscriptionUpdateQueryOptions(tenantId,changePlanRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantsSuspendResponse200 = {
+    export type platformTenantsSuspendResponse200 = {
   data: TenantDetail
   status: 200
 }
@@ -3865,84 +3302,51 @@ return apiFetch<platformTenantsSuspendResponse>(getPlatformTenantsSuspendUrl(ten
 
 
 
-export const getPlatformTenantsSuspendQueryKey = (tenantId: string,
-    reasonRequest?: ReasonRequest,) => {
-    return [
-    'POST', `/api/v1/platform/tenants/${tenantId}/suspend/`, reasonRequest
-    ] as const;
+export const getPlatformTenantsSuspendMutationKey = () => ['platformTenantsSuspend'] as const;
+
+export const getPlatformTenantsSuspendMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError,PlatformTenantsSuspendMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError,PlatformTenantsSuspendMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantsSuspendMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantsSuspend>>, PlatformTenantsSuspendMutationVariables> = (props) => {
+          const {tenantId,data} = props ?? {};
+
+          return  platformTenantsSuspend(tenantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantsSuspendMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantsSuspend>>>
+    export type PlatformTenantsSuspendMutationBody = ReasonRequest
+    export type PlatformTenantsSuspendMutationError = unknown
+    export type PlatformTenantsSuspendMutationVariables = {tenantId: string;data: ReasonRequest}
+
+    export const usePlatformTenantsSuspend = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError,PlatformTenantsSuspendMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantsSuspend>>,
+        TError,
+        PlatformTenantsSuspendMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantsSuspendMutationOptions(options), queryClient);
     }
-
-
-export const getPlatformTenantsSuspendQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantsSuspend>>, TError = unknown>(tenantId: string,
-    reasonRequest: ReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantsSuspendQueryKey(tenantId,reasonRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantsSuspend>>> = ({ signal }) => platformTenantsSuspend(tenantId,reasonRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PlatformTenantsSuspendQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantsSuspend>>>
-export type PlatformTenantsSuspendQueryError = unknown
-
-
-export function usePlatformTenantsSuspend<TData = Awaited<ReturnType<typeof platformTenantsSuspend>>, TError = unknown>(
- tenantId: string,
-    reasonRequest: ReasonRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsSuspend>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsSuspend>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsSuspend<TData = Awaited<ReturnType<typeof platformTenantsSuspend>>, TError = unknown>(
- tenantId: string,
-    reasonRequest: ReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof platformTenantsSuspend>>,
-          TError,
-          Awaited<ReturnType<typeof platformTenantsSuspend>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePlatformTenantsSuspend<TData = Awaited<ReturnType<typeof platformTenantsSuspend>>, TError = unknown>(
- tenantId: string,
-    reasonRequest: ReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePlatformTenantsSuspend<TData = Awaited<ReturnType<typeof platformTenantsSuspend>>, TError = unknown>(
- tenantId: string,
-    reasonRequest: ReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantsSuspend>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPlatformTenantsSuspendQueryOptions(tenantId,reasonRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type platformTenantUsersResponse200 = {
+    export type platformTenantUsersResponse200 = {
   data: PaginatedMembershipList
   status: 200
 }

@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { AccountMenu } from "@/components/auth/account-menu";
+import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
+import { RequireArea } from "@/components/auth/require-area";
 import { SidebarShell, type NavItem } from "@/components/shared/app-shell";
 
 const ITEMS: NavItem[] = [
@@ -33,8 +36,15 @@ const ITEMS: NavItem[] = [
 
 export function DistributorShell({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <SidebarShell title={title} items={ITEMS}>
-      {children}
-    </SidebarShell>
+    <RequireArea area="manage">
+      <SidebarShell
+        title={title}
+        items={ITEMS}
+        banner={<ImpersonationBanner />}
+        account={<AccountMenu accountHref="/manage/account" />}
+      >
+        {children}
+      </SidebarShell>
+    </RequireArea>
   );
 }

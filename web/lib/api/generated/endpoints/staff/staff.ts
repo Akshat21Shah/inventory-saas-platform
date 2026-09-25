@@ -6,16 +6,20 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -552,84 +556,51 @@ return apiFetch<staffUpdateResponse>(getStaffUpdateUrl(membershipId),
 
 
 
-export const getStaffUpdateQueryKey = (membershipId: string,
-    patchedMembershipUpdateRequest?: PatchedMembershipUpdateRequest,) => {
-    return [
-    'PATCH', `/api/v1/staff/${membershipId}/`, patchedMembershipUpdateRequest
-    ] as const;
+export const getStaffUpdateMutationKey = () => ['staffUpdate'] as const;
+
+export const getStaffUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffUpdate>>, TError,StaffUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof staffUpdate>>, TError,StaffUpdateMutationVariables, TContext> => {
+
+const mutationKey = getStaffUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof staffUpdate>>, StaffUpdateMutationVariables> = (props) => {
+          const {membershipId,data} = props ?? {};
+
+          return  staffUpdate(membershipId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StaffUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof staffUpdate>>>
+    export type StaffUpdateMutationBody = PatchedMembershipUpdateRequest | undefined
+    export type StaffUpdateMutationError = unknown
+    export type StaffUpdateMutationVariables = {membershipId: string;data?: PatchedMembershipUpdateRequest}
+
+    export const useStaffUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffUpdate>>, TError,StaffUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof staffUpdate>>,
+        TError,
+        StaffUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStaffUpdateMutationOptions(options), queryClient);
     }
-
-
-export const getStaffUpdateQueryOptions = <TData = Awaited<ReturnType<typeof staffUpdate>>, TError = unknown>(membershipId: string,
-    patchedMembershipUpdateRequest?: PatchedMembershipUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getStaffUpdateQueryKey(membershipId,patchedMembershipUpdateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof staffUpdate>>> = ({ signal }) => staffUpdate(membershipId,patchedMembershipUpdateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: membershipId !== null && membershipId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof staffUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type StaffUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof staffUpdate>>>
-export type StaffUpdateQueryError = unknown
-
-
-export function useStaffUpdate<TData = Awaited<ReturnType<typeof staffUpdate>>, TError = unknown>(
- membershipId: string,
-    patchedMembershipUpdateRequest: undefined |  PatchedMembershipUpdateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffUpdate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof staffUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffUpdate<TData = Awaited<ReturnType<typeof staffUpdate>>, TError = unknown>(
- membershipId: string,
-    patchedMembershipUpdateRequest?: PatchedMembershipUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffUpdate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffUpdate>>,
-          TError,
-          Awaited<ReturnType<typeof staffUpdate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffUpdate<TData = Awaited<ReturnType<typeof staffUpdate>>, TError = unknown>(
- membershipId: string,
-    patchedMembershipUpdateRequest?: PatchedMembershipUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useStaffUpdate<TData = Awaited<ReturnType<typeof staffUpdate>>, TError = unknown>(
- membershipId: string,
-    patchedMembershipUpdateRequest?: PatchedMembershipUpdateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getStaffUpdateQueryOptions(membershipId,patchedMembershipUpdateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type staffInvitationsListResponse200 = {
+    export type staffInvitationsListResponse200 = {
   data: PaginatedInvitationList
   status: 200
 }
@@ -791,78 +762,51 @@ return apiFetch<staffInvitationsCreateResponse>(getStaffInvitationsCreateUrl(),
 
 
 
-export const getStaffInvitationsCreateQueryKey = (invitationCreateRequest?: InvitationCreateRequest,) => {
-    return [
-    'POST', `/api/v1/staff/invitations/`, invitationCreateRequest
-    ] as const;
+export const getStaffInvitationsCreateMutationKey = () => ['staffInvitationsCreate'] as const;
+
+export const getStaffInvitationsCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError,StaffInvitationsCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError,StaffInvitationsCreateMutationVariables, TContext> => {
+
+const mutationKey = getStaffInvitationsCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof staffInvitationsCreate>>, StaffInvitationsCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  staffInvitationsCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StaffInvitationsCreateMutationResult = NonNullable<Awaited<ReturnType<typeof staffInvitationsCreate>>>
+    export type StaffInvitationsCreateMutationBody = InvitationCreateRequest
+    export type StaffInvitationsCreateMutationError = unknown
+    export type StaffInvitationsCreateMutationVariables = {data: InvitationCreateRequest}
+
+    export const useStaffInvitationsCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError,StaffInvitationsCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof staffInvitationsCreate>>,
+        TError,
+        StaffInvitationsCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStaffInvitationsCreateMutationOptions(options), queryClient);
     }
-
-
-export const getStaffInvitationsCreateQueryOptions = <TData = Awaited<ReturnType<typeof staffInvitationsCreate>>, TError = unknown>(invitationCreateRequest: InvitationCreateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getStaffInvitationsCreateQueryKey(invitationCreateRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof staffInvitationsCreate>>> = ({ signal }) => staffInvitationsCreate(invitationCreateRequest, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type StaffInvitationsCreateQueryResult = NonNullable<Awaited<ReturnType<typeof staffInvitationsCreate>>>
-export type StaffInvitationsCreateQueryError = unknown
-
-
-export function useStaffInvitationsCreate<TData = Awaited<ReturnType<typeof staffInvitationsCreate>>, TError = unknown>(
- invitationCreateRequest: InvitationCreateRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffInvitationsCreate>>,
-          TError,
-          Awaited<ReturnType<typeof staffInvitationsCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffInvitationsCreate<TData = Awaited<ReturnType<typeof staffInvitationsCreate>>, TError = unknown>(
- invitationCreateRequest: InvitationCreateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffInvitationsCreate>>,
-          TError,
-          Awaited<ReturnType<typeof staffInvitationsCreate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffInvitationsCreate<TData = Awaited<ReturnType<typeof staffInvitationsCreate>>, TError = unknown>(
- invitationCreateRequest: InvitationCreateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useStaffInvitationsCreate<TData = Awaited<ReturnType<typeof staffInvitationsCreate>>, TError = unknown>(
- invitationCreateRequest: InvitationCreateRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsCreate>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getStaffInvitationsCreateQueryOptions(invitationCreateRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type staffInvitationsResendResponse200 = {
+    export type staffInvitationsResendResponse200 = {
   data: Invitation
   status: 200
 }
@@ -897,78 +841,51 @@ export const staffInvitationsResend = async (invitationId: string, options?: Par
 
 
 
-export const getStaffInvitationsResendQueryKey = (invitationId: string,) => {
-    return [
-    'POST', `/api/v1/staff/invitations/${invitationId}/resend/`
-    ] as const;
+export const getStaffInvitationsResendMutationKey = () => ['staffInvitationsResend'] as const;
+
+export const getStaffInvitationsResendMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError,StaffInvitationsResendMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError,StaffInvitationsResendMutationVariables, TContext> => {
+
+const mutationKey = getStaffInvitationsResendMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof staffInvitationsResend>>, StaffInvitationsResendMutationVariables> = (props) => {
+          const {invitationId} = props ?? {};
+
+          return  staffInvitationsResend(invitationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StaffInvitationsResendMutationResult = NonNullable<Awaited<ReturnType<typeof staffInvitationsResend>>>
+
+    export type StaffInvitationsResendMutationError = unknown
+    export type StaffInvitationsResendMutationVariables = {invitationId: string}
+
+    export const useStaffInvitationsResend = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError,StaffInvitationsResendMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof staffInvitationsResend>>,
+        TError,
+        StaffInvitationsResendMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStaffInvitationsResendMutationOptions(options), queryClient);
     }
-
-
-export const getStaffInvitationsResendQueryOptions = <TData = Awaited<ReturnType<typeof staffInvitationsResend>>, TError = unknown>(invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getStaffInvitationsResendQueryKey(invitationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof staffInvitationsResend>>> = ({ signal }) => staffInvitationsResend(invitationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: invitationId !== null && invitationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type StaffInvitationsResendQueryResult = NonNullable<Awaited<ReturnType<typeof staffInvitationsResend>>>
-export type StaffInvitationsResendQueryError = unknown
-
-
-export function useStaffInvitationsResend<TData = Awaited<ReturnType<typeof staffInvitationsResend>>, TError = unknown>(
- invitationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffInvitationsResend>>,
-          TError,
-          Awaited<ReturnType<typeof staffInvitationsResend>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffInvitationsResend<TData = Awaited<ReturnType<typeof staffInvitationsResend>>, TError = unknown>(
- invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffInvitationsResend>>,
-          TError,
-          Awaited<ReturnType<typeof staffInvitationsResend>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffInvitationsResend<TData = Awaited<ReturnType<typeof staffInvitationsResend>>, TError = unknown>(
- invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useStaffInvitationsResend<TData = Awaited<ReturnType<typeof staffInvitationsResend>>, TError = unknown>(
- invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsResend>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getStaffInvitationsResendQueryOptions(invitationId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type staffInvitationsRevokeResponse200 = {
+    export type staffInvitationsRevokeResponse200 = {
   data: Invitation
   status: 200
 }
@@ -1003,74 +920,47 @@ export const staffInvitationsRevoke = async (invitationId: string, options?: Par
 
 
 
-export const getStaffInvitationsRevokeQueryKey = (invitationId: string,) => {
-    return [
-    'POST', `/api/v1/staff/invitations/${invitationId}/revoke/`
-    ] as const;
+export const getStaffInvitationsRevokeMutationKey = () => ['staffInvitationsRevoke'] as const;
+
+export const getStaffInvitationsRevokeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError,StaffInvitationsRevokeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError,StaffInvitationsRevokeMutationVariables, TContext> => {
+
+const mutationKey = getStaffInvitationsRevokeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof staffInvitationsRevoke>>, StaffInvitationsRevokeMutationVariables> = (props) => {
+          const {invitationId} = props ?? {};
+
+          return  staffInvitationsRevoke(invitationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StaffInvitationsRevokeMutationResult = NonNullable<Awaited<ReturnType<typeof staffInvitationsRevoke>>>
+
+    export type StaffInvitationsRevokeMutationError = unknown
+    export type StaffInvitationsRevokeMutationVariables = {invitationId: string}
+
+    export const useStaffInvitationsRevoke = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError,StaffInvitationsRevokeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof staffInvitationsRevoke>>,
+        TError,
+        StaffInvitationsRevokeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStaffInvitationsRevokeMutationOptions(options), queryClient);
     }
-
-
-export const getStaffInvitationsRevokeQueryOptions = <TData = Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError = unknown>(invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getStaffInvitationsRevokeQueryKey(invitationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof staffInvitationsRevoke>>> = ({ signal }) => staffInvitationsRevoke(invitationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: invitationId !== null && invitationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type StaffInvitationsRevokeQueryResult = NonNullable<Awaited<ReturnType<typeof staffInvitationsRevoke>>>
-export type StaffInvitationsRevokeQueryError = unknown
-
-
-export function useStaffInvitationsRevoke<TData = Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError = unknown>(
- invitationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffInvitationsRevoke>>,
-          TError,
-          Awaited<ReturnType<typeof staffInvitationsRevoke>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffInvitationsRevoke<TData = Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError = unknown>(
- invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof staffInvitationsRevoke>>,
-          TError,
-          Awaited<ReturnType<typeof staffInvitationsRevoke>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStaffInvitationsRevoke<TData = Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError = unknown>(
- invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useStaffInvitationsRevoke<TData = Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError = unknown>(
- invitationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof staffInvitationsRevoke>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getStaffInvitationsRevokeQueryOptions(invitationId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-

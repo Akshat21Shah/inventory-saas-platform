@@ -115,6 +115,14 @@
       - Forgot-password limit is a platform setting.
       - The web server (`web/server.mjs`) sets forwarded headers itself; Django trusts them only from `TRUSTED_PROXIES`; uvicorn proxy headers are off.
       - Checked live: 30 attempts with spoofed `X-Forwarded-For`, through Next.js and directly to Django, share one per-IP bucket (the 31st is 429). HMR still works through the custom server.
+    - Frontend: sign-in (commit 13).
+      - The access token is held in memory only. Refresh is single-flight and serialised across tabs (Web Locks); the fetcher retries once after a refresh on 401; the session is restored from the refresh cookie on reload.
+      - `/login` adapts to the host: admin host, branded tenant subdomain (or the neutral unavailable message), or the generic domain with Shop owner / Staff tabs.
+      - Steps: 2FA code or recovery code, enrolment with a QR code, recovery codes that must be confirmed as saved, tenant and distributor choosers, and handoff to the subdomain through the URL fragment (`/auth/handoff`).
+      - Also `/shop/login` (phone, code, resend timer), forgot/reset password, `/invite/[token]`, and area guards, an account menu and a support-session banner in the shells.
+      - Tenant branding (colour, name, favicon) is applied on the server in the root layout.
+      - Orval now generates mutations for writes. `qrcode` added (web image rebuilt).
+      - Checked live: super admin sign-in with 2FA enrolment and recovery codes, reload keeps the session, 2FA verify on the next sign-in, branded tenant login.
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next

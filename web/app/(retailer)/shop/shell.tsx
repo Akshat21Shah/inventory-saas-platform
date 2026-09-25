@@ -1,8 +1,11 @@
 "use client";
 
 import { ClipboardList, House, Search, ShoppingCart, User } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
+import { RequireArea } from "@/components/auth/require-area";
 import { BottomNavShell, type NavItem } from "@/components/shared/app-shell";
 
 // Bottom navigation per spec §8: Home, Search/Catalog, Cart, Orders, Account.
@@ -23,9 +26,12 @@ function useServiceWorker() {
 
 export function RetailerShell({ title, children }: { title: string; children: ReactNode }) {
   useServiceWorker();
-  return (
-    <BottomNavShell title={title} items={ITEMS}>
+  const pathname = usePathname();
+  const shell = (
+    <BottomNavShell title={title} items={ITEMS} banner={<ImpersonationBanner />}>
       {children}
     </BottomNavShell>
   );
+  // The offline page is the service worker's fallback: it must render without a session.
+  return pathname === "/shop/offline" ? shell : <RequireArea area="shop">{shell}</RequireArea>;
 }

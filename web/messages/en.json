@@ -27,7 +27,108 @@
   },
   "auth": {
     "signInTitle": "Sign in",
-    "signInPending": "Sign-in will be available in the next release."
+    "platformSignInTitle": "Platform sign in",
+    "platformSignInBody": "For the platform team. Two-step verification is required.",
+    "staffSignInTitle": "Staff sign in",
+    "staffSignInBody": "Use the email address your business invited.",
+    "shopOwnerLink": "Shop owner? Sign in with your mobile number",
+    "tabRetailer": "Shop owner",
+    "tabStaff": "Staff",
+    "email": "Email address",
+    "password": "Password",
+    "newPassword": "New password",
+    "confirmPassword": "Type the new password again",
+    "fullName": "Your name",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "forgotPassword": "Forgot your password?",
+    "backToSignIn": "Back to sign in",
+    "chooseTenant": "You work for more than one business. Choose one to continue.",
+    "unavailableTitle": "Account unavailable",
+    "unavailableBody": "This account is currently unavailable. Please contact your distributor.",
+    "wrongAreaTitle": "This page is not for your account",
+    "wrongAreaBody": "You are signed in with an account that uses a different part of the app.",
+    "goToMyArea": "Go to my home page",
+    "validation": {
+      "required": "This is required.",
+      "email": "Enter a valid email address.",
+      "tooShort": "Use at least 10 characters.",
+      "mismatch": "The two passwords are different."
+    },
+    "mfa": {
+      "title": "Two-step verification",
+      "codePrompt": "Enter the 6-digit code from your authenticator app.",
+      "recoveryPrompt": "Enter one of the recovery codes you saved when you set up two-step verification.",
+      "codeLabel": "6-digit code",
+      "recoveryLabel": "Recovery code",
+      "verify": "Verify",
+      "useRecovery": "Use a recovery code instead",
+      "useApp": "Use the authenticator app instead"
+    },
+    "enrol": {
+      "title": "Set up two-step verification",
+      "intro": "Your account needs two-step verification. You will need an authenticator app on your phone, such as Google Authenticator or Microsoft Authenticator.",
+      "start": "Set it up now",
+      "stepScan": "Scan this QR code with your authenticator app.",
+      "stepCode": "Enter the 6-digit code the app shows.",
+      "qrLabel": "QR code to add this account to your authenticator app",
+      "manual": "Can't scan? Enter this key instead",
+      "confirm": "Confirm and continue"
+    },
+    "recovery": {
+      "title": "Save your recovery codes",
+      "intro": "If you lose your phone, each of these codes lets you sign in once. Keep them somewhere safe; they are shown only now.",
+      "copy": "Copy codes",
+      "copied": "Recovery codes copied",
+      "confirm": "I have saved these codes somewhere safe",
+      "continue": "Continue"
+    },
+    "strength": {
+      "hint": "Use at least 10 characters. A few words together work well.",
+      "tooShort": "Too short",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "retailer": {
+      "title": "Sign in to order",
+      "body": "We'll send a 6-digit code to your mobile number.",
+      "phoneLabel": "Mobile number",
+      "phoneHint": "The number your distributor has for your shop.",
+      "phoneInvalid": "Enter your 10-digit mobile number.",
+      "sendCode": "Send code",
+      "codeSent": "We sent a code to {phone}.",
+      "codeLabel": "6-digit code",
+      "verify": "Sign in",
+      "changeNumber": "Change number",
+      "resend": "Send the code again",
+      "resendIn": "Send again in {seconds}s",
+      "chooseDistributor": "Your number is registered with more than one distributor. Choose where to shop."
+    },
+    "handoff": {
+      "failedTitle": "This sign-in link didn't work"
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "body": "Enter your email address and we'll send you a link to choose a new password.",
+      "sent": "If an account uses this email address, we've sent a link to reset the password. Check your inbox.",
+      "submit": "Send link"
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "submit": "Save new password",
+      "doneTitle": "Password changed",
+      "doneBody": "Your password has been changed and you've been signed out everywhere. Sign in with the new password."
+    },
+    "invite": {
+      "invalidTitle": "This invitation can't be used",
+      "title": "Join {business}",
+      "body": "{inviter} invited {email} to join as {role}.",
+      "someone": "The platform team",
+      "existingAccount": "You already have an account with this email. Enter its password to join.",
+      "accept": "Accept invitation"
+    },
+    "myAccount": "My account"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -171,5 +272,17 @@
     "showEmpty": "Empty",
     "showError": "Error",
     "showData": "Data"
+  },
+  "impersonation": {
+    "viewingAs": "Support session: viewing as {name} (read-only)",
+    "actingAs": "Support session: acting as {name} (every change is recorded)",
+    "minutesLeft": "{minutes, plural, one {# minute} other {# minutes}} left",
+    "switchToAct": "Switch to act mode",
+    "end": "End session",
+    "actTitle": "Make changes as this user?",
+    "actBody": "Changes are recorded in the business's audit log with your name. Passwords, two-step verification, staff and bank details can't be changed in a support session.",
+    "reason": "Reason for making changes",
+    "cancel": "Cancel",
+    "confirmAct": "Switch to act mode"
   }
 }

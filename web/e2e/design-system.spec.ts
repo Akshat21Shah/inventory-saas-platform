@@ -12,10 +12,16 @@ test("design system renders core components without horizontal scroll", async ({
 });
 
 test("retailer shell has bottom navigation with large targets", async ({ page }) => {
-  await page.goto("/shop");
+  // The offline page renders the shop shell without a session (service-worker fallback).
+  await page.goto("/shop/offline");
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   const home = nav.getByRole("link", { name: "Home" });
-  await expect(home).toHaveAttribute("aria-current", "page");
+  await expect(home).toBeVisible();
   const box = await home.boundingBox();
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+});
+
+test("signed-out visitors to the shop are sent to sign in", async ({ page }) => {
+  await page.goto("/shop");
+  await expect(page).toHaveURL(/\/(shop\/)?login/);
 });

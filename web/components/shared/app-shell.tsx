@@ -78,47 +78,58 @@ export function SidebarShell({
   title,
   items,
   children,
+  banner,
+  account,
 }: {
   title: string;
   items: NavItem[];
   children: ReactNode;
+  /** Full-width notice above everything (e.g. a support session). */
+  banner?: ReactNode;
+  /** Account menu: bottom of the sidebar, top-right on phones. */
+  account?: ReactNode;
 }) {
   const t = useTranslations();
   const rootHref = items[0]?.href ?? "/";
   return (
-    <div className="flex min-h-dvh">
-      <SkipLink />
-      <aside className="bg-sidebar hidden w-60 shrink-0 border-r md:block">
-        <div className="flex h-14 items-center px-4 font-semibold">{title}</div>
-        <nav aria-label={t("nav.mainNavigation")} className="px-3 py-2">
-          <NavLinks items={items} rootHref={rootHref} />
-        </nav>
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="bg-background/95 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4 backdrop-blur md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t("common.openMenu")}
-                className="size-11"
-              >
-                <Menu aria-hidden />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-4">
-              <SheetTitle>{title}</SheetTitle>
-              <nav aria-label={t("nav.mainNavigation")} className="mt-4">
-                <NavLinks items={items} rootHref={rootHref} />
-              </nav>
-            </SheetContent>
-          </Sheet>
-          <span className="font-semibold">{title}</span>
-        </header>
-        <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8">
-          {children}
-        </main>
+    <div className="flex min-h-dvh flex-col">
+      {banner}
+      <div className="flex min-h-0 flex-1">
+        <SkipLink />
+        <aside className="bg-sidebar hidden w-60 shrink-0 flex-col border-r md:flex">
+          <div className="flex h-14 items-center px-4 font-semibold">{title}</div>
+          <nav aria-label={t("nav.mainNavigation")} className="flex-1 px-3 py-2">
+            <NavLinks items={items} rootHref={rootHref} />
+          </nav>
+          {account ? <div className="border-t p-3">{account}</div> : null}
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="bg-background/95 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4 backdrop-blur md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t("common.openMenu")}
+                  className="size-11"
+                >
+                  <Menu aria-hidden />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-4">
+                <SheetTitle>{title}</SheetTitle>
+                <nav aria-label={t("nav.mainNavigation")} className="mt-4">
+                  <NavLinks items={items} rootHref={rootHref} />
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <span className="flex-1 font-semibold">{title}</span>
+            {account}
+          </header>
+          <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
@@ -129,10 +140,12 @@ export function BottomNavShell({
   title,
   items,
   children,
+  banner,
 }: {
   title: string;
   items: NavItem[];
   children: ReactNode;
+  banner?: ReactNode;
 }) {
   const pathname = usePathname();
   const t = useTranslations();
@@ -140,6 +153,7 @@ export function BottomNavShell({
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
+      {banner}
       <header className="bg-primary text-primary-foreground sticky top-0 z-30 flex h-14 items-center px-4 font-semibold">
         {title}
       </header>
