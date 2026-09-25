@@ -47,7 +47,7 @@ Legend:
 | M2 | Flat discount basis | **FIXED:** per unit (`round(qty × flat)`, capped at gross). |
 | M3 | Quantity slabs basis | **FIXED:** line quantity of that product. |
 | M4 | Category discounts and sub-categories | **FIXED:** a category rule applies to all its descendants. |
-| M5 | "Single best rule" tie-break | Highest discount amount → most specific audience (retailer > price list > all) → most specific scope (product > deeper category > brand > all) → newest rule. **[D]** |
+| M5 | Several applicable rules | ⚙ `pricing.discount_combination` (default **best single**, ADR-038). Best single: highest discount amount → most specific audience (retailer > price list > all) → most specific scope (product > deeper category > brand > all) → newest rule. Add together: each rule's amount on the original line, summed. One after another: in that specificity order (newest first on ties), each % on what is left and flat per unit. The total is always capped at the line gross. **[D]** |
 | M6 | GST-inclusive pricing | ⚙ `tax.prices_include_gst` (default **false**). Inclusive mode: the discount applies to the inclusive amount, and taxable is backed out per line. A **±₹0.01 line tolerance** is accepted and absorbed by the round-off (§6 Ex 7). The price basis of an order line follows the **order's** snapshot, even if the setting changes before invoicing (ADR-016). |
 | M7 | Minimum order value | ⚙ `orders.min_order_value` (default none) and ⚙ `orders.min_order_value_basis` (default **INCL_GST**). Backordered items **count** (FIXED). |
 | M8 | Backorder billing price | ⚙ `backorders.billing_price` = ORIGINAL (default) \| CURRENT. CURRENT = price re-resolved when the backorder shipment is created (allocation confirmed) and stored on the fulfilment line. **If the price increased** vs the order price: the retailer is notified and may **cancel that quantity themselves until the shipment is packed** (ADR-021). Unchanged or lower: notification only. |
@@ -1386,6 +1386,15 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 2.17 | FE: pricing screens (price lists, overrides, discounts, preview) | L |
 | 2.18 | FE retailer: read-only catalog browsing with prices | M |
 | 2.19 | Seed (2 × 200 products, 20 retailers each, price lists, discounts) + acceptance run (1,000 products + 100 retailers import) | S |
+| 2.20 | Free-goods warning for ₹0 price-list prices (ADR-036) | S |
+| 2.21 | Discount combination modes (`pricing.discount_combination`), all applied rules in the result, shop total as amount + % (ADR-038) | M |
+| 2.22 | Own brand, cost price (pricing permission, audited), own-brand badge setting and filter (ADR-039) | M |
+| 2.23 | Per-shop discount grid (one simple rule per shop and product, server net-price preview) | M |
+| 2.24 | Copy pricing between shops (Replace or Add, preview, audit) | M |
+| 2.25 | Bulk price-list change by % for a category or brand (preview, paisa or whole-rupee rounding, optional add missing) | M |
+| 2.26 | Shop pricing report (special prices, shop rules, free products) | S |
+| 2.27 | Import/export of special prices, price-list prices and discount rules | L |
+| 2.28 | FE for 2.20–2.27: inline special prices and "add discount" on the retailer page, discount grid, copy dialog, bulk %, report, own brand, cost price | L |
 
 ### Phase 3 — Inventory
 | # | Task | Size |
@@ -1520,7 +1529,9 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 
 | Item | Notes |
 |---|---|
-| Free-goods schemes ("buy X get Y free") | Until then, a discount rule or special price that brings a net price to zero hides the product from those shops (ADR-034). Saving such a rule or price shows the `FREE_GOODS` warning (ADR-036). |
+| Free-goods schemes ("buy X get Y free") | Until then, a discount rule, special price or price-list price that brings a net price to zero hides the product from those shops (ADR-034). Saving one shows the `FREE_GOODS` warning (ADR-036). |
+| Manufacturing / production | Raw materials, recipes (bill of materials), production entries that consume raw materials and produce finished goods, with cost roll-up into the finished goods' cost price. Builds on own brand and cost price (ADR-039). |
+| Margin reports | Own brand vs traded margins from cost price (ADR-039), with Phase 8 reports. |
 
 ---
 
@@ -1585,7 +1596,9 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Credit & Payments | `payments.cheque_credit_timing` | enum | `ON_RECEIPT` | `ON_RECEIPT`, `ON_CLEARANCE` | PAYMENT | Credit a cheque to the retailer's account when received (reversed automatically if it bounces) or only when it clears. |
 | Security | `security.require_staff_2fa` | bool | `false` | — | — | Require every staff member to set up two-step verification (an authenticator app) before they can sign in. Only owners can change this (ADR-030). |
 | Pricing | `pricing.discounts_on_special_prices` | bool | `true` | — | — (ORDER from Phase 4) | Apply discount rules on top of retailer special prices. Turn off to treat a special price as the final price (ADR-036). |
+| Pricing | `pricing.discount_combination` | enum `BEST` / `ADD` / `SEQUENTIAL` | `BEST` | — | — (ORDER from Phase 4) | When several discounts apply: the best single one, add them together, or apply one after another from the most specific (ADR-038). |
 | Retailers | `retailers.blocked_can_sign_in` | bool | `true` | — | — | Blocked shops can still sign in and see their account, but cannot order. Turn off to refuse their sign-in (ADR-036). |
+| Retailers | `retailers.show_own_brand_badge` | bool | `false` | — | — | Show an "own brand" badge on own-brand products in the shop (ADR-039). |
 
 Later phases add keys through the same registry (e.g. notification channels in Phase 6; e-invoice/e-way bill and gateway options in Phase 7). Feature flags stay a separate mechanism (`FeatureFlag`/`TenantFeature`), because they gate whole modules.
 
@@ -1657,6 +1670,9 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 034 | Catalog search, shop visibility (active + "Show in shop" + current rate + valid price), cancellable future GST-rate changes, content-versioned long-cache product image URLs (2026-09-25) |
 | 035 | Data import: dry run + report, explicit mode (add only / add and update) with change preview, messy-file handling, plain row/column errors (2026-09-25) |
 | 036 | `resolve_price` details, `pricing.discounts_on_special_prices`, `retailers.blocked_can_sign_in` (2026-09-25) |
+| 037 | Per-shop pricing tools: grid, copy pricing, bulk %, report, pricing imports/exports (2026-09-26) |
+| 038 | Discount combination modes; shops see the total as amount and %; all applied rules recorded (2026-09-26) |
+| 039 | Own brand, cost price, own-brand badge; manufacturing on the backlog (2026-09-26) |
 
 ### 10.2 Follow-up answers (2026-09-25)
 | # | Question | Answer |
@@ -1669,6 +1685,22 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 6 | Rounding method lists | As listed; CA confirmation before Phase 5. (ADR-009 remains pending) |
 | 7 | Scheduled rate change + inclusive prices | Inclusive price kept, taxable changes; 7-day warning on the distributor dashboard **and** as a notification. (ADR-022) |
 | 8 | Acceptance document | "Order Confirmation", carrying the line **"This is not a tax invoice."** (ADR-022) |
+
+### 10.2a End-of-phase review decisions (2026-09-26)
+| # | Question | Answer |
+|---|---|---|
+| 1 | ₹0 price-list prices | Same free-goods warning: "This price list makes…" |
+| 2 | Shop "ordering soon" notice | Keep; remove in Phase 4 |
+| 3 | Copy pricing | Replace or Add, chosen every time, preview first |
+| 4 | Bulk % scope | Only products already on the list; optionally add the missing ones from the standard price |
+| 5 | Bulk % rounding | "To the paisa" (default) or "to whole rupees", half-up via `billing/tax.py` |
+| 6 | "Add together" with mixed types | Each rule's amount on the original line, summed |
+| 7 | "One after another" | Most specific first (audience, then scope, newest first on ties); % on what is left, flat per unit |
+| 8 | Discount grid | One simple rule per shop and product; slab or dated rules read-only with a link |
+| 9 | Discount-rule import key | The rule name; rows with the same name are one rule's slabs |
+| 10 | Free-goods warning with combined modes | Per-rule check, plus "free products" in the shop pricing report |
+| 11 | Cost price | `pricing.view` to see, `pricing.manage` to change |
+| 12 | What shops see of discounts | The total as amount and % ("You save ₹12 (12%)") in every mode; never rule names or counts; slab hints stay |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

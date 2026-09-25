@@ -444,4 +444,49 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   2. New tenant setting `pricing.discounts_on_special_prices` (default **true**): when false, a retailer-specific price is the final net price and no discount rule applies to it.
   3. New tenant setting `retailers.blocked_can_sign_in` (default **true**): when true, blocked retailers can sign in, browse and see their account with the notice "Your account is on hold. Please contact your distributor."; ordering is blocked (Phase 4). When false, sign-in is refused with the same neutral message.
   4. **Free goods are not supported yet** (backlog). A discount rule or special price that brings a product's net price to zero is saved, with the warning "This rule makes N products free for M retailers. Free-goods schemes are not supported yet." (code `FREE_GOODS`; a special price says "This special price makes…"). Each shop's own unit price is used, and the rule's highest slab counts. The count covers active products shown in the shop, and active shops. Rules that are switched off or have ended don't count; rules that start later do. The products stay hidden from those shops (ADR-034).
+  5. (2026-09-26) A ₹0 price-list price shows the same warning: "This price list makes N products free for M retailers." Rule 1's "single best rule" is now the default of a setting (ADR-038).
 - **Consequences:** Both settings are evaluated live (no snapshot) until orders exist; Phase 4 snapshots the price basis on the order line.
+
+## ADR-037 — Managing pricing per shop at scale
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 2 end-of-phase review).
+- **Context:** Hundreds of shops and thousands of products. Per-shop pricing must be quick to set up and must not become a hidden mess.
+- **Decision:**
+  1. **What this shop pays** (retailer page): the server's price sheet, with the special price edited in place, and "Add a discount for this shop" (a rule pre-filled for the shop, by product, brand or category).
+  2. **Discount grid for one shop.** All products, searchable and filterable by category and brand. Staff with `pricing.manage` enter the shop's discount per product (% or flat per unit), and the server previews the net price as they type. Saving creates, changes or removes that shop and product's **simple rule** (no slabs, no dates), audited. There is at most one simple rule per pair. Slab or dated rules for the pair are shown read-only, with a link.
+  3. **Copy pricing from another shop.** Copies the price list assignment, special prices and shop-specific rules. The user chooses **Replace** (the target's special prices and shop rules are removed first) or **Add** (on conflicts, the source's special price wins) every time; there is no default. A preview comes first; one audit entry records the copy.
+  4. **Bulk price-list change by percentage** for a category (with sub-categories) or brand. It applies only to products already on the list; optionally it also adds the missing ones, starting from the standard price. Rounding is "to the paisa" (default) or "to whole rupees", both half-up via `billing/tax.py`. Preview first; audited like other price changes.
+  5. **Shop pricing report:** shops with special prices or shop-specific rules (counts, price list, links), plus the products each shop gets free (ADR-036 item 4). Exportable.
+  6. **Excel import/export** through the import framework (ADR-035: explicit mode, change preview, error report):
+     - **Special prices:** shop by mobile or code, product code, price, note.
+     - **Price-list prices:** list name (an existing list), product code, price.
+     - **Discount rules:**
+       - Columns: name, target (product code / brand / category, or all), audience (all shops / price list / shop mobile or code), type, value, optional slab quantity, optional valid from and to.
+       - The rule **name identifies the rule**; rows with the same name are one rule, one row per slab.
+       - In "update existing" mode, a name used by more than one existing rule is a row error.
+- **Consequences:** Every tool goes through the pricing services, so audit, validation and the free-goods warning behave the same everywhere. Lists and grids are paginated and priced in batches.
+
+## ADR-038 — Combining discounts
+- **Status:** Accepted — 2026-09-26 (product owner). Amends ADR-036 item 1 and PLAN M5.
+- **Decision:**
+  1. **Setting.** New tenant setting `pricing.discount_combination` ("when several discounts apply"):
+     - `BEST` (default, the previous behaviour): the single rule with the largest amount; ties as in PLAN M5.
+     - `ADD`: every applicable rule's amount is worked out on the original line (each % of the gross, each flat per unit × quantity), and the amounts are added. For example, 10% + ₹1 off each on a ₹100 unit is ₹11 off.
+     - `SEQUENTIAL`: one after another, from the most specific rule to the least. Order: audience (shop, then price list, then all), then scope (product, then deeper category, then brand, then all), newest first on ties. Each % applies to what is left after the earlier rules; a flat rule takes its per-unit amount × quantity from what is left. For example, 10% then 5% is 14.5%.
+  2. **Rule values and the cap.** Each rule contributes its reached slab (a rule with slabs and no reached slab does not apply). In every mode the total is capped at the line gross. Rounding follows `billing/tax.py`: each rule's amount is rounded to the paisa.
+  3. **The price result lists every rule applied, in order**, with its amount, plus the total. The order line snapshots all of it (Phase 4).
+  4. **Shops see only the total discount, as an amount and a percentage of the gross**, for example "You save ₹12 (12%)", in every mode. The percentage is computed by the server to two decimals. Shops never see rule names, how many rules applied, or the price source. "Buy more, pay less" slab hints stay.
+  5. `pricing.discounts_on_special_prices` still decides whether any rule applies on top of a special price.
+  6. **Free-goods warning.** It checks each rule on its own. Products that several rules make free together show in the shop pricing report (ADR-037 item 5), and they stay hidden from those shops.
+- **Consequences:** `resolve_price`'s single `discount` becomes a list of applied discounts plus a total. The tests cover all three modes, with slabs, flat discounts and special prices.
+
+## ADR-039 — Own brand and cost price
+- **Status:** Accepted — 2026-09-26 (product owner).
+- **Decision:**
+  1. **Own brand.** A brand can be marked "own brand" (white label). The product list filters by it. Tenant setting `retailers.show_own_brand_badge` (default **off**) shows an "own brand" badge in the shop.
+  2. **Cost price.** Products get an optional cost price:
+     - Visible only to staff with `pricing.view`; changed only with `pricing.manage`.
+     - Omitted from every response otherwise, never in the shop API, and audited on change.
+     - Product import/export has a "Cost price" column that needs the pricing permission, as credit columns need the credit permission. Without the permission, the column in a file is refused as an error, not silently ignored.
+  3. Margin reports (own brand vs traded) and manufacturing (raw materials, bills of materials, production entries with cost roll-up) are on the PLAN backlog.
+- **Consequences:** Staff who manage products but not pricing can still create and edit products; they never see or send cost prices.
+
