@@ -98,9 +98,11 @@ class ItemInput:
 
 
 @transaction.atomic
-def upsert_items(price_list_id: UUID, items: list[ItemInput], *, by: User) -> int:
-    """Set prices for many products at once (pasting from a spreadsheet); returns how many
-    changed. Every change is in one audit entry with old → new per product code."""
+def upsert_items(
+    price_list_id: UUID, items: list[ItemInput], *, by: User
+) -> tuple[int, list[Warning]]:
+    """Set prices for many products at once; returns how many changed and any free-goods
+    warning. Every change is in one audit entry with old → new per product code."""
     price_list = _price_list(price_list_id, lock=True)
     if len(items) > MAX_BULK_ITEMS:
         raise InvalidFields({"items": [f"Send at most {MAX_BULK_ITEMS:,} prices at a time."]})
@@ -145,7 +147,8 @@ def upsert_items(price_list_id: UUID, items: list[ItemInput], *, by: User) -> in
             changes=dict(list(changes.items())[:500]),
             metadata={"count": len(changes)},
         )
-    return len(changes)
+    zero = [i.product_id for i in items if i.price == 0]
+    return len(changes), free_goods.price_list_warnings(price_list, zero) if zero else []
 
 
 @transaction.atomic

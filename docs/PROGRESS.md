@@ -249,6 +249,9 @@
     - `e2e_workbook` (DEBUG only) makes real .xlsx import files for the browser test.
     - `e2e/support/flows.ts` holds the onboarding steps shared by both acceptance specs.
     - The full-stack specs run one at a time (`--workers=1`), because the super admin's 2FA codes are single-use.
+- **Phase 2 review additions** (2026-09-26; ADR-037 … ADR-039, PLAN tasks 2.20–2.28):
+  - Docs commit: spec 5.4/5.6, PLAN (M5, tasks, settings, backlog incl. manufacturing, decisions 10.2a), ADR-037 … ADR-039.
+  - 2.20: a ₹0 price-list price warns "This price list makes N products free for M retailers…" (shops with their own special price for the product don't count); shown on the price list screen.
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.

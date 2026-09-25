@@ -152,12 +152,13 @@ class PriceListItemsView(PricingView, generics.ListAPIView[PriceListItem]):
     def put(self, request: Request, price_list_id: UUID) -> Response:
         data = s.ItemsUpsertSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        changed = services.upsert_items(
+        changed, warnings = services.upsert_items(
             price_list_id,
             [services.ItemInput(i["product"], i["price"]) for i in data.validated_data["items"]],
             by=_user(request),
         )
-        return Response({"changed": changed})
+        result = {"changed": changed, "warnings": warnings}
+        return Response(s.ItemsUpsertResultSerializer(result).data)
 
 
 class PriceListItemDetailView(PricingView):

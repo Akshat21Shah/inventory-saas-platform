@@ -5,7 +5,9 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { Warning } from './warning';
 
 export interface ItemsUpsertResult {
   changed: number;
+  readonly warnings: readonly Warning[];
 }

@@ -1166,7 +1166,8 @@
       "PRICE_ABOVE_MRP": "The price including GST ({price_with_gst}) is above the MRP ({mrp}). It is saved; check that this is right.",
       "HSN_RATE_DIFFERS": "HSN {hsn_prefix} usually has {suggested_rate}% GST. Check the rate.",
       "FREE_GOODS": "This rule makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_SPECIAL": "This special price makes this product free for this retailer. Free-goods schemes are not supported yet."
+      "FREE_GOODS_SPECIAL": "This special price makes this product free for this retailer. Free-goods schemes are not supported yet.",
+      "FREE_GOODS_PRICE_LIST": "This price list makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet."
     },
     "products": {
       "title": "Products",

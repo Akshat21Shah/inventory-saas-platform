@@ -68,6 +68,13 @@ class ItemsUpsertSerializer(serializers.Serializer[Any]):
 
 class ItemsUpsertResultSerializer(serializers.Serializer[Any]):
     changed = serializers.IntegerField()
+    warnings = serializers.SerializerMethodField()
+
+    @extend_schema_field(WarningSerializer(many=True))
+    def get_warnings(self, obj: dict[str, Any]) -> list[Any]:
+        return [
+            {"code": w.code, "message": w.message, "details": w.details} for w in obj["warnings"]
+        ]
 
 
 class RetailerPriceSerializer(serializers.ModelSerializer[RetailerPrice]):

@@ -195,3 +195,32 @@ def test_the_api_returns_the_warning_and_still_saves(tenant_a, world, owner):
     )
     assert special.status_code == 201
     assert special.json()["warnings"][0]["details"] == {"products": 1, "retailers": 1}
+
+
+def test_a_zero_list_price_is_free_for_the_lists_shops_without_a_special_price(
+    tenant_a, world, owner
+):
+    with tenant_context(tenant_a.pk):
+        other = create_retailer(
+            shop_name="R4",
+            phone="9876500004",
+            send_welcome=False,
+            extra={"price_list_id": world["gold"].pk},
+        )
+        RetailerPrice.objects.create(retailer=other, product=world["b"], price=D("15"))
+        changed, warnings = services.upsert_items(
+            world["gold"].pk,
+            [services.ItemInput(world["a"].pk, D("0")), services.ItemInput(world["b"].pk, D("0"))],
+            by=owner,
+        )
+    assert changed == 2
+    assert _messages(warnings) == [
+        "This price list makes 2 products free for 2 retailers. Free-goods schemes are not "
+        "supported yet."
+    ]
+    assert warnings[0].details == {"products": 2, "retailers": 2}  # R4 pays 15 for B
+    with tenant_context(tenant_a.pk):
+        _, none = services.upsert_items(
+            world["gold"].pk, [services.ItemInput(world["a"].pk, D("3"))], by=owner
+        )
+    assert none == []

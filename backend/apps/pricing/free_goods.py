@@ -1,6 +1,6 @@
-"""Free-goods warning (ADR-036): a discount rule or special price that brings a product's net price
-to zero for a shop hides that product from the shop (ADR-034). Saving it is allowed, with a
-warning, because free-goods schemes ("buy X get Y free") aren't supported yet (PLAN backlog).
+"""Free-goods warning (ADR-036): a discount rule, special price or price-list price that brings
+a product's net price to zero for a shop hides that product from the shop (ADR-034). Saving it is
+allowed, with a warning, because free-goods schemes ("buy X get Y free") aren't supported yet.
 
 "Free" means the net price is zero at some quantity: a special price of 0, a percentage of 100 or
 more, or rupees off per unit at or above the unit price. The rule's highest slab counts. Rules that
@@ -17,7 +17,7 @@ from apps.catalog import selectors as catalog
 from apps.catalog.models import Product
 from apps.catalog.services import Warning
 from apps.platform.selectors import get_setting
-from apps.pricing.models import DiscountRule, PriceListItem, RetailerPrice
+from apps.pricing.models import DiscountRule, PriceList, PriceListItem, RetailerPrice
 from apps.retailers.models import Retailer
 from common.dates import today_ist
 
@@ -148,3 +148,40 @@ def special_price_warnings(row: RetailerPrice) -> list[Warning]:
     ):
         return [_warning("This special price", 1, 1)]
     return []
+
+
+def price_list_warnings(price_list: PriceList, product_ids: list[UUID]) -> list[Warning]:
+    """₹0 list prices among ``product_ids``: free for the list's shops that have no special
+    price for the product (a special price comes first)."""
+    zero = set(
+        PriceListItem.objects.filter(
+            price_list=price_list,
+            product_id__in=product_ids,
+            price=0,
+            product__is_active=True,
+            product__deleted_at__isnull=True,
+            product__show_in_shop=True,
+        ).values_list("product_id", flat=True)
+    )
+    if not zero:
+        return []
+    shops = list(
+        Retailer.objects.filter(
+            price_list=price_list, is_active=True, deleted_at__isnull=True
+        ).values_list("pk", flat=True)
+    )
+    special: dict[UUID, set[UUID]] = defaultdict(set)
+    for retailer_id, product_id in RetailerPrice.objects.filter(
+        retailer_id__in=shops, product_id__in=zero
+    ).values_list("retailer_id", "product_id"):
+        special[retailer_id].add(product_id)
+    free_products: set[UUID] = set()
+    free_shops = 0
+    for shop in shops:
+        mine = zero - special.get(shop, set())
+        if mine:
+            free_shops += 1
+            free_products |= mine
+    if not free_products:
+        return []
+    return [_warning("This price list", len(free_products), free_shops)]

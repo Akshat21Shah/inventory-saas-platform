@@ -8,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { WarningList } from "@/components/catalog/product-editor";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ErrorState } from "@/components/shared/error-state";
@@ -36,7 +37,7 @@ import {
   usePriceListsList,
   usePriceListsRetrieve,
 } from "@/lib/api/generated/endpoints/pricing/pricing";
-import type { PriceList, PriceListItem } from "@/lib/api/generated/model";
+import type { PriceList, PriceListItem, Warning } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { useDebounced } from "@/lib/use-debounced";
@@ -189,7 +190,7 @@ function PriceCell({
   item: PriceListItem;
   priceListId: string;
   disabled: boolean;
-  onSaved: () => void;
+  onSaved: (warnings: readonly Warning[]) => void;
 }) {
   const t = useTranslations("pricing.items");
   const errors = useErrorText();
@@ -199,11 +200,11 @@ function PriceCell({
   async function save() {
     setError(null);
     try {
-      await priceListItemsUpsert(priceListId, {
+      const response = await priceListItemsUpsert(priceListId, {
         items: [{ product: item.product.id, price: clean(value) }],
       });
       toast.success(t("saved"));
-      onSaved();
+      onSaved(response.data.warnings);
     } catch (err) {
       const fields = errors.fields(err);
       setError(fields["items.0.price"] ?? errors.message(err));
@@ -241,7 +242,13 @@ function PriceCell({
   );
 }
 
-function AddItemDialog({ priceListId, onAdded }: { priceListId: string; onAdded: () => void }) {
+function AddItemDialog({
+  priceListId,
+  onAdded,
+}: {
+  priceListId: string;
+  onAdded: (warnings: readonly Warning[]) => void;
+}) {
   const t = useTranslations("pricing.items");
   const tc = useTranslations("common");
   const errors = useErrorText();
@@ -280,11 +287,11 @@ function AddItemDialog({ priceListId, onAdded }: { priceListId: string; onAdded:
             setBusy(true);
             setFieldErrors({});
             try {
-              await priceListItemsUpsert(priceListId, {
+              const response = await priceListItemsUpsert(priceListId, {
                 items: [{ product: product.id, price: clean(price) }],
               });
               setOpen(false);
-              onAdded();
+              onAdded(response.data.warnings);
             } catch (err) {
               const fields = errors.fields(err);
               setFieldErrors({
@@ -333,6 +340,7 @@ export function PriceListDetailPage({ priceListId }: { priceListId: string }) {
   const { can } = useAuth();
   const manage = can("pricing.manage");
   const [search, setSearch] = useState("");
+  const [warnings, setWarnings] = useState<readonly Warning[]>([]);
   const debounced = useDebounced(search.trim());
   const cursor = useCursor();
   const list = usePriceListsRetrieve(priceListId);
@@ -346,7 +354,8 @@ export function PriceListDetailPage({ priceListId }: { priceListId: string }) {
   }
   const priceList = list.data.data;
   const page = items.data?.data;
-  const refresh = () => {
+  const refresh = (next: readonly Warning[] = []) => {
+    setWarnings(next);
     void items.refetch();
     void list.refetch();
   };
@@ -427,6 +436,9 @@ export function PriceListDetailPage({ priceListId }: { priceListId: string }) {
         actions={manage ? <AddItemDialog priceListId={priceListId} onAdded={refresh} /> : undefined}
       />
       <p className="text-muted-foreground mb-4 text-sm">{t("explain")}</p>
+      <div className="mb-4">
+        <WarningList warnings={warnings} keys={{ FREE_GOODS: "FREE_GOODS_PRICE_LIST" }} />
+      </div>
       <DataTable
         columns={columns}
         data={page?.results ?? []}

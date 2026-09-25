@@ -110,7 +110,7 @@ def test_bulk_prices_are_audited_as_one_change_with_old_and_new(tenant_a, tenant
         },
         format="json",
     )
-    assert first.json() == {"changed": 2}
+    assert first.json() == {"changed": 2, "warnings": []}
     again = a.put(
         url,
         {
@@ -121,7 +121,7 @@ def test_bulk_prices_are_audited_as_one_change_with_old_and_new(tenant_a, tenant
         },
         format="json",
     )
-    assert again.json() == {"changed": 1}
+    assert again.json() == {"changed": 1, "warnings": []}
     last = (
         AuditLog.objects.filter(action="pricing.price_list_prices_changed")
         .order_by("created_at")

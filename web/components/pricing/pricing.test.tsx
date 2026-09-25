@@ -146,7 +146,7 @@ describe("Special prices", () => {
 });
 
 describe("Price list items", () => {
-  it("saves an edited list price as the string typed", async () => {
+  it("saves an edited list price as the string typed and shows a free-goods warning", async () => {
     const calls = mockApi({
       "/api/v1/price-lists/pl-gold/": () => [
         200,
@@ -167,7 +167,10 @@ describe("Price list items", () => {
           ],
         },
       ],
-      "PUT /api/v1/price-lists/pl-gold/items/": () => [200, { changed: 1 }],
+      "PUT /api/v1/price-lists/pl-gold/items/": () => [
+        200,
+        { changed: 1, warnings: [{ ...freeGoods, details: { products: 1, retailers: 3 } }] },
+      ],
     });
     renderWithIntl(<PriceListDetailPage priceListId="pl-gold" />);
     const input = await screen.findByRole("textbox", { name: "List price for Parle-G" });
@@ -179,5 +182,10 @@ describe("Price list items", () => {
         items: [{ product: "p1", price: "1008.50" }],
       }),
     );
+    expect(
+      await screen.findByText(
+        "This price list makes 1 product free for 3 retailers. Free-goods schemes are not supported yet.",
+      ),
+    ).toBeVisible();
   });
 });

@@ -5514,8 +5514,14 @@ components:
       properties:
         changed:
           type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
       required:
       - changed
+      - warnings
     LoginResponse:
       type: object
       description: One shape for every sign-in step; ``status`` says what the client
