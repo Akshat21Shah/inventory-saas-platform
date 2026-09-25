@@ -2696,6 +2696,22 @@ paths:
                 items:
                   $ref: '#/components/schemas/SearchResult'
           description: ''
+  /api/v1/products/tax-options/:
+    get:
+      operationId: catalog_tax_options
+      description: The GST rates and percentage cesses in use (platform reference
+        data) for product forms.
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxOptions'
+          description: ''
   /api/v1/products/tax-rates/schedule/:
     post:
       operationId: catalog_tax_rates_bulk_schedule
@@ -4645,6 +4661,20 @@ components:
           default: 0
       required:
       - name
+    CessOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
     CessType:
       type: object
       properties:
@@ -4957,6 +4987,18 @@ components:
           type: boolean
       required:
       - enabled
+    GstRateOption:
+      type: object
+      properties:
+        rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        label:
+          type: string
+      required:
+      - label
+      - rate
     Handoff:
       type: object
       properties:
@@ -8645,6 +8687,20 @@ components:
       - plan
       - starts_at
       - status
+    TaxOptions:
+      type: object
+      properties:
+        gst_rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/GstRateOption'
+        cess_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/CessOption'
+      required:
+      - cess_types
+      - gst_rates
     TaxRate:
       type: object
       properties:

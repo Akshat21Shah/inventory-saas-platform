@@ -214,6 +214,14 @@ def test_hsn_hint_is_platform_reference_data(b):
     assert b.get(f"{API}/products/hsn-hint/", {"hsn": "9999"}).json() == {"hint": None}
 
 
+@covers("catalog-tax-options")
+def test_tax_options_are_the_platform_rates_in_use(a, b):
+    options = a.get(f"{API}/products/tax-options/").json()
+    rates = [r["rate"] for r in options["gst_rates"]]
+    assert "18.000" in rates and "12.000" not in rates  # 12% is no longer in use
+    assert options == b.get(f"{API}/products/tax-options/").json()  # the same for every tenant
+
+
 def test_price_changes_are_audited_separately(a, tenant_a):
     product = _create(a, tenant_a).json()
     response = a.patch(

@@ -19,6 +19,7 @@ urlpatterns = [
     path("products/search/", v.ProductSearchView.as_view(), name="catalog-product-search"),
     path("products/bulk/", v.ProductBulkView.as_view(), name="catalog-products-bulk"),
     path("products/hsn-hint/", v.HsnHintView.as_view(), name="catalog-hsn-hint"),
+    path("products/tax-options/", v.TaxOptionsView.as_view(), name="catalog-tax-options"),
     path(
         "products/tax-rates/schedule/",
         v.TaxRateScheduleView.as_view(),

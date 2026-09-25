@@ -434,3 +434,19 @@ class SearchResultSerializer(serializers.ModelSerializer[Product]):
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_thumbnail_url(self, product: Product) -> str | None:
         return first_ready_thumb(product)
+
+
+class GstRateOptionSerializer(serializers.Serializer[Any]):
+    rate = rate_field()
+    label = serializers.CharField()  # type: ignore[assignment]  # a field named "label"
+
+
+class CessOptionSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    name = serializers.CharField()
+
+
+class TaxOptionsSerializer(serializers.Serializer[Any]):
+    gst_rates = GstRateOptionSerializer(many=True)
+    cess_types = CessOptionSerializer(many=True)

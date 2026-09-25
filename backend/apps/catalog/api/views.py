@@ -487,6 +487,16 @@ class TaxRateScheduleView(CatalogView):
         return Response({"count": count, "committed": True})
 
 
+class TaxOptionsView(CatalogView):
+    """The GST rates and percentage cesses in use (platform reference data) for product forms."""
+
+    @extend_schema(
+        responses=s.TaxOptionsSerializer, operation_id="catalog_tax_options", tags=["catalog"]
+    )
+    def get(self, request: Request) -> Response:
+        return Response(s.TaxOptionsSerializer(selectors.tax_options()).data)
+
+
 class HsnHintView(CatalogView):
     @extend_schema(
         parameters=[OpenApiParameter("hsn", str, required=True)],

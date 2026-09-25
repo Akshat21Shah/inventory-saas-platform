@@ -61,6 +61,7 @@ import type {
   ProductWriteRequest,
   ScheduleRateRequest,
   SearchResult,
+  TaxOptions,
   Unit,
   UnitWriteRequest
 } from '../../model';
@@ -2805,6 +2806,115 @@ export function useCatalogProductsSearch<TData = Awaited<ReturnType<typeof catal
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCatalogProductsSearchQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type catalogTaxOptionsResponse200 = {
+  data: TaxOptions
+  status: 200
+}
+
+export type catalogTaxOptionsResponseSuccess = (catalogTaxOptionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type catalogTaxOptionsResponse = (catalogTaxOptionsResponseSuccess)
+
+export const getCatalogTaxOptionsUrl = () => {
+
+
+
+
+  return `/api/v1/products/tax-options/`
+}
+
+/**
+ * The GST rates and percentage cesses in use (platform reference data) for product forms.
+ */
+export const catalogTaxOptions = async ( options?: Parameters<typeof apiFetch>[1]): Promise<catalogTaxOptionsResponse> => {
+
+  return apiFetch<catalogTaxOptionsResponse>(getCatalogTaxOptionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCatalogTaxOptionsQueryKey = () => {
+    return [
+    `/api/v1/products/tax-options/`
+    ] as const;
+    }
+
+
+export const getCatalogTaxOptionsQueryOptions = <TData = Awaited<ReturnType<typeof catalogTaxOptions>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogTaxOptions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCatalogTaxOptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof catalogTaxOptions>>> = ({ signal }) => catalogTaxOptions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof catalogTaxOptions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CatalogTaxOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof catalogTaxOptions>>>
+export type CatalogTaxOptionsQueryError = unknown
+
+
+export function useCatalogTaxOptions<TData = Awaited<ReturnType<typeof catalogTaxOptions>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogTaxOptions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof catalogTaxOptions>>,
+          TError,
+          Awaited<ReturnType<typeof catalogTaxOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCatalogTaxOptions<TData = Awaited<ReturnType<typeof catalogTaxOptions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogTaxOptions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof catalogTaxOptions>>,
+          TError,
+          Awaited<ReturnType<typeof catalogTaxOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCatalogTaxOptions<TData = Awaited<ReturnType<typeof catalogTaxOptions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogTaxOptions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCatalogTaxOptions<TData = Awaited<ReturnType<typeof catalogTaxOptions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogTaxOptions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCatalogTaxOptionsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

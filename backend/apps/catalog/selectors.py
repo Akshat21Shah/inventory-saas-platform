@@ -205,3 +205,17 @@ def hsn_hint(hsn_code: str, on: date | None = None) -> HsnRateHint | None:
 def hint_differs(hsn_code: str, gst_rate: Decimal) -> HsnRateHint | None:
     hint = hsn_hint(hsn_code)
     return hint if hint is not None and hint.gst_rate != gst_rate else None
+
+
+def tax_options() -> dict[str, Any]:
+    """Active GST rates and percentage cess types (platform reference data, ADR-008)."""
+    from apps.platform.models import CessType, TaxRate
+
+    return {
+        "gst_rates": list(TaxRate.objects.filter(is_active=True).order_by("rate")),
+        "cess_types": list(
+            CessType.objects.filter(
+                is_active=True, calc_method=CessType.CalcMethod.PERCENT
+            ).order_by("name")
+        ),
+    }

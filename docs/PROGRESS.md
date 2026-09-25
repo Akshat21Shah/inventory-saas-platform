@@ -209,6 +209,13 @@
     - Free-goods warning (`FREE_GOODS`) when saving a discount rule or special price that makes products free. Added to ADR-036, and free-goods schemes are on the PLAN backlog.
     - The search performance test uses the median of 5 runs (limit still 200 ms).
     - New test: MRP changes are highlighted in the import change preview.
+  - Commit 11: distributor catalog screens.
+    - Products list: search, filters for category, brand, status and shop visibility; bulk actions; Excel/CSV export.
+    - Product form (React Hook Form + Zod; decimals stay strings). It shows server warnings, and the GST hint for the HSN code.
+    - Edit page panels: GST-rate history with schedule and cancel, photos (background processing polled until ready), barcodes.
+    - Category tree (3 levels), brands and units.
+    - New `GET products/tax-options/`: the GST rates and cess types in use (platform reference data).
+    - Shared additions: `SubNav`, `FormSelect` (links labels to selects; also fixed in `FieldsDialog`), `downloadFile` for binary downloads, and `useDebounced`.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
