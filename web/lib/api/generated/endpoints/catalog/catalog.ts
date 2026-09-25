@@ -39,6 +39,7 @@ import type {
   CatalogHsnHintParams,
   CatalogProductsListParams,
   CatalogProductsLookupParams,
+  CatalogProductsSearchParams,
   CatalogUnitsListParams,
   Category,
   CategoryTreeNode,
@@ -59,6 +60,7 @@ import type {
   ProductTaxRate,
   ProductWriteRequest,
   ScheduleRateRequest,
+  SearchResult,
   Unit,
   UnitWriteRequest
 } from '../../model';
@@ -2687,6 +2689,122 @@ export function useCatalogProductsLookup<TData = Awaited<ReturnType<typeof catal
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCatalogProductsLookupQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type catalogProductsSearchResponse200 = {
+  data: SearchResult[]
+  status: 200
+}
+
+export type catalogProductsSearchResponseSuccess = (catalogProductsSearchResponse200) & {
+  headers: Headers;
+};
+;
+
+export type catalogProductsSearchResponse = (catalogProductsSearchResponseSuccess)
+
+export const getCatalogProductsSearchUrl = (params: CatalogProductsSearchParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/products/search/?${stringifiedParams}` : `/api/v1/products/search/`
+}
+
+/**
+ * Fast type-ahead: at most 20 best matches (< 200 ms on 20,000 products).
+ */
+export const catalogProductsSearch = async (params: CatalogProductsSearchParams, options?: Parameters<typeof apiFetch>[1]): Promise<catalogProductsSearchResponse> => {
+
+  return apiFetch<catalogProductsSearchResponse>(getCatalogProductsSearchUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCatalogProductsSearchQueryKey = (params?: CatalogProductsSearchParams,) => {
+    return [
+    `/api/v1/products/search/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCatalogProductsSearchQueryOptions = <TData = Awaited<ReturnType<typeof catalogProductsSearch>>, TError = unknown>(params: CatalogProductsSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductsSearch>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCatalogProductsSearchQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof catalogProductsSearch>>> = ({ signal }) => catalogProductsSearch(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof catalogProductsSearch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CatalogProductsSearchQueryResult = NonNullable<Awaited<ReturnType<typeof catalogProductsSearch>>>
+export type CatalogProductsSearchQueryError = unknown
+
+
+export function useCatalogProductsSearch<TData = Awaited<ReturnType<typeof catalogProductsSearch>>, TError = unknown>(
+ params: CatalogProductsSearchParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductsSearch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof catalogProductsSearch>>,
+          TError,
+          Awaited<ReturnType<typeof catalogProductsSearch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCatalogProductsSearch<TData = Awaited<ReturnType<typeof catalogProductsSearch>>, TError = unknown>(
+ params: CatalogProductsSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductsSearch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof catalogProductsSearch>>,
+          TError,
+          Awaited<ReturnType<typeof catalogProductsSearch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCatalogProductsSearch<TData = Awaited<ReturnType<typeof catalogProductsSearch>>, TError = unknown>(
+ params: CatalogProductsSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductsSearch>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCatalogProductsSearch<TData = Awaited<ReturnType<typeof catalogProductsSearch>>, TError = unknown>(
+ params: CatalogProductsSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof catalogProductsSearch>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCatalogProductsSearchQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

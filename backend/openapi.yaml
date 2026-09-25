@@ -2181,6 +2181,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProductDetail'
           description: ''
+  /api/v1/products/search/:
+    get:
+      operationId: catalog_products_search
+      description: 'Fast type-ahead: at most 20 best matches (< 200 ms on 20,000 products).'
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchResult'
+          description: ''
   /api/v1/products/tax-rates/schedule/:
     post:
       operationId: catalog_tax_rates_bulk_schedule
@@ -5466,6 +5489,51 @@ components:
       required:
       - effective_from
       - gst_rate
+    SearchResult:
+      type: object
+      description: Type-ahead row (PLAN §3.5). Stock availability joins in Phase 3.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          readOnly: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - base_price
+      - code
+      - id
+      - is_active
+      - mrp
+      - name
+      - thumbnail_url
+      - unit
     SessionPerson:
       type: object
       properties:

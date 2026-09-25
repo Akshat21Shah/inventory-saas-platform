@@ -16,6 +16,7 @@ urlpatterns = [
     path("units/<uuid:unit_id>/", v.UnitDetailView.as_view(), name="catalog-unit-detail"),
     path("products/", v.ProductListCreateView.as_view(), name="catalog-products"),
     path("products/lookup/", v.ProductLookupView.as_view(), name="catalog-product-lookup"),
+    path("products/search/", v.ProductSearchView.as_view(), name="catalog-product-search"),
     path("products/bulk/", v.ProductBulkView.as_view(), name="catalog-products-bulk"),
     path("products/hsn-hint/", v.HsnHintView.as_view(), name="catalog-hsn-hint"),
     path(

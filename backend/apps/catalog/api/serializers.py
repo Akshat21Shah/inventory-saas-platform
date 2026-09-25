@@ -418,3 +418,19 @@ class BulkScheduleResultSerializer(serializers.Serializer[Any]):
     skipped = serializers.IntegerField(required=False)
     sample = serializers.ListField(child=serializers.DictField(), required=False)
     committed = serializers.BooleanField()
+
+
+class SearchResultSerializer(serializers.ModelSerializer[Product]):
+    """Type-ahead row (PLAN §3.5). Stock availability joins in Phase 3."""
+
+    unit = serializers.CharField(source="unit.code", read_only=True)
+    thumbnail_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ("id", "code", "name", "unit", "base_price", "mrp", "is_active", "thumbnail_url")
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_thumbnail_url(self, product: Product) -> str | None:
+        return first_ready_thumb(product)
