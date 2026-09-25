@@ -27,6 +27,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
           description: ''
+  /api/v1/auth/invitations/accept/:
+    post:
+      operationId: auth_invitation_accept
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationAcceptRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/invitations/preview/:
+    post:
+      operationId: auth_invitation_preview
+      description: No authentication, any caller; and no request-wide transaction
+        (see module docstring).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationTokenRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationPreview'
+          description: ''
   /api/v1/auth/logout/:
     post:
       operationId: auth_logout
@@ -413,6 +457,249 @@ paths:
               schema:
                 $ref: '#/components/schemas/Meta'
           description: ''
+  /api/v1/permissions/:
+    get:
+      operationId: permissions_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+          description: ''
+  /api/v1/roles/:
+    get:
+      operationId: roles_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/staff/:
+    get:
+      operationId: staff_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMembershipList'
+          description: ''
+  /api/v1/staff/{membership_id}/:
+    get:
+      operationId: staff_retrieve
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+    patch:
+      operationId: staff_update
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+  /api/v1/staff/invitations/:
+    get:
+      operationId: staff_invitations_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvitationList'
+          description: ''
+    post:
+      operationId: staff_invitations_create
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+  /api/v1/staff/invitations/{invitation_id}/resend/:
+    post:
+      operationId: staff_invitations_resend
+      parameters:
+      - in: path
+        name: invitation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+  /api/v1/staff/invitations/{invitation_id}/revoke/:
+    post:
+      operationId: staff_invitations_revoke
+      parameters:
+      - in: path
+        name: invitation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
 components:
   schemas:
     ChooseTenantInputRequest:
@@ -470,6 +757,105 @@ components:
           maxLength: 200
       required:
       - code
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleRef'
+        status:
+          type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+        invited_by:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - expires_at
+      - id
+      - invited_by
+      - role
+      - status
+    InvitationAcceptRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        full_name:
+          type: string
+          maxLength: 150
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - password
+      - token
+    InvitationCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        role_code:
+          type: string
+          minLength: 1
+          maxLength: 40
+      required:
+      - email
+      - role_code
+    InvitationPreview:
+      type: object
+      properties:
+        tenant_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/RoleRef'
+        invited_by:
+          type: string
+        existing_account:
+          type: boolean
+          description: 'True: ask for the existing password instead of creating one.'
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - email
+      - existing_account
+      - expires_at
+      - invited_by
+      - role
+      - tenant_name
+    InvitationTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - token
     LoginResponse:
       type: object
       description: One shape for every sign-in step; ``status`` says what the client
@@ -623,6 +1009,28 @@ components:
       - name
       - slug
       - status
+    Membership:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/StaffUser'
+        role:
+          $ref: '#/components/schemas/RoleRef'
+        is_active:
+          type: boolean
+        joined_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - joined_at
+      - role
+      - user
     Meta:
       type: object
       properties:
@@ -695,6 +1103,44 @@ components:
           maxLength: 40
       required:
       - mfa_token
+    PaginatedInvitationList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invitation'
+    PaginatedMembershipList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
     PasswordAndFactorInputRequest:
       type: object
       properties:
@@ -760,6 +1206,28 @@ components:
           maxLength: 150
         preferred_language:
           $ref: '#/components/schemas/PreferredLanguageEnum'
+    PatchedMembershipUpdateRequest:
+      type: object
+      properties:
+        role_code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        is_active:
+          type: boolean
+    Permission:
+      type: object
+      properties:
+        code:
+          type: string
+        module:
+          type: string
+        description:
+          type: string
+      required:
+      - code
+      - description
+      - module
     PreferredLanguageEnum:
       enum:
       - en
@@ -849,6 +1317,41 @@ components:
       required:
       - code
       - phone
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 40
+        name:
+          type: string
+          maxLength: 80
+        is_system:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - code
+      - id
+      - name
+      - permissions
+    RoleRef:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
     StaffLoginInputRequest:
       type: object
       properties:
@@ -863,6 +1366,29 @@ components:
       required:
       - email
       - password
+    StaffUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        mfa_enabled:
+          type: boolean
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - email
+      - full_name
+      - id
+      - last_login
+      - mfa_enabled
     StatusEnum:
       enum:
       - authenticated

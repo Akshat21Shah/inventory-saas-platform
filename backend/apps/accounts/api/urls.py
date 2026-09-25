@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.accounts.api import views
+from apps.accounts.api import staff_views, views
 
 urlpatterns = [
     path("staff/login/", views.StaffLoginView.as_view(), name="auth-staff-login"),
@@ -41,5 +41,15 @@ urlpatterns = [
         "retailer/choose-account/",
         views.RetailerChooseAccountView.as_view(),
         name="auth-retailer-choose-account",
+    ),
+    path(
+        "invitations/preview/",
+        staff_views.InvitationPreviewView.as_view(),
+        name="auth-invitation-preview",
+    ),
+    path(
+        "invitations/accept/",
+        staff_views.InvitationAcceptView.as_view(),
+        name="auth-invitation-accept",
     ),
 ]

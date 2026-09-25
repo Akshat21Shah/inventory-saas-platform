@@ -34,7 +34,7 @@ def new_webhook_token() -> str:
     return secrets.token_urlsafe(32)
 
 
-# --- Reference data & platform masters -----------------------------------------------------------
+# --- Reference data & platform masters ----------------------------------------------------------
 
 
 class State(models.Model):
@@ -119,7 +119,7 @@ class HsnRateHint(BaseModel):
         return f"{self.hsn_prefix} → {self.gst_rate}%"
 
 
-# --- Tenants -------------------------------------------------------------------------------------
+# --- Tenants ------------------------------------------------------------------------------------
 
 
 class Tenant(BaseModel):
@@ -241,7 +241,7 @@ class TenantBranding(TenantScopedModel):
         return f"branding:{self.tenant_id}"
 
 
-# --- Plans, subscriptions & feature flags --------------------------------------------------------
+# --- Plans, subscriptions & feature flags -------------------------------------------------------
 
 
 class Plan(BaseModel):
@@ -332,7 +332,7 @@ class TenantFeature(TenantScopedModel):
         return f"{self.tenant_id}:{self.flag_id}={self.enabled}"
 
 
-# --- Settings overrides (ADR-016): only non-default values are stored ----------------------------
+# --- Settings overrides (ADR-016): only non-default values are stored ---------------------------
 
 
 class TenantSetting(TenantScopedModel):

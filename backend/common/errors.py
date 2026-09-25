@@ -39,3 +39,12 @@ class InvalidFields(DomainError):
 
     def __init__(self, fields: dict[str, list[str]], message: str | None = None) -> None:
         super().__init__(message, details={"fields": fields})
+
+
+class NotFound(DomainError):
+    """A record the caller asked for does not exist in their tenant (also for other tenants'
+    records: never reveal that they exist)."""
+
+    status_code = 404
+    code = ErrorCode.NOT_FOUND
+    default_message = "We couldn't find what you were looking for."

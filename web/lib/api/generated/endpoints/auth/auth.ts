@@ -25,6 +25,9 @@ import type {
   EnrolmentConfirmInputRequest,
   EnrolmentTokenInputRequest,
   HandoffExchangeInputRequest,
+  InvitationAcceptRequest,
+  InvitationPreview,
+  InvitationTokenRequest,
   LoginResponse,
   Me,
   MfaSecret,
@@ -180,6 +183,252 @@ export function useAuthHandoffExchange<TData = Awaited<ReturnType<typeof authHan
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAuthHandoffExchangeQueryOptions(handoffExchangeInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authInvitationAcceptResponse200 = {
+  data: LoginResponse
+  status: 200
+}
+
+export type authInvitationAcceptResponseSuccess = (authInvitationAcceptResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authInvitationAcceptResponse = (authInvitationAcceptResponseSuccess)
+
+export const getAuthInvitationAcceptUrl = () => {
+
+
+
+
+  return `/api/v1/auth/invitations/accept/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authInvitationAccept = async (invitationAcceptRequest: InvitationAcceptRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authInvitationAcceptResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authInvitationAcceptResponse>(getAuthInvitationAcceptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationAcceptRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthInvitationAcceptQueryKey = (invitationAcceptRequest?: InvitationAcceptRequest,) => {
+    return [
+    'POST', `/api/v1/auth/invitations/accept/`, invitationAcceptRequest
+    ] as const;
+    }
+
+
+export const getAuthInvitationAcceptQueryOptions = <TData = Awaited<ReturnType<typeof authInvitationAccept>>, TError = unknown>(invitationAcceptRequest: InvitationAcceptRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationAccept>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthInvitationAcceptQueryKey(invitationAcceptRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authInvitationAccept>>> = ({ signal }) => authInvitationAccept(invitationAcceptRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authInvitationAccept>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthInvitationAcceptQueryResult = NonNullable<Awaited<ReturnType<typeof authInvitationAccept>>>
+export type AuthInvitationAcceptQueryError = unknown
+
+
+export function useAuthInvitationAccept<TData = Awaited<ReturnType<typeof authInvitationAccept>>, TError = unknown>(
+ invitationAcceptRequest: InvitationAcceptRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationAccept>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authInvitationAccept>>,
+          TError,
+          Awaited<ReturnType<typeof authInvitationAccept>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthInvitationAccept<TData = Awaited<ReturnType<typeof authInvitationAccept>>, TError = unknown>(
+ invitationAcceptRequest: InvitationAcceptRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationAccept>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authInvitationAccept>>,
+          TError,
+          Awaited<ReturnType<typeof authInvitationAccept>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthInvitationAccept<TData = Awaited<ReturnType<typeof authInvitationAccept>>, TError = unknown>(
+ invitationAcceptRequest: InvitationAcceptRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationAccept>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthInvitationAccept<TData = Awaited<ReturnType<typeof authInvitationAccept>>, TError = unknown>(
+ invitationAcceptRequest: InvitationAcceptRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationAccept>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthInvitationAcceptQueryOptions(invitationAcceptRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authInvitationPreviewResponse200 = {
+  data: InvitationPreview
+  status: 200
+}
+
+export type authInvitationPreviewResponseSuccess = (authInvitationPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authInvitationPreviewResponse = (authInvitationPreviewResponseSuccess)
+
+export const getAuthInvitationPreviewUrl = () => {
+
+
+
+
+  return `/api/v1/auth/invitations/preview/`
+}
+
+/**
+ * No authentication, any caller; and no request-wide transaction (see module docstring).
+ */
+export const authInvitationPreview = async (invitationTokenRequest: InvitationTokenRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authInvitationPreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authInvitationPreviewResponse>(getAuthInvitationPreviewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationTokenRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthInvitationPreviewQueryKey = (invitationTokenRequest?: InvitationTokenRequest,) => {
+    return [
+    'POST', `/api/v1/auth/invitations/preview/`, invitationTokenRequest
+    ] as const;
+    }
+
+
+export const getAuthInvitationPreviewQueryOptions = <TData = Awaited<ReturnType<typeof authInvitationPreview>>, TError = unknown>(invitationTokenRequest: InvitationTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthInvitationPreviewQueryKey(invitationTokenRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authInvitationPreview>>> = ({ signal }) => authInvitationPreview(invitationTokenRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authInvitationPreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthInvitationPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof authInvitationPreview>>>
+export type AuthInvitationPreviewQueryError = unknown
+
+
+export function useAuthInvitationPreview<TData = Awaited<ReturnType<typeof authInvitationPreview>>, TError = unknown>(
+ invitationTokenRequest: InvitationTokenRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationPreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authInvitationPreview>>,
+          TError,
+          Awaited<ReturnType<typeof authInvitationPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthInvitationPreview<TData = Awaited<ReturnType<typeof authInvitationPreview>>, TError = unknown>(
+ invitationTokenRequest: InvitationTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationPreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authInvitationPreview>>,
+          TError,
+          Awaited<ReturnType<typeof authInvitationPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthInvitationPreview<TData = Awaited<ReturnType<typeof authInvitationPreview>>, TError = unknown>(
+ invitationTokenRequest: InvitationTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthInvitationPreview<TData = Awaited<ReturnType<typeof authInvitationPreview>>, TError = unknown>(
+ invitationTokenRequest: InvitationTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authInvitationPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthInvitationPreviewQueryOptions(invitationTokenRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

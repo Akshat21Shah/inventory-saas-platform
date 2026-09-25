@@ -60,7 +60,7 @@ def _require_staff_2fa(tenant, owner):
     cache.clear()
 
 
-# --- Verification at sign-in ----------------------------------------------------------------------
+# --- Verification at sign-in --------------------------------------------------------------------
 
 
 @covers("auth-staff-mfa-verify")
@@ -170,7 +170,7 @@ def test_generic_domain_verifies_before_the_handoff(tenant_a):
     assert exchanged.json()["status"] == "authenticated"  # no second prompt on the subdomain
 
 
-# --- Enrolment (mandatory for super admin; tenant policy for staff) -------------------------------
+# --- Enrolment (mandatory for super admin; tenant policy for staff) -----------------------------
 
 
 def _enrol(start_body, host):
@@ -244,7 +244,7 @@ def test_tenant_policy_is_applied_at_handoff_exchange(tenant_a):
     assert exchanged.json()["status"] == "mfa_setup_required"
 
 
-# --- Account security (authenticated) -------------------------------------------------------------
+# --- Account security (authenticated) -----------------------------------------------------------
 
 
 @covers("auth-mfa-setup", "auth-mfa-confirm")
@@ -357,7 +357,7 @@ def test_me_reports_2fa_state(tenant_a):
     assert body["mfa_required"] is True
 
 
-# --- Passwords ------------------------------------------------------------------------------------
+# --- Passwords ----------------------------------------------------------------------------------
 
 
 def _reset_link():

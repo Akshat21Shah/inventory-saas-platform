@@ -112,7 +112,7 @@ def _new_secret() -> str:
     return secrets.token_urlsafe(32)
 
 
-# --- Rate limits & lockout ------------------------------------------------------------------------
+# --- Rate limits & lockout ----------------------------------------------------------------------
 
 
 def _limit_login(email: str, ip: str | None) -> None:
@@ -615,7 +615,7 @@ def regenerate_recovery_codes(
     return codes
 
 
-# --- Passwords -----------------------------------------------------------------------------------
+# --- Passwords ----------------------------------------------------------------------------------
 
 PASSWORD_RESET_PER_EMAIL_PER_HOUR = 3
 

@@ -1,11 +1,16 @@
 """Celery tasks for accounts: outbound email (retried with backoff) and housekeeping."""
 
 import logging
+from uuid import UUID
 
 from celery import shared_task
 from django.core.mail import send_mail
+from django.db import transaction
 
-from apps.accounts.models import User
+from apps.accounts.models import Invitation, User
+from common.hosts import web_url
+from common.task_base import TenantTask
+from common.tenancy import tenant_context
 
 logger = logging.getLogger(__name__)
 
@@ -88,3 +93,41 @@ def send_login_otp_sms(phone: str, code: str, sender_name: str) -> None:
     from apps.accounts.adapters.sms import get_sms_sender
 
     get_sms_sender().send_otp(phone, code, sender_name=sender_name)
+
+
+@shared_task(
+    name="accounts.send_invitation_email",
+    base=TenantTask,
+    atomic=False,  # no DB transaction held while talking to the mail server
+    autoretry_for=(Exception,),
+    retry_backoff=30,
+    retry_backoff_max=1800,
+    retry_jitter=True,
+    max_retries=8,
+)
+def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str) -> None:
+    from apps.platform.models import Tenant
+
+    with transaction.atomic(), tenant_context(UUID(tenant_id)):
+        invitation = (
+            Invitation.objects.select_related("role", "invited_by", "tenant")
+            .filter(pk=invitation_id, status=Invitation.Status.PENDING)
+            .first()
+        )
+        if invitation is None:
+            return
+        tenant: Tenant = invitation.tenant
+        inviter = invitation.invited_by.full_name if invitation.invited_by else ""
+        role_name, email = invitation.role.name, invitation.email
+    link = web_url(f"/invite/{raw_token}", tenant_slug=tenant.slug)
+    who = f"{inviter} has" if inviter else "You have been"
+    send_mail(
+        subject=f"You're invited to join {tenant.name}",
+        message=(
+            f"Hello,\n\n{who} invited you to join {tenant.name} as {role_name}.\n\n"
+            f"To accept, open this link:\n\n{link}\n\n"
+            "The link works for 7 days. If you weren't expecting this, you can ignore it.\n"
+        ),
+        from_email=None,
+        recipient_list=[email],
+    )

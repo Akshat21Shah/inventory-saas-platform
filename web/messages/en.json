@@ -123,6 +123,9 @@
     "MFA_INVALID_CODE": "That code didn't work. Check your authenticator app and try again.",
     "MFA_REQUIRED_BY_POLICY": "Two-step verification is required for your account and can't be turned off.",
     "OTP_INVALID": "That code is wrong or has expired. Please ask for a new code.",
+    "PLAN_LIMIT_REACHED": "Your plan's limit has been reached. Please contact the platform team to upgrade.",
+    "LAST_OWNER": "Every business needs at least one active owner. Make someone else an owner first.",
+    "ALREADY_A_MEMBER": "This person is already on your team.",
     "NETWORK_ERROR": "You seem to be offline. Check your connection and try again.",
     "UNKNOWN_ERROR": "Something went wrong. Please try again."
   },

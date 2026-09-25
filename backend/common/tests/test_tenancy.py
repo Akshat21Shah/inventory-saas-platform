@@ -122,3 +122,7 @@ def test_tenant_context_does_not_mask_database_errors(tenant_a):
         Widget.objects.create(name="a")
         with connection.cursor() as cursor:
             cursor.execute(f"INSERT INTO {Widget._meta.db_table} (id) VALUES (NULL)")  # noqa: S608
+
+
+def test_none_needs_no_tenant():
+    assert list(Widget.objects.none()) == []

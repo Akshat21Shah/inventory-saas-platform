@@ -25,7 +25,7 @@ def _clear_cache():
     cache.clear()
 
 
-# --- Registry self-tests (PLAN §9.3) --------------------------------------------------------------
+# --- Registry self-tests (PLAN §9.3) ------------------------------------------------------------
 
 
 @pytest.mark.parametrize("key", list(registry.REGISTRY))
@@ -86,7 +86,7 @@ def test_spec_defaults():
     assert d["platform.otp_rate_per_ip_per_hour"] == 100
 
 
-# --- Validation -----------------------------------------------------------------------------------
+# --- Validation ---------------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -134,7 +134,7 @@ def test_invalid_values(key, value, code):
     assert exc.value.code == code
 
 
-# --- Reads ----------------------------------------------------------------------------------------
+# --- Reads --------------------------------------------------------------------------------------
 
 
 def test_fresh_tenant_resolves_every_key_to_its_default(tenant_a):
@@ -160,7 +160,7 @@ def test_get_setting_rejects_unknown_key_and_wrong_scope(tenant_a):
         selectors.get_platform_setting("orders.acceptance_mode")
 
 
-# --- Writes ---------------------------------------------------------------------------------------
+# --- Writes -------------------------------------------------------------------------------------
 
 
 def test_set_stores_override_audits_and_isolates_tenants(tenant_a, tenant_b, staff_user):
@@ -268,7 +268,7 @@ def test_platform_settings_write_platform_level_audit(
         services.set_platform_settings({"orders.acceptance_mode": "AUTO"}, user=staff_user)
 
 
-# --- Snapshots (ADR-016) --------------------------------------------------------------------------
+# --- Snapshots (ADR-016) ------------------------------------------------------------------------
 
 
 def test_snapshot_contains_exactly_the_snapshot_keys(tenant_a, staff_user):

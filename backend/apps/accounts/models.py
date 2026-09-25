@@ -204,7 +204,7 @@ class Membership(TenantScopedModel):
         return f"{self.user_id}@{self.tenant_id}:{self.role_id}"
 
 
-# --- Login flow tables (identity data, no RLS: used before a tenant is known; ADR-026) ------------
+# --- Login flow tables (identity data, no RLS: used before a tenant is known; ADR-026) ----------
 
 
 class LoginChallenge(BaseModel):
@@ -311,3 +311,43 @@ class OTPRequest(BaseModel):
 
     def __str__(self) -> str:
         return f"otp:{self.phone}"
+
+
+class Invitation(TenantScopedModel):
+    """An email invitation to join a tenant's staff with a role. Only a hash of the token is
+    stored; the link goes to the tenant's subdomain (``/invite/<token>``)."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        ACCEPTED = "ACCEPTED", "Accepted"
+        REVOKED = "REVOKED", "Revoked"
+        EXPIRED = "EXPIRED", "Expired"
+
+    email = models.EmailField()
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="+")
+    token_hash = models.CharField(max_length=64, unique=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    accepted_user = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    invited_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "email"],
+                condition=models.Q(status="PENDING"),
+                name="uniq_pending_invitation_per_email",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(email=Lower("email")), name="invitation_email_lowercase"
+            ),
+        ]
+        indexes = [models.Index(fields=["tenant", "status"], name="invitation_tenant_status_idx")]
+
+    def __str__(self) -> str:
+        return f"invite:{self.email}@{self.tenant_id}"

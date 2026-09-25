@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from django.db import transaction
+from django.db.models import QuerySet
 
-from apps.accounts.models import Membership, Permission, User
+from apps.accounts.models import Invitation, Membership, Permission, Role, User
 from apps.platform.models import Tenant
 from common.platform_db import platform_db
 from common.tenancy import tenant_context
@@ -137,3 +138,25 @@ def retailer_login_for_tenant(phone: str, tenant_id: UUID) -> User | None:
     with transaction.atomic(), tenant_context(tenant_id):
         active = RetailerUser.objects.filter(user=user, retailer__is_active=True).exists()
     return user if active else None
+
+
+# --- Staff management (active tenant) -----------------------------------------------------------
+
+
+def staff_members() -> QuerySet[Membership]:
+    return Membership.objects.select_related("user", "role").order_by("user__full_name", "pk")
+
+
+def staff_member(membership_id: UUID) -> Membership | None:
+    member: Membership | None = staff_members().filter(pk=membership_id).first()
+    return member
+
+
+def invitations(status: str | None = None) -> QuerySet[Invitation]:
+    qs = Invitation.objects.select_related("role", "invited_by").order_by("-created_at")
+    return qs.filter(status=status) if status else qs
+
+
+def tenant_roles() -> QuerySet[Role]:
+    """Roles a tenant can assign: system tenant roles and (later) its own custom roles."""
+    return Role.objects.filter(is_platform=False).prefetch_related("permissions").order_by("code")

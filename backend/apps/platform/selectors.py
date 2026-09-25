@@ -25,7 +25,7 @@ from common.tenancy import require_tenant_id, tenant_context
 FEATURES_CACHE_TTL = 300
 
 
-# --- Tenants -------------------------------------------------------------------------------------
+# --- Tenants ------------------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -162,7 +162,7 @@ def plan_limit_allows(
     return limit is None or current_count < limit
 
 
-# --- Settings (ADR-016) --------------------------------------------------------------------------
+# --- Settings (ADR-016) -------------------------------------------------------------------------
 
 SETTINGS_CACHE_TTL = 300
 _PLATFORM_SETTINGS_KEY = "settings:platform"

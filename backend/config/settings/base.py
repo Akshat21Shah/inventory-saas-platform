@@ -215,9 +215,10 @@ AUTH_CHALLENGE_TTL_SECONDS = 300
 TENANT_STATUS_CACHE_SECONDS = 30
 TOTP_ISSUER = env("TOTP_ISSUER", default="Inventory Platform")
 OTP_TTL_SECONDS = 300
+INVITATION_TTL_DAYS = 7
 OTP_RESEND_AFTER_SECONDS = 30
 
-# --- Integrations (CLAUDE.md §4: adapters with mock implementations) ------------------------------
+# --- Integrations (CLAUDE.md §4: adapters with mock implementations) -----------------------------
 # Mock adapters are refused unless explicitly allowed (dev/test); `manage.py check --deploy` fails
 # when a mock is configured without the allowance.
 ALLOW_MOCK_INTEGRATIONS = env.bool("ALLOW_MOCK_INTEGRATIONS", default=False)

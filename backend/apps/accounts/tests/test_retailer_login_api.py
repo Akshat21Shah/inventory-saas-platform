@@ -52,7 +52,7 @@ def _last_code():
     return MockSmsSender.outbox[-1].code
 
 
-# --- Subdomain sign-in ----------------------------------------------------------------------------
+# --- Subdomain sign-in --------------------------------------------------------------------------
 
 
 @covers("auth-retailer-otp-request", "auth-retailer-otp-verify")
@@ -209,7 +209,7 @@ def test_admin_host_does_not_serve_retailer_sign_in(tenant_a, post):
     )
 
 
-# --- Generic domain: distributor chooser (ADR-015) ------------------------------------------------
+# --- Generic domain: distributor chooser (ADR-015) ----------------------------------------------
 
 
 def _exchange(code, host):

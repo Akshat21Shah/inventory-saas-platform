@@ -149,7 +149,7 @@ def test_suspended_tenant_gets_a_friendly_message_after_valid_credentials(tenant
     assert wrong.json()["error"]["code"] == "INVALID_CREDENTIALS"  # no status leak without creds
 
 
-# --- Lockout & rate limits (ADR-030) --------------------------------------------------------------
+# --- Lockout & rate limits (ADR-030) ------------------------------------------------------------
 
 
 @pytest.fixture
@@ -233,7 +233,7 @@ def test_per_ip_limit_is_generous_for_shared_mobile_ips(tenant_a):
     )
 
 
-# --- Generic domain: handoff and tenant chooser (ADR-020) -----------------------------------------
+# --- Generic domain: handoff and tenant chooser (ADR-020) ---------------------------------------
 
 
 @covers("auth-handoff-exchange")
@@ -315,7 +315,7 @@ def test_generic_domain_with_only_suspended_tenants_says_so(tenant_a):
     assert _login(APIClient(), "owner@example.com").json()["error"]["code"] == "TENANT_SUSPENDED"
 
 
-# --- Refresh, logout (ADR-025) --------------------------------------------------------------------
+# --- Refresh, logout (ADR-025) ------------------------------------------------------------------
 
 
 def _signed_in(tenant, role="OWNER", email="owner@example.com"):
@@ -434,7 +434,7 @@ def test_logout_requires_same_origin_for_cookie(tenant_a):
     )
 
 
-# --- Me & per-request checks ---------------------------------------------------------------------
+# --- Me & per-request checks --------------------------------------------------------------------
 
 
 def _bearer(client, access):
