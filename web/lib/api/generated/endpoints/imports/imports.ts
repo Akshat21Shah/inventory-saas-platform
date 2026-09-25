@@ -25,12 +25,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  DiscountRulesExportParams,
   ImportJob,
   ImportUploadRequest,
   ImportsListParams,
   PaginatedImportJobListList,
+  PriceListItemsExportParams,
   ProductsExportParams,
-  RetailersExportParams
+  RetailersExportParams,
+  SpecialPricesExportParams
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -54,6 +57,122 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export type discountRulesExportResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type discountRulesExportResponseSuccess = (discountRulesExportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type discountRulesExportResponse = (discountRulesExportResponseSuccess)
+
+export const getDiscountRulesExportUrl = (params?: DiscountRulesExportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/discount-rules/export/?${stringifiedParams}` : `/api/v1/discount-rules/export/`
+}
+
+/**
+ * Same columns as the import template, so a file can go out, be edited and come back.
+ */
+export const discountRulesExport = async (params?: DiscountRulesExportParams, options?: Parameters<typeof apiFetch>[1]): Promise<discountRulesExportResponse> => {
+
+  return apiFetch<discountRulesExportResponse>(getDiscountRulesExportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDiscountRulesExportQueryKey = (params?: DiscountRulesExportParams,) => {
+    return [
+    `/api/v1/discount-rules/export/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getDiscountRulesExportQueryOptions = <TData = Awaited<ReturnType<typeof discountRulesExport>>, TError = unknown>(params?: DiscountRulesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof discountRulesExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDiscountRulesExportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof discountRulesExport>>> = ({ signal }) => discountRulesExport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof discountRulesExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DiscountRulesExportQueryResult = NonNullable<Awaited<ReturnType<typeof discountRulesExport>>>
+export type DiscountRulesExportQueryError = unknown
+
+
+export function useDiscountRulesExport<TData = Awaited<ReturnType<typeof discountRulesExport>>, TError = unknown>(
+ params: undefined |  DiscountRulesExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof discountRulesExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof discountRulesExport>>,
+          TError,
+          Awaited<ReturnType<typeof discountRulesExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDiscountRulesExport<TData = Awaited<ReturnType<typeof discountRulesExport>>, TError = unknown>(
+ params?: DiscountRulesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof discountRulesExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof discountRulesExport>>,
+          TError,
+          Awaited<ReturnType<typeof discountRulesExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDiscountRulesExport<TData = Awaited<ReturnType<typeof discountRulesExport>>, TError = unknown>(
+ params?: DiscountRulesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof discountRulesExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDiscountRulesExport<TData = Awaited<ReturnType<typeof discountRulesExport>>, TError = unknown>(
+ params?: DiscountRulesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof discountRulesExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDiscountRulesExportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 export type importsListResponse200 = {
   data: PaginatedImportJobListList
@@ -648,6 +767,122 @@ export function useImportsTemplate<TData = Awaited<ReturnType<typeof importsTemp
 
 
 
+export type priceListItemsExportResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type priceListItemsExportResponseSuccess = (priceListItemsExportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type priceListItemsExportResponse = (priceListItemsExportResponseSuccess)
+
+export const getPriceListItemsExportUrl = (params?: PriceListItemsExportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/price-lists/items/export/?${stringifiedParams}` : `/api/v1/price-lists/items/export/`
+}
+
+/**
+ * Same columns as the import template, so a file can go out, be edited and come back.
+ */
+export const priceListItemsExport = async (params?: PriceListItemsExportParams, options?: Parameters<typeof apiFetch>[1]): Promise<priceListItemsExportResponse> => {
+
+  return apiFetch<priceListItemsExportResponse>(getPriceListItemsExportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPriceListItemsExportQueryKey = (params?: PriceListItemsExportParams,) => {
+    return [
+    `/api/v1/price-lists/items/export/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPriceListItemsExportQueryOptions = <TData = Awaited<ReturnType<typeof priceListItemsExport>>, TError = unknown>(params?: PriceListItemsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof priceListItemsExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPriceListItemsExportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof priceListItemsExport>>> = ({ signal }) => priceListItemsExport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof priceListItemsExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PriceListItemsExportQueryResult = NonNullable<Awaited<ReturnType<typeof priceListItemsExport>>>
+export type PriceListItemsExportQueryError = unknown
+
+
+export function usePriceListItemsExport<TData = Awaited<ReturnType<typeof priceListItemsExport>>, TError = unknown>(
+ params: undefined |  PriceListItemsExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof priceListItemsExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof priceListItemsExport>>,
+          TError,
+          Awaited<ReturnType<typeof priceListItemsExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePriceListItemsExport<TData = Awaited<ReturnType<typeof priceListItemsExport>>, TError = unknown>(
+ params?: PriceListItemsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof priceListItemsExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof priceListItemsExport>>,
+          TError,
+          Awaited<ReturnType<typeof priceListItemsExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePriceListItemsExport<TData = Awaited<ReturnType<typeof priceListItemsExport>>, TError = unknown>(
+ params?: PriceListItemsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof priceListItemsExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePriceListItemsExport<TData = Awaited<ReturnType<typeof priceListItemsExport>>, TError = unknown>(
+ params?: PriceListItemsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof priceListItemsExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPriceListItemsExportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type productsExportResponse200 = {
   data: unknown
   status: 200
@@ -753,6 +988,122 @@ export function useProductsExport<TData = Awaited<ReturnType<typeof productsExpo
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getProductsExportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type specialPricesExportResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type specialPricesExportResponseSuccess = (specialPricesExportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type specialPricesExportResponse = (specialPricesExportResponseSuccess)
+
+export const getSpecialPricesExportUrl = (params?: SpecialPricesExportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/retailer-prices/export/?${stringifiedParams}` : `/api/v1/retailer-prices/export/`
+}
+
+/**
+ * Same columns as the import template, so a file can go out, be edited and come back.
+ */
+export const specialPricesExport = async (params?: SpecialPricesExportParams, options?: Parameters<typeof apiFetch>[1]): Promise<specialPricesExportResponse> => {
+
+  return apiFetch<specialPricesExportResponse>(getSpecialPricesExportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSpecialPricesExportQueryKey = (params?: SpecialPricesExportParams,) => {
+    return [
+    `/api/v1/retailer-prices/export/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSpecialPricesExportQueryOptions = <TData = Awaited<ReturnType<typeof specialPricesExport>>, TError = unknown>(params?: SpecialPricesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialPricesExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSpecialPricesExportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof specialPricesExport>>> = ({ signal }) => specialPricesExport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof specialPricesExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SpecialPricesExportQueryResult = NonNullable<Awaited<ReturnType<typeof specialPricesExport>>>
+export type SpecialPricesExportQueryError = unknown
+
+
+export function useSpecialPricesExport<TData = Awaited<ReturnType<typeof specialPricesExport>>, TError = unknown>(
+ params: undefined |  SpecialPricesExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialPricesExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof specialPricesExport>>,
+          TError,
+          Awaited<ReturnType<typeof specialPricesExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSpecialPricesExport<TData = Awaited<ReturnType<typeof specialPricesExport>>, TError = unknown>(
+ params?: SpecialPricesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialPricesExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof specialPricesExport>>,
+          TError,
+          Awaited<ReturnType<typeof specialPricesExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSpecialPricesExport<TData = Awaited<ReturnType<typeof specialPricesExport>>, TError = unknown>(
+ params?: SpecialPricesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialPricesExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSpecialPricesExport<TData = Awaited<ReturnType<typeof specialPricesExport>>, TError = unknown>(
+ params?: SpecialPricesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialPricesExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSpecialPricesExportQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

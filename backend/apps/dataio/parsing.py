@@ -93,6 +93,21 @@ def parse_bool(text: str) -> bool:
     raise ValueError(text)
 
 
+_DATE_FORMATS = ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d.%m.%Y", "%d-%m-%y", "%d/%m/%y")
+
+
+def parse_date(text: str) -> date:
+    """ "2026-10-01" (Excel date cells) / "01-10-2026" / "1/10/2026" → date (day first, as in
+    India). Raises ``ValueError``."""
+    cleaned = text.strip().split(" ")[0]
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(cleaned, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(text)
+
+
 def split_list(text: str) -> list[str]:
     """ "a, b; c" → ["a", "b", "c"]."""
     return [part.strip() for part in re.split(r"[,;|]", text) if part.strip()]

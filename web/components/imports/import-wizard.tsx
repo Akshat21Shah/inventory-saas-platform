@@ -61,14 +61,26 @@ interface RowChange {
   warnings: string[];
 }
 
-const KINDS: ImportKindEnum[] = ["PRODUCTS", "RETAILERS"];
+const KINDS: ImportKindEnum[] = [
+  "PRODUCTS",
+  "RETAILERS",
+  "SPECIAL_PRICES",
+  "PRICE_LIST_ITEMS",
+  "DISCOUNT_RULES",
+];
 const PERMISSION: Record<ImportKindEnum, string> = {
   PRODUCTS: "products.manage",
   RETAILERS: "retailers.manage",
+  SPECIAL_PRICES: "pricing.manage",
+  PRICE_LIST_ITEMS: "pricing.manage",
+  DISCOUNT_RULES: "pricing.manage",
 };
 const LIST_PAGE: Record<ImportKindEnum, string> = {
   PRODUCTS: "/manage/products",
   RETAILERS: "/manage/retailers",
+  SPECIAL_PRICES: "/manage/pricing/special-prices",
+  PRICE_LIST_ITEMS: "/manage/pricing/price-lists",
+  DISCOUNT_RULES: "/manage/pricing/discounts",
 };
 const BUSY = new Set(["VALIDATING", "COMMITTING"]);
 

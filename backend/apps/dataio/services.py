@@ -17,6 +17,7 @@ from openpyxl.utils import get_column_letter
 from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.dataio.kinds.base import Column, Kind, RowPlan
+from apps.dataio.kinds.pricing import DiscountRulesKind, PriceListItemsKind, SpecialPricesKind
 from apps.dataio.kinds.products import ProductsKind
 from apps.dataio.kinds.retailers import RetailersKind
 from apps.dataio.models import ImportJob
@@ -29,7 +30,13 @@ from common.tenancy import require_tenant_id, tenant_transaction
 if TYPE_CHECKING:
     from django.core.files.uploadedfile import UploadedFile
 
-KINDS: dict[str, Kind] = {"PRODUCTS": ProductsKind(), "RETAILERS": RetailersKind()}
+KINDS: dict[str, Kind] = {
+    "PRODUCTS": ProductsKind(),
+    "RETAILERS": RetailersKind(),
+    "SPECIAL_PRICES": SpecialPricesKind(),
+    "PRICE_LIST_ITEMS": PriceListItemsKind(),
+    "DISCOUNT_RULES": DiscountRulesKind(),
+}
 PREVIEW_LIMIT = 1000  # rows of errors / changes kept on the job (the report has all of them)
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 

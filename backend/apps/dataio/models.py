@@ -10,6 +10,9 @@ class ImportJob(TenantScopedModel):
     class Kind(models.TextChoices):
         PRODUCTS = "PRODUCTS", "Products"
         RETAILERS = "RETAILERS", "Retailers"
+        SPECIAL_PRICES = "SPECIAL_PRICES", "Special prices"
+        PRICE_LIST_ITEMS = "PRICE_LIST_ITEMS", "Price-list prices"
+        DISCOUNT_RULES = "DISCOUNT_RULES", "Discount rules"
 
     class Mode(models.TextChoices):
         ADD_ONLY = "ADD_ONLY", "Add new only"

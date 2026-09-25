@@ -278,6 +278,17 @@
     - Shop pricing report: `GET pricing/shop-report/` (customised shops or all, with counts and free products; 25 per page) and `…/export/`, plus `GET retailers/{id}/free-products/`.
       - Free products are found by a cheap upper bound on each rule's share (best, or the sum), then full pricing for the at-risk products only.
     - Every route has isolation tests and is in the role matrix.
+  - 2.27: pricing imports and exports (`apps/dataio/kinds/pricing.py`), each needing `pricing.manage`; exports need `pricing.view`.
+    - Special prices: shop by mobile or code, product code, price, note. The pair is the key; ₹0 warns.
+    - Price-list prices: an existing list by name (unknown names list your lists), product code, price.
+    - Discount rules:
+      - The name is the key, and rows with the same name are one rule, one row per slab.
+      - Targets: product code, brand, or category path. Audience: a price list or a shop (mobile or code).
+      - Type % or ₹. Dates as DD-MM-YYYY or Excel dates (`parsing.parse_date`).
+      - Rows of one rule must agree, and one bad row skips the whole rule. In "update existing", a name shared by several rules is an error.
+      - The preview shows names, not ids, and highlights discount changes. A 100% discount warns.
+    - Exports use the template columns, so a file can go out and come back with no changes; tested for all three.
+    - The wizard offers the three new kinds. Shared test fixtures moved to `apps/dataio/tests/conftest.py` and `helpers.py`.
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.

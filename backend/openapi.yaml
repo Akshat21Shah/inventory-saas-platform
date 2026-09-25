@@ -881,6 +881,36 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/discount-rules/export/:
+    get:
+      operationId: discount_rules_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/imports/:
     get:
       operationId: imports_list
@@ -2231,6 +2261,36 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/price-lists/items/export/:
+    get:
+      operationId: price_list_items_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/pricing/preview/:
     post:
       operationId: pricing_preview
@@ -3023,6 +3083,36 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/retailer-prices/export/:
+    get:
+      operationId: special_prices_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/retailers/:
     get:
       operationId: retailers_list
@@ -5957,10 +6047,16 @@ components:
       enum:
       - PRODUCTS
       - RETAILERS
+      - SPECIAL_PRICES
+      - PRICE_LIST_ITEMS
+      - DISCOUNT_RULES
       type: string
       description: |-
         * `PRODUCTS` - Products
         * `RETAILERS` - Retailers
+        * `SPECIAL_PRICES` - Special prices
+        * `PRICE_LIST_ITEMS` - Price-list prices
+        * `DISCOUNT_RULES` - Discount rules
     ImportModeEnum:
       enum:
       - ADD_ONLY

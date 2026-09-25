@@ -1384,11 +1384,17 @@
     "whatTitle": "What are you importing?",
     "kind": {
       "PRODUCTS": "Products",
-      "RETAILERS": "Retailers"
+      "RETAILERS": "Retailers",
+      "SPECIAL_PRICES": "Special prices",
+      "PRICE_LIST_ITEMS": "Price-list prices",
+      "DISCOUNT_RULES": "Discounts"
     },
     "kindHint": {
       "PRODUCTS": "Codes, names, prices, GST, categories and brands.",
-      "RETAILERS": "Shops with mobile numbers, GSTIN, addresses and price lists."
+      "RETAILERS": "Shops with mobile numbers, GSTIN, addresses and price lists.",
+      "SPECIAL_PRICES": "One price per shop and product. Shops by mobile number or code.",
+      "PRICE_LIST_ITEMS": "Prices on your price lists, by list name and product code.",
+      "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab."
     },
     "template": "Download the {kind} template",
     "modeTitle": "What should happen to rows that already exist?",
@@ -1416,7 +1422,10 @@
     "skippedRows": "Skipped rows",
     "goTo": {
       "PRODUCTS": "Go to products",
-      "RETAILERS": "Go to retailers"
+      "RETAILERS": "Go to retailers",
+      "SPECIAL_PRICES": "Go to special prices",
+      "PRICE_LIST_ITEMS": "Go to price lists",
+      "DISCOUNT_RULES": "Go to discounts"
     },
     "counts": {
       "new": "New",

@@ -166,3 +166,18 @@ class ProductExportView(ExportView):
 class RetailerExportView(ExportView):
     kind_code = "RETAILERS"
     view_permission = "retailers.view"
+
+
+class SpecialPriceExportView(ExportView):
+    kind_code = "SPECIAL_PRICES"
+    view_permission = "pricing.view"
+
+
+class PriceListItemExportView(ExportView):
+    kind_code = "PRICE_LIST_ITEMS"
+    view_permission = "pricing.view"
+
+
+class DiscountRuleExportView(ExportView):
+    kind_code = "DISCOUNT_RULES"
+    view_permission = "pricing.view"

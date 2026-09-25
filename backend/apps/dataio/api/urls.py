@@ -11,6 +11,16 @@ RetailerExport = extend_schema_view(get=extend_schema(operation_id="retailers_ex
     v.RetailerExportView
 )
 
+SpecialPriceExport = extend_schema_view(get=extend_schema(operation_id="special_prices_export"))(
+    v.SpecialPriceExportView
+)
+PriceListItemExport = extend_schema_view(get=extend_schema(operation_id="price_list_items_export"))(
+    v.PriceListItemExportView
+)
+DiscountRuleExport = extend_schema_view(get=extend_schema(operation_id="discount_rules_export"))(
+    v.DiscountRuleExportView
+)
+
 urlpatterns = [
     path("imports/", v.ImportListCreateView.as_view(), name="imports"),
     path("imports/templates/<str:kind>/", v.ImportTemplateView.as_view(), name="import-template"),
@@ -19,4 +29,11 @@ urlpatterns = [
     path("imports/<uuid:job_id>/report/", v.ImportReportView.as_view(), name="import-report"),
     path("products/export/", ProductExport.as_view(), name="products-export"),
     path("retailers/export/", RetailerExport.as_view(), name="retailers-export"),
+    path("retailer-prices/export/", SpecialPriceExport.as_view(), name="special-prices-export"),
+    path(
+        "price-lists/items/export/",
+        PriceListItemExport.as_view(),
+        name="price-list-items-export",
+    ),
+    path("discount-rules/export/", DiscountRuleExport.as_view(), name="discount-rules-export"),
 ]
