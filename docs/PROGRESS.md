@@ -195,6 +195,15 @@
     - Uses the GST rate in effect on the day. Inactive, deleted or not-yet-taxed products raise `PRICE_UNAVAILABLE`.
     - Staff endpoints: `POST pricing/preview/` and `GET retailers/{id}/prices/` (a shop's price sheet).
     - 44 resolver tests, including both values of the new setting and Hypothesis properties.
+  - Commit 10: shop catalog API (`apps/shop`, retailer logins only, scoped to the login's own shop).
+    - `shop/categories/`: the tree with product counts; empty categories are hidden.
+    - `shop/brands/`: added to PLAN §3.9 for the brand filter.
+    - `shop/products/`: browse by name, filter by category (with sub-categories) or brand. A search returns the top 40 ranked matches.
+    - `shop/products/{id}/`: images and slab hints ("24 or more: ₹9.50 each").
+    - Visibility follows ADR-034, with an implementation note added there. Prices come from `resolve_price` at the minimum order quantity. The shop never sees base prices, price sources or rule names.
+    - A page costs a fixed number of queries.
+    - Isolation tests: the other distributor's shops, staff, and staff routes. Shops on hold follow `retailers.blocked_can_sign_in`.
+  - **Backend checkpoint reached.**
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.

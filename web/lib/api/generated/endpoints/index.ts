@@ -7,4 +7,5 @@ export * from './pricing/pricing';
 export * from './public/public';
 export * from './retailers/retailers';
 export * from './settings/settings';
+export * from './shop/shop';
 export * from './staff/staff';

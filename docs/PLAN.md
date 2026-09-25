@@ -594,6 +594,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 |---|---|---|
 | `home` | GET | branding, announcements, recent orders, outstanding summary, last-order summary for "repeat" |
 | `categories` | GET | tree with product counts |
+| `brands` | GET | brands with visible products (`?category=`), for the brand filter |
 | `products` | GET | search/browse: resolved price, availability label (qty only if allowed), image, min qty/multiple |
 | `products/{id}` | GET | detail with images, slab hints ("buy 24+ save ₹1.50 each") |
 | `cart` | GET | resolved lines, tax estimate, availability + backorder split, totals, credit status, validation messages |

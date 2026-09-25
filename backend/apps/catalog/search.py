@@ -39,12 +39,12 @@ def search_filter(text: str) -> Q:
     return condition
 
 
-def ranked(qs: QuerySet[Product], text: str, *, limit: int = TYPEAHEAD_LIMIT) -> list[Product]:
-    """Best matches first: an exact code or barcode, then full-text rank plus trigram word
-    similarity (so "magi" still finds "Maggi"), then name."""
+def ranked_queryset(qs: QuerySet[Product], text: str) -> QuerySet[Product]:
+    """Matches ordered best first: an exact code or barcode, then full-text rank plus trigram word
+    similarity (so "magi" still finds "Maggi"), then name. Empty text matches nothing."""
     text = " ".join(text.split())[:100]
     if not text:
-        return []
+        return qs.none()
     query = prefix_query(text)
     rank = SearchRank(F("search_vector"), query) if query is not None else Value(0.0)
     similarity = Greatest(TrigramWordSimilarity(text, "name"), TrigramWordSimilarity(text, "code"))
@@ -54,9 +54,13 @@ def ranked(qs: QuerySet[Product], text: str, *, limit: int = TYPEAHEAD_LIMIT) ->
         default=Value(0.0),
         output_field=FloatField(),
     )
-    return list(
+    return (
         qs.annotate(barcode_match=barcode)
         .filter(search_filter(text) | Q(barcode_match=True))
         .annotate(score=exact + rank + similarity)
-        .order_by("-score", "name", "id")[:limit]
+        .order_by("-score", "name", "id")
     )
+
+
+def ranked(qs: QuerySet[Product], text: str, *, limit: int = TYPEAHEAD_LIMIT) -> list[Product]:
+    return list(ranked_queryset(qs, text)[:limit])

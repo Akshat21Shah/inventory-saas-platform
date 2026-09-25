@@ -3599,6 +3599,104 @@ paths:
                 items:
                   $ref: '#/components/schemas/Setting'
           description: ''
+  /api/v1/shop/brands/:
+    get:
+      operationId: shop_brands
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopBrand'
+          description: ''
+  /api/v1/shop/categories/:
+    get:
+      operationId: shop_categories
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopCategory'
+          description: ''
+  /api/v1/shop/products/:
+    get:
+      operationId: shop_products
+      description: 'Browse by name (paged), or search: the best ``SEARCH_LIMIT`` matches
+        on one page.'
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShopProductList'
+          description: ''
+  /api/v1/shop/products/{product_id}/:
+    get:
+      operationId: shop_product
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopProductDetail'
+          description: ''
   /api/v1/staff/:
     get:
       operationId: staff_list
@@ -6013,6 +6111,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RetailerPrice'
+    PaginatedShopProductList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopProduct'
     PaginatedTenantListList:
       type: object
       required:
@@ -8114,6 +8231,255 @@ components:
       - status
       - type
       - value
+    ShopBrand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    ShopCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        level:
+          type: integer
+        product_count:
+          type: integer
+        children:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - children
+      - id
+      - level
+      - name
+      - product_count
+    ShopDiscount:
+      type: object
+      properties:
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: The percentage, or rupees off each unit.
+        slab_min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          description: Set when a quantity slab gave the discount.
+      required:
+      - discount_type
+      - slab_min_qty
+      - value
+    ShopImage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        alt_text:
+          type: string
+        urls:
+          allOf:
+          - $ref: '#/components/schemas/ImageUrls'
+          readOnly: true
+      required:
+      - alt_text
+      - id
+      - urls
+    ShopPrice:
+      type: object
+      properties:
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: The quantity this price is for (the minimum order quantity).
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount:
+          allOf:
+          - $ref: '#/components/schemas/ShopDiscount'
+          nullable: true
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: After the discount; for display only.
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        prices_include_gst:
+          type: boolean
+      required:
+      - discount
+      - gst_rate
+      - net_unit_price
+      - prices_include_gst
+      - qty
+      - unit_price
+    ShopProduct:
+      type: object
+      description: 'One product row with its price; input is ``{"product": Product,
+        "price": PriceResult}``.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        unit:
+          $ref: '#/components/schemas/ShopUnit'
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/ShopUnit'
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        price:
+          $ref: '#/components/schemas/ShopPrice'
+      required:
+      - brand
+      - category
+      - code
+      - id
+      - min_order_qty
+      - mrp
+      - name
+      - order_multiple
+      - pack_size
+      - pack_unit
+      - price
+      - thumbnail_url
+      - unit
+    ShopProductDetail:
+      type: object
+      description: 'One product row with its price; input is ``{"product": Product,
+        "price": PriceResult}``.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        unit:
+          $ref: '#/components/schemas/ShopUnit'
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/ShopUnit'
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        price:
+          $ref: '#/components/schemas/ShopPrice'
+        description:
+          type: string
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopImage'
+        slab_hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlabHint'
+          description: Lower prices for larger quantities, e.g. 24 or more.
+      required:
+      - brand
+      - category
+      - code
+      - description
+      - id
+      - images
+      - min_order_qty
+      - mrp
+      - name
+      - order_multiple
+      - pack_size
+      - pack_unit
+      - price
+      - slab_hints
+      - thumbnail_url
+      - unit
     ShopRef:
       type: object
       properties:
@@ -8128,6 +8494,16 @@ components:
       - code
       - id
       - shop_name
+    ShopUnit:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
     Slab:
       type: object
       properties:
@@ -8142,6 +8518,20 @@ components:
       required:
       - min_qty
       - value
+    SlabHint:
+      type: object
+      properties:
+        min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - min_qty
+      - net_unit_price
     SlabInputRequest:
       type: object
       properties:

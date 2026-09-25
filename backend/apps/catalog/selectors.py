@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from django.db.models import Prefetch, Q, QuerySet
+from django.db.models import Exists, OuterRef, Prefetch, Q, QuerySet
 
 from apps.catalog.models import Brand, Category, Product, ProductImage, ProductTaxRate, Unit
 from apps.platform.models import HsnRateHint
@@ -134,6 +134,11 @@ def product_by_code_or_barcode(*, code: str = "", barcode: str = "") -> Product 
 
 def _in_effect(on: date) -> Q:
     return Q(cancelled_at__isnull=True, effective_from__lte=on)
+
+
+def has_rate_on(on: date) -> Exists:
+    """For filtering products: a GST rate is in effect on ``on``."""
+    return Exists(ProductTaxRate.objects.filter(_in_effect(on), product_id=OuterRef("pk")))
 
 
 def tax_rate_on(product_id: UUID, on: date | None = None) -> ProductTaxRate | None:

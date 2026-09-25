@@ -76,3 +76,13 @@ def salespeople() -> QuerySet[Membership]:
     return (
         Membership.objects.filter(is_active=True).select_related("user").order_by("user__full_name")
     )
+
+
+def own_retailer(user: User) -> Retailer | None:
+    """The shop a retailer login belongs to (the shop app's ``request.retailer``)."""
+    if user.user_type != User.UserType.RETAILER:
+        return None
+    found: Retailer | None = Retailer.objects.filter(
+        logins__user=user, is_active=True, deleted_at__isnull=True
+    ).first()
+    return found

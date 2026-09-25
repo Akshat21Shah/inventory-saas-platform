@@ -81,7 +81,8 @@ class _Context:
     retailer: Retailer
     on: date
     rules: list[DiscountRule]
-    ancestors: dict[UUID, list[Category]] = field(default_factory=dict)
+    # category id -> (parent id, level); loaded once, only when a category rule exists
+    categories: dict[UUID, tuple[UUID | None, int]] = field(default_factory=dict)
     discounts_on_special: bool = True
     include_gst: bool = False
     rounding: ComponentRounding = ComponentRounding.HALF_UP
@@ -99,25 +100,22 @@ def _active_rules(retailer: Retailer, on: date) -> list[DiscountRule]:
         .filter(Q(valid_from__isnull=True) | Q(valid_from__lte=on))
         .filter(Q(valid_to__isnull=True) | Q(valid_to__gte=on))
         .prefetch_related("slabs")
-        .select_related("category")
     )
 
 
-def _category_chain(category_id: UUID | None, ctx: _Context) -> list[Category]:
-    """The product's category and its ancestors (a category rule covers descendants)."""
-    if category_id is None:
-        return []
-    if category_id not in ctx.ancestors:
-        chain: list[Category] = []
-        current = Category.objects.filter(pk=category_id).first()
-        while current is not None:
-            chain.append(current)
-            current = current.parent if current.parent_id else None
-        ctx.ancestors[category_id] = chain
-    return ctx.ancestors[category_id]
+def _category_chain(category_id: UUID | None, ctx: _Context) -> list[tuple[UUID, int]]:
+    """The product's category and its ancestors as (id, level) (a category rule covers
+    descendants)."""
+    chain: list[tuple[UUID, int]] = []
+    current = category_id
+    while current is not None and current in ctx.categories and len(chain) < 3:
+        parent, level = ctx.categories[current]
+        chain.append((current, level))
+        current = parent
+    return chain
 
 
-def _scope_rank(rule: DiscountRule, product: Product, chain: list[Category]) -> int | None:
+def _scope_rank(rule: DiscountRule, product: Product, chain: list[tuple[UUID, int]]) -> int | None:
     """How specific a matching rule's scope is; None if it doesn't cover the product."""
     if rule.scope_type == "ALL":
         return 0
@@ -125,9 +123,9 @@ def _scope_rank(rule: DiscountRule, product: Product, chain: list[Category]) -> 
         return 20 if rule.product_id == product.pk else None
     if rule.scope_type == "BRAND":
         return 5 if product.brand_id and rule.brand_id == product.brand_id else None
-    for category in chain:
-        if category.pk == rule.category_id:
-            return 10 + category.level  # deeper category = more specific
+    for category_id, level in chain:
+        if category_id == rule.category_id:
+            return 10 + level  # deeper category = more specific
     return None
 
 
@@ -177,10 +175,18 @@ def _best_discount(
 
 def _context(retailer: Retailer, on: date) -> _Context:
     tenant_id = retailer.tenant_id
+    rules = _active_rules(retailer, on)
+    categories: dict[UUID, tuple[UUID | None, int]] = {}
+    if any(rule.scope_type == "CATEGORY" for rule in rules):
+        categories = {
+            pk: (parent, level)
+            for pk, parent, level in Category.objects.values_list("pk", "parent_id", "level")
+        }
     return _Context(
         retailer=retailer,
         on=on,
-        rules=_active_rules(retailer, on),
+        rules=rules,
+        categories=categories,
         discounts_on_special=bool(get_setting("pricing.discounts_on_special_prices", tenant_id)),
         include_gst=bool(get_setting("tax.prices_include_gst", tenant_id)),
         rounding=ComponentRounding(get_setting("tax.component_rounding", tenant_id)),
@@ -250,3 +256,19 @@ def resolve_price(
     retailer: Retailer, product: Product, qty: Decimal, *, on: date | None = None
 ) -> PriceResult:
     return resolve_prices(retailer, [(product, qty)], on=on)[0]
+
+
+def slab_quantities(
+    retailer: Retailer, product: Product, *, on: date | None = None
+) -> list[Decimal]:
+    """The slab thresholds of the active rules covering this product for this shop, ascending
+    (for "buy 24+ and pay less" hints; ``resolve_prices`` still decides the price at each)."""
+    ctx = _context(retailer, on or today_ist())
+    chain = _category_chain(product.category_id, ctx)
+    found = {
+        slab.min_qty
+        for rule in ctx.rules
+        if _scope_rank(rule, product, chain) is not None
+        for slab in rule.slabs.all()
+    }
+    return sorted(found)
