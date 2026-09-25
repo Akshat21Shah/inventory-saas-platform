@@ -5,7 +5,6 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { ShopDiscount } from './shopDiscount';
 
 export interface ShopPrice {
   /**
@@ -15,7 +14,16 @@ export interface ShopPrice {
   qty: string;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   unit_price: string;
-  discount: ShopDiscount | null;
+  /**
+     * The total discount on the quoted quantity.
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  discount_total: string;
+  /**
+     * The total discount as a % of the price.
+     * @pattern ^-?\d{0,4}(?:\.\d{0,2})?$
+     */
+  discount_percent: string;
   /**
      * Rupees off each unit; 0.00 without a discount.
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$

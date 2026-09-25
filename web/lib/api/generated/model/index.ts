@@ -235,7 +235,6 @@ export * from './shopBrand';
 export * from './shopBrandsParams';
 export * from './shopCategory';
 export * from './shopCategoryChildrenItem';
-export * from './shopDiscount';
 export * from './shopImage';
 export * from './shopPrice';
 export * from './shopProduct';

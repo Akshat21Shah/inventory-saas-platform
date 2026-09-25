@@ -16,6 +16,7 @@ from apps.billing.tax import (
     SupplyType,
     compute_document,
     compute_line,
+    percent_of,
 )
 
 INTRA, INTER = SupplyType.INTRA, SupplyType.INTER
@@ -278,3 +279,19 @@ def test_documents_reconcile_to_the_paisa(many, method, to_rupee):
         assert D("0") <= doc.round_off < D("1")
     else:
         assert D("-1") < doc.round_off <= D("0")
+
+
+@pytest.mark.parametrize(
+    ("part", "whole", "expected"),
+    [
+        ("2.90", "20.00", "14.50"),
+        ("12.00", "100.00", "12.00"),
+        ("1.00", "3.00", "33.33"),
+        ("2.00", "3.00", "66.67"),
+        ("0.00", "10.00", "0.00"),
+        ("5.00", "0.00", "0.00"),  # nothing to take a share of
+        ("20.00", "20.00", "100.00"),
+    ],
+)
+def test_percent_of(part, whole, expected):
+    assert percent_of(D(part), D(whole), ComponentRounding.HALF_UP) == D(expected)

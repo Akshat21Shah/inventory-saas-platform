@@ -17,7 +17,12 @@ export interface PriceResult {
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   unit_price: string;
   price_source: PriceSourceEnum;
-  discount: AppliedDiscount | null;
+  /** Every rule applied, in order. */
+  discounts: AppliedDiscount[];
+  /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
+  discount_total: string;
+  /** @pattern ^-?\d{0,4}(?:\.\d{0,2})?$ */
+  discount_percent: string;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   gross: string;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */

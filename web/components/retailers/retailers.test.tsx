@@ -159,14 +159,18 @@ describe("Retailer form", () => {
                 base_price: "10.00",
                 unit_price: "9.00",
                 price_source: "PRICE_LIST",
-                discount: {
-                  rule_id: "d1",
-                  rule_name: "Bulk",
-                  discount_type: "PERCENT",
-                  value: "5.00",
-                  slab_min_qty: "12.000",
-                  amount: "5.40",
-                },
+                discounts: [
+                  {
+                    rule_id: "d1",
+                    rule_name: "Bulk",
+                    discount_type: "PERCENT",
+                    value: "5.00",
+                    slab_min_qty: "12.000",
+                    amount: "5.40",
+                  },
+                ],
+                discount_total: "5.40",
+                discount_percent: "5.00",
                 gross: "108.00",
                 line_net: "102.60",
                 net_unit_price: "8.55",
@@ -185,6 +189,7 @@ describe("Retailer form", () => {
     expect(within(row).getByText("₹9.00")).toBeInTheDocument();
     expect(within(row).getByText("Price list")).toBeInTheDocument();
     expect(within(row).getByText("₹8.55")).toBeInTheDocument();
+    expect(within(row).getByText("Bulk")).toBeInTheDocument();
     expect(screen.getByText("₹50,000.00")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Change" })).not.toBeInTheDocument();
   });

@@ -148,7 +148,8 @@ def test_what_a_shop_sees_and_isolation(tenant_a, tenant_b, catalog):
     assert row["price"] == {
         "qty": "1.000",
         "unit_price": "10.00",
-        "discount": None,
+        "discount_total": "0.00",
+        "discount_percent": "0.00",
         "discount_per_unit": "0.00",
         "net_unit_price": "10.00",
         "gst_rate": "18.000",
@@ -220,20 +221,16 @@ def test_detail_with_images_and_slab_hints(tenant_a, catalog):
     )
     assert juice["mrp"] == "12.00"
     assert juice["price"]["unit_price"] == "10.00"
-    assert juice["price"]["discount"] == {  # the 3+ slab applies at 6
-        "discount_type": "PERCENT",
-        "value": "1.00",
-        "slab_min_qty": "3.000",
-        "amount": "0.60",
+    # Only the total, as an amount and a percentage; never the rule (ADR-038).
+    assert {k: juice["price"][k] for k in ("discount_total", "discount_percent")} == {
+        "discount_total": "0.60",
+        "discount_percent": "1.00",
     }
+    assert "discounts" not in juice["price"] and "discount" not in juice["price"]
     assert (juice["price"]["discount_per_unit"], juice["price"]["net_unit_price"]) == (
         "0.10",
         "9.90",
     )
-    assert juice["slab_hints"] == [
-        {"min_qty": "24.000", "net_unit_price": "9.50"},
-        {"min_qty": "48.000", "net_unit_price": "9.00"},
-    ]
     chips = shop.get(f"{API}/products/{catalog['chips_item'].pk}/").json()
     assert [i["urls"]["medium"].endswith("m/p1.webp") for i in chips["images"]] == [True]
     assert chips["slab_hints"] == []

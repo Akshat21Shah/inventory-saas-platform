@@ -75,7 +75,7 @@ export function PriceBlock({
   large?: boolean;
 }) {
   const t = useTranslations("shop.price");
-  const discounted = price.discount !== null;
+  const discounted = price.discount_total !== "0.00";
   return (
     <div className="space-y-0.5">
       <p className="flex flex-wrap items-baseline gap-x-2">
@@ -95,12 +95,10 @@ export function PriceBlock({
             : t("plusGst", { rate: formatQty(price.gst_rate) })}
         </span>
       </p>
-      {price.discount ? (
+      {price.discount_total !== "0.00" ? (
         <p className="text-success-strong text-sm font-medium">
-          {price.discount.discount_type === "PERCENT"
-            ? t("percentOff", { value: formatQty(price.discount.value) })
-            : t("save")}{" "}
-          <MoneyText value={price.discount_per_unit} /> {t("each")}
+          {t("youSave")} <MoneyText value={price.discount_per_unit} />{" "}
+          {t("eachPercent", { percent: formatQty(price.discount_percent, 2) })}
         </p>
       ) : null}
       {mrp ? (

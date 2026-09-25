@@ -542,6 +542,15 @@
       "discounts_on_special_prices": {
         "label": "Discounts on special prices",
         "description": "Apply discount rules on top of a shop's special prices. Turn off to treat a special price as the final price."
+      },
+      "discount_combination": {
+        "label": "When several discounts apply",
+        "description": "How discounts combine when more than one applies to a product. The total never exceeds the price, and shops see only the total saving.",
+        "options": {
+          "BEST": "Best single discount",
+          "ADD": "Add them together (5% + 10% = 15%)",
+          "SEQUENTIAL": "Apply one after another, most specific first (10% then 5% = 14.5%)"
+        }
       }
     }
   },
@@ -1751,10 +1760,10 @@
     "price": {
       "inclGst": "incl. GST",
       "plusGst": "+ {rate}% GST",
-      "percentOff": "{value}% off:",
-      "save": "You save",
-      "each": "each",
-      "mrp": "MRP"
+      "mrp": "MRP",
+      "youSave": "You save",
+      "eachPercent": "each ({percent}%)",
+      "each": "each"
     },
     "product": {
       "back": "Back",

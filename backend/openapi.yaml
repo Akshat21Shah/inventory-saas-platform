@@ -7061,10 +7061,19 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         price_source:
           $ref: '#/components/schemas/PriceSourceEnum'
-        discount:
-          allOf:
-          - $ref: '#/components/schemas/AppliedDiscount'
-          nullable: true
+        discounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedDiscount'
+          description: Every rule applied, in order.
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
         gross:
           type: string
           format: decimal
@@ -7093,7 +7102,9 @@ components:
       required:
       - base_price
       - cess_rate
-      - discount
+      - discount_percent
+      - discount_total
+      - discounts
       - gross
       - gst_rate
       - line_net
@@ -8326,32 +8337,6 @@ components:
       - level
       - name
       - product_count
-    ShopDiscount:
-      type: object
-      properties:
-        discount_type:
-          $ref: '#/components/schemas/DiscountTypeEnum'
-        value:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          description: The percentage, or rupees off each unit.
-        slab_min_qty:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
-          nullable: true
-          description: Set when a quantity slab gave the discount.
-        amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          description: The discount on the quoted quantity (``qty`` of the price).
-      required:
-      - amount
-      - discount_type
-      - slab_min_qty
-      - value
     ShopImage:
       type: object
       properties:
@@ -8380,10 +8365,16 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-        discount:
-          allOf:
-          - $ref: '#/components/schemas/ShopDiscount'
-          nullable: true
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: The total discount on the quoted quantity.
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          description: The total discount as a % of the price.
         discount_per_unit:
           type: string
           format: decimal
@@ -8401,8 +8392,9 @@ components:
         prices_include_gst:
           type: boolean
       required:
-      - discount
       - discount_per_unit
+      - discount_percent
+      - discount_total
       - gst_rate
       - net_unit_price
       - prices_include_gst

@@ -50,7 +50,8 @@ const product = (id: string, name: string, extra: Partial<ShopProduct> = {}): Sh
   price: {
     qty: "1.000",
     unit_price: "10.00",
-    discount: null,
+    discount_total: "0.00",
+    discount_percent: "0.00",
     discount_per_unit: "0.00",
     net_unit_price: "10.00",
     gst_rate: "18.000",
@@ -96,12 +97,8 @@ describe("Catalog", () => {
                     price: {
                       qty: "6.000",
                       unit_price: "10.00",
-                      discount: {
-                        discount_type: "PERCENT",
-                        value: "5.00",
-                        slab_min_qty: null,
-                        amount: "3.00",
-                      },
+                      discount_total: "3.00",
+                      discount_percent: "5.00",
                       discount_per_unit: "0.50",
                       net_unit_price: "9.50",
                       gst_rate: "18.000",
@@ -118,8 +115,8 @@ describe("Catalog", () => {
     const parle = (await screen.findByText("Parle-G")).closest("a")!;
     expect(within(parle).getByText("₹9.50")).toBeVisible();
     expect(within(parle).getByText("₹10.00")).toHaveClass("line-through");
-    expect(within(parle).getByText(/5% off/)).toBeVisible();
-    expect(within(parle).getByText("₹0.50")).toBeVisible();
+    const saving = within(parle).getByText(/You save/);
+    expect(saving).toHaveTextContent("You save ₹0.50 each (5%)");
     expect(within(parle).getByText("+ 18% GST")).toBeVisible();
     expect(within(parle).getByText("₹12.00")).toBeVisible();
     expect(within(parle).getByText("Order at least 6 pieces · in steps of 6")).toBeVisible();

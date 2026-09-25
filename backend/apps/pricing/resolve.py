@@ -1,15 +1,17 @@
 """``resolve_price``: the only place a retailer's price is decided (spec 5.6, PLAN M1-M6, ADR-036).
 
 1. Unit price = the retailer's special price → the retailer's price list → the product base price.
-2. Discount = the single best applicable active rule (no stacking in v1):
-   - highest discount amount on the line (line math from ``billing.tax``), then
-   - the most specific audience (shop > price list > everyone), then
-   - the most specific scope (product > deeper category > brand > all products), then
-   - the newest rule.
+2. Discount = the applicable active rules, combined as ⚙ ``pricing.discount_combination`` says
+   (ADR-038). Line math comes from ``billing.tax``; the total never exceeds the line gross.
+   - ``BEST``: the single rule with the largest amount; ties go to the most specific audience
+     (shop > price list > everyone), then scope (product > deeper category > brand > all
+     products), then the newest rule.
+   - ``ADD``: every rule's amount on the original line, added up.
+   - ``SEQUENTIAL``: most specific rule first (audience, scope, newest), each on what is left.
    A category rule covers its sub-categories. A rule with slabs uses the slab with the highest
    minimum quantity not above the line quantity; if none is reached the rule doesn't apply.
    ⚙ ``pricing.discounts_on_special_prices`` = false makes a special price final.
-3. The result carries everything the order line will snapshot (Phase 4).
+3. The result carries every rule applied, the total and the order line snapshot (Phase 4).
 
 Prices are in the tenant's price basis (⚙ ``tax.prices_include_gst``); the flag is returned.
 """
@@ -23,7 +25,14 @@ from uuid import UUID
 
 from django.db.models import Q
 
-from apps.billing.tax import ComponentRounding, Discount, DiscountType, line_discount, line_gross
+from apps.billing.tax import (
+    ComponentRounding,
+    Discount,
+    DiscountType,
+    line_discount,
+    line_gross,
+    percent_of,
+)
 from apps.catalog import selectors as catalog
 from apps.catalog.models import Category, Product
 from apps.platform.selectors import get_setting
@@ -59,9 +68,11 @@ class PriceResult:
     base_price: Decimal
     unit_price: Decimal
     price_source: str  # SPECIAL, PRICE_LIST or BASE
-    discount: AppliedDiscount | None
+    discounts: tuple[AppliedDiscount, ...]  # every rule applied, in the order applied
+    discount_total: Decimal  # for the line; never more than the gross
+    discount_percent: Decimal  # of the gross, to two decimals (what the shop sees)
     gross: Decimal  # qty * unit price, rounded to paise
-    line_net: Decimal  # gross - discount
+    line_net: Decimal  # gross - discount_total
     net_unit_price: Decimal  # informational only (PLAN M1)
     gst_rate: Decimal
     cess_rate: Decimal
@@ -89,6 +100,7 @@ class _Context:
     # category id -> (parent id, level); loaded once, only when a category rule exists
     categories: dict[UUID, tuple[UUID | None, int]] = field(default_factory=dict)
     discounts_on_special: bool = True
+    combination: str = "BEST"
     include_gst: bool = False
     rounding: ComponentRounding = ComponentRounding.HALF_UP
 
@@ -145,11 +157,17 @@ def _rule_value(rule: DiscountRule, qty: Decimal) -> tuple[Decimal, Decimal | No
     return best.value, best.min_qty
 
 
-def _best_discount(
-    product: Product, qty: Decimal, gross: Decimal, ctx: _Context
-) -> AppliedDiscount | None:
+@dataclass(frozen=True)
+class _Candidate:
+    rule: DiscountRule
+    value: Decimal
+    slab: Decimal | None
+    specificity: tuple[Any, ...]  # (audience, scope, created, id): larger is more specific
+
+
+def _candidates(product: Product, qty: Decimal, ctx: _Context) -> list[_Candidate]:
     chain = _category_chain(product.category_id, ctx)
-    candidates: list[tuple[tuple[Any, ...], AppliedDiscount]] = []
+    found: list[_Candidate] = []
     for rule in ctx.rules:
         scope = _scope_rank(rule, product, chain)
         if scope is None:
@@ -158,24 +176,49 @@ def _best_discount(
         if picked is None:
             continue
         value, slab = picked
-        amount = line_discount(
-            gross, qty, Discount(DiscountType(rule.discount_type), value), ctx.rounding
-        )
-        if amount <= 0:
-            continue
-        applied = AppliedDiscount(
-            rule_id=rule.pk,
-            rule_name=rule.name,
-            discount_type=rule.discount_type,
-            value=value,
-            slab_min_qty=slab,
-            amount=amount,
-        )
-        key = (amount, _AUDIENCE_RANK[rule.audience_type], scope, rule.created_at, rule.pk)
-        candidates.append((key, applied))
-    if not candidates:
-        return None
-    return max(candidates, key=lambda c: c[0])[1]
+        specificity = (_AUDIENCE_RANK[rule.audience_type], scope, rule.created_at, str(rule.pk))
+        found.append(_Candidate(rule, value, slab, specificity))
+    return found
+
+
+def _applied(candidate: _Candidate, amount: Decimal) -> AppliedDiscount:
+    return AppliedDiscount(
+        rule_id=candidate.rule.pk,
+        rule_name=candidate.rule.name,
+        discount_type=candidate.rule.discount_type,
+        value=candidate.value,
+        slab_min_qty=candidate.slab,
+        amount=amount,
+    )
+
+
+def _discounts(
+    product: Product, qty: Decimal, gross: Decimal, ctx: _Context
+) -> list[AppliedDiscount]:
+    """The rules applied to one line, combined as the tenant's setting says (ADR-038)."""
+    candidates = _candidates(product, qty, ctx)
+    if not candidates or gross <= 0:
+        return []
+
+    def amount_on(base: Decimal, c: _Candidate) -> Decimal:
+        discount = Discount(DiscountType(c.rule.discount_type), c.value)
+        return min(line_discount(base, qty, discount, ctx.rounding), base)
+
+    if ctx.combination == "BEST":
+        best = max(candidates, key=lambda c: (amount_on(gross, c), *c.specificity))
+        amount = amount_on(gross, best)
+        return [_applied(best, amount)] if amount > 0 else []
+    applied: list[AppliedDiscount] = []
+    remaining = gross
+    for c in sorted(candidates, key=lambda c: c.specificity, reverse=True):
+        if remaining <= 0:
+            break
+        # ADD: each on the original line; SEQUENTIAL: each on what is left. Both stop at the gross.
+        amount = min(amount_on(gross if ctx.combination == "ADD" else remaining, c), remaining)
+        if amount > 0:
+            applied.append(_applied(c, amount))
+            remaining -= amount
+    return applied
 
 
 def _context(retailer: Retailer, on: date) -> _Context:
@@ -193,6 +236,7 @@ def _context(retailer: Retailer, on: date) -> _Context:
         rules=rules,
         categories=categories,
         discounts_on_special=bool(get_setting("pricing.discounts_on_special_prices", tenant_id)),
+        combination=str(get_setting("pricing.discount_combination", tenant_id)),
         include_gst=bool(get_setting("tax.prices_include_gst", tenant_id)),
         rounding=ComponentRounding(get_setting("tax.component_rounding", tenant_id)),
     )
@@ -232,10 +276,11 @@ def resolve_prices(
         else:
             unit, source = product.base_price, "BASE"
         gross = line_gross(qty, unit, ctx.rounding)
-        discount = None
+        discounts: list[AppliedDiscount] = []
         if source != "SPECIAL" or ctx.discounts_on_special:
-            discount = _best_discount(product, qty, gross, ctx)
-        net = gross - (discount.amount if discount else Decimal("0"))
+            discounts = _discounts(product, qty, gross, ctx)
+        total = sum((d.amount for d in discounts), Decimal("0.00"))
+        net = gross - total
         rate = rates[product.pk]
         results.append(
             PriceResult(
@@ -244,7 +289,9 @@ def resolve_prices(
                 base_price=product.base_price,
                 unit_price=unit,
                 price_source=source,
-                discount=discount,
+                discounts=tuple(discounts),
+                discount_total=total,
+                discount_percent=percent_of(total, gross, ctx.rounding),
                 gross=gross,
                 line_net=net,
                 net_unit_price=(net / qty).quantize(PAISA) if qty else Decimal("0.00"),

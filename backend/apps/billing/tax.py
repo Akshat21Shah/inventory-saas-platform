@@ -103,6 +103,13 @@ def line_discount(
     return min(round2(qty * discount.value, rounding), gross)
 
 
+def percent_of(part: Decimal, whole: Decimal, rounding: ComponentRounding) -> Decimal:
+    """``part`` as a percentage of ``whole`` to two decimals (a discount shown to shops)."""
+    if whole <= 0:
+        return Decimal("0.00")
+    return round2(part * HUNDRED / whole, rounding)
+
+
 def compute_line(
     *,
     qty: Decimal,

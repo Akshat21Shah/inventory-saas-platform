@@ -606,11 +606,14 @@ function PriceSheet({ retailerId }: { retailerId: string }) {
       id: "discount",
       header: t("discount"),
       cell: ({ row }) =>
-        row.original.result.discount ? (
+        row.original.result.discounts.length ? (
           <span className="flex flex-col items-end">
-            <MoneyText value={row.original.result.discount.amount} />
+            <span>
+              <MoneyText value={row.original.result.discount_total} /> (
+              {formatQty(row.original.result.discount_percent, 2)}%)
+            </span>
             <span className="text-muted-foreground text-xs">
-              {row.original.result.discount.rule_name}
+              {row.original.result.discounts.map((d) => d.rule_name).join(" + ")}
             </span>
           </span>
         ) : (

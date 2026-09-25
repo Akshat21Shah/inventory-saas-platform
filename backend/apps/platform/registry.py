@@ -289,6 +289,10 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("pricing.discounts_on_special_prices", Group.PRICING, SettingType.BOOL, True,
             "Apply discount rules on top of a shop's special prices. Turn off to treat a special "
             "price as the final price."),
+    _tenant("pricing.discount_combination", Group.PRICING, SettingType.ENUM, "BEST",
+            "When several discounts apply to a product: the best single one, add them together, "
+            "or apply one after another from the most specific (ADR-038).",
+            allowed=("BEST", "ADD", "SEQUENTIAL")),
     # --- Tenant: Retailers (ADR-036) ------------------------------------------------------------
     _tenant("retailers.blocked_can_sign_in", Group.RETAILERS, SettingType.BOOL, True,
             "Shops you put on hold can still sign in and see their account, but can't order. "

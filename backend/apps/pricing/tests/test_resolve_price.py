@@ -87,6 +87,12 @@ def w(tenant_a):
     return World(food, snacks, chips, drinks, lays, other_brand, p, q, gold, r, s)
 
 
+def one(result):
+    """The single applied discount (best-single mode), or None."""
+    assert len(result.discounts) <= 1, result.discounts
+    return result.discounts[0] if result.discounts else None
+
+
 def price(tenant, retailer, product, qty="1", on=None):
     with tenant_context(tenant.pk):
         return resolve_price(retailer, product, D(qty), on=on)
@@ -161,8 +167,8 @@ def test_discount_line_math(tenant_a, w, kind, value, qty, discount, net_unit, v
     rule(tenant_a, discount_type=kind, value=D(value))
     result = price(tenant_a, w.r, w.p, qty)
     assert result.gross == D("10.00") * D(qty)
-    assert result.discount is not None and result.discount.amount == D(discount)
-    assert result.line_net == result.gross - result.discount.amount
+    assert one(result) is not None and one(result).amount == D(discount)
+    assert result.line_net == result.gross - one(result).amount
     assert (result.net_unit_price, result.valid) == (D(net_unit), valid)
 
 
@@ -172,7 +178,7 @@ def test_fractional_quantities(tenant_a, w):
         w.p.refresh_from_db()
     rule(tenant_a, value=D("7.5"))
     result = price(tenant_a, w.r, w.p, "2.750")
-    assert (result.gross, result.discount.amount, result.line_net) == (
+    assert (result.gross, one(result).amount, result.line_net) == (
         D("495.00"),
         D("37.13"),
         D("457.87"),
@@ -200,15 +206,15 @@ def test_scope(tenant_a, w, scope, target, applies):
     field = {"PRODUCT": "product", "CATEGORY": "category", "BRAND": "brand"}.get(scope)
     extra = {field: getattr(w, target)} if field else {}
     rule(tenant_a, scope_type=scope, **extra)
-    assert (price(tenant_a, w.r, w.p).discount is not None) is applies
+    assert (one(price(tenant_a, w.r, w.p)) is not None) is applies
 
 
 def test_products_without_category_or_brand_only_get_all_and_product_rules(tenant_a, w):
     rule(tenant_a, scope_type="CATEGORY", category=w.food, name="Category")
     rule(tenant_a, scope_type="BRAND", brand=w.lays, name="Brand")
-    assert price(tenant_a, w.r, w.q).discount is None
+    assert one(price(tenant_a, w.r, w.q)) is None
     rule(tenant_a, scope_type="PRODUCT", product=w.q, name="Product", value=D("5"))
-    assert price(tenant_a, w.r, w.q).discount.rule_name == "Product"
+    assert one(price(tenant_a, w.r, w.q)).rule_name == "Product"
 
 
 # --- 4. Audience: everyone, a price list, one shop --------------------------------------------
@@ -216,11 +222,11 @@ def test_products_without_category_or_brand_only_get_all_and_product_rules(tenan
 
 def test_audience(tenant_a, w):
     rule(tenant_a, audience_type="PRICE_LIST", price_list=w.gold, name="Gold only")
-    assert price(tenant_a, w.r, w.p).discount is None
-    assert price(tenant_a, w.s, w.p).discount.rule_name == "Gold only"
+    assert one(price(tenant_a, w.r, w.p)) is None
+    assert one(price(tenant_a, w.s, w.p)).rule_name == "Gold only"
     rule(tenant_a, audience_type="RETAILER", retailer=w.r, name="R only")
-    assert price(tenant_a, w.r, w.p).discount.rule_name == "R only"
-    assert price(tenant_a, w.s, w.p).discount.rule_name == "Gold only"
+    assert one(price(tenant_a, w.r, w.p)).rule_name == "R only"
+    assert one(price(tenant_a, w.s, w.p)).rule_name == "Gold only"
 
 
 # --- 5. Validity and active flag ----------------------------------------------------------------
@@ -245,12 +251,12 @@ def test_validity_dates_are_inclusive(tenant_a, w, valid_from, valid_to, offset,
         valid_to=start + timedelta(days=valid_to) if valid_to is not None else None,
     )
     on = start + timedelta(days=offset)
-    assert (price(tenant_a, w.r, w.p, on=on).discount is not None) is applies
+    assert (one(price(tenant_a, w.r, w.p, on=on)) is not None) is applies
 
 
 def test_inactive_rules_never_apply(tenant_a, w):
     rule(tenant_a, is_active=False)
-    assert price(tenant_a, w.r, w.p).discount is None
+    assert one(price(tenant_a, w.r, w.p)) is None
 
 
 # --- 6. Quantity slabs --------------------------------------------------------------------------
@@ -270,15 +276,15 @@ def test_slabs(tenant_a, w, qty, percent, slab):
     rule(tenant_a, value=D("0"), slabs=[("12", "5"), ("24", "10")])
     result = price(tenant_a, w.r, w.p, qty)
     if percent is None:
-        assert result.discount is None  # a rule with slabs and none reached doesn't apply
+        assert one(result) is None  # a rule with slabs and none reached doesn't apply
     else:
-        assert (result.discount.value, result.discount.slab_min_qty) == (D(percent), D(slab))
-        assert result.discount.amount == (result.gross * D(percent) / 100).quantize(D("0.01"))
+        assert (one(result).value, one(result).slab_min_qty) == (D(percent), D(slab))
+        assert one(result).amount == (result.gross * D(percent) / 100).quantize(D("0.01"))
 
 
 def test_flat_slab_per_unit(tenant_a, w):
     rule(tenant_a, discount_type="FLAT_PER_UNIT", value=D("0"), slabs=[("24", "1.50")])
-    assert price(tenant_a, w.r, w.p, "36").discount.amount == D("54.00")  # 36 x 1.50
+    assert one(price(tenant_a, w.r, w.p, "36")).amount == D("54.00")  # 36 x 1.50
 
 
 # --- 7. The single best rule and tie-breaks (PLAN M5) -----------------------------------------
@@ -288,31 +294,31 @@ def test_highest_amount_wins(tenant_a, w):
     rule(tenant_a, name="5%", value=D("5"))
     rule(tenant_a, name="Flat 2", discount_type="FLAT_PER_UNIT", value=D("2"))
     rule(tenant_a, name="12%", value=D("12"))
-    assert price(tenant_a, w.r, w.p, "4").discount.rule_name == "Flat 2"  # 8.00 > 4.80 > 2.00
+    assert one(price(tenant_a, w.r, w.p, "4")).rule_name == "Flat 2"  # 8.00 > 4.80 > 2.00
 
 
 def test_tie_break_order(tenant_a, w):
     rule(tenant_a, name="all/all", value=D("10"))
     rule(tenant_a, name="brand", scope_type="BRAND", brand=w.lays, value=D("10"))
-    assert price(tenant_a, w.r, w.p).discount.rule_name == "brand"  # brand beats all products
+    assert one(price(tenant_a, w.r, w.p)).rule_name == "brand"  # brand beats all products
     rule(tenant_a, name="food", scope_type="CATEGORY", category=w.food, value=D("10"))
-    assert price(tenant_a, w.r, w.p).discount.rule_name == "food"  # category beats brand
+    assert one(price(tenant_a, w.r, w.p)).rule_name == "food"  # category beats brand
     rule(tenant_a, name="chips", scope_type="CATEGORY", category=w.chips, value=D("10"))
-    assert price(tenant_a, w.r, w.p).discount.rule_name == "chips"  # deeper category
+    assert one(price(tenant_a, w.r, w.p)).rule_name == "chips"  # deeper category
     rule(tenant_a, name="product", scope_type="PRODUCT", product=w.p, value=D("10"))
-    assert price(tenant_a, w.r, w.p).discount.rule_name == "product"
+    assert one(price(tenant_a, w.r, w.p)).rule_name == "product"
     rule(tenant_a, name="gold list", audience_type="PRICE_LIST", price_list=w.gold, value=D("10"))
-    assert price(tenant_a, w.s, w.p).discount.rule_name == "gold list"  # audience before scope
+    assert one(price(tenant_a, w.s, w.p)).rule_name == "gold list"  # audience before scope
     rule(tenant_a, name="just S", audience_type="RETAILER", retailer=w.s, value=D("10"))
-    assert price(tenant_a, w.s, w.p).discount.rule_name == "just S"
+    assert one(price(tenant_a, w.s, w.p)).rule_name == "just S"
     rule(tenant_a, name="just S newer", audience_type="RETAILER", retailer=w.s, value=D("10"))
-    assert price(tenant_a, w.s, w.p).discount.rule_name == "just S newer"  # newest last
+    assert one(price(tenant_a, w.s, w.p)).rule_name == "just S newer"  # newest last
 
 
 def test_no_stacking(tenant_a, w):
     rule(tenant_a, name="a", value=D("10"))
     rule(tenant_a, name="b", value=D("5"))
-    assert price(tenant_a, w.r, w.p, "10").discount.amount == D("10.00")  # not 15.00
+    assert one(price(tenant_a, w.r, w.p, "10")).amount == D("10.00")  # not 15.00
 
 
 # --- 8. Discounts on special prices (ADR-036, both values) ------------------------------------
@@ -327,12 +333,12 @@ def test_discounts_on_special_prices_setting(tenant_a, w, allowed):
     special = price(tenant_a, w.r, w.p, "2")
     assert special.price_source == "SPECIAL"
     if allowed:
-        assert (special.discount.amount, special.line_net) == (D("1.60"), D("14.40"))
+        assert (one(special).amount, special.line_net) == (D("1.60"), D("14.40"))
     else:
-        assert (special.discount, special.line_net) == (None, D("16.00"))
+        assert (one(special), special.line_net) == (None, D("16.00"))
     # Price-list and base prices get the discount either way.
-    assert price(tenant_a, w.s, w.p, "2").discount.amount == D("1.80")
-    assert price(tenant_a, w.r, w.q, "1").discount.amount == D("2.00")
+    assert one(price(tenant_a, w.s, w.p, "2")).amount == D("1.80")
+    assert one(price(tenant_a, w.r, w.q, "1")).amount == D("2.00")
 
 
 # --- 9. Tax rates and sellability --------------------------------------------------------------
@@ -391,7 +397,7 @@ def test_price_properties(tenant_a, w, base, qty, percent):
     if percent is not None:
         rule(tenant_a, value=percent)
     result = price(tenant_a, w.r, product, str(qty))
-    amount = result.discount.amount if result.discount else D("0")
+    amount = one(result).amount if one(result) else D("0")
     assert D("0") <= amount <= result.gross
     assert result.line_net == result.gross - amount
     assert result.gross == (base * qty).quantize(D("0.01"), rounding=ROUND_HALF_UP)
@@ -421,8 +427,8 @@ def test_preview_and_price_sheet(tenant_a, tenant_b, w):
     assert (
         result["unit_price"],
         result["price_source"],
-        result["discount"]["rule_name"],
-        result["discount"]["amount"],
+        result["discounts"][0]["rule_name"],
+        result["discounts"][0]["amount"],
         result["net_unit_price"],
     ) == ("9.00", "PRICE_LIST", "Bulk", "5.40", "8.55")
     sheet = owner.get(f"/api/v1/retailers/{w.s.pk}/prices/").json()["results"]
@@ -443,3 +449,189 @@ def test_preview_and_price_sheet(tenant_a, tenant_b, w):
     assert other.get(f"/api/v1/retailers/{w.s.pk}/prices/").status_code == 404
     warehouse = _client(tenant_a, "WAREHOUSE")  # no pricing.view
     assert warehouse.get(f"/api/v1/retailers/{w.s.pk}/prices/").status_code == 403
+
+
+# --- 11. Combining discounts (ADR-038) -----------------------------------------------------------
+
+
+def mode(tenant, value):
+    setting(tenant, "pricing.discount_combination", value)
+
+
+def applied(result):
+    return [(d.rule_name, d.amount) for d in result.discounts]
+
+
+@pytest.mark.parametrize(
+    ("combination", "expected", "total", "percent"),
+    [
+        ("BEST", [("all 10%", D("2.00"))], D("2.00"), D("10.00")),
+        # Most specific first: the brand rule, then all products.
+        ("ADD", [("brand 5%", D("1.00")), ("all 10%", D("2.00"))], D("3.00"), D("15.00")),
+        ("SEQUENTIAL", [("brand 5%", D("1.00")), ("all 10%", D("1.90"))], D("2.90"), D("14.50")),
+    ],
+)
+def test_percentages_in_each_mode(tenant_a, w, combination, expected, total, percent):
+    mode(tenant_a, combination)
+    rule(tenant_a, name="all 10%", value=D("10"))
+    rule(tenant_a, name="brand 5%", value=D("5"), scope_type="BRAND", brand=w.lays)
+    result = price(tenant_a, w.r, w.p, "2")  # gross 20.00
+    assert applied(result) == expected
+    assert (result.discount_total, result.discount_percent) == (total, percent)
+    assert result.line_net == result.gross - total
+
+
+@pytest.mark.parametrize(
+    ("combination", "flat_is_more_specific", "total"),
+    [
+        ("ADD", True, D("11.00")),  # 10% of 100 + 1.00 each, both on the original line
+        ("ADD", False, D("11.00")),
+        ("SEQUENTIAL", True, D("10.90")),  # 1.00 off first, then 10% of 99
+        ("SEQUENTIAL", False, D("11.00")),  # 10% first, then 1.00 off what is left
+        ("BEST", True, D("10.00")),
+    ],
+)
+def test_flat_and_percentage_together(tenant_a, w, combination, flat_is_more_specific, total):
+    mode(tenant_a, combination)
+    with tenant_context(tenant_a.pk):
+        Product.objects.filter(pk=w.q.pk).update(base_price=D("100.00"))
+        w.q.refresh_from_db()
+    specific = {"scope_type": "PRODUCT", "product": w.q}
+    rule(
+        tenant_a,
+        name="flat",
+        discount_type="FLAT_PER_UNIT",
+        value=D("1"),
+        **(specific if flat_is_more_specific else {}),
+    )
+    rule(tenant_a, name="pct", value=D("10"), **({} if flat_is_more_specific else specific))
+    assert price(tenant_a, w.r, w.q).discount_total == total
+
+
+@pytest.mark.parametrize("combination", ["ADD", "SEQUENTIAL"])
+def test_slabs_count_per_rule(tenant_a, w, combination):
+    mode(tenant_a, combination)
+    rule(
+        tenant_a,
+        name="chips slabs",
+        value=D("0"),
+        scope_type="CATEGORY",
+        category=w.chips,
+        slabs=[("12", "2"), ("24", "5")],
+    )
+    rule(tenant_a, name="all 3%", value=D("3"))
+    big = price(tenant_a, w.r, w.p, "24")  # gross 240.00
+    small = price(tenant_a, w.r, w.p, "11")  # no slab reached
+    if combination == "ADD":
+        assert applied(big) == [("chips slabs", D("12.00")), ("all 3%", D("7.20"))]
+    else:  # 5% of 240 = 12.00, then 3% of 228 = 6.84
+        assert applied(big) == [("chips slabs", D("12.00")), ("all 3%", D("6.84"))]
+    assert big.discounts[0].slab_min_qty == D("24")
+    assert applied(small) == [("all 3%", D("3.30"))]
+
+
+@pytest.mark.parametrize(
+    ("combination", "total"),
+    [("ADD", D("20.00")), ("SEQUENTIAL", D("16.00")), ("BEST", D("12.00"))],
+)
+def test_the_total_never_exceeds_the_line(tenant_a, w, combination, total):
+    mode(tenant_a, combination)
+    rule(tenant_a, name="60%", value=D("60"), scope_type="PRODUCT", product=w.p)
+    rule(tenant_a, name="50%", value=D("50"))
+    result = price(tenant_a, w.r, w.p, "2")  # gross 20.00
+    assert result.discount_total == total <= result.gross
+    assert sum(d.amount for d in result.discounts) == result.discount_total
+    if combination == "ADD":  # 12.00 + 10.00 capped: the least specific rule is trimmed
+        assert applied(result) == [("60%", D("12.00")), ("50%", D("8.00"))]
+        assert (result.valid, result.discount_percent) == (False, D("100.00"))
+
+
+def test_flat_rules_are_capped_too(tenant_a, w):
+    mode(tenant_a, "ADD")
+    rule(
+        tenant_a,
+        name="8 off",
+        discount_type="FLAT_PER_UNIT",
+        value=D("8"),
+        scope_type="PRODUCT",
+        product=w.p,
+    )
+    rule(tenant_a, name="5 off", discount_type="FLAT_PER_UNIT", value=D("5"))
+    result = price(tenant_a, w.r, w.p, "3")  # gross 30.00; 24 + 15 capped at 30
+    assert applied(result) == [("8 off", D("24.00")), ("5 off", D("6.00"))]
+
+
+def test_sequential_order_is_audience_then_scope_then_newest(tenant_a, w):
+    mode(tenant_a, "SEQUENTIAL")
+    rule(tenant_a, name="product, all shops", value=D("10"), scope_type="PRODUCT", product=w.p)
+    rule(
+        tenant_a,
+        name="all products, gold",
+        value=D("10"),
+        audience_type="PRICE_LIST",
+        price_list=w.gold,
+    )
+    rule(tenant_a, name="all products, S", value=D("10"), audience_type="RETAILER", retailer=w.s)
+    rule(
+        tenant_a,
+        name="all products, S, newer",
+        value=D("10"),
+        audience_type="RETAILER",
+        retailer=w.s,
+    )
+    names = [d.rule_name for d in price(tenant_a, w.s, w.p, "10").discounts]
+    assert names == [
+        "all products, S, newer",
+        "all products, S",
+        "all products, gold",
+        "product, all shops",
+    ]
+
+
+@pytest.mark.parametrize("combination", ["ADD", "SEQUENTIAL"])
+@pytest.mark.parametrize("allowed", [True, False])
+def test_special_prices_in_combined_modes(tenant_a, w, combination, allowed):
+    mode(tenant_a, combination)
+    setting(tenant_a, "pricing.discounts_on_special_prices", allowed)
+    rule(tenant_a, name="a", value=D("10"))
+    rule(tenant_a, name="b", value=D("5"), scope_type="BRAND", brand=w.lays)
+    with tenant_context(tenant_a.pk):
+        RetailerPrice.objects.create(retailer=w.r, product=w.p, price=D("8.00"))
+    result = price(tenant_a, w.r, w.p, "10")  # gross 80.00
+    expected = {"ADD": D("12.00"), "SEQUENTIAL": D("11.60")}[combination] if allowed else D("0")
+    assert result.discount_total == expected
+
+
+@settings(
+    max_examples=40, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
+@given(
+    combination=st.sampled_from(["BEST", "ADD", "SEQUENTIAL"]),
+    values=st.lists(
+        st.decimals(min_value=D("0.01"), max_value=D("100"), places=2), min_size=1, max_size=4
+    ),
+    flat=st.decimals(min_value=D("0.01"), max_value=D("50"), places=2),
+    qty=st.decimals(min_value=D("0.001"), max_value=D("500"), places=3),
+)
+def test_combination_properties(tenant_a, w, combination, values, flat, qty):
+    with tenant_context(tenant_a.pk):
+        DiscountRule.objects.all().delete()
+    mode(tenant_a, combination)
+    for index, value in enumerate(values):
+        rule(tenant_a, name=f"p{index}", value=value)
+    rule(
+        tenant_a,
+        name="flat",
+        discount_type="FLAT_PER_UNIT",
+        value=flat,
+        scope_type="PRODUCT",
+        product=w.p,
+    )
+    result = price(tenant_a, w.r, w.p, str(qty))
+    assert D("0") <= result.discount_total <= result.gross
+    assert sum(d.amount for d in result.discounts) == result.discount_total
+    assert all(d.amount > 0 for d in result.discounts)
+    assert result.line_net == result.gross - result.discount_total
+    assert D("0") <= result.discount_percent <= D("100")
+    if combination == "BEST":
+        assert len(result.discounts) <= 1
