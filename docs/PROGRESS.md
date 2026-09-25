@@ -295,6 +295,11 @@
       - "Discounts by product": the discount grid at `/manage/retailers/{id}/discounts`. Server-priced net prices update as you type, and "Save N changes" saves them. Slab or dated rules show as "Also: …" links. Read-only without `pricing.manage`.
       - "Add a discount for this shop": the rule editor, pre-filled for the shop.
       - "Copy pricing from another shop": pick a shop, choose Replace or Add (no default), preview, then "Copy N changes".
+  - 2.28b: frontend, pricing section.
+    - Price lists: "Change prices by %" (brand or category, optionally add missing products, paisa or whole-rupee rounding, server preview, then "Update N prices").
+    - Shop pricing page (`/manage/pricing/report`): customised or all shops, counts linking to the shop's special prices and discount grid, free products in a dialog, Excel export.
+    - Export and import buttons for special prices, price-list prices and discounts.
+    - The "When several discounts apply" setting is on the Pricing settings page (from the registry).
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.

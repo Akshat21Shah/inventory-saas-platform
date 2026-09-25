@@ -1635,7 +1635,8 @@
       "priceLists": "Price lists",
       "specialPrices": "Special prices",
       "discounts": "Discounts",
-      "settings": "Pricing settings"
+      "settings": "Pricing settings",
+      "report": "Shop pricing"
     },
     "picker": {
       "typeToSearch": "Type to search",
@@ -1824,6 +1825,59 @@
       "rulesRemove": "Discounts removed",
       "apply": "{count, plural, one {Copy # change} other {Copy # changes}}",
       "done": "Pricing copied."
+    },
+    "files": {
+      "export": "Export",
+      "excel": "Excel (.xlsx)",
+      "csv": "CSV (.csv)",
+      "import": "Import"
+    },
+    "adjust": {
+      "open": "Change prices by %",
+      "title": "Change prices on {list} by a percentage",
+      "description": "Changes the list prices of one brand or category. You'll see every change before anything is saved.",
+      "percent": "Change (%)",
+      "percentHint": "For example 5 for +5%, or -3 for a 3% cut.",
+      "scope": "Which products",
+      "byBrand": "A brand",
+      "byCategory": "A category",
+      "brand": "Brand",
+      "category": "Category",
+      "categoryHint": "Includes its sub-categories.",
+      "includeMissing": "Also add the products that aren't on this list yet",
+      "includeMissingHint": "They start from the standard price.",
+      "rounding": "Round to",
+      "paisa": "The paisa (e.g. ₹20.99)",
+      "rupee": "Whole rupees (e.g. ₹21)",
+      "preview": "Preview of the change",
+      "previewButton": "Preview",
+      "nothing": "No prices would change.",
+      "summary": "{count, plural, one {# price} other {# prices}} will change{added, plural, =0 {} one { (# new on the list)} other { (# new on the list)}}.",
+      "added": "new:",
+      "more": "…and {count} more.",
+      "apply": "{count, plural, one {Update # price} other {Update # prices}}",
+      "done": "{count, plural, one {# price updated} other {# prices updated}}."
+    },
+    "report": {
+      "title": "Shop pricing",
+      "description": "Shops with their own special prices or discounts, so nothing stays hidden.",
+      "shop": "Shop",
+      "priceList": "Price list",
+      "standard": "Standard prices",
+      "specialPrices": "Special prices",
+      "shopRules": "Shop discounts",
+      "free": "Free products",
+      "freeTitle": "Products {shop} gets free",
+      "freeBody": "A ₹0 price, or discounts that reach the whole price. Shops don't see these products.",
+      "openGrid": "Open this shop's discounts",
+      "export": "Export",
+      "search": "Search shops",
+      "show": "Which shops",
+      "customised": "Shops with their own pricing",
+      "all": "All shops",
+      "emptyTitle": "No shop has its own pricing",
+      "emptyBody": "Special prices and shop-only discounts will show up here.",
+      "freeNote": "Free products are worked out from today's prices and discounts, including discounts that add up to the whole price."
     }
   },
   "shop": {

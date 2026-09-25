@@ -44,7 +44,10 @@ import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney, formatQty } from "@/lib/format";
 
+import { getDiscountRulesExportUrl } from "@/lib/api/generated/endpoints/imports/imports";
+
 import { ProductPicker, RetailerPicker, type Picked } from "./pickers";
+import { PricingFileActions } from "./shop-report";
 
 const ALL = "all";
 const clean = (v: string) => v.trim().replaceAll(",", "");
@@ -142,14 +145,21 @@ export function DiscountRulesPage() {
         title={t("title")}
         description={t("description")}
         actions={
-          can("pricing.manage") ? (
-            <Button asChild className="min-h-10">
-              <Link href="/manage/pricing/discounts/new">
-                <Plus aria-hidden />
-                {t("add")}
-              </Link>
-            </Button>
-          ) : undefined
+          <>
+            <PricingFileActions
+              exportUrl={(file_type) => getDiscountRulesExportUrl({ file_type })}
+              fileName="discounts"
+              importKind="DISCOUNT_RULES"
+            />
+            {can("pricing.manage") ? (
+              <Button asChild className="min-h-10">
+                <Link href="/manage/pricing/discounts/new">
+                  <Plus aria-hidden />
+                  {t("add")}
+                </Link>
+              </Button>
+            ) : null}
+          </>
         }
       />
       <DataTable

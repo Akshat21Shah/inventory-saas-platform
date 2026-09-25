@@ -35,7 +35,10 @@ import type { RetailerPrice, Warning } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 
+import { getSpecialPricesExportUrl } from "@/lib/api/generated/endpoints/imports/imports";
+
 import { ProductPicker, RetailerPicker, type Picked } from "./pickers";
+import { PricingFileActions } from "./shop-report";
 
 const clean = (v: string) => v.trim().replaceAll(",", "");
 /** A special price words the free-goods warning for one shop and one product. */
@@ -276,12 +279,19 @@ export function SpecialPricesPage() {
         title={shopData ? t("titleFor", { shop: shopData.shop_name }) : t("title")}
         description={t("description")}
         actions={
-          manage ? (
-            <SpecialPriceDialog
-              retailer={shopData ? { id: shopData.id, label: shopData.shop_name } : null}
-              onSaved={saved}
+          <>
+            <PricingFileActions
+              exportUrl={(file_type) => getSpecialPricesExportUrl({ file_type })}
+              fileName="special-prices"
+              importKind="SPECIAL_PRICES"
             />
-          ) : undefined
+            {manage ? (
+              <SpecialPriceDialog
+                retailer={shopData ? { id: shopData.id, label: shopData.shop_name } : null}
+                onSaved={saved}
+              />
+            ) : null}
+          </>
         }
       />
       {retailerId ? (

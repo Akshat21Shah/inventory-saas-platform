@@ -42,7 +42,11 @@ import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { useDebounced } from "@/lib/use-debounced";
 
+import { getPriceListItemsExportUrl } from "@/lib/api/generated/endpoints/imports/imports";
+
+import { BulkAdjustDialog } from "./bulk-adjust";
 import { ProductPicker, type Picked } from "./pickers";
+import { PricingFileActions } from "./shop-report";
 
 const clean = (v: string) => v.trim().replaceAll(",", "");
 
@@ -142,27 +146,34 @@ export function PriceListsPage() {
         title={t("title")}
         description={t("description")}
         actions={
-          manage ? (
-            <FieldsDialog
-              trigger={
-                <Button className="min-h-10">
-                  <Plus aria-hidden />
-                  {t("add")}
-                </Button>
-              }
-              title={t("add")}
-              fields={fields}
-              initial={{ name: "", description: "" }}
-              submitLabel={t("add")}
-              onSubmit={async (v) => {
-                await priceListsCreate({
-                  name: String(v.name),
-                  description: String(v.description),
-                });
-                refresh();
-              }}
+          <>
+            <PricingFileActions
+              exportUrl={(file_type) => getPriceListItemsExportUrl({ file_type })}
+              fileName="price-list-prices"
+              importKind="PRICE_LIST_ITEMS"
             />
-          ) : null
+            {manage ? (
+              <FieldsDialog
+                trigger={
+                  <Button className="min-h-10">
+                    <Plus aria-hidden />
+                    {t("add")}
+                  </Button>
+                }
+                title={t("add")}
+                fields={fields}
+                initial={{ name: "", description: "" }}
+                submitLabel={t("add")}
+                onSubmit={async (v) => {
+                  await priceListsCreate({
+                    name: String(v.name),
+                    description: String(v.description),
+                  });
+                  refresh();
+                }}
+              />
+            ) : null}
+          </>
         }
       />
       <DataTable
@@ -433,7 +444,18 @@ export function PriceListDetailPage({ priceListId }: { priceListId: string }) {
       <PageHeader
         title={priceList.name}
         description={t("summary", { items: priceList.item_count, shops: priceList.shop_count })}
-        actions={manage ? <AddItemDialog priceListId={priceListId} onAdded={refresh} /> : undefined}
+        actions={
+          manage ? (
+            <>
+              <BulkAdjustDialog
+                priceListId={priceListId}
+                listName={priceList.name}
+                onDone={refresh}
+              />
+              <AddItemDialog priceListId={priceListId} onAdded={refresh} />
+            </>
+          ) : undefined
+        }
       />
       <p className="text-muted-foreground mb-4 text-sm">{t("explain")}</p>
       <div className="mb-4">
