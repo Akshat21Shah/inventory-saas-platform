@@ -35,10 +35,21 @@
 - `make up` runs everything: all services up; backend healthy; worker online; beat dispatching the outbox sweeper.
 - Health checks pass, directly and through the web proxy.
 - Design system page renders every core component in all states, with no horizontal scroll at 360px.
-- CI: the workflow is written and every step passes locally. It has **not run on GitHub yet** because nothing is pushed.
+- CI: **green on GitHub Actions** for branch `phase-0-foundation`: backend, frontend, e2e and image builds (run 36095584513).
+
+## Review follow-ups (2026-09-25)
+- SeaweedFS approved for local dev/CI only; production uses AWS S3.
+- Project moved to a path without spaces.
+  - The backend venv was recreated.
+  - Makefile venv paths stay relative to `backend/` (harmless; independent of the absolute path).
+  - `make up` and `make test` were re-verified.
+- S3 bucket init made idempotent and race-free on cold start.
+- The root layout no longer depends on generated `LayoutProps` types, so a clean checkout type-checks.
+- Signing keys are >= 32 bytes in CI and `.env.example`; prod settings refuse shorter keys.
+- CI actions are on Node 24 versions, and CI runs on pushes to any branch.
 
 ## In progress
-- Nothing. Awaiting review of Phase 0.
+- Awaiting the product owner's review and merge of `phase-0-foundation` into `main`.
 
 ## Next
 - Phase 1 — Tenancy, auth, platform admin (PLAN §8).
@@ -46,5 +57,5 @@
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
 - Production domain to be supplied before staging (ADR-019).
-- MinIO images are unavailable; SeaweedFS is used instead (ADR-024). Confirm this is acceptable.
+- `.claude/settings.local.json` is tracked from the initial commit but is now listed in `.gitignore`. It contains no secrets. Decide whether to untrack it.
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.
