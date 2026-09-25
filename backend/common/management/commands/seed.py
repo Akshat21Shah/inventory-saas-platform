@@ -1,7 +1,8 @@
-"""Demo data loader: the super admin and two demo distributors with complete business details.
+"""Demo data loader: the super admin, two demo distributors with complete business details, one
+staff login per role in each, and demo shops. Phase 2 adds catalog, retailers and pricing.
 
-Phase 1 later switches this to the onboarding service (owner, staff per role, a retailer each);
-Phase 2 adds catalog, retailers and pricing. Refuses to run unless DEBUG is on. Idempotent.
+Refuses to run unless DEBUG is on. Idempotent. Every password, phone number and the super admin's
+2FA key below are public demo values for local development and E2E only.
 """
 
 from typing import Any
@@ -11,11 +12,23 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.models import Role, User
+from apps.accounts.models import Membership, Role, User
 from apps.accounts.permissions import PLATFORM_ADMIN_ROLE
 from apps.platform.models import Plan, Subscription, Tenant, TenantBranding, TenantProfile
 from apps.platform.validators import gstin_check_char
+from apps.retailers.models import Retailer
+from apps.retailers.services import create_retailer
 from common.tenancy import tenant_context
+
+# Base32 TOTP key set on the dev super admin when it has no 2FA yet, so E2E can sign in.
+DEV_ADMIN_TOTP_SECRET = "DEVSEEDADMINTOTPKEYDEVSEEDADMIN2"  # noqa: S105 - public dev value
+STAFF_ROLES = ("OWNER", "MANAGER", "SALES", "WAREHOUSE", "ACCOUNTS")
+# One shop per distributor, plus one phone number registered with both (the chooser on sign-in).
+DEMO_SHOPS: dict[str, list[tuple[str, str, str]]] = {
+    "sharma": [("Ganesh Kirana", "Ganesh Patil", "9876500001")],
+    "patel": [("Shree Stores", "Mehul Shah", "9876500002")],
+}
+SHARED_SHOP = ("Om Provision Store", "Omkar Joshi", "9876500000")
 
 # Demo identities are fictitious; GSTINs are generated to be checksum-valid.
 DEMO_TENANTS: list[dict[str, str]] = [
@@ -59,6 +72,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--admin-email", default="admin@platform.local")
         parser.add_argument("--admin-password", default="admin-dev-password")
+        parser.add_argument("--staff-password", default="staff-dev-password")
 
     @transaction.atomic
     def handle(self, *args: Any, **options: Any) -> None:
@@ -71,9 +85,14 @@ class Command(BaseCommand):
                 email, options["admin_password"], full_name="Platform Admin"
             )
             self.stdout.write(f"created super admin {email}")
+            admin = User.objects.get(email=email)
         elif admin.platform_role_id is None:  # created before platform roles existed
             admin.platform_role = Role.objects.get(tenant__isnull=True, code=PLATFORM_ADMIN_ROLE)
             admin.save(update_fields=["platform_role"])
+        if not admin.totp_enabled:
+            admin.totp_secret, admin.totp_enabled = DEV_ADMIN_TOTP_SECRET, True
+            admin.save(update_fields=["totp_secret", "totp_enabled"])
+            self.stdout.write(f"super admin 2FA key (dev only): {DEV_ADMIN_TOTP_SECRET}")
 
         beta = Plan.objects.get(is_default=True)
         for demo in DEMO_TENANTS:
@@ -89,5 +108,27 @@ class Command(BaseCommand):
                 )
                 if not Subscription.objects.filter(is_current=True).exists():
                     Subscription.objects.create(tenant=tenant, plan=beta, starts_at=timezone.now())
+                self._staff(tenant, options["staff_password"])
+                for shop in [*DEMO_SHOPS[tenant.slug], SHARED_SHOP]:
+                    self._shop(*shop)
             self.stdout.write(f"{'created' if created else 'updated'} tenant {tenant.slug}")
         self.stdout.write(self.style.SUCCESS("seed complete"))
+
+    def _staff(self, tenant: Tenant, password: str) -> None:
+        """<role>@<slug>.example.com for every tenant system role, e.g. owner@sharma.example.com."""
+        for code in STAFF_ROLES:
+            email = f"{code.lower()}@{tenant.slug}.example.com"
+            user = User.objects.filter(email=email).first()
+            if user is None:
+                user = User.objects.create_user(
+                    email,
+                    password,
+                    user_type=User.UserType.STAFF,
+                    full_name=f"{code.title()} ({tenant.name})",
+                )
+            role = Role.objects.get(tenant__isnull=True, code=code, is_platform=False)
+            Membership.objects.get_or_create(user=user, defaults={"role": role})
+
+    def _shop(self, shop_name: str, contact_name: str, phone: str) -> None:
+        if not Retailer.objects.filter(phone=f"+91{phone}").exists():
+            create_retailer(shop_name=shop_name, phone=phone, contact_name=contact_name)

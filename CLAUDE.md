@@ -129,7 +129,7 @@ make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --chec
 make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
-make seed        # demo data (Phase 0: super admin + 2 demo tenants; full set from Phase 2)
+make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, shops (catalog from Phase 2)
 ```
 
 URLs in dev:
