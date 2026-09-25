@@ -123,6 +123,12 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # Before the stack starts: the web container's node_modules volume would otherwise create
+      # web/node_modules on the host as root.
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
       - name: Start the stack
         run: cp .env.example .env && docker compose -f infra/docker-compose.yml up -d --build
       - name: Wait for the API and the web server
@@ -136,10 +142,6 @@ jobs:
           exit 1
       - name: Load demo data
         run: docker compose -f infra/docker-compose.yml exec -T backend python manage.py seed
-      - run: npm ci
-        working-directory: web
-      - run: npx playwright install --with-deps chromium
-        working-directory: web
       - name: Acceptance tests
         working-directory: web
         env:
