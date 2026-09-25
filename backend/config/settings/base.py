@@ -22,6 +22,11 @@ ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS", default=[PLATFORM_DOMAIN, f".{PLATFORM_DOMAIN}", "backend"]
 )
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+# How many trusted proxies APPEND the client address to X-Forwarded-For. Next.js does not append:
+# it only sets X-Forwarded-For when the header is absent. Dev: 1 (Next sets it from the socket; a
+# client can spoof it in dev). Prod: 1 (the load balancer appends; Next passes it through).
+# Per-IP rate limits and audit IPs depend on this (see PROGRESS "Pre-production verification").
+TRUSTED_PROXY_HOPS = env.int("TRUSTED_PROXY_HOPS", default=1)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -30,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
@@ -39,6 +45,7 @@ INSTALLED_APPS = [
     "common",
     "apps.platform",
     "apps.accounts",
+    "apps.audit",
 ]
 
 MIDDLEWARE = [

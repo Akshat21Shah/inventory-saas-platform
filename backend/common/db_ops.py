@@ -20,12 +20,25 @@ class EnableRLS(migrations.operations.base.Operation):
     """Enable RLS on a tenant table with a policy matching ``app.current_tenant``.
 
     Usage in a migration: ``EnableRLS("Widget")`` right after the model is created.
+
+    Tables whose ``tenant_id`` may be NULL can relax the policy for those rows:
+    - ``null_tenant_readable``: NULL-tenant rows are visible to every tenant (e.g. system roles);
+    - ``null_tenant_insertable``: NULL-tenant rows may be inserted but are never readable through
+      this policy (e.g. platform-level audit entries, read only via the platform alias).
     """
 
     reversible = True
 
-    def __init__(self, model_name: str) -> None:
+    def __init__(
+        self,
+        model_name: str,
+        *,
+        null_tenant_readable: bool = False,
+        null_tenant_insertable: bool = False,
+    ) -> None:
         self.model_name = model_name
+        self.null_tenant_readable = null_tenant_readable
+        self.null_tenant_insertable = null_tenant_insertable
 
     def state_forwards(self, app_label: str, state: ProjectState) -> None:
         pass
@@ -39,9 +52,11 @@ class EnableRLS(migrations.operations.base.Operation):
     ) -> None:
         table = _table(app_label, self.model_name, to_state, schema_editor)
         schema_editor.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
+        match = f"tenant_id = {TENANT_EXPR}"
+        using = f"({match} OR tenant_id IS NULL)" if self.null_tenant_readable else f"({match})"
+        check = f"({match} OR tenant_id IS NULL)" if self.null_tenant_insertable else f"({match})"
         schema_editor.execute(
-            f"CREATE POLICY tenant_isolation ON {table} "
-            f"USING (tenant_id = {TENANT_EXPR}) WITH CHECK (tenant_id = {TENANT_EXPR})"
+            f"CREATE POLICY tenant_isolation ON {table} USING {using} WITH CHECK {check}"
         )
 
     def database_backwards(
@@ -59,7 +74,15 @@ class EnableRLS(migrations.operations.base.Operation):
         return f"Enable row-level security on {self.model_name}"
 
     def deconstruct(self) -> tuple[str, list[Any], dict[str, Any]]:
-        return (self.__class__.__qualname__, [self.model_name], {})
+        kwargs = {
+            k: v
+            for k, v in (
+                ("null_tenant_readable", self.null_tenant_readable),
+                ("null_tenant_insertable", self.null_tenant_insertable),
+            )
+            if v
+        }
+        return (self.__class__.__qualname__, [self.model_name], kwargs)
 
 
 APPEND_ONLY_FUNCTION = """

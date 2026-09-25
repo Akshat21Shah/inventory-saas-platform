@@ -7,6 +7,15 @@ from .base import *
 
 DEBUG = False
 INSTALLED_APPS += ["common.tests.testapp"]
+# The audited platform alias (ADR-002). Locally .env points it at the BYPASSRLS role; in CI it
+# reuses the default credentials. Either way it mirrors the test database (a separate connection,
+# so tests reading through it must be transactional).
+if "platform" not in DATABASES:
+    DATABASES["platform"] = {
+        **DATABASES["default"],
+        "ATOMIC_REQUESTS": False,
+        "TEST": {"MIRROR": "default"},
+    }
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}

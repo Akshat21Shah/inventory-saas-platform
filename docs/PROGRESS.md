@@ -84,7 +84,8 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 |---|---|---|---|---|---|
 | 1 | GST state code list: names and codes, and legacy codes 25 (Daman & Diu, pre-2020) and 28 (Andhra Pradesh, pre-2014) kept inactive | `backend/apps/platform/reference_data.py` (`STATES`) | GST portal state code list | Product owner | Open |
 | 2 | GSTIN format for regular taxpayers (`[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]`) and the mod-36 check character. Other registration kinds (TDS/TCS, UN bodies, NRTP) are out of scope in v1 | `backend/apps/platform/validators.py`, `Tenant` check constraint `tenant_gstin_format` | GST portal / GSTN GSTIN format specification | Product owner | Open |
-| 3 | ADR-009 tax engine & rounding rules | `docs/DECISIONS.md` ADR-009 | Chartered accountant | Product owner | Open (before Phase 5) |
+| 3 | Client IP and host behind proxies. The production load balancer must **append** the client IP to `X-Forwarded-For` and overwrite any client-supplied `X-Forwarded-Host`, and `TRUSTED_PROXY_HOPS` must match the number of appending proxies (1 with a load balancer in front of Next.js). Next.js itself only sets these headers when they are absent. Per-IP rate limits (ADR-030) and audit IPs depend on this | `backend/config/settings/base.py`, `backend/common/net.py`, infra (Phase 10) | Deployment topology and load-balancer documentation | Lead engineer | Open (before staging) |
+| 4 | ADR-009 tax engine & rounding rules | `docs/DECISIONS.md` ADR-009 | Chartered accountant | Product owner | Open (before Phase 5) |
 
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
