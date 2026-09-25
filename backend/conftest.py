@@ -2,24 +2,39 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
+from django.apps import apps as django_apps
+from pytest_django.plugin import blocking_manager_key
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.accounts.models import User
 from apps.platform.models import Tenant
+from apps.platform.reference_data import seed_reference_data
+from apps.platform.tests.factories import TenantFactory
 from common.authentication import TENANT_CLAIM
+
+
+def _is_transactional(item: pytest.Item) -> bool:
+    marker = item.get_closest_marker("django_db")
+    fixturenames = getattr(item, "fixturenames", ())
+    return "transactional_db" in fixturenames or bool(marker and marker.kwargs.get("transaction"))
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> Any:
+    """Transactional tests flush every table, including migration-seeded reference data (states,
+    tax rates, plans, flags). Re-seed after all fixture teardowns (i.e. after the flush)."""
+    result = yield
+    if _is_transactional(item):
+        with item.config.stash[blocking_manager_key].unblock():
+            seed_reference_data(django_apps)
+    return result
 
 
 @pytest.fixture
 def make_tenant(db: Any) -> Callable[..., Tenant]:
-    counter = {"n": 0}
-
     def factory(**kwargs: Any) -> Tenant:
-        counter["n"] += 1
-        n = counter["n"]
-        defaults = {"name": f"Tenant {n}", "slug": f"tenant-{n}", "status": Tenant.Status.ACTIVE}
-        defaults.update(kwargs)
-        return Tenant.objects.create(**defaults)
+        return TenantFactory.create(**kwargs)
 
     return factory
 

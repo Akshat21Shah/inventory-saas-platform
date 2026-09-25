@@ -8,6 +8,15 @@ from django.conf import settings
 
 SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$")
 RESERVED_SUBDOMAINS = frozenset({"admin", "www", "api", "app", "static", "media", "mail"})
+# Refused when a tenant slug is created or changed (superset of the classifier's reserved words).
+RESERVED_TENANT_SLUGS = RESERVED_SUBDOMAINS | frozenset(
+    {
+        "platform", "manage", "shop", "login", "logout", "auth", "account", "accounts",
+        "help", "support", "status", "docs", "health", "cdn", "assets", "files", "s3",
+        "mailpit", "smtp", "ftp", "billing", "pay", "payments", "webhooks", "dev",
+        "staging", "test", "internal", "root", "system", "null", "undefined",
+    }
+)  # fmt: skip
 
 
 class HostKind(StrEnum):
