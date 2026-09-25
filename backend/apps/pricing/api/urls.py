@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.pricing.api import tools as t
 from apps.pricing.api import views as v
 
 urlpatterns = [
@@ -36,5 +37,46 @@ urlpatterns = [
         "discount-rules/<uuid:rule_id>/",
         v.DiscountRuleDetailView.as_view(),
         name="discount-rule-detail",
+    ),
+    path(
+        "retailers/<uuid:retailer_id>/discount-grid/",
+        t.DiscountGridView.as_view(),
+        name="retailer-discount-grid",
+    ),
+    path(
+        "retailers/<uuid:retailer_id>/discount-grid/preview/",
+        t.DiscountGridPreviewView.as_view(),
+        name="retailer-discount-grid-preview",
+    ),
+    path(
+        "retailers/<uuid:retailer_id>/copy-pricing/preview/",
+        t.CopyPricingPreviewView.as_view(),
+        name="retailer-copy-pricing-preview",
+    ),
+    path(
+        "retailers/<uuid:retailer_id>/copy-pricing/",
+        t.CopyPricingView.as_view(),
+        name="retailer-copy-pricing",
+    ),
+    path(
+        "retailers/<uuid:retailer_id>/free-products/",
+        t.FreeProductsView.as_view(),
+        name="retailer-free-products",
+    ),
+    path(
+        "price-lists/<uuid:price_list_id>/adjust/preview/",
+        t.PriceListAdjustPreviewView.as_view(),
+        name="price-list-adjust-preview",
+    ),
+    path(
+        "price-lists/<uuid:price_list_id>/adjust/",
+        t.PriceListAdjustView.as_view(),
+        name="price-list-adjust",
+    ),
+    path("pricing/shop-report/", t.ShopPricingReportView.as_view(), name="pricing-shop-report"),
+    path(
+        "pricing/shop-report/export/",
+        t.ShopPricingReportExportView.as_view(),
+        name="pricing-shop-report-export",
     ),
 ]

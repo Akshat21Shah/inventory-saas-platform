@@ -185,3 +185,13 @@ def price_list_warnings(price_list: PriceList, product_ids: list[UUID]) -> list[
     if not free_products:
         return []
     return [_warning("This price list", len(free_products), free_shops)]
+
+
+def grid_warning(products: int) -> Warning:
+    """The discount grid: the shop's discounts that make products free (one shop)."""
+    return Warning(
+        FREE_GOODS,
+        f"These discounts make {_plural(products, 'product')} free for 1 retailer. "
+        "Free-goods schemes are not supported yet.",
+        {"products": products, "retailers": 1},
+    )

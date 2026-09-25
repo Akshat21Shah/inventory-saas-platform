@@ -254,6 +254,12 @@ def _book(rows: Iterable[list[Any]], widths: list[int] | None = None) -> tuple[W
     return book, sheet
 
 
+def spreadsheet(rows: Iterable[list[Any]], widths: list[int] | None = None) -> bytes:
+    """A one-sheet .xlsx with a bold header row (reports and exports)."""
+    book, _sheet = _book(rows, widths)
+    return _bytes(book)
+
+
 def _bytes(book: Workbook) -> bytes:
     buffer = io.BytesIO()
     book.save(buffer)

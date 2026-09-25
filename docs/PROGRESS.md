@@ -262,6 +262,22 @@
     - `Product.cost_price`: returned only with `pricing.view` (null otherwise), set only with `pricing.manage` (checked in the service, so imports too), audited as a price change. Never in the shop API.
     - Imports: a "Cost price" column that needs `pricing.manage`. Templates and exports leave the column out without `pricing.view`.
     - The seed adds an own brand ("Sharma Select" / "Patel Select") and cost prices.
+  - 2.23–2.26: per-shop pricing tools, backend (`apps/pricing/tools.py`, `api/tools.py`).
+    - Discount grid: `GET/PUT retailers/{id}/discount-grid/` and `POST …/preview/`.
+      - One simple rule per shop and product (no slabs, no dates), named "R-00001 · CODE". Slab or dated rules come back read-only.
+      - The preview prices the entered discounts through `resolve_prices` with rules supplied for the preview only; nothing is saved.
+      - Saving writes one audit entry (`pricing.shop_discounts_changed`) and returns a free-goods warning when needed.
+    - Copy pricing: `POST retailers/{id}/copy-pricing/preview/`, then `…/copy-pricing/` with `expected_changes`.
+      - Replace or Add, no default. A stale preview returns 409 `PREVIEW_OUT_OF_DATE`.
+      - Copies the price list, special prices, and shop rules with their slabs. Copied rule names switch to the target shop's code.
+      - In Add, a simple rule replaces the target's. One audit entry, `pricing.pricing_copied`.
+    - Bulk % change: `POST price-lists/{id}/adjust/preview/`, then `…/adjust/` with `expected_count`.
+      - Category (with sub-categories) or brand; optionally adds the missing products from the standard price.
+      - Rounding to the paisa or to whole rupees, half-up (`billing.tax.adjust_price`).
+      - Audited: the price changes plus `pricing.price_list_adjusted`.
+    - Shop pricing report: `GET pricing/shop-report/` (customised shops or all, with counts and free products; 25 per page) and `…/export/`, plus `GET retailers/{id}/free-products/`.
+      - Free products are found by a cheap upper bound on each rule's share (best, or the sum), then full pricing for the at-risk products only.
+    - Every route has isolation tests and is in the role matrix.
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.

@@ -192,6 +192,7 @@ SPECTACULAR_SETTINGS = {
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",
         "ImportModeEnum": "apps.dataio.models.ImportJob.Mode",
+        "CopyModeEnum": "apps.pricing.tools.COPY_MODE_CHOICES",
         "ImportStatusEnum": "apps.dataio.models.ImportJob.Status",
         "ImportKindEnum": "apps.dataio.models.ImportJob.Kind",
         "AddressKindEnum": "apps.retailers.models.RetailerAddress.Kind",

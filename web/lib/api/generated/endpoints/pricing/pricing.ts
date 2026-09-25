@@ -25,15 +25,28 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdjustApplyRequest,
+  AdjustPreview,
+  AdjustRequest,
+  AdjustResult,
+  Changed,
+  CopyApplyRequest,
+  CopyPlan,
+  CopyRequest,
   DiscountRule,
   DiscountRuleWriteRequest,
   DiscountRulesListParams,
+  FreeProduct,
+  GridItemsRequest,
+  GridPreviewRow,
   ItemsUpsertRequest,
   ItemsUpsertResult,
   PaginatedDiscountRuleList,
+  PaginatedGridRowList,
   PaginatedPriceListItemList,
   PaginatedPriceListList,
   PaginatedPriceSheetRowList,
+  PaginatedReportRowList,
   PaginatedRetailerPriceList,
   PatchedDiscountRuleWriteRequest,
   PatchedPriceListWriteRequest,
@@ -44,9 +57,11 @@ import type {
   PriceListItemsListParams,
   PriceListWriteRequest,
   PriceListsListParams,
+  PricingShopReportParams,
   RetailerPrice,
   RetailerPriceWriteRequest,
   RetailerPricesListParams,
+  RetailersDiscountGridParams,
   RetailersPriceSheetParams
 } from '../../model';
 
@@ -1042,6 +1057,194 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getPriceListsDeleteMutationOptions(options), queryClient);
     }
+    export type priceListsAdjustResponse200 = {
+  data: AdjustResult
+  status: 200
+}
+
+export type priceListsAdjustResponseSuccess = (priceListsAdjustResponse200) & {
+  headers: Headers;
+};
+;
+
+export type priceListsAdjustResponse = (priceListsAdjustResponseSuccess)
+
+export const getPriceListsAdjustUrl = (priceListId: string,) => {
+
+
+
+
+  return `/api/v1/price-lists/${priceListId}/adjust/`
+}
+
+export const priceListsAdjust = async (priceListId: string,
+    adjustApplyRequest: AdjustApplyRequest, options?: Parameters<typeof apiFetch>[1]): Promise<priceListsAdjustResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<priceListsAdjustResponse>(getPriceListsAdjustUrl(priceListId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adjustApplyRequest)
+  }
+);}
+
+
+
+
+
+export const getPriceListsAdjustMutationKey = () => ['priceListsAdjust'] as const;
+
+export const getPriceListsAdjustMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof priceListsAdjust>>, TError,PriceListsAdjustMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof priceListsAdjust>>, TError,PriceListsAdjustMutationVariables, TContext> => {
+
+const mutationKey = getPriceListsAdjustMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof priceListsAdjust>>, PriceListsAdjustMutationVariables> = (props) => {
+          const {priceListId,data} = props ?? {};
+
+          return  priceListsAdjust(priceListId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PriceListsAdjustMutationResult = NonNullable<Awaited<ReturnType<typeof priceListsAdjust>>>
+    export type PriceListsAdjustMutationBody = AdjustApplyRequest
+    export type PriceListsAdjustMutationError = unknown
+    export type PriceListsAdjustMutationVariables = {priceListId: string;data: AdjustApplyRequest}
+
+    export const usePriceListsAdjust = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof priceListsAdjust>>, TError,PriceListsAdjustMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof priceListsAdjust>>,
+        TError,
+        PriceListsAdjustMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPriceListsAdjustMutationOptions(options), queryClient);
+    }
+    export type priceListsAdjustPreviewResponse200 = {
+  data: AdjustPreview
+  status: 200
+}
+
+export type priceListsAdjustPreviewResponseSuccess = (priceListsAdjustPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type priceListsAdjustPreviewResponse = (priceListsAdjustPreviewResponseSuccess)
+
+export const getPriceListsAdjustPreviewUrl = (priceListId: string,) => {
+
+
+
+
+  return `/api/v1/price-lists/${priceListId}/adjust/preview/`
+}
+
+export const priceListsAdjustPreview = async (priceListId: string,
+    adjustRequest: AdjustRequest, options?: Parameters<typeof apiFetch>[1]): Promise<priceListsAdjustPreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<priceListsAdjustPreviewResponse>(getPriceListsAdjustPreviewUrl(priceListId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adjustRequest)
+  }
+);}
+
+
+
+
+
+export const getPriceListsAdjustPreviewMutationKey = () => ['priceListsAdjustPreview'] as const;
+
+export const getPriceListsAdjustPreviewMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof priceListsAdjustPreview>>, TError,PriceListsAdjustPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof priceListsAdjustPreview>>, TError,PriceListsAdjustPreviewMutationVariables, TContext> => {
+
+const mutationKey = getPriceListsAdjustPreviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof priceListsAdjustPreview>>, PriceListsAdjustPreviewMutationVariables> = (props) => {
+          const {priceListId,data} = props ?? {};
+
+          return  priceListsAdjustPreview(priceListId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PriceListsAdjustPreviewMutationResult = NonNullable<Awaited<ReturnType<typeof priceListsAdjustPreview>>>
+    export type PriceListsAdjustPreviewMutationBody = AdjustRequest
+    export type PriceListsAdjustPreviewMutationError = unknown
+    export type PriceListsAdjustPreviewMutationVariables = {priceListId: string;data: AdjustRequest}
+
+    export const usePriceListsAdjustPreview = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof priceListsAdjustPreview>>, TError,PriceListsAdjustPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof priceListsAdjustPreview>>,
+        TError,
+        PriceListsAdjustPreviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPriceListsAdjustPreviewMutationOptions(options), queryClient);
+    }
     export type priceListItemsListResponse200 = {
   data: PaginatedPriceListItemList
   status: 200
@@ -1434,7 +1637,229 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getPricingPreviewMutationOptions(options), queryClient);
     }
-    export type retailerPricesListResponse200 = {
+    export type pricingShopReportResponse200 = {
+  data: PaginatedReportRowList
+  status: 200
+}
+
+export type pricingShopReportResponseSuccess = (pricingShopReportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type pricingShopReportResponse = (pricingShopReportResponseSuccess)
+
+export const getPricingShopReportUrl = (params?: PricingShopReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/pricing/shop-report/?${stringifiedParams}` : `/api/v1/pricing/shop-report/`
+}
+
+/**
+ * Shops with special prices or shop-specific rules, and the products each gets free.
+ */
+export const pricingShopReport = async (params?: PricingShopReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<pricingShopReportResponse> => {
+
+  return apiFetch<pricingShopReportResponse>(getPricingShopReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPricingShopReportQueryKey = (params?: PricingShopReportParams,) => {
+    return [
+    `/api/v1/pricing/shop-report/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPricingShopReportQueryOptions = <TData = Awaited<ReturnType<typeof pricingShopReport>>, TError = unknown>(params?: PricingShopReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPricingShopReportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof pricingShopReport>>> = ({ signal }) => pricingShopReport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof pricingShopReport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PricingShopReportQueryResult = NonNullable<Awaited<ReturnType<typeof pricingShopReport>>>
+export type PricingShopReportQueryError = unknown
+
+
+export function usePricingShopReport<TData = Awaited<ReturnType<typeof pricingShopReport>>, TError = unknown>(
+ params: undefined |  PricingShopReportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pricingShopReport>>,
+          TError,
+          Awaited<ReturnType<typeof pricingShopReport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePricingShopReport<TData = Awaited<ReturnType<typeof pricingShopReport>>, TError = unknown>(
+ params?: PricingShopReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pricingShopReport>>,
+          TError,
+          Awaited<ReturnType<typeof pricingShopReport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePricingShopReport<TData = Awaited<ReturnType<typeof pricingShopReport>>, TError = unknown>(
+ params?: PricingShopReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePricingShopReport<TData = Awaited<ReturnType<typeof pricingShopReport>>, TError = unknown>(
+ params?: PricingShopReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPricingShopReportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type pricingShopReportExportResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type pricingShopReportExportResponseSuccess = (pricingShopReportExportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type pricingShopReportExportResponse = (pricingShopReportExportResponseSuccess)
+
+export const getPricingShopReportExportUrl = () => {
+
+
+
+
+  return `/api/v1/pricing/shop-report/export/`
+}
+
+export const pricingShopReportExport = async ( options?: Parameters<typeof apiFetch>[1]): Promise<pricingShopReportExportResponse> => {
+
+  return apiFetch<pricingShopReportExportResponse>(getPricingShopReportExportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPricingShopReportExportQueryKey = () => {
+    return [
+    `/api/v1/pricing/shop-report/export/`
+    ] as const;
+    }
+
+
+export const getPricingShopReportExportQueryOptions = <TData = Awaited<ReturnType<typeof pricingShopReportExport>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReportExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPricingShopReportExportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof pricingShopReportExport>>> = ({ signal }) => pricingShopReportExport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof pricingShopReportExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PricingShopReportExportQueryResult = NonNullable<Awaited<ReturnType<typeof pricingShopReportExport>>>
+export type PricingShopReportExportQueryError = unknown
+
+
+export function usePricingShopReportExport<TData = Awaited<ReturnType<typeof pricingShopReportExport>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReportExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pricingShopReportExport>>,
+          TError,
+          Awaited<ReturnType<typeof pricingShopReportExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePricingShopReportExport<TData = Awaited<ReturnType<typeof pricingShopReportExport>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReportExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pricingShopReportExport>>,
+          TError,
+          Awaited<ReturnType<typeof pricingShopReportExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePricingShopReportExport<TData = Awaited<ReturnType<typeof pricingShopReportExport>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReportExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePricingShopReportExport<TData = Awaited<ReturnType<typeof pricingShopReportExport>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pricingShopReportExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPricingShopReportExportQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type retailerPricesListResponse200 = {
   data: PaginatedRetailerPriceList
   status: 200
 }
@@ -1813,7 +2238,616 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRetailerPricesDeleteMutationOptions(options), queryClient);
     }
-    export type retailersPriceSheetResponse200 = {
+    export type retailersCopyPricingResponse200 = {
+  data: CopyPlan
+  status: 200
+}
+
+export type retailersCopyPricingResponseSuccess = (retailersCopyPricingResponse200) & {
+  headers: Headers;
+};
+;
+
+export type retailersCopyPricingResponse = (retailersCopyPricingResponseSuccess)
+
+export const getRetailersCopyPricingUrl = (retailerId: string,) => {
+
+
+
+
+  return `/api/v1/retailers/${retailerId}/copy-pricing/`
+}
+
+export const retailersCopyPricing = async (retailerId: string,
+    copyApplyRequest: CopyApplyRequest, options?: Parameters<typeof apiFetch>[1]): Promise<retailersCopyPricingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<retailersCopyPricingResponse>(getRetailersCopyPricingUrl(retailerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(copyApplyRequest)
+  }
+);}
+
+
+
+
+
+export const getRetailersCopyPricingMutationKey = () => ['retailersCopyPricing'] as const;
+
+export const getRetailersCopyPricingMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersCopyPricing>>, TError,RetailersCopyPricingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retailersCopyPricing>>, TError,RetailersCopyPricingMutationVariables, TContext> => {
+
+const mutationKey = getRetailersCopyPricingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retailersCopyPricing>>, RetailersCopyPricingMutationVariables> = (props) => {
+          const {retailerId,data} = props ?? {};
+
+          return  retailersCopyPricing(retailerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetailersCopyPricingMutationResult = NonNullable<Awaited<ReturnType<typeof retailersCopyPricing>>>
+    export type RetailersCopyPricingMutationBody = CopyApplyRequest
+    export type RetailersCopyPricingMutationError = unknown
+    export type RetailersCopyPricingMutationVariables = {retailerId: string;data: CopyApplyRequest}
+
+    export const useRetailersCopyPricing = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersCopyPricing>>, TError,RetailersCopyPricingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retailersCopyPricing>>,
+        TError,
+        RetailersCopyPricingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetailersCopyPricingMutationOptions(options), queryClient);
+    }
+    export type retailersCopyPricingPreviewResponse200 = {
+  data: CopyPlan
+  status: 200
+}
+
+export type retailersCopyPricingPreviewResponseSuccess = (retailersCopyPricingPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type retailersCopyPricingPreviewResponse = (retailersCopyPricingPreviewResponseSuccess)
+
+export const getRetailersCopyPricingPreviewUrl = (retailerId: string,) => {
+
+
+
+
+  return `/api/v1/retailers/${retailerId}/copy-pricing/preview/`
+}
+
+export const retailersCopyPricingPreview = async (retailerId: string,
+    copyRequest: CopyRequest, options?: Parameters<typeof apiFetch>[1]): Promise<retailersCopyPricingPreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<retailersCopyPricingPreviewResponse>(getRetailersCopyPricingPreviewUrl(retailerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(copyRequest)
+  }
+);}
+
+
+
+
+
+export const getRetailersCopyPricingPreviewMutationKey = () => ['retailersCopyPricingPreview'] as const;
+
+export const getRetailersCopyPricingPreviewMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersCopyPricingPreview>>, TError,RetailersCopyPricingPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retailersCopyPricingPreview>>, TError,RetailersCopyPricingPreviewMutationVariables, TContext> => {
+
+const mutationKey = getRetailersCopyPricingPreviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retailersCopyPricingPreview>>, RetailersCopyPricingPreviewMutationVariables> = (props) => {
+          const {retailerId,data} = props ?? {};
+
+          return  retailersCopyPricingPreview(retailerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetailersCopyPricingPreviewMutationResult = NonNullable<Awaited<ReturnType<typeof retailersCopyPricingPreview>>>
+    export type RetailersCopyPricingPreviewMutationBody = CopyRequest
+    export type RetailersCopyPricingPreviewMutationError = unknown
+    export type RetailersCopyPricingPreviewMutationVariables = {retailerId: string;data: CopyRequest}
+
+    export const useRetailersCopyPricingPreview = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersCopyPricingPreview>>, TError,RetailersCopyPricingPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retailersCopyPricingPreview>>,
+        TError,
+        RetailersCopyPricingPreviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetailersCopyPricingPreviewMutationOptions(options), queryClient);
+    }
+    export type retailersDiscountGridResponse200 = {
+  data: PaginatedGridRowList
+  status: 200
+}
+
+export type retailersDiscountGridResponseSuccess = (retailersDiscountGridResponse200) & {
+  headers: Headers;
+};
+;
+
+export type retailersDiscountGridResponse = (retailersDiscountGridResponseSuccess)
+
+export const getRetailersDiscountGridUrl = (retailerId: string,
+    params?: RetailersDiscountGridParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/retailers/${retailerId}/discount-grid/?${stringifiedParams}` : `/api/v1/retailers/${retailerId}/discount-grid/`
+}
+
+/**
+ * GET the grid (pricing.view); PUT saves the shop's per-product discounts (pricing.manage).
+ */
+export const retailersDiscountGrid = async (retailerId: string,
+    params?: RetailersDiscountGridParams, options?: Parameters<typeof apiFetch>[1]): Promise<retailersDiscountGridResponse> => {
+
+  return apiFetch<retailersDiscountGridResponse>(getRetailersDiscountGridUrl(retailerId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetailersDiscountGridQueryKey = (retailerId: string,
+    params?: RetailersDiscountGridParams,) => {
+    return [
+    `/api/v1/retailers/${retailerId}/discount-grid/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getRetailersDiscountGridQueryOptions = <TData = Awaited<ReturnType<typeof retailersDiscountGrid>>, TError = unknown>(retailerId: string,
+    params?: RetailersDiscountGridParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersDiscountGrid>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetailersDiscountGridQueryKey(retailerId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retailersDiscountGrid>>> = ({ signal }) => retailersDiscountGrid(retailerId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: retailerId !== null && retailerId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retailersDiscountGrid>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetailersDiscountGridQueryResult = NonNullable<Awaited<ReturnType<typeof retailersDiscountGrid>>>
+export type RetailersDiscountGridQueryError = unknown
+
+
+export function useRetailersDiscountGrid<TData = Awaited<ReturnType<typeof retailersDiscountGrid>>, TError = unknown>(
+ retailerId: string,
+    params: undefined |  RetailersDiscountGridParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersDiscountGrid>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retailersDiscountGrid>>,
+          TError,
+          Awaited<ReturnType<typeof retailersDiscountGrid>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetailersDiscountGrid<TData = Awaited<ReturnType<typeof retailersDiscountGrid>>, TError = unknown>(
+ retailerId: string,
+    params?: RetailersDiscountGridParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersDiscountGrid>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retailersDiscountGrid>>,
+          TError,
+          Awaited<ReturnType<typeof retailersDiscountGrid>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetailersDiscountGrid<TData = Awaited<ReturnType<typeof retailersDiscountGrid>>, TError = unknown>(
+ retailerId: string,
+    params?: RetailersDiscountGridParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersDiscountGrid>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetailersDiscountGrid<TData = Awaited<ReturnType<typeof retailersDiscountGrid>>, TError = unknown>(
+ retailerId: string,
+    params?: RetailersDiscountGridParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersDiscountGrid>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetailersDiscountGridQueryOptions(retailerId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type retailersDiscountGridSaveResponse200 = {
+  data: Changed
+  status: 200
+}
+
+export type retailersDiscountGridSaveResponseSuccess = (retailersDiscountGridSaveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type retailersDiscountGridSaveResponse = (retailersDiscountGridSaveResponseSuccess)
+
+export const getRetailersDiscountGridSaveUrl = (retailerId: string,) => {
+
+
+
+
+  return `/api/v1/retailers/${retailerId}/discount-grid/`
+}
+
+/**
+ * GET the grid (pricing.view); PUT saves the shop's per-product discounts (pricing.manage).
+ */
+export const retailersDiscountGridSave = async (retailerId: string,
+    gridItemsRequest: GridItemsRequest, options?: Parameters<typeof apiFetch>[1]): Promise<retailersDiscountGridSaveResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<retailersDiscountGridSaveResponse>(getRetailersDiscountGridSaveUrl(retailerId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(gridItemsRequest)
+  }
+);}
+
+
+
+
+
+export const getRetailersDiscountGridSaveMutationKey = () => ['retailersDiscountGridSave'] as const;
+
+export const getRetailersDiscountGridSaveMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersDiscountGridSave>>, TError,RetailersDiscountGridSaveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retailersDiscountGridSave>>, TError,RetailersDiscountGridSaveMutationVariables, TContext> => {
+
+const mutationKey = getRetailersDiscountGridSaveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retailersDiscountGridSave>>, RetailersDiscountGridSaveMutationVariables> = (props) => {
+          const {retailerId,data} = props ?? {};
+
+          return  retailersDiscountGridSave(retailerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetailersDiscountGridSaveMutationResult = NonNullable<Awaited<ReturnType<typeof retailersDiscountGridSave>>>
+    export type RetailersDiscountGridSaveMutationBody = GridItemsRequest
+    export type RetailersDiscountGridSaveMutationError = unknown
+    export type RetailersDiscountGridSaveMutationVariables = {retailerId: string;data: GridItemsRequest}
+
+    export const useRetailersDiscountGridSave = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersDiscountGridSave>>, TError,RetailersDiscountGridSaveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retailersDiscountGridSave>>,
+        TError,
+        RetailersDiscountGridSaveMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetailersDiscountGridSaveMutationOptions(options), queryClient);
+    }
+    export type retailersDiscountGridPreviewResponse200 = {
+  data: GridPreviewRow[]
+  status: 200
+}
+
+export type retailersDiscountGridPreviewResponseSuccess = (retailersDiscountGridPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type retailersDiscountGridPreviewResponse = (retailersDiscountGridPreviewResponseSuccess)
+
+export const getRetailersDiscountGridPreviewUrl = (retailerId: string,) => {
+
+
+
+
+  return `/api/v1/retailers/${retailerId}/discount-grid/preview/`
+}
+
+export const retailersDiscountGridPreview = async (retailerId: string,
+    gridItemsRequest: GridItemsRequest, options?: Parameters<typeof apiFetch>[1]): Promise<retailersDiscountGridPreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<retailersDiscountGridPreviewResponse>(getRetailersDiscountGridPreviewUrl(retailerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(gridItemsRequest)
+  }
+);}
+
+
+
+
+
+export const getRetailersDiscountGridPreviewMutationKey = () => ['retailersDiscountGridPreview'] as const;
+
+export const getRetailersDiscountGridPreviewMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersDiscountGridPreview>>, TError,RetailersDiscountGridPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retailersDiscountGridPreview>>, TError,RetailersDiscountGridPreviewMutationVariables, TContext> => {
+
+const mutationKey = getRetailersDiscountGridPreviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retailersDiscountGridPreview>>, RetailersDiscountGridPreviewMutationVariables> = (props) => {
+          const {retailerId,data} = props ?? {};
+
+          return  retailersDiscountGridPreview(retailerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetailersDiscountGridPreviewMutationResult = NonNullable<Awaited<ReturnType<typeof retailersDiscountGridPreview>>>
+    export type RetailersDiscountGridPreviewMutationBody = GridItemsRequest
+    export type RetailersDiscountGridPreviewMutationError = unknown
+    export type RetailersDiscountGridPreviewMutationVariables = {retailerId: string;data: GridItemsRequest}
+
+    export const useRetailersDiscountGridPreview = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retailersDiscountGridPreview>>, TError,RetailersDiscountGridPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retailersDiscountGridPreview>>,
+        TError,
+        RetailersDiscountGridPreviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetailersDiscountGridPreviewMutationOptions(options), queryClient);
+    }
+    export type retailersFreeProductsResponse200 = {
+  data: FreeProduct[]
+  status: 200
+}
+
+export type retailersFreeProductsResponseSuccess = (retailersFreeProductsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type retailersFreeProductsResponse = (retailersFreeProductsResponseSuccess)
+
+export const getRetailersFreeProductsUrl = (retailerId: string,) => {
+
+
+
+
+  return `/api/v1/retailers/${retailerId}/free-products/`
+}
+
+export const retailersFreeProducts = async (retailerId: string, options?: Parameters<typeof apiFetch>[1]): Promise<retailersFreeProductsResponse> => {
+
+  return apiFetch<retailersFreeProductsResponse>(getRetailersFreeProductsUrl(retailerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetailersFreeProductsQueryKey = (retailerId: string,) => {
+    return [
+    `/api/v1/retailers/${retailerId}/free-products/`
+    ] as const;
+    }
+
+
+export const getRetailersFreeProductsQueryOptions = <TData = Awaited<ReturnType<typeof retailersFreeProducts>>, TError = unknown>(retailerId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersFreeProducts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetailersFreeProductsQueryKey(retailerId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retailersFreeProducts>>> = ({ signal }) => retailersFreeProducts(retailerId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: retailerId !== null && retailerId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retailersFreeProducts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetailersFreeProductsQueryResult = NonNullable<Awaited<ReturnType<typeof retailersFreeProducts>>>
+export type RetailersFreeProductsQueryError = unknown
+
+
+export function useRetailersFreeProducts<TData = Awaited<ReturnType<typeof retailersFreeProducts>>, TError = unknown>(
+ retailerId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersFreeProducts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retailersFreeProducts>>,
+          TError,
+          Awaited<ReturnType<typeof retailersFreeProducts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetailersFreeProducts<TData = Awaited<ReturnType<typeof retailersFreeProducts>>, TError = unknown>(
+ retailerId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersFreeProducts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retailersFreeProducts>>,
+          TError,
+          Awaited<ReturnType<typeof retailersFreeProducts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetailersFreeProducts<TData = Awaited<ReturnType<typeof retailersFreeProducts>>, TError = unknown>(
+ retailerId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersFreeProducts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetailersFreeProducts<TData = Awaited<ReturnType<typeof retailersFreeProducts>>, TError = unknown>(
+ retailerId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersFreeProducts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetailersFreeProductsQueryOptions(retailerId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type retailersPriceSheetResponse200 = {
   data: PaginatedPriceSheetRowList
   status: 200
 }

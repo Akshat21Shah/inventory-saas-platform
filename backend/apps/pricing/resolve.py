@@ -24,6 +24,7 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import Q
+from django.utils import timezone
 
 from apps.billing.tax import (
     ComponentRounding,
@@ -36,13 +37,15 @@ from apps.billing.tax import (
 from apps.catalog import selectors as catalog
 from apps.catalog.models import Category, Product
 from apps.platform.selectors import get_setting
-from apps.pricing.models import DiscountRule, PriceListItem, RetailerPrice
+from apps.pricing.models import DiscountRule, DiscountSlab, PriceListItem, RetailerPrice
 from apps.retailers.models import Retailer
 from common.dates import today_ist
 from common.error_codes import ErrorCode
 from common.errors import DomainError
+from common.ids import uuid7
 
 PAISA = Decimal("0.01")
+ZERO = Decimal("0")
 
 
 class PriceUnavailable(DomainError):
@@ -108,6 +111,10 @@ class _Context:
 _AUDIENCE_RANK = {"RETAILER": 3, "PRICE_LIST": 2, "ALL": 1}
 
 
+def _slabs(rule: DiscountRule) -> list[Any]:
+    return list(rule.slabs.all())
+
+
 def _active_rules(retailer: Retailer, on: date) -> list[DiscountRule]:
     audience = Q(audience_type="ALL") | Q(audience_type="RETAILER", retailer=retailer)
     if retailer.price_list_id:
@@ -147,7 +154,7 @@ def _scope_rank(rule: DiscountRule, product: Product, chain: list[tuple[UUID, in
 
 
 def _rule_value(rule: DiscountRule, qty: Decimal) -> tuple[Decimal, Decimal | None] | None:
-    slabs = list(rule.slabs.all())
+    slabs = _slabs(rule)
     if not slabs:
         return (rule.value, None) if rule.value > 0 else None
     reached = [s for s in slabs if s.min_qty <= qty]
@@ -221,9 +228,16 @@ def _discounts(
     return applied
 
 
-def _context(retailer: Retailer, on: date) -> _Context:
+def _context(
+    retailer: Retailer,
+    on: date,
+    *,
+    extra_rules: Iterable[DiscountRule] = (),
+    exclude_rule_ids: Iterable[UUID] = (),
+) -> _Context:
     tenant_id = retailer.tenant_id
-    rules = _active_rules(retailer, on)
+    excluded = set(exclude_rule_ids)
+    rules = [r for r in _active_rules(retailer, on) if r.pk not in excluded] + list(extra_rules)
     categories: dict[UUID, tuple[UUID | None, int]] = {}
     if any(rule.scope_type == "CATEGORY" for rule in rules):
         categories = {
@@ -242,13 +256,26 @@ def _context(retailer: Retailer, on: date) -> _Context:
     )
 
 
+def hypothetical_rule(**fields: Any) -> DiscountRule:
+    """An unsaved rule for "what if" previews (the discount grid): no slabs, never queried."""
+    rule = DiscountRule(pk=uuid7(), created_at=timezone.now(), is_active=True, **fields)
+    rule._prefetched_objects_cache = {"slabs": DiscountSlab.objects.none()}  # type: ignore[attr-defined]
+    return rule
+
+
 def resolve_prices(
-    retailer: Retailer, lines: Iterable[tuple[Product, Decimal]], *, on: date | None = None
+    retailer: Retailer,
+    lines: Iterable[tuple[Product, Decimal]],
+    *,
+    on: date | None = None,
+    extra_rules: Iterable[DiscountRule] = (),
+    exclude_rule_ids: Iterable[UUID] = (),
 ) -> list[PriceResult]:
-    """``resolve_price`` for many lines at once (catalog pages, carts): one query per source."""
+    """``resolve_price`` for many lines at once (catalog pages, carts): one query per source.
+    ``extra_rules`` / ``exclude_rule_ids`` answer "what if" questions without saving anything."""
     day = on or today_ist()
     lines = list(lines)
-    ctx = _context(retailer, day)
+    ctx = _context(retailer, day, extra_rules=extra_rules, exclude_rule_ids=exclude_rule_ids)
     product_ids = [product.pk for product, _ in lines]
     special = dict(
         RetailerPrice.objects.filter(retailer=retailer, product_id__in=product_ids).values_list(
@@ -324,3 +351,61 @@ def slab_quantities(
         for slab in rule.slabs.all()
     }
     return sorted(found)
+
+
+def free_among(retailer: Retailer, products: list[Product]) -> list[Product]:
+    """Which of ``products`` this shop gets free today: a ₹0 special or list price, or discounts
+    that reach the whole price at the highest slab quantity. A cheap upper bound (each rule's
+    largest % or flat share, the best one or the sum as the setting says) picks the products that
+    are then priced in full (ADR-038 item 6)."""
+    day = today_ist()
+    ctx = _context(retailer, day)
+    ids = [p.pk for p in products]
+    special = dict(
+        RetailerPrice.objects.filter(retailer=retailer, product_id__in=ids).values_list(
+            "product_id", "price"
+        )
+    )
+    listed: dict[UUID, Decimal] = {}
+    if retailer.price_list_id:
+        listed = dict(
+            PriceListItem.objects.filter(
+                price_list_id=retailer.price_list_id,
+                product_id__in=ids,
+                price_list__deleted_at__isnull=True,
+            ).values_list("product_id", "price")
+        )
+    free: list[Product] = []
+    at_risk: list[tuple[Product, Decimal]] = []
+    for product in products:
+        if product.pk in special:
+            unit, source = special[product.pk], "SPECIAL"
+        elif product.pk in listed:
+            unit, source = listed[product.pk], "PRICE_LIST"
+        else:
+            unit, source = product.base_price, "BASE"
+        if unit <= 0:
+            if source != "BASE":  # a ₹0 price someone set, not a product without a price
+                free.append(product)
+            continue
+        if source == "SPECIAL" and not ctx.discounts_on_special:
+            continue
+        chain = _category_chain(product.category_id, ctx)
+        shares: list[Decimal] = []
+        qty = product.min_order_qty
+        for rule in ctx.rules:
+            if _scope_rank(rule, product, chain) is None:
+                continue
+            slabs = _slabs(rule)
+            value = max(s.value for s in slabs) if slabs else rule.value
+            if slabs:
+                qty = max(qty, max(s.min_qty for s in slabs))
+            share = value if rule.discount_type == "PERCENT" else value * 100 / unit
+            shares.append(share)
+        bound = (max(shares) if ctx.combination == "BEST" else sum(shares)) if shares else ZERO
+        if bound >= 100:
+            at_risk.append((product, qty))
+    if at_risk:
+        results = resolve_prices(retailer, at_risk, on=day)
+        free.extend(p for (p, _), r in zip(at_risk, results, strict=True) if r.line_net <= 0)
+    return free

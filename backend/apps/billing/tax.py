@@ -103,6 +103,17 @@ def line_discount(
     return min(round2(qty * discount.value, rounding), gross)
 
 
+RUPEE = Decimal("1")
+
+
+def adjust_price(price: Decimal, percent: Decimal, *, whole_rupees: bool = False) -> Decimal:
+    """``price`` changed by ``percent`` (e.g. 5 or -2.5), rounded half-up to the paisa or to whole
+    rupees (bulk price-list changes, ADR-037). Never below zero."""
+    changed = price * (HUNDRED + percent) / HUNDRED
+    step = RUPEE if whole_rupees else PAISA
+    return max(changed.quantize(step, ROUND_HALF_UP), Decimal("0")).quantize(PAISA)
+
+
 def percent_of(part: Decimal, whole: Decimal, rounding: ComponentRounding) -> Decimal:
     """``part`` as a percentage of ``whole`` to two decimals (a discount shown to shops)."""
     if whole <= 0:

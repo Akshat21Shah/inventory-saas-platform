@@ -2091,6 +2091,60 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/price-lists/{price_list_id}/adjust/:
+    post:
+      operationId: price_lists_adjust
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustApplyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdjustResult'
+          description: ''
+  /api/v1/price-lists/{price_list_id}/adjust/preview/:
+    post:
+      operationId: price_lists_adjust_preview
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdjustPreview'
+          description: ''
   /api/v1/price-lists/{price_list_id}/items/:
     get:
       operationId: price_list_items_list
@@ -2201,6 +2255,68 @@ paths:
                 items:
                   $ref: '#/components/schemas/PreviewRow'
           description: ''
+  /api/v1/pricing/shop-report/:
+    get:
+      operationId: pricing_shop_report
+      description: Shops with special prices or shop-specific rules, and the products
+        each gets free.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: show
+        schema:
+          enum:
+          - CUSTOMISED
+          - ALL
+          type: string
+          default: CUSTOMISED
+          minLength: 1
+        description: |-
+          * `CUSTOMISED` - CUSTOMISED
+          * `ALL` - ALL
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReportRowList'
+          description: ''
+  /api/v1/pricing/shop-report/export/:
+    get:
+      operationId: pricing_shop_report_export
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/products/:
     get:
       operationId: catalog_products_list
@@ -3164,6 +3280,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/RetailerDetail'
           description: ''
+  /api/v1/retailers/{retailer_id}/copy-pricing/:
+    post:
+      operationId: retailers_copy_pricing
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyApplyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopyPlan'
+          description: ''
+  /api/v1/retailers/{retailer_id}/copy-pricing/preview/:
+    post:
+      operationId: retailers_copy_pricing_preview
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopyPlan'
+          description: ''
   /api/v1/retailers/{retailer_id}/credit/:
     patch:
       operationId: retailers_credit_update
@@ -3189,6 +3359,137 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/discount-grid/:
+    get:
+      operationId: retailers_discount_grid
+      description: GET the grid (pricing.view); PUT saves the shop's per-product discounts
+        (pricing.manage).
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGridRowList'
+          description: ''
+    put:
+      operationId: retailers_discount_grid_save
+      description: GET the grid (pricing.view); PUT saves the shop's per-product discounts
+        (pricing.manage).
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GridItemsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Changed'
+          description: ''
+  /api/v1/retailers/{retailer_id}/discount-grid/preview/:
+    post:
+      operationId: retailers_discount_grid_preview
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GridItemsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GridPreviewRow'
+          description: ''
+  /api/v1/retailers/{retailer_id}/free-products/:
+    get:
+      operationId: retailers_free_products
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FreeProduct'
           description: ''
   /api/v1/retailers/{retailer_id}/prices/:
     get:
@@ -4101,6 +4402,86 @@ components:
       - line1
       - pincode
       - state_code
+    AdjustApplyRequest:
+      type: object
+      properties:
+        percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,2})?$
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        include_missing:
+          type: boolean
+          default: false
+        rounding:
+          allOf:
+          - $ref: '#/components/schemas/RoundingEnum'
+          default: PAISA
+        expected_count:
+          type: integer
+          minimum: 0
+      required:
+      - expected_count
+      - percent
+    AdjustPreview:
+      type: object
+      properties:
+        count:
+          type: integer
+        added:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+          description: The first 200 changes.
+      required:
+      - added
+      - count
+      - rows
+    AdjustRequest:
+      type: object
+      properties:
+        percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,2})?$
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        include_missing:
+          type: boolean
+          default: false
+        rounding:
+          allOf:
+          - $ref: '#/components/schemas/RoundingEnum'
+          default: PAISA
+      required:
+      - percent
+    AdjustResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+      required:
+      - changed
+      - warnings
     AppliedDiscount:
       type: object
       properties:
@@ -4732,6 +5113,18 @@ components:
           maxLength: 40
       required:
       - plan_code
+    Changed:
+      type: object
+      properties:
+        changed:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+      required:
+      - changed
+      - warnings
     ChooseTenantInputRequest:
       type: object
       properties:
@@ -4745,6 +5138,90 @@ components:
       required:
       - choice_token
       - tenant_id
+    CopyApplyRequest:
+      type: object
+      properties:
+        copy_from:
+          type: string
+          format: uuid
+          description: The shop whose pricing is copied.
+        mode:
+          $ref: '#/components/schemas/CopyModeEnum'
+        expected_changes:
+          type: integer
+          minimum: 0
+      required:
+      - copy_from
+      - expected_changes
+      - mode
+    CopyModeEnum:
+      enum:
+      - REPLACE
+      - ADD
+      type: string
+      description: |-
+        * `REPLACE` - Replace this shop's pricing
+        * `ADD` - Add to this shop's pricing
+    CopyPlan:
+      type: object
+      properties:
+        price_list_from:
+          type: string
+          nullable: true
+        price_list_to:
+          type: string
+          nullable: true
+        price_list_changes:
+          type: boolean
+        prices_add:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+        prices_update:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+        prices_remove:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+        rules_add:
+          type: array
+          items:
+            type: string
+        rules_replace:
+          type: array
+          items:
+            type: string
+        rules_remove:
+          type: array
+          items:
+            type: string
+        changes:
+          type: integer
+      required:
+      - changes
+      - price_list_changes
+      - price_list_from
+      - price_list_to
+      - prices_add
+      - prices_remove
+      - prices_update
+      - rules_add
+      - rules_remove
+      - rules_replace
+    CopyRequest:
+      type: object
+      properties:
+        copy_from:
+          type: string
+          format: uuid
+          description: The shop whose pricing is copied.
+        mode:
+          $ref: '#/components/schemas/CopyModeEnum'
+      required:
+      - copy_from
+      - mode
     Dashboard:
       type: object
       properties:
@@ -4996,6 +5473,129 @@ components:
           type: boolean
       required:
       - enabled
+    FreeProduct:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
+    GridItemRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Empty or 0 removes the shop's discount.
+      required:
+      - discount_type
+      - product
+      - value
+    GridItemsRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GridItemRequest'
+          maxItems: 500
+          minItems: 1
+      required:
+      - items
+    GridPreviewRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        price:
+          $ref: '#/components/schemas/GridPrice'
+      required:
+      - price
+      - product
+    GridPrice:
+      type: object
+      description: The server-worked price at the minimum order quantity.
+      properties:
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        price_source:
+          type: string
+        discounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedDiscount'
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - discount_percent
+      - discount_total
+      - discounts
+      - net_unit_price
+      - price_source
+      - qty
+      - unit_price
+    GridRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        simple:
+          allOf:
+          - $ref: '#/components/schemas/RuleBrief'
+          nullable: true
+          description: The grid's rule for this pair.
+        others:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleBrief'
+          description: Slab or dated rules (read-only here).
+        price:
+          $ref: '#/components/schemas/GridPrice'
+      required:
+      - brand
+      - category
+      - others
+      - price
+      - product
+      - simple
     GstRateOption:
       type: object
       properties:
@@ -5965,6 +6565,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DiscountRule'
+    PaginatedGridRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GridRow'
     PaginatedHsnHintList:
       type: object
       required:
@@ -6136,6 +6755,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProductList'
+    PaginatedReportRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportRow'
     PaginatedRetailerListList:
       type: object
       required:
@@ -6965,6 +7603,27 @@ components:
       - problem
       - product
       - result
+    PriceChange:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        old:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        new:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - code
+      - name
+      - new
+      - old
     PriceList:
       type: object
       properties:
@@ -7678,6 +8337,35 @@ components:
       description: |-
         * `REGULAR` - Regular
         * `COMPOSITION` - Composition (reserved)
+    ReportRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        shop_name:
+          type: string
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        special_price_count:
+          type: integer
+        shop_rule_count:
+          type: integer
+        free_product_count:
+          type: integer
+          readOnly: true
+      required:
+      - code
+      - free_product_count
+      - id
+      - price_list
+      - shop_name
+      - shop_rule_count
+      - special_price_count
     RetailerAccountChoice:
       type: object
       description: One of the verified phone owner's distributors (ADR-015).
@@ -8136,6 +8824,36 @@ components:
       required:
       - code
       - name
+    RoundingEnum:
+      enum:
+      - PAISA
+      - RUPEE
+      type: string
+      description: |-
+        * `PAISA` - PAISA
+        * `RUPEE` - RUPEE
+    RuleBrief:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        discount_type:
+          type: string
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        is_active:
+          type: boolean
+      required:
+      - discount_type
+      - id
+      - is_active
+      - name
+      - value
     Salesperson:
       type: object
       properties:

@@ -271,7 +271,7 @@ class SlabInput:
     value: Decimal
 
 
-def _check_value(kind: str, value: Decimal, field: str, errors: dict[str, list[str]]) -> None:
+def check_value(kind: str, value: Decimal, field: str, errors: dict[str, list[str]]) -> None:
     if kind == DiscountRule.Type.PERCENT and not Decimal("0") < value <= Decimal("100"):
         errors.setdefault(field, []).append("Enter a percentage above 0 and up to 100.")
     elif kind == DiscountRule.Type.FLAT_PER_UNIT and value <= 0:
@@ -347,10 +347,10 @@ def save_discount_rule(
         for index, slab in enumerate(new_slabs):
             if slab.min_qty <= 0:
                 errors.setdefault(f"slabs.{index}.min_qty", []).append("Enter a quantity above 0.")
-            _check_value(rule.discount_type, slab.value, f"slabs.{index}.value", errors)
+            check_value(rule.discount_type, slab.value, f"slabs.{index}.value", errors)
         rule.value = Decimal("0")  # slabs carry the values
     else:
-        _check_value(rule.discount_type, Decimal(rule.value or 0), "value", errors)
+        check_value(rule.discount_type, Decimal(rule.value or 0), "value", errors)
     if errors:
         raise InvalidFields(errors)
     rule.save()

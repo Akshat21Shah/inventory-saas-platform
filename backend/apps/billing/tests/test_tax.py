@@ -14,6 +14,7 @@ from apps.billing.tax import (
     LineTax,
     RoundOffMethod,
     SupplyType,
+    adjust_price,
     compute_document,
     compute_line,
     percent_of,
@@ -295,3 +296,21 @@ def test_documents_reconcile_to_the_paisa(many, method, to_rupee):
 )
 def test_percent_of(part, whole, expected):
     assert percent_of(D(part), D(whole), ComponentRounding.HALF_UP) == D(expected)
+
+
+@pytest.mark.parametrize(
+    ("price", "percent", "whole", "expected"),
+    [
+        ("9.00", "5", False, "9.45"),
+        ("19.99", "5", False, "20.99"),  # 20.9895
+        ("10.00", "2.5", False, "10.25"),
+        ("10.10", "5", False, "10.61"),  # 10.605 half-up
+        ("9.00", "5", True, "9.00"),  # 9.45 → 9
+        ("9.50", "0", True, "10.00"),  # 9.5 → 10 half-up
+        ("100.00", "-10", False, "90.00"),
+        ("5.00", "-100", False, "0.00"),
+        ("5.00", "-150", False, "0.00"),  # never below zero
+    ],
+)
+def test_adjust_price(price, percent, whole, expected):
+    assert adjust_price(D(price), D(percent), whole_rupees=whole) == D(expected)
