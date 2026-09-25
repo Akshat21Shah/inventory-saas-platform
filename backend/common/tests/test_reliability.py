@@ -89,8 +89,10 @@ def test_concurrent_duplicates_execute_once(api_client_for, staff_user, tenant_a
     barrier = threading.Barrier(4)
     statuses: list[int] = []
 
-    def worker() -> None:
-        client = api_client_for(staff_user, tenant_a)
+    # Build clients (and the membership they need) before the threads start.
+    clients = [api_client_for(staff_user, tenant_a) for _ in range(4)]
+
+    def worker(client) -> None:
         barrier.wait()
         response = client.post(
             "/test-api/idempotent/",
@@ -101,7 +103,7 @@ def test_concurrent_duplicates_execute_once(api_client_for, staff_user, tenant_a
         statuses.append(response.status_code)
         connection.close()
 
-    threads = [threading.Thread(target=worker) for _ in range(4)]
+    threads = [threading.Thread(target=worker, args=(client,)) for client in clients]
     for t in threads:
         t.start()
     for t in threads:
@@ -111,7 +113,7 @@ def test_concurrent_duplicates_execute_once(api_client_for, staff_user, tenant_a
     assert views.CALLS["count"] == 1
 
 
-# --- sequences ------------------------------------------------------------------------------------
+# --- sequences ----------------------------------------------------------------------------------
 @pytest.mark.django_db
 def test_sequences_are_per_tenant_name_and_period(tenant_a, tenant_b):
     with transaction.atomic(), tenant_context(tenant_a.id):
@@ -137,7 +139,7 @@ def test_sequence_requires_transaction():
         next_value("ORDER", "2026")
 
 
-# --- outbox ---------------------------------------------------------------------------------------
+# --- outbox -------------------------------------------------------------------------------------
 @pytest.mark.django_db(transaction=True)
 def test_outbox_dispatches_after_commit_to_registered_handlers(tenant_a):
     outbox.register_handler("test.happened", "tests.handler")
@@ -190,7 +192,7 @@ def test_emit_requires_transaction():
         outbox.emit("x", aggregate_type="y", aggregate_id=None)  # type: ignore[arg-type]
 
 
-# --- deadlock retry ------------------------------------------------------------------------------
+# --- deadlock retry -----------------------------------------------------------------------------
 def _deadlock() -> OperationalError:
     exc = OperationalError("deadlock detected")
     exc.__cause__ = pg_errors.DeadlockDetected()
@@ -228,7 +230,7 @@ def test_retry_on_deadlock_gives_up_and_ignores_other_errors():
         other_error()
 
 
-# --- celery tenant task ---------------------------------------------------------------------------
+# --- celery tenant task -------------------------------------------------------------------------
 def _probe(*, tenant_id: str) -> str:
     with connection.cursor() as cursor:
         cursor.execute("SELECT current_setting('app.current_tenant', true)")

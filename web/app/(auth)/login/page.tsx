@@ -1,13 +1,18 @@
-import { LogIn } from "lucide-react";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
-import { EmptyState } from "@/components/shared/empty-state";
+import { LoginScreen } from "@/components/auth/login-screen";
+import { PageSkeleton } from "@/components/shared/skeletons";
 
-export default async function LoginPage() {
-  const t = await getTranslations("auth");
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations("auth"))("signInTitle") };
+}
+
+export default function LoginPage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4">
-      <EmptyState icon={LogIn} title={t("signInTitle")} description={t("signInPending")} />
-    </main>
+    <Suspense fallback={<PageSkeleton />}>
+      <LoginScreen />
+    </Suspense>
   );
 }

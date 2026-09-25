@@ -23,6 +23,18 @@ import { TableSkeleton } from "./skeletons";
 const features = tableFeatures({});
 export type DataTableColumn<TData extends RowData> = ColumnDef<typeof features, TData>;
 
+/**
+ * Header and cell templates are called as plain functions, not mounted as components: columns are
+ * usually declared inline, and a new component type on every render would remount each cell
+ * (losing focus and state in controls such as selects). So templates must not call hooks; put
+ * stateful parts in their own components.
+ */
+function renderTemplate(template: unknown, context: unknown): ReactNode {
+  return typeof template === "function"
+    ? (template as (ctx: unknown) => ReactNode)(context)
+    : (template as ReactNode);
+}
+
 interface CursorPagination {
   hasNext: boolean;
   hasPrevious: boolean;
@@ -92,7 +104,9 @@ export function DataTable<TData extends RowData>({
                     key={header.id}
                     className={cn(numeric.has(header.column.id) && "text-right")}
                   >
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    {header.isPlaceholder
+                      ? null
+                      : renderTemplate(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -106,7 +120,7 @@ export function DataTable<TData extends RowData>({
                     key={cell.id}
                     className={cn(numeric.has(cell.column.id) && "text-right tabular-nums")}
                   >
-                    <table.FlexRender cell={cell} />
+                    {renderTemplate(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
               </TableRow>

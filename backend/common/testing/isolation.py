@@ -17,6 +17,7 @@ EXEMPT: dict[str, str] = {
     "schema": "OpenAPI schema document; contains no tenant data",
     "docs": "Swagger UI shell; contains no tenant data",
     "meta": "public platform metadata (version, domain); contains no tenant data",
+    "public-states": "public GST state list (reference data); contains no tenant data",
 }
 
 

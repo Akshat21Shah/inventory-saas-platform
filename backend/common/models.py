@@ -36,6 +36,10 @@ class TenantManager[M: models.Model](models.Manager[M]):
         """Cross-tenant queryset. Only for audited platform code paths (ADR-002)."""
         return super().get_queryset()
 
+    def none(self) -> models.QuerySet[M]:
+        """An empty queryset needs no tenant (used by tooling such as the OpenAPI generator)."""
+        return super().get_queryset().none()
+
 
 class TenantScopedModel(BaseModel):
     tenant = models.ForeignKey(

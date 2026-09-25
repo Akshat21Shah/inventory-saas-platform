@@ -114,3 +114,15 @@ def test_append_only_table_rejects_update_and_delete():
         ):
             c.execute(statement)
     assert LedgerLike.objects.get(pk=row.pk).note == "entry"
+
+
+def test_tenant_context_does_not_mask_database_errors(tenant_a):
+    """A DB error inside the block surfaces as itself, not as a failed restore of the setting."""
+    with pytest.raises(IntegrityError), transaction.atomic(), tenant_context(tenant_a.id):
+        Widget.objects.create(name="a")
+        with connection.cursor() as cursor:
+            cursor.execute(f"INSERT INTO {Widget._meta.db_table} (id) VALUES (NULL)")  # noqa: S608
+
+
+def test_none_needs_no_tenant():
+    assert list(Widget.objects.none()) == []

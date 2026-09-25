@@ -1,6 +1,6 @@
 # PLAN.md — Master Engineering Plan (v1)
 
-Status: **v1.2 — product-owner decisions of 2026-09-24 and follow-ups of 2026-09-25 applied (see §10). Phase 0 complete (2026-09-25); Phase 1 next.**
+Status: **v1.3 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 complete (2026-09-25); Phase 1 complete, in review.**
 Source of truth for *what*: `docs/PROJECT_SPEC.md`. Rules for *how*: `CLAUDE.md`.
 Where this plan and the spec disagree, the spec wins until the spec is updated.
 
@@ -122,7 +122,7 @@ Legend:
 | T4 | Staff login & hosts | Staff email is globally unique. Staff log in on their tenant subdomain **or** on the generic `<domain>/login` (email + password [+ TOTP]). On the generic domain the tenant is resolved from active memberships, with a chooser if there is more than one → single-use handoff to `{slug}.<domain>`. **Super admin logs in only at `admin.<domain>`**: platform users are refused on other hosts, and staff are refused on the admin host (ADR-020). |
 | T5 | Celery/Channels/cache/S3 scoping | Explicit `tenant_id`, per-tenant groups, key prefixes. **[D]** |
 | T6 | Suspended tenant | **FIXED:** all staff and retailer logins blocked with a friendly message; data kept; super admin can reactivate. |
-| T7 | Impersonation | Short-lived, non-refreshable, audited token; banner claim. **[D]** |
+| T7 | Impersonation | **UPDATED (ADR-029):** short-lived, non-refreshable, audited token with a banner claim. Sessions start **read-only**; an audited switch to ACT mode needs a reason; credential, staff/role and bank-detail changes are always blocked; session events appear in the tenant's audit log. |
 | T8 | `platform` app name | `apps.platform`, always imported with its prefix. **[D]** |
 | T9 | Primary keys | UUIDv7. **[D]** |
 | T10 | Domain | Platform domain from env `PLATFORM_DOMAIN` (dev: `localhost` → `admin.localhost`, `{slug}.localhost`). Production domain to be supplied before staging. |
@@ -170,7 +170,7 @@ Legend:
 | **Tenant** | `name`, `registration_type` (REGULAR; COMPOSITION reserved, rejected by validation), `slug` (subdomain, `[a-z0-9-]{3,30}`, reserved words blocked), `legal_name`, `gstin` char(15), `pan` char(10), `state` FK→State, `address_line1/2`, `city`, `pincode` char(6), `email`, `phone`, `status` (ONBOARDING, ACTIVE, SUSPENDED), `suspended_reason`, `suspended_at`, `webhook_token` (random, for payment webhooks) | unique `slug`; unique `gstin`; check GSTIN state prefix = `state` (app-level + checksum validator) |
 | **TenantProfile** (1:1 tenant) | business *data* (not settings): `invoice_terms` text, `invoice_footer` text, bank: `bank_account_name`, `bank_account_number` (encrypted), `bank_ifsc`, `bank_name`, `bank_branch`, `upi_id`; `signatory_name`, `signatory_image` (file key) | one row per tenant |
 | **TenantSetting** (tenant) | `key` varchar (must exist in the code registry), `value` jsonb (validated against the registry type/allowed values), `updated_by` | unique `(t, key)`; **only overrides are stored**, and a missing row = registry default, so a new tenant works with zero rows; every write goes through `platform.services.set_setting()` → audit `settings.changed` with old/new; reads via cached `platform.selectors.get_setting(tenant, key)` (typed) |
-| **TenantBranding** (1:1 tenant) | `display_name`, `logo`, `favicon`, `app_icon` (file keys), `primary_color` char(7), `palette` jsonb (derived 50–950 scale + foreground), `updated_by` | check hex format |
+| **TenantBranding** (1:1 tenant) | `display_name`, `logo`, `favicon`, `app_icon` (file keys), `primary_color` char(7), `updated_by` (the palette is derived on the client, ADR-028) | check hex format |
 | **Plan** | `code` unique, `name`, `price_monthly` Money, `max_retailers` int null, `max_staff` int null, `max_products` int null, `features` jsonb (flag codes), `is_default` bool, `is_active` | partial unique `is_default where true` ("BETA") |
 | **Subscription** | `tenant` FK, `plan` FK, `status` (TRIAL, ACTIVE, PAST_DUE, CANCELLED), `starts_at`, `ends_at` null, `is_current` bool | partial unique `(tenant) where is_current` |
 | **FeatureFlag** | `code` unique (`payments`, `subscriptions_enforcement`, `einvoice`, `ewaybill`, `whatsapp`, `batches`, `multi_warehouse`, `ai`), `name`, `description`, `default_enabled`, `tenant_toggleable` bool | — |
@@ -186,9 +186,9 @@ Legend:
 | **Role** | `tenant` FK **null** (null = system role), `code`, `name`, `is_system`, `permissions` M2M→Permission | unique `(tenant, code)` (nulls not distinct); system roles: OWNER, MANAGER, SALES, WAREHOUSE, ACCOUNTS; PLATFORM_ADMIN (platform-level) |
 | **Membership** (tenant) | `user` FK, `role` FK, `is_active`, `invited_by` FK null, `joined_at` | unique `(user, tenant)`; index `(t, role)` |
 | **Invitation** (tenant) | `email`, `role` FK, `token_hash` char(64) unique, `status` (PENDING, ACCEPTED, REVOKED, EXPIRED), `expires_at`, `accepted_at`, `invited_by` | partial unique `(t, email) where status='PENDING'` |
-| **OTPRequest** | `phone`, `tenant` FK null (set when requested on a tenant subdomain; null on the generic domain), `purpose` (LOGIN), `channel` (SMS, WHATSAPP), `code_hash`, `expires_at`, `attempts` int, `consumed_at` null, `ip` inet | index `(phone, created_at desc)`; rate limit: 3/10 min per phone, 10/hour per IP; max 5 verify attempts. The response is identical whether or not the number is known (no enumeration) |
+| **OTPRequest** | `phone`, `tenant` FK null (set when requested on a tenant subdomain; null on the generic domain), `purpose` (LOGIN), `channel` (SMS, WHATSAPP), `code_hash`, `expires_at`, `attempts` int, `consumed_at` null, `ip` inet | index `(phone, created_at desc)`; rate limit (platform settings, ADR-030): 3/10 min per phone, 100/hour per IP (generous because of CGNAT); max 5 verify attempts. The response is identical whether or not the number is known (no enumeration) |
 | **AccountChoiceToken** | `phone`, `token_hash`, `candidate_user_ids` uuid[], `expires_at` (5 min), `used_at` | issued after OTP verification on the generic domain when > 1 tenant matches; only lists **active** tenants |
-| **ImpersonationSession** | `impersonator` FK→User, `target_user` FK, `tenant` FK, `reason` text (required), `started_at`, `ended_at` null, `expires_at`, `ip`, `user_agent` | index `(tenant, started_at)` |
+| **ImpersonationSession** | `impersonator` FK→User, `target_user` FK, `tenant` FK, `reason` text (required), `mode` (READ_ONLY, ACT), `act_reason` text null, `act_started_at` null, `started_at`, `ended_at` null, `end_reason` (ENDED, EXPIRED, null), `expires_at`, `ip`, `user_agent` | index `(tenant, started_at)` |
 | *(library)* | `rest_framework_simplejwt.token_blacklist` OutstandingToken / BlacklistedToken for refresh-token revocation | — |
 
 ### 2.4 `catalog`
@@ -434,7 +434,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 |---|---|---|---|
 | `/health/live`, `/health/ready` | GET | 🌐 | liveness; readiness (DB, Redis, Celery ping) |
 | `/api/v1/schema/`, `/api/v1/docs/` | GET | 🌐 (dev) / staff (prod) | OpenAPI schema and Swagger UI |
-| `/api/v1/public/tenants/{slug}/branding` | GET | 🌐 | pre-login branding (name, logo, palette, favicon) |
+| `/api/v1/public/tenants/{slug}/branding` | GET | 🌐 | pre-login branding (name, logo, colour, favicon) and `available` (never the specific status, ADR-032) |
 | `/api/v1/public/states` | GET | 🌐 | GST state list |
 | `/api/v1/auth/staff/login` | POST | 🌐 rate-limited | email + password (+ host context) → tokens, or `{"mfa_required": true, "mfa_token"}`. Host rules: admin host → PLATFORM users only; tenant subdomain → STAFF with an active membership there; generic host → STAFF → tokens if one membership, else `{choose_tenant: [...], choice_token}` |
 | `/api/v1/auth/staff/choose-tenant` | POST | 🌐 (choice_token) | `{choice_token, tenant_id}` → single-use `handoff_code` + subdomain URL (exchanged via `auth/handoff/exchange`) |
@@ -454,6 +454,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `/api/v1/auth/me` | GET, PATCH | any | profile, tenant, permissions list, feature flags, impersonation info |
 | `/api/v1/auth/invitations/{token}` | GET | 🌐 | preview an invitation (tenant name, role) |
 | `/api/v1/auth/invitations/{token}/accept` | POST | 🌐 | set name/password, create the membership |
+| `/api/v1/auth/impersonation/act` | POST | impersonation token | `{reason}` → switch the session to ACT mode; returns a new access token with `imp_mode=ACT` (audited, ADR-029) |
 | `/api/v1/auth/impersonation/end` | POST | impersonation token | end the session (audited) |
 | `/api/v1/auth/ws-ticket` | POST | any | one-time 30 s ticket for the WebSocket connection |
 | `/ws/v1/?ticket=` | WS | ticket | joins `tenant_{id}` (staff) or `retailer_{id}` (retailer) groups |
@@ -487,7 +488,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | Endpoint | Method | Permission | Purpose |
 |---|---|---|---|
 | `settings/business` | GET, PATCH | GET: any staff; PATCH: `settings.manage` | legal name, GSTIN, PAN, addresses, bank details, terms, signatory (Tenant + TenantProfile) |
-| `settings/registry` | GET | any staff (read) | tenant-scope registry: groups (Tax, Invoicing, Orders, Stock, Credit & Payments), per key: type, allowed values, default, description, edit permission, current value, `is_default` |
+| `settings/registry` | GET | any staff (read) | tenant-scope registry: groups (Tax, Invoicing, Orders, Stock, Credit & Payments, Security), per key: type, allowed values, default, description, edit permission, current value, `is_default` |
 | `settings/values` | PATCH | per key (registry `edit_permission`, default `settings.manage`) | `{key: value, …}` atomic; validated; each change audited (old → new); cache invalidated |
 | `settings/values/{key}` | DELETE | as above | reset to default (audited) |
 | `settings/branding` | GET, PATCH | `branding.manage` | colours, display name |
@@ -1277,7 +1278,7 @@ Shared building blocks (`components/shared`):
 | `/manage/reports`, `/manage/reports/[code]` | ReportCatalogue; ReportViewer (filters, table, chart, export → async run) |
 | `/manage/notifications` | NotificationCentre |
 | `/manage/settings/business`, `/branding`, `/invoice-series`, `/features`, `/integrations` | BusinessProfileForm; BrandingEditor with live preview (palette derived); GatewayKeysForm / GstCredentialsForm (masked) |
-| `/manage/settings/policies/[group]` (Tax, Invoicing, Orders, Stock, Credit & Payments) | **RegistrySettingsForm** generated from the registry: control per type (toggle / select / number / money), plain-language description beside each, "default" badge + reset, dependent settings disabled with an explanation (e.g. insufficient-stock action only when backorders are off), "applies to new orders only" note for snapshot keys, change history (audit) drawer |
+| `/manage/settings/policies/[group]` (Tax, Invoicing, Orders, Stock, Credit & Payments, Security) | **RegistrySettingsForm** generated from the registry: control per type (toggle / select / number / money), plain-language description beside each, "default" badge + reset, dependent settings disabled with an explanation (e.g. insufficient-stock action only when backorders are off), "applies to new orders only" note for snapshot keys, change history (audit) drawer |
 | `/manage/settings/staff`, `/roles` | StaffTable, InviteDialog, RoleMatrix (read-only v1) |
 | `/manage/settings/notifications`, `/announcements` | RulesMatrix (event × recipient × channel), TemplateEditor, DeliveryLog; AnnouncementForm |
 | `/manage/audit` | AuditTable + DiffViewer |
@@ -1435,6 +1436,7 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 5.10 | Reconciliation property test (random scenarios) | M |
 | 5.11 | FE distributor: invoices, credit notes, record payment, ledger statement, receivables ageing, hold approvals | L |
 | 5.12 | FE retailer: invoices, statement, outstanding | M |
+| 5.13 | Lock the tenant's GST identity after its first invoice (product-owner note, 2026-09-25): once a tenant has issued an invoice, GSTIN, legal name and state are read-only for the distributor and in the normal super admin edit. Changing them needs a separate super admin action with a reason, recorded in the audit log, and never alters invoices already issued (they keep their snapshot) | M |
 
 ### Phase 6 — Notifications
 | # | Task | Size |
@@ -1573,6 +1575,7 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | Credit & Payments | `credit.block_overdue_after_days` | int | `null` (off) | 1–365 | — | Treat a retailer as over limit when any invoice is overdue by more than this many days. |
 | Credit & Payments | `payments.hold_advances` | bool | `true` | — | — | Keep extra money paid by a retailer as credit and use it for their next invoices. |
 | Credit & Payments | `payments.cheque_credit_timing` | enum | `ON_RECEIPT` | `ON_RECEIPT`, `ON_CLEARANCE` | PAYMENT | Credit a cheque to the retailer's account when received (reversed automatically if it bounces) or only when it clears. |
+| Security | `security.require_staff_2fa` | bool | `false` | — | — | Require every staff member to set up two-step verification (an authenticator app) before they can sign in. Only owners can change this (ADR-030). |
 
 Later phases add keys through the same registry (e.g. notification channels in Phase 6; e-invoice/e-way bill and gateway options in Phase 7). Feature flags stay a separate mechanism (`FeatureFlag`/`TenantFeature`), because they gate whole modules.
 
@@ -1582,6 +1585,14 @@ Later phases add keys through the same registry (e.g. notification channels in P
 |---|---|---|---|---|---|
 | Tax | `platform.hsn_rate_hints_enabled` | bool | `true` | — | Suggest GST rates from the HSN hint table on product forms and imports. |
 | Security | `platform.impersonation_session_minutes` | int | `30` | 5–60 | Maximum length of a support impersonation session. |
+| Security | `platform.login_lockout_threshold` | int | `5` | 3–20 | Consecutive failed sign-ins before an account is locked. |
+| Security | `platform.login_lockout_minutes` | int | `15` | 1–1440 | How long a locked account stays locked. |
+| Security | `platform.login_rate_per_ip_per_minute` | int | `30` | 5–1000 | Sign-in attempts allowed per minute from one IP address (generous: many mobile users share an IP). |
+| Security | `platform.login_rate_per_email_per_minute` | int | `5` | 1–60 | Sign-in attempts allowed per minute for one email address. |
+| Security | `platform.otp_rate_per_phone_per_10_minutes` | int | `3` | 1–20 | OTP codes that can be requested for one phone number in 10 minutes. |
+| Security | `platform.otp_rate_per_ip_per_hour` | int | `100` | 10–5000 | OTP codes that can be requested from one IP address per hour (generous: many mobile users share an IP). |
+| Security | `platform.otp_max_verify_attempts` | int | `5` | 3–10 | Wrong codes allowed before an OTP stops working. |
+| Security | `platform.password_reset_per_email_per_hour` | int | `3` | 1–20 | Password reset emails that can be requested for one email address per hour (ADR-032). |
 | Invoicing | `platform.default_invoice_prefix` | string | `INV` | `[A-Z0-9]{1,6}` | Prefix proposed when a tenant's first invoice series is created. |
 
 Platform **master data** (managed by super admin, not registry keys): `TaxRate`, `CessType`, `HsnRateHint`, default `NotificationTemplate`s, `Plan`s, `FeatureFlag`s.
@@ -1624,6 +1635,15 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 022 | Follow-up rules: price basis, FULL_EDIT credit override, advances-off, rate-change warning, Order Confirmation wording (2026-09-25) |
 | 023 | Phase 0 tooling: Python 3.13, uv, npm, uvicorn, orval, JSON logging, Next.js 16 conventions (2026-09-25) |
 | 024 | SeaweedFS replaces MinIO as the dev/CI S3 stand-in (2026-09-25) |
+| 025 | Auth tokens: access JWT in memory, host-only httpOnly refresh cookie, CSRF defence; refresh lifetimes retailer 30 d sliding / staff 7 d / super admin 12 h (2026-09-25) |
+| 026 | `accounts_user` without RLS; cross-tenant login lookups only through two narrow, logged platform-alias selectors (2026-09-25) |
+| 027 | Storage adapter (S3 / in-memory), tenant-prefixed keys, PNG/JPEG/WebP ≤ 2 MB, no SVG, presigned redirects (2026-09-25) |
+| 028 | Brand palette derived on the client; `TenantBranding.palette` dropped (2026-09-25) |
+| 029 | Impersonation read-only by default, audited ACT mode, always-blocked actions, visible to tenant owners (2026-09-25) |
+| 030 | Lockout 5/15 min + email, CGNAT-aware rate limits as platform settings, `security.require_staff_2fa`, multiple owners, super-admin-only slug change, ONBOARDING → ACTIVE on owner acceptance (2026-09-25) |
+| 031 | Field-level encryption with MultiFernet and rotatable keys (2026-09-25) |
+| 032 | Neutral "unavailable" tenant state (public `available` flag, one `TENANT_UNAVAILABLE` answer), reset limit as a platform setting, forwarded headers set by our web server and trusted by Django only from configured proxies (2026-09-25) |
+| 033 | Phase 1 review follow-ups: commit before platform-alias reads (static test), Redis public-branding cache with on-commit invalidation, dev 2FA key guard + production startup check, GSTIN rules, repeatable E2E (2026-09-25) |
 
 ### 10.2 Follow-up answers (2026-09-25)
 | # | Question | Answer |

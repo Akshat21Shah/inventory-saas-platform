@@ -65,7 +65,7 @@ class IdempotentView(APIView):
 
 class GuardedView(APIView):
     permission_classes = [HasPermission]
-    required_permission = "orders.accept"
+    required_permission = "orders.manage"
 
     def get(self, request: Request) -> Response:
         return Response({"ok": True})

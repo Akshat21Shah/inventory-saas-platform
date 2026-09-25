@@ -125,11 +125,12 @@ make migrate     # run migrations (as the schema-owner DB role)
 make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
+make e2e-stack   # acceptance E2E against the running stack (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
-make seed        # demo data (Phase 0: super admin + 2 demo tenants; full set from Phase 2)
+make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, shops (catalog from Phase 2)
 ```
 
 URLs in dev:

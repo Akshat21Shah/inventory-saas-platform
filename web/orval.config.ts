@@ -14,7 +14,8 @@ export default defineConfig({
       clean: true,
       override: {
         mutator: { path: "lib/api/fetcher.ts", name: "apiFetch" },
-        query: { useQuery: true, signal: true },
+        // Defaults: useQuery for GET, useMutation for writes.
+        query: { signal: true },
       },
     },
   },

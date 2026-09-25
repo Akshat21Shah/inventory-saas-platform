@@ -22,14 +22,18 @@ ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS", default=[PLATFORM_DOMAIN, f".{PLATFORM_DOMAIN}", "backend"]
 )
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+# Addresses (IPs or CIDRs) of the proxies allowed to set X-Forwarded-* headers: the Next.js
+# server(s) in every environment (ADR-032). Forwarded headers from anyone else are discarded.
+TRUSTED_PROXIES: list[str] = env.list("TRUSTED_PROXIES", default=[])
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "common.admin_apps.PlatformAdminConfig",  # django.contrib.admin, locked down (PLAN 1.13)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
@@ -39,12 +43,16 @@ INSTALLED_APPS = [
     "common",
     "apps.platform",
     "apps.accounts",
+    "apps.audit",
+    "apps.retailers",
 ]
 
 MIDDLEWARE = [
+    "common.net.TrustedProxyMiddleware",  # first: forwarded headers only from trusted proxies
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "common.middleware.RequestContextMiddleware",
+    "apps.accounts.middleware.ImpersonationAuditMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -136,6 +144,8 @@ CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
     "outbox-sweeper": {"task": "common.outbox.sweep_outbox", "schedule": 60.0},
     "idempotency-purge": {"task": "common.idempotency.purge_expired", "schedule": 3600.0},
+    "login-records-purge": {"task": "accounts.purge_expired_login_records", "schedule": 3600.0},
+    "impersonation-expiry": {"task": "accounts.expire_impersonation_sessions", "schedule": 60.0},
 }
 
 CHANNEL_LAYERS = {
@@ -147,7 +157,7 @@ CHANNEL_LAYERS = {
 
 # --- DRF / OpenAPI / JWT ---------------------------------------------------------------------
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["common.authentication.TenantJWTAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.SessionJWTAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "common.pagination.DefaultCursorPagination",
     "DEFAULT_FILTER_BACKENDS": [
@@ -172,7 +182,19 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v1",
     "COMPONENT_SPLIT_REQUEST": True,
     "SERVE_INCLUDE_SCHEMA": False,
-    "ENUM_NAME_OVERRIDES": {},
+    "ENUM_NAME_OVERRIDES": {
+        "TenantStatusEnum": "apps.platform.models.Tenant.Status",
+        "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
+        "UserTypeEnum": "apps.accounts.models.User.UserType",
+        "LoginStatusEnum": [
+            "authenticated",
+            "handoff",
+            "choose_tenant",
+            "choose_account",
+            "mfa_required",
+            "mfa_setup_required",
+        ],
+    },
 }
 
 SIMPLE_JWT = {
@@ -185,7 +207,49 @@ SIMPLE_JWT = {
     "SIGNING_KEY": env("JWT_SIGNING_KEY", default=SECRET_KEY),
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_CLAIM": "sub",
+    # Tokens carry a hash of the password: changing or resetting it revokes every token at once.
+    "CHECK_REVOKE_TOKEN": True,
 }
+
+# --- Auth sessions (ADR-025) ---------------------------------------------------------------------
+# Refresh lifetime per user type. Retailer sessions slide (each rotation restarts the window);
+# staff and super admin sessions end at a fixed time after sign-in.
+AUTH_REFRESH_LIFETIMES = {
+    "RETAILER": timedelta(days=30),
+    "STAFF": timedelta(days=7),
+    "PLATFORM": timedelta(hours=12),
+}
+AUTH_SLIDING_USER_TYPES = frozenset({"RETAILER"})
+AUTH_REFRESH_COOKIE_NAME = "rt"
+AUTH_REFRESH_COOKIE_PATH = "/api/v1/auth/"
+AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=True)
+AUTH_HANDOFF_TTL_SECONDS = 60
+AUTH_CHALLENGE_TTL_SECONDS = 300
+TENANT_STATUS_CACHE_SECONDS = 30
+# Invalidated on every change; the TTL only bounds a missed invalidation.
+PUBLIC_BRANDING_CACHE_SECONDS = 600
+TOTP_ISSUER = env("TOTP_ISSUER", default="Inventory Platform")
+OTP_TTL_SECONDS = 300
+INVITATION_TTL_DAYS = 7
+OTP_RESEND_AFTER_SECONDS = 30
+
+# --- Integrations (CLAUDE.md §4: adapters with mock implementations) -----------------------------
+# Mock adapters are refused unless explicitly allowed (dev/test); `manage.py check --deploy` fails
+# when a mock is configured without the allowance.
+ALLOW_MOCK_INTEGRATIONS = env.bool("ALLOW_MOCK_INTEGRATIONS", default=False)
+SMS_PROVIDER = env("SMS_PROVIDER", default="mock")
+# Object storage (ADR-027): "s3" (AWS in prod, SeaweedFS in dev) or "memory" (tests).
+STORAGE_BACKEND = env("STORAGE_BACKEND", default="s3")
+S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", default="")  # empty = AWS
+S3_PUBLIC_ENDPOINT_URL = env("S3_PUBLIC_ENDPOINT_URL", default="")  # what browsers reach
+S3_BUCKET = env("S3_BUCKET", default="inventory-dev")
+S3_ACCESS_KEY = env("S3_ACCESS_KEY", default="")
+S3_SECRET_KEY = env("S3_SECRET_KEY", default="")
+S3_REGION = env("S3_REGION", default="ap-south-1")
+# Dev only: every OTP is this code (honoured only with ALLOW_MOCK_INTEGRATIONS).
+OTP_FIXED_CODE: str | None = env("OTP_FIXED_CODE", default=None)
+# Links in emails point at the web app: "{host}" is e.g. "admin.<domain>" or "<slug>.<domain>".
+WEB_URL_TEMPLATE = env("WEB_URL_TEMPLATE", default="https://{host}")
 
 CORS_ALLOWED_ORIGIN_REGEXES = env.list(
     "CORS_ALLOWED_ORIGIN_REGEXES", default=[r"^https?://([a-z0-9-]+\.)?localhost(:\d+)?$"]
@@ -245,6 +309,19 @@ if SENTRY_DSN:
         send_default_pii=False,
     )
 
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Inventory Platform <no-reply@localhost>")
+
 # --- App settings --------------------------------------------------------------------------------
 IDEMPOTENCY_TTL_SECONDS = 24 * 3600
 OUTBOX_SWEEP_AFTER_SECONDS = 60
+
+# --- Field-level encryption (ADR-031) ------------------------------------------------------------
+# Comma-separated Fernet keys: the first encrypts, all decrypt (rotation). Prod refuses the dev key,
+# which is base64("dev-only-insecure-fernet-key-000").
+DEV_FIELD_ENCRYPTION_KEY = "ZGV2LW9ubHktaW5zZWN1cmUtZmVybmV0LWtleS0wMDA="
+FIELD_ENCRYPTION_KEYS: list[str] = env.list("FIELD_ENCRYPTION_KEYS", default=[]) or [
+    DEV_FIELD_ENCRYPTION_KEY
+]
+
+# --- Plans (spec 5.1): limits are defined but not enforced until this is switched on ------------
+PLAN_ENFORCEMENT_ENABLED = env.bool("PLAN_ENFORCEMENT_ENABLED", default=False)

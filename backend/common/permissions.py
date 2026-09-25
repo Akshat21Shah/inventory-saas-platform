@@ -49,3 +49,28 @@ class IsTenantStaff(_UserTypePermission):
 
 class IsRetailer(_UserTypePermission):
     user_type = "RETAILER"
+
+
+class IsStaffOrPlatformUser(BasePermission):
+    """Email + password accounts (distributor staff and super admins), not retailers."""
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and getattr(user, "user_type", None) in ("STAFF", "PLATFORM")
+        )
+
+
+class StaffReadsOrHasPermission(HasPermission):
+    """Any staff member of the active tenant may read; changes need the declared permission
+    (``required_permissions[method]`` or ``required_permission``)."""
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            user = request.user
+            return bool(
+                user and user.is_authenticated and getattr(user, "user_type", None) == "STAFF"
+            )
+        return super().has_permission(request, view)

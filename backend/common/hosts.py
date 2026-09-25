@@ -8,6 +8,15 @@ from django.conf import settings
 
 SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$")
 RESERVED_SUBDOMAINS = frozenset({"admin", "www", "api", "app", "static", "media", "mail"})
+# Refused when a tenant slug is created or changed (superset of the classifier's reserved words).
+RESERVED_TENANT_SLUGS = RESERVED_SUBDOMAINS | frozenset(
+    {
+        "platform", "manage", "shop", "login", "logout", "auth", "account", "accounts",
+        "help", "support", "status", "docs", "health", "cdn", "assets", "files", "s3",
+        "mailpit", "smtp", "ftp", "billing", "pay", "payments", "webhooks", "dev",
+        "staging", "test", "internal", "root", "system", "null", "undefined",
+    }
+)  # fmt: skip
 
 
 class HostKind(StrEnum):
@@ -36,3 +45,11 @@ def classify_host(host: str, platform_domain: str | None = None) -> HostContext:
         if "." not in label and label not in RESERVED_SUBDOMAINS and SLUG_RE.match(label):
             return HostContext(HostKind.TENANT, label)
     return HostContext(HostKind.UNKNOWN)
+
+
+def web_url(path: str, *, tenant_slug: str | None = None, admin: bool = False) -> str:
+    """Absolute URL of a page on the admin host, a tenant subdomain or the generic domain."""
+    domain = settings.PLATFORM_DOMAIN
+    host = f"admin.{domain}" if admin else f"{tenant_slug}.{domain}" if tenant_slug else domain
+    base: str = settings.WEB_URL_TEMPLATE.format(host=host)
+    return base.rstrip("/") + "/" + path.lstrip("/")

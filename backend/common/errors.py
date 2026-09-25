@@ -11,6 +11,7 @@ class DomainError(Exception):
     status_code: int = 400
     code: str = ErrorCode.VALIDATION_ERROR
     default_message: str = "The request could not be completed."
+    headers: dict[str, str] | None = None  # extra response headers (e.g. Retry-After)
 
     def __init__(
         self,
@@ -27,3 +28,23 @@ class DomainError(Exception):
             self.status_code = status_code
         self.details = details or {}
         super().__init__(self.message)
+
+
+class InvalidFields(DomainError):
+    """Field-level validation failure raised by services: ``{"fields": {name: [messages]}}``."""
+
+    status_code = 400
+    code = ErrorCode.VALIDATION_ERROR
+    default_message = "Some fields need attention."
+
+    def __init__(self, fields: dict[str, list[str]], message: str | None = None) -> None:
+        super().__init__(message, details={"fields": fields})
+
+
+class NotFound(DomainError):
+    """A record the caller asked for does not exist in their tenant (also for other tenants'
+    records: never reveal that they exist)."""
+
+    status_code = 404
+    code = ErrorCode.NOT_FOUND
+    default_message = "We couldn't find what you were looking for."

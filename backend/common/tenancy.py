@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from uuid import UUID
 
-from django.db import connections
+from django.db import DatabaseError, connections
 
 from common.context import tenant_id_var
 from common.error_codes import ErrorCode
@@ -64,10 +64,20 @@ def tenant_context(tenant_id: UUID) -> Iterator[None]:
             cursor.execute("SELECT current_setting(%s, true)", [RLS_SETTING])
             previous = cursor.fetchone()[0]
         set_db_tenant(tenant_id)
+    failed = False
     try:
         yield
+    except BaseException:
+        failed = True
+        raise
     finally:
         tenant_id_var.reset(token)
         if connection.in_atomic_block and previous is not None:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT set_config(%s, %s, true)", [RLS_SETTING, previous])
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT set_config(%s, %s, true)", [RLS_SETTING, previous])
+            except DatabaseError:
+                # After a failed body the transaction is usually aborted; its rollback discards the
+                # SET LOCAL anyway. Never mask the original error with the restore failure.
+                if not failed:
+                    raise

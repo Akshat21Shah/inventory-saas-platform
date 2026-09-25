@@ -14,6 +14,8 @@ x-backend: &backend
     EMAIL_HOST: mailpit
     S3_ENDPOINT_URL: http://s3:8333
     LOG_FORMAT: json
+    # Only the web server (fixed address below) may set X-Forwarded-* headers (ADR-032).
+    TRUSTED_PROXIES: 172.30.0.10
   volumes:
     - ../backend:/app
   depends_on:
@@ -121,13 +123,23 @@ services:
       API_INTERNAL_URL: http://backend:8000
       PLATFORM_DOMAIN: localhost
       WATCHPACK_POLLING: "true"
+      TRUSTED_PROXIES: ""  # nothing in front of the web server in dev: browsers connect directly
     ports: ["3000:3000"]
+    networks:
+      default:
+        ipv4_address: 172.30.0.10  # Django's TRUSTED_PROXIES points here
     volumes:
       - ../web:/app
       - /app/node_modules
       - /app/.next
     depends_on:
       backend: { condition: service_started }
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
 
 volumes:
   pgdata:

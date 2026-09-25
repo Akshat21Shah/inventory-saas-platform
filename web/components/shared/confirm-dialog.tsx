@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -14,6 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useErrorText } from "@/lib/api/use-error-text";
 
 interface ConfirmDialogProps {
   trigger: ReactNode;
@@ -24,7 +26,8 @@ interface ConfirmDialogProps {
   onConfirm: () => void | Promise<void>;
 }
 
-/** Destructive actions always confirm (spec §8). Stays open and disabled while confirming. */
+/** Destructive actions always confirm (spec §8). Stays open and disabled while confirming; a
+ * failure is shown as a toast and the dialog stays open. */
 export function ConfirmDialog({
   trigger,
   title,
@@ -35,6 +38,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const t = useTranslations("common");
   const [open, setOpen] = useState(false);
+  const errors = useErrorText();
   const [pending, setPending] = useState(false);
 
   async function handleConfirm(event: React.MouseEvent) {
@@ -43,6 +47,9 @@ export function ConfirmDialog({
     try {
       await onConfirm();
       setOpen(false);
+    } catch (err) {
+      // A failed action keeps the dialog open so the user can retry or cancel.
+      toast.error(errors.message(err));
     } finally {
       setPending(false);
     }
