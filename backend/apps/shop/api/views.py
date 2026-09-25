@@ -16,12 +16,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
+from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import own_retailer
 from apps.shop import selectors
 from apps.shop.api import serializers as s
 from common.errors import NotFound
 from common.permissions import IsRetailer
+
+
+def _context(retailer: Retailer) -> dict[str, Any]:
+    return {
+        "own_brand_badge": bool(get_setting("retailers.show_own_brand_badge", retailer.tenant_id))
+    }
 
 
 def _retailer(request: Request) -> Retailer:
@@ -112,7 +119,7 @@ class ShopProductsView(ShopView):
     @staticmethod
     def _rows(retailer: Retailer, page: list[Any]) -> list[Any]:
         rows = [{"product": p, "price": r} for p, r in selectors.priced(retailer, page)]
-        return list(s.ShopProductSerializer(rows, many=True).data)
+        return list(s.ShopProductSerializer(rows, many=True, context=_context(retailer)).data)
 
 
 class ShopProductDetailView(ShopView):
@@ -120,8 +127,9 @@ class ShopProductDetailView(ShopView):
         operation_id="shop_product", tags=["shop"], responses=s.ShopProductDetailSerializer
     )
     def get(self, request: Request, product_id: UUID) -> Response:
-        found = selectors.shop_product(_retailer(request), product_id)
+        retailer = _retailer(request)
+        found = selectors.shop_product(retailer, product_id)
         if found is None:
             raise NotFound()
         row = {"product": found.product, "price": found.price, "slab_hints": found.slab_hints}
-        return Response(s.ShopProductDetailSerializer(row).data)
+        return Response(s.ShopProductDetailSerializer(row, context=_context(retailer)).data)

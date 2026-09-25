@@ -158,10 +158,18 @@ COLUMNS: tuple[Column, ...] = (
         "Yes",
     ),
     C("is_active", "Active", ("status", "enabled"), False, "Yes or No (default Yes).", "Yes"),
+    C(
+        "cost_price",
+        "Cost price",
+        ("cost", "purchase price", "landing cost", "buying price"),
+        False,
+        "What one unit costs you. Never shown to shops. Needs the pricing permission.",
+        "7.20",
+    ),
 )
 LABEL = {c.name: c.label for c in COLUMNS}
 REQUIRED = [c.name for c in COLUMNS if c.required]
-PRICE_COLUMNS = ("base_price", "mrp")
+PRICE_COLUMNS = ("base_price", "mrp", "cost_price")
 CATEGORY_SPLIT = re.compile(r"\s*(?:>|»|/|\\)\s*")
 MODEL_FIELD_TO_COLUMN = {
     "code": "code",
@@ -194,6 +202,7 @@ class ProductsKind:
     permission = "products.manage"
     key_label = LABEL["code"]
     columns = COLUMNS
+    restricted = {"cost_price": "pricing.view"}
 
     # --- reference data, loaded once per file --------------------------------------------------
 
@@ -225,6 +234,7 @@ class ProductsKind:
         deleted_codes = {p.code.lower() for p in matches if p.deleted_at is not None}
         owners = dict(ProductBarcode.objects.values_list("barcode", "product_id"))
         rates = selectors.tax_rates_on([p.pk for p in existing.values()])
+        can_cost = by.has_permission_code("pricing.manage")
         seen_codes: dict[str, int] = {}
         seen_barcodes: dict[str, int] = {}
         plans: list[RowPlan] = []
@@ -255,6 +265,13 @@ class ProductsKind:
                     LABEL["code"],
                     f"A product with code {key} already exists. To change it, choose "
                     "“Add new and update existing”.",
+                )
+                continue
+            if v.get("cost_price") and not can_cost:
+                plan.error(
+                    LABEL["cost_price"],
+                    "You can't set cost prices. Remove this column or ask someone with the "
+                    "pricing permission.",
                 )
                 continue
             if product is None:
@@ -305,6 +322,7 @@ class ProductsKind:
         for name, places in (
             ("base_price", 2),
             ("mrp", 2),
+            ("cost_price", 2),
             ("min_order_qty", 3),
             ("order_multiple", 3),
             ("pack_size", 3),
@@ -424,6 +442,7 @@ class ProductsKind:
             "hsn_code": product.hsn_code,
             "base_price": f"{product.base_price:.2f}",
             "mrp": f"{product.mrp:.2f}" if product.mrp is not None else "",
+            "cost_price": f"{product.cost_price:.2f}" if product.cost_price is not None else "",
             "min_order_qty": f"{product.min_order_qty.normalize():f}",
             "order_multiple": f"{product.order_multiple.normalize():f}",
             "pack_size": f"{product.pack_size.normalize():f}"
@@ -547,6 +566,7 @@ class ProductsKind:
     # --- export (same columns as the template, so a file can go out and back in) -------------
 
     def export_rows(self) -> Iterable[dict[str, str]]:
+        """Every column; ``build_export`` drops the ones the user may not see (cost price)."""
         by_id = {c.pk: c for c in selectors.categories(include_deleted=True)}
         products = list(selectors.products().prefetch_related("barcodes").order_by("code"))
         rates = selectors.tax_rates_on([p.pk for p in products])
@@ -560,6 +580,7 @@ class ProductsKind:
                 "gst_rate": f"{rate.gst_rate.normalize():f}" if rate else "",
                 "base_price": f"{p.base_price:.2f}",
                 "mrp": f"{p.mrp:.2f}" if p.mrp is not None else "",
+                "cost_price": f"{p.cost_price:.2f}" if p.cost_price is not None else "",
                 "category": _category_path(p.category, by_id) if p.category_id else "",
                 "brand": p.brand.name if p.brand else "",
                 "min_order_qty": f"{p.min_order_qty.normalize():f}",

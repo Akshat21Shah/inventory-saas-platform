@@ -12,4 +12,5 @@ export interface PatchedBrandRequest {
      * @maxLength 120
      */
   name?: string;
+  own_brand?: boolean;
 }

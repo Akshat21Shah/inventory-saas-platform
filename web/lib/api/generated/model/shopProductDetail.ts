@@ -38,6 +38,7 @@ export interface ShopProductDetail {
   order_multiple: string;
   /** @nullable */
   readonly thumbnail_url: string | null;
+  readonly own_brand: boolean;
   price: ShopPrice;
   description: string;
   images: ShopImage[];

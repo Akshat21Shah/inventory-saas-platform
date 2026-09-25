@@ -110,6 +110,15 @@ export function PriceBlock({
   );
 }
 
+function OwnBrandBadge() {
+  const t = useTranslations("shop");
+  return (
+    <span className="bg-brand-50 text-brand-800 rounded-full px-2 py-0.5 text-xs font-medium">
+      {t("ownBrand")}
+    </span>
+  );
+}
+
 function Thumb({ url, className }: { url: string | null; className?: string }) {
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element -- long-cached public CDN image
@@ -151,7 +160,10 @@ function ProductCard({ product }: { product: ShopProduct }) {
         <span className="min-w-0 flex-1 space-y-1">
           <span className="block leading-snug font-medium">{product.name}</span>
           {product.brand ? (
-            <span className="text-muted-foreground block text-xs">{product.brand.name}</span>
+            <span className="text-muted-foreground flex items-center gap-2 text-xs">
+              {product.brand.name}
+              {product.own_brand ? <OwnBrandBadge /> : null}
+            </span>
           ) : null}
           <PriceBlock price={product.price} mrp={product.mrp} />
           <OrderingNote product={product} />
@@ -456,7 +468,10 @@ export function ProductPage({ productId }: { productId: string }) {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">{product.name}</h1>
         {product.brand ? (
-          <p className="text-muted-foreground text-sm">{product.brand.name}</p>
+          <p className="text-muted-foreground flex items-center gap-2 text-sm">
+            {product.brand.name}
+            {product.own_brand ? <OwnBrandBadge /> : null}
+          </p>
         ) : null}
       </div>
       <PriceBlock price={product.price} mrp={product.mrp} large />

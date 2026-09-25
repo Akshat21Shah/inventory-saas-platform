@@ -536,6 +536,10 @@
       "blocked_can_sign_in": {
         "label": "Shops on hold can sign in",
         "description": "Shops you put on hold can still sign in and see their account, but can't order. Turn off to stop them signing in."
+      },
+      "show_own_brand_badge": {
+        "label": "Own-brand badge in the shop",
+        "description": "Show an \"own brand\" badge on your own-brand products in the shop."
       }
     },
     "pricing": {
@@ -1224,7 +1228,12 @@
       "setBrand": "Set brand",
       "setCategoryTitle": "Set the category of {count, plural, one {# product} other {# products}}",
       "setBrandTitle": "Set the brand of {count, plural, one {# product} other {# products}}",
-      "clearSelection": "Clear selection"
+      "clearSelection": "Clear selection",
+      "ownBrand": "Own brand",
+      "ownBrandFilter": "Own brand",
+      "allBrandTypes": "Own and traded brands",
+      "ownBrandOnly": "Own brand only",
+      "tradedOnly": "Traded brands only"
     },
     "product": {
       "back": "All products",
@@ -1277,7 +1286,9 @@
       "showInShop": "Show in shop",
       "showInShopHint": "Turn off for items you don't want shops to see, such as internal items.",
       "create": "Add product",
-      "save": "Save changes"
+      "save": "Save changes",
+      "costPrice": "Cost price",
+      "costHint": "What one unit costs you. Only staff with pricing access see it; shops never do."
     },
     "taxRates": {
       "title": "GST rates",
@@ -1345,7 +1356,9 @@
       "delete": "Delete {name}",
       "deleteConfirm": "Delete",
       "emptyTitle": "No brands yet",
-      "emptyBody": "Brands are added automatically when you import products."
+      "emptyBody": "Brands are added automatically when you import products.",
+      "ownBrand": "Own brand",
+      "ownBrandHint": "Your own (white-label) brand. You can filter products by it, and optionally show a badge in the shop."
     },
     "units": {
       "title": "Units",
@@ -1776,6 +1789,7 @@
       "goneTitle": "This product isn't available",
       "goneBody": "It may be out of the catalog for now.",
       "orderingSoon": "Ordering from the app is coming soon. Until then, please order from your distributor as usual."
-    }
+    },
+    "ownBrand": "Own brand"
   }
 }

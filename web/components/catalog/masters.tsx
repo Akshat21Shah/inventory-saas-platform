@@ -13,6 +13,7 @@ import { FieldsDialog } from "@/components/shared/fields-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { TableSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   catalogBrandsCreate,
@@ -187,8 +188,21 @@ export function BrandsPage() {
   const query = useCatalogBrandsList({ cursor: cursor.cursor });
   const page = query.data?.data;
   const refresh = () => void query.refetch();
+  const brandFields = [
+    { name: "name", label: t("name"), required: true },
+    { name: "own_brand", label: t("ownBrand"), kind: "bool" as const, hint: t("ownBrandHint") },
+  ];
   const columns: DataTableColumn<Brand>[] = [
-    { id: "name", header: t("name"), cell: ({ row }) => row.original.name },
+    {
+      id: "name",
+      header: t("name"),
+      cell: ({ row }) => (
+        <span className="flex items-center gap-2">
+          {row.original.name}
+          {row.original.own_brand ? <Badge variant="secondary">{t("ownBrand")}</Badge> : null}
+        </span>
+      ),
+    },
     {
       id: "actions",
       header: "",
@@ -202,11 +216,14 @@ export function BrandsPage() {
                 </IconButton>
               }
               title={t("edit", { name: row.original.name })}
-              fields={[{ name: "name", label: t("name"), required: true }]}
-              initial={{ name: row.original.name }}
+              fields={brandFields}
+              initial={{ name: row.original.name, own_brand: Boolean(row.original.own_brand) }}
               submitLabel={t("save")}
               onSubmit={async (v) => {
-                await catalogBrandsUpdate(row.original.id, { name: String(v.name) });
+                await catalogBrandsUpdate(row.original.id, {
+                  name: String(v.name),
+                  own_brand: Boolean(v.own_brand),
+                });
                 refresh();
               }}
             />
@@ -246,11 +263,14 @@ export function BrandsPage() {
                 </Button>
               }
               title={t("add")}
-              fields={[{ name: "name", label: t("name"), required: true }]}
-              initial={{ name: "" }}
+              fields={brandFields}
+              initial={{ name: "", own_brand: false }}
               submitLabel={t("add")}
               onSubmit={async (v) => {
-                await catalogBrandsCreate({ name: String(v.name) });
+                await catalogBrandsCreate({
+                  name: String(v.name),
+                  own_brand: Boolean(v.own_brand),
+                });
                 refresh();
               }}
             />

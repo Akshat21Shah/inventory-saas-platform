@@ -50,6 +50,7 @@ export function ProductsPage() {
   const [brand, setBrand] = useState(ALL);
   const [status, setStatus] = useState(ALL);
   const [shop, setShop] = useState(ALL);
+  const [own, setOwn] = useState(ALL);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const cursor = useCursor();
   const debounced = useDebounced(search.trim());
@@ -61,6 +62,7 @@ export function ProductsPage() {
     brand: brand === ALL ? undefined : brand,
     is_active: status === ALL ? undefined : status === "active",
     show_in_shop: shop === ALL ? undefined : shop === "shown",
+    own_brand: own === ALL ? undefined : own === "own",
   });
   const page = query.data?.data;
   const rows = page?.results ?? [];
@@ -188,6 +190,7 @@ export function ProductsPage() {
         <span className="flex flex-wrap gap-1">
           <StatusBadge status={row.original.is_active ? "ACTIVE" : "INACTIVE"} />
           {row.original.show_in_shop ? null : <Badge variant="outline">{t("hidden")}</Badge>}
+          {row.original.own_brand ? <Badge variant="secondary">{t("ownBrand")}</Badge> : null}
         </span>
       ),
     },
@@ -246,7 +249,7 @@ export function ProductsPage() {
         pagination={cursor.pagination(page)}
         caption={t("title")}
         empty={
-          debounced || category !== ALL || brand !== ALL || status !== ALL || shop !== ALL
+          debounced || [category, brand, status, shop, own].some((f) => f !== ALL)
             ? { title: t("noMatchTitle"), description: t("noMatchBody") }
             : {
                 title: t("emptyTitle"),
@@ -301,6 +304,16 @@ export function ProductsPage() {
                 { value: ALL, label: t("shownAndHidden") },
                 { value: "shown", label: t("shown") },
                 { value: "hidden", label: t("hiddenOnly") },
+              ]}
+            />
+            <FilterSelect
+              label={t("ownBrandFilter")}
+              value={own}
+              onChange={filtered(setOwn)}
+              options={[
+                { value: ALL, label: t("allBrandTypes") },
+                { value: "own", label: t("ownBrandOnly") },
+                { value: "traded", label: t("tradedOnly") },
               ]}
             />
             {selected.size > 0 ? (

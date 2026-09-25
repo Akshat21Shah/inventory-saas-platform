@@ -74,7 +74,7 @@ class CategoryTreeNodeSerializer(serializers.Serializer[Any]):
 class BrandSerializer(serializers.ModelSerializer[Brand]):
     class Meta:
         model = Brand
-        fields = ("id", "name")
+        fields = ("id", "name", "own_brand")
 
 
 class UnitSerializer(serializers.ModelSerializer[Unit]):
@@ -170,6 +170,7 @@ class ProductListSerializer(serializers.ModelSerializer[Product]):
     unit = serializers.CharField(source="unit.code", read_only=True)
     gst_rate = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
+    own_brand = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -186,9 +187,14 @@ class ProductListSerializer(serializers.ModelSerializer[Product]):
             "base_price",
             "is_active",
             "show_in_shop",
+            "own_brand",
             "thumbnail_url",
         )
         read_only_fields = fields
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_own_brand(self, product: Product) -> bool:
+        return bool(product.brand and product.brand.own_brand)
 
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_thumbnail_url(self, product: Product) -> str | None:
@@ -229,6 +235,8 @@ class ProductDetailSerializer(serializers.ModelSerializer[Product]):
     tax_rates = serializers.SerializerMethodField()
     hsn_hint = serializers.SerializerMethodField()
     warnings = serializers.SerializerMethodField()
+    own_brand = serializers.SerializerMethodField()
+    cost_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -239,12 +247,14 @@ class ProductDetailSerializer(serializers.ModelSerializer[Product]):
             "description",
             "category",
             "brand",
+            "own_brand",
             "unit",
             "pack_unit",
             "pack_size",
             "hsn_code",
             "mrp",
             "base_price",
+            "cost_price",
             "min_order_qty",
             "order_multiple",
             "reorder_level",
@@ -261,6 +271,17 @@ class ProductDetailSerializer(serializers.ModelSerializer[Product]):
             "updated_at",
         )
         read_only_fields = fields
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_own_brand(self, product: Product) -> bool:
+        return bool(product.brand and product.brand.own_brand)
+
+    @extend_schema_field(money_field(allow_null=True))
+    def get_cost_price(self, product: Product) -> str | None:
+        """Null unless the viewer has the pricing permission (ADR-039)."""
+        if not self.context.get("show_cost") or product.cost_price is None:
+            return None
+        return f"{product.cost_price:.2f}"
 
     def _rate_context(self, product: Product) -> dict[str, Any]:
         current = selectors.tax_rate_on(product.pk)
@@ -307,6 +328,7 @@ class ProductWriteSerializer(serializers.Serializer[Any]):
     hsn_code = serializers.CharField(max_length=20)
     mrp = money_field(required=False, allow_null=True, default=None)
     base_price = money_field()
+    cost_price = money_field(required=False, allow_null=True)
     min_order_qty = qty_field(required=False, default=Decimal("1"))
     order_multiple = qty_field(required=False, default=Decimal("1"))
     reorder_level = qty_field(required=False, default=Decimal("0"))
@@ -337,6 +359,7 @@ class ProductUpdateSerializer(serializers.Serializer[Any]):
     hsn_code = serializers.CharField(max_length=20, required=False)
     mrp = money_field(required=False, allow_null=True)
     base_price = money_field(required=False)
+    cost_price = money_field(required=False, allow_null=True)
     min_order_qty = qty_field(required=False)
     order_multiple = qty_field(required=False)
     reorder_level = qty_field(required=False)
@@ -364,6 +387,7 @@ class ProductFilterSerializer(serializers.Serializer[Any]):
     brand = serializers.UUIDField(required=False)
     is_active = serializers.BooleanField(required=False, allow_null=True, default=None)
     show_in_shop = serializers.BooleanField(required=False, allow_null=True, default=None)
+    own_brand = serializers.BooleanField(required=False, allow_null=True, default=None)
     hsn_prefix = serializers.RegexField(r"^[0-9]{1,8}$", required=False, default="")
 
 

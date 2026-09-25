@@ -134,7 +134,7 @@ class ImportTemplateView(ImportView):
         kind = kind.upper()
         _require(request, kind)
         return _download(
-            services.build_template(services.kind_for(kind)),
+            services.build_template(services.kind_for(kind), _user(request)),
             services.XLSX,
             f"{kind.lower()}-template.xlsx",
         )
@@ -153,7 +153,8 @@ class ExportView(ImportView):
         params = s.ExportParamsSerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         fmt = params.validated_data["file_type"]
-        data, content_type = services.build_export(services.kind_for(self.kind_code), fmt)
+        kind = services.kind_for(self.kind_code)
+        data, content_type = services.build_export(kind, fmt, _user(request))
         return _download(data, content_type, f"{self.kind_code.lower()}.{fmt}")
 
 

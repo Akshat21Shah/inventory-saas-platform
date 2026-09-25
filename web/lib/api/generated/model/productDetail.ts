@@ -20,6 +20,7 @@ export interface ProductDetail {
   readonly description: string;
   readonly category: Ref | null;
   readonly brand: Ref | null;
+  readonly own_brand: boolean;
   readonly unit: Unit;
   readonly pack_unit: Unit | null;
   /**
@@ -35,6 +36,11 @@ export interface ProductDetail {
   readonly mrp: string | null;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   readonly base_price: string;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  readonly cost_price: string | null;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   readonly min_order_qty: string;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */

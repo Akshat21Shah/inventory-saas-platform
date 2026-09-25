@@ -153,9 +153,13 @@ def _categories(by: User) -> list[tuple[Category, str, str]]:
     return leaves
 
 
-def _brands(by: User) -> list[Brand]:
+def _brands(tenant: Tenant, by: User) -> tuple[list[Brand], Brand]:
+    """The traded brands, and the distributor's own brand (ADR-039)."""
     have = {b.name: b for b in Brand.objects.filter(deleted_at__isnull=True)}
-    return [have.get(name) or catalog.save_brand(None, name=name, by=by) for name in BRANDS]
+    traded = [have.get(name) or catalog.save_brand(None, name=name, by=by) for name in BRANDS]
+    own_name = f"{tenant.name.split()[0]} Select"
+    own = have.get(own_name) or catalog.save_brand(None, name=own_name, own_brand=True, by=by)
+    return traded, own
 
 
 def _products(
@@ -163,7 +167,7 @@ def _products(
 ) -> list[Product]:
     prefix = tenant.slug[:2].upper()
     leaves = _categories(by)
-    brands = _brands(by)
+    brands, own_brand = _brands(tenant, by)
     units = {u.code: u for u in Unit.objects.all()}
     active = set(TaxRate.objects.filter(is_active=True, rate__gt=0).values_list("rate", flat=True))
     existing = set(Product.objects.values_list("code", flat=True))
@@ -171,7 +175,7 @@ def _products(
         code = f"{prefix}-{n:04d}"
         rng_price = Decimal(rng.randrange(800, 60000)) / 100  # always drawn: stable sequence
         category, hsn, preferred = leaves[n % len(leaves)]
-        brand = brands[(n * 7) % len(brands)]
+        brand = own_brand if n % 10 == 0 else brands[(n * 7) % len(brands)]
         kind = rng.choice(KINDS[category.name])
         size = rng.choice(SIZES)
         box = rng.random() < 0.25
@@ -193,6 +197,7 @@ def _products(
                 "hsn_code": hsn,
                 "mrp": mrp,
                 "base_price": base,
+                "cost_price": _money(base * Decimal("0.82" if brand.own_brand else "0.9")),
                 "min_order_qty": Decimal("6") if box else Decimal("1"),
                 "order_multiple": Decimal("6") if box else Decimal("1"),
                 "reorder_level": Decimal("24"),

@@ -285,8 +285,17 @@ def build_report(kind: Kind, plans: list[RowPlan]) -> bytes:
     return _bytes(book)
 
 
-def build_template(kind: Kind) -> bytes:
-    columns: tuple[Column, ...] = kind.columns
+def visible_columns(kind: Kind, by: User) -> tuple[Column, ...]:
+    """The kind's columns without those the user may not see (ADR-039: cost price)."""
+    return tuple(
+        c
+        for c in kind.columns
+        if c.name not in kind.restricted or by.has_permission_code(kind.restricted[c.name])
+    )
+
+
+def build_template(kind: Kind, by: User) -> bytes:
+    columns: tuple[Column, ...] = visible_columns(kind, by)
     header = [f"{c.label} *" if c.required else c.label for c in columns]
     book, sheet = _book(
         [header, [c.example for c in columns]], [max(14, len(h) + 4) for h in header]
@@ -310,8 +319,8 @@ def build_template(kind: Kind) -> bytes:
     return _bytes(book)
 
 
-def build_export(kind: Kind, fmt: str) -> tuple[bytes, str]:
-    columns = kind.columns
+def build_export(kind: Kind, fmt: str, by: User) -> tuple[bytes, str]:
+    columns = visible_columns(kind, by)
     rows = [[c.label for c in columns]] + [
         [row.get(c.name, "") for c in columns] for row in kind.export_rows()
     ]

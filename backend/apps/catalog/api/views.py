@@ -159,7 +159,12 @@ class BrandListCreateView(CatalogView, generics.ListAPIView[Brand]):
     def post(self, request: Request) -> Response:
         data = s.BrandSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        brand = services.save_brand(None, name=data.validated_data["name"], by=_user(request))
+        brand = services.save_brand(
+            None,
+            name=data.validated_data["name"],
+            own_brand=data.validated_data.get("own_brand"),
+            by=_user(request),
+        )
         return Response(s.BrandSerializer(brand).data, status=201)
 
 
@@ -171,9 +176,17 @@ class BrandDetailView(CatalogView):
         tags=["catalog"],
     )
     def patch(self, request: Request, brand_id: UUID) -> Response:
-        data = s.BrandSerializer(data=request.data)
+        data = s.BrandSerializer(data=request.data, partial=True)
         data.is_valid(raise_exception=True)
-        brand = services.save_brand(brand_id, name=data.validated_data["name"], by=_user(request))
+        current = selectors.brands().filter(pk=brand_id).first()
+        if current is None:
+            raise NotFound()
+        brand = services.save_brand(
+            brand_id,
+            name=data.validated_data.get("name", current.name),
+            own_brand=data.validated_data.get("own_brand"),
+            by=_user(request),
+        )
         return Response(s.BrandSerializer(brand).data)
 
     @extend_schema(
@@ -233,11 +246,17 @@ class UnitDetailView(CatalogView):
 # --- Products -----------------------------------------------------------------------------------
 
 
-def _detail(product_id: UUID, warnings: list[services.Warning] | None = None) -> dict[str, Any]:
+def _detail(
+    request: Request, product_id: UUID, warnings: list[services.Warning] | None = None
+) -> dict[str, Any]:
     product = selectors.product(product_id)
     if product is None:
         raise NotFound()
-    return dict(s.ProductDetailSerializer(product, context={"warnings": warnings or []}).data)
+    context = {
+        "warnings": warnings or [],
+        "show_cost": _user(request).has_permission_code("pricing.view"),  # ADR-039
+    }
+    return dict(s.ProductDetailSerializer(product, context=context).data)
 
 
 class ProductListCreateView(CatalogView, generics.ListAPIView[Product]):
@@ -259,6 +278,7 @@ class ProductListCreateView(CatalogView, generics.ListAPIView[Product]):
                 brand_id=v.get("brand"),
                 is_active=v["is_active"],
                 show_in_shop=v["show_in_shop"],
+                own_brand=v["own_brand"],
                 hsn_prefix=v["hsn_prefix"],
             )
         )
@@ -300,7 +320,7 @@ class ProductListCreateView(CatalogView, generics.ListAPIView[Product]):
             barcodes=barcodes,
             by=_user(request),
         )
-        return Response(_detail(product.pk, warnings), status=201)
+        return Response(_detail(request, product.pk, warnings), status=201)
 
 
 class ProductDetailView(CatalogView):
@@ -310,7 +330,7 @@ class ProductDetailView(CatalogView):
         tags=["catalog"],
     )
     def get(self, request: Request, product_id: UUID) -> Response:
-        return Response(_detail(product_id))
+        return Response(_detail(request, product_id))
 
     @extend_schema(
         request=s.ProductUpdateSerializer,
@@ -324,7 +344,7 @@ class ProductDetailView(CatalogView):
         product, warnings = services.update_product(
             product_id, s.to_model_fields(dict(data.validated_data)), by=_user(request)
         )
-        return Response(_detail(product.pk, warnings))
+        return Response(_detail(request, product.pk, warnings))
 
     @extend_schema(
         request=None,
@@ -352,7 +372,7 @@ class ProductLookupView(CatalogView):
         )
         if product is None:
             raise NotFound()
-        return Response(_detail(product.pk))
+        return Response(_detail(request, product.pk))
 
 
 class ProductBulkView(CatalogView):
@@ -435,7 +455,7 @@ class ProductTaxRatesView(CatalogView):
             reason=v["reason"],
             by=_user(request),
         )
-        return Response(_detail(product_id), status=201)
+        return Response(_detail(request, product_id), status=201)
 
 
 class ProductTaxRateCancelView(CatalogView):
@@ -451,7 +471,7 @@ class ProductTaxRateCancelView(CatalogView):
         services.cancel_tax_rate(
             product_id, rate_id, reason=data.validated_data["reason"], by=_user(request)
         )
-        return Response(_detail(product_id))
+        return Response(_detail(request, product_id))
 
 
 class TaxRateScheduleView(CatalogView):

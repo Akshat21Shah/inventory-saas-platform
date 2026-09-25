@@ -67,6 +67,7 @@ const schema = z.object({
   pack_size: optionalDecimal,
   hsn_code: z.string().trim().min(1, "required"),
   mrp: optionalDecimal,
+  cost_price: optionalDecimal,
   base_price: requiredDecimal,
   min_order_qty: requiredDecimal,
   order_multiple: requiredDecimal,
@@ -93,6 +94,7 @@ function initialValues(product?: ProductDetail): Values {
     pack_size: product?.pack_size ?? "",
     hsn_code: product?.hsn_code ?? "",
     mrp: product?.mrp ?? "",
+    cost_price: product?.cost_price ?? "",
     base_price: product?.base_price ?? "",
     min_order_qty: product?.min_order_qty ?? "1",
     order_multiple: product?.order_multiple ?? "1",
@@ -260,6 +262,8 @@ function ProductForm({ product }: { product?: ProductDetail }) {
       tags: list(v.tags),
       show_in_shop: v.show_in_shop,
       is_active: v.is_active,
+      // Only staff who manage pricing send the cost (ADR-039); others never see it.
+      ...(can("pricing.manage") ? { cost_price: v.cost_price ? clean(v.cost_price) : null } : {}),
     };
     try {
       if (creating) {
@@ -332,6 +336,16 @@ function ProductForm({ product }: { product?: ProductDetail }) {
           <FormField label={t("mrp")} error={fieldError("mrp")} hint={t("mrpHint")}>
             <Input inputMode="decimal" className="h-10" {...form.register("mrp")} />
           </FormField>
+          {can("pricing.view") ? (
+            <FormField label={t("costPrice")} error={fieldError("cost_price")} hint={t("costHint")}>
+              <Input
+                inputMode="decimal"
+                className="h-10"
+                readOnly={!can("pricing.manage")}
+                {...form.register("cost_price")}
+              />
+            </FormField>
+          ) : null}
           <FormField
             label={t("hsn")}
             error={fieldError("hsn_code")}

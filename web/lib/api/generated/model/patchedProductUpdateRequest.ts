@@ -45,6 +45,11 @@ export interface PatchedProductUpdateRequest {
   mrp?: string | null;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   base_price?: string;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  cost_price?: string | null;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   min_order_qty?: string;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */

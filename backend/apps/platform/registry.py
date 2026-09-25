@@ -297,6 +297,8 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("retailers.blocked_can_sign_in", Group.RETAILERS, SettingType.BOOL, True,
             "Shops you put on hold can still sign in and see their account, but can't order. "
             "Turn off to stop them signing in."),
+    _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
+            "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
     # --- Tenant: Security (ADR-030) -------------------------------------------------------------
     _tenant("security.require_staff_2fa", Group.SECURITY, SettingType.BOOL, False,
             "Require every staff member to set up two-step verification (an authenticator app) "

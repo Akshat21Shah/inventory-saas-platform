@@ -49,6 +49,8 @@ class Kind(Protocol):
     permission: str
     key_label: str
     columns: tuple[Column, ...]
+    # Column name -> permission needed to see it in templates and exports (e.g. cost price).
+    restricted: dict[str, str]
 
     def plan(self, sheet: Sheet, mode: str, by: User) -> list[RowPlan]: ...
 

@@ -69,6 +69,8 @@ def test_seed_builds_a_catalog_each_shop_can_browse_at_its_own_prices(settings):
     sharma = Tenant.objects.get(slug="sharma")
     with tenant_context(sharma.id):
         assert Product.objects.count() == 200
+        assert Product.objects.filter(brand__own_brand=True).count() == 20
+        assert not Product.objects.filter(cost_price__isnull=True).exists()
         assert Category.objects.filter(level=3).exists()
         assert set(PriceList.objects.values_list("name", flat=True)) == {"Gold", "Wholesale"}
         assert DiscountRule.objects.count() == 5 and RetailerPrice.objects.count() == 5

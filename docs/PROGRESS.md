@@ -257,6 +257,11 @@
     - The shop API sends only the total: `discount_total`, `discount_percent` and `discount_per_unit`. The shop shows "You save ₹0.50 each (5%)"; slab hints unchanged.
     - Staff price sheets show the total, the % and the rule names.
     - 28 new resolver tests: each mode with percentages, flat plus %, slabs, the cap, sequential order and special prices, plus Hypothesis properties.
+  - 2.22: own brand and cost price (ADR-039).
+    - `Brand.own_brand` (audited), an own-brand filter and badge on the product list, and setting `retailers.show_own_brand_badge` (default off) for the shop badge.
+    - `Product.cost_price`: returned only with `pricing.view` (null otherwise), set only with `pricing.manage` (checked in the service, so imports too), audited as a price change. Never in the shop API.
+    - Imports: a "Cost price" column that needs `pricing.manage`. Templates and exports leave the column out without `pricing.view`.
+    - The seed adds an own brand ("Sharma Select" / "Patel Select") and cost prices.
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.

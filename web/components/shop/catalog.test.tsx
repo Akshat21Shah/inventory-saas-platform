@@ -47,6 +47,7 @@ const product = (id: string, name: string, extra: Partial<ShopProduct> = {}): Sh
   min_order_qty: "1.000",
   order_multiple: "1.000",
   thumbnail_url: null,
+  own_brand: false,
   price: {
     qty: "1.000",
     unit_price: "10.00",

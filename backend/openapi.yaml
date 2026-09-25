@@ -2233,6 +2233,11 @@ paths:
         schema:
           type: boolean
           nullable: true
+      - in: query
+        name: own_brand
+        schema:
+          type: boolean
+          nullable: true
       - name: page_size
         required: false
         in: query
@@ -4356,6 +4361,8 @@ components:
         name:
           type: string
           maxLength: 120
+        own_brand:
+          type: boolean
       required:
       - id
       - name
@@ -4366,6 +4373,8 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        own_brand:
+          type: boolean
       required:
       - name
     Branding:
@@ -6322,6 +6331,8 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        own_brand:
+          type: boolean
     PatchedBrandingRequest:
       type: object
       properties:
@@ -6611,6 +6622,11 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
         min_order_qty:
           type: string
           format: decimal
@@ -7161,6 +7177,9 @@ components:
           - $ref: '#/components/schemas/Ref'
           readOnly: true
           nullable: true
+        own_brand:
+          type: boolean
+          readOnly: true
         unit:
           allOf:
           - $ref: '#/components/schemas/Unit'
@@ -7189,6 +7208,12 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
           readOnly: true
         min_order_qty:
           type: string
@@ -7261,6 +7286,7 @@ components:
       - brand
       - category
       - code
+      - cost_price
       - created_at
       - current_rate
       - description
@@ -7273,6 +7299,7 @@ components:
       - mrp
       - name
       - order_multiple
+      - own_brand
       - pack_size
       - pack_unit
       - reorder_level
@@ -7377,6 +7404,9 @@ components:
         show_in_shop:
           type: boolean
           readOnly: true
+        own_brand:
+          type: boolean
+          readOnly: true
         thumbnail_url:
           type: string
           format: uri
@@ -7393,6 +7423,7 @@ components:
       - is_active
       - mrp
       - name
+      - own_brand
       - show_in_shop
       - thumbnail_url
       - unit
@@ -7515,6 +7546,11 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
         min_order_qty:
           type: string
           format: decimal
@@ -8449,6 +8485,9 @@ components:
           format: uri
           nullable: true
           readOnly: true
+        own_brand:
+          type: boolean
+          readOnly: true
         price:
           $ref: '#/components/schemas/ShopPrice'
       required:
@@ -8460,6 +8499,7 @@ components:
       - mrp
       - name
       - order_multiple
+      - own_brand
       - pack_size
       - pack_unit
       - price
@@ -8514,6 +8554,9 @@ components:
           format: uri
           nullable: true
           readOnly: true
+        own_brand:
+          type: boolean
+          readOnly: true
         price:
           $ref: '#/components/schemas/ShopPrice'
         description:
@@ -8538,6 +8581,7 @@ components:
       - mrp
       - name
       - order_multiple
+      - own_brand
       - pack_size
       - pack_unit
       - price

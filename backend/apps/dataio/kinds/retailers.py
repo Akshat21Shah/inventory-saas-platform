@@ -127,6 +127,7 @@ class RetailersKind:
     permission = "retailers.manage"
     key_label = LABEL["mobile"]
     columns = COLUMNS
+    restricted: dict[str, str] = {}
     _emails: dict[Any, str]
     _lists: dict[Any, str]
 

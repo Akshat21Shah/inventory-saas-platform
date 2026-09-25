@@ -77,6 +77,7 @@ class ProductFilters:
     brand_id: UUID | None = None
     is_active: bool | None = None
     show_in_shop: bool | None = None
+    own_brand: bool | None = None
     hsn_prefix: str = ""
 
 
@@ -94,6 +95,8 @@ def products(filters: ProductFilters | None = None) -> QuerySet[Product]:
         qs = qs.filter(is_active=f.is_active)
     if f.show_in_shop is not None:
         qs = qs.filter(show_in_shop=f.show_in_shop)
+    if f.own_brand is not None:
+        qs = qs.filter(brand__own_brand=True) if f.own_brand else qs.exclude(brand__own_brand=True)
     if f.hsn_prefix:
         qs = qs.filter(hsn_code__startswith=f.hsn_prefix)
     if f.search.strip():

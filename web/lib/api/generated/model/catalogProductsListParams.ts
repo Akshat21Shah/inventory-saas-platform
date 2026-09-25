@@ -23,6 +23,10 @@ hsn_prefix?: string;
  */
 is_active?: boolean | null;
 /**
+ * @nullable
+ */
+own_brand?: boolean | null;
+/**
  * Number of results to return per page.
  */
 page_size?: number;

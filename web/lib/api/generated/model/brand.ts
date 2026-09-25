@@ -10,4 +10,5 @@ export interface Brand {
   readonly id: string;
   /** @maxLength 120 */
   name: string;
+  own_brand?: boolean;
 }

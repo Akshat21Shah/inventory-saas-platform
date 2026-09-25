@@ -36,5 +36,6 @@ export interface ShopProduct {
   order_multiple: string;
   /** @nullable */
   readonly thumbnail_url: string | null;
+  readonly own_brand: boolean;
   price: ShopPrice;
 }

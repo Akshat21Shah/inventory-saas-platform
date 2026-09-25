@@ -46,7 +46,14 @@ class ShopProductSerializer(serializers.Serializer[Any]):
     min_order_qty = qty(source="product.min_order_qty")
     order_multiple = qty(source="product.order_multiple")
     thumbnail_url = serializers.SerializerMethodField()
+    own_brand = serializers.SerializerMethodField()
     price = ShopPriceSerializer()
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_own_brand(self, row: dict[str, Any]) -> bool:
+        """True only when the distributor shows the badge (ADR-039)."""
+        brand = row["product"].brand
+        return bool(self.context.get("own_brand_badge") and brand and brand.own_brand)
 
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_thumbnail_url(self, row: dict[str, Any]) -> str | None:

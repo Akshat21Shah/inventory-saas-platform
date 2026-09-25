@@ -57,6 +57,8 @@ class Category(SoftDeleteMixin, TenantScopedModel):
 class Brand(SoftDeleteMixin, TenantScopedModel):
     name = models.CharField(max_length=120)
     logo = models.CharField(max_length=300, blank=True, default="")  # storage key
+    # The distributor's own (white-label) brand (ADR-039).
+    own_brand = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["name"]
@@ -113,6 +115,9 @@ class Product(SoftDeleteMixin, TenantScopedModel):
     pack_size = QtyField(null=True, blank=True)  # base units in one pack, e.g. 1 BOX = 12 PCS
     hsn_code = models.CharField(max_length=8)
     mrp = MoneyField(null=True, blank=True)
+    # What one unit costs the distributor: staff with pricing permission only, never shops
+    # (ADR-039).
+    cost_price = MoneyField(null=True, blank=True)
     base_price = MoneyField()
     min_order_qty = QtyField(default=1)
     order_multiple = QtyField(default=1)
@@ -129,6 +134,10 @@ class Product(SoftDeleteMixin, TenantScopedModel):
             # Codes are never reused, even after a product is deleted (plan decision).
             models.UniqueConstraint("tenant", Lower("code"), name="uniq_product_code"),
             models.CheckConstraint(condition=Q(base_price__gte=0), name="product_price_nonneg"),
+            models.CheckConstraint(
+                condition=Q(cost_price__isnull=True) | Q(cost_price__gte=0),
+                name="product_cost_nonneg",
+            ),
             models.CheckConstraint(
                 condition=Q(mrp__isnull=True) | Q(mrp__gte=0), name="product_mrp_nonneg"
             ),

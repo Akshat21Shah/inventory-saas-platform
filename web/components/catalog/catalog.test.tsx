@@ -10,7 +10,7 @@ import { CategoriesPage } from "./masters";
 import { EditProductPage, NewProductPage } from "./product-editor";
 import { ProductsPage } from "./products-page";
 
-const permissions = new Set(["products.view", "products.manage"]);
+const permissions = new Set(["products.view", "products.manage", "pricing.view", "pricing.manage"]);
 const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => 
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  permissions.add("products.manage");
+  for (const p of ["products.manage", "pricing.view", "pricing.manage"]) permissions.add(p);
 });
 
 const row = (code: string, name: string, extra: Partial<ProductList> = {}): ProductList => ({
@@ -34,6 +34,7 @@ const row = (code: string, name: string, extra: Partial<ProductList> = {}): Prod
   base_price: "8.50",
   is_active: true,
   show_in_shop: true,
+  own_brand: false,
   thumbnail_url: null,
   ...extra,
 });
@@ -98,6 +99,11 @@ describe("ProductsPage", () => {
     const hidden = screen.getByText("Hide me").closest("tr")!;
     expect(within(hidden).getByText("Hidden from shops")).toBeInTheDocument();
 
+    await userEvent.click(screen.getByRole("combobox", { name: "Own brand" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Own brand only" }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.url.searchParams.get("own_brand") === "true")).toBe(true),
+    );
     await userEvent.type(screen.getByRole("searchbox", { name: "Search products" }), "parle");
     await waitFor(() =>
       expect(
@@ -204,6 +210,8 @@ describe("Product editor", () => {
       hsn_code: "1905",
       mrp: "10.00",
       base_price: "10.00",
+      cost_price: "6.00",
+      own_brand: false,
       min_order_qty: "1.000",
       order_multiple: "1.000",
       reorder_level: "0.000",
@@ -250,6 +258,27 @@ describe("Product editor", () => {
     expect(screen.getByText(/no GST rate in effect today/)).toBeInTheDocument();
     expect(screen.getByText("Scheduled")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel this change" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Cost price")).toHaveValue("6.00");
+  });
+
+  it("never shows the cost price field to staff without pricing access", async () => {
+    permissions.delete("pricing.view");
+    permissions.delete("pricing.manage");
+    const calls = mockApi({ ...masters, "POST /api/v1/products/": () => [201, { id: "p9" }] });
+    renderWithIntl(<NewProductPage />);
+    await screen.findByLabelText(/Product code/);
+    expect(screen.queryByLabelText("Cost price")).not.toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Product code/), "X-1");
+    await userEvent.type(screen.getByLabelText(/^Name/), "X");
+    await userEvent.type(screen.getByLabelText(/^Price/), "5");
+    await userEvent.type(screen.getByLabelText(/HSN code/), "1905");
+    await userEvent.click(screen.getByRole("combobox", { name: /GST rate/ }));
+    await userEvent.click(await screen.findByRole("option", { name: "5%" }));
+    await userEvent.click(screen.getByRole("combobox", { name: /^Unit/ }));
+    await userEvent.click(await screen.findByRole("option", { name: "PCS · Pieces" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add product" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "POST")).toBe(true));
+    expect(calls.find((c) => c.method === "POST")?.body).not.toHaveProperty("cost_price");
   });
 });
 

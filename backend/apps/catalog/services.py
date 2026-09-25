@@ -191,31 +191,38 @@ def delete_category(category_id: UUID, *, by: User) -> None:
 
 
 @transaction.atomic
-def save_brand(brand_id: UUID | None, *, name: str, by: User) -> Brand:
+def save_brand(
+    brand_id: UUID | None, *, name: str, own_brand: bool | None = None, by: User
+) -> Brand:
+    """``own_brand=None`` keeps the current value (ADR-039)."""
     name = name.strip()
     if brand_id is None:
-        brand = Brand(name=name, created_by=by)
+        brand = Brand(name=name, own_brand=bool(own_brand), created_by=by)
         before = None
     else:
         found = selectors.brands().filter(pk=brand_id).first()
         if found is None:
             raise NotFound()
-        brand, before = found, found.name
+        brand, before = found, {"name": found.name, "own_brand": found.own_brand}
         brand.name = name
+        if own_brand is not None:
+            brand.own_brand = own_brand
     try:
         with transaction.atomic():
             brand.save()
     except IntegrityError as exc:
         raise InvalidFields({"name": ["A brand with this name already exists."]}) from exc
     if before is None:
-        audit.record("catalog.brand_created", target=brand, target_repr=name)
-    elif before != name:
         audit.record(
-            "catalog.brand_updated",
+            "catalog.brand_created",
             target=brand,
             target_repr=name,
-            changes={"name": [before, name]},
+            changes={"own_brand": [None, brand.own_brand]} if brand.own_brand else {},
         )
+    else:
+        changes = audit.diff(before, {"name": brand.name, "own_brand": brand.own_brand})
+        if changes:
+            audit.record("catalog.brand_updated", target=brand, target_repr=name, changes=changes)
     return brand
 
 
@@ -309,8 +316,10 @@ PRODUCT_FIELDS = (
     "tags",
     "show_in_shop",
     "is_active",
+    "cost_price",
 )
-PRICE_FIELDS = ("base_price", "mrp")
+PRICE_FIELDS = ("base_price", "mrp", "cost_price")
+COST_PERMISSION = "pricing.manage"  # ADR-039: seen with pricing.view, set with pricing.manage
 
 
 def _clean_tags(tags: Iterable[str]) -> list[str]:
@@ -362,6 +371,7 @@ def _normalize_numbers(product: Product) -> None:
         "pack_size",
         "mrp",
         "base_price",
+        "cost_price",
     ):
         value = getattr(product, name)
         if value is not None and not isinstance(value, Decimal):
@@ -412,6 +422,8 @@ def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:
             errors.setdefault(name, []).append(f"{unit.code} is counted in whole numbers.")
     if product.base_price is None or product.base_price < 0:
         errors.setdefault("base_price", []).append("Enter a price of 0 or more.")
+    if product.cost_price is not None and product.cost_price < 0:
+        errors.setdefault("cost_price", []).append("Enter a cost of 0 or more.")
     if product.mrp is not None and product.mrp < 0:
         errors.setdefault("mrp", []).append("Enter an MRP of 0 or more.")
     if product.reorder_level is not None and product.reorder_level < 0:
@@ -472,6 +484,13 @@ def _save_product(product: Product) -> None:
 
 
 @transaction.atomic
+def _check_cost_permission(data: dict[str, Any], by: User) -> None:
+    if "cost_price" in data and not by.has_permission_code(COST_PERMISSION):
+        raise InvalidFields(
+            {"cost_price": ["Only staff with the pricing permission can set the cost price."]}
+        )
+
+
 def create_product(
     data: dict[str, Any],
     *,
@@ -482,6 +501,9 @@ def create_product(
     by: User,
 ) -> tuple[Product, list[Warning]]:
     """A product with its first GST rate (effective today, so it can be sold at once)."""
+    if data.get("cost_price") is None:
+        data = {k: v for k, v in data.items() if k != "cost_price"}
+    _check_cost_permission(data, by)
     product = Product(created_by=by)
     for key in PRODUCT_FIELDS:
         if key in data:
@@ -531,6 +553,7 @@ def update_product(
     )
     if product is None:
         raise NotFound()
+    _check_cost_permission(changes, by)
     before = _snapshot(product)
     for key in PRODUCT_FIELDS:
         if key in changes:
