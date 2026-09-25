@@ -26,6 +26,7 @@ class Group(StrEnum):
     ORDERS = "orders"
     STOCK = "stock"
     CREDIT_PAYMENTS = "credit_payments"
+    PRICING = "pricing"
     RETAILERS = "retailers"
     SECURITY = "security"
 
@@ -284,6 +285,10 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    # --- Tenant: Pricing (ADR-036) --------------------------------------------------------------
+    _tenant("pricing.discounts_on_special_prices", Group.PRICING, SettingType.BOOL, True,
+            "Apply discount rules on top of a shop's special prices. Turn off to treat a special "
+            "price as the final price."),
     # --- Tenant: Retailers (ADR-036) ------------------------------------------------------------
     _tenant("retailers.blocked_can_sign_in", Group.RETAILERS, SettingType.BOOL, True,
             "Shops you put on hold can still sign in and see their account, but can't order. "

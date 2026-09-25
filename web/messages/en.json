@@ -243,7 +243,8 @@
     "CATEGORY_TOO_DEEP": "Categories can be at most 3 levels deep.",
     "TAX_RATE_NOT_CANCELLABLE": "Only a GST change that hasn't started yet can be cancelled.",
     "PREVIEW_OUT_OF_DATE": "The matching products changed since the preview. Preview again before confirming.",
-    "RETAILER_ON_HOLD": "Your account is on hold. Please contact your distributor."
+    "RETAILER_ON_HOLD": "Your account is on hold. Please contact your distributor.",
+    "PRICE_UNAVAILABLE": "This product can't be sold right now."
   },
   "designSystem": {
     "title": "Design system",
@@ -535,6 +536,12 @@
         "label": "Shops on hold can sign in",
         "description": "Shops you put on hold can still sign in and see their account, but can't order. Turn off to stop them signing in."
       }
+    },
+    "pricing": {
+      "discounts_on_special_prices": {
+        "label": "Discounts on special prices",
+        "description": "Apply discount rules on top of a shop's special prices. Turn off to treat a special price as the final price."
+      }
     }
   },
   "settingsForm": {
@@ -545,7 +552,8 @@
       "stock": "Stock",
       "credit_payments": "Credit & payments",
       "security": "Security",
-      "retailers": "Shops"
+      "retailers": "Shops",
+      "pricing": "Pricing"
     },
     "default": "Default",
     "reset": "Reset to default",

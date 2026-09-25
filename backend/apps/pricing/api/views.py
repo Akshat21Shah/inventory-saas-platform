@@ -12,10 +12,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
-from apps.pricing import selectors, services
+from apps.catalog.models import Product, ProductTaxRate
+from apps.catalog.selectors import products as catalog_products
+from apps.pricing import resolve, selectors, services
 from apps.pricing.api import serializers as s
 from apps.pricing.models import DiscountRule, PriceList, PriceListItem, RetailerPrice
+from apps.retailers.models import Retailer
 from apps.retailers.selectors import retailer_for
+from common.dates import today_ist
 from common.errors import NotFound
 from common.pagination import DefaultCursorPagination
 from common.permissions import HasPermission
@@ -42,6 +46,10 @@ class Paged(CursorPagination):
 
 class ByName(Paged):
     ordering = ("name", "id")
+
+
+class ByCode(Paged):
+    ordering = ("code", "id")
 
 
 class ByProduct(Paged):
@@ -322,3 +330,74 @@ class DiscountRuleDetailView(PricingView):
     def delete(self, request: Request, rule_id: UUID) -> Response:
         services.delete_discount_rule(rule_id, by=_user(request))
         return Response(status=204)
+
+
+class PricePreviewView(PricingView):
+    required_permissions = {"POST": VIEW}
+
+    @extend_schema(
+        request=s.PreviewSerializer,
+        responses=s.PreviewRowSerializer(many=True),
+        operation_id="pricing_preview",
+        tags=["pricing"],
+    )
+    def post(self, request: Request) -> Response:
+        """What a shop would pay: the full breakdown from ``resolve_price`` (for testing rules)."""
+        data = s.PreviewSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        retailer = retailer_for(_user(request), v["retailer"])
+        if retailer is None:
+            raise NotFound()
+        products = {
+            p.pk: p
+            for p in catalog_products().filter(pk__in=[line["product"] for line in v["lines"]])
+        }
+        rows = []
+        for line in v["lines"]:
+            product = products.get(line["product"])
+            if product is None:
+                raise NotFound()
+            try:
+                result = resolve.resolve_price(retailer, product, line["qty"], on=v["on"])
+                rows.append({"product": product, "result": result, "problem": ""})
+            except resolve.PriceUnavailable as exc:
+                rows.append({"product": product, "result": None, "problem": exc.message})
+        return Response(s.PreviewRowSerializer(rows, many=True).data)
+
+
+class RetailerPriceSheetView(PricingView, generics.ListAPIView[Product]):
+    """Every sellable product with this shop's price at its minimum order quantity."""
+
+    serializer_class = s.PriceSheetRowSerializer
+    pagination_class = ByCode
+    filter_backends: list[Any] = []
+
+    _retailer: Retailer | None = None
+
+    def get_queryset(self) -> QuerySet[Product]:
+        fake = _fake(self, Product)
+        if fake is not None:
+            return fake
+        self._retailer = retailer_for(_user(self.request), self.kwargs["retailer_id"])
+        if self._retailer is None:
+            raise NotFound()
+        return catalog_products().filter(
+            is_active=True,
+            pk__in=ProductTaxRate.objects.filter(
+                cancelled_at__isnull=True, effective_from__lte=today_ist()
+            ).values("product_id"),
+        )
+
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset) or []
+        retailer = self._retailer
+        assert retailer is not None  # set by get_queryset (404 otherwise)
+        results = resolve.resolve_prices(retailer, [(p, p.min_order_qty) for p in page])
+        rows = [{"product": p, "result": r} for p, r in zip(page, results, strict=True)]
+        return self.get_paginated_response(s.PriceSheetRowSerializer(rows, many=True).data)
+
+    @extend_schema(operation_id="retailers_price_sheet", tags=["pricing"])
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        return super().get(request, *args, **kwargs)

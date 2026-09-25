@@ -2177,6 +2177,30 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/pricing/preview/:
+    post:
+      operationId: pricing_preview
+      description: 'What a shop would pay: the full breakdown from ``resolve_price``
+        (for testing rules).'
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreviewRow'
+          description: ''
   /api/v1/products/:
     get:
       operationId: catalog_products_list
@@ -3145,6 +3169,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/RetailerDetail'
           description: ''
+  /api/v1/retailers/{retailer_id}/prices/:
+    get:
+      operationId: retailers_price_sheet
+      description: Every sellable product with this shop's price at its minimum order
+        quantity.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPriceSheetRowList'
+          description: ''
   /api/v1/retailers/{retailer_id}/resend-welcome/:
     post:
       operationId: retailers_resend_welcome
@@ -3923,6 +3982,36 @@ components:
       - line1
       - pincode
       - state_code
+    AppliedDiscount:
+      type: object
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        rule_name:
+          type: string
+        discount_type:
+          type: string
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        slab_min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - discount_type
+      - rule_id
+      - rule_name
+      - slab_min_qty
+      - value
     AssetUploadRequest:
       type: object
       properties:
@@ -5848,6 +5937,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PriceList'
+    PaginatedPriceSheetRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceSheetRow'
     PaginatedProductListList:
       type: object
       required:
@@ -6623,6 +6731,53 @@ components:
         * `en` - English
         * `hi` - हिन्दी
         * `mr` - मराठी
+    PreviewLineRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - product
+      - qty
+    PreviewRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreviewLineRequest'
+          maxItems: 200
+          minItems: 1
+        'on':
+          type: string
+          format: date
+          nullable: true
+      required:
+      - lines
+      - retailer
+    PreviewRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        result:
+          allOf:
+          - $ref: '#/components/schemas/PriceResult'
+          nullable: true
+        problem:
+          type: string
+      required:
+      - problem
+      - product
+      - result
     PriceList:
       type: object
       properties:
@@ -6715,6 +6870,89 @@ components:
           maxLength: 300
       required:
       - name
+    PriceResult:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        price_source:
+          $ref: '#/components/schemas/PriceSourceEnum'
+        discount:
+          allOf:
+          - $ref: '#/components/schemas/AppliedDiscount'
+          nullable: true
+        gross:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        line_net:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        prices_include_gst:
+          type: boolean
+        'on':
+          type: string
+          format: date
+      required:
+      - base_price
+      - cess_rate
+      - discount
+      - gross
+      - gst_rate
+      - line_net
+      - net_unit_price
+      - 'on'
+      - price_source
+      - prices_include_gst
+      - product_id
+      - qty
+      - unit_price
+    PriceSheetRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        result:
+          $ref: '#/components/schemas/PriceResult'
+      required:
+      - product
+      - result
+    PriceSourceEnum:
+      enum:
+      - SPECIAL
+      - PRICE_LIST
+      - BASE
+      type: string
+      description: |-
+        * `SPECIAL` - SPECIAL
+        * `PRICE_LIST` - PRICE_LIST
+        * `BASE` - BASE
     ProductDetail:
       type: object
       properties:

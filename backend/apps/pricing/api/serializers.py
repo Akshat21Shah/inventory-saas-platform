@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 from rest_framework import serializers
@@ -171,3 +172,50 @@ FK = {
 
 def rule_fields(data: dict[str, Any]) -> dict[str, Any]:
     return {FK.get(k, k): v for k, v in data.items() if k != "slabs"}
+
+
+class AppliedDiscountSerializer(serializers.Serializer[Any]):
+    rule_id = serializers.UUIDField()
+    rule_name = serializers.CharField()
+    discount_type = serializers.CharField()
+    value = money()
+    slab_min_qty = qty(allow_null=True)
+    amount = money()
+
+
+class PriceResultSerializer(serializers.Serializer[Any]):
+    product_id = serializers.UUIDField()
+    qty = qty()
+    base_price = money()
+    unit_price = money()
+    price_source = serializers.ChoiceField(choices=["SPECIAL", "PRICE_LIST", "BASE"])
+    discount = AppliedDiscountSerializer(allow_null=True)
+    gross = money()
+    line_net = money()
+    net_unit_price = money()
+    gst_rate = serializers.DecimalField(max_digits=6, decimal_places=3)
+    cess_rate = serializers.DecimalField(max_digits=6, decimal_places=3)
+    prices_include_gst = serializers.BooleanField()
+    on = serializers.DateField()
+
+
+class PreviewLineSerializer(serializers.Serializer[Any]):
+    product = serializers.UUIDField()
+    qty = qty(min_value=Decimal("0.001"))
+
+
+class PreviewSerializer(serializers.Serializer[Any]):
+    retailer = serializers.UUIDField()
+    lines = serializers.ListField(child=PreviewLineSerializer(), min_length=1, max_length=200)
+    on = serializers.DateField(required=False, allow_null=True, default=None)
+
+
+class PreviewRowSerializer(serializers.Serializer[Any]):
+    product = ProductRefSerializer()
+    result = PriceResultSerializer(allow_null=True)
+    problem = serializers.CharField(allow_blank=True)
+
+
+class PriceSheetRowSerializer(serializers.Serializer[Any]):
+    product = ProductRefSerializer()
+    result = PriceResultSerializer()

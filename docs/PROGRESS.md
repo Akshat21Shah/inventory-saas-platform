@@ -188,6 +188,13 @@
     - Welcome message through the SMS adapter (mock; DLT template on the pre-production list).
     - Retailer import and export (matched by mobile; the number and sign-in never change on update; credit columns need the credit permission).
   - Commit 8: price lists (deletion refused while shops or rules use one; shop counts), bulk price upsert (one audit entry with old → new per product code), retailer special prices (audited; sales staff limited to their shops), discount rules with quantity slabs and validity dates. Rules are validated in plain words (targets exist in this tenant, percentage ≤ 100, slabs unique) and backed by check constraints. Price lists can be assigned per shop, in bulk or by import.
+  - Commit 9: `pricing/resolve.py` implements `resolve_price` and a batch form, `resolve_prices`, per spec 5.6 and ADR-036.
+    - Unit price comes from the shop's special price, then its price list, then the base price.
+    - Only the single best rule applies. Ties are broken by amount, then audience, then scope (a category rule also covers its sub-categories), then the newest rule. Slabs use the highest one reached.
+    - New setting `pricing.discounts_on_special_prices` (default on).
+    - Uses the GST rate in effect on the day. Inactive, deleted or not-yet-taxed products raise `PRICE_UNAVAILABLE`.
+    - Staff endpoints: `POST pricing/preview/` and `GET retailers/{id}/prices/` (a shop's price sheet).
+    - 44 resolver tests, including both values of the new setting and Hypothesis properties.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
