@@ -4,5 +4,6 @@ export * from './imports/imports';
 export * from './meta/meta';
 export * from './platform/platform';
 export * from './public/public';
+export * from './retailers/retailers';
 export * from './settings/settings';
 export * from './staff/staff';

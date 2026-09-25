@@ -242,7 +242,8 @@
     "IN_USE": "This is still in use, so it can't be deleted.",
     "CATEGORY_TOO_DEEP": "Categories can be at most 3 levels deep.",
     "TAX_RATE_NOT_CANCELLABLE": "Only a GST change that hasn't started yet can be cancelled.",
-    "PREVIEW_OUT_OF_DATE": "The matching products changed since the preview. Preview again before confirming."
+    "PREVIEW_OUT_OF_DATE": "The matching products changed since the preview. Preview again before confirming.",
+    "RETAILER_ON_HOLD": "Your account is on hold. Please contact your distributor."
   },
   "designSystem": {
     "title": "Design system",
@@ -528,6 +529,12 @@
         "label": "Wrong codes allowed",
         "description": "Wrong codes allowed before an OTP stops working."
       }
+    },
+    "retailers": {
+      "blocked_can_sign_in": {
+        "label": "Shops on hold can sign in",
+        "description": "Shops you put on hold can still sign in and see their account, but can't order. Turn off to stop them signing in."
+      }
     }
   },
   "settingsForm": {
@@ -537,7 +544,8 @@
       "orders": "Orders",
       "stock": "Stock",
       "credit_payments": "Credit & payments",
-      "security": "Security"
+      "security": "Security",
+      "retailers": "Shops"
     },
     "default": "Default",
     "reset": "Reset to default",

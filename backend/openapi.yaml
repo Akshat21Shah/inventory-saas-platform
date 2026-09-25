@@ -2457,6 +2457,388 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicBranding'
           description: ''
+  /api/v1/retailers/:
+    get:
+      operationId: retailers_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: salesperson
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: state
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 2
+      - in: query
+        name: status
+        schema:
+          enum:
+          - ACTIVE
+          - BLOCKED
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `ACTIVE` - Active
+          * `BLOCKED` - On hold
+      - in: query
+        name: tag
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 40
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRetailerListList'
+          description: ''
+    post:
+      operationId: retailers_create
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/:
+    get:
+      operationId: retailers_retrieve
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+    patch:
+      operationId: retailers_update
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRetailerUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+    delete:
+      operationId: retailers_delete
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/addresses/:
+    post:
+      operationId: retailers_addresses_create
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/v1/retailers/{retailer_id}/addresses/{address_id}/:
+    patch:
+      operationId: retailers_addresses_update
+      parameters:
+      - in: path
+        name: address_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: retailers_addresses_delete
+      parameters:
+      - in: path
+        name: address_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/block/:
+    post:
+      operationId: retailers_block
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/credit/:
+    patch:
+      operationId: retailers_credit_update
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/resend-welcome/:
+    post:
+      operationId: retailers_resend_welcome
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/unblock/:
+    post:
+      operationId: retailers_unblock
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/bulk/:
+    post:
+      operationId: retailers_bulk
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerBulkRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerBulkResult'
+          description: ''
+  /api/v1/retailers/export/:
+    get:
+      operationId: retailers_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/retailers/salespeople/:
+    get:
+      operationId: retailers_salespeople
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Salesperson'
+          description: ''
   /api/v1/roles/:
     get:
       operationId: roles_list
@@ -3023,22 +3405,6 @@ paths:
           description: No response body
 components:
   schemas:
-    ActionEnum:
-      enum:
-      - activate
-      - deactivate
-      - show_in_shop
-      - hide_from_shop
-      - set_category
-      - set_brand
-      type: string
-      description: |-
-        * `activate` - activate
-        * `deactivate` - deactivate
-        * `show_in_shop` - show_in_shop
-        * `hide_from_shop` - hide_from_shop
-        * `set_category` - set_category
-        * `set_brand` - set_brand
     ActorTypeEnum:
       enum:
       - PLATFORM
@@ -3051,6 +3417,102 @@ components:
         * `STAFF` - Staff
         * `RETAILER` - Retailer
         * `SYSTEM` - System
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AddressKindEnum'
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        line1:
+          type: string
+          readOnly: true
+        line2:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        district:
+          type: string
+          readOnly: true
+        pincode:
+          type: string
+          readOnly: true
+        state_code:
+          type: string
+          readOnly: true
+        is_default:
+          type: boolean
+          readOnly: true
+      required:
+      - city
+      - district
+      - id
+      - is_default
+      - kind
+      - label
+      - line1
+      - line2
+      - pincode
+      - state_code
+    AddressKindEnum:
+      enum:
+      - BILLING
+      - SHIPPING
+      type: string
+      description: |-
+        * `BILLING` - Billing
+        * `SHIPPING` - Shipping
+    AddressWriteRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/AddressKindEnum'
+        label:
+          type: string
+          default: ''
+          maxLength: 60
+        line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        line2:
+          type: string
+          default: ''
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 10
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        is_default:
+          type: boolean
+          nullable: true
+      required:
+      - city
+      - kind
+      - line1
+      - pincode
+      - state_code
     AssetUploadRequest:
       type: object
       properties:
@@ -3220,6 +3682,47 @@ components:
           maxLength: 64
       required:
       - barcode
+    BillingAddressRequest:
+      type: object
+      properties:
+        line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        line2:
+          type: string
+          default: ''
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 10
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+      required:
+      - city
+      - line1
+      - pincode
+      - state_code
+    BlockRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - reason
     Brand:
       type: object
       properties:
@@ -3269,6 +3772,22 @@ components:
       - favicon_url
       - logo_url
       - primary_color
+    BulkActionEnum:
+      enum:
+      - activate
+      - deactivate
+      - show_in_shop
+      - hide_from_shop
+      - set_category
+      - set_brand
+      type: string
+      description: |-
+        * `activate` - activate
+        * `deactivate` - deactivate
+        * `show_in_shop` - show_in_shop
+        * `hide_from_shop` - hide_from_shop
+        * `set_category` - set_category
+        * `set_brand` - set_brand
     BulkRequest:
       type: object
       properties:
@@ -3279,7 +3798,7 @@ components:
             format: uuid
           maxItems: 1000
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/BulkActionEnum'
         value:
           type: string
           format: uuid
@@ -4302,8 +4821,14 @@ components:
           format: uuid
         shop_name:
           type: string
+        code:
+          type: string
+        on_hold:
+          type: boolean
       required:
+      - code
       - id
+      - on_hold
       - shop_name
     MeRole:
       type: object
@@ -4674,6 +5199,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProductList'
+    PaginatedRetailerListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetailerList'
     PaginatedTenantListList:
       type: object
       required:
@@ -4769,6 +5313,42 @@ components:
       - new_password
       - token
       - uid
+    PatchedAddressWriteRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/AddressKindEnum'
+        label:
+          type: string
+          default: ''
+          maxLength: 60
+        line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        line2:
+          type: string
+          default: ''
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 10
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        is_default:
+          type: boolean
+          nullable: true
     PatchedBrandRequest:
       type: object
       properties:
@@ -4859,6 +5439,18 @@ components:
           $ref: '#/components/schemas/CalcMethodEnum'
         is_active:
           type: boolean
+    PatchedCreditRequest:
+      type: object
+      properties:
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        payment_terms_days:
+          type: integer
+          maximum: 365
+          minimum: 0
     PatchedFeatureFlagRequest:
       type: object
       properties:
@@ -5007,6 +5599,47 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedRetailerUpdateRequest:
+      type: object
+      properties:
+        shop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 20
+        owner_name:
+          type: string
+          maxLength: 150
+        email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        gstin:
+          type: string
+          maxLength: 30
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        salesperson:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
     PatchedSettingValuesRequest:
       type: object
       properties:
@@ -5108,6 +5741,17 @@ components:
       - code
       - description
       - module
+    PersonRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+      required:
+      - full_name
+      - id
     Plan:
       type: object
       properties:
@@ -5717,6 +6361,40 @@ components:
       - choice_id
       - distributor_name
       - shop_name
+    RetailerBulkActionEnum:
+      enum:
+      - assign_salesperson
+      - block
+      - unblock
+      type: string
+      description: |-
+        * `assign_salesperson` - assign_salesperson
+        * `block` - block
+        * `unblock` - unblock
+    RetailerBulkRequest:
+      type: object
+      properties:
+        retailer_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+        action:
+          $ref: '#/components/schemas/RetailerBulkActionEnum'
+        value:
+          type: string
+          nullable: true
+      required:
+      - action
+      - retailer_ids
+    RetailerBulkResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
     RetailerChooseAccountInputRequest:
       type: object
       properties:
@@ -5730,6 +6408,175 @@ components:
       required:
       - choice_id
       - choice_token
+    RetailerDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        mobile:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        pan:
+          type: string
+          readOnly: true
+        state_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RetailerStatusEnum'
+          readOnly: true
+        blocked_reason:
+          type: string
+          readOnly: true
+        salesperson:
+          allOf:
+          - $ref: '#/components/schemas/PersonRef'
+          readOnly: true
+          nullable: true
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        payment_terms_days:
+          type: integer
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          readOnly: true
+        preferred_language:
+          type: string
+          readOnly: true
+        welcome_sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - addresses
+      - blocked_reason
+      - code
+      - created_at
+      - credit_limit
+      - email
+      - gstin
+      - id
+      - mobile
+      - notes
+      - owner_name
+      - pan
+      - payment_terms_days
+      - preferred_language
+      - salesperson
+      - shop_name
+      - state_code
+      - status
+      - tags
+      - updated_at
+      - welcome_sent_at
+    RetailerList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        mobile:
+          type: string
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        state_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RetailerStatusEnum'
+          readOnly: true
+        salesperson:
+          allOf:
+          - $ref: '#/components/schemas/PersonRef'
+          readOnly: true
+          nullable: true
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        payment_terms_days:
+          type: integer
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          readOnly: true
+      required:
+      - code
+      - credit_limit
+      - gstin
+      - id
+      - mobile
+      - owner_name
+      - payment_terms_days
+      - salesperson
+      - shop_name
+      - state_code
+      - status
+      - tags
     RetailerOtpRequestInputRequest:
       type: object
       properties:
@@ -5765,6 +6612,78 @@ components:
       required:
       - code
       - phone
+    RetailerStatusEnum:
+      enum:
+      - ACTIVE
+      - BLOCKED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `BLOCKED` - On hold
+    RetailerWritePreferredLanguageEnum:
+      enum:
+      - en
+      - hi
+      - mr
+      type: string
+      description: |-
+        * `en` - en
+        * `hi` - hi
+        * `mr` - mr
+    RetailerWriteRequest:
+      type: object
+      properties:
+        shop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 20
+        owner_name:
+          type: string
+          default: ''
+          maxLength: 150
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        gstin:
+          type: string
+          default: ''
+          maxLength: 30
+        state_code:
+          type: string
+          default: ''
+          maxLength: 2
+        salesperson:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          default: ''
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        preferred_language:
+          allOf:
+          - $ref: '#/components/schemas/RetailerWritePreferredLanguageEnum'
+          default: en
+        billing_address:
+          allOf:
+          - $ref: '#/components/schemas/BillingAddressRequest'
+          nullable: true
+      required:
+      - mobile
+      - shop_name
     Role:
       type: object
       properties:
@@ -5800,6 +6719,21 @@ components:
       required:
       - code
       - name
+    Salesperson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+      - email
+      - full_name
+      - id
     ScheduleRateRequest:
       type: object
       properties:

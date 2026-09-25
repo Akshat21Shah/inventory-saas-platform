@@ -29,7 +29,8 @@ import type {
   ImportUploadRequest,
   ImportsListParams,
   PaginatedImportJobListList,
-  ProductsExportParams
+  ProductsExportParams,
+  RetailersExportParams
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -752,6 +753,122 @@ export function useProductsExport<TData = Awaited<ReturnType<typeof productsExpo
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getProductsExportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type retailersExportResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type retailersExportResponseSuccess = (retailersExportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type retailersExportResponse = (retailersExportResponseSuccess)
+
+export const getRetailersExportUrl = (params?: RetailersExportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/retailers/export/?${stringifiedParams}` : `/api/v1/retailers/export/`
+}
+
+/**
+ * Same columns as the import template, so a file can go out, be edited and come back.
+ */
+export const retailersExport = async (params?: RetailersExportParams, options?: Parameters<typeof apiFetch>[1]): Promise<retailersExportResponse> => {
+
+  return apiFetch<retailersExportResponse>(getRetailersExportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetailersExportQueryKey = (params?: RetailersExportParams,) => {
+    return [
+    `/api/v1/retailers/export/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getRetailersExportQueryOptions = <TData = Awaited<ReturnType<typeof retailersExport>>, TError = unknown>(params?: RetailersExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetailersExportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retailersExport>>> = ({ signal }) => retailersExport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retailersExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetailersExportQueryResult = NonNullable<Awaited<ReturnType<typeof retailersExport>>>
+export type RetailersExportQueryError = unknown
+
+
+export function useRetailersExport<TData = Awaited<ReturnType<typeof retailersExport>>, TError = unknown>(
+ params: undefined |  RetailersExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retailersExport>>,
+          TError,
+          Awaited<ReturnType<typeof retailersExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetailersExport<TData = Awaited<ReturnType<typeof retailersExport>>, TError = unknown>(
+ params?: RetailersExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retailersExport>>,
+          TError,
+          Awaited<ReturnType<typeof retailersExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetailersExport<TData = Awaited<ReturnType<typeof retailersExport>>, TError = unknown>(
+ params?: RetailersExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetailersExport<TData = Awaited<ReturnType<typeof retailersExport>>, TError = unknown>(
+ params?: RetailersExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retailersExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetailersExportQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

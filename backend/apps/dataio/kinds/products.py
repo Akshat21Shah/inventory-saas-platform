@@ -217,7 +217,7 @@ class ProductsKind:
 
     # --- validation ----------------------------------------------------------------------------
 
-    def plan(self, sheet: Sheet, mode: str) -> list[RowPlan]:
+    def plan(self, sheet: Sheet, mode: str, by: User) -> list[RowPlan]:
         ref = self._load()
         codes = {r.values.get("code", "").strip().lower() for r in sheet.rows} - {""}
         matches = list(Product.objects.annotate(lc=Lower("code")).filter(lc__in=codes))

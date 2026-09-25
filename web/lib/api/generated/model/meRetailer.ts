@@ -9,4 +9,6 @@
 export interface MeRetailer {
   id: string;
   shop_name: string;
+  code: string;
+  on_hold: boolean;
 }

@@ -59,9 +59,12 @@ def test_required_permissions_follow_scope():
 
 
 def test_registry_covers_plan_catalogue():
-    assert len(TENANT_KEYS) == 28  # PLAN §9.1 (27) + security.require_staff_2fa (ADR-030)
+    # PLAN §9.1 (27) + security.require_staff_2fa (ADR-030) + retailers.blocked_can_sign_in
+    # (ADR-036)
+    assert len(TENANT_KEYS) == 29
     assert len(PLATFORM_KEYS) == 11  # PLAN §9.2 (3) + 7 login/OTP limits (ADR-030) + reset limit
     assert "security.require_staff_2fa" in TENANT_KEYS
+    assert registry.REGISTRY["retailers.blocked_can_sign_in"].default is True
 
 
 def test_spec_defaults():

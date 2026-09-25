@@ -164,6 +164,10 @@ class ImpersonationReasonSerializer(serializers.Serializer[Any]):
 class MeRetailerSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     shop_name = serializers.CharField()
+    code = serializers.CharField()
+    # True while the distributor has put the shop on hold: the shop shows a notice and can't
+    # order (ADR-036).
+    on_hold = serializers.BooleanField()
 
 
 class MeSerializer(serializers.Serializer[Any]):

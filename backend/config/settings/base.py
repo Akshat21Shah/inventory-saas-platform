@@ -192,6 +192,9 @@ SPECTACULAR_SETTINGS = {
         "ImportModeEnum": "apps.dataio.models.ImportJob.Mode",
         "ImportStatusEnum": "apps.dataio.models.ImportJob.Status",
         "ImportKindEnum": "apps.dataio.models.ImportJob.Kind",
+        "AddressKindEnum": "apps.retailers.models.RetailerAddress.Kind",
+        "RetailerStatusEnum": "apps.retailers.models.Retailer.Status",
+        "PreferredLanguageEnum": "apps.accounts.models.LANGUAGE_CHOICES",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

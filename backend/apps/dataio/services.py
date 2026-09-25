@@ -18,6 +18,7 @@ from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.dataio.kinds.base import Column, Kind, RowPlan
 from apps.dataio.kinds.products import ProductsKind
+from apps.dataio.kinds.retailers import RetailersKind
 from apps.dataio.models import ImportJob
 from apps.dataio.parsing import FileProblem, read_sheet, synonyms_for
 from common.error_codes import ErrorCode
@@ -28,7 +29,7 @@ from common.tenancy import require_tenant_id, tenant_transaction
 if TYPE_CHECKING:
     from django.core.files.uploadedfile import UploadedFile
 
-KINDS: dict[str, Kind] = {"PRODUCTS": ProductsKind()}
+KINDS: dict[str, Kind] = {"PRODUCTS": ProductsKind(), "RETAILERS": RetailersKind()}
 PREVIEW_LIMIT = 1000  # rows of errors / changes kept on the job (the report has all of them)
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -90,7 +91,9 @@ def _plan(job: ImportJob) -> tuple[Kind, list[RowPlan], list[str]]:
             + ", ".join(missing)
             + ". Download the template to see the expected columns."
         )
-    return kind, kind.plan(sheet, job.mode), notes
+    by = job.committed_by or job.created_by
+    assert by is not None
+    return kind, kind.plan(sheet, job.mode, by), notes
 
 
 def _key(kind: Kind) -> str:
@@ -105,7 +108,7 @@ def validate_job(job_id: str) -> None:
     """Runs in a task with the tenant set but no transaction (file reading is not held in one)."""
     tenant_id = require_tenant_id()
     with tenant_transaction(tenant_id):
-        job = ImportJob.objects.filter(pk=job_id).first()
+        job = ImportJob.objects.select_related("created_by").filter(pk=job_id).first()
         if job is None or job.status != ImportJob.Status.VALIDATING:
             return
     try:

@@ -26,6 +26,7 @@ class Group(StrEnum):
     ORDERS = "orders"
     STOCK = "stock"
     CREDIT_PAYMENTS = "credit_payments"
+    RETAILERS = "retailers"
     SECURITY = "security"
 
 
@@ -283,6 +284,10 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    # --- Tenant: Retailers (ADR-036) ------------------------------------------------------------
+    _tenant("retailers.blocked_can_sign_in", Group.RETAILERS, SettingType.BOOL, True,
+            "Shops you put on hold can still sign in and see their account, but can't order. "
+            "Turn off to stop them signing in."),
     # --- Tenant: Security (ADR-030) -------------------------------------------------------------
     _tenant("security.require_staff_2fa", Group.SECURITY, SettingType.BOOL, False,
             "Require every staff member to set up two-step verification (an authenticator app) "

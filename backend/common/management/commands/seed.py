@@ -139,5 +139,5 @@ class Command(BaseCommand):
             Membership.objects.get_or_create(user=user, defaults={"role": role})
 
     def _shop(self, shop_name: str, contact_name: str, phone: str) -> None:
-        if not Retailer.objects.filter(phone=f"+91{phone}").exists():
+        if not Retailer.objects.filter(mobile=f"+91{phone}").exists():
             create_retailer(shop_name=shop_name, phone=phone, contact_name=contact_name)

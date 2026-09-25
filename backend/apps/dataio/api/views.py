@@ -160,3 +160,8 @@ class ExportView(ImportView):
 class ProductExportView(ExportView):
     kind_code = "PRODUCTS"
     view_permission = "products.view"
+
+
+class RetailerExportView(ExportView):
+    kind_code = "RETAILERS"
+    view_permission = "retailers.view"

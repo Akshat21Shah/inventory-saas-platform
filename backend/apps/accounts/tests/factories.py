@@ -60,5 +60,5 @@ def make_retailer_login(
 
     with tenant_context(tenant.id):
         retailer = create_retailer(shop_name=shop_name, phone=phone)
-    user: User = User.objects.get(tenant=tenant, phone=retailer.phone)
+    user: User = User.objects.get(tenant=tenant, phone=retailer.mobile)
     return user

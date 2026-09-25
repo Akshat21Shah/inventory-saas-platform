@@ -14,10 +14,10 @@
  * * `set_category` - set_category
  * * `set_brand` - set_brand
  */
-export type ActionEnum = typeof ActionEnum[keyof typeof ActionEnum];
+export type BulkActionEnum = typeof BulkActionEnum[keyof typeof BulkActionEnum];
 
 
-export const ActionEnum = {
+export const BulkActionEnum = {
   activate: 'activate',
   deactivate: 'deactivate',
   show_in_shop: 'show_in_shop',

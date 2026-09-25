@@ -5,12 +5,12 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { ActionEnum } from './actionEnum';
+import type { BulkActionEnum } from './bulkActionEnum';
 
 export interface BulkRequest {
   /** @maxItems 1000 */
   product_ids: string[];
-  action: ActionEnum;
+  action: BulkActionEnum;
   /** @nullable */
   value?: string | null;
 }
