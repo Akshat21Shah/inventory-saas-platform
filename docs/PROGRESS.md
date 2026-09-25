@@ -216,6 +216,11 @@
     - Category tree (3 levels), brands and units.
     - New `GET products/tax-options/`: the GST rates and cess types in use (platform reference data).
     - Shared additions: `SubNav`, `FormSelect` (links labels to selects; also fixed in `FieldsDialog`), `downloadFile` for binary downloads, and `useDebounced`.
+  - Commit 12: import wizard (`/manage/imports/new`, `/manage/imports/{id}`, `/manage/imports`).
+    - Start page: choose products or retailers (with the template download), choose the mode explicitly (no default; the button stays disabled until one is chosen), then the file.
+    - Job page: polls while the file is checked or imported. Shows the counts, skipped columns, and row errors with row and column.
+    - Change preview: old → new values, with price and MRP changes highlighted. Confirm with "Import N rows". Then the result, with any rows skipped at commit.
+    - Full xlsx report download and an import history.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.

@@ -1351,5 +1351,80 @@
       "edit": "Edit {name}",
       "save": "Save"
     }
+  },
+  "imports": {
+    "title": "Import from Excel",
+    "description": "Add or update many products or retailers at once. Nothing is saved until you confirm.",
+    "whatTitle": "What are you importing?",
+    "kind": {
+      "PRODUCTS": "Products",
+      "RETAILERS": "Retailers"
+    },
+    "kindHint": {
+      "PRODUCTS": "Codes, names, prices, GST, categories and brands.",
+      "RETAILERS": "Shops with mobile numbers, GSTIN, addresses and price lists."
+    },
+    "template": "Download the {kind} template",
+    "modeTitle": "What should happen to rows that already exist?",
+    "mode": {
+      "ADD_ONLY": "Add new only",
+      "ADD_OR_UPDATE": "Add new and update existing"
+    },
+    "modeHint": {
+      "ADD_ONLY": "New rows are added. Rows that already exist are reported as errors and nothing about them changes.",
+      "ADD_OR_UPDATE": "New rows are added and existing ones are updated. Only the columns in your file change; a blank cell means “no change”. You'll see every change before anything is saved."
+    },
+    "fileTitle": "Choose the file",
+    "chooseFile": "Choose an Excel or CSV file",
+    "fileHint": "Excel (.xlsx) or CSV, saved from Excel is fine.",
+    "check": "Check the file",
+    "chooseModeFirst": "Choose what should happen to existing rows first.",
+    "nothingSavedYet": "We check every row first and show you the result. Nothing is saved until you confirm.",
+    "report": "Download the full report",
+    "checking": "Checking your file…",
+    "importing": "Importing…",
+    "failedTitle": "This file can't be imported",
+    "tryAgain": "Try another file",
+    "doneTitle": "{count, plural, one {# row imported} other {# rows imported}}.",
+    "doneFailed": "{count, plural, one {# row was} other {# rows were}} skipped because the data changed after the check. See below.",
+    "skippedRows": "Skipped rows",
+    "goTo": {
+      "PRODUCTS": "Go to products",
+      "RETAILERS": "Go to retailers"
+    },
+    "counts": {
+      "new": "New",
+      "update": "Will change",
+      "unchanged": "No change",
+      "error": "With errors"
+    },
+    "errorsTitle": "{count, plural, one {# row needs fixing} other {# rows need fixing}}. These rows will be skipped; fix them in your file and import again.",
+    "updatesTitle": "{count, plural, one {# existing row will change} other {# existing rows will change}}",
+    "newTitle": "{count, plural, one {# new row} other {# new rows}}",
+    "rowNumber": "(row {row})",
+    "changesTo": "changes to",
+    "priceChange": "Price change",
+    "confirmSummary": "{count, plural, one {# row} other {# rows}} will be saved.{skipped, plural, =0 {} one { # row with errors will be skipped.} other { # rows with errors will be skipped.}}",
+    "nothingToImport": "There's nothing to import: every row has an error or no change.",
+    "commit": "{count, plural, one {Import # row} other {Import # rows}}",
+    "commitTitle": "Import {count, plural, one {# row} other {# rows}}?",
+    "commitBody": "Price changes are recorded in the audit log, just like changes made by hand.",
+    "historyTitle": "Imports",
+    "newImport": "New import",
+    "historyEmpty": "No imports yet",
+    "file": "File",
+    "what": "What",
+    "modeColumn": "Existing rows",
+    "statusColumn": "Status",
+    "by": "By",
+    "when": "When",
+    "status": {
+      "VALIDATING": "Checking",
+      "VALIDATED": "Ready to import",
+      "FAILED": "Can't be imported",
+      "COMMITTING": "Importing",
+      "COMMITTED": "Imported"
+    },
+    "pastImports": "Past imports"
   }
 }
