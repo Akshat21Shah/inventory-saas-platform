@@ -1,6 +1,7 @@
 """TOTP (RFC 6238) and recovery codes for the second sign-in factor (spec 5.2)."""
 
 import hashlib
+import logging
 import secrets
 import time
 
@@ -10,6 +11,13 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import RecoveryCode, User
+
+logger = logging.getLogger(__name__)
+
+# Public base32 key that `manage.py seed` gives the local super admin so E2E tests can sign in.
+# It is refused whenever DEBUG is off (below), and `check --deploy --database default`, run at
+# production startup, fails if any account still has it (accounts.E003).
+DEV_TOTP_SECRET = "DEVSEEDADMINTOTPKEYDEVSEEDADMIN2"  # noqa: S105 - public dev value
 
 TOTP_INTERVAL = 30
 TOTP_DIGITS = 6
@@ -32,6 +40,9 @@ def matching_step(secret: str, code: str, *, after_step: int | None = None) -> i
     """The time step (±1 for clock drift) whose code matches, if newer than ``after_step``."""
     code = (code or "").strip().replace(" ", "")
     if len(code) != TOTP_DIGITS or not code.isdigit() or not secret:
+        return None
+    if secret == DEV_TOTP_SECRET and not settings.DEBUG:
+        logger.error("security: refused the public dev TOTP key outside DEBUG")
         return None
     totp = pyotp.TOTP(secret, interval=TOTP_INTERVAL, digits=TOTP_DIGITS)
     current = int(time.time()) // TOTP_INTERVAL

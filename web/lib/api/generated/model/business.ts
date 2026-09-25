@@ -11,7 +11,7 @@ export interface Business {
   name: string;
   /** @maxLength 200 */
   legal_name: string;
-  /** @maxLength 15 */
+  /** @maxLength 30 */
   gstin: string;
   /** @maxLength 10 */
   readonly pan: string;

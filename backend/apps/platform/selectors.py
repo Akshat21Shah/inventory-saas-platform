@@ -1,5 +1,6 @@
 """Read-side queries for the platform app (tenants, feature flags, plans, settings)."""
 
+import hashlib
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
@@ -16,6 +17,7 @@ from apps.platform.models import (
     PlatformSetting,
     Subscription,
     Tenant,
+    TenantBranding,
     TenantFeature,
     TenantSetting,
 )
@@ -59,8 +61,68 @@ def tenant_info(tenant_id: UUID) -> TenantInfo | None:
     return info
 
 
-def invalidate_tenant_info(tenant_id: UUID) -> None:
+def invalidate_tenant_info(tenant_id: UUID, *old_slugs: str) -> None:
+    """Call on commit after a tenant's name, slug, status or branding changed: drops the cached
+    status and the cached public branding (for the current slug and any previous one)."""
     cache.delete(_tenant_info_key(tenant_id))
+    invalidate_public_branding(tenant_id, *old_slugs)
+
+
+# --- Public branding (pre-login pages) ----------------------------------------------------------
+
+
+def _public_branding_key(slug: str) -> str:
+    return f"public_branding:{slug}"
+
+
+def branding_asset_url(slug: str, kind: str, key: str) -> str | None:
+    """Stable public URL of a brand image; the version changes with the stored object, so a new
+    logo is never served from a browser's cache of the old one."""
+    if not key:
+        return None
+    version = hashlib.sha256(key.encode()).hexdigest()[:12]
+    return f"/api/v1/public/tenants/{slug}/assets/{kind}/?v={version}"
+
+
+def branding_body(tenant: Tenant, branding: TenantBranding) -> dict[str, Any]:
+    return {
+        "display_name": branding.display_name or tenant.name,
+        "primary_color": branding.primary_color,
+        "logo_url": branding_asset_url(tenant.slug, "logo", branding.logo),
+        "favicon_url": branding_asset_url(tenant.slug, "favicon", branding.favicon),
+        "app_icon_url": branding_asset_url(tenant.slug, "app_icon", branding.app_icon),
+    }
+
+
+def public_branding(slug: str) -> dict[str, Any] | None:
+    """What a tenant's sign-in page shows, cached per tenant in Redis. Every change to it (branding,
+    name, slug, status) invalidates the entry on commit, so the TTL is only a safety net.
+    Unknown slugs are not cached (they would let anyone fill the cache)."""
+    key = _public_branding_key(slug)
+    cached: dict[str, Any] | None = cache.get(key)
+    if cached is not None:
+        return cached
+    tenant = tenant_by_slug(slug)
+    if tenant is None:
+        return None
+    with tenant_context(tenant.pk):
+        branding = TenantBranding.objects.first() or TenantBranding(display_name=tenant.name)
+    # Never the specific status (onboarding, suspended, ...): only whether sign-in is open.
+    body = {
+        "slug": tenant.slug,
+        "available": tenant.status == Tenant.Status.ACTIVE,
+        **branding_body(tenant, branding),
+    }
+    cache.set(key, body, settings.PUBLIC_BRANDING_CACHE_SECONDS)
+    return body
+
+
+def invalidate_public_branding(tenant_id: UUID, *old_slugs: str) -> None:
+    slugs = set(old_slugs)
+    current = Tenant.objects.filter(pk=tenant_id).values_list("slug", flat=True).first()
+    if current:
+        slugs.add(current)
+    cache.delete_many([_public_branding_key(slug) for slug in slugs])
 
 
 def tenant_by_slug(slug: str) -> Tenant | None:

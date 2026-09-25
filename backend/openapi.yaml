@@ -2270,7 +2270,7 @@ components:
           maxLength: 200
         gstin:
           type: string
-          maxLength: 15
+          maxLength: 30
         pan:
           type: string
           readOnly: true
@@ -3051,7 +3051,7 @@ components:
         gstin:
           type: string
           minLength: 1
-          maxLength: 15
+          maxLength: 30
         state_code:
           type: string
           minLength: 1
@@ -3309,7 +3309,7 @@ components:
         gstin:
           type: string
           minLength: 1
-          maxLength: 15
+          maxLength: 30
         state_code:
           type: string
           minLength: 1
@@ -3458,7 +3458,7 @@ components:
         gstin:
           type: string
           minLength: 1
-          maxLength: 15
+          maxLength: 30
         state_code:
           type: string
           minLength: 1

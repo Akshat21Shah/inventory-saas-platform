@@ -97,7 +97,7 @@ class TenantDetailSerializer(TenantListSerializer):
 class OnboardingSerializer(serializers.Serializer[Any]):
     name = serializers.CharField(max_length=200)
     legal_name = serializers.CharField(max_length=200)
-    gstin = serializers.CharField(max_length=15)
+    gstin = serializers.CharField(max_length=30)  # spaces are removed by the service
     state_code = serializers.CharField(max_length=2)
     address_line1 = serializers.CharField(max_length=200)
     address_line2 = serializers.CharField(
@@ -119,7 +119,7 @@ class OnboardingSerializer(serializers.Serializer[Any]):
 class TenantUpdateSerializer(serializers.Serializer[Any]):
     name = serializers.CharField(max_length=200, required=False)
     legal_name = serializers.CharField(max_length=200, required=False)
-    gstin = serializers.CharField(max_length=15, required=False)
+    gstin = serializers.CharField(max_length=30, required=False)  # spaces removed later
     state_code = serializers.CharField(max_length=2, required=False)
     address_line1 = serializers.CharField(max_length=200, required=False)
     address_line2 = serializers.CharField(max_length=200, required=False, allow_blank=True)

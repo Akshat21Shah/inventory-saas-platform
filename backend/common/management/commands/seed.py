@@ -12,6 +12,7 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
 from django.utils import timezone
 
+from apps.accounts.mfa import DEV_TOTP_SECRET
 from apps.accounts.models import Membership, Role, User
 from apps.accounts.permissions import PLATFORM_ADMIN_ROLE
 from apps.platform.models import Plan, Subscription, Tenant, TenantBranding, TenantProfile
@@ -20,8 +21,6 @@ from apps.retailers.models import Retailer
 from apps.retailers.services import create_retailer
 from common.tenancy import tenant_context
 
-# Base32 TOTP key set on the dev super admin when it has no 2FA yet, so E2E can sign in.
-DEV_ADMIN_TOTP_SECRET = "DEVSEEDADMINTOTPKEYDEVSEEDADMIN2"  # noqa: S105 - public dev value
 STAFF_ROLES = ("OWNER", "MANAGER", "SALES", "WAREHOUSE", "ACCOUNTS")
 # One shop per distributor, plus one phone number registered with both (the chooser on sign-in).
 DEMO_SHOPS: dict[str, list[tuple[str, str, str]]] = {
@@ -95,11 +94,11 @@ class Command(BaseCommand):
             admin.platform_role = Role.objects.get(tenant__isnull=True, code=PLATFORM_ADMIN_ROLE)
             admin.save(update_fields=["platform_role"])
         if not admin.totp_enabled or options["reset_admin_2fa"]:
-            admin.totp_secret, admin.totp_enabled = DEV_ADMIN_TOTP_SECRET, True
+            admin.totp_secret, admin.totp_enabled = DEV_TOTP_SECRET, True
             admin.totp_last_step = None
             admin.save(update_fields=["totp_secret", "totp_enabled", "totp_last_step"])
             admin.recovery_codes.all().delete()
-            self.stdout.write(f"super admin 2FA key (dev only): {DEV_ADMIN_TOTP_SECRET}")
+            self.stdout.write(f"super admin 2FA key (dev only): {DEV_TOTP_SECRET}")
 
         beta = Plan.objects.get(is_default=True)
         for demo in DEMO_TENANTS:

@@ -8,7 +8,7 @@ from rest_framework import serializers
 class BusinessSerializer(serializers.Serializer[Any]):
     name = serializers.CharField(max_length=200)
     legal_name = serializers.CharField(max_length=200)
-    gstin = serializers.CharField(max_length=15)
+    gstin = serializers.CharField(max_length=30)  # spaces are removed by the service
     pan = serializers.CharField(max_length=10, read_only=True)
     state_code = serializers.CharField(max_length=2)
     registration_type = serializers.CharField(read_only=True)

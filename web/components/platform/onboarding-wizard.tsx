@@ -179,7 +179,9 @@ export function OnboardingWizard() {
         value={name === "slug" ? slug : values[name]}
         onChange={(e) => {
           if (name === "slug") setSlugTouched(true);
-          set(name, props.upper ? e.target.value.toUpperCase() : e.target.value);
+          // A GSTIN is often copied with spaces ("29 AAGFK 7315R 1ZL"); the server removes them too.
+          const raw = name === "gstin" ? e.target.value.replace(/\s+/g, "") : e.target.value;
+          set(name, props.upper ? raw.toUpperCase() : raw);
         }}
       />
     </FormField>

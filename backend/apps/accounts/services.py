@@ -561,33 +561,46 @@ def begin_mfa_setup(user: User) -> tuple[str, str, str]:
     return raw, secret, uri
 
 
-def confirm_enrolment(token: str, code: str, host: HostContext | None) -> LoginOutcome:
-    """Turn 2FA on with the first code from the app. At sign-in this also finishes the login."""
-    challenge = _open_challenge(
-        token, (LoginChallenge.Kind.MFA_ENROLMENT, LoginChallenge.Kind.MFA_SETUP)
-    )
-    at_sign_in = challenge.kind == LoginChallenge.Kind.MFA_ENROLMENT
-    if at_sign_in:
-        if host is None:
-            raise TokenInvalid()
-        _check_challenge_host(challenge.payload, host)
+def _first_code_step(challenge: LoginChallenge, code: str) -> int:
+    """The time step of the first code from the app. A wrong code is counted in its own committed
+    transaction, so call this outside any enclosing transaction."""
     step = mfa.matching_step(challenge.secret, code)
     if step is None:
         _failed_code(challenge)
+    assert step is not None
+    return step
+
+
+@transaction.atomic
+def _enable_totp(challenge: LoginChallenge, step: int) -> tuple[User, list[str]]:
+    """Turn 2FA on (the code was already checked)."""
     user = challenge.user
     assert user is not None
-    with transaction.atomic():
-        _mark_used(challenge)
-        User.objects.filter(pk=user.pk).update(
-            totp_secret=challenge.secret, totp_enabled=True, totp_last_step=step
-        )
-        user.refresh_from_db()
-        codes = mfa.replace_recovery_codes(user)
-        audit.record("auth.mfa_enabled", target=user, tenant_id=None, actor=_actor(user))
-        if not at_sign_in:
-            return LoginOutcome(status=LoginStatus.AUTHENTICATED, user=user, recovery_codes=codes)
-        outcome = _complete_login(user, challenge.payload)
-    return replace(outcome, recovery_codes=codes)
+    _mark_used(challenge)
+    User.objects.filter(pk=user.pk).update(
+        totp_secret=challenge.secret, totp_enabled=True, totp_last_step=step
+    )
+    user.refresh_from_db()
+    codes = mfa.replace_recovery_codes(user)
+    audit.record("auth.mfa_enabled", target=user, tenant_id=None, actor=_actor(user))
+    return user, codes
+
+
+def confirm_enrolment(token: str, code: str, host: HostContext) -> LoginOutcome:
+    """2FA set-up required at sign-in: turn it on, then finish the login."""
+    challenge = _open_challenge(token, (LoginChallenge.Kind.MFA_ENROLMENT,))
+    _check_challenge_host(challenge.payload, host)
+    user, codes = _enable_totp(challenge, _first_code_step(challenge, code))
+    # Finishing the login may read memberships through the platform alias, so the 2FA change is
+    # committed first (that connection cannot see this request's uncommitted rows).
+    return replace(_complete_login(user, challenge.payload), recovery_codes=codes)
+
+
+def confirm_setup(token: str, code: str) -> list[str]:
+    """2FA set-up from "My account" (already signed in): turn it on; returns recovery codes."""
+    challenge = _open_challenge(token, (LoginChallenge.Kind.MFA_SETUP,))
+    _user, codes = _enable_totp(challenge, _first_code_step(challenge, code))
+    return codes
 
 
 def limit_mfa_management(user: User) -> None:

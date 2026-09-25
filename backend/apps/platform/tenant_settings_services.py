@@ -12,6 +12,7 @@ from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.platform import tenant_services
 from apps.platform.models import FeatureFlag, Tenant, TenantBranding, TenantProfile
+from apps.platform.selectors import invalidate_public_branding
 from apps.platform.validators import validate_hex_color, validate_ifsc, validate_upi_id
 from common.crypto import mask
 from common.errors import InvalidFields, NotFound
@@ -128,7 +129,14 @@ def update_branding(changes: dict[str, Any], *, by: User) -> TenantBranding:
         branding.updated_by = by
         branding.save()
         audit.record("settings.branding_changed", target=branding, changes=diff)
+        _refresh_public_branding()
     return branding
+
+
+def _refresh_public_branding() -> None:
+    """The sign-in page's cached branding must show the change on the next request."""
+    tenant_id = require_tenant_id()
+    transaction.on_commit(lambda: invalidate_public_branding(tenant_id))
 
 
 def _asset_key(kind: str, extension: str) -> str:
@@ -167,6 +175,7 @@ def upload_asset(kind: str, upload: "UploadedFile[bytes]", *, by: User) -> str:
         metadata={"kind": kind, "content_type": image.content_type, "bytes": len(image.data)},
     )
     _delete_later(old)
+    _refresh_public_branding()
     return key
 
 
@@ -186,6 +195,7 @@ def remove_asset(kind: str, *, by: User) -> None:
     holder.save()
     audit.record("settings.asset_removed", target=holder, metadata={"kind": kind})
     _delete_later(old)
+    _refresh_public_branding()
 
 
 @transaction.atomic

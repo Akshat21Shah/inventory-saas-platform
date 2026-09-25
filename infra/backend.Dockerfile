@@ -27,6 +27,10 @@ RUN DJANGO_SECRET_KEY=build-time-only-key-for-collectstatic-0000 DATABASE_URL=po
     FIELD_ENCRYPTION_KEYS=YnVpbGQtdGltZS1vbmx5LW5vdC1hLXJlYWwta2V5MDA= \
     python manage.py collectstatic --noinput --settings=config.settings.prod
 USER app
+# Without this, manage.py/asgi.py fall back to dev settings (DEBUG on).
+ENV DJANGO_SETTINGS_MODULE=config.settings.prod
 EXPOSE 8000
+# Startup gate: deployment checks with database access must pass before serving (mock SMS,
+# fixed OTP, the public dev 2FA key: accounts.E001-E003); warnings do not block.
 # No --proxy-headers: Django's TrustedProxyMiddleware decides which forwarded headers to trust.
-CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]
+CMD ["sh", "-c", "python manage.py check --deploy --database default --fail-level ERROR && exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --no-proxy-headers"]

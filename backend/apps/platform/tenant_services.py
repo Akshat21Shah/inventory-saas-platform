@@ -20,6 +20,7 @@ from apps.platform.models import (
     DEFAULT_BRAND_COLOR,
     FeatureFlag,
     Plan,
+    State,
     Subscription,
     Tenant,
     TenantBranding,
@@ -27,6 +28,7 @@ from apps.platform.models import (
     TenantProfile,
 )
 from apps.platform.selectors import invalidate_tenant_features, invalidate_tenant_info
+from apps.platform.validators import gstin_format_error, normalize_gstin
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
 from common.tenancy import tenant_context
@@ -84,12 +86,29 @@ def _validate_tenant(tenant: Tenant, exclude: list[str] | None = None) -> None:
         raise InvalidFields(fields) from exc
 
 
-def _check_gst_identity(gstin: str, pan: str, state_id: str) -> None:
+def _check_gst_identity(tenant: Tenant) -> None:
+    """GSTIN rules with plain, specific messages (spec 5.1). The PAN is never an input: it is
+    characters 3 to 12 of the GSTIN (a check constraint enforces this too)."""
     errors: dict[str, list[str]] = {}
-    if gstin[:2] != state_id:
-        errors["state_code"] = ["The state must match the first two digits of the GSTIN."]
-    if gstin[2:12] != pan:
-        errors["pan"] = ["The PAN must match characters 3 to 12 of the GSTIN."]
+    problem = gstin_format_error(tenant.gstin)
+    if problem is None:
+        state = State.objects.filter(code=tenant.gstin[:2]).first()
+        if state is None:
+            problem = f"The first 2 digits ({tenant.gstin[:2]}) are not a GST state code."
+        elif not state.is_active:
+            problem = (
+                f"State code {state.code} ({state.name}) is no longer used for new registrations."
+            )
+    if problem is None and (
+        Tenant.objects.filter(gstin=tenant.gstin).exclude(pk=tenant.pk).exists()
+    ):
+        problem = "Another business is already registered with this GSTIN."
+    if problem is not None:
+        errors["gstin"] = [problem]
+    elif tenant.state_id != tenant.gstin[:2]:
+        errors["state_code"] = [
+            f"The state must match the first 2 digits of the GSTIN ({tenant.gstin[:2]})."
+        ]
     if errors:
         raise InvalidFields(errors)
 
@@ -97,7 +116,7 @@ def _check_gst_identity(gstin: str, pan: str, state_id: str) -> None:
 @transaction.atomic
 def onboard_tenant(data: OnboardingInput, *, by: User) -> Tenant:
     """Create a distributor in one transaction (spec 5.1 onboarding wizard, PLAN 1.9)."""
-    gstin = data.gstin.strip().upper()
+    gstin = normalize_gstin(data.gstin)
     plan = (
         Plan.objects.filter(code=data.plan_code, is_active=True).first()
         if data.plan_code
@@ -120,7 +139,7 @@ def onboard_tenant(data: OnboardingInput, *, by: User) -> Tenant:
         slug=data.slug.strip().lower(),
         status=Tenant.Status.ONBOARDING,
     )
-    _check_gst_identity(tenant.gstin, tenant.pan, tenant.state_id)
+    _check_gst_identity(tenant)
     _validate_tenant(tenant)
     tenant.save(force_insert=True)
     with tenant_context(tenant.pk):
@@ -158,10 +177,10 @@ def update_tenant(
     allowed = {*TENANT_BUSINESS_FIELDS, "slug"}
     before = {f: getattr(tenant, f) for f in allowed}
     for field, value in changes.items():
-        if field not in allowed:
+        if field not in allowed or field == "pan":  # the PAN always follows the GSTIN
             continue
         if field == "gstin":
-            value = value.strip().upper()
+            value = normalize_gstin(value)
             tenant.pan = value[2:12]
         elif field in ("email", "slug"):
             value = value.strip().lower()
@@ -170,7 +189,7 @@ def update_tenant(
         setattr(tenant, field, value)
     if tenant.slug != before["slug"] and not confirm_slug_change:
         raise SlugChangeNotConfirmed()
-    _check_gst_identity(tenant.gstin, tenant.pan, tenant.state_id)
+    _check_gst_identity(tenant)
     _validate_tenant(tenant)
     diff = audit.diff(before, {f: getattr(tenant, f) for f in allowed})
     if not diff:
@@ -184,7 +203,8 @@ def update_tenant(
             tenant_id=tenant.pk,
             changes={"slug": diff["slug"]},
         )
-    transaction.on_commit(lambda: invalidate_tenant_info(tenant.pk))
+    old_slug = before["slug"]
+    transaction.on_commit(lambda: invalidate_tenant_info(tenant.pk, old_slug))
     return tenant
 
 

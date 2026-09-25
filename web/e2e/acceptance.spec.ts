@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import {
   ADMIN,
@@ -7,6 +7,8 @@ import {
   linkFromEmail,
   origin,
   randomGstin,
+  resetLimits,
+  SHOP_PHONES,
   totp,
 } from "./support/stack";
 
@@ -19,9 +21,10 @@ import {
 test.skip(!FULL_STACK, "needs the full stack (E2E_FULL_STACK=1)");
 test.describe.configure({ mode: "serial", timeout: 120_000 });
 
-async function signInAsSuperAdmin(page: Page, testInfo: TestInfo) {
-  // A code is accepted once (replay protection): on a retry, wait for the next 30-second step.
-  if (testInfo.retry > 0) await page.waitForTimeout(30_000 - (Date.now() % 30_000) + 500);
+async function signInAsSuperAdmin(page: Page) {
+  // Each code is accepted once (replay protection); a retry reuses the current code, so clear the
+  // account's replay state and counters first instead of waiting for the next 30-second step.
+  resetLimits({ emails: [ADMIN.email] });
   await page.goto(`${origin("admin")}/login`);
   await page.getByLabel(/email address/i).fill(ADMIN.email);
   await page.getByLabel(/^password/i).fill(ADMIN.password);
@@ -40,8 +43,8 @@ test.describe("distributor onboarding", () => {
   const ownerEmail = `owner-${stamp}@e2e.example.com`;
   const ownerPassword = "a-long-e2e-owner-passphrase";
 
-  test("super admin creates a distributor and the owner is invited", async ({ page }, testInfo) => {
-    await signInAsSuperAdmin(page, testInfo);
+  test("super admin creates a distributor and the owner is invited", async ({ page }) => {
+    await signInAsSuperAdmin(page);
     await page.goto(`${origin("admin")}/platform/tenants/new`);
     const next = () => page.getByRole("button", { name: /^next$/i }).click();
 
@@ -94,7 +97,7 @@ test.describe("distributor onboarding", () => {
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel(/^email/i).fill(`sales-${stamp}@e2e.example.com`);
     await dialog.getByRole("button", { name: /send invitation/i }).click();
-    await expect(page.getByText(`sales-${stamp}@e2e.example.com`)).toBeVisible();
+    await expect(page.getByRole("cell", { name: `sales-${stamp}@e2e.example.com` })).toBeVisible();
     await linkFromEmail(`sales-${stamp}@e2e.example.com`, /\/invite\/[^\s"<>]+/);
   });
 
@@ -111,8 +114,8 @@ test.describe("distributor onboarding", () => {
 });
 
 test.describe("shop owner sign-in", () => {
-  // Phones only: one code per number per run stays well inside the per-phone limit.
   test.skip(({ isMobile }) => !isMobile, "phone flow");
+  test.beforeEach(() => resetLimits({ phones: SHOP_PHONES }));
 
   test("with a one-time code on the distributor's address", async ({ page }) => {
     await page.goto(`${origin("sharma")}/shop/login`);

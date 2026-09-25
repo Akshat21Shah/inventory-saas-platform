@@ -233,7 +233,8 @@ def test_logo_upload_is_validated_stored_per_tenant_and_served_by_redirect(
         owner.post, "/api/v1/settings/branding/assets/logo/", _upload(_png()), format="multipart"
     )
     assert response.status_code == 201, response.json()
-    assert response.json()["logo_url"] == f"/api/v1/public/tenants/{tenant_a.slug}/assets/logo/"
+    first_url = response.json()["logo_url"]
+    assert first_url.startswith(f"/api/v1/public/tenants/{tenant_a.slug}/assets/logo/?v=")
     [key] = list(InMemoryStorage.objects)
     assert key.startswith(f"tenants/{tenant_a.pk}/branding/logo/") and key.endswith(".png")
 
@@ -252,6 +253,7 @@ def test_logo_upload_is_validated_stored_per_tenant_and_served_by_redirect(
     assert replaced.status_code == 201
     [new_key] = list(InMemoryStorage.objects)  # the old file was deleted after commit
     assert new_key != key and new_key.endswith(".webp")
+    assert replaced.json()["logo_url"] != first_url  # a new version: no stale browser cache
 
     removed = run(owner.delete, "/api/v1/settings/branding/assets/logo/")
     assert removed.json()["logo_url"] is None

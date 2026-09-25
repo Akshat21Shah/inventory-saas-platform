@@ -369,10 +369,10 @@ class MfaConfirmView(APIView):
         data = s.MfaSetupConfirmInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         services.limit_mfa_management(request.user)  # type: ignore[arg-type]
-        outcome = services.confirm_enrolment(
-            data.validated_data["setup_token"], data.validated_data["code"], None
+        codes = services.confirm_setup(
+            data.validated_data["setup_token"], data.validated_data["code"]
         )
-        return Response(s.RecoveryCodesSerializer({"recovery_codes": outcome.recovery_codes}).data)
+        return Response(s.RecoveryCodesSerializer({"recovery_codes": codes}).data)
 
 
 class MfaDisableView(APIView):

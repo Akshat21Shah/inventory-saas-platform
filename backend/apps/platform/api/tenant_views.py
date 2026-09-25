@@ -26,7 +26,13 @@ from apps.platform.api.serializers import (
     setting_rows,
 )
 from apps.platform.models import FeatureFlag, Tenant, TenantBranding, TenantProfile
-from apps.platform.selectors import effective_features, tenant_by_slug, tenant_settings
+from apps.platform.selectors import (
+    branding_body,
+    effective_features,
+    public_branding,
+    tenant_by_slug,
+    tenant_settings,
+)
 from common.errors import NotFound
 from common.permissions import HasPermission, StaffReadsOrHasPermission
 from common.storage import get_storage
@@ -36,10 +42,6 @@ from common.tenancy import require_tenant_id, tenant_context
 def _user(request: Request) -> User:
     user: User = request.user  # type: ignore[assignment]
     return user
-
-
-def _asset_url(slug: str, kind: str, key: str) -> str | None:
-    return f"/api/v1/public/tenants/{slug}/assets/{kind}/" if key else None
 
 
 # --- Business & bank details --------------------------------------------------------------------
@@ -195,20 +197,10 @@ class TenantSettingResetView(APIView):
 # --- Branding & assets --------------------------------------------------------------------------
 
 
-def _branding_body(tenant: Tenant, branding: TenantBranding) -> dict[str, Any]:
-    return {
-        "display_name": branding.display_name or tenant.name,
-        "primary_color": branding.primary_color,
-        "logo_url": _asset_url(tenant.slug, "logo", branding.logo),
-        "favicon_url": _asset_url(tenant.slug, "favicon", branding.favicon),
-        "app_icon_url": _asset_url(tenant.slug, "app_icon", branding.app_icon),
-    }
-
-
 def _load_branding() -> dict[str, Any]:
     tenant = Tenant.objects.get(pk=require_tenant_id())
     branding, _ = TenantBranding.objects.get_or_create()
-    return _branding_body(tenant, branding)
+    return branding_body(tenant, branding)
 
 
 class BrandingView(APIView):
@@ -379,14 +371,9 @@ class PublicBrandingView(APIView):
         responses=s.PublicBrandingSerializer, operation_id="public_tenant_branding", tags=["public"]
     )
     def get(self, request: Request, slug: str) -> Response:
-        tenant = tenant_by_slug(slug)
-        if tenant is None:
+        body = public_branding(slug)
+        if body is None:
             raise NotFound()
-        with tenant_context(tenant.pk):
-            branding = TenantBranding.objects.first() or TenantBranding(display_name=tenant.name)
-        # Never the specific status (onboarding, suspended, ...): only whether sign-in is open.
-        available = tenant.status == Tenant.Status.ACTIVE
-        body = {"slug": tenant.slug, "available": available, **_branding_body(tenant, branding)}
         return Response(s.PublicBrandingSerializer(body).data)
 
 

@@ -19,7 +19,7 @@ export interface PatchedTenantUpdateRequest {
   legal_name?: string;
   /**
      * @minLength 1
-     * @maxLength 15
+     * @maxLength 30
      */
   gstin?: string;
   /**
