@@ -32,6 +32,9 @@ interface AuthContextValue {
   me: Me | null;
   /** Error code of the last failed session check (e.g. TENANT_UNAVAILABLE), for a friendly message. */
   blockedCode: string | null;
+  /** True after the person signed out here: the next sign-in starts from home, not the page
+   * they were on. */
+  signedOut: boolean;
   can: (permission: string) => boolean;
   signIn: (access: string, expiresAt: string | undefined) => Promise<Me | null>;
   signOut: () => Promise<void>;
@@ -44,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [me, setMe] = useState<Me | null>(null);
   const [blockedCode, setBlockedCode] = useState<string | null>(null);
+  const [signedOut, setSignedOut] = useState(false);
 
   const loadMe = useCallback(async (): Promise<Me | null> => {
     try {
@@ -83,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(
     async (access: string, expiresAt: string | undefined) => {
       setAccessToken(access, expiresAt);
+      setSignedOut(false);
       return loadMe();
     },
     [loadMe],
@@ -96,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // The session is ended locally either way.
     }
     clearAccessToken();
+    setSignedOut(true);
     setMe(null);
     setStatus("anonymous");
   }, [me]);
@@ -105,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status,
       me,
       blockedCode,
+      signedOut,
       can: (permission) => Boolean(me?.permissions.includes(permission)),
       signIn,
       signOut,
@@ -112,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await loadMe();
       },
     }),
-    [status, me, blockedCode, signIn, signOut, loadMe],
+    [status, me, blockedCode, signedOut, signIn, signOut, loadMe],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

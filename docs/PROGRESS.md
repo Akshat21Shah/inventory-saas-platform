@@ -233,6 +233,12 @@
     - Discount rules: list with status filter. Editor for percentage or rupees per unit, quantity slabs, scope (all products, category with sub-categories, brand, one product), audience (all, price list, one shop), dates and on/off.
     - The `FREE_GOODS` warning shows with the product owner's wording. After a create that warns, the editor stays open and later saves update the same rule.
     - Settings groups "Pricing" (`pricing.discounts_on_special_prices`) and "Shops" (`retailers.blocked_can_sign_in`).
+  - Commit 15: shop catalog, read-only (`/shop`, `/shop/catalog[/{category}]`, `/shop/search`, `/shop/products/{id}`).
+    - Pages: home greeting with categories and search; category tiles with counts; brand chips; product cards ("show more" paging); product page with photos, the "Buy more, pay less" slab hints and pack size.
+    - Prices exactly as the server sends them: net price, struck-through price and the saving when discounted, MRP, and "+ GST" or "incl. GST".
+    - Minimum quantity and order steps are shown in plain words. The on-hold notice appears on every catalog page.
+    - Ordering arrives in Phase 4; the product page says so.
+    - Sign-out fix: after signing out, the next sign-in lands on the shop home page, not the page the person left.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
@@ -250,5 +256,4 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
 - Production domain to be supplied before staging (ADR-019).
-- Signing out from `/shop/account` lands on `/shop/login?next=/shop/account`, so the next sign-in returns to the account page instead of home. Harmless; tidy up in Phase 2 with the shop home.
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.

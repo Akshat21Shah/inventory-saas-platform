@@ -1724,5 +1724,48 @@
       "delete": "Delete",
       "deleteTitle": "Delete {name}?"
     }
+  },
+  "shop": {
+    "hello": "Hello, {shop}",
+    "homeBody": "Find products and see your prices.",
+    "catalogTitle": "Products",
+    "onHold": "Your account is on hold. Please contact your distributor.",
+    "search": "Search products",
+    "searchPlaceholder": "Search by name or brand",
+    "searchTitle": "Search",
+    "searchHint": "Type a product name or brand.",
+    "categories": "Categories",
+    "allProducts": "See all products",
+    "allCategories": "All products",
+    "productCount": "{count, plural, one {# product} other {# products}}",
+    "brandFilter": "Filter by brand",
+    "allBrands": "All brands",
+    "showMore": "Show more",
+    "noMatchTitle": "Nothing found",
+    "noMatchBody": "Check the spelling or try a shorter word.",
+    "noProductsTitle": "No products here yet",
+    "noProductsBody": "Your distributor hasn't added products here yet.",
+    "categoryGoneTitle": "This category isn't available",
+    "categoryGoneBody": "It may have been moved or emptied.",
+    "price": {
+      "inclGst": "incl. GST",
+      "plusGst": "+ {rate}% GST",
+      "percentOff": "{value}% off:",
+      "save": "You save",
+      "each": "each",
+      "mrp": "MRP"
+    },
+    "product": {
+      "back": "Back",
+      "photos": "Photos",
+      "minimum": "Order at least {qty} {unit}",
+      "inSteps": "in steps of {qty}",
+      "pack": "1 {pack} = {qty} {unit}",
+      "buyMore": "Buy more, pay less",
+      "slab": "{qty} or more:",
+      "goneTitle": "This product isn't available",
+      "goneBody": "It may be out of the catalog for now.",
+      "orderingSoon": "Ordering from the app is coming soon. Until then, please order from your distributor as usual."
+    }
   }
 }

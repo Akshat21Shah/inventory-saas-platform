@@ -1,11 +1,5 @@
-import { ShoppingCart } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { ShopHome } from "@/components/shop/catalog";
 
-import { EmptyState } from "@/components/shared/empty-state";
-
-export default async function ShopHome() {
-  const t = await getTranslations("home");
-  return (
-    <EmptyState icon={ShoppingCart} title={t("shopEmptyTitle")} description={t("shopEmptyBody")} />
-  );
+export default function Page() {
+  return <ShopHome />;
 }
