@@ -153,7 +153,12 @@ class MeRoleSerializer(serializers.Serializer[Any]):
 class MeImpersonationSerializer(serializers.Serializer[Any]):
     session_id = serializers.UUIDField()
     impersonator_id = serializers.UUIDField()
-    mode = serializers.CharField()
+    mode = serializers.ChoiceField(choices=["READ_ONLY", "ACT"])
+    expires_at = serializers.DateTimeField()
+
+
+class ImpersonationReasonSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(max_length=1000)
 
 
 class MeRetailerSerializer(serializers.Serializer[Any]):

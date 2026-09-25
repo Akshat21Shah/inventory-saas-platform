@@ -80,4 +80,7 @@ urlpatterns = [
         name="platform-settings-values",
     ),
     path("audit-logs/", v.PlatformAuditLogView.as_view(), name="platform-audit-logs"),
+    path(
+        "impersonations/", v.ImpersonationListCreateView.as_view(), name="platform-impersonations"
+    ),
 ]

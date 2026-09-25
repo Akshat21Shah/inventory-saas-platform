@@ -25,6 +25,7 @@ import type {
   EnrolmentConfirmInputRequest,
   EnrolmentTokenInputRequest,
   HandoffExchangeInputRequest,
+  ImpersonationReasonRequest,
   InvitationAcceptRequest,
   InvitationPreview,
   InvitationTokenRequest,
@@ -183,6 +184,235 @@ export function useAuthHandoffExchange<TData = Awaited<ReturnType<typeof authHan
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAuthHandoffExchangeQueryOptions(handoffExchangeInputRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authImpersonationActResponse200 = {
+  data: TokenResponse
+  status: 200
+}
+
+export type authImpersonationActResponseSuccess = (authImpersonationActResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authImpersonationActResponse = (authImpersonationActResponseSuccess)
+
+export const getAuthImpersonationActUrl = () => {
+
+
+
+
+  return `/api/v1/auth/impersonation/act/`
+}
+
+/**
+ * Switch the current support session to ACT mode (a reason is required; audited).
+ */
+export const authImpersonationAct = async (impersonationReasonRequest: ImpersonationReasonRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authImpersonationActResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<authImpersonationActResponse>(getAuthImpersonationActUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(impersonationReasonRequest)
+  }
+);}
+
+
+
+
+
+export const getAuthImpersonationActQueryKey = (impersonationReasonRequest?: ImpersonationReasonRequest,) => {
+    return [
+    'POST', `/api/v1/auth/impersonation/act/`, impersonationReasonRequest
+    ] as const;
+    }
+
+
+export const getAuthImpersonationActQueryOptions = <TData = Awaited<ReturnType<typeof authImpersonationAct>>, TError = unknown>(impersonationReasonRequest: ImpersonationReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationAct>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthImpersonationActQueryKey(impersonationReasonRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authImpersonationAct>>> = ({ signal }) => authImpersonationAct(impersonationReasonRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authImpersonationAct>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthImpersonationActQueryResult = NonNullable<Awaited<ReturnType<typeof authImpersonationAct>>>
+export type AuthImpersonationActQueryError = unknown
+
+
+export function useAuthImpersonationAct<TData = Awaited<ReturnType<typeof authImpersonationAct>>, TError = unknown>(
+ impersonationReasonRequest: ImpersonationReasonRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationAct>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authImpersonationAct>>,
+          TError,
+          Awaited<ReturnType<typeof authImpersonationAct>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthImpersonationAct<TData = Awaited<ReturnType<typeof authImpersonationAct>>, TError = unknown>(
+ impersonationReasonRequest: ImpersonationReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationAct>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authImpersonationAct>>,
+          TError,
+          Awaited<ReturnType<typeof authImpersonationAct>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthImpersonationAct<TData = Awaited<ReturnType<typeof authImpersonationAct>>, TError = unknown>(
+ impersonationReasonRequest: ImpersonationReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationAct>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthImpersonationAct<TData = Awaited<ReturnType<typeof authImpersonationAct>>, TError = unknown>(
+ impersonationReasonRequest: ImpersonationReasonRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationAct>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthImpersonationActQueryOptions(impersonationReasonRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type authImpersonationEndResponse204 = {
+  data: void
+  status: 204
+}
+
+export type authImpersonationEndResponseSuccess = (authImpersonationEndResponse204) & {
+  headers: Headers;
+};
+;
+
+export type authImpersonationEndResponse = (authImpersonationEndResponseSuccess)
+
+export const getAuthImpersonationEndUrl = () => {
+
+
+
+
+  return `/api/v1/auth/impersonation/end/`
+}
+
+export const authImpersonationEnd = async ( options?: Parameters<typeof apiFetch>[1]): Promise<authImpersonationEndResponse> => {
+
+  return apiFetch<authImpersonationEndResponse>(getAuthImpersonationEndUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAuthImpersonationEndQueryKey = () => {
+    return [
+    'POST', `/api/v1/auth/impersonation/end/`
+    ] as const;
+    }
+
+
+export const getAuthImpersonationEndQueryOptions = <TData = Awaited<ReturnType<typeof authImpersonationEnd>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationEnd>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthImpersonationEndQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authImpersonationEnd>>> = ({ signal }) => authImpersonationEnd({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authImpersonationEnd>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthImpersonationEndQueryResult = NonNullable<Awaited<ReturnType<typeof authImpersonationEnd>>>
+export type AuthImpersonationEndQueryError = unknown
+
+
+export function useAuthImpersonationEnd<TData = Awaited<ReturnType<typeof authImpersonationEnd>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationEnd>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authImpersonationEnd>>,
+          TError,
+          Awaited<ReturnType<typeof authImpersonationEnd>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthImpersonationEnd<TData = Awaited<ReturnType<typeof authImpersonationEnd>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationEnd>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authImpersonationEnd>>,
+          TError,
+          Awaited<ReturnType<typeof authImpersonationEnd>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthImpersonationEnd<TData = Awaited<ReturnType<typeof authImpersonationEnd>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationEnd>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAuthImpersonationEnd<TData = Awaited<ReturnType<typeof authImpersonationEnd>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authImpersonationEnd>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthImpersonationEndQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

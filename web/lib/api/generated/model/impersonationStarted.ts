@@ -5,11 +5,13 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { ModeEnum } from './modeEnum';
 
-export interface MeImpersonation {
+export interface ImpersonationStarted {
   session_id: string;
-  impersonator_id: string;
-  mode: ModeEnum;
+  tenant_slug: string;
+  /** Exchange on the tenant subdomain within 60 s. */
+  handoff_code: string;
+  /** STAFF opens /manage; RETAILER opens /shop. */
+  target_type: string;
   expires_at: string;
 }

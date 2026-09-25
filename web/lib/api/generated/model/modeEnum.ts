@@ -5,11 +5,15 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { ModeEnum } from './modeEnum';
 
-export interface MeImpersonation {
-  session_id: string;
-  impersonator_id: string;
-  mode: ModeEnum;
-  expires_at: string;
-}
+/**
+ * * `READ_ONLY` - READ_ONLY
+ * * `ACT` - ACT
+ */
+export type ModeEnum = typeof ModeEnum[keyof typeof ModeEnum];
+
+
+export const ModeEnum = {
+  READ_ONLY: 'READ_ONLY',
+  ACT: 'ACT',
+} as const;

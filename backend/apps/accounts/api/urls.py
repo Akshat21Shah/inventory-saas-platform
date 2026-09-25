@@ -52,4 +52,6 @@ urlpatterns = [
         staff_views.InvitationAcceptView.as_view(),
         name="auth-invitation-accept",
     ),
+    path("impersonation/act/", views.ImpersonationActView.as_view(), name="auth-impersonation-act"),
+    path("impersonation/end/", views.ImpersonationEndView.as_view(), name="auth-impersonation-end"),
 ]

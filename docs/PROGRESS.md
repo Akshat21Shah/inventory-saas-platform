@@ -104,6 +104,12 @@
         - `audit-logs/`: `audit.view`, own tenant only.
         - Public `public/tenants/{slug}/branding/` and `.../assets/{kind}/` (a stable URL that 302s to a presigned link; never the signatory).
       - Checked against the running stack: logo upload to SeaweedFS and download through the public redirect.
+    - Impersonation (ADR-029):
+      - `platform/impersonations/` POST (reason, target staff or retailer of that tenant, never a super admin) returns a handoff code for the tenant subdomain. The token has no refresh and expires with the session (30 min, a platform setting).
+      - Every request checks that the session is open. READ-ONLY refuses writes (`IMPERSONATION_READ_ONLY`). `auth/impersonation/act/` needs a reason. Endpoints marked `impersonation_blocked` refuse writes in every mode (`IMPERSONATION_BLOCKED`): staff management, 2FA, password change and bank details. A test fails if a route in those groups is unmarked.
+      - Every successful write in a session is audited (`impersonation.write`), in addition to the domain entry that records the impersonator. Start, ACT, end and expiry go to the tenant's own log (the owner sees them); a beat task records expiries. Support can open a suspended tenant (ADR-018).
+    - Django admin (PLAN 1.13): super admins only, admin host only; sign-in needs password + TOTP and uses the same lockout and rate limits. Read-only, through the platform alias. Third-party editable registrations (groups, token blacklist) removed; password, TOTP secret and webhook token never shown.
+    - Role matrix (PLAN 1.17): a generic test walks every permission-guarded tenant endpoint and checks each system role gets 403 exactly when it lacks the code.
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next

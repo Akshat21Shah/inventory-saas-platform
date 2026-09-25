@@ -15,8 +15,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts import impersonation
 from apps.accounts.api.staff_serializers import MembershipSerializer
-from apps.accounts.models import Membership, User
+from apps.accounts.models import ImpersonationSession, Membership, User
 from apps.audit import selectors as audit_selectors
 from apps.audit.api.serializers import AuditFilterSerializer, AuditLogSerializer
 from apps.audit.models import AuditLog
@@ -25,6 +26,7 @@ from apps.platform.api import serializers as s
 from apps.platform.models import CessType, FeatureFlag, HsnRateHint, Plan, State, TaxRate, Tenant
 from apps.platform.selectors import current_plan, effective_features, platform_settings
 from apps.platform.tenant_services import OnboardingInput
+from common.context import request_meta_var
 from common.errors import NotFound
 from common.permissions import HasPermission
 
@@ -595,3 +597,47 @@ class PlatformAuditLogView(PlatformView, generics.ListAPIView[AuditLog]):
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
+
+
+# --- Impersonation (ADR-029) --------------------------------------------------------------------
+
+
+class ImpersonationListCreateView(PlatformView, generics.ListAPIView[ImpersonationSession]):
+    required_permissions = {"GET": "platform.audit.view", "POST": "platform.impersonate"}
+    serializer_class = s.ImpersonationSessionSerializer
+
+    def get_queryset(self) -> Any:
+        if getattr(self, "swagger_fake_view", False):
+            return ImpersonationSession.objects.unscoped().none()
+        return impersonation.history()
+
+    @extend_schema(operation_id="platform_impersonations_list", tags=["platform"])
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        request=s.ImpersonationStartSerializer,
+        responses={201: s.ImpersonationStartedSerializer},
+        operation_id="platform_impersonations_start",
+        tags=["platform"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.ImpersonationStartSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        meta = request_meta_var.get()
+        session, handoff = impersonation.start_impersonation(
+            admin=_user(request),
+            tenant_id=data.validated_data["tenant_id"],
+            user_id=data.validated_data["user_id"],
+            reason=data.validated_data["reason"],
+            ip=meta.ip if meta else None,
+            user_agent=meta.user_agent if meta else "",
+        )
+        body = {
+            "session_id": session.pk,
+            "tenant_slug": handoff.tenant_slug,
+            "handoff_code": handoff.code,
+            "target_type": session.target_user.user_type,
+            "expires_at": session.expires_at,
+        }
+        return Response(s.ImpersonationStartedSerializer(body).data, status=201)

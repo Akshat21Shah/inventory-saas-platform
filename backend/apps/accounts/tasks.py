@@ -131,3 +131,10 @@ def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str)
         from_email=None,
         recipient_list=[email],
     )
+
+
+@shared_task(name="accounts.expire_impersonation_sessions")
+def expire_impersonation_sessions() -> int:
+    from apps.accounts.impersonation import expire_sessions
+
+    return expire_sessions()

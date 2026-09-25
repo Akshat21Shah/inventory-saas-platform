@@ -321,3 +321,54 @@ def setting_rows(
 
 class SettingValuesSerializer(serializers.Serializer[Any]):
     values = serializers.DictField(child=serializers.JSONField(allow_null=True))
+
+
+# --- Impersonation (ADR-029) --------------------------------------------------------------------
+
+
+class ImpersonationStartSerializer(serializers.Serializer[Any]):
+    tenant_id = serializers.UUIDField()
+    user_id = serializers.UUIDField()
+    reason = serializers.CharField(max_length=1000)
+
+
+class ImpersonationStartedSerializer(serializers.Serializer[Any]):
+    session_id = serializers.UUIDField()
+    tenant_slug = serializers.CharField()
+    handoff_code = serializers.CharField(help_text="Exchange on the tenant subdomain within 60 s.")
+    target_type = serializers.CharField(help_text="STAFF opens /manage; RETAILER opens /shop.")
+    expires_at = serializers.DateTimeField()
+
+
+class ImpersonationSessionSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    tenant = serializers.SerializerMethodField()
+    impersonator = serializers.SerializerMethodField()
+    target = serializers.SerializerMethodField()
+    reason = serializers.CharField()
+    mode = serializers.CharField()
+    act_reason = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    expires_at = serializers.DateTimeField()
+    ended_at = serializers.DateTimeField(allow_null=True)
+    end_reason = serializers.CharField()
+
+    def get_tenant(self, obj: Any) -> dict[str, Any]:
+        return {"id": obj.tenant_id, "name": obj.tenant.name, "slug": obj.tenant.slug}
+
+    def get_impersonator(self, obj: Any) -> dict[str, Any]:
+        return {
+            "id": obj.impersonator_id,
+            "full_name": obj.impersonator.full_name,
+            "email": obj.impersonator.email,
+        }
+
+    def get_target(self, obj: Any) -> dict[str, Any]:
+        t = obj.target_user
+        return {
+            "id": t.pk,
+            "full_name": t.full_name,
+            "email": t.email,
+            "phone": t.phone,
+            "user_type": t.user_type,
+        }

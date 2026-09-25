@@ -15,7 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts import retailer_login, services
+from apps.accounts import impersonation, retailer_login, services
 from apps.accounts.api import serializers as s
 from apps.accounts.api.cookies import (
     clear_refresh_cookie,
@@ -28,12 +28,10 @@ from apps.accounts.tokens import IssuedTokens, SessionExpired
 from apps.platform.selectors import effective_features, tenant_info
 from apps.retailers.models import RetailerUser
 from common.authentication import (
-    IMPERSONATION_MODE_CLAIM,
-    IMPERSONATION_SESSION_CLAIM,
-    IMPERSONATOR_CLAIM,
     TENANT_CLAIM,
 )
 from common.context import request_meta_var
+from common.errors import NotFound
 from common.hosts import HostContext
 from common.permissions import IsStaffOrPlatformUser
 
@@ -86,7 +84,7 @@ def _login_response(outcome: services.LoginOutcome) -> Response:
         body.update(_token_body(outcome.tokens))
         body["user_type"] = outcome.user.user_type
     response = Response(s.LoginResponseSerializer(body).data)
-    if outcome.tokens is not None:
+    if outcome.tokens is not None and outcome.tokens.refresh:  # impersonation: no refresh
         set_refresh_cookie(response, outcome.tokens)
     return response
 
@@ -343,6 +341,7 @@ def _token_tenant_id(request: Request) -> UUID | None:
 
 class MfaSetupView(APIView):
     permission_classes = [IsStaffOrPlatformUser]
+    impersonation_blocked = True  # ADR-029: credentials never change in a support session
 
     @extend_schema(
         request=None,
@@ -358,6 +357,7 @@ class MfaSetupView(APIView):
 
 class MfaConfirmView(APIView):
     permission_classes = [IsStaffOrPlatformUser]
+    impersonation_blocked = True  # ADR-029: credentials never change in a support session
 
     @extend_schema(
         request=s.MfaSetupConfirmInputSerializer,
@@ -377,6 +377,7 @@ class MfaConfirmView(APIView):
 
 class MfaDisableView(APIView):
     permission_classes = [IsStaffOrPlatformUser]
+    impersonation_blocked = True  # ADR-029: credentials never change in a support session
 
     @extend_schema(
         request=s.PasswordAndFactorInputSerializer,
@@ -401,6 +402,7 @@ class MfaDisableView(APIView):
 
 class RecoveryCodesView(APIView):
     permission_classes = [IsStaffOrPlatformUser]
+    impersonation_blocked = True  # ADR-029: credentials never change in a support session
 
     @extend_schema(
         request=s.PasswordAndFactorInputSerializer,
@@ -424,6 +426,7 @@ class RecoveryCodesView(APIView):
 
 class PasswordChangeView(APIView):
     permission_classes = [IsStaffOrPlatformUser]
+    impersonation_blocked = True  # ADR-029: credentials never change in a support session
 
     @extend_schema(
         request=s.PasswordChangeInputSerializer,
@@ -443,6 +446,47 @@ class PasswordChangeView(APIView):
         response = Response(s.TokenResponseSerializer(_token_body(tokens)).data)
         set_refresh_cookie(response, tokens)
         return response
+
+
+class ImpersonationActView(APIView):
+    """Switch the current support session to ACT mode (a reason is required; audited)."""
+
+    permission_classes = [IsAuthenticated]
+    impersonation_control = True
+
+    @extend_schema(
+        request=s.ImpersonationReasonSerializer,
+        responses=s.TokenResponseSerializer,
+        operation_id="auth_impersonation_act",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        session = _impersonation_session(request)
+        data = s.ImpersonationReasonSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        access, expires = impersonation.enable_act_mode(session, data.validated_data["reason"])
+        return Response(
+            s.TokenResponseSerializer({"access": access, "access_expires_at": expires}).data
+        )
+
+
+class ImpersonationEndView(APIView):
+    permission_classes = [IsAuthenticated]
+    impersonation_control = True
+
+    @extend_schema(
+        request=None, responses={204: None}, operation_id="auth_impersonation_end", tags=["auth"]
+    )
+    def post(self, request: Request) -> Response:
+        impersonation.end_impersonation(_impersonation_session(request))
+        return Response(status=204)
+
+
+def _impersonation_session(request: Request) -> Any:
+    session = request.user.__dict__.get("impersonation_session")
+    if session is None:
+        raise NotFound()
+    return session
 
 
 class MeView(APIView):
@@ -472,12 +516,14 @@ def _me(request: Request) -> dict[str, Any]:
     tenant_id = UUID(str(raw_tenant)) if raw_tenant else None
     info = tenant_info(tenant_id) if tenant_id else None
     membership = user.__dict__.get("membership")
-    impersonation = None
-    if token is not None and token.get(IMPERSONATION_SESSION_CLAIM):
-        impersonation = {
-            "session_id": token.get(IMPERSONATION_SESSION_CLAIM),
-            "impersonator_id": token.get(IMPERSONATOR_CLAIM),
-            "mode": token.get(IMPERSONATION_MODE_CLAIM, "READ_ONLY"),
+    support_session = None
+    session = user.__dict__.get("impersonation_session")
+    if session is not None:
+        support_session = {
+            "session_id": session.pk,
+            "impersonator_id": session.impersonator_id,
+            "mode": session.mode,  # from the database: an ACT switch applies at once
+            "expires_at": session.expires_at,
         }
     return {
         "id": user.pk,
@@ -497,7 +543,7 @@ def _me(request: Request) -> dict[str, Any]:
         "retailer": _retailer_summary(user) if tenant_id else None,
         "permissions": sorted(user.permission_codes()),
         "features": effective_features(tenant_id) if tenant_id else {},
-        "impersonation": impersonation,
+        "impersonation": support_session,
         "mfa_enabled": user.totp_enabled,
         "mfa_required": services.mfa_required_for(user, tenant_id),
     }

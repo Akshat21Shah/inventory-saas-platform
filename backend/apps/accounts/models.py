@@ -250,6 +250,8 @@ class HandoffCode(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
     tenant = models.ForeignKey("platform.Tenant", on_delete=models.CASCADE, related_name="+")
     session_expires_at = models.DateTimeField(null=True, blank=True)
+    # Set when the handoff starts an impersonation session instead of a normal sign-in.
+    impersonation_session_id = models.UUIDField(null=True, blank=True)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
 
@@ -351,3 +353,43 @@ class Invitation(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"invite:{self.email}@{self.tenant_id}"
+
+
+class ImpersonationSession(TenantScopedModel):
+    """A super admin acting as a tenant user for support (ADR-029). READ_ONLY until the admin
+    switches to ACT with a separate reason. Events go to the tenant's own audit log."""
+
+    class Mode(models.TextChoices):
+        READ_ONLY = "READ_ONLY", "Read only"
+        ACT = "ACT", "Act"
+
+    class EndReason(models.TextChoices):
+        ENDED = "ENDED", "Ended"
+        EXPIRED = "EXPIRED", "Expired"
+
+    impersonator = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    target_user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
+    reason = models.TextField()
+    mode = models.CharField(max_length=10, choices=Mode.choices, default=Mode.READ_ONLY)
+    act_reason = models.TextField(blank=True, default="")
+    act_started_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    ended_at = models.DateTimeField(null=True, blank=True)
+    end_reason = models.CharField(max_length=10, choices=EndReason.choices, blank=True, default="")
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True, default="")
+
+    class Meta:
+        indexes = [models.Index(fields=["tenant", "created_at"], name="impersonation_tenant_idx")]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(impersonator=models.F("target_user")),
+                name="impersonation_not_self",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.impersonator_id}->{self.target_user_id}"
+
+    def is_open(self) -> bool:
+        return self.ended_at is None and self.expires_at > timezone.now()

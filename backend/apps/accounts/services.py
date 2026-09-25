@@ -337,7 +337,10 @@ def choose_tenant(choice_token: str, tenant_id: UUID) -> Handoff:
 
 
 def create_handoff(
-    user: User, tenant: Tenant, session_expires_at: datetime | None = None
+    user: User,
+    tenant: Tenant,
+    session_expires_at: datetime | None = None,
+    impersonation_session_id: UUID | None = None,
 ) -> Handoff:
     raw = _new_secret()
     HandoffCode.objects.create(
@@ -345,6 +348,7 @@ def create_handoff(
         user=user,
         tenant=tenant,
         session_expires_at=session_expires_at,
+        impersonation_session_id=impersonation_session_id,
         expires_at=timezone.now() + timedelta(seconds=settings.AUTH_HANDOFF_TTL_SECONDS),
     )
     return Handoff(code=raw, tenant_slug=tenant.slug)
@@ -367,9 +371,9 @@ def exchange_handoff(code: str, host: HostContext, ip: str | None) -> LoginOutco
     user, tenant = handoff.user, handoff.tenant
     if host.kind != HostKind.TENANT or host.tenant_slug != tenant.slug or not user.is_active:
         raise TokenInvalid()
-    if tenant.status == Tenant.Status.SUSPENDED:
-        raise TenantSuspended()
-    if tenant.status != Tenant.Status.ACTIVE:
+    if tenant.status == Tenant.Status.SUSPENDED and handoff.impersonation_session_id is None:
+        raise TenantSuspended()  # ADR-018: support may still look at a suspended tenant
+    if tenant.status == Tenant.Status.ONBOARDING:
         raise TokenInvalid()
     if (
         user.user_type == User.UserType.STAFF
@@ -381,6 +385,10 @@ def exchange_handoff(code: str, host: HostContext, ip: str | None) -> LoginOutco
         or selectors.retailer_login_for_tenant(user.phone or "", tenant.id) is None
     ):
         raise TokenInvalid()
+    if handoff.impersonation_session_id is not None:
+        from apps.accounts.impersonation import complete_handoff
+
+        return complete_handoff(handoff)
     # The second factor (if enabled) was verified on the generic domain before the handoff; the
     # tenant's own 2FA policy is applied here, where the tenant is known.
     target = _tokens_target(host, tenant.id, handoff.session_expires_at)

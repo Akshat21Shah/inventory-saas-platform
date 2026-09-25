@@ -29,7 +29,7 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 TRUSTED_PROXY_HOPS = env.int("TRUSTED_PROXY_HOPS", default=1)
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "common.admin_apps.PlatformAdminConfig",  # django.contrib.admin, locked down (PLAN 1.13)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -53,6 +53,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "common.middleware.RequestContextMiddleware",
+    "apps.accounts.middleware.ImpersonationAuditMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -145,6 +146,7 @@ CELERY_BEAT_SCHEDULE = {
     "outbox-sweeper": {"task": "common.outbox.sweep_outbox", "schedule": 60.0},
     "idempotency-purge": {"task": "common.idempotency.purge_expired", "schedule": 3600.0},
     "login-records-purge": {"task": "accounts.purge_expired_login_records", "schedule": 3600.0},
+    "impersonation-expiry": {"task": "accounts.expire_impersonation_sessions", "schedule": 60.0},
 }
 
 CHANNEL_LAYERS = {

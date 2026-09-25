@@ -32,9 +32,12 @@ import type {
   HsnHintRequest,
   HsnImportRequest,
   HsnImportResult,
+  ImpersonationStartRequest,
+  ImpersonationStarted,
   OnboardingRequest,
   PaginatedAuditLogList,
   PaginatedHsnHintList,
+  PaginatedImpersonationSessionList,
   PaginatedMembershipList,
   PaginatedTenantListList,
   PatchedCessTypeUpdateRequest,
@@ -50,6 +53,7 @@ import type {
   PlatformCessTypesListParams,
   PlatformFeatureFlagsListParams,
   PlatformHsnHintsListParams,
+  PlatformImpersonationsListParams,
   PlatformPlansListParams,
   PlatformTaxRatesListParams,
   PlatformTenantFeatures200,
@@ -1469,6 +1473,239 @@ export function usePlatformHsnHintsImport<TData = Awaited<ReturnType<typeof plat
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPlatformHsnHintsImportQueryOptions(hsnImportRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformImpersonationsListResponse200 = {
+  data: PaginatedImpersonationSessionList
+  status: 200
+}
+
+export type platformImpersonationsListResponseSuccess = (platformImpersonationsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformImpersonationsListResponse = (platformImpersonationsListResponseSuccess)
+
+export const getPlatformImpersonationsListUrl = (params?: PlatformImpersonationsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/platform/impersonations/?${stringifiedParams}` : `/api/v1/platform/impersonations/`
+}
+
+export const platformImpersonationsList = async (params?: PlatformImpersonationsListParams, options?: Parameters<typeof apiFetch>[1]): Promise<platformImpersonationsListResponse> => {
+
+  return apiFetch<platformImpersonationsListResponse>(getPlatformImpersonationsListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformImpersonationsListQueryKey = (params?: PlatformImpersonationsListParams,) => {
+    return [
+    `/api/v1/platform/impersonations/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPlatformImpersonationsListQueryOptions = <TData = Awaited<ReturnType<typeof platformImpersonationsList>>, TError = unknown>(params?: PlatformImpersonationsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformImpersonationsListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformImpersonationsList>>> = ({ signal }) => platformImpersonationsList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformImpersonationsListQueryResult = NonNullable<Awaited<ReturnType<typeof platformImpersonationsList>>>
+export type PlatformImpersonationsListQueryError = unknown
+
+
+export function usePlatformImpersonationsList<TData = Awaited<ReturnType<typeof platformImpersonationsList>>, TError = unknown>(
+ params: undefined |  PlatformImpersonationsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformImpersonationsList>>,
+          TError,
+          Awaited<ReturnType<typeof platformImpersonationsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformImpersonationsList<TData = Awaited<ReturnType<typeof platformImpersonationsList>>, TError = unknown>(
+ params?: PlatformImpersonationsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformImpersonationsList>>,
+          TError,
+          Awaited<ReturnType<typeof platformImpersonationsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformImpersonationsList<TData = Awaited<ReturnType<typeof platformImpersonationsList>>, TError = unknown>(
+ params?: PlatformImpersonationsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformImpersonationsList<TData = Awaited<ReturnType<typeof platformImpersonationsList>>, TError = unknown>(
+ params?: PlatformImpersonationsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformImpersonationsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformImpersonationsStartResponse201 = {
+  data: ImpersonationStarted
+  status: 201
+}
+
+export type platformImpersonationsStartResponseSuccess = (platformImpersonationsStartResponse201) & {
+  headers: Headers;
+};
+;
+
+export type platformImpersonationsStartResponse = (platformImpersonationsStartResponseSuccess)
+
+export const getPlatformImpersonationsStartUrl = () => {
+
+
+
+
+  return `/api/v1/platform/impersonations/`
+}
+
+export const platformImpersonationsStart = async (impersonationStartRequest: ImpersonationStartRequest, options?: Parameters<typeof apiFetch>[1]): Promise<platformImpersonationsStartResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<platformImpersonationsStartResponse>(getPlatformImpersonationsStartUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(impersonationStartRequest)
+  }
+);}
+
+
+
+
+
+export const getPlatformImpersonationsStartQueryKey = (impersonationStartRequest?: ImpersonationStartRequest,) => {
+    return [
+    'POST', `/api/v1/platform/impersonations/`, impersonationStartRequest
+    ] as const;
+    }
+
+
+export const getPlatformImpersonationsStartQueryOptions = <TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformImpersonationsStartQueryKey(impersonationStartRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformImpersonationsStart>>> = ({ signal }) => platformImpersonationsStart(impersonationStartRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformImpersonationsStartQueryResult = NonNullable<Awaited<ReturnType<typeof platformImpersonationsStart>>>
+export type PlatformImpersonationsStartQueryError = unknown
+
+
+export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
+ impersonationStartRequest: ImpersonationStartRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformImpersonationsStart>>,
+          TError,
+          Awaited<ReturnType<typeof platformImpersonationsStart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
+ impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformImpersonationsStart>>,
+          TError,
+          Awaited<ReturnType<typeof platformImpersonationsStart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
+ impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformImpersonationsStart<TData = Awaited<ReturnType<typeof platformImpersonationsStart>>, TError = unknown>(
+ impersonationStartRequest: ImpersonationStartRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformImpersonationsStart>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformImpersonationsStartQueryOptions(impersonationStartRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

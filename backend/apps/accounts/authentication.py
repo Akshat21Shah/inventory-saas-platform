@@ -12,14 +12,21 @@ from typing import Any
 from uuid import UUID
 
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.request import Request
 
-from apps.accounts.models import User
+from apps.accounts.impersonation import ImpersonationBlocked, ImpersonationReadOnly, open_session
+from apps.accounts.models import ImpersonationSession, User
 from apps.accounts.selectors import active_membership, retailer_login_for_tenant, role_codes
 from apps.accounts.services import TenantSuspended
 from apps.platform.models import Tenant
 from apps.platform.selectors import tenant_info
-from common.authentication import TENANT_CLAIM, TenantJWTAuthentication
+from common.authentication import (
+    IMPERSONATION_SESSION_CLAIM,
+    IMPERSONATOR_CLAIM,
+    TENANT_CLAIM,
+    TenantJWTAuthentication,
+)
 from common.hosts import HostContext, HostKind
 
 
@@ -31,8 +38,11 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
         user, token = result
         host: HostContext | None = getattr(request, "host_context", None)
         raw_tenant = token.get(TENANT_CLAIM)
+        impersonating = bool(token.get(IMPERSONATION_SESSION_CLAIM))
         if raw_tenant:
-            self._check_tenant_access(user, UUID(str(raw_tenant)), host)
+            self._check_tenant_access(user, UUID(str(raw_tenant)), host, impersonating)
+            if impersonating:
+                self._check_impersonation(request, user, token, UUID(str(raw_tenant)))
         elif user.user_type != User.UserType.PLATFORM:
             raise AuthenticationFailed("This session is not valid.", code="token_not_valid")
         elif host is not None and host.kind == HostKind.TENANT:
@@ -40,13 +50,41 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
         return user, token
 
     @staticmethod
-    def _check_tenant_access(user: User, tenant_id: UUID, host: HostContext | None) -> None:
+    def _check_impersonation(request: Request, user: User, token: Any, tenant_id: UUID) -> None:
+        """ADR-029: the session must still be open; READ-ONLY refuses writes; endpoints marked
+        ``impersonation_blocked`` refuse writes in every mode."""
+        session = open_session(UUID(str(token[IMPERSONATION_SESSION_CLAIM])), tenant_id)
+        if (
+            session is None
+            or session.target_user_id != user.pk
+            or str(session.impersonator_id) != str(token.get(IMPERSONATOR_CLAIM))
+        ):
+            raise AuthenticationFailed(
+                "This support session has ended.", code="impersonation_ended"
+            )
+        user.__dict__["impersonation_session"] = session
+        view = (getattr(request, "parser_context", None) or {}).get("view")
+        if getattr(view, "impersonation_control", False):
+            # act/end record their own audit events; skip the generic write entry.
+            request._request.impersonation_control = True  # type: ignore[attr-defined]
+            return
+        if request.method in SAFE_METHODS:
+            return
+        if getattr(view, "impersonation_blocked", False):
+            raise ImpersonationBlocked()
+        if session.mode != ImpersonationSession.Mode.ACT:
+            raise ImpersonationReadOnly()
+
+    @staticmethod
+    def _check_tenant_access(
+        user: User, tenant_id: UUID, host: HostContext | None, impersonating: bool = False
+    ) -> None:
         info = tenant_info(tenant_id)
         if info is None:
             raise AuthenticationFailed("This session is not valid.", code="token_not_valid")
-        if info.status == Tenant.Status.SUSPENDED:
-            raise TenantSuspended()
-        if not info.is_active:
+        if info.status == Tenant.Status.SUSPENDED and not impersonating:
+            raise TenantSuspended()  # ADR-018: support may still look at a suspended tenant
+        if info.status == Tenant.Status.ONBOARDING:
             raise AuthenticationFailed("This session is not valid.", code="token_not_valid")
         if host is not None and host.kind == HostKind.ADMIN:
             raise AuthenticationFailed("This session is not valid here.", code="wrong_host")

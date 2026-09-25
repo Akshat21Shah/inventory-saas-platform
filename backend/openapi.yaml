@@ -104,6 +104,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
           description: ''
+  /api/v1/auth/impersonation/act/:
+    post:
+      operationId: auth_impersonation_act
+      description: Switch the current support session to ACT mode (a reason is required;
+        audited).
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpersonationReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+          description: ''
+  /api/v1/auth/impersonation/end/:
+    post:
+      operationId: auth_impersonation_end
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/auth/invitations/accept/:
     post:
       operationId: auth_invitation_accept
@@ -905,6 +937,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HsnImportResult'
+          description: ''
+  /api/v1/platform/impersonations/:
+    get:
+      operationId: platform_impersonations_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedImpersonationSessionList'
+          description: ''
+    post:
+      operationId: platform_impersonations_start
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpersonationStartRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImpersonationStarted'
           description: ''
   /api/v1/platform/plans/:
     get:
@@ -2440,6 +2530,103 @@ components:
       required:
       - created
       - updated
+    ImpersonationReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
+    ImpersonationSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        impersonator:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        target:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        reason:
+          type: string
+        mode:
+          type: string
+        act_reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+        end_reason:
+          type: string
+      required:
+      - act_reason
+      - created_at
+      - end_reason
+      - ended_at
+      - expires_at
+      - id
+      - impersonator
+      - mode
+      - reason
+      - target
+      - tenant
+    ImpersonationStartRequest:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
+      - tenant_id
+      - user_id
+    ImpersonationStarted:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        tenant_slug:
+          type: string
+        handoff_code:
+          type: string
+          description: Exchange on the tenant subdomain within 60 s.
+        target_type:
+          type: string
+          description: STAFF opens /manage; RETAILER opens /shop.
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - handoff_code
+      - session_id
+      - target_type
+      - tenant_slug
     Invitation:
       type: object
       properties:
@@ -2665,8 +2852,12 @@ components:
           type: string
           format: uuid
         mode:
+          $ref: '#/components/schemas/ModeEnum'
+        expires_at:
           type: string
+          format: date-time
       required:
+      - expires_at
       - impersonator_id
       - mode
       - session_id
@@ -2802,6 +2993,14 @@ components:
           maxLength: 40
       required:
       - mfa_token
+    ModeEnum:
+      enum:
+      - READ_ONLY
+      - ACT
+      type: string
+      description: |-
+        * `READ_ONLY` - READ_ONLY
+        * `ACT` - ACT
     OnboardingRequest:
       type: object
       properties:
@@ -2917,6 +3116,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HsnHint'
+    PaginatedImpersonationSessionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImpersonationSession'
     PaginatedInvitationList:
       type: object
       required:
