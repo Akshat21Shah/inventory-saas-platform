@@ -3,6 +3,7 @@
 ## Done
 - 2026-09-24 — Master plan `docs/PLAN.md`; product-owner decisions applied (PLAN v1.1, SPEC v1.1, ADR-001…019).
 - 2026-09-25 — Follow-up answers applied (PLAN v1.2, SPEC updates, ADR-020…022).
+- 2026-09-25 — Phase 0 merged to `main` (PR #1).
 - 2026-09-25 — **Phase 0 — Foundation** implemented and verified:
   - **Infra**
     - Docker Compose: postgres 16 (three roles: owner / runtime without BYPASSRLS / platform with BYPASSRLS), redis, mailpit, SeaweedFS S3 + bucket init, a one-shot `migrate` service, backend (uvicorn ASGI), celery worker, celery beat, web.
@@ -51,10 +52,26 @@
 - The status line in `PLAN.md` now says Phase 0 is complete.
 
 ## In progress
-- Awaiting the product owner's review and merge of `phase-0-foundation` into `main`.
+- **Phase 1 — Tenancy, auth, platform admin** (branch `phase-1`; plan approved 2026-09-25, including the wider PLAN §8 scope).
+  - Decisions recorded: ADR-025 … ADR-031; PLAN v1.3 (§1.2 T7, §2.2, §2.3, §3.2, §9.1/§9.2 Security keys, §10).
+  - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
-- Phase 1 — Tenancy, auth, platform admin (PLAN §8).
+- Phase 1 commits, in order:
+  1. Platform models and masters
+  2. Encryption and storage
+  3. Audit log
+  4. Settings registry
+  5. Permissions and roles
+  6. Staff auth
+  7. 2FA and passwords
+  8. Retailer OTP
+  9. Invitations
+  10. Onboarding and platform APIs
+  11. Tenant settings and branding
+  12. Impersonation and Django admin
+  13–16. Frontend
+  17. Seed, E2E and docs
 
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.

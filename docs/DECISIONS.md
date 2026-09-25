@@ -29,6 +29,13 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 | 022 | Follow-up business rules (2026-09-25) | Accepted |
 | 023 | Phase 0 tooling choices | Accepted |
 | 024 | SeaweedFS as the dev/CI S3 stand-in | Accepted |
+| 025 | Auth tokens, refresh cookie & session lengths | Accepted |
+| 026 | Identity tables & cross-tenant login lookups | Accepted |
+| 027 | Storage adapter & asset serving | Accepted |
+| 028 | Brand palette derived on the client | Accepted (amends PLAN §2.2) |
+| 029 | Impersonation: read-only by default, audited "act" mode | Accepted (amends PLAN T7) |
+| 030 | Login protection, staff 2FA, owners, subdomain & tenant lifecycle | Accepted |
+| 031 | Field-level encryption | Accepted |
 
 ---
 
@@ -268,3 +275,87 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   - Use **SeaweedFS** (`chrislusf/seaweedfs`, Apache-2.0) with its S3 gateway on port 8333, dev credentials from `infra/seaweedfs/s3.json`, and bucket `inventory-dev` created by a one-shot `s3-init` service using the same image.
   - All application code talks to storage only through the storage adapter (boto3 / S3 API, Phase 1). Production uses AWS S3.
 - **Consequences:** Nothing S3-specific changes in application code. If you prefer another stand-in (e.g. RustFS, LocalStack), it is a Compose-only swap.
+
+## ADR-025 — Auth tokens, refresh cookie & session lengths
+- **Status:** Accepted — 2026-09-25 (technical decision approved by the product owner; session lengths by the product owner)
+- **Context:** Spec 5.2 asks for a short-lived access JWT and a refresh token in an httpOnly cookie for the web. Cookies must stay scoped to one tenant subdomain (ADR-020, ADR-023).
+- **Decision:**
+  - The access JWT (10 minutes) carries `sub`, `tid` (tenant, or none for platform users), `utype` and, when impersonating, `imp` (session id) and `imp_mode`. It is kept **only in memory** in the browser and sent as `Authorization: Bearer`.
+  - The refresh token lives in an httpOnly cookie: `Secure` outside dev, `SameSite=Lax`, **host-only** (no `Domain` attribute, so it never reaches another subdomain), `Path=/api/v1/auth/`. It rotates on every use, and the old token is blacklisted (simplejwt blacklist).
+  - CSRF defence for the cookie-authenticated endpoints (`token/refresh`, `logout`, `handoff/exchange`): the request must carry `X-Requested-With: fetch`, and its `Origin` must match the host.
+  - Refresh lifetimes by user type: **retailer 30 days, sliding** (each rotation restarts the window); **staff 7 days**; **super admin 12 hours**. Impersonation tokens are never refreshable (ADR-029).
+  - On each refresh and on each authenticated request, the tenant status and the user's active membership or retailer account are re-checked (cached briefly and invalidated on change), so suspension and deactivation take effect at once (ADR-018).
+  - The frontend makes one refresh attempt on a 401, shared by all waiting requests, then retries. Area shells guard on the client; the API enforces everything regardless.
+- **Consequences:** XSS cannot read the refresh token, and a page reload costs one refresh call. Mobile (Phase 11) stores the refresh token in secure storage and sends it in the body instead of a cookie.
+
+## ADR-026 — Identity tables & cross-tenant login lookups
+- **Status:** Accepted — 2026-09-25 (technical decision approved by the product owner)
+- **Context:** Login has to find users before any tenant is known. Examples: staff on the generic domain, resolved by their memberships (ADR-020), and a verified phone on the generic domain, which may match retailers in several tenants (ADR-015).
+- **Decision:**
+  - `accounts_user` is an identity table **without RLS**, because it is read before a tenant is known. It holds no business data. The RLS-coverage test lists it as an explicit exemption, with this reason.
+  - Tenant-owned identity data (`Membership`, `Invitation`, `Retailer`, `OTPRequest` with a tenant) is tenant-scoped with RLS.
+  - Cross-tenant lookups at login use **two narrow selectors** on the platform (BYPASSRLS) alias, and each call is logged:
+    - `staff_memberships_for_login(user)`, which returns active memberships in active tenants;
+    - `retailer_accounts_for_verified_phone(phone)`, which runs only after the OTP is verified and returns active retailer accounts in active tenants.
+  - No other code uses the platform alias for login.
+  - `Role` rows with `tenant = NULL` are system roles. Their RLS policy lets every tenant read them, but no tenant can write them.
+- **Consequences:** Account discovery is limited to someone who has proved identity (a password or OTP), and it never reveals other tenants to a distributor.
+
+## ADR-027 — Storage adapter & asset serving
+- **Status:** Accepted — 2026-09-25 (technical decision approved by the product owner)
+- **Decision:**
+  - `common.storage` defines a `Storage` interface (`put`, `open`, `delete`, `presigned_get`) with two implementations: S3, via boto3 (AWS in prod, SeaweedFS in dev and CI, ADR-024), and in-memory (tests).
+  - Object keys are prefixed by tenant: `tenants/{tenant_id}/branding/{kind}/{uuid}.{ext}`.
+  - Uploads are validated on the server: PNG, JPEG or WebP only, with the type checked from content by Pillow and not from the file name. The limit is 2 MB. **SVG is refused**, because it can carry scripts.
+  - Public branding assets (logo, favicon, app icon) are served at a stable API URL that redirects (302) to a short-lived presigned URL, so pages can cache the stable URL.
+  - The signatory image is never public; only staff with `settings.manage` can read it.
+- **Consequences:** The bucket stays private, and moving to another S3-compatible store changes only configuration.
+
+## ADR-028 — Brand palette derived on the client
+- **Status:** Accepted — 2026-09-25 (technical decision approved by the product owner). **Amends PLAN §2.2** (`TenantBranding.palette` is dropped).
+- **Decision:** The server stores only `primary_color`. The 50–950 palette and the foreground colour are derived in `web/lib/theme/palette.ts`, which is already tested; the React Native app (Phase 11) will reuse the same TypeScript. The server validates only the hex format.
+- **Consequences:** Deriving a palette is presentation, not business logic, so the thin-client rule still holds. There is one source of truth for the derivation.
+
+## ADR-029 — Impersonation: read-only by default, audited "act" mode
+- **Status:** Accepted — 2026-09-25 (product owner). **Amends PLAN §1.2 T7.**
+- **Decision:**
+  - A super admin starts an impersonation session with a required reason. Sessions start **READ-ONLY**: every write request (any method other than GET, HEAD or OPTIONS) is refused with `IMPERSONATION_READ_ONLY`.
+  - The super admin can switch the session to **ACT** mode by entering a separate reason. The switch is audited (`impersonation.act_enabled`), and so is every write made in the session: each audit entry records the impersonator and the session.
+  - **Always blocked, even in ACT mode:**
+    - changing the target user's password, 2FA or email;
+    - staff and role management (invitations, role changes, deactivation);
+    - bank details;
+    - payment gateway and GST credentials (Phase 7).
+
+    These endpoints are marked `impersonation_blocked`, and a test fails if any endpoint in the listed groups isn't marked.
+  - Super admins cannot be impersonated. Staff and retailers can be.
+  - A session lasts at most `platform.impersonation_session_minutes` (default 30). The token cannot be refreshed. Ending the session, or the token expiring, closes it.
+  - Session events (start, switch to ACT, end or expiry, with reasons) are written to the **tenant's** audit log, so the tenant's owners see them in `/manage/audit`. Platform users see them in `/platform/impersonations`.
+  - The frontend shows a persistent banner with the target, the mode, the remaining time and an "End session" button.
+- **Consequences:** Support staff can look without risk, and every change is traceable. Some support fixes need the ACT step on purpose.
+
+## ADR-030 — Login protection, staff 2FA, owners, subdomain & tenant lifecycle
+- **Status:** Accepted — 2026-09-25 (product owner)
+- **Decision:**
+  1. **Lockout:** 5 consecutive failed logins lock the account for 15 minutes. A successful login resets the count, and so does a successful password reset, which also unlocks the account. When an account is locked, the user is sent an email (via Celery, enqueued with `on_commit`).
+  2. **Rate limits:** Indian mobile carriers put many users behind shared IPs (CGNAT), so per-IP limits are generous and per-account limits do the real protection.
+     - Login: 30/min per IP, 5/min per email.
+     - OTP request: 3 per 10 min per phone, 100/hour per IP.
+     - OTP verify: at most 5 attempts per code.
+
+     All of these values are **platform settings** (PLAN §9.2, group Security). A throttled response is `RATE_LIMITED` with `Retry-After`.
+  3. **Staff 2FA:** a tenant setting `security.require_staff_2fa` (default off; edit permission `settings.manage`, which only the Owner system role holds). When it is on, staff without TOTP must enrol at their next login before getting a session. 2FA remains mandatory for super admins.
+  4. **Owners:** a tenant may have several owners. The last active owner cannot be demoted or deactivated, and an owner cannot deactivate themself.
+  5. **Subdomain:** only a super admin can change a tenant's slug, after a warning that bookmarks, installed apps and sessions on the old address stop working. It is audited. Distributors see it read-only.
+  6. **Tenant lifecycle:** a new tenant is `ONBOARDING` until the owner accepts the invitation, then becomes `ACTIVE` automatically. While it is ONBOARDING, a super admin can resend the owner invitation (the previous link is revoked). A super admin can suspend a tenant from ONBOARDING or ACTIVE (ADR-018) and reactivate it.
+- **Consequences:** Shared-IP users aren't locked out together. Lockout emails tell account owners about attacks. Security limits can be tuned without a deploy.
+
+## ADR-031 — Field-level encryption
+- **Status:** Accepted — 2026-09-25 (technical decision; lead engineer)
+- **Decision:**
+  - `common.crypto.EncryptedTextField` encrypts values with `cryptography`'s `MultiFernet` (AES-128-CBC + HMAC-SHA256). Keys come from `FIELD_ENCRYPTION_KEYS`, a comma-separated list whose first key encrypts and all keys decrypt, so keys can rotate.
+  - A management command, `rotate_encrypted_fields`, re-encrypts stored values with the current first key.
+  - Prod settings refuse to start without a key. Dev and test use a fixed, clearly non-secret key.
+  - Encrypted fields cannot be searched or indexed. They are masked in API responses (for example `••••1234`) and in audit diffs.
+  - Encrypted in Phase 1: the bank account number and the TOTP secret. Phase 7 adds gateway and GSP credentials.
+- **Consequences:** A database dump alone doesn't reveal secrets. Losing all keys loses the data, so keys go in the secrets manager with a backup (runbook in Phase 10).
