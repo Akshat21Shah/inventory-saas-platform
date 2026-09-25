@@ -1,13 +1,23 @@
-"""Read-side queries for the platform app (tenants, feature flags, plans)."""
+"""Read-side queries for the platform app (tenants, feature flags, plans, settings)."""
 
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 
-from apps.platform.models import FeatureFlag, Plan, Subscription, TenantFeature
+from apps.platform import registry
+from apps.platform.models import (
+    FeatureFlag,
+    Plan,
+    PlatformSetting,
+    Subscription,
+    TenantFeature,
+    TenantSetting,
+)
+from apps.platform.registry import Scope, SnapshotOn
 from common.tenancy import require_tenant_id, tenant_context
 
 FEATURES_CACHE_TTL = 300
@@ -103,3 +113,89 @@ def plan_limit_allows(
         return True
     limit: int | None = getattr(current_plan(tid), resource.value)
     return limit is None or current_count < limit
+
+
+# --- Settings (ADR-016) --------------------------------------------------------------------------
+
+SETTINGS_CACHE_TTL = 300
+_PLATFORM_SETTINGS_KEY = "settings:platform"
+
+
+def _tenant_settings_key(tenant_id: UUID) -> str:
+    return f"settings:tenant:{tenant_id}"
+
+
+def invalidate_tenant_settings(tenant_id: UUID) -> None:
+    cache.delete(_tenant_settings_key(tenant_id))
+
+
+def invalidate_platform_settings() -> None:
+    cache.delete(_PLATFORM_SETTINGS_KEY)
+
+
+def tenant_setting_overrides(
+    tenant_id: UUID | None = None, *, fresh: bool = False
+) -> dict[str, Any]:
+    """Stored overrides (JSON values) for the tenant. Cached, unless ``fresh``: writers read fresh
+    inside their transaction and never put uncommitted values into the shared cache."""
+    tid = tenant_id or require_tenant_id()
+    key = _tenant_settings_key(tid)
+    if not fresh:
+        cached: dict[str, Any] | None = cache.get(key)
+        if cached is not None:
+            return cached
+    with transaction.atomic(), tenant_context(tid):
+        overrides = dict(TenantSetting.objects.filter(tenant_id=tid).values_list("key", "value"))
+    if not fresh:
+        cache.set(key, overrides, SETTINGS_CACHE_TTL)
+    return overrides
+
+
+def platform_setting_overrides(*, fresh: bool = False) -> dict[str, Any]:
+    if not fresh:
+        cached: dict[str, Any] | None = cache.get(_PLATFORM_SETTINGS_KEY)
+        if cached is not None:
+            return cached
+    overrides = dict(PlatformSetting.objects.values_list("key", "value"))
+    if not fresh:
+        cache.set(_PLATFORM_SETTINGS_KEY, overrides, SETTINGS_CACHE_TTL)
+    return overrides
+
+
+def _effective(defn: registry.SettingDef, overrides: dict[str, Any]) -> Any:
+    if defn.key in overrides:
+        return registry.from_json(defn, overrides[defn.key])
+    return defn.default
+
+
+def get_setting(key: str, tenant_id: UUID | None = None) -> Any:
+    """Typed effective value of a tenant-scope key (override, else registry default)."""
+    defn = registry.get_definition(key, Scope.TENANT)
+    return _effective(defn, tenant_setting_overrides(tenant_id))
+
+
+def get_platform_setting(key: str) -> Any:
+    defn = registry.get_definition(key, Scope.PLATFORM)
+    return _effective(defn, platform_setting_overrides())
+
+
+def tenant_settings(tenant_id: UUID | None = None, *, fresh: bool = False) -> dict[str, Any]:
+    """Every tenant-scope key with its typed effective value."""
+    overrides = tenant_setting_overrides(tenant_id, fresh=fresh)
+    return {d.key: _effective(d, overrides) for d in registry.definitions(Scope.TENANT)}
+
+
+def platform_settings(*, fresh: bool = False) -> dict[str, Any]:
+    overrides = platform_setting_overrides(fresh=fresh)
+    return {d.key: _effective(d, overrides) for d in registry.definitions(Scope.PLATFORM)}
+
+
+def settings_snapshot(target: SnapshotOn, tenant_id: UUID | None = None) -> dict[str, Any]:
+    """JSON-safe values of every key snapshotted onto a ``target`` document (ADR-016). Documents
+    store this when created, so later setting changes never alter them."""
+    overrides = tenant_setting_overrides(tenant_id)
+    return {
+        d.key: registry.to_json(d, _effective(d, overrides))
+        for d in registry.definitions(Scope.TENANT)
+        if target in d.snapshot_on
+    }

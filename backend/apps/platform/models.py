@@ -330,3 +330,37 @@ class TenantFeature(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.tenant_id}:{self.flag_id}={self.enabled}"
+
+
+# --- Settings overrides (ADR-016): only non-default values are stored ----------------------------
+
+
+class TenantSetting(TenantScopedModel):
+    """A tenant's override of a registry key. Written only via ``platform.services.set_setting``."""
+
+    key = models.CharField(max_length=80)
+    value = models.JSONField(null=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "key"], name="uniq_tenant_setting_key"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tenant_id}:{self.key}"
+
+
+class PlatformSetting(BaseModel):
+    """A platform-wide override of a platform-scope registry key."""
+
+    key = models.CharField(max_length=80, unique=True)
+    value = models.JSONField(null=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    def __str__(self) -> str:
+        return self.key
