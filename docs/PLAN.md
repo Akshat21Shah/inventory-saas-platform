@@ -1,6 +1,6 @@
 # PLAN.md — Master Engineering Plan (v1)
 
-Status: **v1.2 — product-owner decisions of 2026-09-24 and follow-ups of 2026-09-25 applied (see §10). Phase 0 in progress.**
+Status: **v1.2 — product-owner decisions of 2026-09-24 and follow-ups of 2026-09-25 applied (see §10). Phase 0 complete (2026-09-25); Phase 1 next.**
 Source of truth for *what*: `docs/PROJECT_SPEC.md`. Rules for *how*: `CLAUDE.md`.
 Where this plan and the spec disagree, the spec wins until the spec is updated.
 

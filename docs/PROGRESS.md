@@ -47,6 +47,8 @@
 - The root layout no longer depends on generated `LayoutProps` types, so a clean checkout type-checks.
 - Signing keys are >= 32 bytes in CI and `.env.example`; prod settings refuse shorter keys.
 - CI actions are on Node 24 versions, and CI runs on pushes to any branch.
+- The Claude Code deny rule (`mcp__bex`) now lives in the committed `.claude/settings.json`; `.claude/settings.local.json` is untracked (per-developer only).
+- The status line in `PLAN.md` now says Phase 0 is complete.
 
 ## In progress
 - Awaiting the product owner's review and merge of `phase-0-foundation` into `main`.
@@ -57,5 +59,4 @@
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
 - Production domain to be supplied before staging (ADR-019).
-- `.claude/settings.local.json` is tracked from the initial commit but is now listed in `.gitignore`. It contains no secrets. Decide whether to untrack it.
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.
