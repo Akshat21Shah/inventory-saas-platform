@@ -120,7 +120,18 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
     capsys.readouterr()
     call_command("e2e_ids")
     ids = json.loads(capsys.readouterr().out)
-    assert set(ids) == {"tenant", "retailer", "product", "price_list", "rule", "import_job"}
+    assert set(ids) == {
+        "tenant",
+        "retailer",
+        "product",
+        "price_list",
+        "rule",
+        "import_job",
+        "receipt",
+        "draft_receipt",
+        "adjustment",
+    }
+    assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("e2e_ids")
