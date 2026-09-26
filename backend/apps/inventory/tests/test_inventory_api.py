@@ -107,6 +107,7 @@ def setup(tenant_a, tenant_b):
     "stock-detail",
     "stock-reorder-level",
     "report-low-stock",
+    "report-low-stock-summary",
     "report-low-stock-export",
     "report-valuation",
     "report-valuation-products",
@@ -128,6 +129,10 @@ def test_tenant_isolation(setup):
     assert ids(client.get(f"{API}/stock/inwards/")) == {a["pending"]["id"]}
     assert len(client.get(f"{API}/stock/adjustments/").json()["results"]) == 1
     assert ids(client.get(f"{API}/reports/stock/low-stock/")) == {str(a["low"].pk)}
+    assert client.get(f"{API}/reports/stock/low-stock/summary/").json() == {
+        "low_stock": 1,
+        "without_reorder_level": 1,  # A-PLAIN only; tenant B's products don't count
+    }
     assert ids(client.get(f"{API}/reports/stock/valuation/products/")) == {
         str(a["low"].pk),
         str(a["plain"].pk),
@@ -328,6 +333,7 @@ def test_stock_filters(setup):
     assert codes(status="LOW") == ["A-LOW"]
     assert codes(status="IN_STOCK") == ["A-PLAIN"]
     assert codes(status="OUT") == []
+    assert codes(no_reorder_level="true") == ["A-PLAIN"]
     assert codes(search="plain") == ["A-PLAIN"]
     assert codes(brand=str(a["brand"].pk)) == ["A-LOW"]
     assert codes(category=str(a["category"].pk)) == ["A-LOW", "A-PLAIN"]

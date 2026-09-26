@@ -264,7 +264,7 @@ function ProductForm({ product }: { product?: ProductDetail }) {
       show_in_shop: v.show_in_shop,
       is_active: v.is_active,
       // Only staff who manage pricing send the cost (ADR-039); others never see it.
-      ...(can("pricing.manage") ? { cost_price: v.cost_price ? clean(v.cost_price) : null } : {}),
+      ...(can("costs.manage") ? { cost_price: v.cost_price ? clean(v.cost_price) : null } : {}),
     };
     try {
       if (creating) {
@@ -337,12 +337,12 @@ function ProductForm({ product }: { product?: ProductDetail }) {
           <FormField label={t("mrp")} error={fieldError("mrp")} hint={t("mrpHint")}>
             <Input inputMode="decimal" className="h-10" {...form.register("mrp")} />
           </FormField>
-          {can("pricing.view") ? (
+          {can("costs.view") ? (
             <FormField label={t("costPrice")} error={fieldError("cost_price")} hint={t("costHint")}>
               <Input
                 inputMode="decimal"
                 className="h-10"
-                readOnly={!can("pricing.manage")}
+                readOnly={!can("costs.manage")}
                 {...form.register("cost_price")}
               />
             </FormField>

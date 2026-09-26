@@ -1,7 +1,9 @@
 """Opening stock import (PLAN task 3.7, ADR-041): product code, quantity and an optional cost per
 unit before GST. Two modes, chosen for every import: "Add to stock" adds the quantity; "Set stock
-to this count" makes the stock equal to it. Each changed row is posted as an adjustment with the
-reason "Opening stock", so it has movements, a number and an audit entry like any adjustment.
+to this count" makes the stock equal to it. The file becomes ONE adjustment with the reason
+"Opening stock" and one line per changed row (ADR-042), with movements, a number and an audit
+entry like any adjustment. If the stock changed since validation so that a row can't be applied,
+nothing from the file is applied.
 """
 
 from collections.abc import Iterable
@@ -24,6 +26,7 @@ from common.tenancy import require_tenant_id
 C = Column
 STOCK_ADD, STOCK_SET = "STOCK_ADD", "STOCK_SET"
 NOTE = "Opening stock import"
+MAX_ROWS = 20_000  # one document per file; the upload size limit is reached first
 
 COLUMNS: tuple[Column, ...] = (
     C("product_code", "Product code", ("code", "item code", "sku"), True, "", "PG-100"),
@@ -59,7 +62,7 @@ class OpeningStockKind:
     key_label = LABEL["product_code"]
     columns = COLUMNS
     modes = (STOCK_ADD, STOCK_SET)
-    restricted = {"cost": "pricing.manage"}
+    restricted = {"cost": "costs.view"}  # importing a cost needs costs.manage (ADR-042)
 
     def reference_lists(self) -> dict[str, list[str]]:
         return {}
@@ -70,7 +73,7 @@ class OpeningStockKind:
             p.code.lower(): p
             for p in with_stock(catalog.products()).annotate(lc=Lower("code")).filter(lc__in=codes)
         }
-        can_cost = by.has_permission_code("pricing.manage")
+        can_cost = by.has_permission_code("costs.manage")
         manual = get_setting("stock.cost_method", require_tenant_id()) == "MANUAL"
         seen: dict[UUID, int] = {}
         plans: list[RowPlan] = []
@@ -151,7 +154,7 @@ class OpeningStockKind:
         if not text:
             return None
         if not can_cost:
-            plan.error(LABEL["cost"], "Only staff who manage pricing can import costs.")
+            plan.error(LABEL["cost"], "Only staff who manage costs can import costs.")
             return None
         try:
             value = parse_decimal(text, places=4)
@@ -164,18 +167,28 @@ class OpeningStockKind:
         return value
 
     def apply(self, row: RowPlan, *, by: User, cache: dict[str, Any]) -> None:
-        d = row.data
+        self.apply_all([row], by=by, source="")
+
+    def apply_all(self, rows: list[RowPlan], *, by: User, source: str) -> None:
+        """The whole file as one adjustment (ADR-042)."""
+        if not rows:
+            return
         adjustments.create_adjustment(
             adjustments.AdjustmentInput(
                 reason_code=AdjustmentReason.OPENING_STOCK,
-                note=NOTE,
+                note=f"{NOTE}: {source}" if source else NOTE,
                 lines=[
                     adjustments.AdjustmentLineInput(
-                        d["product_id"], d["mode"], d["quantity"], unit_cost=d["unit_cost"]
+                        r.data["product_id"],
+                        r.data["mode"],
+                        r.data["quantity"],
+                        unit_cost=r.data["unit_cost"],
                     )
+                    for r in rows
                 ],
             ),
             by=by,
+            max_lines=MAX_ROWS,
         )
 
     def export_rows(self) -> Iterable[dict[str, str]]:

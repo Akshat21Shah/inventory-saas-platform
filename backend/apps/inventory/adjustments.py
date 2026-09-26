@@ -41,7 +41,7 @@ class AdjustmentLineInput:
     mode: str
     quantity: Decimal  # the counted quantity for COUNTED; otherwise how much to add or remove
     # Cost per base unit before GST for stock that comes in (opening stock import); needs
-    # pricing.manage, and runs the cost method (ADR-041).
+    # costs.manage, and runs the cost method (ADR-041, ADR-042).
     unit_cost: Decimal | None = None
 
 
@@ -58,20 +58,20 @@ class AdjustmentResult:
     unchanged: list[str]  # product codes whose count matched the stock (no line written)
 
 
-def _validate(data: AdjustmentInput, by: User) -> dict[UUID, Product]:
+def _validate(data: AdjustmentInput, by: User, max_lines: int) -> dict[UUID, Product]:
     errors: dict[str, list[str]] = {}
     if any(line.unit_cost is not None for line in data.lines) and not by.has_permission_code(
-        "pricing.manage"
+        "costs.manage"
     ):
-        errors["lines"] = ["Only staff who manage pricing can enter costs."]
+        errors["lines"] = ["Only staff who manage costs can enter them."]
     if data.reason_code not in AdjustmentReason.values:
         errors["reason_code"] = ["Choose a reason."]
     if not data.note.strip():
         errors["note"] = ["Write a short note about why the stock changes."]
     if not data.lines:
         errors["lines"] = ["Add at least one product."]
-    elif len(data.lines) > MAX_LINES:
-        errors["lines"] = [f"An adjustment can have up to {MAX_LINES} lines."]
+    elif len(data.lines) > max_lines:
+        errors["lines"] = [f"An adjustment can have up to {max_lines} lines."]
     if errors:
         raise InvalidFields(errors)
     products = {
@@ -111,8 +111,11 @@ def _validate(data: AdjustmentInput, by: User) -> dict[UUID, Product]:
 
 
 @retry_on_deadlock()
-def create_adjustment(data: AdjustmentInput, *, by: User) -> AdjustmentResult:
-    products = _validate(data, by)
+def create_adjustment(
+    data: AdjustmentInput, *, by: User, max_lines: int = MAX_LINES
+) -> AdjustmentResult:
+    """``max_lines`` is higher only for imports, where one file is one document."""
+    products = _validate(data, by, max_lines)
     note = data.note.strip()
     with transaction.atomic():
         warehouse = services.default_warehouse()

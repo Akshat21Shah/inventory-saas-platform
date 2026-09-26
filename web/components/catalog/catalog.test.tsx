@@ -10,7 +10,14 @@ import { CategoriesPage } from "./masters";
 import { EditProductPage, NewProductPage } from "./product-editor";
 import { ProductsPage } from "./products-page";
 
-const permissions = new Set(["products.view", "products.manage", "pricing.view", "pricing.manage"]);
+const permissions = new Set([
+  "products.view",
+  "products.manage",
+  "pricing.view",
+  "pricing.manage",
+  "costs.view",
+  "costs.manage",
+]);
 const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
@@ -18,7 +25,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => 
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  for (const p of ["products.manage", "pricing.view", "pricing.manage"]) permissions.add(p);
+  for (const p of [
+    "products.manage",
+    "pricing.view",
+    "pricing.manage",
+    "costs.view",
+    "costs.manage",
+  ])
+    permissions.add(p);
 });
 
 const row = (code: string, name: string, extra: Partial<ProductList> = {}): ProductList => ({
@@ -261,9 +275,10 @@ describe("Product editor", () => {
     expect(screen.getByLabelText("Cost price")).toHaveValue("6.00");
   });
 
-  it("never shows the cost price field to staff without pricing access", async () => {
-    permissions.delete("pricing.view");
-    permissions.delete("pricing.manage");
+  it("never shows the cost price field to staff without cost access", async () => {
+    // Sales keep pricing.view for selling prices but never see costs (ADR-042).
+    permissions.delete("costs.view");
+    permissions.delete("costs.manage");
     const calls = mockApi({ ...masters, "POST /api/v1/products/": () => [201, { id: "p9" }] });
     renderWithIntl(<NewProductPage />);
     await screen.findByLabelText(/Product code/);

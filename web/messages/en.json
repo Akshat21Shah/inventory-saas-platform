@@ -1314,7 +1314,7 @@
       "create": "Add product",
       "save": "Save changes",
       "costPrice": "Cost price",
-      "costHint": "What one unit costs you. Only staff with pricing access see it; shops never do.",
+      "costHint": "What one unit costs you, before GST. Only staff with cost access see it; shops never do.",
       "cancel": "Cancel"
     },
     "taxRates": {

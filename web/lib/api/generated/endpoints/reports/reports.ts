@@ -21,10 +21,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  LowStockSummary,
   PaginatedLowStockRowList,
   PaginatedValuationRowList,
   ReportsLowStockExportParams,
   ReportsLowStockParams,
+  ReportsLowStockSummaryParams,
   ReportsStockValuationExportParams,
   ReportsStockValuationParams,
   ReportsStockValuationProductsParams,
@@ -268,6 +270,119 @@ export function useReportsLowStockExport<TData = Awaited<ReturnType<typeof repor
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReportsLowStockExportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type reportsLowStockSummaryResponse200 = {
+  data: LowStockSummary
+  status: 200
+}
+
+export type reportsLowStockSummaryResponseSuccess = (reportsLowStockSummaryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type reportsLowStockSummaryResponse = (reportsLowStockSummaryResponseSuccess)
+
+export const getReportsLowStockSummaryUrl = (params?: ReportsLowStockSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/stock/low-stock/summary/?${stringifiedParams}` : `/api/v1/reports/stock/low-stock/summary/`
+}
+
+export const reportsLowStockSummary = async (params?: ReportsLowStockSummaryParams, options?: Parameters<typeof apiFetch>[1]): Promise<reportsLowStockSummaryResponse> => {
+
+  return apiFetch<reportsLowStockSummaryResponse>(getReportsLowStockSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReportsLowStockSummaryQueryKey = (params?: ReportsLowStockSummaryParams,) => {
+    return [
+    `/api/v1/reports/stock/low-stock/summary/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReportsLowStockSummaryQueryOptions = <TData = Awaited<ReturnType<typeof reportsLowStockSummary>>, TError = unknown>(params?: ReportsLowStockSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsLowStockSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportsLowStockSummaryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportsLowStockSummary>>> = ({ signal }) => reportsLowStockSummary(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportsLowStockSummary>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReportsLowStockSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof reportsLowStockSummary>>>
+export type ReportsLowStockSummaryQueryError = unknown
+
+
+export function useReportsLowStockSummary<TData = Awaited<ReturnType<typeof reportsLowStockSummary>>, TError = unknown>(
+ params: undefined |  ReportsLowStockSummaryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsLowStockSummary>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportsLowStockSummary>>,
+          TError,
+          Awaited<ReturnType<typeof reportsLowStockSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportsLowStockSummary<TData = Awaited<ReturnType<typeof reportsLowStockSummary>>, TError = unknown>(
+ params?: ReportsLowStockSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsLowStockSummary>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportsLowStockSummary>>,
+          TError,
+          Awaited<ReturnType<typeof reportsLowStockSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportsLowStockSummary<TData = Awaited<ReturnType<typeof reportsLowStockSummary>>, TError = unknown>(
+ params?: ReportsLowStockSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsLowStockSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useReportsLowStockSummary<TData = Awaited<ReturnType<typeof reportsLowStockSummary>>, TError = unknown>(
+ params?: ReportsLowStockSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsLowStockSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReportsLowStockSummaryQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

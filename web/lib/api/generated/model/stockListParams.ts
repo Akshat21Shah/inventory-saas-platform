@@ -15,6 +15,7 @@ category?: string;
  */
 cursor?: string;
 is_active?: boolean;
+no_reorder_level?: boolean;
 /**
  * Which field to use when ordering the results.
  */

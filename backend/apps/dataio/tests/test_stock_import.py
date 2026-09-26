@@ -55,9 +55,10 @@ def test_add_to_stock_with_costs(tenant_a, owner, run):
     assert (_on_hand(tenant_a, "A"), _on_hand(tenant_a, "B")) == (10, 4)
     assert _cost(tenant_a, "A") == D("7.50") and _cost(tenant_a, "B") == D("5.00")
     with tenant_context(tenant_a.pk):
-        adjustments = StockAdjustment.objects.all()
-        assert {a.reason_code for a in adjustments} == {"OPENING_STOCK"}
-        assert adjustments.count() == 2
+        adjustment = StockAdjustment.objects.get()  # one document for the file (ADR-042)
+        assert adjustment.reason_code == "OPENING_STOCK"
+        assert adjustment.note == "Opening stock import: stock.xlsx"
+        assert adjustment.lines.count() == 2
         move = StockMovement.objects.get(product__code="A")
         assert (move.movement_type, move.unit_cost, move.value) == (
             "ADJUSTMENT_IN",
@@ -117,11 +118,11 @@ def test_duplicates_and_decimal_units(tenant_a, owner, run):
     assert any("also in row 2" in m for m in messages(job))
 
 
-def test_costs_need_pricing_manage(tenant_a, run):
+def test_costs_need_costs_manage(tenant_a, run):
     make_product(tenant_a, "A")
     warehouse = _client(tenant_a, "WAREHOUSE")
     job = upload(warehouse, run, _stock_file(["A", "3", "2"]), "STOCK_ADD", "OPENING_STOCK")
-    assert any("manage pricing" in m for m in messages(job))
+    assert any("manage costs" in m for m in messages(job))
     ok = upload(warehouse, run, _stock_file(["A", "3"]), "STOCK_ADD", "OPENING_STOCK")
     commit(warehouse, run, ok)
     assert _on_hand(tenant_a, "A") == 3
@@ -175,3 +176,32 @@ def test_stock_count_export(tenant_a, tenant_b, owner, run):
     assert _client(tenant_a, "SALES").get(f"{API}/stock/export/").status_code == 403
     warehouse_rows = _rows(_client(tenant_a, "WAREHOUSE").get(f"{API}/stock/export/"))
     assert warehouse_rows[0] == ("Product code", "Quantity", "Product name")
+
+
+def test_rows_that_changed_since_validation_are_reported_and_the_rest_is_one_document(
+    tenant_a, owner, run
+):
+    from uuid import uuid4
+
+    from django.db import transaction
+
+    from apps.inventory import services
+
+    a = make_product(tenant_a, "A")
+    make_product(tenant_a, "B")
+    first = upload(owner, run, _stock_file(["A", "5"], ["B", "5"]), "STOCK_ADD", "OPENING_STOCK")
+    commit(owner, run, first)
+    job = upload(owner, run, _stock_file(["A", "1"], ["B", "9"]), "STOCK_SET", "OPENING_STOCK")
+    assert job["counts"]["update"] == 2
+    # Before the commit, an order reserves 3 of A: setting A to 1 is no longer possible.
+    with tenant_context(tenant_a.pk), transaction.atomic():
+        level = services.lock_levels([a.pk], services.default_warehouse())[a.pk]
+        services.reserve(level, D("3"), services.Ref("ORDER", uuid4()), by=None)
+    job = commit(owner, run, job)
+    assert (job["counts"]["applied"], job["counts"]["failed"]) == (1, 1)
+    assert any("reserved for orders" in m for m in messages(job))
+    assert (_on_hand(tenant_a, "A"), _on_hand(tenant_a, "B")) == (5, 9)
+    with tenant_context(tenant_a.pk):
+        latest = StockAdjustment.objects.order_by("-created_at").first()
+        assert latest is not None and latest.lines.count() == 1
+        assert StockAdjustment.objects.count() == 2

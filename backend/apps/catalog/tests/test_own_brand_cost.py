@@ -97,7 +97,7 @@ def test_brands_can_be_marked_own_brand_and_products_filtered(tenant_a, tenant_b
     )
 
 
-def test_cost_price_is_seen_only_with_pricing_permission_and_audited(tenant_a, owner):
+def test_cost_price_is_seen_only_with_costs_view_and_audited(tenant_a, owner):
     unit = owner.get(f"{API}/units/").json()["results"][0]["id"]
     created = owner.post(
         f"{API}/products/",
@@ -119,13 +119,18 @@ def test_cost_price_is_seen_only_with_pricing_permission_and_audited(tenant_a, o
     change = AuditLog.objects.get(action="catalog.product_price_changed")
     assert change.changes == {"cost_price": ["7.25", "7.50"]}
 
-    # Sales and accounts staff have pricing.view; warehouse staff don't.
-    for role, visible in (("SALES", "7.50"), ("ACCOUNTS", "7.50"), ("WAREHOUSE", None)):
+    # costs.view (ADR-042): accounts staff yes; sales (pricing.view only) and warehouse no.
+    for role, visible in (
+        ("ACCOUNTS", "7.50"),
+        ("MANAGER", "7.50"),
+        ("SALES", None),
+        ("WAREHOUSE", None),
+    ):
         viewer = _client(tenant_a, make_staff_in(tenant_a, role))
         assert viewer.get(f"{API}/products/{product_id}/").json()["cost_price"] == visible, role
 
 
-def test_only_pricing_managers_can_set_cost(tenant_a):
+def test_only_cost_managers_can_set_cost(tenant_a):
     warehouse = make_staff_in(tenant_a, "WAREHOUSE")
     product = _product(tenant_a, "C-2")
     with tenant_context(tenant_a.pk), pytest.raises(InvalidFields) as refused:
@@ -175,7 +180,7 @@ def test_the_cost_column_needs_pricing_permission_in_imports(tenant_a, owner_use
     assert refused.action == "ERROR"
     assert refused.messages() == [
         "Row 2, column “Cost price”: You can't set cost prices. Remove this column or ask "
-        "someone with the pricing permission."
+        "someone who manages costs."
     ]
     assert allowed.action == "NEW" and allowed.data["cost_price"] == D("6.40")
 

@@ -44,6 +44,11 @@ urlpatterns = [
     ),
     path("reports/stock/low-stock/", v.LowStockView.as_view(), name="report-low-stock"),
     path(
+        "reports/stock/low-stock/summary/",
+        v.LowStockSummaryView.as_view(),
+        name="report-low-stock-summary",
+    ),
+    path(
         "reports/stock/low-stock/export/",
         v.LowStockExportView.as_view(),
         name="report-low-stock-export",

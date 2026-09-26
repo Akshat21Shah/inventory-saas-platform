@@ -43,9 +43,10 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 | 036 | Pricing resolution and retailer settings | Accepted |
 | 037 | Managing pricing per shop at scale | Accepted |
 | 038 | Combining discounts | Accepted (amends 036) |
-| 039 | Own brand and cost price | Accepted |
+| 039 | Own brand and cost price | Accepted (amended by 042) |
 | 040 | Responsive design: cards, filter sheet, sticky actions, three checked widths | Accepted |
-| 041 | Inventory: stock movements, cost method, costs after posting, what shops see | Accepted |
+| 041 | Inventory: stock movements, cost method, costs after posting, what shops see | Accepted (amended by 042) |
+| 042 | Cost permissions separate from pricing; one opening-stock document per file | Accepted (amends 039, 041) |
 
 ---
 
@@ -489,7 +490,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 - **Consequences:** `resolve_price`'s single `discount` becomes a list of applied discounts plus a total. The tests cover all three modes, with slabs, flat discounts and special prices.
 
 ## ADR-039 — Own brand and cost price
-- **Status:** Accepted — 2026-09-26 (product owner).
+- **Status:** Accepted — 2026-09-26 (product owner). Cost visibility amended by ADR-042 (`costs.view` / `costs.manage` instead of the pricing permissions).
 - **Decision:**
   1. **Own brand.** A brand can be marked "own brand" (white label). The product list filters by it. Tenant setting `retailers.show_own_brand_badge` (default **off**) shows an "own brand" badge in the shop.
   2. **Cost price.** Products get an optional cost price:
@@ -513,7 +514,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 - **Consequences:** New screens reuse `DataTable` (`cardLayout`, `selection`), `FilterBar` and `FormActions`, and are added to the responsive check. The check runs against the full stack after the seed, so it needs the seeded demo records (`manage.py e2e_ids`).
 
 ## ADR-041 — Inventory: stock movements, cost method, costs after posting, what shops see
-- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 plan). Amends PLAN S8 (valuation) and ADR-039 (cost price).
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 plan). Amends PLAN S8 (valuation) and ADR-039 (cost price). Permissions in items 8 and 9 amended by ADR-042; the opening stock import is one adjustment per file (ADR-042).
 - **Context:** Phase 3 adds stock. Own-brand products and a cost price exist (ADR-039), manufacturing is on the backlog, and warehouse staff (no `pricing.view`) receive goods on phones.
 - **Decision:**
   1. **One default warehouse per tenant**, created with the tenant (existing tenants backfilled). Every stock row, movement, receipt and adjustment carries the warehouse, so more warehouses can come later behind the existing `multi_warehouse` flag without a data change. A stock level is created with every product (existing products backfilled at 0).
@@ -535,4 +536,16 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   13. **Alerts** (`LOW_STOCK`, `OUT_OF_STOCK`, `BACKORDER_DEMAND`) are evaluated in the same transaction as each stock change. A partial unique index allows one open alert per product, warehouse and type, so each fires once until resolved. Opening and resolving write outbox events (`stock.alert_opened`, `stock.alert_resolved`); notifications deliver them in Phase 6.
   14. **Barcodes:** keyboard-wedge (USB/Bluetooth) and typed barcodes work everywhere, including over the LAN. The phone camera uses the browser's `BarcodeDetector` where available and a scanning library loaded only when the camera opens. Browsers allow the camera only on HTTPS or localhost: over `make lan` it needs a Chrome flag on the phone (documented); real camera testing is on staging.
 - **Consequences:** A product's cost price can now change without a manual edit, always with an audit entry naming the receipt. Valuation needs no separate cost history in Phase 3; weighted-average per warehouse, FIFO or batch costing would need a new decision.
+
+## ADR-042 — Cost permissions separate from pricing; one opening-stock document per file
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 backend checkpoint). Amends ADR-039 (who sees and sets the cost price) and ADR-041 items 8–9 and the opening stock import.
+- **Context:** Sales staff need `pricing.view` for selling prices, discounts and price lists, but must never see what goods cost the distributor. ADR-039 and ADR-041 tied cost visibility to `pricing.view`.
+- **Decision:**
+  1. **Two new permission codes.** `costs.view` controls every cost-related field and screen: the product cost price, goods-receipt costs (entered cost, cost per base unit, line and receipt totals), the "Goods receipts awaiting cost" list and count, the unit cost and value of movements, and the valuation report (`reports.stock` + `costs.view`). `costs.manage` (chosen over reusing `pricing.manage`, so changing costs is separate from changing selling prices) is needed to set a cost price, enter costs on a receipt or adjustment, complete pending costs, and import a cost column.
+  2. **Default roles:** `costs.view` for Owner, Manager and Accounts; `costs.manage` for Owner and Manager. Not Sales, not Warehouse. Sales keep `pricing.view`.
+  3. Without `costs.view` every cost field is null in API responses and cost columns are left out of templates and exports. A test walks every GET route of the tenant API as Sales and as Warehouse, with real ids, and fails if any cost figure in the database appears in any response (JSON, Excel or CSV) or any cost-named field is not null. A control test with Accounts proves the figures are findable.
+  4. Receipts can be read with `stock.inward` **or** `costs.view` (so cost staff reach "awaiting cost").
+  5. **Opening stock import: one adjustment per file**, with one line per changed row (up to 20,000). The commit re-checks the file: rows that can no longer be applied (for example, stock reserved since validation) are reported with the reason, and the rest are posted together as that one document.
+  6. The low-stock report shows how many active products have no reorder level, linking to the stock list filtered to them (`no_reorder_level=true`), where the reorder level can be set.
+- **Consequences:** Accounts can see costs and the awaiting-cost list but cannot change costs. The valuation report stays `reports.stock` + `costs.view`, so Accounts (no `reports.stock`) don't see it by default; giving them the report would be a role change, not a code change.
 

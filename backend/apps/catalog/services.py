@@ -321,7 +321,7 @@ PRODUCT_FIELDS = (
     "cost_price",
 )
 PRICE_FIELDS = ("base_price", "mrp", "cost_price")
-COST_PERMISSION = "pricing.manage"  # ADR-039: seen with pricing.view, set with pricing.manage
+COST_PERMISSION = "costs.manage"  # ADR-042: seen with costs.view, set with costs.manage
 
 
 def _clean_tags(tags: Iterable[str]) -> list[str]:
@@ -488,9 +488,7 @@ def _save_product(product: Product) -> None:
 @transaction.atomic
 def _check_cost_permission(data: dict[str, Any], by: User) -> None:
     if "cost_price" in data and not by.has_permission_code(COST_PERMISSION):
-        raise InvalidFields(
-            {"cost_price": ["Only staff with the pricing permission can set the cost price."]}
-        )
+        raise InvalidFields({"cost_price": ["Only staff who manage costs can set the cost price."]})
 
 
 def create_product(

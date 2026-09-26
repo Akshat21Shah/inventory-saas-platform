@@ -1,5 +1,5 @@
-"""Inventory API shapes (PLAN §3.7). Cost fields are null unless the viewer has ``pricing.view``
-(context ``show_cost``, ADR-039/041). Business rules are checked in the services."""
+"""Inventory API shapes (PLAN §3.7). Cost fields are null unless the viewer has ``costs.view``
+(context ``show_cost``, ADR-042). Business rules are checked in the services."""
 
 from collections.abc import Mapping
 from decimal import Decimal
@@ -418,6 +418,13 @@ class LowStockRowSerializer(StockRowSerializer):
     class Meta(StockRowSerializer.Meta):
         fields = (*StockRowSerializer.Meta.fields, "shortfall")
         read_only_fields = fields
+
+
+class LowStockSummarySerializer(serializers.Serializer[Any]):
+    low_stock = serializers.IntegerField()
+    without_reorder_level = serializers.IntegerField(
+        help_text="Active products with no reorder level: they never show as low."
+    )
 
 
 class BucketSerializer(serializers.Serializer[Any]):

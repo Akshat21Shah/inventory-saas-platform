@@ -254,7 +254,7 @@ def _detail(
         raise NotFound()
     context = {
         "warnings": warnings or [],
-        "show_cost": _user(request).has_permission_code("pricing.view"),  # ADR-039
+        "show_cost": _user(request).has_permission_code("costs.view"),  # ADR-042
     }
     return dict(s.ProductDetailSerializer(product, context=context).data)
 

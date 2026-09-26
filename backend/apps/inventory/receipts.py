@@ -24,8 +24,8 @@ from common.errors import DomainError, InvalidFields, NotFound
 from common.sequences import next_value
 
 MAX_LINES = 500
-COST_VIEW = "pricing.view"
-COST_MANAGE = "pricing.manage"
+COST_VIEW = "costs.view"  # ADR-042
+COST_MANAGE = "costs.manage"
 QTY_STEP = Decimal("0.001")
 
 
@@ -75,7 +75,7 @@ def _lines(
         errors["lines"] = [f"A goods receipt can have up to {MAX_LINES} lines."]
     sees_costs = _can_see_costs(by)
     if not sees_costs and any(line.entered_cost is not None for line in data.lines):
-        errors["lines"] = ["Only staff with the pricing permission can enter costs."]
+        errors["lines"] = ["Only staff who can see costs can enter them."]
     if errors:
         raise InvalidFields(errors)
     products = {
@@ -289,7 +289,7 @@ def complete_costs(inward_id: UUID, costs: Mapping[UUID, Decimal], *, by: User) 
     """Add costs (per entered unit, before GST) to cost-pending lines of a posted receipt. Changes
     nothing else. The cost method runs now, with the stock and cost price of this moment."""
     if not by.has_permission_code(COST_MANAGE):
-        raise InvalidFields({"costs": ["Only staff who manage pricing can complete costs."]})
+        raise InvalidFields({"costs": ["Only staff who manage costs can complete them."]})
     with transaction.atomic():
         inward: StockInward | None = (
             StockInward.objects.select_for_update().filter(pk=inward_id).first()

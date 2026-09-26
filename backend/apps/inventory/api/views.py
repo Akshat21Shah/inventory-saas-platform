@@ -33,8 +33,8 @@ from common.permissions import AllOf, AnyOf, HasPermission
 
 VIEW, INWARD, ADJUST = "stock.view", "stock.inward", "stock.adjust"
 REPORTS = "reports.stock"
-COSTS = "pricing.view"
-READ_RECEIPTS = AnyOf((INWARD, COSTS))  # pricing.view users open "Goods receipts awaiting cost"
+COSTS = "costs.view"  # ADR-042
+READ_RECEIPTS = AnyOf((INWARD, COSTS))  # costs.view users open "Goods receipts awaiting cost"
 VALUATION = AllOf((REPORTS, COSTS))
 
 
@@ -148,6 +148,7 @@ STOCK_FILTERS = [
     OpenApiParameter("brand", UUID),
     OpenApiParameter("status", str, enum=["IN_STOCK", "LOW", "OUT", "BACKORDERED"]),
     OpenApiParameter("is_active", bool),
+    OpenApiParameter("no_reorder_level", bool),
 ]
 
 
@@ -170,6 +171,7 @@ class StockListView(Guarded, generics.ListAPIView[Any]):
                 brand_id=_uuid(q.get("brand"), "brand"),
                 status=q.get("status", ""),
                 is_active=None if active in (None, "") else active == "true",
+                no_reorder_level=q.get("no_reorder_level") == "true",
             )
         )
 
@@ -430,7 +432,7 @@ class ReceiptPostView(Guarded):
 
 
 class CompleteCostsView(Guarded):
-    required_permission = "pricing.manage"
+    required_permission = "costs.manage"
 
     @extend_schema(
         operation_id="stock_receipts_complete_costs",
@@ -547,6 +549,25 @@ class LowStockView(Guarded, generics.ListAPIView[Any]):
     @extend_schema(operation_id="reports_low_stock", tags=["reports"], parameters=REPORT_FILTERS)
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().get(request, *args, **kwargs)
+
+
+class LowStockSummaryView(Guarded):
+    required_permission = REPORTS
+
+    @extend_schema(
+        operation_id="reports_low_stock_summary",
+        tags=["reports"],
+        parameters=REPORT_FILTERS,
+        responses=s.LowStockSummarySerializer,
+    )
+    def get(self, request: Request) -> Response:
+        filters = _report_filters(request)
+        return Response(
+            {
+                "low_stock": selectors.low_stock(filters).count(),
+                "without_reorder_level": selectors.products_without_reorder_level(filters),
+            }
+        )
 
 
 class LowStockExportView(Guarded):

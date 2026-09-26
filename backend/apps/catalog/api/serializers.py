@@ -278,7 +278,7 @@ class ProductDetailSerializer(serializers.ModelSerializer[Product]):
 
     @extend_schema_field(money_field(allow_null=True))
     def get_cost_price(self, product: Product) -> str | None:
-        """Null unless the viewer has the pricing permission (ADR-039)."""
+        """Null unless the viewer has ``costs.view`` (ADR-042)."""
         if not self.context.get("show_cost") or product.cost_price is None:
             return None
         return f"{product.cost_price:.2f}"

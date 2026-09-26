@@ -62,6 +62,7 @@ class StockFilters:
     brand_id: UUID | None = None
     status: str = ""  # IN_STOCK, LOW, OUT, BACKORDERED
     is_active: bool | None = None
+    no_reorder_level: bool = False  # reorder level 0: never "low" (the report prompts to set it)
 
 
 def with_stock(qs: QuerySet[Product], warehouse: Warehouse | None = None) -> QuerySet[Product]:
@@ -104,6 +105,8 @@ def stock_list(filters: StockFilters | None = None) -> QuerySet[Product]:
         qs = qs.filter(Q(available__gt=0)).exclude(LOW_Q)
     elif f.status == "BACKORDERED":
         qs = qs.filter(Q(backordered__gt=0))
+    if f.no_reorder_level:
+        qs = qs.filter(reorder_level=0)
     return qs
 
 
@@ -253,6 +256,16 @@ def low_stock(filters: ReportFilters | None = None) -> QuerySet[Product]:
         Q(reorder_level__gt=0, available__lte=F("reorder_level"))
     )
     return qs.annotate(shortfall=F("reorder_level") - F("available"))
+
+
+def products_without_reorder_level(filters: ReportFilters | None = None) -> int:
+    """Active products whose reorder level is 0, so they can never show as low."""
+    f = filters or ReportFilters()
+    return (
+        catalog_products(ProductFilters(category_id=f.category_id, brand_id=f.brand_id))
+        .filter(is_active=True, reorder_level=0)
+        .count()
+    )
 
 
 def category_paths() -> dict[UUID, str]:

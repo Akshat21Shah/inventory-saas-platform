@@ -216,7 +216,26 @@ def commit_job(job_id: str) -> None:
         kind, plans, _notes = _plan(job)
     assert by is not None
     applied, failed = 0, []
+    # Rows that were fine at validation but no longer are (the data changed): report them.
+    known = {e["row"] for e in job.errors}
+    if len(job.errors) < PREVIEW_LIMIT:  # the stored list is complete, so "new" is certain
+        failed = [
+            {"row": p.number, "key": p.key, "messages": p.messages()}
+            for p in plans
+            if p.action == "ERROR" and p.number not in known
+        ]
     cache: dict[str, Any] = {}
+    apply_all = getattr(kind, "apply_all", None)
+    if apply_all is not None:
+        # One document for the whole file (opening stock, ADR-042): all valid rows or none.
+        rows = [p for p in plans if p.action in ("NEW", "UPDATE")]
+        try:
+            with tenant_transaction(tenant_id):
+                apply_all(rows, by=by, source=job.file_name)
+            applied = len(rows)
+        except DomainError as exc:
+            failed += [{"row": p.number, "key": p.key, "messages": [exc.message]} for p in rows]
+        plans = []
     for plan in plans:
         if plan.action not in ("NEW", "UPDATE"):
             continue

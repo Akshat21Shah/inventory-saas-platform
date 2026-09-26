@@ -128,13 +128,13 @@ def test_needs_lines_and_real_products(tenant, owner, make_tenant):
     assert "existing product" in str(exc.value.details)
 
 
-def test_staff_without_pricing_cannot_send_costs(tenant, warehouse_staff):
+def test_staff_without_costs_view_cannot_send_costs(tenant, warehouse_staff):
     product = make_product(tenant)
     with tenant_context(tenant.pk), pytest.raises(InvalidFields) as exc:
         receipts.create_draft(
             _receipt(LineInput(product.pk, D("1"), entered_cost=D("3"))), by=warehouse_staff
         )
-    assert "pricing permission" in str(exc.value.details)
+    assert "can see costs" in str(exc.value.details)
 
 
 def test_warehouse_edit_keeps_costs_it_cannot_see(tenant, owner, warehouse_staff):
@@ -246,10 +246,10 @@ def test_complete_costs_rules(tenant, warehouse_staff, owner, make_tenant):
             _receipt(LineInput(product.pk, D("2"))), by=warehouse_staff
         )
         line = posted.lines.get()
-        manager_without_pricing = make_staff_in(tenant, "ACCOUNTS")  # pricing.view only
+        manager_without_pricing = make_staff_in(tenant, "ACCOUNTS")  # costs.view, not manage
         with pytest.raises(InvalidFields) as exc:
             receipts.complete_costs(posted.pk, {line.pk: D("1")}, by=manager_without_pricing)
-        assert "manage pricing" in str(exc.value.details)
+        assert "manage costs" in str(exc.value.details)
         for costs in ({}, {line.pk: D("-1")}, {posted.pk: D("1")}):
             with pytest.raises(InvalidFields), transaction.atomic():
                 receipts.complete_costs(posted.pk, costs, by=owner)

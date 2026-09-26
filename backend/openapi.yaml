@@ -3060,6 +3060,31 @@ paths:
                 type: string
                 format: binary
           description: ''
+  /api/v1/reports/stock/low-stock/summary/:
+    get:
+      operationId: reports_low_stock_summary
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LowStockSummary'
+          description: ''
   /api/v1/reports/stock/valuation/:
     get:
       operationId: reports_stock_valuation
@@ -4495,6 +4520,10 @@ paths:
           type: string
       - in: query
         name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: no_reorder_level
         schema:
           type: boolean
       - name: ordering
@@ -7584,6 +7613,18 @@ components:
       - status
       - thumbnail_url
       - unit
+    LowStockSummary:
+      type: object
+      properties:
+        low_stock:
+          type: integer
+        without_reorder_level:
+          type: integer
+          description: 'Active products with no reorder level: they never show as
+            low.'
+      required:
+      - low_stock
+      - without_reorder_level
     Me:
       type: object
       properties:

@@ -38,6 +38,8 @@ PLAN_MATRIX: dict[str, set[str]] = {
     "products.manage": {OWN, MGR},
     "pricing.view": {OWN, MGR, SAL, ACC},
     "pricing.manage": {OWN, MGR},
+    "costs.view": {OWN, MGR, ACC},  # ADR-042
+    "costs.manage": {OWN, MGR},
     "retailers.view": {OWN, MGR, SAL, ACC},
     "retailers.manage": {OWN, MGR, SAL},
     "credit.manage": {OWN, MGR, ACC},
