@@ -13,6 +13,7 @@ Rules (PLAN §5.1, level L3):
 from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from django.db import connection, transaction
@@ -26,7 +27,7 @@ from apps.inventory.defaults import ensure_default_warehouse
 from apps.inventory.models import MovementType, StockLevel, StockMovement, Warehouse
 from apps.platform.selectors import get_setting
 from common.error_codes import ErrorCode
-from common.errors import DomainError
+from common.errors import DomainError, InvalidFields, NotFound
 from common.ids import uuid7
 from common.tenancy import require_tenant_id
 
@@ -261,3 +262,41 @@ def apply_cost_method(
             metadata={"updated_by": source, "cost_method": method},
         )
     return new_cost
+
+
+# --- Warehouse details (PLAN §3.7) ---------------------------------------------------------------
+
+WAREHOUSE_FIELDS = ("name", "address_line1", "address_line2", "city", "pincode", "state_id")
+
+
+@transaction.atomic
+def update_warehouse(warehouse_id: UUID, changes: dict[str, Any], *, by: User) -> Warehouse:
+    """Rename a warehouse or change its address (``settings.manage``, audited)."""
+    from apps.platform.models import State
+
+    warehouse: Warehouse | None = (
+        Warehouse.objects.select_for_update().filter(pk=warehouse_id).first()
+    )
+    if warehouse is None:
+        raise NotFound()
+    before = audit.snapshot(warehouse, WAREHOUSE_FIELDS)
+    for key in WAREHOUSE_FIELDS:
+        if key in changes:
+            value = changes[key]
+            setattr(warehouse, key, value.strip() if isinstance(value, str) else value)
+    errors: dict[str, list[str]] = {}
+    if not warehouse.name:
+        errors["name"] = ["Enter a name."]
+    if warehouse.pincode and not (warehouse.pincode.isdigit() and len(warehouse.pincode) == 6):
+        errors["pincode"] = ["Enter a 6-digit PIN code."]
+    if warehouse.state_id and not State.objects.filter(pk=warehouse.state_id).exists():
+        errors["state"] = ["Choose a state."]
+    if errors:
+        raise InvalidFields(errors)
+    diff = audit.diff(before, audit.snapshot(warehouse, WAREHOUSE_FIELDS))
+    if diff:
+        warehouse.save()
+        audit.record(
+            "stock.warehouse_updated", target=warehouse, target_repr=warehouse.name, changes=diff
+        )
+    return warehouse

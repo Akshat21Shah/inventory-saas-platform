@@ -11,17 +11,40 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 
 
-def user_has_permission(user: Any, code: str) -> bool:
+class AnyOf(tuple[str, ...]):
+    """A requirement met by any one of these codes, e.g. ``AnyOf(("products.manage",
+    "stock.adjust"))``."""
+
+
+class AllOf(tuple[str, ...]):
+    """A requirement that needs every one of these codes."""
+
+
+Requirement = str | AnyOf | AllOf
+
+
+def codes_of(requirement: Requirement) -> tuple[str, ...]:
+    return (requirement,) if isinstance(requirement, str) else tuple(requirement)
+
+
+def user_has_permission(user: Any, code: Requirement) -> bool:
     checker = getattr(user, "has_permission_code", None)
-    return bool(user and user.is_authenticated and checker is not None and checker(code))
+    if not (user and user.is_authenticated and checker is not None):
+        return False
+    if isinstance(code, AnyOf):
+        return any(checker(c) for c in code)
+    if isinstance(code, AllOf):
+        return all(checker(c) for c in code)
+    return bool(checker(code))
 
 
 class HasPermission(BasePermission):
-    """Checks ``view.required_permission`` (str) or ``view.required_permissions[method]``."""
+    """Checks ``view.required_permission`` or ``view.required_permissions[method]``: a code, or
+    ``AnyOf`` / ``AllOf`` several codes."""
 
     def has_permission(self, request: Request, view: APIView) -> bool:
-        per_method: dict[str, str] | None = getattr(view, "required_permissions", None)
-        code: str | None = (per_method or {}).get(request.method or "", None) or getattr(
+        per_method: dict[str, Requirement] | None = getattr(view, "required_permissions", None)
+        code: Requirement | None = (per_method or {}).get(request.method or "", None) or getattr(
             view, "required_permission", None
         )
         if not code:

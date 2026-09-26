@@ -177,7 +177,14 @@
      - One adjustment covers up to 500 products, each at most once. It has a reason code and a required note. Lines add, remove or record a counted quantity; the server works out the difference, and a count that matches is reported as unchanged with no line written. Whole numbers where the unit requires them.
      - Numbered `ADJ-<year>-00001`, gap-free. The DAMAGE reason writes DAMAGE movements; other removals write ADJUSTMENT_OUT. Removing reserved stock fails the whole adjustment with `STOCK_RESERVED`, naming the product and how much can be removed. Audited as `stock.adjusted` with each line's before and change.
      - Reorder level: `set_reorder_level` (audited as `stock.reorder_level_changed`) re-checks alerts. A product edit that changes the reorder level does too; it locks the stock level before the product, the same order receipts use.
-  7. Stock APIs and reports (low stock, valuation) with isolation and role tests
+  7. Stock APIs and reports (low stock, valuation) with isolation and role tests — **done** (`apps/inventory/api`, `selectors.py`):
+     - Routes: `warehouses/` (+ PATCH, `settings.manage`), `stock/` (search, category, brand, status IN_STOCK/LOW/OUT/BACKORDERED), `stock/summary/` (open alerts by type; receipts awaiting cost only for `pricing.view`), `stock/lookup/?code=` (barcode or code, for scanning), `stock/{product}/` (+ `reorder-level/`: `products.manage` or `stock.adjust`), `stock/movements/`, `stock/alerts/`, `stock/inwards/` (+ detail, `post/`, `complete-costs/`), `stock/adjustments/` (+ detail), `reports/stock/low-stock/` and `reports/stock/valuation/` (+ `products/`, both with Excel export).
+     - POSTs that create receipts or adjustments, post a receipt or complete costs need an Idempotency-Key; a repeat returns the original result.
+     - Receipts can be read with `stock.inward` or `pricing.view`, so pricing users can open "Goods receipts awaiting cost". Valuation needs `reports.stock` and `pricing.view`.
+     - `HasPermission` accepts `AnyOf(...)` / `AllOf(...)`, and the role matrix and permission-code tests understand them.
+     - Cost fields are null without `pricing.view`: receipt costs, movement unit cost and value, and the cost price on the stock page.
+     - Valuation rounds each product's value to the paisa before summing, so the page, the totals and the export agree. Products without a cost price are marked, left out of every total and counted. Category (full path) and brand totals are included in the export.
+     - Tests: one isolation test covers all 20 routes (lists, detail by id, writes, exports), plus hidden costs, awaiting cost, idempotent posting, pack entry and lookup, adjustment errors, reorder-level roles, filters, valuation and warehouse rename. API client regenerated.
   8. Shop availability labels, `stock.show_out_of_stock_in_shop`, opening stock import
   9. Seed demo stock, API client — **backend checkpoint**
   10–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges

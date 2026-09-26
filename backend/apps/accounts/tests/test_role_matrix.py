@@ -16,6 +16,7 @@ from rest_framework.test import APIClient
 from apps.accounts.permissions import SYSTEM_ROLES
 from apps.accounts.tests.factories import make_staff_in
 from apps.accounts.tokens import issue_tokens
+from common.permissions import AllOf, AnyOf
 
 pytestmark = pytest.mark.django_db
 
@@ -59,6 +60,14 @@ def _guarded_endpoints():
 GUARDED = _guarded_endpoints()
 
 
+def _allowed(code, permissions):
+    if isinstance(code, AnyOf):
+        return any(c in permissions for c in code)
+    if isinstance(code, AllOf):
+        return all(c in permissions for c in code)
+    return code in permissions
+
+
 def test_the_walk_found_the_guarded_endpoints():
     paths = {p for p, _, _ in GUARDED}
     assert "/api/v1/staff/" in paths
@@ -82,6 +91,6 @@ def test_each_role_is_allowed_exactly_what_its_permissions_say(tenant_a, role):
             HTTP_X_FORWARDED_HOST="alpha.localhost",
         )
         denied = response.status_code == 403
-        if denied == (code in role.permissions):
+        if denied == _allowed(code, role.permissions):
             wrong.append(f"{method} {path} ({code}) -> {response.status_code}")
     assert wrong == []

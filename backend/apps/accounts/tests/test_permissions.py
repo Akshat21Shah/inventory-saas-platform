@@ -21,6 +21,7 @@ from apps.accounts.tests.factories import (
     make_super_admin,
     system_role,
 )
+from common.permissions import codes_of
 from common.tenancy import tenant_context
 
 pytestmark = pytest.mark.django_db
@@ -235,7 +236,7 @@ def test_every_declared_endpoint_permission_is_a_registered_code():
         if getattr(cls, "required_permission", None):
             declared.append(cls.required_permission)
         declared.extend((getattr(cls, "required_permissions", None) or {}).values())
-        for code in declared:
+        for code in (c for requirement in declared for c in codes_of(requirement)):
             assert code in ALL_PERMISSIONS, f"{route}: unknown permission code {code!r}"
 
 
