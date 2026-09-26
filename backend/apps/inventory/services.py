@@ -185,9 +185,17 @@ def receive(
 
 
 def add(
-    level: StockLevel, quantity: Decimal, ref: Ref, *, by: User | None, reason: str = ""
+    level: StockLevel,
+    quantity: Decimal,
+    ref: Ref,
+    *,
+    by: User | None,
+    reason: str = "",
+    unit_cost: Decimal | None = None,
 ) -> StockMovement:
-    return _apply_movement(level, MovementType.ADJUSTMENT_IN, quantity, ref, by=by, reason=reason)
+    return _apply_movement(
+        level, MovementType.ADJUSTMENT_IN, quantity, ref, by=by, reason=reason, unit_cost=unit_cost
+    )
 
 
 def remove(

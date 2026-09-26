@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
+from apps.inventory.availability import ShopStockRules
 from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import own_retailer
@@ -27,7 +28,8 @@ from common.permissions import IsRetailer
 
 def _context(retailer: Retailer) -> dict[str, Any]:
     return {
-        "own_brand_badge": bool(get_setting("retailers.show_own_brand_badge", retailer.tenant_id))
+        "own_brand_badge": bool(get_setting("retailers.show_own_brand_badge", retailer.tenant_id)),
+        "stock": ShopStockRules.for_tenant(retailer.tenant_id),
     }
 
 

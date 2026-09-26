@@ -181,3 +181,10 @@ class PriceListItemExportView(ExportView):
 class DiscountRuleExportView(ExportView):
     kind_code = "DISCOUNT_RULES"
     view_permission = "pricing.view"
+
+
+class StockCountExportView(ExportView):
+    """Today's stock in the opening-stock columns: count, edit and import with "Set stock"."""
+
+    kind_code = "OPENING_STOCK"
+    view_permission = "stock.adjust"

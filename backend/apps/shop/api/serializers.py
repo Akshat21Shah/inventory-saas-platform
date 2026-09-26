@@ -9,6 +9,7 @@ from rest_framework import serializers
 from apps.catalog.api.serializers import ImageUrlsSerializer, RefSerializer, first_ready_thumb
 from apps.catalog.images import variant_urls
 from apps.catalog.models import ProductImage
+from apps.inventory.availability import LABELS, availability
 from apps.pricing.api.serializers import money, qty
 
 
@@ -31,6 +32,13 @@ class ShopUnitSerializer(serializers.Serializer[Any]):
     name = serializers.CharField()
 
 
+class ShopAvailabilitySerializer(serializers.Serializer[Any]):
+    """Plain labels only; the quantity only when the distributor shows exact stock."""
+
+    status = serializers.ChoiceField(choices=LABELS)
+    quantity = qty(allow_null=True)
+
+
 class ShopProductSerializer(serializers.Serializer[Any]):
     """One product row with its price; input is ``{"product": Product, "price": PriceResult}``."""
 
@@ -48,6 +56,13 @@ class ShopProductSerializer(serializers.Serializer[Any]):
     thumbnail_url = serializers.SerializerMethodField()
     own_brand = serializers.SerializerMethodField()
     price = ShopPriceSerializer()
+    availability = serializers.SerializerMethodField()
+
+    @extend_schema_field(ShopAvailabilitySerializer())
+    def get_availability(self, row: dict[str, Any]) -> dict[str, Any]:
+        product = row["product"]
+        found = availability(product.stock_available, product.reorder_level, self.context["stock"])
+        return dict(ShopAvailabilitySerializer(found).data)
 
     @extend_schema_field(serializers.BooleanField())
     def get_own_brand(self, row: dict[str, Any]) -> bool:

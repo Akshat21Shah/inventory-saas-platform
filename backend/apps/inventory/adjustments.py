@@ -40,6 +40,9 @@ class AdjustmentLineInput:
     product_id: UUID
     mode: str
     quantity: Decimal  # the counted quantity for COUNTED; otherwise how much to add or remove
+    # Cost per base unit before GST for stock that comes in (opening stock import); needs
+    # pricing.manage, and runs the cost method (ADR-041).
+    unit_cost: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -55,8 +58,12 @@ class AdjustmentResult:
     unchanged: list[str]  # product codes whose count matched the stock (no line written)
 
 
-def _validate(data: AdjustmentInput) -> dict[UUID, Product]:
+def _validate(data: AdjustmentInput, by: User) -> dict[UUID, Product]:
     errors: dict[str, list[str]] = {}
+    if any(line.unit_cost is not None for line in data.lines) and not by.has_permission_code(
+        "pricing.manage"
+    ):
+        errors["lines"] = ["Only staff who manage pricing can enter costs."]
     if data.reason_code not in AdjustmentReason.values:
         errors["reason_code"] = ["Choose a reason."]
     if not data.note.strip():
@@ -93,6 +100,8 @@ def _validate(data: AdjustmentInput) -> dict[UUID, Product]:
             problem = "Enter a quantity with at most 3 decimals."
         elif not product.unit.allows_decimal and line.quantity % 1:
             problem = f"{product.unit.code} is counted in whole numbers."
+        elif line.unit_cost is not None and line.unit_cost < 0:
+            problem = "Enter a cost of 0 or more."
         if problem:
             errors[f"lines.{index}"] = [problem]
         seen.add(line.product_id)
@@ -103,7 +112,7 @@ def _validate(data: AdjustmentInput) -> dict[UUID, Product]:
 
 @retry_on_deadlock()
 def create_adjustment(data: AdjustmentInput, *, by: User) -> AdjustmentResult:
-    products = _validate(data)
+    products = _validate(data, by)
     note = data.note.strip()
     with transaction.atomic():
         warehouse = services.default_warehouse()
@@ -141,7 +150,15 @@ def create_adjustment(data: AdjustmentInput, *, by: User) -> AdjustmentResult:
                 continue
             try:
                 if change > 0:
-                    services.add(level, change, ref, by=by, reason=note)
+                    services.add(level, change, ref, by=by, reason=note, unit_cost=line.unit_cost)
+                    if line.unit_cost is not None:
+                        services.apply_cost_method(
+                            product.pk,
+                            on_hand_before=before,
+                            received=change,
+                            unit_cost=line.unit_cost,
+                            source=number,
+                        )
                 else:
                     services.remove(level, -change, ref, by=by, reason=note, movement_type=out_type)
             except (StockReserved, InsufficientStock) as exc:

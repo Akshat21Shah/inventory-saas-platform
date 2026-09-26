@@ -1,6 +1,7 @@
 """Staff authentication API (spec 5.2, ADR-020, ADR-025, ADR-030)."""
 
 import threading
+import types
 from datetime import timedelta
 
 import pytest
@@ -226,8 +227,11 @@ def test_per_email_rate_limit(tenant_a):
     assert int(limited["Retry-After"]) >= 1
 
 
-def test_per_ip_limit_is_generous_for_shared_mobile_ips(tenant_a):
+def test_per_ip_limit_is_generous_for_shared_mobile_ips(tenant_a, monkeypatch):
     """30 attempts per minute from one IP (CGNAT), across different accounts."""
+    # Fixed windows: keep all 31 attempts in one minute even if the run crosses a boundary.
+    frozen = types.SimpleNamespace(time=lambda: 1_800_000_010.0)
+    monkeypatch.setattr("common.ratelimit.time", frozen)  # only the limiter's clock
     for i in range(30):
         response = _login(
             APIClient(), f"user{i}@example.com", host=_host(tenant_a), ip="203.0.113.5"

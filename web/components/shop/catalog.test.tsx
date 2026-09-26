@@ -48,6 +48,7 @@ const product = (id: string, name: string, extra: Partial<ShopProduct> = {}): Sh
   order_multiple: "1.000",
   thumbnail_url: null,
   own_brand: false,
+  availability: { status: "IN_STOCK", quantity: null },
   price: {
     qty: "1.000",
     unit_price: "10.00",

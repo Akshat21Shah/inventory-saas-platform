@@ -74,6 +74,7 @@ const PERMISSION: Record<ImportKindEnum, string> = {
   SPECIAL_PRICES: "pricing.manage",
   PRICE_LIST_ITEMS: "pricing.manage",
   DISCOUNT_RULES: "pricing.manage",
+  OPENING_STOCK: "stock.adjust",
 };
 const LIST_PAGE: Record<ImportKindEnum, string> = {
   PRODUCTS: "/manage/products",
@@ -81,6 +82,7 @@ const LIST_PAGE: Record<ImportKindEnum, string> = {
   SPECIAL_PRICES: "/manage/pricing/special-prices",
   PRICE_LIST_ITEMS: "/manage/pricing/price-lists",
   DISCOUNT_RULES: "/manage/pricing/discounts",
+  OPENING_STOCK: "/manage/stock",
 };
 const BUSY = new Set(["VALIDATING", "COMMITTING"]);
 

@@ -275,7 +275,17 @@ def test_mode_must_be_chosen(owner, run):
     response = owner.post(
         f"{API}/imports/", {"kind": "PRODUCTS", "file": xlsx([HEADER])}, format="multipart"
     )
-    assert "Add new only" in response.json()["error"]["details"]["fields"]["mode"][0]
+    assert response.json()["error"]["details"]["fields"]["mode"] == [
+        "Choose how to import the file."
+    ]
+    wrong = owner.post(
+        f"{API}/imports/",
+        {"kind": "PRODUCTS", "mode": "STOCK_SET", "file": xlsx([HEADER])},
+        format="multipart",
+    )
+    assert wrong.json()["error"]["details"]["fields"]["mode"] == [
+        "Choose “Add new only” or “Add new and update existing”."
+    ]
 
 
 # --- Updating existing products ----------------------------------------------------------------

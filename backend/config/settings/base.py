@@ -199,6 +199,7 @@ SPECTACULAR_SETTINGS = {
         "StockAlertTypeEnum": "apps.inventory.models.StockAlert.Type",
         "AdjustmentModeEnum": "apps.inventory.models.StockAdjustmentLine.Mode",
         "StockStatusEnum": "apps.inventory.selectors.STOCK_STATUS_CHOICES",
+        "ShopAvailabilityLabelEnum": "apps.inventory.availability.LABELS",
         "ImportStatusEnum": "apps.dataio.models.ImportJob.Status",
         "ImportKindEnum": "apps.dataio.models.ImportJob.Kind",
         "AddressKindEnum": "apps.retailers.models.RetailerAddress.Kind",

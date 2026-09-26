@@ -185,7 +185,16 @@
      - Cost fields are null without `pricing.view`: receipt costs, movement unit cost and value, and the cost price on the stock page.
      - Valuation rounds each product's value to the paisa before summing, so the page, the totals and the export agree. Products without a cost price are marked, left out of every total and counted. Category (full path) and brand totals are included in the export.
      - Tests: one isolation test covers all 20 routes (lists, detail by id, writes, exports), plus hidden costs, awaiting cost, idempotent posting, pack entry and lookup, adjustment errors, reorder-level roles, filters, valuation and warehouse rename. API client regenerated.
-  8. Shop availability labels, `stock.show_out_of_stock_in_shop`, opening stock import
+  8. Shop availability labels, `stock.show_out_of_stock_in_shop`, opening stock import — **done**:
+     - `apps/inventory/availability.py`: shop products carry `availability {status, quantity}`. The status is IN_STOCK, LOW_STOCK (only with `stock.show_low_stock_label`), BACKORDER (nothing available, backorders on) or OUT_OF_STOCK. The quantity is shown only with `stock.show_exact_quantity`. Available means on hand minus reserved.
+     - With backorders off and `stock.show_out_of_stock_in_shop` off, products with nothing available are hidden from lists, detail, category counts and brands.
+     - Opening stock import (`OPENING_STOCK`, needs `stock.adjust`):
+       - Columns: product code, quantity, optional "Cost per unit (before GST)" (restricted to `pricing.manage`, refused as an error without it).
+       - Modes of its own, chosen every time: "Add to stock" or "Set stock to this count". Import kinds now declare their modes.
+       - Each changed row is posted as an "Opening stock" adjustment. A cost runs the cost method, or is noted as unused when the stock goes down or the method is "Never". Stock can't be set below what is reserved.
+     - `GET stock/export/` gives today's stock as a count sheet in the same columns.
+     - The import wizard doesn't offer the new kind yet; that comes in frontend commit 12.
+     - Test fix: the per-IP sign-in limit test pins the limiter's clock, because the fixed one-minute window could split its 31 attempts (a flaky CI failure).
   9. Seed demo stock, API client — **backend checkpoint**
   10–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
   14. E2E acceptance, responsive check, docs — **final review**

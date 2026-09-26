@@ -2,9 +2,10 @@
 
 A product is shown only if it is active, not deleted, "Show in shop" is on, a GST rate is in
 effect today, and ``resolve_price`` gives this shop a price above zero at the product's minimum
-order quantity. The first four and "unit price above zero" are filtered in SQL, so counts and
-pages stay cheap; the rare product that a 100% discount brings to zero is dropped from the page
-after pricing.
+order quantity. With backorders off and ⚙ ``stock.show_out_of_stock_in_shop`` off, products with
+nothing available are hidden too. The first four and "unit price above zero" are filtered in SQL,
+so counts and pages stay cheap; the rare product that a 100% discount brings to zero is dropped
+from the page after pricing.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from django.db.models.functions import Coalesce
 from apps.catalog import selectors as catalog
 from apps.catalog.models import Brand, Product, ProductImage
 from apps.catalog.search import ranked_queryset
+from apps.inventory import availability
 from apps.pricing.models import PriceListItem, RetailerPrice
 from apps.pricing.resolve import PriceResult, resolve_prices, slab_quantities
 from apps.retailers.models import Retailer
@@ -57,7 +59,9 @@ def visible_products(retailer: Retailer, on: date | None = None) -> QuerySet[Pro
         .annotate(shop_unit_price=Coalesce(*sources, F("base_price")))
         .filter(shop_unit_price__gt=0)
     )
-    return qs
+    # Stock available to the shop; products that can't be ordered are hidden when the
+    # distributor chooses so (ADR-041 item 12).
+    return availability.for_shop(qs, availability.ShopStockRules.for_tenant(retailer.tenant_id))
 
 
 @dataclass(frozen=True)

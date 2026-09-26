@@ -4720,6 +4720,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedAlertList'
           description: ''
+  /api/v1/stock/export/:
+    get:
+      operationId: stock_count_export
+      description: 'Today''s stock in the opening-stock columns: count, edit and import
+        with "Set stock".'
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/stock/inwards/:
     get:
       operationId: stock_receipts_list
@@ -7131,6 +7161,7 @@ components:
       - SPECIAL_PRICES
       - PRICE_LIST_ITEMS
       - DISCOUNT_RULES
+      - OPENING_STOCK
       type: string
       description: |-
         * `PRODUCTS` - Products
@@ -7138,14 +7169,19 @@ components:
         * `SPECIAL_PRICES` - Special prices
         * `PRICE_LIST_ITEMS` - Price-list prices
         * `DISCOUNT_RULES` - Discount rules
+        * `OPENING_STOCK` - Opening stock
     ImportModeEnum:
       enum:
       - ADD_ONLY
       - ADD_OR_UPDATE
+      - STOCK_ADD
+      - STOCK_SET
       type: string
       description: |-
         * `ADD_ONLY` - Add new only
         * `ADD_OR_UPDATE` - Add new and update existing
+        * `STOCK_ADD` - Add to stock
+        * `STOCK_SET` - Set stock to this count
     ImportStatusEnum:
       enum:
       - VALIDATING
@@ -11045,6 +11081,33 @@ components:
       - status
       - type
       - value
+    ShopAvailability:
+      type: object
+      description: Plain labels only; the quantity only when the distributor shows
+        exact stock.
+      properties:
+        status:
+          $ref: '#/components/schemas/ShopAvailabilityLabelEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+      required:
+      - quantity
+      - status
+    ShopAvailabilityLabelEnum:
+      enum:
+      - IN_STOCK
+      - LOW_STOCK
+      - BACKORDER
+      - OUT_OF_STOCK
+      type: string
+      description: |-
+        * `IN_STOCK` - IN_STOCK
+        * `LOW_STOCK` - LOW_STOCK
+        * `BACKORDER` - BACKORDER
+        * `OUT_OF_STOCK` - OUT_OF_STOCK
     ShopBrand:
       type: object
       properties:
@@ -11197,7 +11260,12 @@ components:
           readOnly: true
         price:
           $ref: '#/components/schemas/ShopPrice'
+        availability:
+          allOf:
+          - $ref: '#/components/schemas/ShopAvailability'
+          readOnly: true
       required:
+      - availability
       - brand
       - category
       - code
@@ -11266,6 +11334,10 @@ components:
           readOnly: true
         price:
           $ref: '#/components/schemas/ShopPrice'
+        availability:
+          allOf:
+          - $ref: '#/components/schemas/ShopAvailability'
+          readOnly: true
         description:
           type: string
         images:
@@ -11278,6 +11350,7 @@ components:
             $ref: '#/components/schemas/SlabHint'
           description: Lower prices for larger quantities, e.g. 24 or more.
       required:
+      - availability
       - brand
       - category
       - code

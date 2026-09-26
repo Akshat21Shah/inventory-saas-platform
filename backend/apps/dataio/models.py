@@ -13,10 +13,14 @@ class ImportJob(TenantScopedModel):
         SPECIAL_PRICES = "SPECIAL_PRICES", "Special prices"
         PRICE_LIST_ITEMS = "PRICE_LIST_ITEMS", "Price-list prices"
         DISCOUNT_RULES = "DISCOUNT_RULES", "Discount rules"
+        OPENING_STOCK = "OPENING_STOCK", "Opening stock"
 
     class Mode(models.TextChoices):
         ADD_ONLY = "ADD_ONLY", "Add new only"
         ADD_OR_UPDATE = "ADD_OR_UPDATE", "Add new and update existing"
+        # Opening stock (ADR-041): add the quantity, or make the stock equal to it.
+        STOCK_ADD = "STOCK_ADD", "Add to stock"
+        STOCK_SET = "STOCK_SET", "Set stock to this count"
 
     class Status(models.TextChoices):
         VALIDATING = "VALIDATING", "Checking the file"

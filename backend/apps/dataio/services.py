@@ -20,6 +20,7 @@ from apps.dataio.kinds.base import Column, Kind, RowPlan
 from apps.dataio.kinds.pricing import DiscountRulesKind, PriceListItemsKind, SpecialPricesKind
 from apps.dataio.kinds.products import ProductsKind
 from apps.dataio.kinds.retailers import RetailersKind
+from apps.dataio.kinds.stock import OpeningStockKind
 from apps.dataio.models import ImportJob
 from apps.dataio.parsing import FileProblem, read_sheet, synonyms_for
 from common.error_codes import ErrorCode
@@ -36,7 +37,16 @@ KINDS: dict[str, Kind] = {
     "SPECIAL_PRICES": SpecialPricesKind(),
     "PRICE_LIST_ITEMS": PriceListItemsKind(),
     "DISCOUNT_RULES": DiscountRulesKind(),
+    "OPENING_STOCK": OpeningStockKind(),
 }
+RECORD_MODES = ("ADD_ONLY", "ADD_OR_UPDATE")
+
+
+def modes_for(kind: Kind) -> tuple[str, ...]:
+    """The import modes a kind offers; records (products, shops, prices) use the two defaults."""
+    return tuple(getattr(kind, "modes", RECORD_MODES))
+
+
 PREVIEW_LIMIT = 1000  # rows of errors / changes kept on the job (the report has all of them)
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -63,9 +73,10 @@ def register(kind: Kind) -> None:
 
 @transaction.atomic
 def create_job(kind_code: str, mode: str, upload: "UploadedFile[bytes]", *, by: User) -> ImportJob:
-    if mode not in ImportJob.Mode.values:
-        raise InvalidFields({"mode": ["Choose “Add new only” or “Add new and update existing”."]})
-    kind_for(kind_code)
+    modes = modes_for(kind_for(kind_code))
+    if mode not in modes:
+        labels = " or ".join(f"“{ImportJob.Mode(m).label}”" for m in modes)
+        raise InvalidFields({"mode": [f"Choose {labels}."]})
     data = upload.read(10 * 1024 * 1024 + 1)
     name = (upload.name or "import").split("/")[-1][:200]
     job = ImportJob(kind=kind_code, mode=mode, file_name=name, created_by=by)
@@ -90,7 +101,7 @@ def _plan(job: ImportJob) -> tuple[Kind, list[RowPlan], list[str]]:
     missing = [
         c.label
         for c in required
-        if c.name not in sheet.columns and (job.mode == "ADD_ONLY" or c.name == _key(kind))
+        if c.name not in sheet.columns and (job.mode != "ADD_OR_UPDATE" or c.name == _key(kind))
     ]
     if missing:
         raise FileProblem(
