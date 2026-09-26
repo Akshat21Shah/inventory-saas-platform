@@ -1,6 +1,6 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.1. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.2. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
 - **1.1 (2026-09-24)** — Product-owner decisions applied:
@@ -12,6 +12,7 @@ Version 1.1. This is the source of truth for what to build. Working rules are in
   - configurability principle and settings registry (§13);
   - payments (advances, cheques);
   - backorder FIFO policy.
+- **1.2 (2026-09-26)** — Phase 3 plan decisions (ADR-041): cost method setting, receiving without cost ("complete costs" later), valuation at cost price in Phase 3, multi-line adjustments with counted quantities, out-of-stock products in the shop setting, movement types open for manufacturing.
 
 ---
 
@@ -203,12 +204,16 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
 ### 5.7 Inventory
 - Warehouses: one default warehouse per tenant; multi-warehouse behind a feature flag (later phase).
 - StockLevel per (product, warehouse): `quantity_on_hand`, `quantity_reserved`; available = on_hand − reserved. DB constraints ≥ 0.
-- StockMovement (append-only): type (`INWARD`, `SALE`, `RETURN`, `ADJUSTMENT_IN`, `ADJUSTMENT_OUT`, `DAMAGE`, `TRANSFER_IN`, `TRANSFER_OUT`, `RESERVE`, `RELEASE`), quantity, reference (order/invoice/inward id), reason, user, timestamp, resulting balances.
-- Stock inward entry (goods received): supplier name/ref, bill number, lines (product, qty, cost price). On save: increase on_hand, then trigger backorder allocation.
-- Stock adjustments with mandatory reason (audited).
-- Reorder level (min stock) per product. Alerts: `LOW_STOCK` when available ≤ reorder level, `OUT_OF_STOCK` when available = 0, and `BACKORDER_DEMAND` when retailers backorder a product. Alerts de-duplicated (one open alert per product per type until resolved).
-- Availability label shown to retailers: `In stock`, `Low stock` (optional), `Available on backorder`. Exact quantity only if tenant setting allows.
-- Later (feature-flagged): batches & expiry, stock transfers, purchase orders & suppliers, stock valuation.
+- StockMovement (append-only): type (`INWARD`, `SALE`, `RETURN`, `ADJUSTMENT_IN`, `ADJUSTMENT_OUT`, `DAMAGE`, `TRANSFER_IN`, `TRANSFER_OUT`, `RESERVE`, `RELEASE`), quantity, reference (order/invoice/inward id), reason, user, timestamp, resulting balances. Types are data, so manufacturing can add "consume raw material" and "produce finished goods" later without restructuring (ADR-041).
+- Stock inward entry (goods received): supplier name/ref, bill number, lines (product, qty in base unit or packs, "Cost per unit (before GST)"). On save: increase on_hand, then trigger backorder allocation.
+  - Staff without pricing access post quantities only; those lines are "cost pending" until someone with pricing access completes the costs (audited). A "Goods receipts awaiting cost" list shows them.
+- **Cost method** (tenant setting): posted costs update the product's cost price by weighted average (default), to the last purchase cost, or never (manual only). Manual edits are always possible and audited.
+- Stock adjustments: several products at once, one reason code and a required note (audited); each line adds, removes, or records a counted quantity. Reserved stock cannot be removed.
+- Reorder level (min stock) per product, editable with product or stock-adjust permission (audited). Alerts: `LOW_STOCK` when available ≤ reorder level, `OUT_OF_STOCK` when available = 0, and `BACKORDER_DEMAND` when retailers backorder a product. Alerts de-duplicated (one open alert per product per type until resolved).
+- Availability label shown to retailers: `In stock`, `Low stock` (optional), `Available on backorder`, `Out of stock`. Exact quantity only if tenant setting allows. A tenant setting hides out-of-stock products instead (default: shown).
+- Reports: low stock, and stock valuation (quantity × cost price, category and brand totals; products without a cost price marked and excluded from totals), with Excel export.
+- Fast entry on phones and tablets: product search, typed or scanner (USB/Bluetooth) barcodes, and the phone camera where the browser supports it.
+- Later (feature-flagged): batches & expiry, stock transfers, purchase orders & suppliers.
 
 ### 5.8 Cart & orders
 **Cart** (server-side, per retailer): add/update/remove lines; server returns resolved prices, tax estimate, availability and backorder split per line, totals, credit status.
@@ -417,7 +422,7 @@ Categories, brands, units, products (images, HSN, GST), bulk import/export, prod
 **Accept when:** distributor imports 1,000 products and 100 retailers from Excel; a retailer logs in and sees only their distributor's products with correctly resolved prices.
 
 ### Phase 3 — Inventory
-Default warehouse, stock levels, movement log, stock inward, adjustments, reorder levels, stock alerts (deduplicated), stock screens and reports (summary, movement history, low stock), availability labels for retailers.
+Default warehouse, stock levels, movement log, stock inward (with cost method and cost completion), adjustments, reorder levels, stock alerts (deduplicated), stock screens and reports (summary, movement history, low stock, valuation), barcode entry, availability labels for retailers.
 **Accept when:** inward and adjustments update stock with correct movements; alerts fire once; concurrency test passes.
 
 ### Phase 4 — Ordering & backorders
@@ -469,7 +474,8 @@ Business rules that are not firm are configurable; legal and data-integrity guar
 - **Product level:** GST rate and cess with effective-from dates.
 - **Tenant level:** every setting in `docs/PLAN.md` §9 (Settings catalogue). Defaults:
   - prices GST-exclusive;
-  - exact stock hidden;
+  - exact stock hidden; out-of-stock products shown as "Out of stock";
+  - cost price updated by weighted average from goods receipts;
   - backorders on, with allocation confirmed by the distributor;
   - credit breach → approval;
   - invoice at dispatch;

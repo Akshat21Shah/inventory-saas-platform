@@ -158,7 +158,19 @@
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
-- Phase 2 — Catalog, retailers, pricing (branch `phase-2`, draft PR #3; plan approved 2026-09-25 with ADR-034 … ADR-036). **All commits done; waiting for the end-of-phase review.** Then Phase 3 (inventory). Commits in order:
+- **Phase 3 — Inventory** (branch `phase-3` from `main` e117fdf; plan approved 2026-09-26 with ADR-041, PLAN §10.2b, SPEC 1.2). Commits in order:
+  1. Docs: ADR-041, PLAN v1.4 (§1.2 S8–S10, §2.7, §3.7, §5, §7.3, §8, §9.1, §10.2b), SPEC 1.2 — **done**
+  2. Models: warehouse, stock level, movement, receipts, adjustments, alerts; RLS, checks, append-only trigger, backfills
+  3. Stock primitives (`MOVEMENT_KINDS`, lock order), cost method, concurrency tests
+  4. Alerts: dedupe and outbox events
+  5. Goods receipts: draft, post, packs, cost pending, complete costs
+  6. Adjustments: reason + note, add / remove / counted, reserved guard, audit
+  7. Stock APIs and reports (low stock, valuation) with isolation and role tests
+  8. Shop availability labels, `stock.show_out_of_stock_in_shop`, opening stock import
+  9. Seed demo stock, API client — **backend checkpoint**
+  10–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
+  14. E2E acceptance, responsive check, docs — **final review**
+- Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
   1. Catalog models
   2. `billing/tax.py` line math
