@@ -155,6 +155,8 @@ make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts each
+make lan         # open the dev stack to phones on your Wi-Fi: http://{slug}.<lan-ip-with-dashes>.nip.io:3000
+make localhost   # back to *.localhost (run before the E2E suites)
 ```
 
 URLs in dev:
@@ -163,6 +165,7 @@ URLs in dev:
 - health: http://localhost:8000/health/ready
 - mailpit: http://localhost:8025
 - S3: http://localhost:8333
+- After `make lan` (dev only): the same pages on `<lan-ip-with-dashes>.nip.io`, e.g. http://sharma.192-168-0-106.nip.io:3000. Only web (3000) and photos (8333) are reachable from other devices; database, Redis, API and Mailpit stay on this machine. `*.localhost` doesn't work until `make localhost`.
 
 Database roles:
 - `app_user` is the runtime role, with RLS enforced.

@@ -314,6 +314,11 @@
     - On phones: filters in a bottom sheet (`FilterBar`) and Save/Cancel stuck to the bottom of long forms (`FormActions`).
     - 44 px touch targets in the design system. The audit log also shows cards on phones.
     - `e2e/responsive.spec.ts` checks 57 screens at 360, 768 and 1440 px: no sideways scrolling, no off-screen or overlapping controls, 44 px targets on phones. Screenshots are the CI artifact `responsive-screenshots`; locally `make e2e-responsive`.
+  - **Phone testing on the home network:** `make lan` / `make localhost` (`infra/dev-domain.sh`).
+    - The switch detects the LAN IP and writes the git-ignored `infra/dev-domain.env` (platform domain `<ip>.nip.io` and public storage address), which Compose layers over `.env`. It then recreates the containers and clears cached branding links.
+    - Dev-only settings follow the domain: Next `allowedDevOrigins` and Django CORS.
+    - Postgres, Redis, the API and Mailpit are now bound to 127.0.0.1; only web and storage are reachable from the LAN.
+    - Checked over nip.io at phone size: staff sign-in and reload, shop OTP sign-in, the chooser hand-off, and product photos from the LAN address.
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.

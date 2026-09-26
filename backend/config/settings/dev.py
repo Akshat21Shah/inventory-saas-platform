@@ -1,3 +1,5 @@
+import re
+
 from .base import *
 
 DEBUG = True
@@ -15,3 +17,9 @@ OTP_FIXED_CODE = env("OTP_FIXED_CODE", default="123456")  # mock SMS: sign in wi
 # Host-run web server (npm run dev on the host) reaches Django from localhost; Compose sets the
 # web container's fixed address instead.
 TRUSTED_PROXIES = env.list("TRUSTED_PROXIES", default=["127.0.0.1", "::1"])
+# Browsers on any subdomain of the dev platform domain (*.localhost, or <lan-ip>.nip.io after
+# "make lan"). Dev only: base.py and prod.py are unchanged.
+CORS_ALLOWED_ORIGIN_REGEXES = env.list(
+    "CORS_ALLOWED_ORIGIN_REGEXES",
+    default=[rf"^https?://([a-z0-9-]+\.)?{re.escape(PLATFORM_DOMAIN)}(:\d+)?$"],
+)

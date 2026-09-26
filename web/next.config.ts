@@ -7,8 +7,16 @@ const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
 // Django and forwards X-Forwarded-Host so the backend can classify the host (ADR-020).
 const apiInternalUrl = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
+// Dev server only: "make lan" serves the app on <lan-ip>.nip.io so phones on the same Wi-Fi can
+// use it. Next already allows localhost and its subdomains; any other platform domain is listed
+// here (ignored by production builds).
+const platformDomain = process.env.PLATFORM_DOMAIN ?? "localhost";
+const allowedDevOrigins =
+  platformDomain === "localhost" ? [] : [platformDomain, `*.${platformDomain}`];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  allowedDevOrigins,
   // Keep the dev-only indicator clear of the retailer bottom navigation.
   devIndicators: { position: "top-right" },
   reactStrictMode: true,

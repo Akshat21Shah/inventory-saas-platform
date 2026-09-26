@@ -5,7 +5,11 @@ x-backend: &backend
     context: ../backend
     dockerfile: ../infra/backend.Dockerfile
     target: dev
-  env_file: ../.env
+  env_file:
+    - ../.env
+    # "make lan" / "make localhost" (infra/dev-domain.sh): platform domain + public storage address.
+    - path: ./dev-domain.env
+      required: false
   environment: &backend-env
     DATABASE_URL: postgres://app_user:app_user@postgres:5432/inventory
     MIGRATION_DATABASE_URL: postgres://app_owner:app_owner@postgres:5432/inventory
@@ -29,7 +33,7 @@ services:
       POSTGRES_DB: inventory
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
@@ -41,7 +45,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["127.0.0.1:6379:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
@@ -50,7 +54,7 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    ports: ["8025:8025", "1025:1025"]
+    ports: ["127.0.0.1:8025:8025", "127.0.0.1:1025:1025"]
 
   # S3-compatible object storage for dev/CI (ADR-024: SeaweedFS replaces MinIO, whose public
   # images are no longer available). Only reached through the storage adapter.
@@ -96,7 +100,7 @@ services:
 
   backend:
     <<: *backend
-    ports: ["8000:8000"]
+    ports: ["127.0.0.1:8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
     healthcheck:
@@ -122,9 +126,11 @@ services:
       context: ../web
       dockerfile: ../infra/web.Dockerfile
       target: dev
+    env_file:
+      - path: ./dev-domain.env
+        required: false
     environment:
       API_INTERNAL_URL: http://backend:8000
-      PLATFORM_DOMAIN: localhost
       WATCHPACK_POLLING: "true"
       TRUSTED_PROXIES: ""  # nothing in front of the web server in dev: browsers connect directly
     ports: ["3000:3000"]
