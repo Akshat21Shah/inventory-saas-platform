@@ -27,6 +27,7 @@ from apps.catalog.models import (
     ProductTaxRate,
     Unit,
 )
+from apps.inventory import services as inventory
 from apps.platform.models import CessType, TaxRate
 from apps.platform.selectors import get_setting
 from common.dates import today_ist
@@ -524,6 +525,7 @@ def create_product(
     if errors:
         raise InvalidFields(errors)
     _save_product(product)
+    inventory.ensure_levels_exist([product.pk], inventory.default_warehouse())
     ProductTaxRate.objects.create(
         product=product,
         gst_rate=gst_rate,

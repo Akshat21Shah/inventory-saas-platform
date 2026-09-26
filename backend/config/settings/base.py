@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.retailers",
     "apps.catalog",
     "apps.pricing",
+    "apps.inventory",
     "apps.billing",
     "apps.dataio",
     "apps.shop",

@@ -52,12 +52,15 @@ class TenantFactory(factory.django.DjangoModelFactory[Tenant]):
 
 
 def _default_units(tenant: Tenant, create: bool) -> None:
-    """Like onboarding: every tenant starts with the default units."""
+    """Like onboarding: every tenant starts with the default units and warehouse."""
     if not create:
         return
     from apps.catalog.defaults import ensure_default_units
     from apps.catalog.models import Unit
+    from apps.inventory.defaults import ensure_default_warehouse
+    from apps.inventory.models import Warehouse
     from common.tenancy import tenant_context
 
     with tenant_context(tenant.pk):
         ensure_default_units(Unit)
+        ensure_default_warehouse(Warehouse)

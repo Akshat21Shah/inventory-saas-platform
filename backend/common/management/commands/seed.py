@@ -18,6 +18,8 @@ from apps.accounts.models import Membership, Role, User
 from apps.accounts.permissions import PLATFORM_ADMIN_ROLE
 from apps.catalog.defaults import ensure_default_units
 from apps.catalog.models import Unit
+from apps.inventory.defaults import ensure_default_warehouse
+from apps.inventory.models import Warehouse
 from apps.platform.models import Plan, Subscription, Tenant, TenantBranding, TenantProfile
 from apps.platform.validators import gstin_check_char
 from apps.retailers.models import Retailer
@@ -122,6 +124,7 @@ class Command(BaseCommand):
                 if not Subscription.objects.filter(is_current=True).exists():
                     Subscription.objects.create(tenant=tenant, plan=beta, starts_at=timezone.now())
                 ensure_default_units(Unit)
+                ensure_default_warehouse(Warehouse)
                 self._staff(tenant, options["staff_password"])
                 for shop in [*DEMO_SHOPS[tenant.slug], SHARED_SHOP]:
                     self._shop(*shop)
