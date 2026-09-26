@@ -430,7 +430,7 @@ erDiagram
 | `notifications.manage` (rules, templates, delivery log, announcements) | ✔ | ✔ | | | |
 | `dashboard.view` | ✔ | ✔ | ✔ | ✔ | ✔ (content filtered by other perms) |
 
-Inventory specifics (ADR-041, ADR-042): reorder levels can be changed with `products.manage` **or** `stock.adjust`; cost fields (cost price, receipt costs, movement values) need `costs.view`; setting costs and "complete costs" need `costs.manage`; the valuation report needs `reports.stock` **and** `costs.view`.
+Inventory specifics (ADR-041, ADR-042): reorder levels can be changed with `products.manage` **or** `stock.adjust`; cost fields (cost price, receipt costs, movement values) need `costs.view`; setting costs and "complete costs" need `costs.manage`; the valuation report needs `costs.view` **and** (`reports.stock` **or** `reports.financial`) (ADR-043).
 
 Row-level scope: when ⚙ `orders.sales_visibility = ASSIGNED_RETAILERS`, users whose role is SALES see only orders/retailers/invoices of retailers where `salesperson = user` (applied in selectors, tested).
 
@@ -575,7 +575,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `reports/stock/low-stock` (+ `/export`) | GET | `reports.stock` | at or below the reorder level, with shortfall |
 | `reports/stock/low-stock/summary` | GET | `reports.stock` | low-stock count and active products without a reorder level (ADR-042) |
 | `stock/export` | GET | `stock.adjust` | today's stock as a count sheet in the opening-stock columns |
-| `reports/stock/valuation` (+ `/export`) | GET | `reports.stock` + `costs.view` | qty × cost price, category and brand totals, missing-cost products marked and counted |
+| `reports/stock/valuation` (+ `/export`) | GET | `costs.view` + (`reports.stock` or `reports.financial`) | qty × cost price, category and brand totals, missing-cost products marked and counted |
 
 ### 3.8 Orders, fulfilments, backorders (distributor)
 | Endpoint | Method | Permission | Purpose |
@@ -1744,6 +1744,15 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 4 | Hiding out-of-stock products | Only when backorders are off |
 | 5 | Cost visibility | New `costs.view` / `costs.manage` (Owner, Manager, Accounts / Owner, Manager); Sales keep `pricing.view` without costs |
 | 6 | Opening stock import | One adjustment per file |
+
+### 10.2d Phase 3 final review (2026-09-26, ADR-043)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Stock value for Accounts | Yes: `costs.view` with `reports.stock` or `reports.financial` |
+| 2 | "No reorder level" link to the stock list | Approved |
+| 3 | Import commit reports rows that fail the re-check | Approved |
+| 4 | `barcode-detector` served from our own server | Approved |
+| 5 | Flaky 2FA sign-in in E2E | Root cause found (clock skew after the Mac slept) and the helper made deterministic |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

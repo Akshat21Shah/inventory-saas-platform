@@ -242,6 +242,14 @@
       - Responsive check: 15 new screens (stock, product stock, movements, alerts, receipts list/new/posted/draft, adjustments list/new/detail, reports index, low stock, stock value, stock settings). `e2e_ids` gives the receipt and adjustment ids. Two phone problems it found were fixed: the "More stock actions" button was 38 px wide, and the folded bill fields on the receiving page still took space (now a toggle that renders them only when open). All screens pass at 360/768/1440.
       - Phone receipt cards show the line cost up front.
       - CLAUDE.md: how to enable the camera over `make lan` (a Chrome flag on Android; typed and USB/Bluetooth scanners need nothing).
+  15. Final review follow-ups (ADR-043, PLAN §10.2d) — **done**:
+      - The stock value report is open to `costs.view` with `reports.stock` or `reports.financial`, so Accounts sees it. Requirements nest (`AllOf`/`AnyOf`), and the role matrix, permission-code test, frontend check and API test (Accounts and Manager 200, Warehouse and Sales 403) all agree.
+      - Flaky 2FA sign-in, root cause: clock skew after the Mac slept. The Docker VM clock was about 5 minutes behind until its 30-second time sync caught up; the `pmset` and Docker `GET /time` logs show it. It wasn't replay.
+      - The server now logs the refusal reason (`replay`, `clock_skew:±n`, `invalid`). The E2E helper computes the code from the backend's clock (`e2e_totp_state`), never reuses a step (it waits for the next), avoids the last 3 seconds of a step, and fails at once with the reason.
+      - Proof runs:
+        - 30 sign-ins passed with the old helper, which ruled out replay between runs.
+        - With the new helper: 20 normal sign-ins; 6 back-to-back sign-ins without the reset, landing on 6 different steps (the old helper would have been refused on 5 of them); and a deliberate replay, reported as "replay".
+        - Then the four full-stack suites 3 times in a row and the responsive check.
 - **Phase 3 acceptance (spec §12):** receipts and adjustments update stock with the right movements, alerts fire once, and the concurrency tests pass (backend threads plus the lock mutation check). Shops see the labels at 360 px.
 - Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs

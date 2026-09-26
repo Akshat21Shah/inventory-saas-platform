@@ -4,6 +4,7 @@ Permission codes (e.g. ``orders.accept``) are resolved by ``User.has_permission_
 implements from Membership → Role → Permission. Until then the check fails closed.
 """
 
+from collections.abc import Callable
 from typing import Any
 
 from rest_framework.permissions import BasePermission
@@ -11,31 +12,40 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 
 
-class AnyOf(tuple[str, ...]):
-    """A requirement met by any one of these codes, e.g. ``AnyOf(("products.manage",
-    "stock.adjust"))``."""
+class AnyOf(tuple[Any, ...]):
+    """A requirement met by any one of its parts (codes or nested requirements), e.g.
+    ``AnyOf(("products.manage", "stock.adjust"))``."""
 
 
-class AllOf(tuple[str, ...]):
-    """A requirement that needs every one of these codes."""
+class AllOf(tuple[Any, ...]):
+    """A requirement that needs every one of its parts, e.g.
+    ``AllOf(("costs.view", AnyOf(("reports.stock", "reports.financial"))))``."""
 
 
 Requirement = str | AnyOf | AllOf
 
 
 def codes_of(requirement: Requirement) -> tuple[str, ...]:
-    return (requirement,) if isinstance(requirement, str) else tuple(requirement)
+    """Every code a requirement mentions (to check they all exist)."""
+    if isinstance(requirement, str):
+        return (requirement,)
+    return tuple(code for part in requirement for code in codes_of(part))
+
+
+def satisfies(has: Callable[[str], bool], requirement: Requirement) -> bool:
+    """Whether a holder of the codes for which ``has`` is true meets the requirement."""
+    if isinstance(requirement, AnyOf):
+        return any(satisfies(has, part) for part in requirement)
+    if isinstance(requirement, AllOf):
+        return all(satisfies(has, part) for part in requirement)
+    return bool(has(requirement))
 
 
 def user_has_permission(user: Any, code: Requirement) -> bool:
     checker = getattr(user, "has_permission_code", None)
     if not (user and user.is_authenticated and checker is not None):
         return False
-    if isinstance(code, AnyOf):
-        return any(checker(c) for c in code)
-    if isinstance(code, AllOf):
-        return all(checker(c) for c in code)
-    return bool(checker(code))
+    return satisfies(checker, code)
 
 
 class HasPermission(BasePermission):

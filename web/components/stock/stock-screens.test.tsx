@@ -240,4 +240,17 @@ describe("reports", () => {
     expect(screen.getByRole("link", { name: /Low stock/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Stock value/ })).not.toBeInTheDocument();
   });
+
+  it("offers it to accounts staff through the financial reports", () => {
+    permissions.delete("reports.stock");
+    permissions.add("reports.financial");
+    try {
+      renderWithIntl(<ReportsIndex />);
+      expect(screen.getByRole("link", { name: /Stock value/ })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /Low stock/ })).not.toBeInTheDocument();
+    } finally {
+      permissions.add("reports.stock");
+      permissions.delete("reports.financial");
+    }
+  });
 });

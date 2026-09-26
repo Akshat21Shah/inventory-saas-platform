@@ -54,6 +54,27 @@ def matching_step(secret: str, code: str, *, after_step: int | None = None) -> i
     return None
 
 
+SKEW_STEPS = 10  # how far (in 30-second steps) a refused code is checked for clock skew
+
+
+def refusal_reason(secret: str, code: str, last_step: int | None) -> str:
+    """Why ``matching_step`` refused a code, for the logs (never shown to the user):
+    - ``replay``: the code is right for an accepted step, but that step was already used;
+    - ``clock_skew:<n>``: the code belongs to a step <n> steps away, outside the ±1 window;
+    - ``invalid``: the code matches no step nearby (a typo, or the wrong key)."""
+    code = (code or "").strip().replace(" ", "")
+    if len(code) != TOTP_DIGITS or not code.isdigit() or not secret:
+        return "invalid"
+    totp = pyotp.TOTP(secret, interval=TOTP_INTERVAL, digits=TOTP_DIGITS)
+    current = int(time.time()) // TOTP_INTERVAL
+    for offset in sorted(range(-SKEW_STEPS, SKEW_STEPS + 1), key=abs):
+        if secrets.compare_digest(totp.at((current + offset) * TOTP_INTERVAL), code):
+            if abs(offset) <= 1 and last_step is not None and current + offset <= last_step:
+                return "replay"
+            return f"clock_skew:{offset:+d}"
+    return "invalid"
+
+
 def verify_user_totp(user: User, code: str) -> bool:
     """Check ``code`` against the user's enabled TOTP and consume its time step."""
     with transaction.atomic():
@@ -62,6 +83,11 @@ def verify_user_totp(user: User, code: str) -> bool:
             return False
         step = matching_step(locked.totp_secret, code, after_step=locked.totp_last_step)
         if step is None:
+            logger.warning(
+                "mfa: code refused (%s) for user %s",
+                refusal_reason(locked.totp_secret, code, locked.totp_last_step),
+                locked.pk,
+            )
             return False
         User.objects.filter(pk=user.pk).update(totp_last_step=step)
         user.totp_last_step = step

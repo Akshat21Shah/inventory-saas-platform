@@ -46,7 +46,8 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 | 039 | Own brand and cost price | Accepted (amended by 042) |
 | 040 | Responsive design: cards, filter sheet, sticky actions, three checked widths | Accepted |
 | 041 | Inventory: stock movements, cost method, costs after posting, what shops see | Accepted (amended by 042) |
-| 042 | Cost permissions separate from pricing; one opening-stock document per file | Accepted (amends 039, 041) |
+| 042 | Cost permissions separate from pricing; one opening-stock document per file | Accepted (amends 039, 041; valuation access amended by 043) |
+| 043 | Stock value for Accounts; E2E 2FA codes from the backend's clock | Accepted (amends 042) |
 
 ---
 
@@ -538,7 +539,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 - **Consequences:** A product's cost price can now change without a manual edit, always with an audit entry naming the receipt. Valuation needs no separate cost history in Phase 3; weighted-average per warehouse, FIFO or batch costing would need a new decision.
 
 ## ADR-042 — Cost permissions separate from pricing; one opening-stock document per file
-- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 backend checkpoint). Amends ADR-039 (who sees and sets the cost price) and ADR-041 items 8–9 and the opening stock import.
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 backend checkpoint). Valuation access amended by ADR-043. Amends ADR-039 (who sees and sets the cost price) and ADR-041 items 8–9 and the opening stock import.
 - **Context:** Sales staff need `pricing.view` for selling prices, discounts and price lists, but must never see what goods cost the distributor. ADR-039 and ADR-041 tied cost visibility to `pricing.view`.
 - **Decision:**
   1. **Two new permission codes.** `costs.view` controls every cost-related field and screen: the product cost price, goods-receipt costs (entered cost, cost per base unit, line and receipt totals), the "Goods receipts awaiting cost" list and count, the unit cost and value of movements, and the valuation report (`reports.stock` + `costs.view`). `costs.manage` (chosen over reusing `pricing.manage`, so changing costs is separate from changing selling prices) is needed to set a cost price, enter costs on a receipt or adjustment, complete pending costs, and import a cost column.
@@ -548,4 +549,13 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   5. **Opening stock import: one adjustment per file**, with one line per changed row (up to 20,000). The commit re-checks the file: rows that can no longer be applied (for example, stock reserved since validation) are reported with the reason, and the rest are posted together as that one document.
   6. The low-stock report shows how many active products have no reorder level, linking to the stock list filtered to them (`no_reorder_level=true`), where the reorder level can be set.
 - **Consequences:** Accounts can see costs and the awaiting-cost list but cannot change costs. The valuation report stays `reports.stock` + `costs.view`, so Accounts (no `reports.stock`) don't see it by default; giving them the report would be a role change, not a code change.
+
+## ADR-043 — Stock value for Accounts; E2E 2FA codes from the backend's clock
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 final review). Amends ADR-042 item 1 (valuation access).
+- **Decision:**
+  1. **Stock value report:** `costs.view` **and** (`reports.stock` **or** `reports.financial`). Accounts (costs.view, reports.financial) now sees it; Warehouse (no costs) and Sales (neither report) still don't. Permission requirements can nest (`AllOf(("costs.view", AnyOf(("reports.stock", "reports.financial"))))`); the permission-code and role-matrix tests evaluate them the same way.
+  2. **Root cause of the flaky super admin 2FA sign-in in local E2E runs: clock skew, not replay.** The Mac slept for about five minutes during a run (`pmset` log: idle sleep 16:55:04–17:00:06 IST). Docker Desktop's VM was frozen too and its clock synchronises with the Mac only every 30 seconds (`GET /time`: no sync between 16:54:50 and 17:00:21, the VM's monotonic clock advanced 30 s across the gap). A run started right after waking computed the code with the Mac's clock while the backend's clock was still ~5 minutes behind, so the code matched no step in its ±1 window. Replay was ruled out: the helper clears the replay state first, and 30 back-to-back sign-ins passed. CI (Docker on Linux, no VM) is not exposed.
+  3. **The E2E helper no longer depends on the machines' clocks or on the reset.** `freshTotp` reads the backend's clock and last used step (`manage.py e2e_totp_state`, dev only), computes the code for the backend's step, waits for the next step when the current one was already used or less than 3 s remain, and a refusal fails at once with its reason (`replay`, `clock skew` with both steps, or `invalid`) and the clock difference.
+  4. **The server logs why a code was refused** (`mfa: code refused (replay | clock_skew:±n | invalid)`, without the code). Users still see one neutral message.
+- **Consequences:** a slept laptop or a stale container clock can no longer make the E2E suites flaky. Real users are unaffected; the ±1 step window is unchanged.
 

@@ -16,7 +16,7 @@ from rest_framework.test import APIClient
 from apps.accounts.permissions import SYSTEM_ROLES
 from apps.accounts.tests.factories import make_staff_in
 from apps.accounts.tokens import issue_tokens
-from common.permissions import AllOf, AnyOf
+from common.permissions import satisfies
 
 pytestmark = pytest.mark.django_db
 
@@ -61,11 +61,7 @@ GUARDED = _guarded_endpoints()
 
 
 def _allowed(code, permissions):
-    if isinstance(code, AnyOf):
-        return any(c in permissions for c in code)
-    if isinstance(code, AllOf):
-        return all(c in permissions for c in code)
-    return code in permissions
+    return satisfies(lambda c: c in permissions, code)
 
 
 def test_the_walk_found_the_guarded_endpoints():

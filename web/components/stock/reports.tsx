@@ -36,6 +36,11 @@ import { CountCard } from "./shared";
 
 const ALL = "all";
 
+/** Mirrors the server (ADR-042): costs, and the stock or the financial reports. Cosmetic only. */
+export function canSeeValuation(can: (code: string) => boolean): boolean {
+  return can("costs.view") && (can("reports.stock") || can("reports.financial"));
+}
+
 function useReportFilters() {
   const t = useTranslations("stock.reports");
   const categories = useCategoryOptions();
@@ -221,7 +226,7 @@ function BucketTable({ title, rows }: { title: string; rows: Bucket[] }) {
 export function ValuationReport() {
   const t = useTranslations("stock.reports");
   const { can } = useAuth();
-  if (!can("costs.view") || !can("reports.stock")) {
+  if (!canSeeValuation(can)) {
     return <EmptyState title={t("valuationTitle")} description={t("valuationNoAccess")} />;
   }
   return <Valuation />;
@@ -391,7 +396,7 @@ export function ReportsIndex() {
       icon: ChartColumn,
       title: t("valuationTitle"),
       body: t("valuationDescription"),
-      allowed: can("reports.stock") && can("costs.view"),
+      allowed: canSeeValuation(can),
     },
   ].filter((r) => r.allowed);
   return (

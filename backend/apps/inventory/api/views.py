@@ -35,7 +35,8 @@ VIEW, INWARD, ADJUST = "stock.view", "stock.inward", "stock.adjust"
 REPORTS = "reports.stock"
 COSTS = "costs.view"  # ADR-042
 READ_RECEIPTS = AnyOf((INWARD, COSTS))  # costs.view users open "Goods receipts awaiting cost"
-VALUATION = AllOf((REPORTS, COSTS))
+# Stock value: costs.view with the stock or the financial reports (ADR-042; Accounts included).
+VALUATION = AllOf((COSTS, AnyOf((REPORTS, "reports.financial"))))
 
 
 def _user(request: Request) -> User:

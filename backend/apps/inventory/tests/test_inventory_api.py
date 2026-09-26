@@ -357,12 +357,11 @@ def test_valuation_marks_products_without_cost(setup):
     rows = list(_book(owner.get(f"{API}/reports/stock/valuation/export/")).values)
     assert list(rows[1][:2]) == ["A-LOW", "Product A-LOW"] and rows[1][7] == 20
     assert any(r[1] == "Total value" and r[7] == 20 for r in rows)
-    assert (
-        _client(a["tenant"], "WAREHOUSE").get(f"{API}/reports/stock/valuation/").status_code == 403
-    )
-    assert (
-        _client(a["tenant"], "ACCOUNTS").get(f"{API}/reports/stock/valuation/").status_code == 403
-    )
+    # costs.view with reports.stock or reports.financial (ADR-042): Accounts yes; Warehouse
+    # (no costs) and Sales (neither report permission) no.
+    for role, status in (("ACCOUNTS", 200), ("MANAGER", 200), ("WAREHOUSE", 403), ("SALES", 403)):
+        response = _client(a["tenant"], role).get(f"{API}/reports/stock/valuation/")
+        assert response.status_code == status, role
 
 
 def test_warehouse_can_be_renamed_by_owner_only(setup):
