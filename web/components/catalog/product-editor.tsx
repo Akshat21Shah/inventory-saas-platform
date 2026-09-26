@@ -14,6 +14,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState } from "@/components/shared/error-state";
 import { FormField } from "@/components/shared/form-field";
+import { FormActions } from "@/components/shared/form-actions";
 import { FormSelect } from "@/components/shared/form-select";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageSkeleton } from "@/components/shared/skeletons";
@@ -466,11 +467,26 @@ function ProductForm({ product }: { product?: ProductDetail }) {
         </p>
       ) : null}
       {manage ? (
-        <div className="flex justify-end gap-2">
+        <FormActions>
+          {creating ? (
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/manage/products">{t("cancel")}</Link>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              disabled={!form.formState.isDirty}
+              onClick={() => form.reset()}
+            >
+              {t("cancel")}
+            </Button>
+          )}
           <Button type="submit" className="min-h-11" disabled={form.formState.isSubmitting}>
             {creating ? t("create") : t("save")}
           </Button>
-        </div>
+        </FormActions>
       ) : null}
     </form>
   );

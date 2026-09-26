@@ -202,7 +202,14 @@
   "table": {
     "emptyTitle": "No records yet",
     "emptyBody": "When records are added they will show up here.",
-    "rowsLabel": "Table rows"
+    "rowsLabel": "Table rows",
+    "select": "Select",
+    "done": "Done",
+    "selected": "{count} selected",
+    "clearSelection": "Clear selection",
+    "more": "More",
+    "less": "Less",
+    "selectHint": "Tap the boxes to choose rows, then pick an action at the bottom."
   },
   "errors": {
     "title": "Something went wrong",
@@ -1037,7 +1044,8 @@
       "imageRules": "PNG, JPEG or WebP, up to 2 MB. The signature is never shown publicly.",
       "save": "Save changes",
       "saved": "Business details saved.",
-      "readOnly": "Only the owner can change these details."
+      "readOnly": "Only the owner can change these details.",
+      "cancel": "Cancel"
     },
     "bank": {
       "title": "Bank details",
@@ -1291,7 +1299,8 @@
       "create": "Add product",
       "save": "Save changes",
       "costPrice": "Cost price",
-      "costHint": "What one unit costs you. Only staff with pricing access see it; shops never do."
+      "costHint": "What one unit costs you. Only staff with pricing access see it; shops never do.",
+      "cancel": "Cancel"
     },
     "taxRates": {
       "title": "GST rates",
@@ -1550,7 +1559,8 @@
       "sameAsShop": "Same as the shop's state",
       "welcomeNote": "A welcome message with the sign-in link is sent to the mobile number.",
       "create": "Add retailer",
-      "save": "Save changes"
+      "save": "Save changes",
+      "cancel": "Cancel"
     },
     "detail": {
       "resendWelcome": "Send the welcome message again",
@@ -1925,5 +1935,13 @@
       "orderingSoon": "Ordering from the app is coming soon. Until then, please order from your distributor as usual."
     },
     "ownBrand": "Own brand"
+  },
+  "filters": {
+    "button": "Filters",
+    "buttonActive": "Filters ({count})",
+    "title": "Filters",
+    "description": "Narrow down the list.",
+    "clear": "Clear filters",
+    "show": "Show results"
   }
 }

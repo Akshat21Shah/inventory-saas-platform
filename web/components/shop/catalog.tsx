@@ -292,7 +292,10 @@ export function ShopHome() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t("categories")}</h2>
-          <Link href="/shop/catalog" className="text-brand-700 text-sm font-medium hover:underline">
+          <Link
+            href="/shop/catalog"
+            className="text-brand-700 inline-flex min-h-11 items-center text-sm font-medium hover:underline"
+          >
             {t("allProducts")}
           </Link>
         </div>

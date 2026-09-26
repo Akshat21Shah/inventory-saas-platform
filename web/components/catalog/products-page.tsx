@@ -8,12 +8,12 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { MoneyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,38 +98,7 @@ export function ProductsPage() {
     }
   }
 
-  const allOnPage = rows.length > 0 && rows.every((row) => selected.has(row.id));
   const columns: DataTableColumn<ProductList>[] = [
-    ...(manage
-      ? [
-          {
-            id: "select",
-            header: () => (
-              <Checkbox
-                aria-label={t("selectPage")}
-                checked={allOnPage}
-                onCheckedChange={(checked) =>
-                  setSelected(checked ? new Set(rows.map((r) => r.id)) : new Set())
-                }
-              />
-            ),
-            cell: ({ row }) => (
-              <Checkbox
-                aria-label={t("selectRow", { name: row.original.name })}
-                checked={selected.has(row.original.id)}
-                onCheckedChange={(checked) =>
-                  setSelected((current) => {
-                    const next = new Set(current);
-                    if (checked) next.add(row.original.id);
-                    else next.delete(row.original.id);
-                    return next;
-                  })
-                }
-              />
-            ),
-          } satisfies DataTableColumn<ProductList>,
-        ]
-      : []),
     {
       id: "product",
       header: t("product"),
@@ -261,102 +230,123 @@ export function ProductsPage() {
                 ) : undefined,
               }
         }
+        cardLayout={{
+          product: "title",
+          price: "primary",
+          status: "primary",
+          category: "secondary",
+          brand: "secondary",
+          mrp: "secondary",
+          gst: "secondary",
+        }}
+        selection={
+          manage
+            ? {
+                selected,
+                onChange: setSelected,
+                pageLabel: t("selectPage"),
+                rowLabel: (row) => t("selectRow", { name: row.name }),
+                regionLabel: t("bulkLabel"),
+                actions: (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => void bulk("activate")}>
+                      {t("activate")}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => void bulk("deactivate")}>
+                      {t("deactivate")}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => void bulk("show_in_shop")}>
+                      {t("showInShop")}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => void bulk("hide_from_shop")}>
+                      {t("hideFromShop")}
+                    </Button>
+                    <PickDialog
+                      trigger={t("setCategory")}
+                      title={t("setCategoryTitle", { count: selected.size })}
+                      label={t("category")}
+                      options={categories}
+                      onPick={(value) => bulk("set_category", value)}
+                    />
+                    <PickDialog
+                      trigger={t("setBrand")}
+                      title={t("setBrandTitle", { count: selected.size })}
+                      label={t("brand")}
+                      options={brands}
+                      onPick={(value) => bulk("set_brand", value)}
+                    />
+                  </>
+                ),
+              }
+            : undefined
+        }
         toolbar={
-          <>
-            <Input
-              type="search"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                cursor.reset();
-              }}
-              placeholder={t("searchPlaceholder")}
-              aria-label={t("search")}
-              className="h-10 w-full sm:w-64"
-            />
-            <FilterSelect
-              label={t("category")}
-              value={category}
-              onChange={filtered(setCategory)}
-              options={[{ value: ALL, label: t("allCategories") }, ...categories]}
-            />
-            <FilterSelect
-              label={t("brand")}
-              value={brand}
-              onChange={filtered(setBrand)}
-              options={[{ value: ALL, label: t("allBrands") }, ...brands]}
-            />
-            <FilterSelect
-              label={t("status")}
-              value={status}
-              onChange={filtered(setStatus)}
-              options={[
-                { value: ALL, label: t("anyStatus") },
-                { value: "active", label: t("active") },
-                { value: "inactive", label: t("inactive") },
-              ]}
-            />
-            <FilterSelect
-              label={t("shop")}
-              value={shop}
-              onChange={filtered(setShop)}
-              options={[
-                { value: ALL, label: t("shownAndHidden") },
-                { value: "shown", label: t("shown") },
-                { value: "hidden", label: t("hiddenOnly") },
-              ]}
-            />
-            <FilterSelect
-              label={t("ownBrandFilter")}
-              value={own}
-              onChange={filtered(setOwn)}
-              options={[
-                { value: ALL, label: t("allBrandTypes") },
-                { value: "own", label: t("ownBrandOnly") },
-                { value: "traded", label: t("tradedOnly") },
-              ]}
-            />
-            {selected.size > 0 ? (
-              <div
-                role="region"
-                aria-label={t("bulkLabel")}
-                className="bg-brand-50 flex w-full flex-wrap items-center gap-2 rounded-lg p-2"
-              >
-                <span className="text-sm font-medium">
-                  {t("selected", { count: selected.size })}
-                </span>
-                <Button size="sm" variant="outline" onClick={() => void bulk("activate")}>
-                  {t("activate")}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => void bulk("deactivate")}>
-                  {t("deactivate")}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => void bulk("show_in_shop")}>
-                  {t("showInShop")}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => void bulk("hide_from_shop")}>
-                  {t("hideFromShop")}
-                </Button>
-                <PickDialog
-                  trigger={t("setCategory")}
-                  title={t("setCategoryTitle", { count: selected.size })}
+          <FilterBar
+            active={[category, brand, status, shop, own].filter((f) => f !== ALL).length}
+            onClear={() => {
+              for (const reset of [setCategory, setBrand, setStatus, setShop, setOwn]) reset(ALL);
+              cursor.reset();
+            }}
+            search={
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  cursor.reset();
+                }}
+                placeholder={t("searchPlaceholder")}
+                aria-label={t("search")}
+                className="h-10 w-full sm:w-64"
+              />
+            }
+            filters={
+              <>
+                <FilterSelect
                   label={t("category")}
-                  options={categories}
-                  onPick={(value) => bulk("set_category", value)}
+                  value={category}
+                  onChange={filtered(setCategory)}
+                  options={[{ value: ALL, label: t("allCategories") }, ...categories]}
                 />
-                <PickDialog
-                  trigger={t("setBrand")}
-                  title={t("setBrandTitle", { count: selected.size })}
+                <FilterSelect
                   label={t("brand")}
-                  options={brands}
-                  onPick={(value) => bulk("set_brand", value)}
+                  value={brand}
+                  onChange={filtered(setBrand)}
+                  options={[{ value: ALL, label: t("allBrands") }, ...brands]}
                 />
-                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                  {t("clearSelection")}
-                </Button>
-              </div>
-            ) : null}
-          </>
+                <FilterSelect
+                  label={t("status")}
+                  value={status}
+                  onChange={filtered(setStatus)}
+                  options={[
+                    { value: ALL, label: t("anyStatus") },
+                    { value: "active", label: t("active") },
+                    { value: "inactive", label: t("inactive") },
+                  ]}
+                />
+                <FilterSelect
+                  label={t("shop")}
+                  value={shop}
+                  onChange={filtered(setShop)}
+                  options={[
+                    { value: ALL, label: t("shownAndHidden") },
+                    { value: "shown", label: t("shown") },
+                    { value: "hidden", label: t("hiddenOnly") },
+                  ]}
+                />
+                <FilterSelect
+                  label={t("ownBrandFilter")}
+                  value={own}
+                  onChange={filtered(setOwn)}
+                  options={[
+                    { value: ALL, label: t("allBrandTypes") },
+                    { value: "own", label: t("ownBrandOnly") },
+                    { value: "traded", label: t("tradedOnly") },
+                  ]}
+                />
+              </>
+            }
+          />
         }
       />
     </>

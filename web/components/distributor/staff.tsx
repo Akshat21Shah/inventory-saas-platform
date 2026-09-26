@@ -202,6 +202,13 @@ function StaffTable({ roles }: { roles: Role[] }) {
   return (
     <DataTable
       columns={columns}
+      cardLayout={{
+        name: "title",
+        role: "primary",
+        status: "primary",
+        mfa: "secondary",
+        lastLogin: "secondary",
+      }}
       data={page?.results ?? []}
       getRowId={(row) => row.id}
       isLoading={query.isLoading}
@@ -292,6 +299,7 @@ function Invitations() {
       <h2 className="text-lg font-semibold">{t("invitations")}</h2>
       <DataTable
         columns={columns}
+        cardLayout={{ email: "title", role: "primary", status: "primary", sent: "secondary" }}
         data={rows}
         getRowId={(row) => row.id}
         isLoading={query.isLoading}

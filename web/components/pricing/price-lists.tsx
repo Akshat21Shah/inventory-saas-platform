@@ -178,6 +178,7 @@ export function PriceListsPage() {
       />
       <DataTable
         columns={columns}
+        cardLayout={{ name: "title", items: "primary", shops: "primary" }}
         data={page?.results ?? []}
         getRowId={(row) => row.id}
         isLoading={query.isLoading}
@@ -463,6 +464,7 @@ export function PriceListDetailPage({ priceListId }: { priceListId: string }) {
       </div>
       <DataTable
         columns={columns}
+        cardLayout={{ product: "title", price: "primary", base: "primary" }}
         data={page?.results ?? []}
         getRowId={(row) => row.product.id}
         isLoading={items.isLoading}

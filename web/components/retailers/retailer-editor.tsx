@@ -19,6 +19,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { ErrorState } from "@/components/shared/error-state";
 import { FieldsDialog, type FieldValue } from "@/components/shared/fields-dialog";
 import { FormField } from "@/components/shared/form-field";
+import { FormActions } from "@/components/shared/form-actions";
 import { FormSelect } from "@/components/shared/form-select";
 import { DateText, MoneyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
@@ -337,13 +338,30 @@ function RetailerForm({ retailer }: { retailer?: RetailerDetail }) {
           {formError}
         </p>
       ) : null}
+      {manage && creating ? (
+        <p className="text-muted-foreground text-right text-sm">{t("welcomeNote")}</p>
+      ) : null}
       {manage ? (
-        <div className="flex flex-col items-end gap-2">
-          {creating ? <p className="text-muted-foreground text-sm">{t("welcomeNote")}</p> : null}
+        <FormActions>
+          {creating ? (
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/manage/retailers">{t("cancel")}</Link>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              disabled={!form.formState.isDirty}
+              onClick={() => form.reset()}
+            >
+              {t("cancel")}
+            </Button>
+          )}
           <Button type="submit" className="min-h-11" disabled={form.formState.isSubmitting}>
             {creating ? t("create") : t("save")}
           </Button>
-        </div>
+        </FormActions>
       ) : null}
     </form>
   );
@@ -739,6 +757,15 @@ function PriceSheet({ retailerId }: { retailerId: string }) {
       <WarningList warnings={warnings} keys={{ FREE_GOODS: "FREE_GOODS_SPECIAL" }} />
       <DataTable
         columns={columns}
+        cardLayout={{
+          product: "title",
+          price: "primary",
+          net: "primary",
+          special: "primary",
+          discount: "secondary",
+          qty: "secondary",
+          base: "secondary",
+        }}
         data={page?.results ?? []}
         getRowId={(row) => row.product.id}
         isLoading={query.isLoading}

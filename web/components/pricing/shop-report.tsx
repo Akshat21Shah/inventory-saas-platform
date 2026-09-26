@@ -194,6 +194,13 @@ export function ShopPricingReportPage() {
       />
       <DataTable
         columns={columns}
+        cardLayout={{
+          shop: "title",
+          list: "primary",
+          special: "primary",
+          rules: "primary",
+          free: "primary",
+        }}
         data={page?.results ?? []}
         getRowId={(row) => row.id}
         isLoading={query.isLoading}

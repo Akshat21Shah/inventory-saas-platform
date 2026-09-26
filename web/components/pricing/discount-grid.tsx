@@ -12,6 +12,7 @@ import { FilterSelect } from "@/components/catalog/controls";
 import { useBrandOptions, useCategoryOptions } from "@/components/catalog/options";
 import { WarningList } from "@/components/catalog/product-editor";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { MoneyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -263,6 +264,7 @@ export function DiscountGridPage({ retailerId }: { retailerId: string }) {
       </div>
       <DataTable
         columns={columns}
+        cardLayout={{ product: "title", price: "primary", discount: "primary", net: "primary" }}
         data={rows}
         getRowId={(row) => row.product.id}
         isLoading={query.isLoading}
@@ -272,37 +274,49 @@ export function DiscountGridPage({ retailerId }: { retailerId: string }) {
         pagination={cursor.pagination(page)}
         empty={{ title: t("emptyTitle"), description: t("emptyBody") }}
         toolbar={
-          <>
-            <Input
-              type="search"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                cursor.reset();
-              }}
-              placeholder={t("search")}
-              aria-label={t("search")}
-              className="h-10 w-full sm:w-64"
-            />
-            <FilterSelect
-              label={t("category")}
-              value={category}
-              onChange={(v) => {
-                setCategory(v);
-                cursor.reset();
-              }}
-              options={[{ value: ALL, label: t("allCategories") }, ...categories]}
-            />
-            <FilterSelect
-              label={t("brand")}
-              value={brand}
-              onChange={(v) => {
-                setBrand(v);
-                cursor.reset();
-              }}
-              options={[{ value: ALL, label: t("allBrands") }, ...brands]}
-            />
-          </>
+          <FilterBar
+            active={[category, brand].filter((f) => f !== ALL).length}
+            onClear={() => {
+              setCategory(ALL);
+              setBrand(ALL);
+              cursor.reset();
+            }}
+            search={
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  cursor.reset();
+                }}
+                placeholder={t("search")}
+                aria-label={t("search")}
+                className="h-10 w-full sm:w-64"
+              />
+            }
+            filters={
+              <>
+                <FilterSelect
+                  label={t("category")}
+                  value={category}
+                  onChange={(v) => {
+                    setCategory(v);
+                    cursor.reset();
+                  }}
+                  options={[{ value: ALL, label: t("allCategories") }, ...categories]}
+                />
+                <FilterSelect
+                  label={t("brand")}
+                  value={brand}
+                  onChange={(v) => {
+                    setBrand(v);
+                    cursor.reset();
+                  }}
+                  options={[{ value: ALL, label: t("allBrands") }, ...brands]}
+                />
+              </>
+            }
+          />
         }
       />
       {manage && changed ? (

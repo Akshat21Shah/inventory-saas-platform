@@ -304,6 +304,17 @@ export function SpecialPricesPage() {
       </div>
       <DataTable
         columns={columns}
+        cardLayout={
+          retailerId
+            ? { product: "title", price: "primary", base: "primary", note: "secondary" }
+            : {
+                shop: "title",
+                product: "primary",
+                price: "primary",
+                base: "secondary",
+                note: "secondary",
+              }
+        }
         data={page?.results ?? []}
         getRowId={(row) => row.id}
         isLoading={query.isLoading}

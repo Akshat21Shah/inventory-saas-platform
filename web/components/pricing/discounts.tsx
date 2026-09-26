@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ErrorState } from "@/components/shared/error-state";
 import { FormField } from "@/components/shared/form-field";
+import { FormActions } from "@/components/shared/form-actions";
 import { FormSelect } from "@/components/shared/form-select";
 import { DateText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
@@ -164,6 +165,14 @@ export function DiscountRulesPage() {
       />
       <DataTable
         columns={columns}
+        cardLayout={{
+          name: "title",
+          discount: "primary",
+          on: "primary",
+          for: "primary",
+          status: "primary",
+          dates: "secondary",
+        }}
         data={page?.results ?? []}
         getRowId={(row) => row.id}
         isLoading={query.isLoading}
@@ -494,14 +503,14 @@ function RuleForm({ rule, forShop }: { rule?: DiscountRule; forShop?: Picked }) 
         </p>
       ) : null}
       {manage ? (
-        <div className="flex justify-end gap-2">
+        <FormActions>
           <Button asChild variant="outline" className="min-h-11">
             <Link href="/manage/pricing/discounts">{tc("cancel")}</Link>
           </Button>
           <Button type="submit" className="min-h-11" disabled={busy}>
             {savedId ? t("save") : t("create")}
           </Button>
-        </div>
+        </FormActions>
       ) : null}
     </form>
   );

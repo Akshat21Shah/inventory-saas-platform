@@ -10,12 +10,12 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { FilterSelect, PickDialog } from "@/components/catalog/controls";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { MoneyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
 import { ReasonDialog } from "@/components/shared/reason-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,38 +92,7 @@ export function RetailersPage() {
     }
   }
 
-  const allOnPage = rows.length > 0 && rows.every((row) => selected.has(row.id));
   const columns: DataTableColumn<RetailerList>[] = [
-    ...(manage
-      ? [
-          {
-            id: "select",
-            header: () => (
-              <Checkbox
-                aria-label={t("selectPage")}
-                checked={allOnPage}
-                onCheckedChange={(checked) =>
-                  setSelected(checked ? new Set(rows.map((r) => r.id)) : new Set())
-                }
-              />
-            ),
-            cell: ({ row }) => (
-              <Checkbox
-                aria-label={t("selectRow", { name: row.original.shop_name })}
-                checked={selected.has(row.original.id)}
-                onCheckedChange={(checked) =>
-                  setSelected((current) => {
-                    const next = new Set(current);
-                    if (checked) next.add(row.original.id);
-                    else next.delete(row.original.id);
-                    return next;
-                  })
-                }
-              />
-            ),
-          } satisfies DataTableColumn<RetailerList>,
-        ]
-      : []),
     {
       id: "shop",
       header: t("shop"),
@@ -234,97 +203,118 @@ export function RetailersPage() {
                 ) : undefined,
               }
         }
+        cardLayout={{
+          shop: "title",
+          mobile: "primary",
+          priceList: "primary",
+          status: "primary",
+          gstin: "secondary",
+          salesperson: "secondary",
+          credit: "secondary",
+        }}
+        selection={
+          manage
+            ? {
+                selected,
+                onChange: setSelected,
+                pageLabel: t("selectPage"),
+                rowLabel: (row) => t("selectRow", { name: row.shop_name }),
+                regionLabel: t("bulkLabel"),
+                actions: (
+                  <>
+                    <PickDialog
+                      trigger={t("assignSalesperson")}
+                      title={t("assignSalespersonTitle", { count: selected.size })}
+                      label={t("salesperson")}
+                      options={salespeople}
+                      onPick={(value) => bulk("assign_salesperson", value)}
+                    />
+                    {can("pricing.manage") ? (
+                      <PickDialog
+                        trigger={t("assignPriceList")}
+                        title={t("assignPriceListTitle", { count: selected.size })}
+                        label={t("priceList")}
+                        options={priceLists}
+                        onPick={(value) => bulk("assign_price_list", value)}
+                      />
+                    ) : null}
+                    <ReasonDialog
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          {t("putOnHold")}
+                        </Button>
+                      }
+                      title={t("putOnHoldTitle", { count: selected.size })}
+                      description={t("putOnHoldBody")}
+                      reasonLabel={t("reason")}
+                      confirmLabel={t("putOnHold")}
+                      destructive
+                      onConfirm={(reason) => bulk("block", reason)}
+                    />
+                    <ConfirmDialog
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          {t("removeHold")}
+                        </Button>
+                      }
+                      title={t("removeHoldTitle", { count: selected.size })}
+                      confirmLabel={t("removeHold")}
+                      onConfirm={() => bulk("unblock")}
+                    />
+                  </>
+                ),
+              }
+            : undefined
+        }
         toolbar={
-          <>
-            <Input
-              type="search"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                cursor.reset();
-              }}
-              placeholder={t("searchPlaceholder")}
-              aria-label={t("search")}
-              className="h-10 w-full sm:w-64"
-            />
-            <FilterSelect
-              label={t("status")}
-              value={status}
-              onChange={filtered(setStatus)}
-              options={[
-                { value: ALL, label: t("anyStatus") },
-                { value: "ACTIVE", label: t("active") },
-                { value: "BLOCKED", label: t("onHold") },
-              ]}
-            />
-            <FilterSelect
-              label={t("salesperson")}
-              value={salesperson}
-              onChange={filtered(setSalesperson)}
-              options={[{ value: ALL, label: t("anySalesperson") }, ...salespeople]}
-            />
-            {priceLists.length ? (
-              <FilterSelect
-                label={t("priceList")}
-                value={priceList}
-                onChange={filtered(setPriceList)}
-                options={[{ value: ALL, label: t("anyPriceList") }, ...priceLists]}
+          <FilterBar
+            active={[status, salesperson, priceList].filter((f) => f !== ALL).length}
+            onClear={() => {
+              for (const reset of [setStatus, setSalesperson, setPriceList]) reset(ALL);
+              cursor.reset();
+            }}
+            search={
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  cursor.reset();
+                }}
+                placeholder={t("searchPlaceholder")}
+                aria-label={t("search")}
+                className="h-10 w-full sm:w-64"
               />
-            ) : null}
-            {selected.size > 0 ? (
-              <div
-                role="region"
-                aria-label={t("bulkLabel")}
-                className="bg-brand-50 flex w-full flex-wrap items-center gap-2 rounded-lg p-2"
-              >
-                <span className="text-sm font-medium">
-                  {t("selected", { count: selected.size })}
-                </span>
-                <PickDialog
-                  trigger={t("assignSalesperson")}
-                  title={t("assignSalespersonTitle", { count: selected.size })}
-                  label={t("salesperson")}
-                  options={salespeople}
-                  onPick={(value) => bulk("assign_salesperson", value)}
+            }
+            filters={
+              <>
+                <FilterSelect
+                  label={t("status")}
+                  value={status}
+                  onChange={filtered(setStatus)}
+                  options={[
+                    { value: ALL, label: t("anyStatus") },
+                    { value: "ACTIVE", label: t("active") },
+                    { value: "BLOCKED", label: t("onHold") },
+                  ]}
                 />
-                {can("pricing.manage") ? (
-                  <PickDialog
-                    trigger={t("assignPriceList")}
-                    title={t("assignPriceListTitle", { count: selected.size })}
+                <FilterSelect
+                  label={t("salesperson")}
+                  value={salesperson}
+                  onChange={filtered(setSalesperson)}
+                  options={[{ value: ALL, label: t("anySalesperson") }, ...salespeople]}
+                />
+                {priceLists.length ? (
+                  <FilterSelect
                     label={t("priceList")}
-                    options={priceLists}
-                    onPick={(value) => bulk("assign_price_list", value)}
+                    value={priceList}
+                    onChange={filtered(setPriceList)}
+                    options={[{ value: ALL, label: t("anyPriceList") }, ...priceLists]}
                   />
                 ) : null}
-                <ReasonDialog
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      {t("putOnHold")}
-                    </Button>
-                  }
-                  title={t("putOnHoldTitle", { count: selected.size })}
-                  description={t("putOnHoldBody")}
-                  reasonLabel={t("reason")}
-                  confirmLabel={t("putOnHold")}
-                  destructive
-                  onConfirm={(reason) => bulk("block", reason)}
-                />
-                <ConfirmDialog
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      {t("removeHold")}
-                    </Button>
-                  }
-                  title={t("removeHoldTitle", { count: selected.size })}
-                  confirmLabel={t("removeHold")}
-                  onConfirm={() => bulk("unblock")}
-                />
-                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                  {t("clearSelection")}
-                </Button>
-              </div>
-            ) : null}
-          </>
+              </>
+            }
+          />
         }
       />
     </>

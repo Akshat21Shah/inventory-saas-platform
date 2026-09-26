@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AuditLog } from "@/lib/api/generated/model";
+import { useIsCompact } from "@/lib/use-media";
 
 import { EmptyState } from "./empty-state";
 import { ErrorState } from "./error-state";
@@ -112,6 +113,7 @@ export function AuditTable({
   const t = useTranslations("audit");
   const tc = useTranslations("common");
   const [open, setOpen] = useState<string | null>(null);
+  const compact = useIsCompact();
 
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2 pb-4">
@@ -119,7 +121,7 @@ export function AuditTable({
         value={filter || "all"}
         onValueChange={(value) => onFilterChange(value === "all" ? "" : value)}
       >
-        <SelectTrigger className="min-h-10 w-56" aria-label={t("action")}>
+        <SelectTrigger className="min-h-10 w-full sm:w-56" aria-label={t("action")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -139,7 +141,50 @@ export function AuditTable({
   else if (error) body = <ErrorState error={error} onRetry={onRetry} />;
   else if (rows.length === 0)
     body = <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />;
-  else {
+  else if (compact) {
+    // Phones and tablets: one card per entry (CLAUDE.md "Responsive design").
+    body = (
+      <ul className="space-y-3">
+        {rows.map((row) => {
+          const expanded = open === row.id;
+          const actor = row.actor;
+          return (
+            <li key={row.id} className="space-y-1 rounded-xl border p-3 text-sm">
+              <p className="font-medium">{actionLabel(t, row.action)}</p>
+              <p className="text-muted-foreground">
+                <DateText value={row.created_at} withTime /> ·{" "}
+                {actor ? actor.full_name || actor.email : t("system")}
+                {showTenant && row.tenant ? ` · ${row.tenant.name}` : ""}
+              </p>
+              {row.impersonator ? (
+                <p className="text-warning-strong flex items-center gap-1 text-xs">
+                  <Headset aria-hidden className="size-3" />
+                  {t("via", { name: row.impersonator.full_name || row.impersonator.email || "" })}
+                </p>
+              ) : null}
+              <p className="break-words">{targetLabel(t, row)}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-2"
+                aria-expanded={expanded}
+                onClick={() => setOpen(expanded ? null : row.id)}
+              >
+                {expanded ? <ChevronDown aria-hidden /> : <ChevronRight aria-hidden />}
+                {expanded ? t("hideDetails") : t("showDetails")}
+              </Button>
+              {expanded ? (
+                <div className="bg-muted/40 space-y-3 rounded-lg p-3">
+                  <DiffViewer changes={row.changes} />
+                  {row.ip ? <p className="text-muted-foreground text-xs">IP {row.ip}</p> : null}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  } else {
     body = (
       <div className="overflow-x-auto rounded-xl border">
         <Table>
