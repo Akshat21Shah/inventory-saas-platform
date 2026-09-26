@@ -340,20 +340,23 @@ function ReceiptView({ receipt, onChanged }: { receipt: ReceiptDetail; onChanged
         ) : null}
       </div>
       <div className="grid gap-6 xl:grid-cols-[1fr_24rem]">
-        <DataTable
-          columns={columns}
-          data={[...receipt.lines]}
-          getRowId={(row) => row.id}
-          numericColumns={["received", "cost", "line_cost"]}
-          caption={t("linesCaption")}
-          cardLayout={{
-            product: "title",
-            received: "primary",
-            line_cost: "primary",
-            cost_status: "primary",
-            cost: "secondary",
-          }}
-        />
+        {/* min-w-0: a wide lines table scrolls inside its column instead of widening the page */}
+        <div className="min-w-0">
+          <DataTable
+            columns={columns}
+            data={[...receipt.lines]}
+            getRowId={(row) => row.id}
+            numericColumns={["received", "cost", "line_cost"]}
+            caption={t("linesCaption")}
+            cardLayout={{
+              product: "title",
+              received: "primary",
+              line_cost: "primary",
+              cost_status: "primary",
+              cost: "secondary",
+            }}
+          />
+        </div>
         <div className="space-y-6">
           <Card>
             <CardContent className="grid grid-cols-2 gap-3 py-5 text-sm">
