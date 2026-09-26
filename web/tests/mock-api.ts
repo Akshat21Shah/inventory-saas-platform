@@ -7,6 +7,7 @@ export interface ApiCall {
   path: string;
   url: URL;
   body: unknown;
+  headers: Headers;
 }
 
 /**
@@ -22,7 +23,7 @@ export function mockApi(routes: Record<string, Handler>): ApiCall[] {
       const method = (init.method ?? "GET").toUpperCase();
       let body: unknown = init.body;
       if (typeof init.body === "string") body = JSON.parse(init.body);
-      calls.push({ method, path: url.pathname, url, body });
+      calls.push({ method, path: url.pathname, url, body, headers: new Headers(init.headers) });
       const handler =
         routes[`${method} ${url.pathname}`] ??
         (method === "GET" ? routes[url.pathname] : undefined);

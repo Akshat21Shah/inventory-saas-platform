@@ -207,7 +207,22 @@
       - `/manage/stock/[product]`: available, on hand, reserved and waiting figures; the reorder level editor (`products.manage` or `stock.adjust`); cost price (`costs.view` only); open alerts; barcodes; paginated movement history.
       - `/manage/stock/movements`: filter by type and date. Each row links to its goods receipt or adjustment, and the value column appears only when the server sends values.
       - A stock card on the product page. A stock sub-navigation. The sidebar "Stock" item shows the open-alert count, refreshed every minute.
-  11–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
+  11. Frontend: goods receipt entry — **done**:
+      - `ScanBar` (receipts, and adjustments next):
+        - a USB/Bluetooth scanner or a typed code plus Enter looks up the exact product (`stock/lookup`), and typing a name shows 44 px matches;
+        - the camera button uses the browser's `BarcodeDetector`, or else `barcode-detector` (zxing-wasm), loaded only when the camera opens. The `.wasm` is copied into `public/vendor` before `dev`/`build`, so it's served by us, never a CDN;
+        - over plain http (LAN) the camera explains that it needs https, as ADR-041 item 14 says;
+        - an unknown code can be linked to a product on the spot (`products.manage`).
+      - `/manage/stock/inwards/new` and draft editing:
+        - Phones: products as cards, the base-unit or pack choice, large −/+ steppers, and the bill details folded under "Supplier and bill" so scanning comes first.
+        - Laptops: a grid where Enter goes from quantity to cost and back to the scan bar.
+        - Scanning the same product again adds one. The cost field shows only with `costs.view`; warehouse staff see "Costs are added later…" and never send a cost.
+        - "Save as draft" / "Save and post" with a confirmation. Server messages appear next to their line.
+        - Every create, post and cost save sends an Idempotency-Key, made with `crypto.getRandomValues`. The live check on the LAN found that `crypto.randomUUID` doesn't exist on plain http, so the page had crashed there; that is fixed and tested.
+      - `/manage/stock/inwards`: All / Drafts / Posted / Waiting for costs (`costs.view`). The posted receipt shows received packs and the base-unit equivalent, and has the "Add the missing costs" form (`costs.manage`).
+      - Lockfile: regenerated with the image's npm (node:24-alpine). My local npm had dropped optional entries, which made `npm ci` fail in Docker.
+      - Checked on the running stack at 360 and 1440 px as warehouse and owner: no sideways scrolling, scanning a code adds the line and selects its quantity.
+  12–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
   14. E2E acceptance, responsive check, docs — **final review**
 - Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
