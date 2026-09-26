@@ -67,7 +67,14 @@ const KINDS: ImportKindEnum[] = [
   "SPECIAL_PRICES",
   "PRICE_LIST_ITEMS",
   "DISCOUNT_RULES",
+  "OPENING_STOCK",
 ];
+// Records (products, shops, prices) are added or updated; stock is added to or set to a count
+// (ADR-042). The server refuses a mode the kind doesn't offer.
+const MODES: Partial<Record<ImportKindEnum, ImportModeEnum[]>> = {
+  OPENING_STOCK: ["STOCK_ADD", "STOCK_SET"],
+};
+const RECORD_MODES: ImportModeEnum[] = ["ADD_ONLY", "ADD_OR_UPDATE"];
 const PERMISSION: Record<ImportKindEnum, string> = {
   PRODUCTS: "products.manage",
   RETAILERS: "retailers.manage",
@@ -193,7 +200,10 @@ export function ImportStartPage() {
                 name="kind"
                 value={k}
                 checked={kind === k}
-                onChange={(v) => setKind(v as ImportKindEnum)}
+                onChange={(v) => {
+                  setKind(v as ImportKindEnum);
+                  setMode("");
+                }}
                 title={t(`kind.${k}`)}
                 description={t(`kindHint.${k}`)}
                 disabled={!allowed.includes(k)}
@@ -216,24 +226,19 @@ export function ImportStartPage() {
             </Button>
           ) : null}
         </Step>
-        <Step number={2} title={t("modeTitle")}>
+        <Step number={2} title={kind === "OPENING_STOCK" ? t("stockModeTitle") : t("modeTitle")}>
           <div className="grid gap-3">
-            <Choice
-              name="mode"
-              value="ADD_ONLY"
-              checked={mode === "ADD_ONLY"}
-              onChange={(v) => setMode(v as ImportModeEnum)}
-              title={t("mode.ADD_ONLY")}
-              description={t("modeHint.ADD_ONLY")}
-            />
-            <Choice
-              name="mode"
-              value="ADD_OR_UPDATE"
-              checked={mode === "ADD_OR_UPDATE"}
-              onChange={(v) => setMode(v as ImportModeEnum)}
-              title={t("mode.ADD_OR_UPDATE")}
-              description={t("modeHint.ADD_OR_UPDATE")}
-            />
+            {((kind && MODES[kind]) || RECORD_MODES).map((value) => (
+              <Choice
+                key={value}
+                name="mode"
+                value={value}
+                checked={mode === value}
+                onChange={(v) => setMode(v as ImportModeEnum)}
+                title={t(`mode.${value}`)}
+                description={t(`modeHint.${value}`)}
+              />
+            ))}
           </div>
         </Step>
         <Step number={3} title={t("fileTitle")}>

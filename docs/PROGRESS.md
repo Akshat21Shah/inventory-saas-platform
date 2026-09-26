@@ -222,7 +222,15 @@
       - `/manage/stock/inwards`: All / Drafts / Posted / Waiting for costs (`costs.view`). The posted receipt shows received packs and the base-unit equivalent, and has the "Add the missing costs" form (`costs.manage`).
       - Lockfile: regenerated with the image's npm (node:24-alpine). My local npm had dropped optional entries, which made `npm ci` fail in Docker.
       - Checked on the running stack at 360 and 1440 px as warehouse and owner: no sideways scrolling, scanning a code adds the line and selects its quantity.
-  12–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
+  12. Frontend: adjustments, alerts, reports, opening stock import — **done**:
+      - `/manage/stock/adjustments/new`: reason chips (required), a required note and the same `ScanBar`. Each line is Counted (default), Add or Remove, shows what is in stock now, and has a large quantity field. It posts with an Idempotency-Key and reports how many counts matched. The adjustment list and detail pages show before and change for each line.
+      - `/manage/stock/alerts`: Open / Resolved, filter by type.
+      - `/manage/reports/low-stock`: shortfall per product, Excel export, and "N active products have no reorder level" linking to the filtered stock list.
+      - `/manage/reports/stock-valuation` (`reports.stock` + `costs.view`; others get a plain "needs cost access" message): total value, products valued, a "without a cost price" count that filters the list, category/brand totals and Excel export.
+      - `/manage/reports`: an index of the reports that exist so far.
+      - The import wizard offers "Opening stock" with its own modes ("Add to stock" / "Set stock to this count"); choosing another kind clears the mode.
+      - Checked on the running stack at 360 and 1440 px as warehouse and owner: no sideways scrolling.
+  13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
   14. E2E acceptance, responsive check, docs — **final review**
 - Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs

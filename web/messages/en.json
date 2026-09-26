@@ -1420,30 +1420,36 @@
       "RETAILERS": "Retailers",
       "SPECIAL_PRICES": "Special prices",
       "PRICE_LIST_ITEMS": "Price-list prices",
-      "DISCOUNT_RULES": "Discounts"
+      "DISCOUNT_RULES": "Discounts",
+      "OPENING_STOCK": "Opening stock"
     },
     "kindHint": {
       "PRODUCTS": "Codes, names, prices, GST, categories and brands.",
       "RETAILERS": "Shops with mobile numbers, GSTIN, addresses and price lists.",
       "SPECIAL_PRICES": "One price per shop and product. Shops by mobile number or code.",
       "PRICE_LIST_ITEMS": "Prices on your price lists, by list name and product code.",
-      "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab."
+      "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab.",
+      "OPENING_STOCK": "How much of each product you have, by product code; optionally its cost. The whole file becomes one stock adjustment."
     },
     "template": "Download the {kind} template",
     "modeTitle": "What should happen to rows that already exist?",
     "mode": {
       "ADD_ONLY": "Add new only",
-      "ADD_OR_UPDATE": "Add new and update existing"
+      "ADD_OR_UPDATE": "Add new and update existing",
+      "STOCK_ADD": "Add to stock",
+      "STOCK_SET": "Set stock to this count"
     },
     "modeHint": {
       "ADD_ONLY": "New rows are added. Rows that already exist are reported as errors and nothing about them changes.",
-      "ADD_OR_UPDATE": "New rows are added and existing ones are updated. Only the columns in your file change; a blank cell means “no change”. You'll see every change before anything is saved."
+      "ADD_OR_UPDATE": "New rows are added and existing ones are updated. Only the columns in your file change; a blank cell means “no change”. You'll see every change before anything is saved.",
+      "STOCK_ADD": "Each quantity is added to what is in stock now.",
+      "STOCK_SET": "Stock becomes exactly the quantity in the file (for example after a count). You'll see the old and new stock of every product before anything is saved."
     },
     "fileTitle": "Choose the file",
     "chooseFile": "Choose an Excel or CSV file",
     "fileHint": "Excel (.xlsx) or CSV, saved from Excel is fine.",
     "check": "Check the file",
-    "chooseModeFirst": "Choose what should happen to existing rows first.",
+    "chooseModeFirst": "Choose an option in step 2 first.",
     "nothingSavedYet": "We check every row first and show you the result. Nothing is saved until you confirm.",
     "report": "Download the full report",
     "checking": "Checking your file…",
@@ -1458,7 +1464,8 @@
       "RETAILERS": "Go to retailers",
       "SPECIAL_PRICES": "Go to special prices",
       "PRICE_LIST_ITEMS": "Go to price lists",
-      "DISCOUNT_RULES": "Go to discounts"
+      "DISCOUNT_RULES": "Go to discounts",
+      "OPENING_STOCK": "Go to stock"
     },
     "counts": {
       "new": "New",
@@ -1493,7 +1500,8 @@
       "COMMITTING": "Importing",
       "COMMITTED": "Imported"
     },
-    "pastImports": "Past imports"
+    "pastImports": "Past imports",
+    "stockModeTitle": "How should the quantities be used?"
   },
   "retailers": {
     "list": {
@@ -2174,6 +2182,119 @@
       "saveCosts": "{count, plural, =0 {Save costs} one {Save # cost} other {Save # costs}}",
       "costsSaved": "{count, plural, one {# cost saved} other {# costs saved}}",
       "billDetails": "Supplier and bill"
+    },
+    "reasons": {
+      "COUNT_CORRECTION": "Stock count",
+      "DAMAGE": "Damaged",
+      "EXPIRY": "Expired",
+      "THEFT": "Lost or stolen",
+      "OPENING_STOCK": "Opening stock",
+      "OTHER": "Other"
+    },
+    "adjustment": {
+      "back": "All adjustments",
+      "newTitle": "Adjust stock",
+      "newBody": "Correct stock after a count, damage or loss. Every adjustment keeps its reason and note.",
+      "reason": "Why is the stock changing?",
+      "note": "Note",
+      "noteHint": "Required. For example: \"Monthly count, rack B\".",
+      "linesTitle": "{count, plural, =0 {Products} one {# product} other {# products}}",
+      "emptyLines": "No products yet. Scan a barcode or search above.",
+      "inStockNow": "now {qty} {unit}",
+      "how": "How to change {name}",
+      "modeColumn": "How",
+      "modes": {
+        "COUNTED": "Counted",
+        "ADD": "Add",
+        "REMOVE": "Remove"
+      },
+      "qtyLabel": {
+        "COUNTED": "Counted quantity of {name} in {unit}",
+        "ADD": "Quantity of {name} to add, in {unit}",
+        "REMOVE": "Quantity of {name} to remove, in {unit}"
+      },
+      "qtyPlaceholder": {
+        "COUNTED": "Counted",
+        "ADD": "Add",
+        "REMOVE": "Remove"
+      },
+      "remove": "Remove {name}",
+      "save": "{count, plural, =0 {Save adjustment} one {Save adjustment (# product)} other {Save adjustment (# products)}}",
+      "saved": "{number} saved",
+      "savedWithUnchanged": "{number} saved. {count, plural, one {# count matched} other {# counts matched}} the stock, so nothing changed there.",
+      "product": "Product",
+      "before": "Before",
+      "change": "Change"
+    },
+    "adjustments": {
+      "title": "Stock adjustments",
+      "description": "Corrections to stock with their reasons. Adjustments can't be edited; a mistake is fixed with another adjustment.",
+      "new": "Adjust stock",
+      "number": "Adjustment",
+      "reason": "Reason",
+      "note": "Note",
+      "lines": "Products",
+      "when": "When",
+      "by": "By",
+      "emptyTitle": "No adjustments yet",
+      "emptyBody": "Adjust stock after a count, or when goods are damaged or lost."
+    },
+    "alerts": {
+      "title": "Stock alerts",
+      "description": "Products that are low, out of stock or have shops waiting. Alerts close by themselves when stock comes back.",
+      "show": "Show",
+      "open": "Open",
+      "resolvedTab": "Resolved",
+      "product": "Product",
+      "type": "Alert",
+      "atTheTime": "Stock at the time",
+      "since": "Since",
+      "opened": "Opened",
+      "resolved": "Resolved",
+      "allTypes": "All alerts",
+      "noneOpen": "No open alerts",
+      "noneOpenBody": "Everything is above its reorder level.",
+      "noneResolved": "No resolved alerts yet"
+    },
+    "reports": {
+      "indexTitle": "Reports",
+      "indexDescription": "More reports (sales, receivables) come with ordering and billing.",
+      "noReports": "No reports for your role",
+      "noReportsBody": "Ask the owner if you need stock reports.",
+      "lowTitle": "Low stock",
+      "lowDescription": "Products at or below their reorder level, with how much you are short.",
+      "valuationTitle": "Stock value",
+      "valuationDescription": "What your stock is worth at cost price, before GST, by category and brand.",
+      "exportExcel": "Download Excel",
+      "category": "Category",
+      "brand": "Brand",
+      "allCategories": "All categories",
+      "allBrands": "All brands",
+      "product": "Product",
+      "available": "Available",
+      "reorderLevel": "Reorder level",
+      "shortBy": "Short by",
+      "onHand": "On hand",
+      "costPrice": "Cost price",
+      "value": "Value",
+      "products": "Products",
+      "noCost": "No cost price",
+      "withoutReorder": "{count, plural, one {# active product has} other {# active products have}} no reorder level, so they never show as low.",
+      "setThem": "Set them",
+      "noLowTitle": "Nothing is low",
+      "noLowBody": "Every product with a reorder level has more than that in stock.",
+      "totalValue": "Total value (before GST)",
+      "productsValued": "Products valued",
+      "withoutCost": "Without a cost price",
+      "missingNote": "Products without a cost price are not in the totals. Tap the count to see them.",
+      "productsTitle": "Products in stock",
+      "missingTitle": "Products in stock without a cost price",
+      "noCostPrice": "No cost price",
+      "totalsBy": "Totals by",
+      "none": "(none)",
+      "noStock": "No stock",
+      "noStockBody": "Products appear here once they are in stock.",
+      "valuationNoAccess": "This report shows costs, so it needs cost access. Ask the owner if you need it."
     }
   }
 }
