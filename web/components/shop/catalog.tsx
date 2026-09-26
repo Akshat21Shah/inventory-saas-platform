@@ -202,7 +202,7 @@ function ProductList({ params }: { params: ShopProductsParams }) {
   }
   return (
     <div className="space-y-4">
-      <ul className="grid gap-3 md:grid-cols-2">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -253,7 +253,7 @@ function SearchBox({ initial = "" }: { initial?: string }) {
 function CategoryTiles({ categories }: { categories: ShopCategory[] }) {
   const t = useTranslations("shop");
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {categories.map((c) => (
         <li key={c.id}>
           <Link
@@ -446,65 +446,69 @@ export function ProductPage({ productId }: { productId: string }) {
         {t("back")}
       </Button>
       <OnHoldNotice />
-      {product.images.length ? (
-        <ul
-          className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4"
-          aria-label={t("photos")}
-        >
-          {product.images.map((image) => (
-            <li key={image.id} className="w-4/5 shrink-0 snap-center sm:w-80">
-              {/* eslint-disable-next-line @next/next/no-img-element -- long-cached public CDN image */}
-              <img
-                src={image.urls.medium}
-                alt={image.alt_text || product.name}
-                className="bg-muted aspect-square w-full rounded-xl object-contain"
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <Thumb url={null} className="aspect-square w-full max-w-80 rounded-xl" />
-      )}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{product.name}</h1>
-        {product.brand ? (
-          <p className="text-muted-foreground flex items-center gap-2 text-sm">
-            {product.brand.name}
-            {product.own_brand ? <OwnBrandBadge /> : null}
-          </p>
-        ) : null}
-      </div>
-      <PriceBlock price={product.price} mrp={product.mrp} large />
-      <OrderingNote product={product} />
-      {product.pack_unit && product.pack_size ? (
-        <p className="text-sm">
-          {t("pack", {
-            pack: product.pack_unit.name,
-            qty: formatQty(product.pack_size),
-            unit: product.unit.name,
-          })}
-        </p>
-      ) : null}
-      {product.slab_hints.length ? (
-        <section className="bg-success/10 space-y-1 rounded-xl p-4">
-          <h2 className="font-semibold">{t("buyMore")}</h2>
-          <ul className="space-y-1 text-sm">
-            {product.slab_hints.map((hint) => (
-              <li key={hint.min_qty}>
-                {t("slab", { qty: formatQty(hint.min_qty) })}{" "}
-                <MoneyText value={hint.net_unit_price} className="font-semibold" />{" "}
-                {ts("price.each")}
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-10">
+        {product.images.length ? (
+          <ul
+            className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4"
+            aria-label={t("photos")}
+          >
+            {product.images.map((image) => (
+              <li key={image.id} className="w-4/5 shrink-0 snap-center sm:w-80 lg:w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element -- long-cached public CDN image */}
+                <img
+                  src={image.urls.medium}
+                  alt={image.alt_text || product.name}
+                  className="bg-muted aspect-square w-full rounded-xl object-contain"
+                />
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
-      {product.description ? (
-        <p className="text-sm whitespace-pre-line">{product.description}</p>
-      ) : null}
-      <p className="text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
-        {t("orderingSoon")}
-      </p>
+        ) : (
+          <Thumb url={null} className="aspect-square w-full max-w-80 rounded-xl lg:max-w-none" />
+        )}
+        <div className="space-y-5">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold">{product.name}</h1>
+            {product.brand ? (
+              <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                {product.brand.name}
+                {product.own_brand ? <OwnBrandBadge /> : null}
+              </p>
+            ) : null}
+          </div>
+          <PriceBlock price={product.price} mrp={product.mrp} large />
+          <OrderingNote product={product} />
+          {product.pack_unit && product.pack_size ? (
+            <p className="text-sm">
+              {t("pack", {
+                pack: product.pack_unit.name,
+                qty: formatQty(product.pack_size),
+                unit: product.unit.name,
+              })}
+            </p>
+          ) : null}
+          {product.slab_hints.length ? (
+            <section className="bg-success/10 space-y-1 rounded-xl p-4">
+              <h2 className="font-semibold">{t("buyMore")}</h2>
+              <ul className="space-y-1 text-sm">
+                {product.slab_hints.map((hint) => (
+                  <li key={hint.min_qty}>
+                    {t("slab", { qty: formatQty(hint.min_qty) })}{" "}
+                    <MoneyText value={hint.net_unit_price} className="font-semibold" />{" "}
+                    {ts("price.each")}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {product.description ? (
+            <p className="text-sm whitespace-pre-line">{product.description}</p>
+          ) : null}
+          <p className="text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
+            {t("orderingSoon")}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -154,15 +154,46 @@ export function BottomNavShell({
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       {banner}
-      <header className="bg-primary text-primary-foreground sticky top-0 z-30 flex h-14 items-center px-4 font-semibold">
-        {title}
+      <header className="bg-primary text-primary-foreground sticky top-0 z-30 h-14">
+        <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-between gap-4 px-4">
+          <span className="font-semibold">{title}</span>
+          {/* Wide screens: the same links in the header instead of the phone's bottom bar. */}
+          <nav aria-label={t("nav.mainNavigation")} className="hidden lg:block">
+            <ul className="flex gap-1">
+              {items.map(({ href, labelKey, icon: Icon }) => {
+                const active = isActive(pathname, href, rootHref);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-medium",
+                        active
+                          ? "bg-primary-foreground text-primary"
+                          : "text-primary-foreground/90 hover:bg-primary-foreground/15",
+                      )}
+                    >
+                      <Icon aria-hidden className="size-4" />
+                      {t(`nav.${labelKey}`)}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
       </header>
-      <main id="main" className="mx-auto w-full max-w-2xl flex-1 px-4 pt-4 pb-24">
+      {/* Phones keep one comfortable column; tablets and laptops use the room they have. */}
+      <main
+        id="main"
+        className="mx-auto w-full max-w-2xl flex-1 px-4 pt-4 pb-24 md:max-w-4xl lg:max-w-6xl lg:pb-10"
+      >
         {children}
       </main>
       <nav
         aria-label={t("nav.mainNavigation")}
-        className="bg-background fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)]"
+        className="bg-background fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <ul className="mx-auto grid max-w-2xl grid-cols-5">
           {items.map(({ href, labelKey, icon: Icon }) => {
