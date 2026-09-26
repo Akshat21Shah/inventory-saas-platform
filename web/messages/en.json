@@ -1963,7 +1963,10 @@
       "goneBody": "It may be out of the catalog for now.",
       "orderingSoon": "Ordering from the app is coming soon. Until then, please order from your distributor as usual."
     },
-    "ownBrand": "Own brand"
+    "ownBrand": "Own brand",
+    "stock": {
+      "left": "{qty} {unit} in stock"
+    }
   },
   "filters": {
     "button": "Filters",

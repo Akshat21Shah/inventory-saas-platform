@@ -230,7 +230,7 @@
       - `/manage/reports`: an index of the reports that exist so far.
       - The import wizard offers "Opening stock" with its own modes ("Add to stock" / "Set stock to this count"); choosing another kind clears the mode.
       - Checked on the running stack at 360 and 1440 px as warehouse and owner: no sideways scrolling.
-  13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
+  13. Frontend: shop stock labels — **done**: product cards and the product page show the server's label (In stock, Low stock, Available on backorder, Out of stock) with the product's status colours, and "3 pieces in stock" only when the distributor shows exact stock. Nothing about stock is worked out in the shop.
   14. E2E acceptance, responsive check, docs — **final review**
 - Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
