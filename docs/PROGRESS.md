@@ -52,7 +52,7 @@
 - The status line in `PLAN.md` now says Phase 0 is complete.
 
 ## In progress
-- **Phase 1 — Tenancy, auth, platform admin** (branch `phase-1`, draft PR #2; plan approved 2026-09-25, including the wider PLAN §8 scope). **All 17 commits done; waiting for the end-of-phase review.**
+- **Phase 1 — Tenancy, auth, platform admin** (branch `phase-1`, draft PR #2; plan approved 2026-09-25, including the wider PLAN §8 scope). **Merged to main (PR #2, 2026-09-25).**
   - Decisions recorded: ADR-025 … ADR-031; PLAN v1.3 (§1.2 T7, §2.2, §2.3, §3.2, §9.1/§9.2 Security keys, §10).
   - Done so far:
     - Field-level encryption (ADR-031).
@@ -158,8 +158,172 @@
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
-- End-of-phase review of Phase 1 (PR #2), then merge.
-- Phase 2 — Catalog, retailers, pricing (after review). The retailer model and its OTP login are already in place as a stub.
+- Phase 2 — Catalog, retailers, pricing (branch `phase-2`, draft PR #3; plan approved 2026-09-25 with ADR-034 … ADR-036). **All commits done; waiting for the end-of-phase review.** Then Phase 3 (inventory). Commits in order:
+  0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
+  1. Catalog models
+  2. `billing/tax.py` line math
+  3. Catalog services and APIs (incl. effective-dated GST rates)
+  4. Product images
+  5. Product search
+  6. Import framework + product import/export
+  7. Retailers (+ import, welcome message)
+  8. Price lists, special prices, discount rules
+  9. `resolve_price`
+  10. Shop catalog APIs — backend checkpoint
+  11–15. Frontend (catalog, import wizard, retailers, pricing, shop + sign-out fix)
+  16. Seed, E2E acceptance, docs
+- Phase 2 done so far:
+  - Commit 0: Phase 1 decisions (97 accepted, PAN holder types verified) and ADR-034 … ADR-036.
+  - Commit 1: catalog models; search-vector triggers; append-only GST-rate history (cancellation only); default units per tenant.
+  - Commit 2: `billing/tax.py` line and document math; PLAN §6.3 examples 1–10 and Hypothesis properties. The GST-inclusive one-paisa bound was also checked by brute force: 50,000 prices per rate.
+  - Commit 3: catalog services and API: categories (3 levels), brands, units; products with barcodes, lookup and bulk actions; price-change audit; GST scheduling, cancellation and bulk scheduling. Isolation test on every route.
+  - Commit 4: product images: background WebP variants on a public, unlisted bucket with immutable caching and content-versioned URLs. Checked live. `tenant_transaction()` keeps RLS working in non-atomic tasks, and a test runs the worker as `app_user`.
+  - Commit 5: ranked search. On 20,000 products, as the runtime role, queries took 44–60 ms (target < 200 ms).
+  - Commit 6: import framework and product import/export: dry run, change preview, xlsx error report, templates, round-trip export, messy-file handling (ADR-035). 21 import tests. Checked live through the worker.
+  - Commit 7: retailers.
+    - Full profile on top of the Phase 1 stub: code R-00001, GSTIN with the ADR-033 rules, state, addresses, credit limit and terms (credit permission, audited), hold/unhold, salesperson, tags and language. The migration renames the stub's fields and backfills codes and states; checked on dev data.
+    - Soft delete ends the sign-in; a re-added number takes the login over. Changing the mobile moves the sign-in.
+    - Sales staff can be limited to their own shops (`orders.sales_visibility`).
+    - Shops on hold: new setting `retailers.blocked_can_sign_in` (default on). When it is off, sign-in, hand-off and every request say "Your account is on hold. Please contact your distributor." (`RETAILER_ON_HOLD`); the code is still sent, so the request looks the same for every number. `/auth/me` reports `on_hold` for the shop's notice.
+    - Welcome message through the SMS adapter (mock; DLT template on the pre-production list).
+    - Retailer import and export (matched by mobile; the number and sign-in never change on update; credit columns need the credit permission).
+  - Commit 8: price lists (deletion refused while shops or rules use one; shop counts), bulk price upsert (one audit entry with old → new per product code), retailer special prices (audited; sales staff limited to their shops), discount rules with quantity slabs and validity dates. Rules are validated in plain words (targets exist in this tenant, percentage ≤ 100, slabs unique) and backed by check constraints. Price lists can be assigned per shop, in bulk or by import.
+  - Commit 9: `pricing/resolve.py` implements `resolve_price` and a batch form, `resolve_prices`, per spec 5.6 and ADR-036.
+    - Unit price comes from the shop's special price, then its price list, then the base price.
+    - Only the single best rule applies. Ties are broken by amount, then audience, then scope (a category rule also covers its sub-categories), then the newest rule. Slabs use the highest one reached.
+    - New setting `pricing.discounts_on_special_prices` (default on).
+    - Uses the GST rate in effect on the day. Inactive, deleted or not-yet-taxed products raise `PRICE_UNAVAILABLE`.
+    - Staff endpoints: `POST pricing/preview/` and `GET retailers/{id}/prices/` (a shop's price sheet).
+    - 44 resolver tests, including both values of the new setting and Hypothesis properties.
+  - Commit 10: shop catalog API (`apps/shop`, retailer logins only, scoped to the login's own shop).
+    - `shop/categories/`: the tree with product counts; empty categories are hidden.
+    - `shop/brands/`: added to PLAN §3.9 for the brand filter.
+    - `shop/products/`: browse by name, filter by category (with sub-categories) or brand. A search returns the top 40 ranked matches.
+    - `shop/products/{id}/`: images and slab hints ("24 or more: ₹9.50 each").
+    - Visibility follows ADR-034, with an implementation note added there. Prices come from `resolve_price` at the minimum order quantity. The shop never sees base prices, price sources or rule names.
+    - A page costs a fixed number of queries.
+    - Isolation tests: the other distributor's shops, staff, and staff routes. Shops on hold follow `retailers.blocked_can_sign_in`.
+  - **Backend checkpoint reached.**
+  - Checkpoint follow-ups (approved 2026-09-25):
+    - The shop price now includes the discount amount and `discount_per_unit`, alongside the MRP.
+    - Free-goods warning (`FREE_GOODS`) when saving a discount rule or special price that makes products free. Added to ADR-036, and free-goods schemes are on the PLAN backlog.
+    - The search performance test uses the median of 5 runs (limit still 200 ms).
+    - New test: MRP changes are highlighted in the import change preview.
+  - Commit 11: distributor catalog screens.
+    - Products list: search, filters for category, brand, status and shop visibility; bulk actions; Excel/CSV export.
+    - Product form (React Hook Form + Zod; decimals stay strings). It shows server warnings, and the GST hint for the HSN code.
+    - Edit page panels: GST-rate history with schedule and cancel, photos (background processing polled until ready), barcodes.
+    - Category tree (3 levels), brands and units.
+    - New `GET products/tax-options/`: the GST rates and cess types in use (platform reference data).
+    - Shared additions: `SubNav`, `FormSelect` (links labels to selects; also fixed in `FieldsDialog`), `downloadFile` for binary downloads, and `useDebounced`.
+  - Commit 12: import wizard (`/manage/imports/new`, `/manage/imports/{id}`, `/manage/imports`).
+    - Start page: choose products or retailers (with the template download), choose the mode explicitly (no default; the button stays disabled until one is chosen), then the file.
+    - Job page: polls while the file is checked or imported. Shows the counts, skipped columns, and row errors with row and column.
+    - Change preview: old → new values, with price and MRP changes highlighted. Confirm with "Import N rows". Then the result, with any rows skipped at commit.
+    - Full xlsx report download and an import history.
+  - Commit 13: retailer screens.
+    - List: search; filters for status, salesperson and price list; bulk assign salesperson or price list, put on hold (with a reason) or remove the hold; export; import.
+    - Create form: profile, GSTIN, state, language, salesperson, price list, and an optional billing address. The welcome message is sent on create.
+    - Detail page: edit, resend the welcome message, hold or remove the hold, delete.
+    - Credit card: editable only with `credit.manage`. Addresses: add, edit, remove.
+    - "What this shop pays": the server's price sheet at each product's minimum quantity, showing the price source and discount.
+  - Commit 14: pricing screens (`/manage/pricing/...`).
+    - Price lists: create, rename, delete; a list's products with inline price edits and add or remove.
+    - Special prices: all shops, or one shop from its page; shop and product pickers that search as you type.
+    - Discount rules: list with status filter. Editor for percentage or rupees per unit, quantity slabs, scope (all products, category with sub-categories, brand, one product), audience (all, price list, one shop), dates and on/off.
+    - The `FREE_GOODS` warning shows with the product owner's wording. After a create that warns, the editor stays open and later saves update the same rule.
+    - Settings groups "Pricing" (`pricing.discounts_on_special_prices`) and "Shops" (`retailers.blocked_can_sign_in`).
+  - Commit 15: shop catalog, read-only (`/shop`, `/shop/catalog[/{category}]`, `/shop/search`, `/shop/products/{id}`).
+    - Pages: home greeting with categories and search; category tiles with counts; brand chips; product cards ("show more" paging); product page with photos, the "Buy more, pay less" slab hints and pack size.
+    - Prices exactly as the server sends them: net price, struck-through price and the saving when discounted, MRP, and "+ GST" or "incl. GST".
+    - Minimum quantity and order steps are shown in plain words. The on-hold notice appears on every catalog page.
+    - Ordering arrives in Phase 4; the product page says so.
+    - Sign-out fix: after signing out, the next sign-in lands on the shop home page, not the page the person left.
+  - Commit 16: seed, E2E acceptance, docs.
+    - `make seed` adds, per distributor (`common/demo.py`):
+      - a 3-level category tree, 12 brands and 200 products with photos (a few hidden or inactive);
+      - "Gold" and "Wholesale" price lists;
+      - 20 shops (some with a GSTIN, on price lists, with salespeople; one on hold) and 5 special prices;
+      - 5 discount rules: category slabs, a brand week, a price-list rule, a future Diwali offer and a switched-off rule.
+    - The seed goes through the normal services, is idempotent, and takes about 18 s locally. `--no-photos` skips the photos.
+    - `e2e_workbook` (DEBUG only) makes real .xlsx import files for the browser test.
+    - `e2e/support/flows.ts` holds the onboarding steps shared by both acceptance specs.
+    - The full-stack specs run one at a time (`--workers=1`), because the super admin's 2FA codes are single-use.
+- **Phase 2 review additions** (2026-09-26; ADR-037 … ADR-039, PLAN tasks 2.20–2.28):
+  - Docs commit: spec 5.4/5.6, PLAN (M5, tasks, settings, backlog incl. manufacturing, decisions 10.2a), ADR-037 … ADR-039.
+  - 2.20: a ₹0 price-list price warns "This price list makes N products free for M retailers…" (shops with their own special price for the product don't count); shown on the price list screen.
+  - 2.21: discount combination (ADR-038), new setting `pricing.discount_combination`: `BEST` (default), `ADD` or `SEQUENTIAL`.
+    - `resolve_price` returns every rule applied, in order, plus the total and the percentage (`billing.tax.percent_of`). The total is capped at the line; in `ADD` the least specific rule is trimmed.
+    - The shop API sends only the total: `discount_total`, `discount_percent` and `discount_per_unit`. The shop shows "You save ₹0.50 each (5%)"; slab hints unchanged.
+    - Staff price sheets show the total, the % and the rule names.
+    - 28 new resolver tests: each mode with percentages, flat plus %, slabs, the cap, sequential order and special prices, plus Hypothesis properties.
+  - 2.22: own brand and cost price (ADR-039).
+    - `Brand.own_brand` (audited), an own-brand filter and badge on the product list, and setting `retailers.show_own_brand_badge` (default off) for the shop badge.
+    - `Product.cost_price`: returned only with `pricing.view` (null otherwise), set only with `pricing.manage` (checked in the service, so imports too), audited as a price change. Never in the shop API.
+    - Imports: a "Cost price" column that needs `pricing.manage`. Templates and exports leave the column out without `pricing.view`.
+    - The seed adds an own brand ("Sharma Select" / "Patel Select") and cost prices.
+  - 2.23–2.26: per-shop pricing tools, backend (`apps/pricing/tools.py`, `api/tools.py`).
+    - Discount grid: `GET/PUT retailers/{id}/discount-grid/` and `POST …/preview/`.
+      - One simple rule per shop and product (no slabs, no dates), named "R-00001 · CODE". Slab or dated rules come back read-only.
+      - The preview prices the entered discounts through `resolve_prices` with rules supplied for the preview only; nothing is saved.
+      - Saving writes one audit entry (`pricing.shop_discounts_changed`) and returns a free-goods warning when needed.
+    - Copy pricing: `POST retailers/{id}/copy-pricing/preview/`, then `…/copy-pricing/` with `expected_changes`.
+      - Replace or Add, no default. A stale preview returns 409 `PREVIEW_OUT_OF_DATE`.
+      - Copies the price list, special prices, and shop rules with their slabs. Copied rule names switch to the target shop's code.
+      - In Add, a simple rule replaces the target's. One audit entry, `pricing.pricing_copied`.
+    - Bulk % change: `POST price-lists/{id}/adjust/preview/`, then `…/adjust/` with `expected_count`.
+      - Category (with sub-categories) or brand; optionally adds the missing products from the standard price.
+      - Rounding to the paisa or to whole rupees, half-up (`billing.tax.adjust_price`).
+      - Audited: the price changes plus `pricing.price_list_adjusted`.
+    - Shop pricing report: `GET pricing/shop-report/` (customised shops or all, with counts and free products; 25 per page) and `…/export/`, plus `GET retailers/{id}/free-products/`.
+      - Free products are found by a cheap upper bound on each rule's share (best, or the sum), then full pricing for the at-risk products only.
+    - Every route has isolation tests and is in the role matrix.
+  - 2.27: pricing imports and exports (`apps/dataio/kinds/pricing.py`), each needing `pricing.manage`; exports need `pricing.view`.
+    - Special prices: shop by mobile or code, product code, price, note. The pair is the key; ₹0 warns.
+    - Price-list prices: an existing list by name (unknown names list your lists), product code, price.
+    - Discount rules:
+      - The name is the key, and rows with the same name are one rule, one row per slab.
+      - Targets: product code, brand, or category path. Audience: a price list or a shop (mobile or code).
+      - Type % or ₹. Dates as DD-MM-YYYY or Excel dates (`parsing.parse_date`).
+      - Rows of one rule must agree, and one bad row skips the whole rule. In "update existing", a name shared by several rules is an error.
+      - The preview shows names, not ids, and highlights discount changes. A 100% discount warns.
+    - Exports use the template columns, so a file can go out and come back with no changes; tested for all three.
+    - The wizard offers the three new kinds. Shared test fixtures moved to `apps/dataio/tests/conftest.py` and `helpers.py`.
+  - 2.28a: frontend, retailer page.
+    - "What this shop pays" edits the special price in place (the price sheet now returns each row's special price); clearing it removes the price.
+    - A "Pricing for this shop" card with:
+      - "Discounts by product": the discount grid at `/manage/retailers/{id}/discounts`. Server-priced net prices update as you type, and "Save N changes" saves them. Slab or dated rules show as "Also: …" links. Read-only without `pricing.manage`.
+      - "Add a discount for this shop": the rule editor, pre-filled for the shop.
+      - "Copy pricing from another shop": pick a shop, choose Replace or Add (no default), preview, then "Copy N changes".
+  - 2.28b: frontend, pricing section.
+    - Price lists: "Change prices by %" (brand or category, optionally add missing products, paisa or whole-rupee rounding, server preview, then "Update N prices").
+    - Shop pricing page (`/manage/pricing/report`): customised or all shops, counts linking to the shop's special prices and discount grid, free products in a dialog, Excel export.
+    - Export and import buttons for special prices, price-list prices and discounts.
+    - The "When several discounts apply" setting is on the Pricing settings page (from the registry).
+  - E2E `e2e/pricing-tools.spec.ts` (in `make e2e-stack` and CI). Passed locally with the other two specs (17 passed).
+    - A new distributor imports 20 products and 4 shops.
+    - The grid previews ₹10.35 for 10% off ₹11.50 and saves; a special price is set in place.
+    - Pricing is copied (Replace) after a preview.
+    - At 360 px the second shop sees "You save ₹1.15 each (10%)" and the ₹9.00 special price.
+    - Gold gets +5% for one brand with the missing products added (5 prices), and the report lists both shops.
+  - **Phase 2 review additions complete; waiting for review.**
+  - Fixes after manual testing: the missing descriptions of the Pricing and Shops settings pages (a test now renders every settings group); the shop now uses the width of tablets and laptops.
+  - **Responsive design (ADR-040, CLAUDE.md §6a):**
+    - Lists become cards below 1024 px, each with its own card fields.
+    - Bulk selection on phones uses a "Select" mode with a bottom action bar.
+    - On phones: filters in a bottom sheet (`FilterBar`) and Save/Cancel stuck to the bottom of long forms (`FormActions`).
+    - 44 px touch targets in the design system. The audit log also shows cards on phones.
+    - `e2e/responsive.spec.ts` checks 57 screens at 360, 768 and 1440 px: no sideways scrolling, no off-screen or overlapping controls, 44 px targets on phones. Screenshots are the CI artifact `responsive-screenshots`; locally `make e2e-responsive`.
+  - **Phone testing on the home network:** `make lan` / `make localhost` (`infra/dev-domain.sh`).
+    - The switch detects the LAN IP and writes the git-ignored `infra/dev-domain.env` (platform domain `<ip>.nip.io` and public storage address), which Compose layers over `.env`. It then recreates the containers and clears cached branding links.
+    - Dev-only settings follow the domain: Next `allowedDevOrigins` and Django CORS.
+    - Postgres, Redis, the API and Mailpit are now bound to 127.0.0.1; only web and storage are reachable from the LAN.
+    - Checked over nip.io at phone size: staff sign-in and reload, shop OTP sign-in, the chooser hand-off, and product photos from the LAN address.
+- **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
+  - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
+  - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.
+  - Neither shop finds the other distributor's seeded products. Pages don't scroll sideways, and signing out leads to plain sign-in.
+  - The same run passed `acceptance.spec.ts` (Phase 1) after the flows were shared.
 
 ## Pre-production verification
 Every `TODO(verify)` in the code is listed here, so each item is checked before launch. Search the code with `grep -rn "TODO(verify)" backend web/server.mjs web/server web/lib web/app web/components`.
@@ -169,13 +333,12 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 | 1 | GST state code list: names and codes, and legacy codes 25 (Daman & Diu, pre-2020) and 28 (Andhra Pradesh, pre-2014) kept inactive | `backend/apps/platform/reference_data.py` (`STATES`) | GST portal state code list | Product owner | Open |
 | 2 | GSTIN format for regular taxpayers (`[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]`) and the mod-36 check character. Other registration kinds (TDS/TCS, UN bodies, NRTP) are out of scope in v1 | `backend/apps/platform/validators.py`, `Tenant` check constraint `tenant_gstin_format` | GST portal / GSTN GSTIN format specification | Product owner | Open |
 | 3 | Production load balancer configuration. It must append the client IP to `X-Forwarded-For` and set `X-Forwarded-Proto`. The web server's `TRUSTED_PROXIES` must list the load balancer's addresses, and Django's `TRUSTED_PROXIES` must list the web servers' addresses (ADR-032; our own code already discards client-supplied forwarded headers) | infra (Phase 10), `web/server.mjs`, `backend/config/settings/base.py` | Load balancer documentation and the deployment topology | Lead engineer | Open (before staging) |
-| 4 | SMS provider for retailer OTP: implement a real adapter against the provider's official API, with a DLT-registered sender ID and OTP template (required in India). Only the mock exists; deployed environments refuse it (`check --deploy`: accounts.E001/E002) | `backend/apps/accounts/adapters/sms.py` | Chosen provider's API docs; TRAI DLT registration | Product owner (provider choice) + lead engineer | Open (before staging) |
+| 4 | SMS provider for retailer OTP and the welcome message: implement a real adapter against the provider's official API, with a DLT-registered sender ID and OTP template (required in India). Only the mock exists; deployed environments refuse it (`check --deploy`: accounts.E001/E002) | `backend/apps/accounts/adapters/sms.py` | Chosen provider's API docs; TRAI DLT registration | Product owner (provider choice) + lead engineer | Open (before staging) |
 | 5 | ADR-009 tax engine & rounding rules | `docs/DECISIONS.md` ADR-009 | Chartered accountant | Product owner | Open (before Phase 5) |
-| 6 | PAN holder types accepted as the 4th PAN character (6th of the GSTIN): currently A, B, C, F, G, H, J, L, P, T; anything else is rejected | `backend/apps/platform/validators.py` (`PAN_HOLDER_TYPES`) | Income Tax Department PAN documentation | Product owner | Open |
+| 6 | GST Unit Quantity Codes (UQC) of the default units (PCS, NOS, BOX, CTN, PAC, DOZ, BTL, SET, KGS, GMS, LTR, MLT, MTR) | `backend/apps/catalog/defaults.py` | GST portal UQC list | Product owner | Open (before Phase 7) |
+| 7 | Production public bucket and CDN for product images: anonymous `GetObject` only (no `ListBucket`), `Cache-Control` passed through, `PUBLIC_ASSETS_BASE_URL` set to the CDN (ADR-034) | `backend/common/storage.py`, infra (Phase 10) | AWS S3 / CloudFront documentation | Lead engineer | Open (before staging) |
 
 ## Known issues / pending
 - ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
 - Production domain to be supplied before staging (ADR-019).
-- Decision pending (product owner): GST state code 97 (Other Territory) is active and accepted today.
-- Signing out from `/shop/account` lands on `/shop/login?next=/shop/account`, so the next sign-in returns to the account page instead of home. Harmless; tidy up in Phase 2 with the shop home.
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.

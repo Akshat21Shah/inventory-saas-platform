@@ -152,6 +152,12 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
   - Distributors are warned 7 days before a scheduled change (dashboard card + notification).
   - With GST-inclusive prices, the inclusive price stays the same and the taxable value changes.
 - Variants: out of scope for v1 (model products flatly; revisit later).
+- **Own brand (white label):** a distributor can mark a brand as its own brand. The product list filters by it, and a tenant setting (default off) shows an "own brand" badge in the shop.
+- **Cost price** per product:
+  - Visible only to staff with the pricing permission (`pricing.view` to see, `pricing.manage` to change). Never sent to shops. Audited on change.
+  - Kept so margins can be reported later (own brand vs traded).
+  - Optional column in product import/export, which needs the pricing permission.
+- Manufacturing (raw materials, bills of materials, production entries with cost roll-up) is a future phase (PLAN backlog).
 - Bulk import/export via Excel/CSV with validation report (row-level errors), and a downloadable template.
 - Search: PostgreSQL full-text + trigram similarity on name, code, barcode, brand, tags. Target < 200 ms.
 
@@ -161,14 +167,38 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
 - A retailer account belongs to exactly one tenant. The mobile number is unique **per tenant**. The same person/shop may have separate retailer accounts under different distributors, with fully separate data. A distributor is never told that a number exists under another tenant.
 
 ### 5.6 Pricing & discounts
-- Price lists (e.g. "Standard", "Gold retailers") with per-product prices; each retailer assigned one price list (default: base price).
-- Retailer-specific product price overrides.
-- Discount rules: percentage or flat; scope = product, category, brand, or all; audience = all retailers, price list, or specific retailer; optional quantity slabs; optional validity dates.
-- **Resolution order** (implemented in one service, `pricing.services.resolve_price`):
-  1. Unit price = retailer override → retailer's price list → product base price.
-  2. Discount = the single best applicable active rule (no stacking in v1; stacking flag reserved for later).
-  3. Return a structured result: base, unit price, discount applied (rule id + amount), net unit price, tax rate. Store this snapshot on the order line.
-- Prices shown to retailers always come from this service.
+- **Price lists** (e.g. "Standard", "Gold retailers") with per-product prices. Each retailer is assigned one price list; without one, the base price applies.
+- **Retailer-specific product prices** (special prices).
+- **Discount rules:**
+  - Percentage, or flat per unit.
+  - Scope: product, category (with its sub-categories), brand, or all products.
+  - Audience: all retailers, a price list, or one retailer.
+  - Optional quantity slabs and validity dates.
+  - Every product can have its own discount, set per product and per shop (or price list). Many products have none.
+- **Combining discounts** is a tenant setting, `pricing.discount_combination` (ADR-038):
+  - **Best single discount** (default): the one rule giving the largest discount.
+  - **Add them together:** each rule's amount is worked out on the original line, and the amounts are added (5% + 10% = 15%).
+  - **One after another:** from the most specific rule to the least specific, each applied to what is left (10% then 5% = 14.5%).
+  - In every mode, the total discount never exceeds the line amount.
+- **Resolution** (one service, `pricing.resolve_price`):
+  1. Unit price = retailer special price → retailer's price list → product base price.
+  2. Discount = the applicable active rules, combined as the setting says.
+  3. A structured result: base, unit price, every rule applied (rule, amount), total discount, net unit price, tax rate. The order line stores this snapshot (Phase 4).
+- **What shops see:**
+  - Prices always come from this service.
+  - The total discount, as an amount and a percentage ("You save ₹12 (12%)"), and "Buy more, pay less" slab hints.
+  - Never rule names, how many rules applied, base prices or cost prices.
+- **Free goods** ("buy X get Y free") are not supported yet. A rule, special price or price-list price that brings a net price to zero is saved with a warning, and the product is hidden from those shops (ADR-034, ADR-036).
+- **Managing pricing at scale** (hundreds of shops, thousands of products; ADR-037):
+  - **Per shop:**
+    - A "what this shop pays" table with inline special prices.
+    - A discount grid (discount per product, net price previewed by the server).
+    - "Add a discount for this shop".
+    - "Copy pricing from another shop" (Replace or Add, chosen each time, with a preview; audited).
+  - **Bulk and reporting:**
+    - Bulk price-list change by percentage for a category or brand (preview first; paisa or whole-rupee rounding).
+    - A report of shops with special prices or shop-specific rules, including products that become free.
+  - Excel import/export (explicit mode, change preview, error report) for special prices, price-list prices and discount rules.
 
 ### 5.7 Inventory
 - Warehouses: one default warehouse per tenant; multi-warehouse behind a feature flag (later phase).
@@ -383,7 +413,7 @@ Tenant model and onboarding, feature flags, plans (non-enforced Beta), staff aut
 **Accept when:** super admin creates a distributor; distributor admin logs in, sets branding, invites staff; tenant isolation tests pass for all endpoints.
 
 ### Phase 2 — Catalog, retailers, pricing
-Categories, brands, units, products (images, HSN, GST), bulk import/export, product search, retailers (CRUD, bulk import, welcome message via mock), price lists, retailer overrides, discount rules, `resolve_price` with full tests.
+Categories, brands, units, products (images, HSN, GST), bulk import/export, product search, retailers (CRUD, bulk import, welcome message via mock), price lists, retailer overrides, discount rules, `resolve_price` with full tests. Added at the end-of-phase review: discount combination modes, per-shop pricing tools (grid, copy, bulk %, report, pricing imports/exports), own-brand products and cost price.
 **Accept when:** distributor imports 1,000 products and 100 retailers from Excel; a retailer logs in and sees only their distributor's products with correctly resolved prices.
 
 ### Phase 3 — Inventory

@@ -16,11 +16,13 @@ from apps.accounts import staff_services
 from apps.accounts.models import Invitation, Membership, User
 from apps.accounts.permissions import OWNER_ROLE
 from apps.audit import services as audit
+from apps.catalog.defaults import ensure_default_units
+from apps.catalog.models import Unit
+from apps.platform.gst import gstin_problem
 from apps.platform.models import (
     DEFAULT_BRAND_COLOR,
     FeatureFlag,
     Plan,
-    State,
     Subscription,
     Tenant,
     TenantBranding,
@@ -28,7 +30,7 @@ from apps.platform.models import (
     TenantProfile,
 )
 from apps.platform.selectors import invalidate_tenant_features, invalidate_tenant_info
-from apps.platform.validators import gstin_format_error, normalize_gstin
+from apps.platform.validators import normalize_gstin
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
 from common.tenancy import tenant_context
@@ -90,15 +92,7 @@ def _check_gst_identity(tenant: Tenant) -> None:
     """GSTIN rules with plain, specific messages (spec 5.1). The PAN is never an input: it is
     characters 3 to 12 of the GSTIN (a check constraint enforces this too)."""
     errors: dict[str, list[str]] = {}
-    problem = gstin_format_error(tenant.gstin)
-    if problem is None:
-        state = State.objects.filter(code=tenant.gstin[:2]).first()
-        if state is None:
-            problem = f"The first 2 digits ({tenant.gstin[:2]}) are not a GST state code."
-        elif not state.is_active:
-            problem = (
-                f"State code {state.code} ({state.name}) is no longer used for new registrations."
-            )
+    problem = gstin_problem(tenant.gstin)
     if problem is None and (
         Tenant.objects.filter(gstin=tenant.gstin).exclude(pk=tenant.pk).exists()
     ):
@@ -151,6 +145,7 @@ def onboard_tenant(data: OnboardingInput, *, by: User) -> Tenant:
             created_by=by,
         )
         Subscription.objects.create(plan=plan, starts_at=timezone.now(), created_by=by)
+        ensure_default_units(Unit)
         audit.record(
             "tenant.created",
             target=tenant,

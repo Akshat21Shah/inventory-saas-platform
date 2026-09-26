@@ -14,6 +14,11 @@ api_v1: list[URLPattern | URLResolver] = [
     path("", include("apps.accounts.api.staff_urls")),
     path("platform/", include("apps.platform.api.urls")),
     path("", include("apps.platform.api.tenant_urls")),
+    path("", include("apps.dataio.api.urls")),
+    path("", include("apps.catalog.api.urls")),
+    path("", include("apps.retailers.api.urls")),
+    path("", include("apps.pricing.api.urls")),
+    path("shop/", include("apps.shop.api.urls")),
     path("public/states/", PublicStatesView.as_view(), name="public-states"),
 ]
 

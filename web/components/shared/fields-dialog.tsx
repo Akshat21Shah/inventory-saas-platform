@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { FormField } from "@/components/shared/form-field";
+import { FormSelect } from "@/components/shared/form-select";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,13 +16,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useErrorText } from "@/lib/api/use-error-text";
 
@@ -128,22 +122,12 @@ export function FieldsDialog({
                   error={fieldErrors[field.name]}
                   required={field.required}
                 >
-                  <Select
+                  <FormSelect
                     value={String(value ?? "")}
                     disabled={field.readOnly}
                     onValueChange={(next) => setValues((v) => ({ ...v, [field.name]: next }))}
-                  >
-                    <SelectTrigger className="min-h-10 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(field.options ?? []).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={field.options ?? []}
+                  />
                 </FormField>
               );
             }

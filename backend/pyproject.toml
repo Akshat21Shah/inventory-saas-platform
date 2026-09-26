@@ -23,6 +23,7 @@ dependencies = [
     "pyotp>=2.9",
     "boto3>=1.40",
     "pillow>=11.3",
+    "openpyxl>=3.1",
 ]
 
 [dependency-groups]
@@ -37,6 +38,8 @@ dev = [
     "djangorestframework-stubs[compatible-mypy]>=3.16",
     "celery-types>=0.23",
     "pre-commit>=4.2",
+    "hypothesis>=6.130",
+    "types-openpyxl>=3.1.5.20260827",
 ]
 
 [tool.uv]

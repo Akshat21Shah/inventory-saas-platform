@@ -553,4 +553,12 @@ def _retailer_summary(user: User) -> dict[str, Any] | None:
     if user.user_type != User.UserType.RETAILER:
         return None
     link = RetailerUser.objects.filter(user=user).select_related("retailer").first()
-    return {"id": link.retailer.pk, "shop_name": link.retailer.shop_name} if link else None
+    if link is None:
+        return None
+    retailer = link.retailer
+    return {
+        "id": retailer.pk,
+        "shop_name": retailer.shop_name,
+        "code": retailer.code,
+        "on_hold": retailer.status == retailer.Status.BLOCKED,
+    }

@@ -41,12 +41,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = await getLocale();
   const host = await hostContext();
   return (
-    <html lang={locale} className={`${inter.variable} h-full antialiased`}>
+    // Browsers and extensions add attributes to <html> and <body> before React loads (Chrome's
+    // __gcrremoteframetoken, translators, password managers). Ignore attribute differences on these
+    // two tags only; mismatches anywhere inside the page are still reported.
+    <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Tenant colour as CSS variables before first paint (ADR-028: derived on the client). */}
         <BrandTheme color={host.branding?.primary_color} />
       </head>
-      <body className="bg-background text-foreground min-h-full font-sans">
+      <body className="bg-background text-foreground min-h-full font-sans" suppressHydrationWarning>
         <NextIntlClientProvider>
           <Providers host={host}>{children}</Providers>
         </NextIntlClientProvider>

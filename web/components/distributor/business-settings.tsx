@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState } from "@/components/shared/error-state";
 import { FormField } from "@/components/shared/form-field";
+import { FormActions } from "@/components/shared/form-actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageSkeleton } from "@/components/shared/skeletons";
 import { Button } from "@/components/ui/button";
@@ -185,11 +186,20 @@ function BusinessForm({ business, canEdit }: { business: Business; canEdit: bool
         </CardContent>
       </Card>
       {canEdit ? (
-        <div className="flex justify-end">
+        <FormActions>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-10"
+            disabled={busy || changed.length === 0}
+            onClick={() => form.setValues(initial)}
+          >
+            {t("cancel")}
+          </Button>
           <Button type="submit" disabled={busy || changed.length === 0} className="min-h-10">
             {t("save")}
           </Button>
-        </div>
+        </FormActions>
       ) : null}
     </form>
   );

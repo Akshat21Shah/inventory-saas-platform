@@ -105,7 +105,7 @@ def retailer_accounts_for_verified_phone(
         link.user_id: link
         for link in RetailerUser.objects.unscoped()
         .using(alias)
-        .filter(user__in=users, retailer__is_active=True)
+        .filter(user__in=users, retailer__is_active=True, retailer__deleted_at__isnull=True)
         .select_related("retailer")
     }
     brand_names = dict(
@@ -127,18 +127,46 @@ def retailer_accounts_for_verified_phone(
     return sorted(accounts, key=lambda a: a.distributor_name.lower())
 
 
-def retailer_login_for_tenant(phone: str, tenant_id: UUID) -> User | None:
-    """The active retailer login for ``phone`` in this tenant (subdomain sign-in)."""
+def _retailer_status(user: User, tenant_id: UUID) -> tuple[bool, bool]:
+    """(linked to a shop that isn't deleted, shop on hold and the distributor refuses sign-in)."""
+    from apps.platform.selectors import get_setting
     from apps.retailers.models import RetailerUser
 
+    with transaction.atomic(), tenant_context(tenant_id):
+        status = (
+            RetailerUser.objects.filter(
+                user=user, retailer__is_active=True, retailer__deleted_at__isnull=True
+            )
+            .values_list("retailer__status", flat=True)
+            .first()
+        )
+        if status is None:
+            return False, False
+        refused = status == "BLOCKED" and not get_setting(
+            "retailers.blocked_can_sign_in", tenant_id
+        )
+    return True, refused
+
+
+def retailer_login_for_tenant(phone: str, tenant_id: UUID) -> User | None:
+    """The retailer login for ``phone`` in this tenant that may use the app: its shop exists, and
+    if the shop is on hold the distributor lets such shops sign in (ADR-036)."""
     user: User | None = User.objects.filter(
         user_type=User.UserType.RETAILER, phone=phone, tenant_id=tenant_id, is_active=True
     ).first()
     if user is None:
         return None
-    with transaction.atomic(), tenant_context(tenant_id):
-        active = RetailerUser.objects.filter(user=user, retailer__is_active=True).exists()
-    return user if active else None
+    linked, refused = _retailer_status(user, tenant_id)
+    return user if linked and not refused else None
+
+
+def retailer_on_hold_refused(phone: str, tenant_id: UUID) -> bool:
+    """True when this number's shop is on hold and the distributor refuses sign-in, so the
+    person is told so instead of "wrong code"."""
+    user: User | None = User.objects.filter(
+        user_type=User.UserType.RETAILER, phone=phone, tenant_id=tenant_id, is_active=True
+    ).first()
+    return user is not None and _retailer_status(user, tenant_id)[1]
 
 
 # --- Staff management (active tenant) -----------------------------------------------------------

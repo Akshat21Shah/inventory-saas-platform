@@ -222,7 +222,7 @@ function BrandingEditor({ branding }: { branding: Branding }) {
                     type="color"
                     aria-label={t("color")}
                     disabled={!canEdit}
-                    className="size-10 cursor-pointer rounded border"
+                    className="size-10 cursor-pointer rounded border max-md:size-11"
                     value={isHexColor(color) ? color : DEFAULT_BRAND_COLOR}
                     onChange={(e) => setColor(e.target.value)}
                   />

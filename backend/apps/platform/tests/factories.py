@@ -3,7 +3,7 @@
 from typing import Any
 
 import factory
-from factory.declarations import LazyAttribute, Sequence
+from factory.declarations import LazyAttribute, PostGeneration, Sequence
 
 from apps.platform.models import Tenant
 from apps.platform.validators import gstin_check_char
@@ -23,6 +23,7 @@ def make_pan(n: int) -> str:
 class TenantFactory(factory.django.DjangoModelFactory[Tenant]):
     class Meta:
         model = Tenant
+        skip_postgeneration_save = True
 
     name = Sequence(lambda n: f"Tenant {n}")
     legal_name = LazyAttribute(lambda o: f"{o.name} Private Limited")
@@ -46,3 +47,17 @@ class TenantFactory(factory.django.DjangoModelFactory[Tenant]):
             kwargs["gstin"] += gstin_check_char(kwargs["gstin"])
         kwargs["pan"] = kwargs["gstin"][2:12]
         return kwargs
+
+    default_units = PostGeneration(lambda obj, create, extracted, **kw: _default_units(obj, create))
+
+
+def _default_units(tenant: Tenant, create: bool) -> None:
+    """Like onboarding: every tenant starts with the default units."""
+    if not create:
+        return
+    from apps.catalog.defaults import ensure_default_units
+    from apps.catalog.models import Unit
+    from common.tenancy import tenant_context
+
+    with tenant_context(tenant.pk):
+        ensure_default_units(Unit)

@@ -18,12 +18,19 @@ logger = logging.getLogger(__name__)
 class SmsSender(Protocol):
     def send_otp(self, phone: str, code: str, *, sender_name: str) -> None: ...
 
+    def send_text(self, phone: str, text: str, *, sender_name: str, template: str) -> None:
+        """A transactional message. ``template`` names the DLT-registered template it must match.
+        TODO(verify): template registration and variable rules with the chosen provider."""
+        ...
+
 
 @dataclass(frozen=True)
 class SentSms:
     phone: str
     code: str
     sender_name: str
+    text: str = ""
+    template: str = ""
 
 
 class MockSmsSender:
@@ -34,6 +41,15 @@ class MockSmsSender:
     def send_otp(self, phone: str, code: str, *, sender_name: str) -> None:
         self.outbox.append(SentSms(phone=phone, code=code, sender_name=sender_name))
         logger.info("mock SMS sent", extra={"phone_tail": phone[-4:], "sender": sender_name})
+
+    def send_text(self, phone: str, text: str, *, sender_name: str, template: str) -> None:
+        self.outbox.append(
+            SentSms(phone=phone, code="", sender_name=sender_name, text=text, template=template)
+        )
+        logger.info(
+            "mock SMS text sent",
+            extra={"phone_tail": phone[-4:], "sender": sender_name, "template": template},
+        )
 
 
 def get_sms_sender() -> SmsSender:

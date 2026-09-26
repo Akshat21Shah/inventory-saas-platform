@@ -94,6 +94,15 @@ export function TenantsList() {
       />
       <DataTable
         columns={columns}
+        cardLayout={{
+          name: "title",
+          status: "primary",
+          slug: "primary",
+          plan: "primary",
+          gstin: "secondary",
+          city: "secondary",
+          created: "secondary",
+        }}
         data={page?.results ?? []}
         getRowId={(row) => row.id}
         isLoading={query.isLoading}
@@ -122,7 +131,7 @@ export function TenantsList() {
                 cursor.reset();
               }}
             >
-              <SelectTrigger className="min-h-10 w-48" aria-label={t("status")}>
+              <SelectTrigger className="min-h-10 w-full sm:w-48" aria-label={t("status")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

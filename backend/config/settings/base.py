@@ -45,6 +45,11 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.audit",
     "apps.retailers",
+    "apps.catalog",
+    "apps.pricing",
+    "apps.billing",
+    "apps.dataio",
+    "apps.shop",
 ]
 
 MIDDLEWARE = [
@@ -186,6 +191,13 @@ SPECTACULAR_SETTINGS = {
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",
+        "ImportModeEnum": "apps.dataio.models.ImportJob.Mode",
+        "CopyModeEnum": "apps.pricing.tools.COPY_MODE_CHOICES",
+        "ImportStatusEnum": "apps.dataio.models.ImportJob.Status",
+        "ImportKindEnum": "apps.dataio.models.ImportJob.Kind",
+        "AddressKindEnum": "apps.retailers.models.RetailerAddress.Kind",
+        "RetailerStatusEnum": "apps.retailers.models.Retailer.Status",
+        "PreferredLanguageEnum": "apps.accounts.models.LANGUAGE_CHOICES",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",
@@ -243,6 +255,9 @@ STORAGE_BACKEND = env("STORAGE_BACKEND", default="s3")
 S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", default="")  # empty = AWS
 S3_PUBLIC_ENDPOINT_URL = env("S3_PUBLIC_ENDPOINT_URL", default="")  # what browsers reach
 S3_BUCKET = env("S3_BUCKET", default="inventory-dev")
+# Anonymous read, no listing (ADR-034); served through the CDN in production.
+S3_PUBLIC_BUCKET = env("S3_PUBLIC_BUCKET", default="inventory-public-dev")
+PUBLIC_ASSETS_BASE_URL = env("PUBLIC_ASSETS_BASE_URL", default="")  # empty = S3 public endpoint
 S3_ACCESS_KEY = env("S3_ACCESS_KEY", default="")
 S3_SECRET_KEY = env("S3_SECRET_KEY", default="")
 S3_REGION = env("S3_REGION", default="ap-south-1")

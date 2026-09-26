@@ -26,6 +26,8 @@ class Group(StrEnum):
     ORDERS = "orders"
     STOCK = "stock"
     CREDIT_PAYMENTS = "credit_payments"
+    PRICING = "pricing"
+    RETAILERS = "retailers"
     SECURITY = "security"
 
 
@@ -283,6 +285,20 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    # --- Tenant: Pricing (ADR-036) --------------------------------------------------------------
+    _tenant("pricing.discounts_on_special_prices", Group.PRICING, SettingType.BOOL, True,
+            "Apply discount rules on top of a shop's special prices. Turn off to treat a special "
+            "price as the final price."),
+    _tenant("pricing.discount_combination", Group.PRICING, SettingType.ENUM, "BEST",
+            "When several discounts apply to a product: the best single one, add them together, "
+            "or apply one after another from the most specific (ADR-038).",
+            allowed=("BEST", "ADD", "SEQUENTIAL")),
+    # --- Tenant: Retailers (ADR-036) ------------------------------------------------------------
+    _tenant("retailers.blocked_can_sign_in", Group.RETAILERS, SettingType.BOOL, True,
+            "Shops you put on hold can still sign in and see their account, but can't order. "
+            "Turn off to stop them signing in."),
+    _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
+            "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
     # --- Tenant: Security (ADR-030) -------------------------------------------------------------
     _tenant("security.require_staff_2fa", Group.SECURITY, SettingType.BOOL, False,
             "Require every staff member to set up two-step verification (an authenticator app) "

@@ -63,6 +63,19 @@ class InvalidCredentials(DomainError):
     )
 
 
+class RetailerOnHold(DomainError):
+    """ADR-036: the distributor put this shop on hold and doesn't let such shops sign in."""
+
+    status_code = 403
+    code = ErrorCode.RETAILER_ON_HOLD
+    default_message = "Your account is on hold. Please contact your distributor."
+
+
+def refuse_if_on_hold(phone: str, tenant_id: UUID) -> None:
+    if selectors.retailer_on_hold_refused(phone, tenant_id):
+        raise RetailerOnHold()
+
+
 class TenantUnavailable(DomainError):
     """One neutral answer for every tenant that is not ACTIVE (onboarding, suspended, ...): the
     specific state is never disclosed outside the platform team."""
@@ -397,6 +410,7 @@ def exchange_handoff(code: str, host: HostContext, ip: str | None) -> LoginOutco
         user.tenant_id != tenant.id
         or selectors.retailer_login_for_tenant(user.phone or "", tenant.id) is None
     ):
+        refuse_if_on_hold(user.phone or "", tenant.id)
         raise TokenInvalid()
     if handoff.impersonation_session_id is not None:
         from apps.accounts.impersonation import complete_handoff

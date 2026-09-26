@@ -26,16 +26,19 @@ const LOGIN_PATH: Record<Area, string> = {
  * the right sign-in page; other account types see a short explanation.
  */
 export function RequireArea({ area, children }: { area: Area; children: ReactNode }) {
-  const { status, me, blockedCode, signOut } = useAuth();
+  const { status, me, blockedCode, signedOut, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations("auth");
 
   useEffect(() => {
     if (status === "anonymous" && blockedCode !== "TENANT_UNAVAILABLE") {
-      router.replace(`${LOGIN_PATH[area]}?next=${encodeURIComponent(pathname)}`);
+      // After signing out, the next sign-in starts from home, not the page they left.
+      router.replace(
+        signedOut ? LOGIN_PATH[area] : `${LOGIN_PATH[area]}?next=${encodeURIComponent(pathname)}`,
+      );
     }
-  }, [status, blockedCode, area, pathname, router]);
+  }, [status, blockedCode, signedOut, area, pathname, router]);
 
   if (status === "loading" || (status === "anonymous" && blockedCode !== "TENANT_UNAVAILABLE")) {
     return <PageSkeleton />;

@@ -16,6 +16,7 @@ from apps.accounts.tests.factories import make_retailer_login
 from apps.platform.models import Tenant
 from apps.platform.tests.factories import TenantFactory
 from apps.retailers.models import Retailer
+from common.tenancy import tenant_context
 from common.testing.isolation import covers
 
 pytestmark = pytest.mark.django_db
@@ -350,3 +351,25 @@ def test_generic_domain_tells_the_verified_owner_their_distributor_is_unavailabl
     assert response.json()["error"]["code"] == "TENANT_UNAVAILABLE"
     wrong = post(VERIFY, {"phone": "9123456780", "code": "000000"}, "localhost")
     assert wrong.json()["error"]["code"] == "OTP_INVALID"  # unknown numbers learn nothing
+
+
+def test_shop_on_hold_signs_in_by_default_but_is_told_when_refused(tenant_a, post):
+    """ADR-036: ``retailers.blocked_can_sign_in`` (default on)."""
+    from apps.platform.models import TenantSetting
+    from apps.retailers.models import Retailer
+
+    make_retailer_login(tenant_a, PHONE)
+    with tenant_context(tenant_a.pk):
+        Retailer.objects.update(status="BLOCKED", blocked_reason="Overdue")
+    host = "alpha.localhost"
+    post(REQUEST, {"phone": PHONE}, host)
+    signed_in = post(VERIFY, {"phone": PHONE, "code": _last_code()}, host)
+    assert signed_in.json()["status"] == "authenticated"
+
+    with tenant_context(tenant_a.pk):
+        TenantSetting.objects.create(key="retailers.blocked_can_sign_in", value=False)
+    cache.clear()
+    post(REQUEST, {"phone": PHONE}, host)
+    refused = post(VERIFY, {"phone": PHONE, "code": _last_code()}, host)
+    assert refused.status_code == 403
+    assert refused.json()["error"]["code"] == "RETAILER_ON_HOLD"

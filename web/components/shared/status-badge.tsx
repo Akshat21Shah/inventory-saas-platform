@@ -26,6 +26,7 @@ const TONES: Record<string, StatusTone> = {
   PAID: "success",
   ACTIVE: "success",
   SUSPENDED: "danger",
+  BLOCKED: "warning",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {

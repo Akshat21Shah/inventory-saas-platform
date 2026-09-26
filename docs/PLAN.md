@@ -1,6 +1,6 @@
 # PLAN.md — Master Engineering Plan (v1)
 
-Status: **v1.3 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 complete (2026-09-25); Phase 1 complete, in review.**
+Status: **v1.3 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25); Phase 2 in progress.**
 Source of truth for *what*: `docs/PROJECT_SPEC.md`. Rules for *how*: `CLAUDE.md`.
 Where this plan and the spec disagree, the spec wins until the spec is updated.
 
@@ -47,7 +47,7 @@ Legend:
 | M2 | Flat discount basis | **FIXED:** per unit (`round(qty × flat)`, capped at gross). |
 | M3 | Quantity slabs basis | **FIXED:** line quantity of that product. |
 | M4 | Category discounts and sub-categories | **FIXED:** a category rule applies to all its descendants. |
-| M5 | "Single best rule" tie-break | Highest discount amount → most specific audience (retailer > price list > all) → most specific scope (product > deeper category > brand > all) → newest rule. **[D]** |
+| M5 | Several applicable rules | ⚙ `pricing.discount_combination` (default **best single**, ADR-038). Best single: highest discount amount → most specific audience (retailer > price list > all) → most specific scope (product > deeper category > brand > all) → newest rule. Add together: each rule's amount on the original line, summed. One after another: in that specificity order (newest first on ties), each % on what is left and flat per unit. The total is always capped at the line gross. **[D]** |
 | M6 | GST-inclusive pricing | ⚙ `tax.prices_include_gst` (default **false**). Inclusive mode: the discount applies to the inclusive amount, and taxable is backed out per line. A **±₹0.01 line tolerance** is accepted and absorbed by the round-off (§6 Ex 7). The price basis of an order line follows the **order's** snapshot, even if the setting changes before invoicing (ADR-016). |
 | M7 | Minimum order value | ⚙ `orders.min_order_value` (default none) and ⚙ `orders.min_order_value_basis` (default **INCL_GST**). Backordered items **count** (FIXED). |
 | M8 | Backorder billing price | ⚙ `backorders.billing_price` = ORIGINAL (default) \| CURRENT. CURRENT = price re-resolved when the backorder shipment is created (allocation confirmed) and stored on the fulfilment line. **If the price increased** vs the order price: the retailer is notified and may **cancel that quantity themselves until the shipment is packed** (ADR-021). Unchanged or lower: notification only. |
@@ -197,7 +197,7 @@ Legend:
 | **Category** (tenant, soft-delete) | `name`, `slug`, `parent` FK self null, `level` smallint, `sort_order` int, `image` null | check `level between 1 and 3`; unique `(t, parent, lower(name))` (nulls not distinct); index `(t, parent)` |
 | **Brand** (tenant, soft-delete) | `name`, `logo` null | unique `(t, lower(name))` |
 | **Unit** (tenant) | `code` (PCS, BOX, KG, LTR…), `name`, `allows_decimal` bool, `uqc` (GST Unit Quantity Code, e.g. NOS/KGS/BOX; the list must be verified) | unique `(t, code)`; defaults seeded per tenant |
-| **Product** (tenant, soft-delete) | `code` varchar(40), `name` varchar(200), `description`, `category` FK null, `brand` FK null, `unit` FK, `pack_unit` FK→Unit null, `pack_size` Qty null, `hsn_code` varchar(8), *(tax rate lives in `ProductTaxRate`)*, `mrp` Money null, `base_price` Money, `min_order_qty` Qty=1, `order_multiple` Qty=1, `reorder_level` Qty=0, `tags` varchar[] , `search_vector` tsvector (trigger-maintained: name A, code/barcodes A, brand B, tags B, category C) | unique `(t, lower(code))`; checks: `base_price>=0`, `mrp is null or mrp>=0`, `min_order_qty>0`, `order_multiple>0`, `(pack_unit is null) = (pack_size is null)`, `pack_size>0`; GIN `(tenant_id, search_vector)` (btree_gin); GIN trigram on `name` and `code`; `(t, category)`, `(t, brand)`, `(t, is_active, name)` |
+| **Product** (tenant, soft-delete) | `code` varchar(40), `name` varchar(200), `description`, `category` FK null, `brand` FK null, `unit` FK, `pack_unit` FK→Unit null, `pack_size` Qty null, `hsn_code` varchar(8), *(tax rate lives in `ProductTaxRate`)*, `mrp` Money null, `base_price` Money, `min_order_qty` Qty=1, `order_multiple` Qty=1, `reorder_level` Qty=0, `tags` varchar[] , `show_in_shop` bool=true (ADR-034), `search_vector` tsvector (trigger-maintained: name A, code/barcodes A, brand B, tags B, category C) | unique `(t, lower(code))`; checks: `base_price>=0`, `mrp is null or mrp>=0`, `min_order_qty>0`, `order_multiple>0`, `(pack_unit is null) = (pack_size is null)`, `pack_size>0`; GIN `(tenant_id, search_vector)` (btree_gin); GIN trigram on `name` and `code`; `(t, category)`, `(t, brand)`, `(t, is_active, name)` |
 | **ProductTaxRate** (tenant, append-only history) | `product` FK, `gst_rate` Rate (must be an active `TaxRate` when created), `cess_type` FK null, `cess_rate` Rate=0, `effective_from` date (IST; may be in the future = scheduled), `reason` | unique `(product, effective_from)`; index `(t, product, effective_from desc)`; the rate for date *d* = row with max `effective_from ≤ d`; a product must have a row with `effective_from ≤ today` to be sellable; changes audited; bulk "schedule rate change" by HSN/category |
 | **ProductImage** (tenant) | `product` FK, `original_key`, `variants` jsonb (`thumb/medium/large` keys + dims), `sort_order`, `alt_text`, `status` (PROCESSING, READY, FAILED) | index `(t, product, sort_order)`; upload limit 5 MB, jpeg/png/webp |
 | **ProductBarcode** (tenant) | `product` FK, `barcode` varchar(64) | unique `(t, barcode)` |
@@ -525,7 +525,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `products/{id}/barcodes` | GET, POST, DELETE | as above | — |
 | `products/{id}/tax-rates` | GET, POST | view: `products.view`; POST: `products.manage` | rate history; schedule a new rate (`effective_from` ≥ today; audited) |
 | `products/tax-rates/schedule` | POST | `products.manage` | bulk schedule `{filter: hsn/category/product_ids, gst_rate, cess, effective_from}` → preview count, then commit |
-| `imports` | GET, POST | per kind: `products.manage`, `retailers.manage`, `pricing.manage`, `stock.inward`, `ledger.adjust` | upload → async validate (dry run) |
+| `imports` | GET, POST | per kind (mode `ADD_ONLY` \| `ADD_OR_UPDATE`, no default; ADR-035): `products.manage`, `retailers.manage`, `pricing.manage`, `stock.inward`, `ledger.adjust` | upload → async validate (dry run) |
 | `imports/{id}` | GET | same | status + counts |
 | `imports/{id}/commit` | POST | same | apply valid rows (async) |
 | `imports/{id}/report` | GET | same | signed URL for the row-level error report (xlsx) |
@@ -594,6 +594,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 |---|---|---|
 | `home` | GET | branding, announcements, recent orders, outstanding summary, last-order summary for "repeat" |
 | `categories` | GET | tree with product counts |
+| `brands` | GET | brands with visible products (`?category=`), for the brand filter |
 | `products` | GET | search/browse: resolved price, availability label (qty only if allowed), image, min qty/multiple |
 | `products/{id}` | GET | detail with images, slab hints ("buy 24+ save ₹1.50 each") |
 | `cart` | GET | resolved lines, tax estimate, availability + backorder split, totals, credit status, validation messages |
@@ -1385,6 +1386,15 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 2.17 | FE: pricing screens (price lists, overrides, discounts, preview) | L |
 | 2.18 | FE retailer: read-only catalog browsing with prices | M |
 | 2.19 | Seed (2 × 200 products, 20 retailers each, price lists, discounts) + acceptance run (1,000 products + 100 retailers import) | S |
+| 2.20 | Free-goods warning for ₹0 price-list prices (ADR-036) | S |
+| 2.21 | Discount combination modes (`pricing.discount_combination`), all applied rules in the result, shop total as amount + % (ADR-038) | M |
+| 2.22 | Own brand, cost price (pricing permission, audited), own-brand badge setting and filter (ADR-039) | M |
+| 2.23 | Per-shop discount grid (one simple rule per shop and product, server net-price preview) | M |
+| 2.24 | Copy pricing between shops (Replace or Add, preview, audit) | M |
+| 2.25 | Bulk price-list change by % for a category or brand (preview, paisa or whole-rupee rounding, optional add missing) | M |
+| 2.26 | Shop pricing report (special prices, shop rules, free products) | S |
+| 2.27 | Import/export of special prices, price-list prices and discount rules | L |
+| 2.28 | FE for 2.20–2.27: inline special prices and "add discount" on the retailer page, discount grid, copy dialog, bulk %, report, own brand, cost price | L |
 
 ### Phase 3 — Inventory
 | # | Task | Size |
@@ -1514,6 +1524,15 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 11.7 | Offline caching, retry, connectivity UX | M |
 | 11.8 | Play Store release checklist + build | S |
 
+### Backlog (not scheduled)
+Requested features with no phase yet. Each needs a spec and an ADR before it is scheduled.
+
+| Item | Notes |
+|---|---|
+| Free-goods schemes ("buy X get Y free") | Until then, a discount rule, special price or price-list price that brings a net price to zero hides the product from those shops (ADR-034). Saving one shows the `FREE_GOODS` warning (ADR-036). |
+| Manufacturing / production | Raw materials, recipes (bill of materials), production entries that consume raw materials and produce finished goods, with cost roll-up into the finished goods' cost price. Builds on own brand and cost price (ADR-039). |
+| Margin reports | Own brand vs traded margins from cost price (ADR-039), with Phase 8 reports. |
+
 ---
 
 ## 9. Settings catalogue
@@ -1576,6 +1595,10 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | Credit & Payments | `payments.hold_advances` | bool | `true` | — | — | Keep extra money paid by a retailer as credit and use it for their next invoices. |
 | Credit & Payments | `payments.cheque_credit_timing` | enum | `ON_RECEIPT` | `ON_RECEIPT`, `ON_CLEARANCE` | PAYMENT | Credit a cheque to the retailer's account when received (reversed automatically if it bounces) or only when it clears. |
 | Security | `security.require_staff_2fa` | bool | `false` | — | — | Require every staff member to set up two-step verification (an authenticator app) before they can sign in. Only owners can change this (ADR-030). |
+| Pricing | `pricing.discounts_on_special_prices` | bool | `true` | — | — (ORDER from Phase 4) | Apply discount rules on top of retailer special prices. Turn off to treat a special price as the final price (ADR-036). |
+| Pricing | `pricing.discount_combination` | enum `BEST` / `ADD` / `SEQUENTIAL` | `BEST` | — | — (ORDER from Phase 4) | When several discounts apply: the best single one, add them together, or apply one after another from the most specific (ADR-038). |
+| Retailers | `retailers.blocked_can_sign_in` | bool | `true` | — | — | Blocked shops can still sign in and see their account, but cannot order. Turn off to refuse their sign-in (ADR-036). |
+| Retailers | `retailers.show_own_brand_badge` | bool | `false` | — | — | Show an "own brand" badge on own-brand products in the shop (ADR-039). |
 
 Later phases add keys through the same registry (e.g. notification channels in Phase 6; e-invoice/e-way bill and gateway options in Phase 7). Feature flags stay a separate mechanism (`FeatureFlag`/`TenantFeature`), because they gate whole modules.
 
@@ -1644,6 +1667,13 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 031 | Field-level encryption with MultiFernet and rotatable keys (2026-09-25) |
 | 032 | Neutral "unavailable" tenant state (public `available` flag, one `TENANT_UNAVAILABLE` answer), reset limit as a platform setting, forwarded headers set by our web server and trusted by Django only from configured proxies (2026-09-25) |
 | 033 | Phase 1 review follow-ups: commit before platform-alias reads (static test), Redis public-branding cache with on-commit invalidation, dev 2FA key guard + production startup check, GSTIN rules, repeatable E2E (2026-09-25) |
+| 034 | Catalog search, shop visibility (active + "Show in shop" + current rate + valid price), cancellable future GST-rate changes, content-versioned long-cache product image URLs (2026-09-25) |
+| 035 | Data import: dry run + report, explicit mode (add only / add and update) with change preview, messy-file handling, plain row/column errors (2026-09-25) |
+| 036 | `resolve_price` details, `pricing.discounts_on_special_prices`, `retailers.blocked_can_sign_in` (2026-09-25) |
+| 037 | Per-shop pricing tools: grid, copy pricing, bulk %, report, pricing imports/exports (2026-09-26) |
+| 038 | Discount combination modes; shops see the total as amount and %; all applied rules recorded (2026-09-26) |
+| 039 | Own brand, cost price, own-brand badge; manufacturing on the backlog (2026-09-26) |
+| 040 | Responsive design: cards below 1024 px, filter sheet and sticky form actions on phones, 44 px targets, CI check at 360/768/1440 px with screenshots (2026-09-26) |
 
 ### 10.2 Follow-up answers (2026-09-25)
 | # | Question | Answer |
@@ -1656,6 +1686,22 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 6 | Rounding method lists | As listed; CA confirmation before Phase 5. (ADR-009 remains pending) |
 | 7 | Scheduled rate change + inclusive prices | Inclusive price kept, taxable changes; 7-day warning on the distributor dashboard **and** as a notification. (ADR-022) |
 | 8 | Acceptance document | "Order Confirmation", carrying the line **"This is not a tax invoice."** (ADR-022) |
+
+### 10.2a End-of-phase review decisions (2026-09-26)
+| # | Question | Answer |
+|---|---|---|
+| 1 | ₹0 price-list prices | Same free-goods warning: "This price list makes…" |
+| 2 | Shop "ordering soon" notice | Keep; remove in Phase 4 |
+| 3 | Copy pricing | Replace or Add, chosen every time, preview first |
+| 4 | Bulk % scope | Only products already on the list; optionally add the missing ones from the standard price |
+| 5 | Bulk % rounding | "To the paisa" (default) or "to whole rupees", half-up via `billing/tax.py` |
+| 6 | "Add together" with mixed types | Each rule's amount on the original line, summed |
+| 7 | "One after another" | Most specific first (audience, then scope, newest first on ties); % on what is left, flat per unit |
+| 8 | Discount grid | One simple rule per shop and product; slab or dated rules read-only with a link |
+| 9 | Discount-rule import key | The rule name; rows with the same name are one rule's slabs |
+| 10 | Free-goods warning with combined modes | Per-rule check, plus "free products" in the shop pricing report |
+| 11 | Cost price | `pricing.view` to see, `pricing.manage` to change |
+| 12 | What shops see of discounts | The total as amount and % ("You save ₹12 (12%)") in every mode; never rule names or counts; slab hints stay |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

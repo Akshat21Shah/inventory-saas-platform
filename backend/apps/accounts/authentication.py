@@ -18,7 +18,7 @@ from rest_framework.request import Request
 from apps.accounts.impersonation import ImpersonationBlocked, ImpersonationReadOnly, open_session
 from apps.accounts.models import ImpersonationSession, User
 from apps.accounts.selectors import active_membership, retailer_login_for_tenant, role_codes
-from apps.accounts.services import TenantUnavailable
+from apps.accounts.services import TenantUnavailable, refuse_if_on_hold
 from apps.platform.models import Tenant
 from apps.platform.selectors import tenant_info
 from common.authentication import (
@@ -92,6 +92,8 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
             user.tenant_id != tenant_id
             or retailer_login_for_tenant(user.phone or "", tenant_id) is None
         ):
+            if user.tenant_id == tenant_id:
+                refuse_if_on_hold(user.phone or "", tenant_id)
             raise AuthenticationFailed("You no longer have access.", code="retailer_inactive")
         if user.user_type == User.UserType.STAFF:
             membership = active_membership(user, tenant_id)

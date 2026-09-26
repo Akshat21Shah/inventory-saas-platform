@@ -30,6 +30,7 @@ from apps.accounts.services import (
     _consume_challenge,
     _new_secret,
     create_handoff,
+    refuse_if_on_hold,
     token_hash,
 )
 from apps.platform.models import Tenant
@@ -72,7 +73,11 @@ def _scope(host: HostContext) -> Tenant | None:
 
 def _has_account(phone: str, tenant: Tenant | None) -> bool:
     if tenant is not None:
-        return selectors.retailer_login_for_tenant(phone, tenant.pk) is not None
+        # A shop on hold still gets its code: after verifying, it's told why it can't continue
+        # (the request itself looks the same for every number).
+        return selectors.retailer_login_for_tenant(
+            phone, tenant.pk
+        ) is not None or selectors.retailer_on_hold_refused(phone, tenant.pk)
     # Generic domain: also for distributors that are unavailable, so the phone's owner learns
     # (after verifying) that the account is unavailable rather than seeing "wrong code".
     return bool(selectors.retailer_accounts_for_verified_phone(phone, active_only=False))
@@ -143,6 +148,7 @@ def verify_otp(phone: str, code: str, host: HostContext, ip: str | None) -> Logi
         if tenant is not None:
             user = selectors.retailer_login_for_tenant(phone, tenant.pk)
             if user is None:
+                refuse_if_on_hold(phone, tenant.pk)  # the code was right: say why (ADR-036)
                 raise OtpInvalid()  # indistinguishable from a wrong code
             return _authenticated(user, tenant.pk)
         accounts = selectors.retailer_accounts_for_verified_phone(phone)

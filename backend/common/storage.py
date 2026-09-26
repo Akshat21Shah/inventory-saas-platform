@@ -3,7 +3,11 @@
 - ``s3``: AWS S3 in production, SeaweedFS in dev and CI (ADR-024), via boto3. Two clients: one talks
   to the internal endpoint, the other only signs download URLs for the endpoint browsers can reach.
 - ``memory``: an in-process store for tests.
-Keys are tenant-prefixed (``tenants/<tenant_id>/...``); the bucket stays private.
+Keys are tenant-prefixed (``tenants/<tenant_id>/...``); the main bucket stays private.
+
+Public assets (ADR-034: resized product images) go to a separate bucket that allows anonymous
+reads but not listing. Their keys contain an unguessable, content-versioned part and they are
+written with long ``Cache-Control`` headers, so browsers and the CDN keep them indefinitely.
 """
 
 from functools import lru_cache
@@ -22,9 +26,28 @@ class Storage(Protocol):
 
     def presigned_get(self, key: str, expires_in: int = 300) -> str: ...
 
+    def put_public(self, key: str, data: bytes, content_type: str, cache_control: str) -> None: ...
+
+    def delete_public(self, key: str) -> None: ...
+
+    def public_url(self, key: str) -> str: ...
+
+
+IMMUTABLE = "public, max-age=31536000, immutable"
+
+
+def public_base_url() -> str:
+    """Where browsers fetch public assets: the CDN in production, the dev S3 bucket otherwise."""
+    configured: str = settings.PUBLIC_ASSETS_BASE_URL
+    if configured:
+        return configured.rstrip("/")
+    endpoint = settings.S3_PUBLIC_ENDPOINT_URL or settings.S3_ENDPOINT_URL
+    return f"{endpoint.rstrip('/')}/{settings.S3_PUBLIC_BUCKET}"
+
 
 class InMemoryStorage:
     objects: ClassVar[dict[str, tuple[bytes, str]]] = {}
+    public_objects: ClassVar[dict[str, tuple[bytes, str, str]]] = {}
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
         self.objects[key] = (data, content_type)
@@ -37,6 +60,15 @@ class InMemoryStorage:
 
     def presigned_get(self, key: str, expires_in: int = 300) -> str:
         return f"https://storage.test/{key}?expires_in={expires_in}"
+
+    def put_public(self, key: str, data: bytes, content_type: str, cache_control: str) -> None:
+        self.public_objects[key] = (data, content_type, cache_control)
+
+    def delete_public(self, key: str) -> None:
+        self.public_objects.pop(key, None)
+
+    def public_url(self, key: str) -> str:
+        return f"https://cdn.test/{key}"
 
 
 class S3Storage:
@@ -51,6 +83,7 @@ class S3Storage:
             "config": Config(signature_version="s3v4", s3={"addressing_style": "path"}),
         }
         self.bucket: str = settings.S3_BUCKET
+        self.public_bucket: str = settings.S3_PUBLIC_BUCKET
         self.client = boto3.client("s3", endpoint_url=settings.S3_ENDPOINT_URL or None, **common)
         public = settings.S3_PUBLIC_ENDPOINT_URL or settings.S3_ENDPOINT_URL or None
         self.signer = boto3.client("s3", endpoint_url=public, **common)
@@ -70,6 +103,21 @@ class S3Storage:
             "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expires_in
         )
         return url
+
+    def put_public(self, key: str, data: bytes, content_type: str, cache_control: str) -> None:
+        self.client.put_object(
+            Bucket=self.public_bucket,
+            Key=key,
+            Body=data,
+            ContentType=content_type,
+            CacheControl=cache_control,
+        )
+
+    def delete_public(self, key: str) -> None:
+        self.client.delete_object(Bucket=self.public_bucket, Key=key)
+
+    def public_url(self, key: str) -> str:
+        return f"{public_base_url()}/{key}"
 
 
 @lru_cache(maxsize=1)

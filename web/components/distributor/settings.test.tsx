@@ -10,6 +10,7 @@ import { renderWithIntl } from "@/tests/render";
 import { BrandingSettings } from "./branding-settings";
 import { BusinessSettings } from "./business-settings";
 import { PolicySettings } from "./policy-settings";
+import { POLICY_GROUPS } from "./settings-nav";
 
 const auth = {
   permissions: [] as string[],
@@ -194,5 +195,14 @@ describe("PolicySettings", () => {
     await user.click(within(card).getByRole("button", { name: /reset/i }));
     await waitFor(() => expect(screen.getByRole("switch")).not.toBeChecked());
     expect(calls.some((c) => c.method === "DELETE")).toBe(true);
+  });
+
+  // Every settings group has its page title, description and form heading (a missing message
+  // throws in the strict test provider, as it would show a raw key to the distributor).
+  it.each(POLICY_GROUPS)("renders the %s group with all of its messages", async (group) => {
+    auth.permissions = ["settings.manage"];
+    mockApi({ "/api/v1/settings/registry/": () => [200, [row(`${group}.x`, group, false)]] });
+    renderWithIntl(<PolicySettings group={group} />);
+    expect(await screen.findByRole("switch")).toBeInTheDocument();
   });
 });

@@ -37,3 +37,5 @@ celerybeat-schedule*
 
 # Claude Code local settings
 .claude/settings.local.json
+# make lan / make localhost (infra/dev-domain.sh): dev-only domain overlay
+infra/dev-domain.env

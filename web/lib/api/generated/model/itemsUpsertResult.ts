@@ -5,15 +5,9 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { Warning } from './warning';
 
-/**
- * * `READ_ONLY` - READ_ONLY
- * * `ACT` - ACT
- */
-export type ModeEnum = typeof ModeEnum[keyof typeof ModeEnum];
-
-
-export const ModeEnum = {
-  READ_ONLY: 'READ_ONLY',
-  ACT: 'ACT',
-} as const;
+export interface ItemsUpsertResult {
+  changed: number;
+  readonly warnings: readonly Warning[];
+}

@@ -552,6 +552,496 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
           description: ''
+  /api/v1/brands/:
+    get:
+      operationId: catalog_brands_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBrandList'
+          description: ''
+    post:
+      operationId: catalog_brands_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+  /api/v1/brands/{brand_id}/:
+    patch:
+      operationId: catalog_brands_update
+      parameters:
+      - in: path
+        name: brand_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBrandRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+    delete:
+      operationId: catalog_brands_delete
+      parameters:
+      - in: path
+        name: brand_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/categories/:
+    get:
+      operationId: catalog_categories_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: catalog_categories_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/categories/{category_id}/:
+    get:
+      operationId: catalog_categories_retrieve
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: catalog_categories_update
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    delete:
+      operationId: catalog_categories_delete
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/categories/tree/:
+    get:
+      operationId: catalog_categories_tree
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryTreeNode'
+          description: ''
+  /api/v1/discount-rules/:
+    get:
+      operationId: discount_rules_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+          nullable: true
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDiscountRuleList'
+          description: ''
+    post:
+      operationId: discount_rules_create
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscountRuleWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountRule'
+          description: ''
+  /api/v1/discount-rules/{rule_id}/:
+    get:
+      operationId: discount_rules_retrieve
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountRule'
+          description: ''
+    patch:
+      operationId: discount_rules_update
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDiscountRuleWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountRule'
+          description: ''
+    delete:
+      operationId: discount_rules_delete
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/discount-rules/export/:
+    get:
+      operationId: discount_rules_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/imports/:
+    get:
+      operationId: imports_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedImportJobListList'
+          description: ''
+    post:
+      operationId: imports_create
+      tags:
+      - imports
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+          description: ''
+  /api/v1/imports/{job_id}/:
+    get:
+      operationId: imports_retrieve
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+          description: ''
+  /api/v1/imports/{job_id}/commit/:
+    post:
+      operationId: imports_commit
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+          description: ''
+  /api/v1/imports/{job_id}/report/:
+    get:
+      operationId: imports_report
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/imports/templates/{kind}/:
+    get:
+      operationId: imports_template
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
   /api/v1/meta/:
     get:
       operationId: meta_retrieve
@@ -1523,6 +2013,906 @@ paths:
               schema:
                 $ref: '#/components/schemas/SlugAvailability'
           description: ''
+  /api/v1/price-lists/:
+    get:
+      operationId: price_lists_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPriceListList'
+          description: ''
+    post:
+      operationId: price_lists_create
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceListWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+          description: ''
+  /api/v1/price-lists/{price_list_id}/:
+    get:
+      operationId: price_lists_retrieve
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+          description: ''
+    patch:
+      operationId: price_lists_update
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPriceListWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+          description: ''
+    delete:
+      operationId: price_lists_delete
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/price-lists/{price_list_id}/adjust/:
+    post:
+      operationId: price_lists_adjust
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustApplyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdjustResult'
+          description: ''
+  /api/v1/price-lists/{price_list_id}/adjust/preview/:
+    post:
+      operationId: price_lists_adjust_preview
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdjustPreview'
+          description: ''
+  /api/v1/price-lists/{price_list_id}/items/:
+    get:
+      operationId: price_list_items_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPriceListItemList'
+          description: ''
+    put:
+      operationId: price_list_items_upsert
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemsUpsertRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemsUpsertResult'
+          description: ''
+  /api/v1/price-lists/{price_list_id}/items/{product_id}/:
+    delete:
+      operationId: price_list_items_delete
+      parameters:
+      - in: path
+        name: price_list_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/price-lists/items/export/:
+    get:
+      operationId: price_list_items_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/pricing/preview/:
+    post:
+      operationId: pricing_preview
+      description: 'What a shop would pay: the full breakdown from ``resolve_price``
+        (for testing rules).'
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreviewRow'
+          description: ''
+  /api/v1/pricing/shop-report/:
+    get:
+      operationId: pricing_shop_report
+      description: Shops with special prices or shop-specific rules, and the products
+        each gets free.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: show
+        schema:
+          enum:
+          - CUSTOMISED
+          - ALL
+          type: string
+          default: CUSTOMISED
+          minLength: 1
+        description: |-
+          * `CUSTOMISED` - CUSTOMISED
+          * `ALL` - ALL
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReportRowList'
+          description: ''
+  /api/v1/pricing/shop-report/export/:
+    get:
+      operationId: pricing_shop_report_export
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/products/:
+    get:
+      operationId: catalog_products_list
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: hsn_prefix
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          pattern: ^[0-9]{1,8}$
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+          nullable: true
+      - in: query
+        name: own_brand
+        schema:
+          type: boolean
+          nullable: true
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: show_in_shop
+        schema:
+          type: boolean
+          nullable: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+    post:
+      operationId: catalog_products_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/{product_id}/:
+    get:
+      operationId: catalog_products_retrieve
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+    patch:
+      operationId: catalog_products_update
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+    delete:
+      operationId: catalog_products_delete
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/{product_id}/barcodes/:
+    post:
+      operationId: catalog_product_barcodes_create
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BarcodeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Barcode'
+          description: ''
+  /api/v1/products/{product_id}/barcodes/{barcode_id}/:
+    delete:
+      operationId: catalog_product_barcodes_delete
+      parameters:
+      - in: path
+        name: barcode_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/{product_id}/images/:
+    get:
+      operationId: catalog_product_images_list
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductImage'
+          description: ''
+    post:
+      operationId: catalog_product_images_upload
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImageUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+  /api/v1/products/{product_id}/images/{image_id}/:
+    patch:
+      operationId: catalog_product_images_update
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedImageUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+    delete:
+      operationId: catalog_product_images_delete
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/{product_id}/tax-rates/:
+    get:
+      operationId: catalog_product_tax_rates_list
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductTaxRate'
+          description: ''
+    post:
+      operationId: catalog_product_tax_rates_schedule
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/{product_id}/tax-rates/{rate_id}/cancel/:
+    post:
+      operationId: catalog_product_tax_rates_cancel
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: rate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/bulk/:
+    post:
+      operationId: catalog_products_bulk
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkResult'
+          description: ''
+  /api/v1/products/export/:
+    get:
+      operationId: products_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/products/hsn-hint/:
+    get:
+      operationId: catalog_hsn_hint
+      parameters:
+      - in: query
+        name: hsn
+        schema:
+          type: string
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HsnHintResult'
+          description: ''
+  /api/v1/products/lookup/:
+    get:
+      operationId: catalog_products_lookup
+      parameters:
+      - in: query
+        name: barcode
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /api/v1/products/search/:
+    get:
+      operationId: catalog_products_search
+      description: 'Fast type-ahead: at most 20 best matches (< 200 ms on 20,000 products).'
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchResult'
+          description: ''
+  /api/v1/products/tax-options/:
+    get:
+      operationId: catalog_tax_options
+      description: The GST rates and percentage cesses in use (platform reference
+        data) for product forms.
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxOptions'
+          description: ''
+  /api/v1/products/tax-rates/schedule/:
+    post:
+      operationId: catalog_tax_rates_bulk_schedule
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkScheduleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkScheduleResult'
+          description: ''
   /api/v1/public/states/:
     get:
       operationId: public_states_list
@@ -1594,6 +2984,741 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicBranding'
+          description: ''
+  /api/v1/retailer-prices/:
+    get:
+      operationId: retailer_prices_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRetailerPriceList'
+          description: ''
+    post:
+      operationId: retailer_prices_create
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerPriceWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerPrice'
+          description: ''
+  /api/v1/retailer-prices/{price_id}/:
+    patch:
+      operationId: retailer_prices_update
+      parameters:
+      - in: path
+        name: price_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRetailerPriceUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerPrice'
+          description: ''
+    delete:
+      operationId: retailer_prices_delete
+      parameters:
+      - in: path
+        name: price_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/retailer-prices/export/:
+    get:
+      operationId: special_prices_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/retailers/:
+    get:
+      operationId: retailers_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: price_list
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: salesperson
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: state
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 2
+      - in: query
+        name: status
+        schema:
+          enum:
+          - ACTIVE
+          - BLOCKED
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `ACTIVE` - Active
+          * `BLOCKED` - On hold
+      - in: query
+        name: tag
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 40
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRetailerListList'
+          description: ''
+    post:
+      operationId: retailers_create
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/:
+    get:
+      operationId: retailers_retrieve
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+    patch:
+      operationId: retailers_update
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRetailerUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+    delete:
+      operationId: retailers_delete
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/addresses/:
+    post:
+      operationId: retailers_addresses_create
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/v1/retailers/{retailer_id}/addresses/{address_id}/:
+    patch:
+      operationId: retailers_addresses_update
+      parameters:
+      - in: path
+        name: address_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: retailers_addresses_delete
+      parameters:
+      - in: path
+        name: address_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/block/:
+    post:
+      operationId: retailers_block
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/copy-pricing/:
+    post:
+      operationId: retailers_copy_pricing
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyApplyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopyPlan'
+          description: ''
+  /api/v1/retailers/{retailer_id}/copy-pricing/preview/:
+    post:
+      operationId: retailers_copy_pricing_preview
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopyPlan'
+          description: ''
+  /api/v1/retailers/{retailer_id}/credit/:
+    patch:
+      operationId: retailers_credit_update
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCreditRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/discount-grid/:
+    get:
+      operationId: retailers_discount_grid
+      description: GET the grid (pricing.view); PUT saves the shop's per-product discounts
+        (pricing.manage).
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGridRowList'
+          description: ''
+    put:
+      operationId: retailers_discount_grid_save
+      description: GET the grid (pricing.view); PUT saves the shop's per-product discounts
+        (pricing.manage).
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GridItemsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Changed'
+          description: ''
+  /api/v1/retailers/{retailer_id}/discount-grid/preview/:
+    post:
+      operationId: retailers_discount_grid_preview
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GridItemsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GridPreviewRow'
+          description: ''
+  /api/v1/retailers/{retailer_id}/free-products/:
+    get:
+      operationId: retailers_free_products
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FreeProduct'
+          description: ''
+  /api/v1/retailers/{retailer_id}/prices/:
+    get:
+      operationId: retailers_price_sheet
+      description: Every sellable product with this shop's price at its minimum order
+        quantity.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPriceSheetRowList'
+          description: ''
+  /api/v1/retailers/{retailer_id}/resend-welcome/:
+    post:
+      operationId: retailers_resend_welcome
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/unblock/:
+    post:
+      operationId: retailers_unblock
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/bulk/:
+    post:
+      operationId: retailers_bulk
+      tags:
+      - retailers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetailerBulkRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailerBulkResult'
+          description: ''
+  /api/v1/retailers/export/:
+    get:
+      operationId: retailers_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/retailers/salespeople/:
+    get:
+      operationId: retailers_salespeople
+      tags:
+      - retailers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Salesperson'
           description: ''
   /api/v1/roles/:
     get:
@@ -1886,6 +4011,104 @@ paths:
                 items:
                   $ref: '#/components/schemas/Setting'
           description: ''
+  /api/v1/shop/brands/:
+    get:
+      operationId: shop_brands
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopBrand'
+          description: ''
+  /api/v1/shop/categories/:
+    get:
+      operationId: shop_categories
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopCategory'
+          description: ''
+  /api/v1/shop/products/:
+    get:
+      operationId: shop_products
+      description: 'Browse by name (paged), or search: the best ``SEARCH_LIMIT`` matches
+        on one page.'
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShopProductList'
+          description: ''
+  /api/v1/shop/products/{product_id}/:
+    get:
+      operationId: shop_product
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopProductDetail'
+          description: ''
   /api/v1/staff/:
     get:
       operationId: staff_list
@@ -2071,6 +4294,94 @@ paths:
               schema:
                 $ref: '#/components/schemas/Invitation'
           description: ''
+  /api/v1/units/:
+    get:
+      operationId: catalog_units_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUnitList'
+          description: ''
+    post:
+      operationId: catalog_units_create
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+  /api/v1/units/{unit_id}/:
+    patch:
+      operationId: catalog_units_update
+      parameters:
+      - in: path
+        name: unit_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUnitWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+          description: ''
+    delete:
+      operationId: catalog_units_delete
+      parameters:
+      - in: path
+        name: unit_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - catalog
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
     ActorTypeEnum:
@@ -2085,6 +4396,212 @@ components:
         * `STAFF` - Staff
         * `RETAILER` - Retailer
         * `SYSTEM` - System
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AddressKindEnum'
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        line1:
+          type: string
+          readOnly: true
+        line2:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        district:
+          type: string
+          readOnly: true
+        pincode:
+          type: string
+          readOnly: true
+        state_code:
+          type: string
+          readOnly: true
+        is_default:
+          type: boolean
+          readOnly: true
+      required:
+      - city
+      - district
+      - id
+      - is_default
+      - kind
+      - label
+      - line1
+      - line2
+      - pincode
+      - state_code
+    AddressKindEnum:
+      enum:
+      - BILLING
+      - SHIPPING
+      type: string
+      description: |-
+        * `BILLING` - Billing
+        * `SHIPPING` - Shipping
+    AddressWriteRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/AddressKindEnum'
+        label:
+          type: string
+          default: ''
+          maxLength: 60
+        line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        line2:
+          type: string
+          default: ''
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 10
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        is_default:
+          type: boolean
+          nullable: true
+      required:
+      - city
+      - kind
+      - line1
+      - pincode
+      - state_code
+    AdjustApplyRequest:
+      type: object
+      properties:
+        percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,2})?$
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        include_missing:
+          type: boolean
+          default: false
+        rounding:
+          allOf:
+          - $ref: '#/components/schemas/RoundingEnum'
+          default: PAISA
+        expected_count:
+          type: integer
+          minimum: 0
+      required:
+      - expected_count
+      - percent
+    AdjustPreview:
+      type: object
+      properties:
+        count:
+          type: integer
+        added:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+          description: The first 200 changes.
+      required:
+      - added
+      - count
+      - rows
+    AdjustRequest:
+      type: object
+      properties:
+        percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,2})?$
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        include_missing:
+          type: boolean
+          default: false
+        rounding:
+          allOf:
+          - $ref: '#/components/schemas/RoundingEnum'
+          default: PAISA
+      required:
+      - percent
+    AdjustResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+      required:
+      - changed
+      - warnings
+    AppliedDiscount:
+      type: object
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        rule_name:
+          type: string
+        discount_type:
+          type: string
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        slab_min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - discount_type
+      - rule_id
+      - rule_name
+      - slab_min_qty
+      - value
     AssetUploadRequest:
       type: object
       properties:
@@ -2093,6 +4610,16 @@ components:
           format: binary
       required:
       - file
+    AudienceTypeEnum:
+      enum:
+      - ALL
+      - PRICE_LIST
+      - RETAILER
+      type: string
+      description: |-
+        * `ALL` - All shops
+        * `PRICE_LIST` - Shops on a price list
+        * `RETAILER` - One shop
     AuditActor:
       type: object
       properties:
@@ -2232,6 +4759,95 @@ components:
         upi_id:
           type: string
           maxLength: 320
+    Barcode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        barcode:
+          type: string
+          maxLength: 64
+      required:
+      - barcode
+      - id
+    BarcodeRequest:
+      type: object
+      properties:
+        barcode:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+      - barcode
+    BillingAddressRequest:
+      type: object
+      properties:
+        line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        line2:
+          type: string
+          default: ''
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 10
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+      required:
+      - city
+      - line1
+      - pincode
+      - state_code
+    BlockRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - reason
+    Brand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        own_brand:
+          type: boolean
+      required:
+      - id
+      - name
+    BrandRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        own_brand:
+          type: boolean
+      required:
+      - name
     Branding:
       type: object
       properties:
@@ -2259,6 +4875,111 @@ components:
       - favicon_url
       - logo_url
       - primary_color
+    BulkActionEnum:
+      enum:
+      - activate
+      - deactivate
+      - show_in_shop
+      - hide_from_shop
+      - set_category
+      - set_brand
+      type: string
+      description: |-
+        * `activate` - activate
+        * `deactivate` - deactivate
+        * `show_in_shop` - show_in_shop
+        * `hide_from_shop` - hide_from_shop
+        * `set_category` - set_category
+        * `set_brand` - set_brand
+    BulkRequest:
+      type: object
+      properties:
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+        action:
+          $ref: '#/components/schemas/BulkActionEnum'
+        value:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - action
+      - product_ids
+    BulkResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
+    BulkScheduleRequest:
+      type: object
+      properties:
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_type:
+          type: string
+          format: uuid
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          default: '0.000'
+        effective_from:
+          type: string
+          format: date
+        reason:
+          type: string
+          default: ''
+          maxLength: 200
+        hsn_prefix:
+          type: string
+          minLength: 1
+          default: ''
+          pattern: ^[0-9]{2,8}$
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 5000
+        preview:
+          type: boolean
+          default: true
+        expected_count:
+          type: integer
+          minimum: 0
+      required:
+      - effective_from
+      - gst_rate
+    BulkScheduleResult:
+      type: object
+      properties:
+        count:
+          type: integer
+        skipped:
+          type: integer
+        sample:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        committed:
+          type: boolean
+      required:
+      - committed
+      - count
     Business:
       type: object
       properties:
@@ -2339,6 +5060,101 @@ components:
       description: |-
         * `PERCENT` - Percentage of taxable value
         * `SPECIFIC_PER_UNIT` - Fixed amount per unit (reserved)
+    CancelRateRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - reason
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        parent_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        level:
+          type: integer
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - level
+      - name
+      - parent_id
+      - slug
+      - sort_order
+    CategoryTreeNode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        level:
+          type: integer
+        sort_order:
+          type: integer
+        children:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - children
+      - id
+      - level
+      - name
+      - sort_order
+    CategoryWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        sort_order:
+          type: integer
+          default: 0
+      required:
+      - name
+    CessOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
     CessType:
       type: object
       properties:
@@ -2387,6 +5203,18 @@ components:
           maxLength: 40
       required:
       - plan_code
+    Changed:
+      type: object
+      properties:
+        changed:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+      required:
+      - changed
+      - warnings
     ChooseTenantInputRequest:
       type: object
       properties:
@@ -2400,6 +5228,90 @@ components:
       required:
       - choice_token
       - tenant_id
+    CopyApplyRequest:
+      type: object
+      properties:
+        copy_from:
+          type: string
+          format: uuid
+          description: The shop whose pricing is copied.
+        mode:
+          $ref: '#/components/schemas/CopyModeEnum'
+        expected_changes:
+          type: integer
+          minimum: 0
+      required:
+      - copy_from
+      - expected_changes
+      - mode
+    CopyModeEnum:
+      enum:
+      - REPLACE
+      - ADD
+      type: string
+      description: |-
+        * `REPLACE` - Replace this shop's pricing
+        * `ADD` - Add to this shop's pricing
+    CopyPlan:
+      type: object
+      properties:
+        price_list_from:
+          type: string
+          nullable: true
+        price_list_to:
+          type: string
+          nullable: true
+        price_list_changes:
+          type: boolean
+        prices_add:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+        prices_update:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+        prices_remove:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceChange'
+        rules_add:
+          type: array
+          items:
+            type: string
+        rules_replace:
+          type: array
+          items:
+            type: string
+        rules_remove:
+          type: array
+          items:
+            type: string
+        changes:
+          type: integer
+      required:
+      - changes
+      - price_list_changes
+      - price_list_from
+      - price_list_to
+      - prices_add
+      - prices_remove
+      - prices_update
+      - rules_add
+      - rules_remove
+      - rules_replace
+    CopyRequest:
+      type: object
+      properties:
+        copy_from:
+          type: string
+          format: uuid
+          description: The shop whose pricing is copied.
+        mode:
+          $ref: '#/components/schemas/CopyModeEnum'
+      required:
+      - copy_from
+      - mode
     Dashboard:
       type: object
       properties:
@@ -2429,6 +5341,174 @@ components:
       - equals
       - key
       - not_null
+    DiscountRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        discount_type:
+          allOf:
+          - $ref: '#/components/schemas/DiscountTypeEnum'
+          readOnly: true
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        scope_type:
+          allOf:
+          - $ref: '#/components/schemas/ScopeTypeEnum'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        audience_type:
+          allOf:
+          - $ref: '#/components/schemas/AudienceTypeEnum'
+          readOnly: true
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        retailer:
+          allOf:
+          - $ref: '#/components/schemas/ShopRef'
+          readOnly: true
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        slabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slab'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
+      required:
+      - audience_type
+      - brand
+      - category
+      - created_at
+      - discount_type
+      - id
+      - is_active
+      - name
+      - price_list
+      - product
+      - retailer
+      - scope_type
+      - slabs
+      - updated_at
+      - valid_from
+      - valid_to
+      - value
+      - warnings
+    DiscountRuleWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          default: '0.00'
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        product:
+          type: string
+          format: uuid
+          nullable: true
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        audience_type:
+          $ref: '#/components/schemas/AudienceTypeEnum'
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        retailer:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+        slabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlabInputRequest'
+      required:
+      - audience_type
+      - discount_type
+      - name
+      - scope_type
+    DiscountTypeEnum:
+      enum:
+      - PERCENT
+      - FLAT_PER_UNIT
+      type: string
+      description: |-
+        * `PERCENT` - Percentage
+        * `FLAT_PER_UNIT` - Rupees off per unit
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -2483,6 +5563,141 @@ components:
           type: boolean
       required:
       - enabled
+    FreeProduct:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
+    GridItemRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Empty or 0 removes the shop's discount.
+      required:
+      - discount_type
+      - product
+      - value
+    GridItemsRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GridItemRequest'
+          maxItems: 500
+          minItems: 1
+      required:
+      - items
+    GridPreviewRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        price:
+          $ref: '#/components/schemas/GridPrice'
+      required:
+      - price
+      - product
+    GridPrice:
+      type: object
+      description: The server-worked price at the minimum order quantity.
+      properties:
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        price_source:
+          type: string
+        discounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedDiscount'
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - discount_percent
+      - discount_total
+      - discounts
+      - net_unit_price
+      - price_source
+      - qty
+      - unit_price
+    GridRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        simple:
+          allOf:
+          - $ref: '#/components/schemas/RuleBrief'
+          nullable: true
+          description: The grid's rule for this pair.
+        others:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleBrief'
+          description: Slab or dated rules (read-only here).
+        price:
+          $ref: '#/components/schemas/GridPrice'
+      required:
+      - brand
+      - category
+      - others
+      - price
+      - product
+      - simple
+    GstRateOption:
+      type: object
+      properties:
+        rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        label:
+          type: string
+      required:
+      - label
+      - rate
     Handoff:
       type: object
       properties:
@@ -2548,6 +5763,15 @@ components:
       - effective_from
       - gst_rate
       - hsn_prefix
+    HsnHintResult:
+      type: object
+      properties:
+        hint:
+          allOf:
+          - $ref: '#/components/schemas/HsnSuggestion'
+          nullable: true
+      required:
+      - hint
     HsnImportRequest:
       type: object
       properties:
@@ -2566,6 +5790,49 @@ components:
       required:
       - created
       - updated
+    HsnSuggestion:
+      type: object
+      properties:
+        hsn_prefix:
+          type: string
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        description:
+          type: string
+      required:
+      - description
+      - gst_rate
+      - hsn_prefix
+    ImageUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        alt_text:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - file
+    ImageUrls:
+      type: object
+      properties:
+        thumb:
+          type: string
+          format: uri
+        medium:
+          type: string
+          format: uri
+        large:
+          type: string
+          format: uri
+      required:
+      - large
+      - medium
+      - thumb
     ImpersonationReasonRequest:
       type: object
       properties:
@@ -2663,6 +5930,169 @@ components:
       - session_id
       - target_type
       - tenant_slug
+    ImportJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ImportKindEnum'
+          readOnly: true
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/ImportModeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ImportStatusEnum'
+          readOnly: true
+        file_name:
+          type: string
+          readOnly: true
+        problem:
+          type: string
+          readOnly: true
+        counts:
+          readOnly: true
+        notes:
+          readOnly: true
+        errors:
+          readOnly: true
+        changes:
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        validated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        committed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - changes
+      - committed_at
+      - counts
+      - created_at
+      - created_by
+      - errors
+      - file_name
+      - id
+      - kind
+      - mode
+      - notes
+      - problem
+      - status
+      - validated_at
+    ImportJobList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ImportKindEnum'
+          readOnly: true
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/ImportModeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ImportStatusEnum'
+          readOnly: true
+        file_name:
+          type: string
+          readOnly: true
+        counts:
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        committed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - committed_at
+      - counts
+      - created_at
+      - created_by
+      - file_name
+      - id
+      - kind
+      - mode
+      - status
+    ImportKindEnum:
+      enum:
+      - PRODUCTS
+      - RETAILERS
+      - SPECIAL_PRICES
+      - PRICE_LIST_ITEMS
+      - DISCOUNT_RULES
+      type: string
+      description: |-
+        * `PRODUCTS` - Products
+        * `RETAILERS` - Retailers
+        * `SPECIAL_PRICES` - Special prices
+        * `PRICE_LIST_ITEMS` - Price-list prices
+        * `DISCOUNT_RULES` - Discount rules
+    ImportModeEnum:
+      enum:
+      - ADD_ONLY
+      - ADD_OR_UPDATE
+      type: string
+      description: |-
+        * `ADD_ONLY` - Add new only
+        * `ADD_OR_UPDATE` - Add new and update existing
+    ImportStatusEnum:
+      enum:
+      - VALIDATING
+      - VALIDATED
+      - FAILED
+      - COMMITTING
+      - COMMITTED
+      type: string
+      description: |-
+        * `VALIDATING` - Checking the file
+        * `VALIDATED` - Ready to import
+        * `FAILED` - Can't be imported
+        * `COMMITTING` - Importing
+        * `COMMITTED` - Imported
+    ImportUploadRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ImportKindEnum'
+        mode:
+          $ref: '#/components/schemas/ImportModeEnum'
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+      - kind
+      - mode
     Invitation:
       type: object
       properties:
@@ -2762,6 +6192,41 @@ components:
           maxLength: 200
       required:
       - token
+    ItemInputRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - price
+      - product
+    ItemsUpsertRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemInputRequest'
+      required:
+      - items
+    ItemsUpsertResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
+      required:
+      - changed
+      - warnings
     LoginResponse:
       type: object
       description: One shape for every sign-in step; ``status`` says what the client
@@ -2888,7 +6353,7 @@ components:
           type: string
           format: uuid
         mode:
-          $ref: '#/components/schemas/ModeEnum'
+          $ref: '#/components/schemas/MeImpersonationModeEnum'
         expires_at:
           type: string
           format: date-time
@@ -2897,6 +6362,14 @@ components:
       - impersonator_id
       - mode
       - session_id
+    MeImpersonationModeEnum:
+      enum:
+      - READ_ONLY
+      - ACT
+      type: string
+      description: |-
+        * `READ_ONLY` - READ_ONLY
+        * `ACT` - ACT
     MeRetailer:
       type: object
       properties:
@@ -2905,8 +6378,14 @@ components:
           format: uuid
         shop_name:
           type: string
+        code:
+          type: string
+        on_hold:
+          type: boolean
       required:
+      - code
       - id
+      - on_hold
       - shop_name
     MeRole:
       type: object
@@ -3029,14 +6508,6 @@ components:
           maxLength: 40
       required:
       - mfa_token
-    ModeEnum:
-      enum:
-      - READ_ONLY
-      - ACT
-      type: string
-      description: |-
-        * `READ_ONLY` - READ_ONLY
-        * `ACT` - ACT
     OnboardingRequest:
       type: object
       properties:
@@ -3133,6 +6604,82 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditLog'
+    PaginatedBrandList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Brand'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedDiscountRuleList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscountRule'
+    PaginatedGridRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GridRow'
     PaginatedHsnHintList:
       type: object
       required:
@@ -3171,6 +6718,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ImpersonationSession'
+    PaginatedImportJobListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportJobList'
     PaginatedInvitationList:
       type: object
       required:
@@ -3209,6 +6775,158 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Membership'
+    PaginatedPriceListItemList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceListItem'
+    PaginatedPriceListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceList'
+    PaginatedPriceSheetRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceSheetRow'
+    PaginatedProductListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
+    PaginatedReportRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportRow'
+    PaginatedRetailerListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetailerList'
+    PaginatedRetailerPriceList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetailerPrice'
+    PaginatedShopProductList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopProduct'
     PaginatedTenantListList:
       type: object
       required:
@@ -3228,6 +6946,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TenantList'
+    PaginatedUnitList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Unit'
     PasswordAndFactorInputRequest:
       type: object
       properties:
@@ -3285,6 +7022,51 @@ components:
       - new_password
       - token
       - uid
+    PatchedAddressWriteRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/AddressKindEnum'
+        label:
+          type: string
+          default: ''
+          maxLength: 60
+        line1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        line2:
+          type: string
+          default: ''
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        pincode:
+          type: string
+          minLength: 1
+          maxLength: 10
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        is_default:
+          type: boolean
+          nullable: true
+    PatchedBrandRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        own_brand:
+          type: boolean
     PatchedBrandingRequest:
       type: object
       properties:
@@ -3344,6 +7126,19 @@ components:
         signatory_name:
           type: string
           maxLength: 150
+    PatchedCategoryUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        sort_order:
+          type: integer
     PatchedCessTypeUpdateRequest:
       type: object
       properties:
@@ -3355,6 +7150,71 @@ components:
           $ref: '#/components/schemas/CalcMethodEnum'
         is_active:
           type: boolean
+    PatchedCreditRequest:
+      type: object
+      properties:
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        payment_terms_days:
+          type: integer
+          maximum: 365
+          minimum: 0
+    PatchedDiscountRuleWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          default: '0.00'
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        product:
+          type: string
+          format: uuid
+          nullable: true
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        audience_type:
+          $ref: '#/components/schemas/AudienceTypeEnum'
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        retailer:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+        slabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlabInputRequest'
     PatchedFeatureFlagRequest:
       type: object
       properties:
@@ -3378,6 +7238,14 @@ components:
         description:
           type: string
           maxLength: 255
+    PatchedImageUpdateRequest:
+      type: object
+      properties:
+        sort_order:
+          type: integer
+        alt_text:
+          type: string
+          maxLength: 200
     PatchedMeUpdateRequest:
       type: object
       properties:
@@ -3426,6 +7294,151 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedPriceListWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        code:
+          type: string
+          default: ''
+          maxLength: 30
+        description:
+          type: string
+          default: ''
+          maxLength: 300
+    PatchedProductUpdateRequest:
+      type: object
+      description: Edits; the GST rate changes only through a scheduled rate change.
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        unit:
+          type: string
+          format: uuid
+        pack_unit:
+          type: string
+          format: uuid
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        hsn_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        show_in_shop:
+          type: boolean
+        is_active:
+          type: boolean
+    PatchedRetailerPriceUpdateRequest:
+      type: object
+      properties:
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+          maxLength: 200
+    PatchedRetailerUpdateRequest:
+      type: object
+      properties:
+        shop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 20
+        owner_name:
+          type: string
+          maxLength: 150
+        email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        gstin:
+          type: string
+          maxLength: 30
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        salesperson:
+          type: string
+          format: uuid
+          nullable: true
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
     PatchedSettingValuesRequest:
       type: object
       properties:
@@ -3493,6 +7506,27 @@ components:
         confirm_slug_change:
           type: boolean
           default: false
+    PatchedUnitWriteRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        allows_decimal:
+          type: boolean
+          default: false
+        uqc:
+          type: string
+          minLength: 1
+          maxLength: 10
+        is_active:
+          type: boolean
+          default: true
     Permission:
       type: object
       properties:
@@ -3506,6 +7540,17 @@ components:
       - code
       - description
       - module
+    PersonRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+      required:
+      - full_name
+      - id
     Plan:
       type: object
       properties:
@@ -3607,6 +7652,719 @@ components:
         * `en` - English
         * `hi` - हिन्दी
         * `mr` - मराठी
+    PreviewLineRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - product
+      - qty
+    PreviewRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreviewLineRequest'
+          maxItems: 200
+          minItems: 1
+        'on':
+          type: string
+          format: date
+          nullable: true
+      required:
+      - lines
+      - retailer
+    PreviewRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        result:
+          allOf:
+          - $ref: '#/components/schemas/PriceResult'
+          nullable: true
+        problem:
+          type: string
+      required:
+      - problem
+      - product
+      - result
+    PriceChange:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        old:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        new:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - code
+      - name
+      - new
+      - old
+    PriceList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        code:
+          type: string
+          maxLength: 30
+        description:
+          type: string
+          maxLength: 300
+        item_count:
+          type: integer
+          readOnly: true
+          default: 0
+        shop_count:
+          type: integer
+          readOnly: true
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - item_count
+      - name
+      - shop_count
+    PriceListItem:
+      type: object
+      properties:
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+        unit:
+          type: string
+          readOnly: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - base_price
+      - price
+      - product
+      - unit
+      - updated_at
+    PriceListRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    PriceListWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        code:
+          type: string
+          default: ''
+          maxLength: 30
+        description:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - name
+    PriceResult:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        price_source:
+          $ref: '#/components/schemas/PriceSourceEnum'
+        discounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedDiscount'
+          description: Every rule applied, in order.
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        gross:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        line_net:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        prices_include_gst:
+          type: boolean
+        'on':
+          type: string
+          format: date
+      required:
+      - base_price
+      - cess_rate
+      - discount_percent
+      - discount_total
+      - discounts
+      - gross
+      - gst_rate
+      - line_net
+      - net_unit_price
+      - 'on'
+      - price_source
+      - prices_include_gst
+      - product_id
+      - qty
+      - unit_price
+    PriceSheetRow:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRef'
+        result:
+          $ref: '#/components/schemas/PriceResult'
+        special:
+          allOf:
+          - $ref: '#/components/schemas/SpecialRef'
+          nullable: true
+          description: The shop's special price for the product, to edit in place.
+      required:
+      - product
+      - result
+      - special
+    PriceSourceEnum:
+      enum:
+      - SPECIAL
+      - PRICE_LIST
+      - BASE
+      type: string
+      description: |-
+        * `SPECIAL` - SPECIAL
+        * `PRICE_LIST` - PRICE_LIST
+        * `BASE` - BASE
+    ProductDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        own_brand:
+          type: boolean
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/Unit'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/Unit'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        hsn_code:
+          type: string
+          readOnly: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          readOnly: true
+        show_in_shop:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        barcodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Barcode'
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        current_rate:
+          allOf:
+          - $ref: '#/components/schemas/ProductTaxRate'
+          nullable: true
+          readOnly: true
+        tax_rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductTaxRate'
+          readOnly: true
+        hsn_hint:
+          allOf:
+          - $ref: '#/components/schemas/HsnSuggestion'
+          nullable: true
+          readOnly: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - barcodes
+      - base_price
+      - brand
+      - category
+      - code
+      - cost_price
+      - created_at
+      - current_rate
+      - description
+      - hsn_code
+      - hsn_hint
+      - id
+      - images
+      - is_active
+      - min_order_qty
+      - mrp
+      - name
+      - order_multiple
+      - own_brand
+      - pack_size
+      - pack_unit
+      - reorder_level
+      - show_in_shop
+      - tags
+      - tax_rates
+      - unit
+      - updated_at
+      - warnings
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ProductImageStatusEnum'
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+        alt_text:
+          type: string
+          readOnly: true
+        urls:
+          allOf:
+          - $ref: '#/components/schemas/ImageUrls'
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - alt_text
+      - created_at
+      - id
+      - sort_order
+      - status
+      - urls
+    ProductImageStatusEnum:
+      enum:
+      - PROCESSING
+      - READY
+      - FAILED
+      type: string
+      description: |-
+        * `PROCESSING` - Processing
+        * `READY` - Ready
+        * `FAILED` - Failed
+    ProductList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        unit:
+          type: string
+          readOnly: true
+        hsn_code:
+          type: string
+          readOnly: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          nullable: true
+          readOnly: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        show_in_shop:
+          type: boolean
+          readOnly: true
+        own_brand:
+          type: boolean
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - base_price
+      - brand
+      - category
+      - code
+      - gst_rate
+      - hsn_code
+      - id
+      - is_active
+      - mrp
+      - name
+      - own_brand
+      - show_in_shop
+      - thumbnail_url
+      - unit
+    ProductRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
+    ProductTaxRate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        cess_type:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        effective_from:
+          type: string
+          format: date
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        state:
+          type: string
+          description: CANCELLED, SCHEDULED (future), CURRENT or PAST.
+          readOnly: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancel_reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cancel_reason
+      - cancelled_at
+      - cess_rate
+      - cess_type
+      - created_at
+      - effective_from
+      - gst_rate
+      - id
+      - reason
+      - state
+    ProductWriteRequest:
+      type: object
+      description: 'Create: code, name, unit, hsn_code, base_price and gst_rate are
+        required.'
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          default: ''
+        category:
+          type: string
+          format: uuid
+          nullable: true
+        brand:
+          type: string
+          format: uuid
+          nullable: true
+        unit:
+          type: string
+          format: uuid
+        pack_unit:
+          type: string
+          format: uuid
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        hsn_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          default: '1.000'
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          default: '1.000'
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          default: '0.000'
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        show_in_shop:
+          type: boolean
+          default: true
+        is_active:
+          type: boolean
+          default: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_type:
+          type: string
+          format: uuid
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          default: '0.000'
+        barcodes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+      - base_price
+      - code
+      - gst_rate
+      - hsn_code
+      - name
+      - unit
     PublicBranding:
       type: object
       properties:
@@ -3655,6 +8413,17 @@ components:
             type: string
       required:
       - recovery_codes
+    Ref:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
     RefreshInputRequest:
       type: object
       properties:
@@ -3670,6 +8439,35 @@ components:
       description: |-
         * `REGULAR` - Regular
         * `COMPOSITION` - Composition (reserved)
+    ReportRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        shop_name:
+          type: string
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        special_price_count:
+          type: integer
+        shop_rule_count:
+          type: integer
+        free_product_count:
+          type: integer
+          readOnly: true
+      required:
+      - code
+      - free_product_count
+      - id
+      - price_list
+      - shop_name
+      - shop_rule_count
+      - special_price_count
     RetailerAccountChoice:
       type: object
       description: One of the verified phone owner's distributors (ADR-015).
@@ -3685,6 +8483,42 @@ components:
       - choice_id
       - distributor_name
       - shop_name
+    RetailerBulkActionEnum:
+      enum:
+      - assign_salesperson
+      - assign_price_list
+      - block
+      - unblock
+      type: string
+      description: |-
+        * `assign_salesperson` - assign_salesperson
+        * `assign_price_list` - assign_price_list
+        * `block` - block
+        * `unblock` - unblock
+    RetailerBulkRequest:
+      type: object
+      properties:
+        retailer_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+        action:
+          $ref: '#/components/schemas/RetailerBulkActionEnum'
+        value:
+          type: string
+          nullable: true
+      required:
+      - action
+      - retailer_ids
+    RetailerBulkResult:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
     RetailerChooseAccountInputRequest:
       type: object
       properties:
@@ -3698,6 +8532,187 @@ components:
       required:
       - choice_id
       - choice_token
+    RetailerDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        mobile:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        pan:
+          type: string
+          readOnly: true
+        state_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RetailerStatusEnum'
+          readOnly: true
+        blocked_reason:
+          type: string
+          readOnly: true
+        salesperson:
+          allOf:
+          - $ref: '#/components/schemas/PersonRef'
+          readOnly: true
+          nullable: true
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/PriceListRef'
+          readOnly: true
+          nullable: true
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        payment_terms_days:
+          type: integer
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          readOnly: true
+        preferred_language:
+          type: string
+          readOnly: true
+        welcome_sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - addresses
+      - blocked_reason
+      - code
+      - created_at
+      - credit_limit
+      - email
+      - gstin
+      - id
+      - mobile
+      - notes
+      - owner_name
+      - pan
+      - payment_terms_days
+      - preferred_language
+      - price_list
+      - salesperson
+      - shop_name
+      - state_code
+      - status
+      - tags
+      - updated_at
+      - welcome_sent_at
+    RetailerList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        mobile:
+          type: string
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        state_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RetailerStatusEnum'
+          readOnly: true
+        salesperson:
+          allOf:
+          - $ref: '#/components/schemas/PersonRef'
+          readOnly: true
+          nullable: true
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/PriceListRef'
+          readOnly: true
+          nullable: true
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        payment_terms_days:
+          type: integer
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+          readOnly: true
+      required:
+      - code
+      - credit_limit
+      - gstin
+      - id
+      - mobile
+      - owner_name
+      - payment_terms_days
+      - price_list
+      - salesperson
+      - shop_name
+      - state_code
+      - status
+      - tags
     RetailerOtpRequestInputRequest:
       type: object
       properties:
@@ -3733,6 +8748,149 @@ components:
       required:
       - code
       - phone
+    RetailerPrice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer:
+          allOf:
+          - $ref: '#/components/schemas/ShopRef'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          readOnly: true
+      required:
+      - base_price
+      - id
+      - note
+      - price
+      - product
+      - retailer
+      - updated_at
+      - warnings
+    RetailerPriceWriteRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        product:
+          type: string
+          format: uuid
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - price
+      - product
+      - retailer
+    RetailerStatusEnum:
+      enum:
+      - ACTIVE
+      - BLOCKED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `BLOCKED` - On hold
+    RetailerWritePreferredLanguageEnum:
+      enum:
+      - en
+      - hi
+      - mr
+      type: string
+      description: |-
+        * `en` - en
+        * `hi` - hi
+        * `mr` - mr
+    RetailerWriteRequest:
+      type: object
+      properties:
+        shop_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 20
+        owner_name:
+          type: string
+          default: ''
+          maxLength: 150
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        gstin:
+          type: string
+          default: ''
+          maxLength: 30
+        state_code:
+          type: string
+          default: ''
+          maxLength: 2
+        salesperson:
+          type: string
+          format: uuid
+          nullable: true
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          default: ''
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        preferred_language:
+          allOf:
+          - $ref: '#/components/schemas/RetailerWritePreferredLanguageEnum'
+          default: en
+        billing_address:
+          allOf:
+          - $ref: '#/components/schemas/BillingAddressRequest'
+          nullable: true
+      required:
+      - mobile
+      - shop_name
     Role:
       type: object
       properties:
@@ -3768,6 +8926,134 @@ components:
       required:
       - code
       - name
+    RoundingEnum:
+      enum:
+      - PAISA
+      - RUPEE
+      type: string
+      description: |-
+        * `PAISA` - PAISA
+        * `RUPEE` - RUPEE
+    RuleBrief:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        discount_type:
+          type: string
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        is_active:
+          type: boolean
+      required:
+      - discount_type
+      - id
+      - is_active
+      - name
+      - value
+    Salesperson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+      - email
+      - full_name
+      - id
+    ScheduleRateRequest:
+      type: object
+      properties:
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_type:
+          type: string
+          format: uuid
+          nullable: true
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          default: '0.000'
+        effective_from:
+          type: string
+          format: date
+        reason:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - effective_from
+      - gst_rate
+    ScopeTypeEnum:
+      enum:
+      - ALL
+      - PRODUCT
+      - CATEGORY
+      - BRAND
+      type: string
+      description: |-
+        * `ALL` - All products
+        * `PRODUCT` - One product
+        * `CATEGORY` - A category (and its sub-categories)
+        * `BRAND` - A brand
+    SearchResult:
+      type: object
+      description: Type-ahead row (PLAN §3.5). Stock availability joins in Phase 3.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          readOnly: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - base_price
+      - code
+      - id
+      - is_active
+      - mrp
+      - name
+      - thumbnail_url
+      - unit
     SessionPerson:
       type: object
       properties:
@@ -3872,6 +9158,322 @@ components:
       - status
       - type
       - value
+    ShopBrand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    ShopCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        level:
+          type: integer
+        product_count:
+          type: integer
+        children:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - children
+      - id
+      - level
+      - name
+      - product_count
+    ShopImage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        alt_text:
+          type: string
+        urls:
+          allOf:
+          - $ref: '#/components/schemas/ImageUrls'
+          readOnly: true
+      required:
+      - alt_text
+      - id
+      - urls
+    ShopPrice:
+      type: object
+      properties:
+        qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: The quantity this price is for (the minimum order quantity).
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: The total discount on the quoted quantity.
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          description: The total discount as a % of the price.
+        discount_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Rupees off each unit; 0.00 without a discount.
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: After the discount; for display only.
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        prices_include_gst:
+          type: boolean
+      required:
+      - discount_per_unit
+      - discount_percent
+      - discount_total
+      - gst_rate
+      - net_unit_price
+      - prices_include_gst
+      - qty
+      - unit_price
+    ShopProduct:
+      type: object
+      description: 'One product row with its price; input is ``{"product": Product,
+        "price": PriceResult}``.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        unit:
+          $ref: '#/components/schemas/ShopUnit'
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/ShopUnit'
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        own_brand:
+          type: boolean
+          readOnly: true
+        price:
+          $ref: '#/components/schemas/ShopPrice'
+      required:
+      - brand
+      - category
+      - code
+      - id
+      - min_order_qty
+      - mrp
+      - name
+      - order_multiple
+      - own_brand
+      - pack_size
+      - pack_unit
+      - price
+      - thumbnail_url
+      - unit
+    ShopProductDetail:
+      type: object
+      description: 'One product row with its price; input is ``{"product": Product,
+        "price": PriceResult}``.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        unit:
+          $ref: '#/components/schemas/ShopUnit'
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/ShopUnit'
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        own_brand:
+          type: boolean
+          readOnly: true
+        price:
+          $ref: '#/components/schemas/ShopPrice'
+        description:
+          type: string
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopImage'
+        slab_hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlabHint'
+          description: Lower prices for larger quantities, e.g. 24 or more.
+      required:
+      - brand
+      - category
+      - code
+      - description
+      - id
+      - images
+      - min_order_qty
+      - mrp
+      - name
+      - order_multiple
+      - own_brand
+      - pack_size
+      - pack_unit
+      - price
+      - slab_hints
+      - thumbnail_url
+      - unit
+    ShopRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        shop_name:
+          type: string
+      required:
+      - code
+      - id
+      - shop_name
+    ShopUnit:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
+    Slab:
+      type: object
+      properties:
+        min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - min_qty
+      - value
+    SlabHint:
+      type: object
+      properties:
+        min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        net_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - min_qty
+      - net_unit_price
+    SlabInputRequest:
+      type: object
+      properties:
+        min_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - min_qty
+      - value
     SlugAvailability:
       type: object
       properties:
@@ -3882,6 +9484,19 @@ components:
       required:
       - available
       - slug
+    SpecialRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - id
+      - price
     StaffLoginInputRequest:
       type: object
       properties:
@@ -3947,6 +9562,20 @@ components:
       - plan
       - starts_at
       - status
+    TaxOptions:
+      type: object
+      properties:
+        gst_rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/GstRateOption'
+        cess_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/CessOption'
+      required:
+      - cess_types
+      - gst_rates
     TaxRate:
       type: object
       properties:
@@ -4220,6 +9849,56 @@ components:
       required:
       - access
       - access_expires_at
+    Unit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 10
+        name:
+          type: string
+          maxLength: 60
+        allows_decimal:
+          type: boolean
+        uqc:
+          type: string
+          maxLength: 10
+        is_active:
+          type: boolean
+      required:
+      - code
+      - id
+      - name
+      - uqc
+    UnitWriteRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        allows_decimal:
+          type: boolean
+          default: false
+        uqc:
+          type: string
+          minLength: 1
+          maxLength: 10
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - code
+      - name
+      - uqc
     UserTypeEnum:
       enum:
       - PLATFORM
@@ -4230,6 +9909,20 @@ components:
         * `PLATFORM` - Platform
         * `STAFF` - Distributor staff
         * `RETAILER` - Retailer
+    Warning:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+      required:
+      - code
+      - details
+      - message
   securitySchemes:
     jwtAuth:
       type: http

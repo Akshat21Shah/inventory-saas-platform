@@ -18,19 +18,13 @@ export const OTP_CODE = "123456"; // dev mock SMS (OTP_FIXED_CODE)
 export const SHOP_PHONES = ["9876500000", "9876500001", "9876500002"];
 
 /**
- * Clear rate-limit counters, lockouts and 2FA replay state for test accounts (dev-only backend
- * command), so runs and retries never depend on a time window. Override the command with
- * E2E_RESET_COMMAND when the stack is not the local docker compose one.
+ * Run a dev-only backend management command and return its output. Override the prefix with
+ * E2E_MANAGE_COMMAND (everything up to and including `manage.py`) when the stack is not the local
+ * docker compose one.
  */
-export function resetLimits({
-  emails = [],
-  phones = [],
-}: {
-  emails?: string[];
-  phones?: string[];
-}) {
-  const base = process.env.E2E_RESET_COMMAND
-    ? process.env.E2E_RESET_COMMAND.split(" ")
+export function manage(args: string[]): string {
+  const base = process.env.E2E_MANAGE_COMMAND
+    ? process.env.E2E_MANAGE_COMMAND.split(" ")
     : [
         "docker",
         "compose",
@@ -41,13 +35,34 @@ export function resetLimits({
         "backend",
         "python",
         "manage.py",
-        "reset_e2e_limits",
       ];
-  const args = [
+  return execFileSync(base[0]!, [...base.slice(1), ...args], {
+    stdio: "pipe",
+    maxBuffer: 64 * 1024 * 1024,
+  }).toString();
+}
+
+/**
+ * Clear rate-limit counters, lockouts and 2FA replay state for test accounts (dev-only backend
+ * command), so runs and retries never depend on a time window.
+ */
+export function resetLimits({
+  emails = [],
+  phones = [],
+}: {
+  emails?: string[];
+  phones?: string[];
+}) {
+  manage([
+    "reset_e2e_limits",
     ...emails.flatMap((email) => ["--email", email]),
     ...phones.flatMap((phone) => ["--phone", phone]),
-  ];
-  execFileSync(base[0]!, [...base.slice(1), ...args], { stdio: "pipe" });
+  ]);
+}
+
+/** A real .xlsx import file made by the backend (dev-only `e2e_workbook` command). */
+export function workbook(args: string[]): Buffer {
+  return Buffer.from(manage(["e2e_workbook", ...args]).trim(), "base64");
 }
 
 export const origin = (sub?: string) => `http://${sub ? `${sub}.` : ""}localhost:${PORT}`;

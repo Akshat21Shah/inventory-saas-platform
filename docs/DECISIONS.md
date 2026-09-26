@@ -400,7 +400,8 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
      - Prod settings also refuse the dev field-encryption key (ADR-031).
   4. **GSTIN rules.**
      - Spaces are removed and letters uppercased before validation.
-     - The state code must be an active GST state, and the PAN holder type (6th character) must be valid (list to verify, pre-production item 6).
+     - The state code must be an active GST state, including 97 (Other Territory, accepted by the product owner on 2026-09-25).
+     - The PAN holder type (6th character) must be one of A, B, C, F (firms, including LLPs), G, H, J, L, P, T. Source: the Income Tax Department's official list of PAN holder types, verified by the product owner on 2026-09-25.
      - Character 13 is 1–9 or a letter, character 14 is Z, and the check character must match (the error adds "Check for mix-ups like O/0, I/1 or S/5.").
      - Every error names the wrong part.
      - A GSTIN is unique across tenants; the same PAN in another state is a separate tenant.
@@ -408,3 +409,97 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
      - The same rules apply to onboarding, super admin edits and the distributor's business settings.
   5. **E2E repeatability.** `manage.py reset_e2e_limits` (DEBUG only) clears rate-limit counters for the test accounts and all per-IP counters, and resets their lockout and 2FA replay state. Playwright runs it in global set-up and before each sign-in step, so no test waits for a time window.
 - **Consequences:** Phase 5 adds the GST identity lock after the first invoice (PLAN task 5.13).
+
+## ADR-034 — Catalog: search, product visibility and product images
+- **Status:** Accepted — 2026-09-25 (product owner, Phase 2 plan).
+- **Decision:**
+  1. **Search.** Products carry a `search_vector` maintained by a database trigger (name and codes/barcodes weight A, brand and tags B, category C), with GIN indexes starting with the tenant. Trigram similarity on name and code catches typos. One selector ranks full-text matches, then trigram similarity. Target < 200 ms on 20,000 products, checked by a CI test.
+  2. **What retailers see.** A product appears in the shop only if it is active, not deleted, has "Show in shop" on (a per-product switch, default on, independent of active/inactive, for internal items), has a GST rate in effect today, and `resolve_price` returns a valid price for that retailer. Products whose only rate is in the future stay hidden until it takes effect.
+     *Implementation (commit 10):* every rule except the last is filtered in SQL, together with "unit price above zero" (special price, then price list, then base price), so category counts and pages stay cheap. A product that only a 100% discount brings to zero is dropped from the page after pricing. Its category count may then be one too high, which is acceptable for such a rare setup. The shop never sees the base price, the price source or rule names.
+  3. **Scheduled GST-rate changes.** Rate history is append-only. A change dated in the future can be cancelled before it takes effect: it is marked cancelled (audited), never deleted. Rates in effect can never be changed retroactively; a correction is a new future-dated change.
+  4. **Product images.** JPEG/PNG/WebP up to 5 MB, validated like brand images (ADR-027). A background task makes thumbnail, medium and large WebP variants. Variants are stored under unguessable, content-versioned keys (`…/products/<product>/<random token>-<content hash>/<size>.webp`) with `Cache-Control: public, max-age=31536000, immutable`, and served through the storage/CDN layer at a stable URL. A new URL is generated only when the image changes, so browsers and CDNs cache images indefinitely (important on mobile data). Keys are never listed publicly. Originals stay private.
+- **Consequences:** Product image URLs are public-but-unguessable (like most CDNs); anyone holding a URL can view that image, which is acceptable for catalog photos. Production CDN configuration is on the pre-production list.
+
+## ADR-035 — Data import framework
+- **Status:** Accepted — 2026-09-25 (product owner, Phase 2 plan).
+- **Decision:**
+  1. **Flow.** Upload (xlsx or csv) → background validation of every row without saving (dry run) → report with counts (new, updated, unchanged, errors) and a downloadable row-level error report (xlsx) → the distributor commits → valid rows are applied in the background. Templates (xlsx) per kind.
+  2. **Mode chosen explicitly for every import** (no default): *Add new only* (existing codes/mobiles are reported as errors) or *Add new and update existing* (only columns present in the file change; a blank cell means "no change"; a retailer's mobile number and login are never changed).
+  3. **Change preview** for update imports: old and new value for every changed field, with price and MRP changes highlighted, and the total number of rows that will change. Price changes via import are audited exactly like manual changes.
+  4. **Messy files are normal.** Blank rows and columns are skipped; merged or padded header cells, trailing spaces, numbers stored as text, prices with commas and the ₹ symbol, and CSV files in UTF-8 (with or without BOM), UTF-16 or Windows-1252 are handled. Duplicate keys within one file, missing required columns, wrong GST rates and invalid HSN codes are errors. Every error names the row (as numbered in the file) and the column, in plain language.
+  5. **Implementation choices (lead engineer).**
+     - The uploaded file stays the source of truth: commit re-reads and re-checks it, so rows changed since validation are reported, and a retried commit never applies a row twice.
+     - Each valid row is applied in its own transaction through the normal services (audited as manual changes).
+     - Missing brands and categories (up to 3 levels, written `Food > Biscuits`) are created and shown in the preview.
+     - An update import never changes a GST rate: that needs a start date, so it is scheduled under GST rates.
+     - HSN codes of odd length are read with the leading zero Excel drops (`402` → `0402`, noted on the row).
+     - The error report is an authenticated xlsx download, not a public link.
+     - Exports use the template's columns, so a file can go out, be edited and come back.
+- **Consequences:** Imports are never partially applied by accident: nothing is saved until the distributor confirms a validated file.
+
+## ADR-036 — Pricing resolution and retailer settings
+- **Status:** Accepted — 2026-09-25 (product owner, Phase 2 plan).
+- **Decision:**
+  1. `pricing.services.resolve_price(retailer, product, qty, on)` implements spec 5.6 with PLAN M1–M6: unit price = retailer special price → retailer's price list → base price; discount = the single best active rule (highest amount, then audience retailer > price list > all, then scope product > deeper category > brand > all, then newest); category rules cover sub-categories; flat discounts are per unit, capped at the line gross; the highest slab reached by the line quantity applies (a rule with slabs and no reached slab does not apply). Line math comes from `apps/billing/tax.py`.
+  2. New tenant setting `pricing.discounts_on_special_prices` (default **true**): when false, a retailer-specific price is the final net price and no discount rule applies to it.
+  3. New tenant setting `retailers.blocked_can_sign_in` (default **true**): when true, blocked retailers can sign in, browse and see their account with the notice "Your account is on hold. Please contact your distributor."; ordering is blocked (Phase 4). When false, sign-in is refused with the same neutral message.
+  4. **Free goods are not supported yet** (backlog). A discount rule or special price that brings a product's net price to zero is saved, with the warning "This rule makes N products free for M retailers. Free-goods schemes are not supported yet." (code `FREE_GOODS`; a special price says "This special price makes…"). Each shop's own unit price is used, and the rule's highest slab counts. The count covers active products shown in the shop, and active shops. Rules that are switched off or have ended don't count; rules that start later do. The products stay hidden from those shops (ADR-034).
+  5. (2026-09-26) A ₹0 price-list price shows the same warning: "This price list makes N products free for M retailers." Rule 1's "single best rule" is now the default of a setting (ADR-038).
+- **Consequences:** Both settings are evaluated live (no snapshot) until orders exist; Phase 4 snapshots the price basis on the order line.
+
+## ADR-037 — Managing pricing per shop at scale
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 2 end-of-phase review).
+- **Context:** Hundreds of shops and thousands of products. Per-shop pricing must be quick to set up and must not become a hidden mess.
+- **Decision:**
+  1. **What this shop pays** (retailer page): the server's price sheet, with the special price edited in place, and "Add a discount for this shop" (a rule pre-filled for the shop, by product, brand or category).
+  2. **Discount grid for one shop.** All products, searchable and filterable by category and brand. Staff with `pricing.manage` enter the shop's discount per product (% or flat per unit), and the server previews the net price as they type. Saving creates, changes or removes that shop and product's **simple rule** (no slabs, no dates), audited. There is at most one simple rule per pair. Slab or dated rules for the pair are shown read-only, with a link.
+  3. **Copy pricing from another shop.** Copies the price list assignment, special prices and shop-specific rules. The user chooses **Replace** (the target's special prices and shop rules are removed first) or **Add** (on conflicts, the source's special price wins) every time; there is no default. A preview comes first; one audit entry records the copy.
+  4. **Bulk price-list change by percentage** for a category (with sub-categories) or brand. It applies only to products already on the list; optionally it also adds the missing ones, starting from the standard price. Rounding is "to the paisa" (default) or "to whole rupees", both half-up via `billing/tax.py`. Preview first; audited like other price changes.
+  5. **Shop pricing report:** shops with special prices or shop-specific rules (counts, price list, links), plus the products each shop gets free (ADR-036 item 4). Exportable.
+  6. **Excel import/export** through the import framework (ADR-035: explicit mode, change preview, error report):
+     - **Special prices:** shop by mobile or code, product code, price, note.
+     - **Price-list prices:** list name (an existing list), product code, price.
+     - **Discount rules:**
+       - Columns: name, target (product code / brand / category, or all), audience (all shops / price list / shop mobile or code), type, value, optional slab quantity, optional valid from and to.
+       - The rule **name identifies the rule**; rows with the same name are one rule, one row per slab.
+       - In "update existing" mode, a name used by more than one existing rule is a row error.
+- **Consequences:** Every tool goes through the pricing services, so audit, validation and the free-goods warning behave the same everywhere. Lists and grids are paginated and priced in batches.
+
+## ADR-038 — Combining discounts
+- **Status:** Accepted — 2026-09-26 (product owner). Amends ADR-036 item 1 and PLAN M5.
+- **Decision:**
+  1. **Setting.** New tenant setting `pricing.discount_combination` ("when several discounts apply"):
+     - `BEST` (default, the previous behaviour): the single rule with the largest amount; ties as in PLAN M5.
+     - `ADD`: every applicable rule's amount is worked out on the original line (each % of the gross, each flat per unit × quantity), and the amounts are added. For example, 10% + ₹1 off each on a ₹100 unit is ₹11 off.
+     - `SEQUENTIAL`: one after another, from the most specific rule to the least. Order: audience (shop, then price list, then all), then scope (product, then deeper category, then brand, then all), newest first on ties. Each % applies to what is left after the earlier rules; a flat rule takes its per-unit amount × quantity from what is left. For example, 10% then 5% is 14.5%.
+  2. **Rule values and the cap.** Each rule contributes its reached slab (a rule with slabs and no reached slab does not apply). In every mode the total is capped at the line gross. Rounding follows `billing/tax.py`: each rule's amount is rounded to the paisa.
+  3. **The price result lists every rule applied, in order**, with its amount, plus the total. The order line snapshots all of it (Phase 4).
+  4. **Shops see only the total discount, as an amount and a percentage of the gross**, for example "You save ₹12 (12%)", in every mode. The percentage is computed by the server to two decimals. Shops never see rule names, how many rules applied, or the price source. "Buy more, pay less" slab hints stay.
+  5. `pricing.discounts_on_special_prices` still decides whether any rule applies on top of a special price.
+  6. **Free-goods warning.** It checks each rule on its own. Products that several rules make free together show in the shop pricing report (ADR-037 item 5), and they stay hidden from those shops.
+- **Consequences:** `resolve_price`'s single `discount` becomes a list of applied discounts plus a total. The tests cover all three modes, with slabs, flat discounts and special prices.
+
+## ADR-039 — Own brand and cost price
+- **Status:** Accepted — 2026-09-26 (product owner).
+- **Decision:**
+  1. **Own brand.** A brand can be marked "own brand" (white label). The product list filters by it. Tenant setting `retailers.show_own_brand_badge` (default **off**) shows an "own brand" badge in the shop.
+  2. **Cost price.** Products get an optional cost price:
+     - Visible only to staff with `pricing.view`; changed only with `pricing.manage`.
+     - Omitted from every response otherwise, never in the shop API, and audited on change.
+     - Product import/export has a "Cost price" column that needs the pricing permission, as credit columns need the credit permission. Without the permission, the column in a file is refused as an error, not silently ignored.
+  3. Margin reports (own brand vs traded) and manufacturing (raw materials, bills of materials, production entries with cost roll-up) are on the PLAN backlog.
+- **Consequences:** Staff who manage products but not pricing can still create and edit products; they never see or send cost prices.
+
+## ADR-040 — Responsive design: cards, filter sheet, sticky actions, three checked widths
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 2 review).
+- **Context:** The shop was mobile-first, but staff and platform screens only avoided sideways scrolling on phones: tables had to be slid sideways, filters took the whole first screen, and some controls were under 44 px.
+- **Decision:**
+  1. Lists are cards below 1024 px (phones and tablets) and tables above. Each list names its card fields (`title`, `media`, `primary`, `secondary` behind "More", `actions`) instead of stacking every column.
+  2. Bulk selection on phones and tablets uses a "Select" mode with checkboxes and a bottom action bar. Laptops keep the checkbox column and inline bar.
+  3. On phones, filters live in a bottom sheet behind "Filters (n)", with the search kept visible.
+  4. Long forms have Save/Cancel in a bar stuck to the bottom of the screen on phones.
+  5. Touch targets are at least 44 × 44 px below 768 px, set in the design-system primitives.
+  6. `e2e/responsive.spec.ts` visits every screen at 360, 768 and 1440 px in CI. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves full-page screenshots as the `responsive-screenshots` artifact.
+  7. `CLAUDE.md` §6a makes these rules part of the definition of done.
+- **Consequences:** New screens reuse `DataTable` (`cardLayout`, `selection`), `FilterBar` and `FormActions`, and are added to the responsive check. The check runs against the full stack after the seed, so it needs the seeded demo records (`manage.py e2e_ids`).
+
