@@ -176,3 +176,46 @@ def test_mixed_operations_have_no_deadlocks_and_keep_invariants(make_tenant):
     assert errors == [], errors  # no deadlock got past the retry, no database check fired
     assert sum(results) == done["ok"] + done["refused"] and done["ok"] > 0
     check_invariants(tenant)
+
+
+def test_a_draft_is_posted_once(make_tenant):
+    from apps.accounts.tests.factories import make_staff_in
+    from apps.inventory import receipts
+
+    tenant = make_tenant()
+    owner = make_staff_in(tenant, "OWNER")
+    product = make_product(tenant)
+    with tenant_context(tenant.pk):
+        draft = receipts.create_draft(
+            receipts.ReceiptInput(lines=[receipts.LineInput(product.pk, D("3"))]), by=owner
+        )
+
+    def post(_: int) -> str:
+        with tenant_context(tenant.pk):
+            return str(receipts.post(draft.pk, by=owner).number)
+
+    results, errors = _parallel(10, post)
+    assert len(results) == 1
+    assert len(errors) == 9 and all(isinstance(e, receipts.NotDraft) for e in errors)
+    assert _level(tenant, product).quantity_on_hand == 3
+    check_invariants(tenant)
+
+
+def test_receipt_numbers_have_no_gaps_under_load(make_tenant):
+    from apps.accounts.tests.factories import make_staff_in
+    from apps.inventory import receipts
+
+    tenant = make_tenant()
+    owner = make_staff_in(tenant, "OWNER")
+    products = [make_product(tenant, f"N-{i}") for i in range(3)]
+
+    def post(index: int) -> str:
+        lines = [receipts.LineInput(p.pk, D("1")) for p in random.sample(products, 2)]
+        with tenant_context(tenant.pk):
+            receipt = receipts.create_and_post(receipts.ReceiptInput(lines=lines), by=owner)
+        return str(receipt.number)
+
+    results, errors = _parallel(10, post)
+    assert errors == []
+    assert sorted(int(n.rsplit("-", 1)[1]) for n in results) == list(range(1, 11))
+    check_invariants(tenant)

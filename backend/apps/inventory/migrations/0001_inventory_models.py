@@ -36,8 +36,8 @@ CREATE TRIGGER inward_guard BEFORE UPDATE OR DELETE ON inventory_stockinward
 CREATE FUNCTION inventory_inward_line_guard() RETURNS trigger AS $$
 DECLARE
     parent_status text;
-    cost_cols text[] := ARRAY['unit_cost', 'line_cost', 'cost_status', 'cost_completed_at',
-                              'cost_completed_by_id', 'updated_at'];
+    cost_cols text[] := ARRAY['entered_cost', 'unit_cost', 'line_cost', 'cost_status',
+                              'cost_completed_at', 'cost_completed_by_id', 'updated_at'];
 BEGIN
     SELECT status INTO parent_status FROM inventory_stockinward
         WHERE id = COALESCE(NEW.inward_id, OLD.inward_id);
@@ -259,6 +259,7 @@ class Migration(migrations.Migration):
                 ('entered_unit', models.CharField(choices=[('BASE', 'Base unit'), ('PACK', 'Pack')], default='BASE', max_length=4)),
                 ('entered_qty', common.fields.QtyField(decimal_places=3, max_digits=14)),
                 ('quantity', common.fields.QtyField(decimal_places=3, max_digits=14)),
+                ('entered_cost', common.fields.UnitCostField(blank=True, decimal_places=4, max_digits=14, null=True)),
                 ('unit_cost', common.fields.UnitCostField(blank=True, decimal_places=4, max_digits=14, null=True)),
                 ('line_cost', common.fields.MoneyField(blank=True, decimal_places=2, max_digits=14, null=True)),
                 ('cost_status', models.CharField(blank=True, choices=[('SET', 'Cost entered'), ('PENDING', 'Cost pending')], max_length=8, null=True)),
@@ -272,7 +273,7 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ['line_no'],
                 'indexes': [models.Index(fields=['tenant', 'product'], name='inward_line_product_idx')],
-                'constraints': [models.UniqueConstraint(fields=('inward', 'line_no'), name='uniq_inward_line_no'), models.CheckConstraint(condition=models.Q(('quantity__gt', 0)), name='inward_line_qty_pos'), models.CheckConstraint(condition=models.Q(('entered_qty__gt', 0)), name='inward_line_entered_pos'), models.CheckConstraint(condition=models.Q(('unit_cost__isnull', True), ('unit_cost__gte', 0), _connector='OR'), name='inward_line_cost_nonneg'), models.CheckConstraint(condition=models.Q(('cost_status__isnull', True), models.Q(('cost_status', 'SET'), ('unit_cost__isnull', False)), models.Q(('cost_status', 'PENDING'), ('unit_cost__isnull', True)), _connector='OR'), name='inward_line_cost_status')],
+                'constraints': [models.UniqueConstraint(fields=('inward', 'line_no'), name='uniq_inward_line_no'), models.CheckConstraint(condition=models.Q(('quantity__gt', 0)), name='inward_line_qty_pos'), models.CheckConstraint(condition=models.Q(('entered_qty__gt', 0)), name='inward_line_entered_pos'), models.CheckConstraint(condition=models.Q(('unit_cost__isnull', True), ('unit_cost__gte', 0), _connector='OR'), name='inward_line_cost_nonneg'), models.CheckConstraint(condition=models.Q(models.Q(('entered_cost__isnull', True), ('unit_cost__isnull', True)), models.Q(('entered_cost__gte', 0), ('unit_cost__isnull', False)), _connector='OR'), name='inward_line_cost_pair'), models.CheckConstraint(condition=models.Q(('cost_status__isnull', True), models.Q(('cost_status', 'SET'), ('unit_cost__isnull', False)), models.Q(('cost_status', 'PENDING'), ('unit_cost__isnull', True)), _connector='OR'), name='inward_line_cost_status')],
             },
         ),
         migrations.AddConstraint(

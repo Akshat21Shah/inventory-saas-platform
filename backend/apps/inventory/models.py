@@ -208,7 +208,9 @@ class StockInwardLine(TenantScopedModel):
     )
     entered_qty = QtyField()
     quantity = QtyField()  # base unit
-    unit_cost = UnitCostField(null=True, blank=True)  # per base unit, before GST (ADR-041)
+    # Cost of one entered unit (a pack or a base unit) as on the bill, before GST (ADR-041).
+    entered_cost = UnitCostField(null=True, blank=True)
+    unit_cost = UnitCostField(null=True, blank=True)  # per base unit, derived from entered_cost
     line_cost = MoneyField(null=True, blank=True)
     # NULL while the receipt is a draft; SET or PENDING once posted.
     cost_status = models.CharField(  # noqa: DJ001
@@ -228,6 +230,11 @@ class StockInwardLine(TenantScopedModel):
             models.CheckConstraint(
                 condition=Q(unit_cost__isnull=True) | Q(unit_cost__gte=0),
                 name="inward_line_cost_nonneg",
+            ),
+            models.CheckConstraint(
+                condition=Q(entered_cost__isnull=True, unit_cost__isnull=True)
+                | Q(entered_cost__gte=0, unit_cost__isnull=False),
+                name="inward_line_cost_pair",
             ),
             models.CheckConstraint(
                 condition=Q(cost_status__isnull=True)
