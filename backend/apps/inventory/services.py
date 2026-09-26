@@ -21,6 +21,7 @@ from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.billing.tax import round2, stock_value, weighted_average_cost
 from apps.catalog.models import Product
+from apps.inventory import alerts
 from apps.inventory.defaults import ensure_default_warehouse
 from apps.inventory.models import MovementType, StockLevel, StockMovement, Warehouse
 from apps.platform.selectors import get_setting
@@ -162,7 +163,15 @@ def _apply_movement(
         reason=reason,
         created_by=by,
     )
+    alerts.evaluate(level)
     return movement
+
+
+def refresh_alerts(product_ids: Iterable[UUID], warehouse: Warehouse | None = None) -> None:
+    """Re-check alerts without a stock change (e.g. after a reorder level changes)."""
+    levels = lock_levels(product_ids, warehouse or default_warehouse())
+    for level in levels.values():
+        alerts.evaluate(level)
 
 
 # --- Primitives for other services (receipts, adjustments, orders in Phase 4) -----------------
