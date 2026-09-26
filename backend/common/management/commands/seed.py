@@ -133,7 +133,8 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"{'created' if created else 'updated'} tenant {tenant.slug}: "
                 f"+{summary.products} products, +{summary.images} photos, "
-                f"+{summary.shops} shops, +{summary.rules} discounts"
+                f"+{summary.shops} shops, +{summary.rules} discounts, "
+                f"+{summary.stock_documents} stock documents"
             )
         self.stdout.write(self.style.SUCCESS("seed complete"))
 

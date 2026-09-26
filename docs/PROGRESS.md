@@ -195,7 +195,7 @@
      - `GET stock/export/` gives today's stock as a count sheet in the same columns.
      - The import wizard doesn't offer the new kind yet; that comes in frontend commit 12.
      - Test fix: the per-IP sign-in limit test pins the limiter's clock, because the fixed one-minute window could split its 31 attempts (a flaky CI failure).
-  9. Seed demo stock, API client — **backend checkpoint**
+  9. Seed demo stock, API client — **done; backend checkpoint**: each demo tenant gets opening stock, a shelf count that empties some products and leaves some low (so both alert types show), a posted goods receipt with costs, one posted by the warehouse without costs (awaiting cost), a draft and a damage adjustment. This happens once only (skipped when stock documents exist). Checked on the running stack: alert counts, the out-of-stock filter, valuation, and the warehouse view of a receipt awaiting cost (costs hidden; valuation refused).
   10–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
   14. E2E acceptance, responsive check, docs — **final review**
 - Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:

@@ -124,3 +124,24 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("e2e_ids")
+
+
+def test_seed_adds_demo_stock_once(settings):
+    from apps.inventory.models import StockAdjustment, StockAlert, StockInward, StockLevel
+    from apps.inventory.tests.helpers import check_invariants
+
+    settings.DEBUG = True
+    call_command("seed", "--no-photos")
+    call_command("seed", "--no-photos")  # a second run adds nothing
+    sharma = Tenant.objects.get(slug="sharma")
+    with tenant_context(sharma.id):
+        assert StockAdjustment.objects.count() == 3  # opening stock, shelf count, damage
+        assert StockInward.objects.filter(status="POSTED").count() == 2
+        assert StockInward.objects.filter(status="DRAFT").count() == 1
+        assert StockInward.objects.filter(cost_pending_lines__gt=0).count() == 1
+        assert StockLevel.objects.filter(quantity_on_hand=0).exists()
+        alert_types = set(
+            StockAlert.objects.filter(status="OPEN").values_list("alert_type", flat=True)
+        )
+        assert alert_types == {"LOW_STOCK", "OUT_OF_STOCK"}
+    check_invariants(sharma)
