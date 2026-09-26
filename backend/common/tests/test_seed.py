@@ -110,3 +110,17 @@ def test_e2e_workbook_is_an_importable_excel_file(settings, capsys):
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("e2e_workbook", "retailers")
+
+
+def test_e2e_ids_lists_seeded_records(settings, capsys):
+    import json
+
+    settings.DEBUG = True
+    call_command("seed", "--no-photos")
+    capsys.readouterr()
+    call_command("e2e_ids")
+    ids = json.loads(capsys.readouterr().out)
+    assert set(ids) == {"tenant", "retailer", "product", "price_list", "rule", "import_job"}
+    settings.DEBUG = False
+    with pytest.raises(CommandError):
+        call_command("e2e_ids")

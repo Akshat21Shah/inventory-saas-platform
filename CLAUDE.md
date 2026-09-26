@@ -104,13 +104,36 @@ web/
 - Accessibility: semantic HTML, keyboard navigable, sufficient contrast, labelled inputs.
 - Regenerate the API client after any backend API change; never edit generated files.
 
+## 6a. Responsive design (every screen, phone to laptop)
+
+Every screen works at three widths, and CI checks them: **360 px** (phone), **768 px** (tablet) and **1440 px** (laptop). Build with these shared patterns instead of one-off layouts:
+
+- **Lists are cards on phones and tablets** (below 1024 px), tables on laptops. `DataTable` does this. Each list passes a `cardLayout` naming its fields:
+  - `title`: the card heading, usually a link to the detail page.
+  - `media`: a photo.
+  - `primary`: a few `label: value` lines that are always shown.
+  - `secondary`: behind "More", or only on the detail page.
+  - `actions`: the row's buttons.
+
+  Pick the 3–5 fields a person needs to recognise and act on a row (products: photo, name, code, price, status; retailers: shop name, owner, mobile, price list, status). Never stack every column.
+- **Bulk actions use `DataTable`'s `selection`.** On laptops that's a checkbox column with an inline bar. On phones and tablets a "Select" button turns on checkboxes and the actions move to a bar fixed to the bottom of the screen. Row actions (edit, menus, dialogs) go in the `actions` slot and must work on a card.
+- **Filters use `FilterBar`.** On phones the search stays visible and the other filters open in a bottom sheet from a "Filters (n)" button. On wider screens they sit inline.
+- **Long forms end with `FormActions`.** It gives Save/Cancel a bar stuck to the bottom of the screen on phones and a normal row elsewhere. The settings registry form keeps its fixed save bar.
+- **Touch targets are at least 44 × 44 px on phones.** The design-system primitives (Button, Input, Select, menu items, Tabs, Checkbox and Switch hit areas) already do this below 768 px, so don't shrink them with fixed heights on phones. Links inside running text are the only exception.
+- **No sideways scrolling of the page, ever.** Wide content (tables on laptops, chip rows) scrolls inside its own `overflow-x-auto` container. No control may sit off-screen or overlap another.
+- **Layout switches in code use `lib/use-media.ts`** (`useIsPhone` below 768 px, `useIsCompact` below 1024 px). Everything else uses Tailwind breakpoints (`max-md:`, `md:`, `lg:`).
+- **The shop** is mobile-first: a bottom navigation bar on phones and tablets, navigation in the header on laptops, and a centred content column up to 1152 px wide.
+- **Checks:**
+  - Each new screen is added to `web/e2e/responsive.spec.ts`. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves a screenshot of every screen at every width (the CI artifact `responsive-screenshots`; locally `make e2e-responsive`).
+  - Component tests can render at any width with `setViewport(width)` from `tests/viewport.ts`.
+
 ## 7. Definition of done (every task)
 
 - [ ] Matches the spec; ambiguities raised, not guessed
 - [ ] Migrations created and applied cleanly
 - [ ] Unit tests for services (happy path + edge cases + permission + tenant isolation)
 - [ ] API documented via drf-spectacular; client regenerated
-- [ ] UI has loading/empty/error states, i18n keys, works at 360px width
+- [ ] UI has loading/empty/error states, i18n keys, and follows §6a: listed in `e2e/responsive.spec.ts`, passing at 360/768/1440 px
 - [ ] Lint, format, type checks pass (ruff, mypy, eslint, tsc)
 - [ ] `docs/PROGRESS.md` updated
 
@@ -126,6 +149,7 @@ make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
 make e2e-stack   # acceptance E2E (Phase 1 + 2) against the running stack (needs make up + make seed)
+make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated

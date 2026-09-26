@@ -1673,6 +1673,7 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 037 | Per-shop pricing tools: grid, copy pricing, bulk %, report, pricing imports/exports (2026-09-26) |
 | 038 | Discount combination modes; shops see the total as amount and %; all applied rules recorded (2026-09-26) |
 | 039 | Own brand, cost price, own-brand badge; manufacturing on the backlog (2026-09-26) |
+| 040 | Responsive design: cards below 1024 px, filter sheet and sticky form actions on phones, 44 px targets, CI check at 360/768/1440 px with screenshots (2026-09-26) |
 
 ### 10.2 Follow-up answers (2026-09-25)
 | # | Question | Answer |

@@ -149,6 +149,20 @@ jobs:
           E2E_BASE_URL: http://localhost:3000
         # One at a time: the specs share the super admin, whose 2FA codes are single-use.
         run: npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts
+      - name: Responsive check (every screen at 360, 768 and 1440 px)
+        if: success() || failure()
+        working-directory: web
+        env:
+          E2E_FULL_STACK: "1"
+          E2E_BASE_URL: http://localhost:3000
+        run: npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts
+      - name: Screenshots of every screen at every width
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: responsive-screenshots
+          path: web/test-results/responsive
+          if-no-files-found: warn
       - name: Service logs
         if: failure()
         run: docker compose -f infra/docker-compose.yml logs --tail=200 backend worker web

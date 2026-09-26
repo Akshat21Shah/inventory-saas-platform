@@ -490,3 +490,16 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   3. Margin reports (own brand vs traded) and manufacturing (raw materials, bills of materials, production entries with cost roll-up) are on the PLAN backlog.
 - **Consequences:** Staff who manage products but not pricing can still create and edit products; they never see or send cost prices.
 
+## ADR-040 — Responsive design: cards, filter sheet, sticky actions, three checked widths
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 2 review).
+- **Context:** The shop was mobile-first, but staff and platform screens only avoided sideways scrolling on phones: tables had to be slid sideways, filters took the whole first screen, and some controls were under 44 px.
+- **Decision:**
+  1. Lists are cards below 1024 px (phones and tablets) and tables above. Each list names its card fields (`title`, `media`, `primary`, `secondary` behind "More", `actions`) instead of stacking every column.
+  2. Bulk selection on phones and tablets uses a "Select" mode with checkboxes and a bottom action bar. Laptops keep the checkbox column and inline bar.
+  3. On phones, filters live in a bottom sheet behind "Filters (n)", with the search kept visible.
+  4. Long forms have Save/Cancel in a bar stuck to the bottom of the screen on phones.
+  5. Touch targets are at least 44 × 44 px below 768 px, set in the design-system primitives.
+  6. `e2e/responsive.spec.ts` visits every screen at 360, 768 and 1440 px in CI. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves full-page screenshots as the `responsive-screenshots` artifact.
+  7. `CLAUDE.md` §6a makes these rules part of the definition of done.
+- **Consequences:** New screens reuse `DataTable` (`cardLayout`, `selection`), `FilterBar` and `FormActions`, and are added to the responsive check. The check runs against the full stack after the seed, so it needs the seeded demo records (`manage.py e2e_ids`).
+

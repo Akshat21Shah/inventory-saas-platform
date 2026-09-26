@@ -307,6 +307,13 @@
     - At 360 px the second shop sees "You save ₹1.15 each (10%)" and the ₹9.00 special price.
     - Gold gets +5% for one brand with the missing products added (5 prices), and the report lists both shops.
   - **Phase 2 review additions complete; waiting for review.**
+  - Fixes after manual testing: the missing descriptions of the Pricing and Shops settings pages (a test now renders every settings group); the shop now uses the width of tablets and laptops.
+  - **Responsive design (ADR-040, CLAUDE.md §6a):**
+    - Lists become cards below 1024 px, each with its own card fields.
+    - Bulk selection on phones uses a "Select" mode with a bottom action bar.
+    - On phones: filters in a bottom sheet (`FilterBar`) and Save/Cancel stuck to the bottom of long forms (`FormActions`).
+    - 44 px touch targets in the design system. The audit log also shows cards on phones.
+    - `e2e/responsive.spec.ts` checks 57 screens at 360, 768 and 1440 px: no sideways scrolling, no off-screen or overlapping controls, 44 px targets on phones. Screenshots are the CI artifact `responsive-screenshots`; locally `make e2e-responsive`.
 - **Phase 2 acceptance (spec §12), passed on the local stack and wired into CI (`e2e-stack`).** In `e2e/catalog-acceptance.spec.ts`:
   - A new distributor imports 1,000 products and 100 retailers from Excel, and adds a price-list price.
   - At 360 px, a shop on the price list sees ₹5.00 and a shop without it sees the standard ₹11.50.
