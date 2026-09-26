@@ -231,7 +231,18 @@
       - The import wizard offers "Opening stock" with its own modes ("Add to stock" / "Set stock to this count"); choosing another kind clears the mode.
       - Checked on the running stack at 360 and 1440 px as warehouse and owner: no sideways scrolling.
   13. Frontend: shop stock labels — **done**: product cards and the product page show the server's label (In stock, Low stock, Available on backorder, Out of stock) with the product's status colours, and "3 pieces in stock" only when the distributor shows exact stock. Nothing about stock is worked out in the shop.
-  14. E2E acceptance, responsive check, docs — **final review**
+  14. E2E acceptance, responsive check, docs — **done; waiting for the final review**:
+      - `e2e/inventory-acceptance.spec.ts` (in `make e2e-stack` and CI):
+        - a new distributor imports 3 products and a shop, and sets a reorder level of 5;
+        - it receives 12 by typing the code and pressing Enter (as a scanner does), with cost 7.50, and posts: GRN-…-00001, a ₹90.00 line and total, the movement on the product page, and cost price ₹7.50;
+        - two damage adjustments (−9, −1) leave one open low-stock alert, not two;
+        - at 360 px the shop sees "Low stock" with no quantity and "Available on backorder" for a product never received, with no sideways scrolling.
+        
+        It passed locally (5/5) on the stack in localhost mode. One earlier run failed at the super admin's 2FA step ("That code didn't work"): the Mac and container clocks agree, and the next runs passed. I'll keep an eye on it.
+      - Responsive check: 15 new screens (stock, product stock, movements, alerts, receipts list/new/posted/draft, adjustments list/new/detail, reports index, low stock, stock value, stock settings). `e2e_ids` gives the receipt and adjustment ids. Two phone problems it found were fixed: the "More stock actions" button was 38 px wide, and the folded bill fields on the receiving page still took space (now a toggle that renders them only when open). All screens pass at 360/768/1440.
+      - Phone receipt cards show the line cost up front.
+      - CLAUDE.md: how to enable the camera over `make lan` (a Chrome flag on Android; typed and USB/Bluetooth scanners need nothing).
+- **Phase 3 acceptance (spec §12):** receipts and adjustments update stock with the right movements, alerts fire once, and the concurrency tests pass (backend threads plus the lock mutation check). Shops see the labels at 360 px.
 - Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
   1. Catalog models

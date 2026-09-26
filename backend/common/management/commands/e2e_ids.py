@@ -1,5 +1,6 @@
 """Print the ids of seeded Sharma records as JSON, so the responsive E2E check can open detail
-pages (a product, a shop, a price list, a discount rule). Dev only: refuses unless DEBUG is on."""
+pages (a product, a shop, a price list, a discount rule, goods receipts, an adjustment). Dev only:
+refuses unless DEBUG is on."""
 
 import json
 from typing import Any
@@ -9,10 +10,16 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.catalog.models import Product
 from apps.dataio.models import ImportJob
+from apps.inventory.models import StockAdjustment, StockInward
 from apps.platform.models import Tenant
 from apps.pricing.models import DiscountRule, PriceList
 from apps.retailers.models import Retailer
 from common.tenancy import tenant_transaction
+
+
+def _first(qs: Any) -> str | None:
+    pk = qs.order_by("created_at").values_list("pk", flat=True).first()
+    return str(pk) if pk else None
 
 
 class Command(BaseCommand):
@@ -37,5 +44,8 @@ class Command(BaseCommand):
                 ),
                 "rule": str(DiscountRule.objects.order_by("name").values_list("pk", flat=True)[0]),
                 "import_job": str(job.pk) if job else None,
+                "receipt": _first(StockInward.objects.filter(status="POSTED")),
+                "draft_receipt": _first(StockInward.objects.filter(status="DRAFT")),
+                "adjustment": _first(StockAdjustment.objects.all()),
             }
         self.stdout.write(json.dumps(ids))

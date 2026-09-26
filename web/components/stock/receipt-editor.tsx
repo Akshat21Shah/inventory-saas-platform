@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Minus, Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
@@ -112,6 +112,7 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
   // The line whose quantity field gets the focus after it is added (laptops).
   const focusNext = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [billOpen, setBillOpen] = useState(Boolean(draft?.supplier_name || draft?.bill_number));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [header, setHeader] = useState({
     supplier_name: draft?.supplier_name ?? "",
@@ -289,12 +290,21 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
       <div className="space-y-6">
         {phone ? (
           // Phones: scanning comes first; the bill details are one tap away.
-          <details className="rounded-xl border" open={Boolean(draft?.supplier_name)}>
-            <summary className="flex min-h-11 cursor-pointer items-center px-4 font-medium">
+          <div className="rounded-xl border">
+            <button
+              type="button"
+              aria-expanded={billOpen}
+              onClick={() => setBillOpen(!billOpen)}
+              className="flex min-h-11 w-full items-center justify-between px-4 text-left font-medium"
+            >
               {t("billDetails")}
-            </summary>
-            <div className="grid gap-4 px-4 pb-4">{billFields}</div>
-          </details>
+              <ChevronDown
+                aria-hidden
+                className={cn("size-4 transition-transform", billOpen && "rotate-180")}
+              />
+            </button>
+            {billOpen ? <div className="grid gap-4 px-4 pb-4">{billFields}</div> : null}
+          </div>
         ) : (
           <Card>
             <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-4">

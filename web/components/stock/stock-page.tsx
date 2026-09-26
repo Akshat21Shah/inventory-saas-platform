@@ -163,7 +163,11 @@ export function StockPage() {
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="min-h-10" aria-label={t("more")}>
+                    <Button
+                      variant="outline"
+                      className="min-h-10 max-md:min-w-11"
+                      aria-label={t("more")}
+                    >
                       <MoreHorizontal aria-hidden />
                     </Button>
                   </DropdownMenuTrigger>

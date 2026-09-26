@@ -29,6 +29,9 @@ interface Ids {
   price_list: string;
   rule: string;
   import_job: string | null;
+  receipt: string | null;
+  draft_receipt: string | null;
+  adjustment: string | null;
 }
 
 function pages(ids: Ids) {
@@ -54,11 +57,26 @@ function pages(ids: Ids) {
     "/manage/pricing/discounts/new",
     `/manage/pricing/discounts/${ids.rule}`,
     "/manage/pricing/report",
+    "/manage/stock",
+    `/manage/stock/${ids.product}`,
+    "/manage/stock/movements",
+    "/manage/stock/alerts",
+    "/manage/stock/inwards",
+    "/manage/stock/inwards/new",
+    ...(ids.receipt ? [`/manage/stock/inwards/${ids.receipt}`] : []),
+    ...(ids.draft_receipt ? [`/manage/stock/inwards/${ids.draft_receipt}`] : []),
+    "/manage/stock/adjustments",
+    "/manage/stock/adjustments/new",
+    ...(ids.adjustment ? [`/manage/stock/adjustments/${ids.adjustment}`] : []),
+    "/manage/reports",
+    "/manage/reports/low-stock",
+    "/manage/reports/stock-valuation",
     "/manage/settings/business",
     "/manage/settings/branding",
     "/manage/settings/policies/tax",
     "/manage/settings/policies/pricing",
     "/manage/settings/policies/retailers",
+    "/manage/settings/policies/stock",
     "/manage/settings/features",
     "/manage/settings/staff",
     "/manage/settings/roles",

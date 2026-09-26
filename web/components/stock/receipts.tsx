@@ -349,9 +349,9 @@ function ReceiptView({ receipt, onChanged }: { receipt: ReceiptDetail; onChanged
           cardLayout={{
             product: "title",
             received: "primary",
+            line_cost: "primary",
             cost_status: "primary",
             cost: "secondary",
-            line_cost: "secondary",
           }}
         />
         <div className="space-y-6">
