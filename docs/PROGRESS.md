@@ -173,7 +173,10 @@
      - `complete_costs` (`pricing.manage`) fills pending lines only and applies the cost method at that moment. The "stock before" is what is on hand now minus that line's quantity (the goods are already in stock), never below zero. It is audited.
      - Race tests: one draft posted by 10 threads posts once, and 10 receipts posted together get numbers 1–10.
      - Test fix: threaded tests skip the after-commit Celery enqueue. Eager tasks in parallel threads could leave Celery's global "inside a task" flag set, which failed a later test in CI.
-  6. Adjustments: reason + note, add / remove / counted, reserved guard, audit
+  6. Adjustments: reason + note, add / remove / counted, reserved guard, audit — **done** (`apps/inventory/adjustments.py`):
+     - One adjustment covers up to 500 products, each at most once. It has a reason code and a required note. Lines add, remove or record a counted quantity; the server works out the difference, and a count that matches is reported as unchanged with no line written. Whole numbers where the unit requires them.
+     - Numbered `ADJ-<year>-00001`, gap-free. The DAMAGE reason writes DAMAGE movements; other removals write ADJUSTMENT_OUT. Removing reserved stock fails the whole adjustment with `STOCK_RESERVED`, naming the product and how much can be removed. Audited as `stock.adjusted` with each line's before and change.
+     - Reorder level: `set_reorder_level` (audited as `stock.reorder_level_changed`) re-checks alerts. A product edit that changes the reorder level does too; it locks the stock level before the product, the same order receipts use.
   7. Stock APIs and reports (low stock, valuation) with isolation and role tests
   8. Shop availability labels, `stock.show_out_of_stock_in_shop`, opening stock import
   9. Seed demo stock, API client — **backend checkpoint**

@@ -27,6 +27,7 @@ from apps.catalog.models import (
     ProductTaxRate,
     Unit,
 )
+from apps.inventory import alerts as inventory_alerts
 from apps.inventory import services as inventory
 from apps.platform.models import CessType, TaxRate
 from apps.platform.selectors import get_setting
@@ -550,6 +551,10 @@ def create_product(
 def update_product(
     product_id: UUID, changes: dict[str, Any], *, by: User
 ) -> tuple[Product, list[Warning]]:
+    levels = {}
+    if "reorder_level" in changes and Product.objects.filter(pk=product_id).exists():
+        # Stock level before the product row (the inventory lock order), to re-check alerts.
+        levels = inventory.lock_levels([product_id], inventory.default_warehouse())
     product = (
         Product.objects.select_for_update().filter(pk=product_id, deleted_at__isnull=True).first()
     )
@@ -579,6 +584,9 @@ def update_product(
             audit.record(
                 "catalog.product_price_changed", target=product, target_repr=repr_, changes=prices
             )
+        if "reorder_level" in diff:
+            for level in levels.values():
+                inventory_alerts.evaluate(level, product.reorder_level)
     rate = selectors.tax_rate_on(product.pk)
     return product, price_warnings(product, rate.gst_rate if rate else None)
 
