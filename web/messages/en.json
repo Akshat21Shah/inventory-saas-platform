@@ -152,7 +152,8 @@
     "cart": "Cart",
     "account": "Account",
     "mainNavigation": "Main navigation",
-    "impersonations": "Support sessions"
+    "impersonations": "Support sessions",
+    "needsAttention": "need attention"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -197,7 +198,12 @@
     "EXPIRED": "Expired",
     "PENDING": "Waiting",
     "REVOKED": "Cancelled",
-    "BLOCKED": "On hold"
+    "BLOCKED": "On hold",
+    "LOW": "Low stock",
+    "OUT": "Out of stock",
+    "OUT_OF_STOCK": "Out of stock",
+    "DRAFT": "Draft",
+    "POSTED": "Posted"
   },
   "table": {
     "emptyTitle": "No records yet",
@@ -1958,5 +1964,119 @@
     "description": "Narrow down the list.",
     "clear": "Clear filters",
     "show": "Show results"
+  },
+  "stock": {
+    "nav": {
+      "label": "Stock sections",
+      "overview": "Overview",
+      "receipts": "Goods received",
+      "adjustments": "Adjustments",
+      "alerts": "Alerts",
+      "movements": "Movements",
+      "lowStock": "Low stock",
+      "valuation": "Stock value",
+      "settings": "Settings"
+    },
+    "movementTypes": {
+      "INWARD": "Goods received",
+      "SALE": "Dispatched",
+      "RETURN": "Returned",
+      "ADJUSTMENT_IN": "Added",
+      "ADJUSTMENT_OUT": "Removed",
+      "DAMAGE": "Damaged",
+      "TRANSFER_IN": "Transfer in",
+      "TRANSFER_OUT": "Transfer out",
+      "RESERVE": "Reserved for an order",
+      "RELEASE": "Reservation released"
+    },
+    "alertTypes": {
+      "LOW_STOCK": "Low stock",
+      "OUT_OF_STOCK": "Out of stock",
+      "BACKORDER_DEMAND": "Shops waiting"
+    },
+    "overview": {
+      "title": "Stock",
+      "description": "What you have, what is reserved for orders and what needs restocking.",
+      "receive": "Receive goods",
+      "adjust": "Adjust stock",
+      "more": "More stock actions",
+      "exportCount": "Download count sheet",
+      "importStock": "Import opening stock",
+      "awaitingCost": "{count, plural, one {# goods receipt is} other {# goods receipts are}} waiting for costs.",
+      "addCosts": "Add costs",
+      "lowStock": "Low stock",
+      "outOfStock": "Out of stock",
+      "shopsWaiting": "Shops waiting",
+      "product": "Product",
+      "available": "Available",
+      "status": "Status",
+      "onHand": "On hand",
+      "reserved": "Reserved",
+      "reorderLevel": "Reorder level",
+      "notSet": "Not set",
+      "category": "Category",
+      "brand": "Brand",
+      "search": "Search stock",
+      "searchPlaceholder": "Name, code or barcode",
+      "anyStatus": "Any stock status",
+      "allCategories": "All categories",
+      "allBrands": "All brands",
+      "statuses": {
+        "IN_STOCK": "In stock",
+        "LOW": "Low stock",
+        "OUT": "Out of stock",
+        "BACKORDERED": "Shops waiting",
+        "NO_REORDER_LEVEL": "No reorder level"
+      },
+      "noMatchTitle": "No products match",
+      "noMatchBody": "Try another search or clear the filters.",
+      "emptyTitle": "No products yet",
+      "emptyBody": "Add products first; their stock appears here."
+    },
+    "detail": {
+      "back": "All stock",
+      "receive": "Receive goods",
+      "adjust": "Adjust",
+      "productDetails": "Product details",
+      "available": "Available",
+      "onHand": "On hand",
+      "reserved": "Reserved for orders",
+      "backordered": "Shops waiting for",
+      "movements": "Stock movements",
+      "noMovements": "No stock movements yet",
+      "reorderTitle": "Reorder level",
+      "reorderHelp": "You'll get a low-stock alert when the available stock falls to this level.",
+      "reorderLabel": "Reorder at ({unit})",
+      "notSet": "Not set",
+      "save": "Save",
+      "reorderSaved": "Reorder level saved",
+      "costTitle": "Cost price",
+      "perUnit": "per {unit}, before GST",
+      "noCost": "No cost price yet",
+      "alertsTitle": "Open alerts",
+      "noAlerts": "No open alerts",
+      "barcodes": "Barcodes",
+      "stockTitle": "Stock",
+      "stockUnavailable": "Stock isn't available right now.",
+      "stockLink": "Stock and movements"
+    },
+    "movements": {
+      "title": "Stock movements",
+      "description": "Every change to stock, newest first. Movements are never edited; corrections are new movements.",
+      "when": "When",
+      "product": "Product",
+      "type": "What happened",
+      "change": "Change",
+      "onHandAfter": "On hand after",
+      "reference": "Document",
+      "reason": "Reason",
+      "by": "By",
+      "value": "Value",
+      "allTypes": "All movements",
+      "from": "From",
+      "to": "To",
+      "emptyTitle": "No stock movements",
+      "emptyBody": "Receiving goods and adjustments show up here."
+    }
   }
 }

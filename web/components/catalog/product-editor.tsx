@@ -18,6 +18,7 @@ import { FormActions } from "@/components/shared/form-actions";
 import { FormSelect } from "@/components/shared/form-select";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageSkeleton } from "@/components/shared/skeletons";
+import { ProductStockCard } from "@/components/stock/stock-detail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -560,6 +561,7 @@ export function EditProductPage({ productId }: { productId: string }) {
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <ProductForm key={product.updated_at} product={product} />
         <div className="space-y-6">
+          {can("stock.view") ? <ProductStockCard productId={product.id} /> : null}
           <TaxRatesPanel product={product} onChanged={() => void query.refetch()} />
           <ImagesPanel productId={product.id} />
           <BarcodesPanel product={product} onChanged={() => void query.refetch()} />

@@ -27,10 +27,12 @@ function NavLinks({
   items,
   rootHref,
   onNavigate,
+  badges,
 }: {
   items: NavItem[];
   rootHref: string;
   onNavigate?: () => void;
+  badges?: Partial<Record<string, number>>;
 }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
@@ -52,7 +54,13 @@ function NavLinks({
               )}
             >
               <Icon aria-hidden className="size-4" />
-              {t(labelKey)}
+              <span className="flex-1">{t(labelKey)}</span>
+              {badges?.[labelKey] ? (
+                <span className="bg-warning/20 text-warning-strong rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums">
+                  {badges[labelKey]}
+                  <span className="sr-only"> {t("needsAttention")}</span>
+                </span>
+              ) : null}
             </Link>
           </li>
         );
@@ -80,10 +88,13 @@ export function SidebarShell({
   children,
   banner,
   account,
+  badges,
 }: {
   title: string;
   items: NavItem[];
   children: ReactNode;
+  /** Counts shown next to nav items, by label key (e.g. open stock alerts). */
+  badges?: Partial<Record<string, number>>;
   /** Full-width notice above everything (e.g. a support session). */
   banner?: ReactNode;
   /** Account menu: bottom of the sidebar, top-right on phones. */
@@ -99,7 +110,7 @@ export function SidebarShell({
         <aside className="bg-sidebar hidden w-60 shrink-0 flex-col border-r md:flex">
           <div className="flex h-14 items-center px-4 font-semibold">{title}</div>
           <nav aria-label={t("nav.mainNavigation")} className="flex-1 px-3 py-2">
-            <NavLinks items={items} rootHref={rootHref} />
+            <NavLinks items={items} rootHref={rootHref} badges={badges} />
           </nav>
           {account ? <div className="border-t p-3">{account}</div> : null}
         </aside>
@@ -119,7 +130,7 @@ export function SidebarShell({
               <SheetContent side="left" className="w-72 p-4">
                 <SheetTitle>{title}</SheetTitle>
                 <nav aria-label={t("nav.mainNavigation")} className="mt-4">
-                  <NavLinks items={items} rootHref={rootHref} />
+                  <NavLinks items={items} rootHref={rootHref} badges={badges} />
                 </nav>
               </SheetContent>
             </Sheet>

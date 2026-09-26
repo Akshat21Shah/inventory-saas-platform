@@ -202,7 +202,12 @@
      - The opening stock import is one adjustment per file. The import framework now reports rows that were valid at validation but fail the re-check at commit, instead of skipping them silently.
      - Low-stock summary: `reports/stock/low-stock/summary/` gives the low count and the active products without a reorder level. The stock list filter `no_reorder_level=true` shows them.
      - Dev database: the demo products' missing cost prices were backfilled (dev data only, done once from a shell).
-  10–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
+  10. Frontend: stock overview, product stock page, movements — **done**:
+      - `/manage/stock`: count cards (low, out, shops waiting) that filter the list. A notice links to "N goods receipts are waiting for costs" (for `costs.view`). Search, status filter (including "No reorder level", also reachable via `?status=`), category and brand. Cards on phones. "Receive goods", "Adjust stock", the count-sheet download and opening stock import appear only for staff with those permissions.
+      - `/manage/stock/[product]`: available, on hand, reserved and waiting figures; the reorder level editor (`products.manage` or `stock.adjust`); cost price (`costs.view` only); open alerts; barcodes; paginated movement history.
+      - `/manage/stock/movements`: filter by type and date. Each row links to its goods receipt or adjustment, and the value column appears only when the server sends values.
+      - A stock card on the product page. A stock sub-navigation. The sidebar "Stock" item shows the open-alert count, refreshed every minute.
+  11–13. Frontend: stock overview and detail; goods receipt entry (phone scan flow, laptop grid, complete costs); adjustments, alerts and reports; shop badges
   14. E2E acceptance, responsive check, docs — **final review**
 - Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
