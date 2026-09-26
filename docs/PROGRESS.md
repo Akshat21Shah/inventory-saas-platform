@@ -161,7 +161,10 @@
 - **Phase 3 — Inventory** (branch `phase-3` from `main` e117fdf; plan approved 2026-09-26 with ADR-041, PLAN §10.2b, SPEC 1.2). Commits in order:
   1. Docs: ADR-041, PLAN v1.4 (§1.2 S8–S10, §2.7, §3.7, §5, §7.3, §8, §9.1, §10.2b), SPEC 1.2 — **done**
   2. Models: warehouse, stock level, movement, receipts, adjustments, alerts; RLS, checks, append-only trigger, backfills — **done**: RLS on all eight tables; append-only movements and adjustments; a trigger keeps posted receipts unchanged except for completing pending costs once; one open alert per product/warehouse/type; the default warehouse is made with each tenant and every product gets a stock level (both backfilled); movement types have no database list (ADR-041).
-  3. Stock primitives (`MOVEMENT_KINDS`, lock order), cost method, concurrency tests
+  3. Stock primitives (`MOVEMENT_KINDS`, lock order), cost method, concurrency tests — **done**:
+     - `lock_levels` (creates missing levels, locks in product order) and `_apply_movement`, the only writer of stock levels. Primitives: receive, add, remove, reserve, release, consume reserved. `INSUFFICIENT_STOCK` and `STOCK_RESERVED` (PLAN S4) are refused before the database checks.
+     - Cost method: settings `stock.cost_method` (WEIGHTED_AVERAGE default, LAST_PURCHASE, MANUAL) and `stock.show_out_of_stock_in_shop`. Cost arithmetic in `billing/tax.py` (`cost_per_base_unit`, `stock_value`, `weighted_average_cost`) with table and Hypothesis tests; automatic cost price changes audited with the receipt number.
+     - Concurrency tests with real threads and a barrier: 20 threads for the last unit (exactly one reserves), 20 removals from 5 (exactly 5), reservations racing removals, and a 30-second random mix across 5 products in shuffled order (no deadlock past the retry; on hand and reserved equal the movement sums). Removing the row lock makes all four fail.
   4. Alerts: dedupe and outbox events
   5. Goods receipts: draft, post, packs, cost pending, complete costs
   6. Adjustments: reason + note, add / remove / counted, reserved guard, audit

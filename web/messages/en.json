@@ -252,7 +252,9 @@
     "TAX_RATE_NOT_CANCELLABLE": "Only a GST change that hasn't started yet can be cancelled.",
     "PREVIEW_OUT_OF_DATE": "The matching products changed since the preview. Preview again before confirming.",
     "RETAILER_ON_HOLD": "Your account is on hold. Please contact your distributor.",
-    "PRICE_UNAVAILABLE": "This product can't be sold right now."
+    "PRICE_UNAVAILABLE": "This product can't be sold right now.",
+    "INSUFFICIENT_STOCK": "There isn't enough stock for this.",
+    "STOCK_RESERVED": "Part of this stock is reserved for orders, so it can't be removed."
   },
   "designSystem": {
     "title": "Design system",
@@ -431,6 +433,19 @@
       "show_low_stock_label": {
         "label": "Show a \"Low stock\" label",
         "description": "Show a \"Low stock\" label to retailers when stock is at or below the reorder level."
+      },
+      "show_out_of_stock_in_shop": {
+        "label": "Show out-of-stock products to shops",
+        "description": "Shops see products with no stock, marked \"Out of stock\". Turn off to hide them until stock arrives. Only matters when backorders are off."
+      },
+      "cost_method": {
+        "label": "How goods receipts change the cost price",
+        "description": "When you receive goods with a cost, the product's cost price can follow the average of your stock and the new bill, the latest bill, or stay as you set it. You can always change a cost price by hand.",
+        "options": {
+          "WEIGHTED_AVERAGE": "Average of stock and new bill",
+          "LAST_PURCHASE": "Latest bill cost",
+          "MANUAL": "Never (I set it myself)"
+        }
       }
     },
     "backorders": {

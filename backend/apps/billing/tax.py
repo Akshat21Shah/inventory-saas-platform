@@ -121,6 +121,37 @@ def percent_of(part: Decimal, whole: Decimal, rounding: ComponentRounding) -> De
     return round2(part * HUNDRED / whole, rounding)
 
 
+# --- Stock cost (ADR-041): per-unit costs before GST ------------------------------------------
+
+UNIT_COST_STEP = Decimal("0.0001")
+
+
+def cost_per_base_unit(entered_cost: Decimal, base_units_per_entered_unit: Decimal) -> Decimal:
+    """Cost of one base unit from the cost of one entered unit (a pack holds several base units),
+    to 4 decimals, half-up. ``cost_per_base_unit(Decimal("100"), Decimal("12"))`` is 8.3333."""
+    if base_units_per_entered_unit <= 0:
+        raise ValueError("a pack holds more than zero base units")
+    return (entered_cost / base_units_per_entered_unit).quantize(UNIT_COST_STEP, ROUND_HALF_UP)
+
+
+def stock_value(qty: Decimal, unit_cost: Decimal) -> Decimal:
+    """Value of ``qty`` at ``unit_cost``, half-up to the paisa (movements, receipts, valuation)."""
+    return round2(qty * unit_cost)
+
+
+def weighted_average_cost(
+    on_hand: Decimal, cost_price: Decimal | None, received: Decimal, unit_cost: Decimal
+) -> Decimal:
+    """New cost price after receiving ``received`` units at ``unit_cost`` (⚙ ``stock.cost_method``
+    WEIGHTED_AVERAGE), half-up to the paisa. With no stock (0 or less) or no cost price yet, the
+    bill cost becomes the cost price."""
+    if received <= 0:
+        raise ValueError("received quantity must be above zero")
+    if on_hand <= 0 or cost_price is None:
+        return round2(unit_cost)
+    return round2((on_hand * cost_price + received * unit_cost) / (on_hand + received))
+
+
 def compute_line(
     *,
     qty: Decimal,
