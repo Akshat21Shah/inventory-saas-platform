@@ -1009,7 +1009,9 @@
       "orders": "Rules for orders your shops place.",
       "stock": "How stock is counted and reserved.",
       "credit_payments": "Credit limits and how payments are handled.",
-      "security": "Sign-in rules for your staff."
+      "security": "Sign-in rules for your staff.",
+      "pricing": "How discounts combine and whether they apply on top of shop special prices.",
+      "retailers": "What shops on hold can do and what shops see in the app."
     },
     "unknownGroup": "This settings page does not exist.",
     "noSettings": "Nothing to set here yet",
