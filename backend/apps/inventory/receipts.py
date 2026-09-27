@@ -207,11 +207,6 @@ def delete_draft(inward_id: UUID, *, by: User) -> None:
 # --- Posting -------------------------------------------------------------------------------------
 
 
-def on_stock_received(product_ids: Sequence[UUID], *, source: str) -> None:
-    """Backorder allocation after stock arrives (PLAN §5.2). Phase 4 fills this in; it runs in the
-    posting transaction so waiting backorders get the stock first."""
-
-
 @retry_on_deadlock()
 def post(inward_id: UUID, *, by: User) -> StockInward:
     """Post a draft: stock up, one movement per line, the cost method for lines with a cost, and
@@ -228,9 +223,12 @@ def post(inward_id: UUID, *, by: User) -> StockInward:
             raise InvalidFields(
                 {"lines": [f"Deleted products can't be received: {', '.join(sorted(inactive))}."]}
             )
-        # Lock order: stock levels (L3), then the GRN sequence, then product rows for the cost
-        # price. Only postings take the GRN sequence, and they always hold their levels first.
-        levels = services.lock_levels([line.product_id for line in lines], inward.warehouse)
+        # Lock order: shops and orders waiting for these products (L1, L2), stock levels (L3),
+        # then the GRN sequence, then product rows for the cost price. Only postings take the GRN
+        # sequence, and they always hold their levels first.
+        product_ids = [line.product_id for line in lines]
+        waiting = services.hold_waiting_orders(product_ids)
+        levels = services.lock_levels(product_ids, inward.warehouse)
         year = today_ist().year
         number = f"GRN-{year}-{next_value('GRN', str(year)):05d}"
         ref = services.Ref(ReferenceType.INWARD, inward.pk, number)
@@ -258,7 +256,7 @@ def post(inward_id: UUID, *, by: User) -> StockInward:
         inward.posted_by = by
         inward.cost_pending_lines = pending
         inward.save()
-        on_stock_received(sorted(levels), source=number)
+        services.serve_backorders(levels, waiting, trigger="INWARD", source_id=inward.pk, by=by)
         audit.record(
             "stock.inward_posted",
             target=inward,

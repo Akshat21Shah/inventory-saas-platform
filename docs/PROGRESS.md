@@ -186,8 +186,14 @@
      - Dispatch: SALE movements consume the reservation, transport details (vehicle, transporter, LR) are kept, and Phase 5 will issue the invoice here. Deliver is done by `orders.fulfil` staff.
      - Staff can cancel a shipment before dispatch (to backorder or cancelled, their choice), or the whole accepted order (every open shipment and the backorder). Neither is possible once anything is dispatched.
      - Order status is derived: COMPLETED when every shipment is delivered and nothing waits, otherwise the least advanced shipment; `backorder_state` stays in step. Freed stock calls the backorder hook.
-  7. Backorders: queue, allocation, proposals, cancel remainder, repriced cancel, mixed-operations race
-  8. Distributor APIs (+ ordering on behalf), isolation and role tests
+  7. Backorders: allocation, proposals, cancel remainder, repriced cancel, mixed-operations race — **done** (`apps/orders/backorders.py`):
+     - Goods receipts and stock added by adjustments serve waiting backorders in the same transaction (the waiting shops and orders are locked before the stock rows). FIFO by placement time, accepted orders only. A proposal reserves the stock at once.
+     - CONFIRM mode (the default): staff confirm proposals in bulk, one backorder shipment per order, or reject one (the stock goes to the next in line; the rejected line keeps its place). AUTO mode confirms in the same run.
+     - Credit is re-checked: a shop over its limit is skipped and flagged once (`SKIPPED_CREDIT`, `backorder.skipped_credit`). With a CURRENT billing price, a higher price counts (GST included), and the shipment line is flagged `price_increased`. The shop may decline it until the shipment is packed; the stock then goes to the next in line.
+     - Manual allocation: staff choose lines and quantities in any order (no credit re-check: a staff decision). The shop or staff can cancel what a line still waits for.
+     - Stock released by a reject, cancel, short pack or cancelled shipment runs allocation after commit.
+     - Races: a goods receipt vs a new order (5 rounds; the waiting order always gets the stock), and 30 s of mixed operations across 6 threads and 5 products (the invariants hold: stock vs movements, reserved = what lines and open shipments hold, backorder demand = what lines wait for). Mutation checks: allocating after commit fails the receipt race; removing the credit re-check, FIFO, AUTO confirm, GST on the price increase, or the proposal's hold each fail a test.
+  8. Distributor APIs (+ ordering on behalf), backorder queue, isolation and role tests
   9. Shop APIs: home, orders, cancel, repeat, checkout attempts
   10. Live updates (WebSocket ticket, consumer, outbox → push)
   11. Seed demo orders, API client — **backend checkpoint**

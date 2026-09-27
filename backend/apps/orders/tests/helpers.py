@@ -112,3 +112,24 @@ def place(
                 expected_total=quote.totals.grand_total,
             )
         )
+
+
+def check_order_invariants(tenant: Any) -> None:
+    """Stock agrees with its movements, and with the orders (PLAN §5.5): what is reserved is what
+    order lines hold plus what shipments hold until dispatch; backorder demand is what lines
+    wait for."""
+    from django.db.models import F, Sum
+
+    from apps.inventory.models import StockLevel
+    from apps.inventory.tests.helpers import check_invariants
+    from apps.orders.models import OrderLine
+
+    check_invariants(tenant)
+    with tenant_context(tenant.pk):
+        for level in StockLevel.objects.all():
+            held = OrderLine.objects.filter(product_id=level.product_id).aggregate(
+                reserved=Sum(F("qty_reserved") + F("qty_allocated") - F("qty_dispatched")),
+                waiting=Sum("qty_backordered"),
+            )
+            assert level.quantity_reserved == (held["reserved"] or 0), level.product_id
+            assert level.quantity_backordered == (held["waiting"] or 0), level.product_id
