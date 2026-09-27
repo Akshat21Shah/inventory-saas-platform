@@ -5,8 +5,8 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { ActorTypeEnum } from './actorTypeEnum';
 import type { AuditActor } from './auditActor';
+import type { AuditLogActorTypeEnum } from './auditLogActorTypeEnum';
 import type { AuditTenant } from './auditTenant';
 
 export interface AuditLog {
@@ -14,7 +14,7 @@ export interface AuditLog {
   readonly created_at: string;
   readonly tenant: AuditTenant | null;
   readonly actor: AuditActor | null;
-  actor_type: ActorTypeEnum;
+  actor_type: AuditLogActorTypeEnum;
   readonly impersonator: AuditActor | null;
   /** @nullable */
   impersonation_session_id?: string | null;

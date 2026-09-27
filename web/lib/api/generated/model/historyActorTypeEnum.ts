@@ -7,17 +7,15 @@
  */
 
 /**
- * * `PLATFORM` - Platform
+ * * `RETAILER` - Shop
  * * `STAFF` - Staff
- * * `RETAILER` - Retailer
  * * `SYSTEM` - System
  */
-export type ActorTypeEnum = typeof ActorTypeEnum[keyof typeof ActorTypeEnum];
+export type HistoryActorTypeEnum = typeof HistoryActorTypeEnum[keyof typeof HistoryActorTypeEnum];
 
 
-export const ActorTypeEnum = {
-  PLATFORM: 'PLATFORM',
-  STAFF: 'STAFF',
+export const HistoryActorTypeEnum = {
   RETAILER: 'RETAILER',
+  STAFF: 'STAFF',
   SYSTEM: 'SYSTEM',
 } as const;

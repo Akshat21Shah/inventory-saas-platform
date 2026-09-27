@@ -260,7 +260,10 @@
     "RETAILER_ON_HOLD": "Your account is on hold. Please contact your distributor.",
     "PRICE_UNAVAILABLE": "This product can't be sold right now.",
     "INSUFFICIENT_STOCK": "There isn't enough stock for this.",
-    "STOCK_RESERVED": "Part of this stock is reserved for orders, so it can't be removed."
+    "STOCK_RESERVED": "Part of this stock is reserved for orders, so it can't be removed.",
+    "CART_NOT_READY": "Your cart needs a change before you can place the order.",
+    "PRICE_CHANGED": "Some prices changed. Please check your cart and place the order again.",
+    "CREDIT_LIMIT_EXCEEDED": "This order is over the credit limit."
   },
   "designSystem": {
     "title": "Design system",

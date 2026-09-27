@@ -92,6 +92,8 @@ class Order(TenantScopedModel):
     )
     placed_by = models.ForeignKey(USER, on_delete=models.PROTECT, related_name="+")
     placed_via = models.CharField(max_length=14, choices=PlacedVia.choices)
+    # "Priya (Sales)" when staff placed it for the shop (ADR-044); empty when the shop did.
+    placed_by_label = models.CharField(max_length=160, blank=True, default="")
     status = models.CharField(max_length=12, choices=OrderStatus.choices)
     backorder_state = models.CharField(
         max_length=6, choices=BackorderState.choices, default=BackorderState.NONE

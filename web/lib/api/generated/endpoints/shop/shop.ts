@@ -26,7 +26,9 @@ import type {
 
 import type {
   DeliveryAddress,
+  Order,
   PaginatedShopProductList,
+  PlaceOrderRequest,
   QuantityRequest,
   Quote,
   ShopBrand,
@@ -856,7 +858,100 @@ export function useShopCategories<TData = Awaited<ReturnType<typeof shopCategori
 
 
 
-export type shopProductsResponse200 = {
+export type shopOrdersPlaceResponse201 = {
+  data: Order
+  status: 201
+}
+
+export type shopOrdersPlaceResponseSuccess = (shopOrdersPlaceResponse201) & {
+  headers: Headers;
+};
+;
+
+export type shopOrdersPlaceResponse = (shopOrdersPlaceResponseSuccess)
+
+export const getShopOrdersPlaceUrl = () => {
+
+
+
+
+  return `/api/v1/shop/orders/`
+}
+
+export const shopOrdersPlace = async (placeOrderRequest: PlaceOrderRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopOrdersPlaceResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopOrdersPlaceResponse>(getShopOrdersPlaceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(placeOrderRequest)
+  }
+);}
+
+
+
+
+
+export const getShopOrdersPlaceMutationKey = () => ['shopOrdersPlace'] as const;
+
+export const getShopOrdersPlaceMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrdersPlace>>, TError,ShopOrdersPlaceMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopOrdersPlace>>, TError,ShopOrdersPlaceMutationVariables, TContext> => {
+
+const mutationKey = getShopOrdersPlaceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopOrdersPlace>>, ShopOrdersPlaceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  shopOrdersPlace(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopOrdersPlaceMutationResult = NonNullable<Awaited<ReturnType<typeof shopOrdersPlace>>>
+    export type ShopOrdersPlaceMutationBody = PlaceOrderRequest
+    export type ShopOrdersPlaceMutationError = unknown
+    export type ShopOrdersPlaceMutationVariables = {data: PlaceOrderRequest}
+
+    export const useShopOrdersPlace = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrdersPlace>>, TError,ShopOrdersPlaceMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopOrdersPlace>>,
+        TError,
+        ShopOrdersPlaceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopOrdersPlaceMutationOptions(options), queryClient);
+    }
+    export type shopProductsResponse200 = {
   data: PaginatedShopProductList
   status: 200
 }

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.shop.api import cart as c
+from apps.shop.api import orders as o
 from apps.shop.api import views as v
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
         name="shop-cart-reduce",
     ),
     path("addresses/", c.ShopAddressesView.as_view(), name="shop-addresses"),
+    path("orders/", o.ShopOrdersView.as_view(), name="shop-orders"),
 ]

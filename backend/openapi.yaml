@@ -4375,6 +4375,32 @@ paths:
                 items:
                   $ref: '#/components/schemas/ShopCategory'
           description: ''
+  /api/v1/shop/orders/:
+    post:
+      operationId: shop_orders_place
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
   /api/v1/shop/products/:
     get:
       operationId: shop_products
@@ -5383,18 +5409,6 @@ paths:
           description: ''
 components:
   schemas:
-    ActorTypeEnum:
-      enum:
-      - PLATFORM
-      - STAFF
-      - RETAILER
-      - SYSTEM
-      type: string
-      description: |-
-        * `PLATFORM` - Platform
-        * `STAFF` - Staff
-        * `RETAILER` - Retailer
-        * `SYSTEM` - System
     Address:
       type: object
       properties:
@@ -5863,7 +5877,7 @@ components:
           nullable: true
           readOnly: true
         actor_type:
-          $ref: '#/components/schemas/ActorTypeEnum'
+          $ref: '#/components/schemas/AuditLogActorTypeEnum'
         impersonator:
           allOf:
           - $ref: '#/components/schemas/AuditActor'
@@ -5904,6 +5918,18 @@ components:
       - id
       - impersonator
       - tenant
+    AuditLogActorTypeEnum:
+      enum:
+      - PLATFORM
+      - STAFF
+      - RETAILER
+      - SYSTEM
+      type: string
+      description: |-
+        * `PLATFORM` - Platform
+        * `STAFF` - Staff
+        * `RETAILER` - Retailer
+        * `SYSTEM` - System
     AuditTenant:
       type: object
       properties:
@@ -5915,6 +5941,16 @@ components:
       required:
       - id
       - name
+    BackorderStateEnum:
+      enum:
+      - NONE
+      - OPEN
+      - CLOSED
+      type: string
+      description: |-
+        * `NONE` - None
+        * `OPEN` - Open
+        * `CLOSED` - Closed
     BankDetails:
       type: object
       properties:
@@ -6847,6 +6883,38 @@ components:
       description: |-
         * `BASE` - Base unit
         * `PACK` - Pack
+    EventEnum:
+      enum:
+      - PLACE
+      - HOLD
+      - APPROVE_HOLD
+      - ACCEPT
+      - REJECT
+      - CANCEL
+      - MODIFY
+      - PACK
+      - DISPATCH
+      - DELIVER
+      - SHORT_SUPPLY
+      - BACKORDER_ALLOCATED
+      - BACKORDER_CANCELLED
+      - COMPLETE
+      type: string
+      description: |-
+        * `PLACE` - Placed
+        * `HOLD` - Put on hold
+        * `APPROVE_HOLD` - Hold approved
+        * `ACCEPT` - Accepted
+        * `REJECT` - Rejected
+        * `CANCEL` - Cancelled
+        * `MODIFY` - Changed
+        * `PACK` - Packed
+        * `DISPATCH` - Dispatched
+        * `DELIVER` - Delivered
+        * `SHORT_SUPPLY` - Short supplied
+        * `BACKORDER_ALLOCATED` - Backorder allocated
+        * `BACKORDER_CANCELLED` - Backorder cancelled
+        * `COMPLETE` - Completed
     FeatureFlag:
       type: object
       properties:
@@ -7032,6 +7100,67 @@ components:
           maxLength: 200
       required:
       - code
+    History:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        event:
+          allOf:
+          - $ref: '#/components/schemas/EventEnum'
+          readOnly: true
+        from_status:
+          type: string
+          readOnly: true
+        to_status:
+          type: string
+          readOnly: true
+        actor_type:
+          allOf:
+          - $ref: '#/components/schemas/HistoryActorTypeEnum'
+          readOnly: true
+        by:
+          type: string
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        payload:
+          readOnly: true
+      required:
+      - actor_type
+      - by
+      - created_at
+      - event
+      - from_status
+      - id
+      - note
+      - payload
+      - to_status
+    HistoryActorTypeEnum:
+      enum:
+      - RETAILER
+      - STAFF
+      - SYSTEM
+      type: string
+      description: |-
+        * `RETAILER` - Shop
+        * `STAFF` - Staff
+        * `SYSTEM` - System
+    HoldReasonEnum:
+      enum:
+      - CREDIT_LIMIT
+      - OVERDUE
+      type: string
+      description: |-
+        * `CREDIT_LIMIT` - Over the credit limit
+        * `OVERDUE` - Overdue invoices
     HsnHint:
       type: object
       properties:
@@ -8222,6 +8351,267 @@ components:
       - pincode
       - slug
       - state_code
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        backorder_state:
+          allOf:
+          - $ref: '#/components/schemas/BackorderStateEnum'
+          readOnly: true
+        hold_reason:
+          allOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          readOnly: true
+        retailer:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        placed_via:
+          allOf:
+          - $ref: '#/components/schemas/PlacedViaEnum'
+          readOnly: true
+        placed_by_label:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        shipping_address:
+          readOnly: true
+        retailer_note:
+          type: string
+          readOnly: true
+        prices_include_tax:
+          type: boolean
+          readOnly: true
+        gross_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        taxable_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        tax_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        round_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        rejection_reason:
+          type: string
+          readOnly: true
+        cancellation_reason:
+          type: string
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+          readOnly: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/History'
+          readOnly: true
+      required:
+      - accepted_at
+      - backorder_state
+      - cancellation_reason
+      - closed_at
+      - discount_total
+      - grand_total
+      - gross_total
+      - history
+      - hold_reason
+      - id
+      - lines
+      - number
+      - placed_at
+      - placed_by_label
+      - placed_via
+      - prices_include_tax
+      - rejection_reason
+      - retailer
+      - retailer_name
+      - retailer_note
+      - round_off
+      - shipping_address
+      - status
+      - tax_total
+      - taxable_total
+    OrderLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        line_no:
+          type: integer
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_pending:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_allocated:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_cancelled:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_dispatched:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_delivered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        ready_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Held for the shop, not yet sent.
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - discount_per_unit
+      - gst_rate
+      - id
+      - line_no
+      - line_total
+      - product
+      - product_code
+      - product_name
+      - qty_allocated
+      - qty_backordered
+      - qty_cancelled
+      - qty_delivered
+      - qty_dispatched
+      - qty_ordered
+      - qty_pending
+      - qty_reserved
+      - ready_qty
+      - unit_code
+      - unit_price
+    OrderStatusEnum:
+      enum:
+      - PLACED
+      - ON_HOLD
+      - ACCEPTED
+      - PACKED
+      - DISPATCHED
+      - DELIVERED
+      - COMPLETED
+      - REJECTED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PLACED` - Placed
+        * `ON_HOLD` - On hold
+        * `ACCEPTED` - Accepted
+        * `PACKED` - Packed
+        * `DISPATCHED` - Dispatched
+        * `DELIVERED` - Delivered
+        * `COMPLETED` - Completed
+        * `REJECTED` - Rejected
+        * `CANCELLED` - Cancelled
     OutcomeEnum:
       enum:
       - OK
@@ -9384,6 +9774,33 @@ components:
       required:
       - full_name
       - id
+    PlaceOrderRequest:
+      type: object
+      properties:
+        expected_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: 'The cart''s expected_total: a price change is caught.'
+        address:
+          type: string
+          format: uuid
+          nullable: true
+        note:
+          type: string
+          default: ''
+          description: Delivery instructions (landmark, timing).
+          maxLength: 500
+      required:
+      - expected_total
+    PlacedViaEnum:
+      enum:
+      - RETAILER_APP
+      - STAFF
+      type: string
+      description: |-
+        * `RETAILER_APP` - Shop app
+        * `STAFF` - Staff
     Plan:
       type: object
       properties:

@@ -166,7 +166,14 @@
      - It also reports problems (minimum, multiple, unavailable, not enough stock or partly available with backorders off, minimum order value counting backordered items, shop on hold) and the credit outcome (`apps/orders/credit.py`: the ADR-044 stub; empty limit = unlimited, 0 = no credit).
      - The delivery address (default shipping, else billing) decides the place of supply.
      - Shop API: `shop/cart/` (GET, DELETE), `shop/cart/lines/{product}/` (PUT quantity, 0 removes; DELETE), `shop/cart/reduce-to-available/`, `shop/addresses/`. Every response is the whole priced cart plus `expected_total` for placement.
-  4. `place_order` + races (last units, duplicate key, inward vs new order)
+  4. `place_order` + races (last units, duplicate key, inward vs new order) — **done** (inward vs new order moves to commit 7, with allocation):
+     - `apps/orders/services.py` holds the order-date settings snapshot and runs in lock order: the shop account first (L1), then stock levels in product order (L3), then the order number sequence (L6).
+     - The same quote as the cart is checked against `expected_total` (`PRICE_CHANGED` keeps the cart; nothing saved). Cart problems give `CART_NOT_READY` with the list; a blocked shop gets `RETAILER_ON_HOLD`.
+     - Under the lock, `min(requested, available)` is reserved (RESERVE movements referencing the line) and the rest is backordered (the shops-waiting counter is updated). With backorders off: FAIL (`INSUFFICIENT_STOCK`) or PLACE_AVAILABLE (the rest cancelled).
+     - Credit stub: on a breach, ON_HOLD (reserving, or pending when `credit.hold_reserves_stock` is off) or BLOCK (`CREDIT_LIMIT_EXCEEDED`, nothing saved).
+     - Saved with the order: `ORD-<year>-000001`, snapshots of product, price (every discount rule in its own row, in the order applied), address, place of supply, settings and totals, plus "Placed by Priya (Sales)" for staff orders. The PLACE/HOLD history, the `order.placed` / `order.on_hold` outbox event and emptying the cart happen in the same transaction.
+     - Shop API `POST shop/orders/` (Idempotency-Key): a retry returns the same order (`Idempotent-Replayed: true`).
+     - Races: 20 shops ordering 3 each against 10 in stock reserve exactly 10 (with the stock lock removed, 60 were reserved), and 10 simultaneous submissions with one key make one order.
   5. Order state machine + accept/cancel race
   6. Shipments: pack, short pack, dispatch, deliver, derived status
   7. Backorders: queue, allocation, proposals, cancel remainder, repriced cancel, mixed-operations race

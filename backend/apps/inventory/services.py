@@ -175,6 +175,16 @@ def refresh_alerts(product_ids: Iterable[UUID], warehouse: Warehouse | None = No
         alerts.evaluate(level)
 
 
+def change_backordered(level: StockLevel, delta: Decimal) -> None:
+    """Shops' open backorder demand for a locked level (order services keep it in step). Not a
+    stock movement: nothing physical moves. Re-checks the BACKORDER_DEMAND alert."""
+    level.quantity_backordered = level.quantity_backordered + delta
+    if level.quantity_backordered < 0:
+        raise ValueError("backorder demand can't go below zero")
+    level.save(update_fields=["quantity_backordered", "updated_at"])
+    alerts.evaluate(level)
+
+
 # --- Primitives for other services (receipts, adjustments, orders in Phase 4) -----------------
 
 
