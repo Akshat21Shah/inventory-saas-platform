@@ -50,7 +50,8 @@ class OrderStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", "Accepted"
     PACKED = "PACKED", "Packed"
     DISPATCHED = "DISPATCHED", "Dispatched"
-    DELIVERED = "DELIVERED", "Delivered"
+    # At least one shipment delivered and something still to follow (2026-09-28).
+    PARTLY_DELIVERED = "PARTLY_DELIVERED", "Partly delivered"
     COMPLETED = "COMPLETED", "Completed"
     REJECTED = "REJECTED", "Rejected"
     CANCELLED = "CANCELLED", "Cancelled"
@@ -62,13 +63,13 @@ OPEN_STATUSES = (
     OrderStatus.ACCEPTED,
     OrderStatus.PACKED,
     OrderStatus.DISPATCHED,
-    OrderStatus.DELIVERED,
+    OrderStatus.PARTLY_DELIVERED,
 )
 ACCEPTED_STATUSES = (
     OrderStatus.ACCEPTED,
     OrderStatus.PACKED,
     OrderStatus.DISPATCHED,
-    OrderStatus.DELIVERED,
+    OrderStatus.PARTLY_DELIVERED,
 )
 
 
@@ -94,13 +95,16 @@ class Order(TenantScopedModel):
     placed_via = models.CharField(max_length=14, choices=PlacedVia.choices)
     # "Priya (Sales)" when staff placed it for the shop (ADR-044); empty when the shop did.
     placed_by_label = models.CharField(max_length=160, blank=True, default="")
-    status = models.CharField(max_length=12, choices=OrderStatus.choices)
+    status = models.CharField(max_length=16, choices=OrderStatus.choices)
     backorder_state = models.CharField(
         max_length=6, choices=BackorderState.choices, default=BackorderState.NONE
     )
     hold_reason = models.CharField(
         max_length=14, choices=HoldReason.choices, blank=True, default=""
     )
+    # Set when a credit hold is approved: the order value approved over the limit, backorders
+    # included, so their allocations aren't skipped for the limit (2026-09-28).
+    credit_approved_value = MoneyField(null=True, blank=True)
     # Settings in effect when placed (registry keys snapshotted on ORDER, ADR-016).
     settings_snapshot = models.JSONField(default=dict)
     shipping_address = models.JSONField(default=dict)
@@ -282,8 +286,8 @@ class OrderStatusHistory(TenantScopedModel):
         SYSTEM = "SYSTEM", "System"
 
     order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="history")
-    from_status = models.CharField(max_length=12, blank=True, default="")
-    to_status = models.CharField(max_length=12)
+    from_status = models.CharField(max_length=16, blank=True, default="")
+    to_status = models.CharField(max_length=16)
     event = models.CharField(max_length=20, choices=OrderEvent.choices)
     actor = models.ForeignKey(
         USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
@@ -380,6 +384,7 @@ class BackorderAllocation(TenantScopedModel):
         CONFIRMED = "CONFIRMED", "Confirmed"
         REJECTED = "REJECTED", "Rejected"
         SKIPPED_CREDIT = "SKIPPED_CREDIT", "Skipped: over credit limit"
+        SKIPPED_BLOCKED = "SKIPPED_BLOCKED", "Skipped: shop blocked"
 
     class Trigger(models.TextChoices):
         INWARD = "INWARD", "Goods received"

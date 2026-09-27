@@ -13,7 +13,10 @@ import type { OrderLine } from './orderLine';
 import type { OrderStatusEnum } from './orderStatusEnum';
 import type { PlacedViaEnum } from './placedViaEnum';
 
-export interface Order {
+/**
+ * The distributor's view adds the credit approval (not shown to the shop).
+ */
+export interface StaffOrder {
   readonly id: string;
   readonly number: string;
   readonly status: OrderStatusEnum;
@@ -45,7 +48,14 @@ export interface Order {
   readonly grand_total: string;
   readonly rejection_reason: string;
   readonly cancellation_reason: string;
+  /** Products still to be delivered ("N items to follow"). */
+  readonly items_to_follow: number;
   readonly lines: readonly OrderLine[];
   readonly fulfilments: readonly Fulfilment[];
   readonly history: readonly History[];
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  readonly credit_approved_value: string | null;
 }

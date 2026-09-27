@@ -29,50 +29,71 @@ from common.errors import InvalidFields, NotFound
 
 ZERO = Decimal("0")
 F = Fulfilment.Status
-PROGRESS = {F.ALLOCATED: 0, F.PACKED: 1, F.DISPATCHED: 2, F.DELIVERED: 3}
+PROGRESS = {F.ALLOCATED: 0, F.PACKED: 1, F.DISPATCHED: 2}
 AS_ORDER_STATUS = {
     F.ALLOCATED: OrderStatus.ACCEPTED,
     F.PACKED: OrderStatus.PACKED,
     F.DISPATCHED: OrderStatus.DISPATCHED,
-    F.DELIVERED: OrderStatus.DELIVERED,
 }
+FOLLOWING = (
+    OrderStatus.ACCEPTED,
+    OrderStatus.PACKED,
+    OrderStatus.DISPATCHED,
+    OrderStatus.PARTLY_DELIVERED,
+)
 
 
 def _open(line: OrderLine) -> Decimal:
     return Decimal(line.qty_pending + line.qty_reserved + line.qty_backordered)
 
 
-def derive_status(order: Order, *, by: User | None) -> None:
-    """After acceptance the order follows its shipments (PLAN §4.1): COMPLETED when every
-    shipment is delivered and nothing is left to send; otherwise the least advanced shipment's
-    status (ACCEPTED when there is none yet). Saves the order."""
-    if order.status not in (
-        OrderStatus.ACCEPTED,
-        OrderStatus.PACKED,
-        OrderStatus.DISPATCHED,
-        OrderStatus.DELIVERED,
-    ):
-        return
+def next_status(order: Order) -> str:
+    """What an accepted order's status is now, from its lines and shipments (PLAN §4.1):
+    - COMPLETED: every shipment delivered and nothing left to send;
+    - CANCELLED: every shipment cancelled and nothing left;
+    - PARTLY_DELIVERED: something delivered, something still to follow (waiting, proposed, or
+      in a shipment not yet delivered);
+    - otherwise the least advanced open shipment (ACCEPTED when there is none yet)."""
+    if order.status not in FOLLOWING:
+        return order.status
     lines = list(OrderLine.objects.filter(order=order))
     shipments = list(Fulfilment.objects.filter(order=order).exclude(status=F.CANCELLED))
     open_qty = sum((_open(line) for line in lines), ZERO)
-    waiting = any(line.qty_backordered > 0 for line in lines)
+    delivered = [s for s in shipments if s.status == F.DELIVERED]
+    undelivered = [s for s in shipments if s.status != F.DELIVERED]
+    if open_qty == 0 and not undelivered:
+        return OrderStatus.COMPLETED if shipments else OrderStatus.CANCELLED
+    if delivered:
+        return OrderStatus.PARTLY_DELIVERED
+    if undelivered:
+        return AS_ORDER_STATUS[min(undelivered, key=lambda s: PROGRESS[s.status]).status]
+    return OrderStatus.ACCEPTED
+
+
+def items_to_follow(order: Order) -> int:
+    """Products on the order still to be delivered (for "N items to follow")."""
+    return sum(
+        1
+        for line in OrderLine.objects.filter(order=order)
+        if line.qty_ordered - line.qty_cancelled - line.qty_delivered > 0
+    )
+
+
+def derive_status(order: Order, *, by: User | None) -> None:
+    """After acceptance the order follows its shipments (``next_status``); ``backorder_state``
+    stays in step. Saves the order."""
+    if order.status not in FOLLOWING:
+        return
+    waiting = OrderLine.objects.filter(order=order, qty_backordered__gt=0).exists()
     if waiting:
         order.backorder_state = Order.BackorderState.OPEN
     elif order.backorder_state == Order.BackorderState.OPEN:
         order.backorder_state = Order.BackorderState.CLOSED
     before = order.status
-    if open_qty == 0 and all(s.status == F.DELIVERED for s in shipments):
-        if shipments:
-            order.status, order.closed_at = OrderStatus.COMPLETED, timezone.now()
-        else:  # every shipment was cancelled and nothing is left: the order is over
-            order.status, order.closed_at = OrderStatus.CANCELLED, timezone.now()
-    elif shipments:
-        least = min(shipments, key=lambda s: PROGRESS[s.status])
-        order.status = AS_ORDER_STATUS[least.status]
-    else:
-        order.status = OrderStatus.ACCEPTED
-    if order.status != before and order.status in (OrderStatus.COMPLETED,):
+    order.status = next_status(order)
+    if order.status in (OrderStatus.COMPLETED, OrderStatus.CANCELLED):
+        order.closed_at = timezone.now()
+    if order.status != before and order.status == OrderStatus.COMPLETED:
         record(order, OrderEvent.COMPLETE, to=order.status, by=by, frm=before)
         emit("order.completed", order)
     order.save(update_fields=["status", "backorder_state", "closed_at", "updated_at"])
@@ -182,14 +203,15 @@ def pack(fulfilment_id: UUID, packed: dict[UUID, Decimal], *, by: User) -> Fulfi
             shipment.cancelled_reason = "Nothing packed"
         else:
             shipment.status, shipment.packed_at = F.PACKED, timezone.now()
+        shipment.save(update_fields=["status", "packed_at", "cancelled_reason", "updated_at"])
+        if shipment.status == F.PACKED:
             record(
                 order,
                 OrderEvent.PACK,
-                to=OrderStatus.PACKED,
+                to=next_status(order),
                 by=by,
                 payload={"shipment": shipment.number},
             )
-        shipment.save(update_fields=["status", "packed_at", "cancelled_reason", "updated_at"])
         derive_status(order, by=by)
     return shipment
 
@@ -228,7 +250,7 @@ def dispatch(fulfilment_id: UUID, transport: Transport, *, by: User) -> Fulfilme
         record(
             order,
             OrderEvent.DISPATCH,
-            to=OrderStatus.DISPATCHED,
+            to=next_status(order),
             by=by,
             payload={"shipment": shipment.number, "vehicle": shipment.vehicle_number},
         )
@@ -252,9 +274,9 @@ def deliver(fulfilment_id: UUID, *, by: User) -> Fulfilment:
         record(
             order,
             OrderEvent.DELIVER,
-            to=OrderStatus.DELIVERED,
+            to=next_status(order),
             by=by,
-            payload={"shipment": shipment.number},
+            payload={"shipment": shipment.number, "items_to_follow": items_to_follow(order)},
         )
         emit("order.delivered", order, shipment=shipment.number)
         derive_status(order, by=by)

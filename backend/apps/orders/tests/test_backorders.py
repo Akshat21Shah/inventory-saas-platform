@@ -402,3 +402,150 @@ def test_cancelling_an_accepted_order_ends_its_proposals(ctx):
             backorders.confirm([proposal.pk], by=ctx["owner"])
     assert _level(ctx, ctx["a"]).quantity_reserved == 0
     check_order_invariants(ctx["t"])
+
+
+# --- Product-owner decisions of 2026-09-28 -------------------------------------------------------
+
+
+def _approved_over_limit(ctx, shop, *lines):
+    """A shop over its limit whose held order was approved, accepted, and now waits."""
+    with tenant_context(ctx["t"].pk):
+        Retailer.objects.filter(pk=shop.pk).update(credit_limit=D("100"))
+    order = place(ctx["t"], shop, *lines)
+    assert order.status == "ON_HOLD"
+    with tenant_context(ctx["t"].pk):
+        transitions.approve_hold(order.pk, by=ctx["owner"])
+        transitions.accept_order(order.pk, by=ctx["owner"])
+        order.refresh_from_db()
+    return order
+
+
+class TestApprovedFromACreditHold:
+    def test_approval_records_the_value_and_covers_the_backorders(self, ctx):
+        order = _approved_over_limit(ctx, make_shop(ctx["t"]), (ctx["a"], "2"))
+        assert order.credit_approved_value == D("210.00")  # 2 x 100 + 5%, all waiting
+        _receive(ctx, (ctx["a"], "2"))
+        [allocation] = _allocations(ctx)
+        assert allocation.status == "PROPOSED"  # not skipped: the approval covers it
+        check_order_invariants(ctx["t"])
+
+    def test_a_higher_current_price_is_checked_against_the_limit(self, ctx):
+        settings(ctx["t"], backorders__billing_price="CURRENT")
+        order = _approved_over_limit(ctx, make_shop(ctx["t"]), (ctx["a"], "2"))
+        with tenant_context(ctx["t"].pk):
+            ctx["a"].base_price = D("110")
+            ctx["a"].save(update_fields=["base_price"])
+        _receive(ctx, (ctx["a"], "2"))
+        [allocation] = _allocations(ctx)
+        assert allocation.status == "SKIPPED_CREDIT"  # the extra 21.00 wasn't approved
+        assert _line(ctx, order, ctx["a"]).qty_backordered == 2
+
+    def test_other_orders_of_the_shop_are_still_checked(self, ctx):
+        shop = make_shop(ctx["t"])
+        _approved_over_limit(ctx, shop, (ctx["a"], "1"))
+        with tenant_context(ctx["t"].pk):
+            Retailer.objects.filter(pk=shop.pk).update(credit_limit=None)
+        other = _waiting_order(ctx, shop, (ctx["b"], "2"))
+        with tenant_context(ctx["t"].pk):
+            Retailer.objects.filter(pk=shop.pk).update(credit_limit=D("100"))
+        _receive(ctx, (ctx["b"], "2"))
+        [allocation] = _allocations(ctx, product=ctx["b"])
+        assert allocation.status == "SKIPPED_CREDIT"
+        assert _line(ctx, other, ctx["b"]).qty_backordered == 2
+
+
+class TestBlockedShops:
+    def _block(self, ctx, shop):
+        from apps.retailers.services import block_retailer
+
+        with tenant_context(ctx["t"].pk):
+            block_retailer(shop.pk, reason="Overdue", by=ctx["owner"])
+
+    def test_skipped_and_flagged_once_and_the_next_shop_served(self, ctx):
+        blocked = make_shop(ctx["t"], "9876500061")
+        first = _waiting_order(ctx, blocked, (ctx["a"], "2"))
+        second = _waiting_order(ctx, make_shop(ctx["t"], "9876500062"), (ctx["a"], "2"))
+        self._block(ctx, blocked)
+        _receive(ctx, (ctx["a"], "2"))
+        _receive(ctx, (ctx["a"], "1"))
+        skipped = _allocations(ctx, status="SKIPPED_BLOCKED")
+        assert [a.order_line_id for a in skipped] == [_line(ctx, first, ctx["a"]).pk]
+        assert _line(ctx, second, ctx["a"]).qty_reserved == 2
+        with tenant_context(ctx["t"].pk):
+            assert OutboxEvent.objects.filter(event_type="backorder.skipped_blocked").count() == 1
+        check_order_invariants(ctx["t"])
+
+    def test_never_by_hand_or_by_confirming_an_older_proposal(self, ctx):
+        from apps.orders.services import RetailerOnHold
+
+        shop = make_shop(ctx["t"])
+        order = _waiting_order(ctx, shop, (ctx["a"], "4"))
+        _receive(ctx, (ctx["a"], "2"))
+        [proposal] = _allocations(ctx)
+        self._block(ctx, shop)
+        add_stock(ctx["t"], ctx["a"], "2")
+        line = _line(ctx, order, ctx["a"])
+        with tenant_context(ctx["t"].pk):
+            with pytest.raises(RetailerOnHold) as refused:
+                backorders.confirm([proposal.pk], by=ctx["owner"])
+            assert refused.value.status_code == 409
+            with pytest.raises(RetailerOnHold):
+                backorders.allocate_manually(
+                    ctx["a"].pk, {line.pk: D("2")}, by=ctx["owner"], override_reason="Urgent"
+                )
+        check_order_invariants(ctx["t"])
+
+
+class TestManualAllocationCredit:
+    def _over_limit(self, ctx):
+        shop = make_shop(ctx["t"])
+        order = _waiting_order(ctx, shop, (ctx["a"], "2"))  # 210 waiting
+        with tenant_context(ctx["t"].pk):
+            Retailer.objects.filter(pk=shop.pk).update(credit_limit=D("100"))
+        add_stock(ctx["t"], ctx["a"], "2")
+        return order, _line(ctx, order, ctx["a"])
+
+    def test_refused_without_credit_manage(self, ctx):
+        order, line = self._over_limit(ctx)
+        warehouse = make_staff_in(ctx["t"], "WAREHOUSE")
+        with tenant_context(ctx["t"].pk), pytest.raises(CreditLimitExceeded) as refused:
+            backorders.allocate_manually(
+                ctx["a"].pk, {line.pk: D("2")}, by=warehouse, override_reason="Please"
+            )
+        assert refused.value.details["can_override"] is False
+        assert "Someone who manages credit" in refused.value.message
+        assert _line(ctx, order, ctx["a"]).qty_backordered == 2
+
+    def test_credit_manage_overrides_with_a_reason_audited(self, ctx):
+        from apps.audit.models import AuditLog
+
+        order, line = self._over_limit(ctx)
+        with tenant_context(ctx["t"].pk):
+            with pytest.raises(CreditLimitExceeded) as refused:
+                backorders.allocate_manually(ctx["a"].pk, {line.pk: D("2")}, by=ctx["owner"])
+            assert refused.value.details["can_override"] is True
+            [shipment] = backorders.allocate_manually(
+                ctx["a"].pk,
+                {line.pk: D("2")},
+                by=ctx["owner"],
+                override_reason="Paid in cash today",
+            )
+            audit = AuditLog.objects.get(action="credit.override_applied")
+        assert shipment.order_id == order.pk
+        assert audit.metadata == {
+            "reason": "Paid in cash today",
+            "action": "backorder_allocation",
+        }
+        [allocation] = _allocations(ctx)
+        assert allocation.note == "Credit override: Paid in cash today"
+        check_order_invariants(ctx["t"])
+
+    def test_an_order_approved_from_a_hold_needs_no_override(self, ctx):
+        order = _approved_over_limit(ctx, make_shop(ctx["t"]), (ctx["a"], "2"))
+        add_stock(ctx["t"], ctx["a"], "2")
+        warehouse = make_staff_in(ctx["t"], "WAREHOUSE")
+        with tenant_context(ctx["t"].pk):
+            [shipment] = backorders.allocate_manually(
+                ctx["a"].pk, {_line(ctx, order, ctx["a"]).pk: D("2")}, by=warehouse
+            )
+        assert shipment.order_id == order.pk

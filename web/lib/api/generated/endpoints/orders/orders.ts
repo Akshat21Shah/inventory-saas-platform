@@ -35,7 +35,6 @@ import type {
   DispatchRequest,
   FulfilmentDetail,
   FulfilmentsListParams,
-  Order,
   OrderCounts,
   OrdersListParams,
   PackRequest,
@@ -50,6 +49,7 @@ import type {
   RetailerCartLineSetParams,
   RetailerCartReduceToAvailableParams,
   RetailerCartRetrieveParams,
+  StaffOrder,
   StaffPlaceOrderRequest,
   WaitingLine
 } from '../../model';
@@ -1254,7 +1254,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getFulfilmentsPackMutationOptions(options), queryClient);
     }
     export type orderLinesCancelBackorderResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 
@@ -1446,7 +1446,7 @@ export function useOrdersList<TData = Awaited<ReturnType<typeof ordersList>>, TE
 
 
 export type ordersPlaceOnBehalfResponse201 = {
-  data: Order
+  data: StaffOrder
   status: 201
 }
 
@@ -1539,7 +1539,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getOrdersPlaceOnBehalfMutationOptions(options), queryClient);
     }
     export type ordersRetrieveResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 
@@ -1645,7 +1645,7 @@ export function useOrdersRetrieve<TData = Awaited<ReturnType<typeof ordersRetrie
 
 
 export type ordersAcceptResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 
@@ -1724,7 +1724,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getOrdersAcceptMutationOptions(options), queryClient);
     }
     export type ordersCancelResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 
@@ -1822,7 +1822,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getOrdersCancelMutationOptions(options), queryClient);
     }
     export type ordersHoldApproveResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 
@@ -1901,7 +1901,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getOrdersHoldApproveMutationOptions(options), queryClient);
     }
     export type ordersHoldRejectResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 
@@ -1995,7 +1995,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getOrdersHoldRejectMutationOptions(options), queryClient);
     }
     export type ordersModifyResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 
@@ -2089,7 +2089,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getOrdersModifyMutationOptions(options), queryClient);
     }
     export type ordersRejectResponse200 = {
-  data: Order
+  data: StaffOrder
   status: 200
 }
 

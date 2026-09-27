@@ -85,8 +85,10 @@ def release_quantities(
     by: User | None,
     levels: dict[UUID, StockLevel] | None = None,
 ) -> None:
-    """Take ``quantity`` off each line (pending first, then reserved, then backordered) and move
-    it to cancelled, or to backordered. Stock is released and demand counters kept in step."""
+    """Take the wanted quantity off each line and move it to cancelled, or to backordered.
+    Cancelling takes what still waits first (backordered, then pending), then held stock, so the
+    shop keeps what is ready to send (product-owner decision 2026-09-28). Moving to backorder takes
+    pending, then held stock. Stock is released and demand counters kept in step."""
     lines = sorted(wanted, key=lambda line: line.product_id)
     levels = levels or stock.lock_levels(
         [line.product_id for line in lines], stock.default_warehouse()
@@ -94,10 +96,18 @@ def release_quantities(
     for line in lines:
         remaining = wanted[line]
         level = levels[line.product_id]
+        moved = ZERO
+        if not to_backorder:
+            take = min(line.qty_backordered, remaining)
+            if take:
+                stock.change_backordered(level, -take)
+                line.qty_backordered -= take
+                remaining -= take
+                moved += take
         take = min(line.qty_pending, remaining)
         line.qty_pending -= take
         remaining -= take
-        moved = take
+        moved += take
         take = min(line.qty_reserved, remaining)
         if take:
             stock.release(
@@ -106,20 +116,14 @@ def release_quantities(
             line.qty_reserved -= take
             remaining -= take
             moved += take
+        if remaining > 0:
+            raise ValueError("more released than the line holds")
         if to_backorder:
             line.qty_backordered += moved
             if moved:
                 stock.change_backordered(level, moved)
         else:
-            take = min(line.qty_backordered, remaining)
-            if take:
-                stock.change_backordered(level, -take)
-                line.qty_backordered -= take
-                remaining -= take
-                moved += take
             line.qty_cancelled += moved
-        if remaining > 0:
-            raise ValueError("more released than the line holds")
         line.save()
     backorders.after_stock_released([line.product_id for line in lines])
 
@@ -386,10 +390,23 @@ def approve_hold(order_id: UUID, *, by: User) -> Order:
                 line.qty_pending = ZERO
                 line.save()
             recompute_totals(order, list(OrderLine.objects.filter(order=order)))
-        audit.record("credit.hold_approved", target=order, target_repr=order.number)
-        record(order, OrderEvent.APPROVE_HOLD, to=OrderStatus.PLACED, by=by)
+        # The approval covers the whole order, backorders included (2026-09-28).
+        order.credit_approved_value = order.grand_total
+        audit.record(
+            "credit.hold_approved",
+            target=order,
+            target_repr=order.number,
+            metadata={"approved_value": str(order.credit_approved_value)},
+        )
+        record(
+            order,
+            OrderEvent.APPROVE_HOLD,
+            to=OrderStatus.PLACED,
+            by=by,
+            payload={"approved_value": str(order.credit_approved_value)},
+        )
         order.status, order.hold_reason = OrderStatus.PLACED, ""
-        order.save(update_fields=["status", "hold_reason", "updated_at"])
+        order.save(update_fields=["status", "hold_reason", "credit_approved_value", "updated_at"])
         emit("order.hold_approved", order)
         schedule_auto_accept(order)
     return order

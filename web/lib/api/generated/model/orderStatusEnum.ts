@@ -12,7 +12,7 @@
  * * `ACCEPTED` - Accepted
  * * `PACKED` - Packed
  * * `DISPATCHED` - Dispatched
- * * `DELIVERED` - Delivered
+ * * `PARTLY_DELIVERED` - Partly delivered
  * * `COMPLETED` - Completed
  * * `REJECTED` - Rejected
  * * `CANCELLED` - Cancelled
@@ -26,7 +26,7 @@ export const OrderStatusEnum = {
   ACCEPTED: 'ACCEPTED',
   PACKED: 'PACKED',
   DISPATCHED: 'DISPATCHED',
-  DELIVERED: 'DELIVERED',
+  PARTLY_DELIVERED: 'PARTLY_DELIVERED',
   COMPLETED: 'COMPLETED',
   REJECTED: 'REJECTED',
   CANCELLED: 'CANCELLED',

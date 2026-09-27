@@ -13,4 +13,9 @@ export interface AllocateRequest {
   allocations?: AllocationAmountRequest[];
   /** Offer the free stock to waiting orders, oldest first. */
   auto?: boolean;
+  /**
+     * credit.manage only: allocate to a shop over its credit limit (audited).
+     * @maxLength 300
+     */
+  override_reason?: string;
 }

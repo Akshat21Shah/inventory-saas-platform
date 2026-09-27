@@ -239,7 +239,14 @@ class TestShipments:
         done = client.post(f"/api/v1/fulfilments/{shipment.pk}/deliver/").json()
         assert done["status"] == "DELIVERED"
         body = client.get(f"/api/v1/orders/{order.pk}/").json()
-        assert (body["status"], body["backorder_state"]) == ("DELIVERED", "OPEN")  # 1 waits
+        # 1 unit waits after the short pack: "Partly delivered, 1 item to follow" (2026-09-28).
+        assert (body["status"], body["backorder_state"], body["items_to_follow"]) == (
+            "PARTLY_DELIVERED",
+            "OPEN",
+            1,
+        )
+        row = client.get("/api/v1/orders/?status=PARTLY_DELIVERED").json()["results"][0]
+        assert (row["id"], row["items_to_follow"]) == (str(order.pk), 1)
         check_order_invariants(world["t"])
 
     def test_cancel_a_shipment_back_to_backorder(self, world):
@@ -336,6 +343,58 @@ class TestBackorders:
             **key(),
         )
         assert neither.status_code == 400
+        check_order_invariants(world["t"])
+
+    def test_queue_flags_and_the_credit_override(self, world):
+        from apps.retailers.services import block_retailer
+
+        approved_shop = make_shop(world["t"], "9876500091")
+        blocked_shop = make_shop(world["t"], "9876500092")
+        over_shop = make_shop(world["t"], "9876500093")
+        with tenant_context(world["t"].pk):
+            Retailer.objects.filter(pk=approved_shop.pk).update(credit_limit=D("100"))
+        approved = place(world["t"], approved_shop, (world["b"], "3"))
+        with tenant_context(world["t"].pk):
+            transitions.approve_hold(approved.pk, by=world["owner"])
+        for order in (
+            approved,
+            *[place(world["t"], s, (world["b"], "3")) for s in (blocked_shop, over_shop)],
+        ):
+            with tenant_context(world["t"].pk):
+                transitions.accept_order(order.pk, by=world["owner"])
+        with tenant_context(world["t"].pk):
+            block_retailer(blocked_shop.pk, reason="Overdue", by=world["owner"])
+            Retailer.objects.filter(pk=over_shop.pk).update(credit_limit=D("100"))
+            over_line = OrderLine.objects.get(order__retailer=over_shop)
+        _, warehouse = staff(world, "WAREHOUSE")
+        [group] = warehouse.get("/api/v1/backorders/").json()
+        assert (group["blocked"], group["approved_over_limit"]) == (1, 1)
+        rows = {
+            r["retailer"]: r for r in warehouse.get(f"/api/v1/backorders/{world['b'].pk}/").json()
+        }
+        assert rows[str(approved_shop.pk)]["approved_over_limit"] is True
+        assert rows[str(blocked_shop.pk)]["shop_blocked"] is True
+        add_stock(world["t"], world["b"], "3")
+        body = {
+            "product": str(world["b"].pk),
+            "allocations": [{"order_line": str(over_line.pk), "quantity": "3"}],
+            "override_reason": "Paid in cash",
+        }
+        refused = warehouse.post("/api/v1/backorders/allocate/", body, **key())
+        assert (refused.status_code, code(refused)) == (422, "CREDIT_LIMIT_EXCEEDED")
+        assert refused.json()["error"]["details"]["can_override"] is False
+        _, owner = staff(world, "OWNER")
+        allowed = owner.post("/api/v1/backorders/allocate/", body, **key())
+        assert allowed.status_code == 200, allowed.json()
+        assert allowed.json()[0]["note"] == "Credit override: Paid in cash"
+        detail = owner.get(f"/api/v1/orders/{approved.pk}/").json()
+        assert detail["credit_approved_value"] == "158.00"  # the grand total, rounded to the rupee
+        assert (
+            "credit_approved_value"
+            not in shop_client(world["t"], approved_shop)
+            .get(f"/api/v1/shop/orders/{approved.pk}/")
+            .json()
+        )
         check_order_invariants(world["t"])
 
     def test_cancel_backorder(self, world):

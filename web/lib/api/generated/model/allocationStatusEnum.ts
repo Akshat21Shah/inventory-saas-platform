@@ -11,6 +11,7 @@
  * * `CONFIRMED` - Confirmed
  * * `REJECTED` - Rejected
  * * `SKIPPED_CREDIT` - Skipped: over credit limit
+ * * `SKIPPED_BLOCKED` - Skipped: shop blocked
  */
 export type AllocationStatusEnum = typeof AllocationStatusEnum[keyof typeof AllocationStatusEnum];
 
@@ -20,4 +21,5 @@ export const AllocationStatusEnum = {
   CONFIRMED: 'CONFIRMED',
   REJECTED: 'REJECTED',
   SKIPPED_CREDIT: 'SKIPPED_CREDIT',
+  SKIPPED_BLOCKED: 'SKIPPED_BLOCKED',
 } as const;

@@ -95,7 +95,7 @@ Legend:
 | B1 | Order vs shipments | **Accepted:** every shipment (initial + each backorder allocation) is a `Fulfilment` with its own packing, dispatch, invoice and status. Order status adds **COMPLETED** = all shipments delivered **and** no open backorder quantity (§4.1). |
 | B2 | Priority when stock arrives | **FIXED:** FIFO. Older backorders are served before new orders. Proposals awaiting confirmation **hold the stock**. Allocation happens in the same transaction as the stock inward. |
 | B3 | Eligibility | **FIXED:** only accepted orders (and later statuses) are eligible for allocation. |
-| B4 | Credit at allocation | **FIXED:** re-checked. Retailers over their limit are skipped and flagged (`SKIPPED_CREDIT`). |
+| B4 | Credit at allocation | **FIXED:** re-checked. Retailers over their limit are skipped and flagged (`SKIPPED_CREDIT`). An order approved from a credit hold is covered for its approved value, backorders included; only a higher CURRENT price is re-checked. Blocked shops never get stock (`SKIPPED_BLOCKED`). Manual allocation is re-checked too; `credit.manage` may override with a reason (audited) (ADR-045). |
 | B5 | Edits before acceptance | ⚙ `orders.pre_acceptance_edit_mode` = **REDUCE_ONLY (default)** \| FULL_EDIT (increase qty / add lines at current prices, reserved or backordered per the normal rules). An edit that would breach the credit limit is **refused** (`CREDIT_LIMIT_EXCEEDED`) unless a user with `credit.manage` applies an **audited override in the same flow** (ADR-022). The retailer is **always** notified with a diff. |
 | B6 | Retailer cancellation | Before acceptance only. The open backorder remainder can be cancelled any time. **[D]** |
 | B7 | Staff orders on behalf | ⚙ `orders.staff_can_place_on_behalf` (default **true**), permission `orders.create_on_behalf`. `Order.placed_by` + `placed_via` record who placed it. |
@@ -237,7 +237,7 @@ Legend:
 |---|---|---|
 | **Cart** (tenant) | `retailer` FK, `user` FK (the shop's login, or the staff member ordering on its behalf; ADR-044), `notes`, `updated_at` | unique `(retailer, user)` |
 | **CartLine** (tenant) | `cart` FK, `product` FK, `quantity` Qty, `last_seen_unit_price` Money (for `PRICE_CHANGED` detection) | unique `(cart, product)`; check `quantity>0` |
-| **Order** (tenant) | `number` (`ORD-2026-000123`), `retailer` FK, `placed_by` FK→User, `placed_via` (RETAILER_APP, STAFF), `status` (PLACED, ON_HOLD, ACCEPTED, PACKED, DISPATCHED, DELIVERED, **COMPLETED**, REJECTED, CANCELLED), `settings_snapshot` jsonb (registry keys flagged `snapshot: order`, see §9), `confirmation_pdf_key` null, `backorder_state` (NONE, OPEN, CLOSED), `hold_reason` (CREDIT_LIMIT), `billing_address` jsonb, `shipping_address` jsonb, `place_of_supply` FK→State, `prices_include_tax` bool, estimates: `gross_total`, `discount_total`, `taxable_total`, `tax_total`, `round_off`, `grand_total` (Money), `reserved_value` Money, `backordered_value` Money, `retailer_note`, `internal_note`, `placed_at`, `accepted_at`, `accepted_by`, `closed_at`, `rejection_reason`, `cancellation_reason`, `cancelled_by` | unique `(t, number)`; `(t, status, placed_at desc)`, `(t, retailer, placed_at desc)`, `(t, backorder_state)`; check totals ≥ 0 |
+| **Order** (tenant) | `number` (`ORD-2026-000123`), `retailer` FK, `placed_by` FK→User, `placed_via` (RETAILER_APP, STAFF), `status` (PLACED, ON_HOLD, ACCEPTED, PACKED, DISPATCHED, PARTLY_DELIVERED, **COMPLETED**, REJECTED, CANCELLED), `credit_approved_value` Money null (set when a credit hold is approved, ADR-045), `settings_snapshot` jsonb (registry keys flagged `snapshot: order`, see §9), `confirmation_pdf_key` null, `backorder_state` (NONE, OPEN, CLOSED), `hold_reason` (CREDIT_LIMIT), `billing_address` jsonb, `shipping_address` jsonb, `place_of_supply` FK→State, `prices_include_tax` bool, estimates: `gross_total`, `discount_total`, `taxable_total`, `tax_total`, `round_off`, `grand_total` (Money), `reserved_value` Money, `backordered_value` Money, `retailer_note`, `internal_note`, `placed_at`, `accepted_at`, `accepted_by`, `closed_at`, `rejection_reason`, `cancellation_reason`, `cancelled_by` | unique `(t, number)`; `(t, status, placed_at desc)`, `(t, retailer, placed_at desc)`, `(t, backorder_state)`; check totals ≥ 0 |
 | **OrderLine** (tenant) | `order` FK, `line_no`, `product` FK, snapshot: `product_code`, `product_name`, `hsn_code`, `unit_code`; price snapshot: `base_price`, `unit_price`, `price_source` (OVERRIDE, PRICE_LIST, BASE), `discount_rule` FK null, `discount_type`, `discount_value`, `gst_rate`, `cess_rate`; quantities (Qty): `qty_ordered`, `qty_pending` (on credit hold without reservation, when `credit.hold_reserves_stock=false`), `qty_reserved` (held, not yet in a fulfilment), `qty_backordered` (waiting), `qty_allocated` (moved into fulfilments), `qty_cancelled`; counters: `qty_invoiced`, `qty_dispatched`, `qty_delivered`; estimates: `gross_amount`, `discount_amount`, `taxable_amount`, `tax_amount`, `line_total` | unique `(order, line_no)`; **check `qty_ordered = qty_pending + qty_reserved + qty_backordered + qty_allocated + qty_cancelled`**; all qty ≥ 0; partial index `(t, product, created_at) where qty_backordered > 0` (backorder queue) |
 | **OrderLineDiscount** (tenant) | `order_line` FK, `position`, `rule` FK null (kept if the rule is deleted), `rule_name`, `discount_type`, `value`, `amount` Money | every rule applied, in order (ADR-038 item 3); unique `(order_line, position)` |
 | **OrderStatusHistory** (tenant, append-only) | `order` FK, `from_status`, `to_status`, `event` (PLACE, HOLD, APPROVE_HOLD, ACCEPT, REJECT, CANCEL, MODIFY, PACK, DISPATCH, DELIVER, BACKORDER_ALLOCATED, BACKORDER_CANCELLED), `actor` FK null, `actor_type` (RETAILER, STAFF, SYSTEM), `note`, `payload` jsonb (diffs) | index `(t, order, created_at)` |
@@ -715,9 +715,9 @@ stateDiagram-v2
     PLACED --> CANCELLED : cancel
     ACCEPTED --> PACKED : shipments progress (derived)
     PACKED --> DISPATCHED : (derived)
-    DISPATCHED --> DELIVERED : (derived)
-    DELIVERED --> ACCEPTED : new backorder shipment created (derived)
-    DELIVERED --> COMPLETED : all shipments delivered and no open backorder
+    DISPATCHED --> PARTLY_DELIVERED : a shipment delivered, more to follow (derived)
+    PARTLY_DELIVERED --> COMPLETED : all shipments delivered and nothing left to send
+    DISPATCHED --> COMPLETED : the only shipment delivered, nothing left
     ACCEPTED --> COMPLETED : remaining backorder cancelled, all shipments delivered
     ACCEPTED --> CANCELLED : distributor cancel (nothing dispatched)
     PACKED --> CANCELLED : distributor cancel (nothing dispatched)
@@ -727,13 +727,14 @@ stateDiagram-v2
 ```
 **Derived status after acceptance.** Once accepted, the order status is recomputed after every shipment or backorder change:
 - `COMPLETED` if every non-cancelled shipment is DELIVERED and no quantity is open (backordered/reserved/pending = 0).
+- `PARTLY_DELIVERED` ("Partly delivered", with "N items to follow") if at least one shipment is delivered and something is still to follow: waiting, proposed, or in a shipment not yet delivered (ADR-045). N = order lines with quantity not yet delivered or cancelled.
 - Otherwise, the **least advanced** non-cancelled shipment's status (ALLOCATED → shown as ACCEPTED), or ACCEPTED when there is no shipment yet (backorder-only).
 
 `backorder_state` (`NONE / OPEN / CLOSED`) drives the Backorders tab. Distributor tabs:
 - **New** = PLACED.
 - **On hold** = ON_HOLD.
 - **Backorders** = `backorder_state=OPEN`.
-- **In progress** = ACCEPTED/PACKED/DISPATCHED/DELIVERED.
+- **In progress** = ACCEPTED/PACKED/DISPATCHED/PARTLY_DELIVERED.
 - **Completed** = COMPLETED, REJECTED, CANCELLED.
 
 | From → To | Trigger / actor | Guard | Side effects (same txn unless noted) |
@@ -743,7 +744,7 @@ stateDiagram-v2
 | ∅ → ON_HOLD | `place_order` | credit breach and `REQUIRE_APPROVAL` | if ⚙ `credit.hold_reserves_stock` → reserve/backorder as PLACED; else all qty → `qty_pending` (no stock touched); `hold_reason`; outbox `order.on_hold` |
 | ON_HOLD → PLACED / ACCEPTED | `approve_hold`: `credit.manage` | — | `qty_pending` → reserve/backorder/insufficient-stock rules now; audit `credit.hold_approved`; → PLACED, or accept if the snapshot acceptance mode is AUTO |
 | ON_HOLD → REJECTED | `reject_hold`: `credit.manage` | reason | as reject |
-| PLACED → PLACED | `modify_order`: `orders.manage` | snapshot ⚙ `orders.pre_acceptance_edit_mode`: REDUCE_ONLY → reductions/removals only; FULL_EDIT → also increases/new lines (current `resolve_price`, reserve/backorder rules, **credit re-check**); ≥ 1 line remains | reductions: release reserved first, then backorder → `qty_cancelled`; increases: reserve/backorder; recompute estimates; history with diff; outbox `order.modified` → **retailer always notified** |
+| PLACED → PLACED | `modify_order`: `orders.manage` | snapshot ⚙ `orders.pre_acceptance_edit_mode`: REDUCE_ONLY → reductions/removals only; FULL_EDIT → also increases/new lines (current `resolve_price`, reserve/backorder rules, **credit re-check**); ≥ 1 line remains | reductions: the waiting (backordered) quantity first, then held stock (released) → `qty_cancelled`, so the shop keeps what is ready to send (2026-09-28); increases: reserve/backorder; recompute estimates; history with diff; outbox `order.modified` → **retailer always notified** |
 | PLACED → ACCEPTED | `accept_order`: `orders.manage` or SYSTEM 🔑 | — | lines with `qty_reserved>0` → Fulfilment INITIAL (`qty_reserved → qty_allocated`, stock stays reserved); if snapshot ⚙ `invoicing.timing=ON_ACCEPTANCE` → issue invoice now; `backorder_state=OPEN` if backordered; if ⚙ `orders.send_confirmation_on_accept` → render Order Confirmation PDF (after commit) and notify; outbox `order.accepted` |
 | PLACED / ON_HOLD → REJECTED | `reject_order`: `orders.manage` | reason | release reserved; `pending + reserved + backordered → cancelled`; outbox `order.rejected` |
 | PLACED / ON_HOLD → CANCELLED | `cancel_order`: retailer (own) or `orders.manage` | — | as reject; `cancelled_by`; outbox `order.cancelled` |
@@ -766,7 +767,7 @@ stateDiagram-v2
 | ∅ → ALLOCATED | SYSTEM via accept / allocation confirm | fulfilment lines with `unit_price` (order snapshot, or re-resolved if snapshot ⚙ `backorders.billing_price=CURRENT` for BACKORDER shipments); **ON_ACCEPTANCE** timing → invoice issued now |
 | ALLOCATED → PACKED | `orders.fulfil` | record `qty_packed` per line. **Short pack** (`qty_packed < quantity`): the remainder is released (RELEASE) and goes to `qty_backordered` if snapshot `backorders.enabled`, else `qty_cancelled`, and the retailer is notified (`order.short_supplied`). In **ON_ACCEPTANCE** mode the already-issued invoice is corrected with a `SHORT_SUPPLY` credit note for the remainder. |
 | PACKED → DISPATCHED | `orders.fulfil` | **ON_DISPATCH** timing → invoice issued now for the packed quantities (tax rate on invoice date); SALE movements (`on_hand −= q`, `reserved −= q`); transport details; e-way bill generated **from the invoice** when the flag is on and the invoice is eligible (both timings); outbox `order.dispatched` |
-| DISPATCHED → DELIVERED | `orders.fulfil` | `qty_delivered +=`; order status recomputed (may become COMPLETED) |
+| DISPATCHED → DELIVERED | `orders.fulfil` | `qty_delivered +=`; order status recomputed (PARTLY_DELIVERED or COMPLETED); the timeline records the order's new status and the items to follow |
 | ALLOCATED / PACKED → CANCELLED | `orders.manage` | RELEASE reserved; quantity → backorder or cancelled (user choice); if an invoice exists (ON_ACCEPTANCE) → full `CANCELLATION` credit note |
 
 ### 4.3 Backorder (per order-line quantity) and BackorderAllocation
@@ -785,8 +786,8 @@ stateDiagram-v2
 ```
 | Transition | Actor | Side effects |
 |---|---|---|
-| WAITING → PROPOSED | SYSTEM (inward posted, adjustment-in, restock, reservation released) — **in the same txn as the stock increase** | FIFO by `placed_at` over **accepted** orders only; credit re-check (skip → `SKIPPED_CREDIT`); `BackorderAllocation(PROPOSED)`; RESERVE (**proposal holds stock**); `qty_backordered → qty_reserved`; outbox `backorder.proposed` |
-| WAITING → ALLOCATED | SYSTEM when ⚙ `backorders.allocation_mode=AUTO`, or `orders.allocate_backorder` (manual) 🔑 | as above + immediate confirm |
+| WAITING → PROPOSED | SYSTEM (inward posted, adjustment-in, restock, reservation released) — **in the same txn as the stock increase** | FIFO by `placed_at` over **accepted** orders only; blocked shops skipped (`SKIPPED_BLOCKED`); credit re-check (skip → `SKIPPED_CREDIT`; an order approved from a hold is covered except for a higher CURRENT price); `BackorderAllocation(PROPOSED)`; RESERVE (**proposal holds stock**); `qty_backordered → qty_reserved`; outbox `backorder.proposed` |
+| WAITING → ALLOCATED | SYSTEM when ⚙ `backorders.allocation_mode=AUTO`, or `orders.allocate_backorder` (manual) 🔑 | as above + immediate confirm. Manual: blocked shops refused; credit re-checked, and a shop over its limit is refused unless a `credit.manage` user gives an override reason (audited `credit.override_applied`) (ADR-045) |
 | PROPOSED → ALLOCATED | `orders.allocate_backorder` 🔑 | Fulfilment BACKORDER (price per snapshot `backorders.billing_price`; CURRENT → re-resolved now, and the credit re-check uses the new value); ON_ACCEPTANCE timing → invoice now; outbox `backorder.allocated` → retailer notified. If CURRENT and the price **increased**: the fulfilment line is flagged `price_increased`, the notification offers cancellation, and the retailer may cancel via `cancel-repriced` until PACKED → RELEASE, quantity → cancelled, FIFO re-run for the freed stock; in ON_ACCEPTANCE mode a `CANCELLATION` credit note corrects the invoice |
 | PROPOSED → WAITING | `orders.allocate_backorder` | RELEASE; line keeps its FIFO position but is excluded from this run; `run_allocation` for the freed qty |
 | WAITING → CANCELLED | retailer (own) or `orders.manage` | `qty_backordered → qty_cancelled`; demand counters/alerts updated; order status recomputed |
@@ -1007,7 +1008,7 @@ def dispatch_fulfilment(ctx, fulfilment_id, transport):
 def run_allocation(tenant, product_ids, trigger, source_id=None, mode=setting("backorders.allocation_mode")):
   # Phase A — no locks: find candidates
   cands = OrderLine.filter(tenant, product__in=product_ids, qty_backordered>0,
-                           order.status in (ACCEPTED, PACKED, DISPATCHED, DELIVERED))   # FIXED: accepted orders only
+                           order.status in (ACCEPTED, PACKED, DISPATCHED, PARTLY_DELIVERED))   # FIXED: accepted orders only
                    .order_by("order__placed_at", "order_id", "line_no")
   retailer_ids = sorted({c.order.retailer_id for c in cands})
   with atomic():
@@ -1770,6 +1771,14 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 5 | Delivered | Marked by `orders.fulfil` staff; shop confirmation and proof-of-delivery code on the backlog |
 | + | Flaky connections | Idempotency-Key kept per checkout attempt (across reloads); unknown outcome → ask the server (`shop/checkout-attempts/{key}`) before retrying; E2E drops the network |
 | + | Quick ordering | Stepper and "Add" on search, category and repeat-order cards; cart count badge; 3 taps from search to a placed order |
+
+### 10.2f Phase 4 backend checkpoint decisions (2026-09-28, ADR-045)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Reducing before acceptance | Waiting (backordered) quantity first, then held stock |
+| 2 | Backorders of an order approved from a credit hold | Covered for the approved value (recorded on the order); a higher CURRENT price is re-checked; blocked shops never get stock; "Approved over limit" shown in the queue |
+| 3 | Manual allocation and credit | Re-checked; over the limit is refused unless `credit.manage` overrides with a reason (audited); others see why it's blocked |
+| 4 | Partial delivery | "Partly delivered" with "N items to follow" for shops and staff; in lists, detail, timeline and the status filter |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

@@ -17,6 +17,7 @@ export interface OrderRow {
   readonly id: string;
   readonly number: string;
   readonly status: OrderStatusEnum;
+  readonly items_to_follow: number;
   readonly backorder_state: BackorderStateEnum;
   readonly hold_reason: HoldReasonEnum;
   readonly retailer: string;

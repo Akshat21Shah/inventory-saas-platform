@@ -28,11 +28,12 @@ LIVE_EVENTS = (
     "order.completed",
     "backorder.proposed",
     "backorder.skipped_credit",
+    "backorder.skipped_blocked",
     "backorder.allocated",
     "backorder.cancelled",
     "backorder.repriced_cancelled",
 )
-STAFF_ONLY = {"backorder.proposed", "backorder.skipped_credit"}
+STAFF_ONLY = {"backorder.proposed", "backorder.skipped_credit", "backorder.skipped_blocked"}
 
 
 @shared_task(

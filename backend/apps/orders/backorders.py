@@ -35,6 +35,7 @@ from apps.orders.models import (
 )
 from apps.platform.selectors import get_setting
 from apps.pricing.resolve import resolve_prices
+from apps.retailers.models import Retailer
 from common.db import retry_on_deadlock
 from common.errors import InvalidFields, NotFound
 from common.tenancy import require_tenant_id, tenant_context
@@ -112,6 +113,11 @@ def allocate_locked(
             continue
         order = line.order = orders[line.order_id]
         quantity = min(line.qty_backordered, free)
+        if order.retailer.status == Retailer.Status.BLOCKED:  # never, automatic or manual
+            made.extend(
+                _flag_skipped(line, order, level, quantity, trigger, source_id, blocked=True)
+            )
+            continue
         if not _credit_allows(order, line, quantity):
             made.extend(_flag_skipped(line, order, level, quantity, trigger, source_id))
             continue
@@ -158,23 +164,26 @@ def _flag_skipped(
     quantity: Decimal,
     trigger: str,
     source_id: UUID | None,
+    *,
+    blocked: bool = False,
 ) -> list[BackorderAllocation]:
-    """Over the credit limit: skipped and flagged for staff, once until something else happens
-    on the line."""
+    """Skipped and flagged for staff (over the credit limit, or the shop is blocked), once until
+    something else happens on the line."""
+    status = A.SKIPPED_BLOCKED if blocked else A.SKIPPED_CREDIT
     latest = BackorderAllocation.objects.filter(order_line=line).order_by("-created_at").first()
-    if latest is not None and latest.status == A.SKIPPED_CREDIT:
+    if latest is not None and latest.status == status:
         return []
     allocation = BackorderAllocation.objects.create(
         order_line=line,
         product_id=line.product_id,
         warehouse_id=level.warehouse_id,
         quantity=quantity,
-        status=A.SKIPPED_CREDIT,
+        status=status,
         trigger=trigger,
         source_id=source_id,
-        note="Over the credit limit",
+        note="The shop is blocked" if blocked else "Over the credit limit",
     )
-    _emit("backorder.skipped_credit", allocation, order)
+    _emit("backorder.skipped_blocked" if blocked else "backorder.skipped_credit", allocation, order)
     return [allocation]
 
 
@@ -187,20 +196,41 @@ def _billing_price(order: Order, line: OrderLine, quantity: Decimal) -> tuple[De
     return (result.unit_price if result.valid else line.unit_price), True
 
 
+def _extra_value(order: Order, line: OrderLine, quantity: Decimal, price: Decimal) -> Decimal:
+    """What a higher billing price adds to the order's value (tax included)."""
+    extra = max(price - Decimal(line.unit_price), ZERO) * quantity
+    if not order.prices_include_tax:
+        extra *= 1 + (Decimal(line.gst_rate) + Decimal(line.cess_rate)) / HUNDRED
+    return extra
+
+
 def _credit_allows(
     order: Order, line: OrderLine, quantity: Decimal, price: Decimal | None = None
 ) -> bool:
-    """The waiting quantity is already in the shop's exposure at its order price; a higher
-    billing price adds the difference (tax included)."""
+    """The waiting quantity is already in the shop's exposure at its order price. An order approved
+    from a credit hold is covered for its approved value, backorders included; only a higher
+    billing price adds to it, and that extra is checked against the limit as normal
+    (2026-09-28)."""
     limit = order.retailer.credit_limit
     if limit is None:
         return True
     if price is None:
         price, _ = _billing_price(order, line, quantity)
-    extra = max(price - Decimal(line.unit_price), ZERO) * quantity
-    if not order.prices_include_tax:
-        extra *= 1 + (Decimal(line.gst_rate) + Decimal(line.cess_rate)) / HUNDRED
+    extra = _extra_value(order, line, quantity, price)
+    if order.credit_approved_value is not None and extra == 0:
+        return True
     return bool(credit.exposure(order.retailer_id) + extra <= Decimal(limit))
+
+
+def _refuse_blocked(order: Order) -> None:
+    from apps.orders.services import RetailerOnHold
+
+    if order.retailer.status == Retailer.Status.BLOCKED:
+        raise RetailerOnHold(
+            f"{order.retailer.shop_name} is blocked, so it can't receive stock.",
+            details={"order": order.number, "retailer": str(order.retailer_id)},
+            status_code=409,
+        )
 
 
 def _emit(event_type: str, allocation: BackorderAllocation, order: Order) -> None:
@@ -353,6 +383,7 @@ def confirm(allocation_ids: list[UUID], *, by: User) -> list[Fulfilment]:
         for allocation in allocations:
             line = lines[allocation.order_line_id]
             order = line.order = orders[line.order_id]
+            _refuse_blocked(order)
             price, repriced = _billing_price(order, line, allocation.quantity)
             if repriced and not _credit_allows(order, line, allocation.quantity, price):
                 raise CreditLimitExceeded(
@@ -393,11 +424,20 @@ def reject(allocation_id: UUID, *, by: User) -> BackorderAllocation:
 
 @retry_on_deadlock()
 def allocate_manually(
-    product_id: UUID, amounts: dict[UUID, Decimal], *, by: User
+    product_id: UUID,
+    amounts: dict[UUID, Decimal],
+    *,
+    by: User,
+    override_reason: str = "",
 ) -> list[Fulfilment]:
     """Staff choose how much free stock each waiting line gets, in any order, and each order gets
-    a backorder shipment at once (🔑 ``orders.allocate_backorder``: a staff decision, so no credit
-    re-check)."""
+    a backorder shipment at once (🔑 ``orders.allocate_backorder``). Blocked shops never get
+    stock. Credit is re-checked as for automatic allocation (orders approved from a hold are
+    covered); a shop over its limit is refused unless a ``credit.manage`` user overrides with a
+    reason, which is audited (2026-09-28)."""
+    from apps.audit import services as audit
+    from apps.orders.services import CreditLimitExceeded
+
     if not amounts or any(q <= 0 for q in amounts.values()):
         raise InvalidFields({"allocations": ["Choose waiting lines and quantities above 0."]})
     with transaction.atomic():
@@ -416,10 +456,45 @@ def allocate_manually(
         free = level.quantity_on_hand - level.quantity_reserved
         if sum(amounts.values(), ZERO) > free:
             raise InvalidFields({"allocations": [f"Only {free.normalize():f} is free."]})
-        grouped: dict[UUID, Pairs] = defaultdict(list)
+        can_override = bool(by.has_permission_code("credit.manage"))
+        overridden: list[Order] = []
         for line_id in sorted(amounts):
             line = lines[line_id]
             order = line.order = orders[line.order_id]
+            _refuse_blocked(order)
+            if _credit_allows(order, line, amounts[line_id]):
+                continue
+            if can_override and override_reason.strip():
+                if order not in overridden:
+                    overridden.append(order)
+                continue
+            status = credit.check(order.retailer, ZERO, breach_action="BLOCK")
+            raise CreditLimitExceeded(
+                f"{order.retailer.shop_name} is over its credit limit."
+                + (
+                    " Give a reason to allocate anyway."
+                    if can_override
+                    else " Someone who manages credit can allocate it."
+                ),
+                details={
+                    "order": order.number,
+                    "retailer": order.retailer.shop_name,
+                    "limit": str(status.limit),
+                    "exposure": str(status.exposure),
+                    "can_override": can_override,
+                },
+            )
+        for order in overridden:
+            audit.record(
+                "credit.override_applied",
+                target=order,
+                target_repr=order.number,
+                metadata={"reason": override_reason.strip(), "action": "backorder_allocation"},
+            )
+        grouped: dict[UUID, Pairs] = defaultdict(list)
+        for line_id in sorted(amounts):
+            line = lines[line_id]
+            order = orders[line.order_id]
             allocation = BackorderAllocation.objects.create(
                 order_line=line,
                 product_id=product_id,
@@ -427,6 +502,9 @@ def allocate_manually(
                 quantity=amounts[line_id],
                 status=A.PROPOSED,
                 trigger=Trigger.MANUAL,
+                note=f"Credit override: {override_reason.strip()}"[:300]
+                if order in overridden
+                else "",
             )
             _hold(level, line, allocation, order, by=by)
             grouped[order.pk].append((allocation, line))

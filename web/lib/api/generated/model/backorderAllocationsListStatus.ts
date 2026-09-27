@@ -13,5 +13,6 @@ export const BackorderAllocationsListStatus = {
   CONFIRMED: 'CONFIRMED',
   PROPOSED: 'PROPOSED',
   REJECTED: 'REJECTED',
+  SKIPPED_BLOCKED: 'SKIPPED_BLOCKED',
   SKIPPED_CREDIT: 'SKIPPED_CREDIT',
 } as const;

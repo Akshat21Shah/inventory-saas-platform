@@ -132,10 +132,21 @@ class OrderSerializer(serializers.ModelSerializer[Order]):
     lines = OrderLineSerializer(many=True, read_only=True)
     fulfilments = FulfilmentSerializer(many=True, read_only=True)
     history = HistorySerializer(many=True, read_only=True)
+    items_to_follow = serializers.SerializerMethodField(
+        help_text='Products still to be delivered ("N items to follow").'
+    )
+
+    @extend_schema_field(serializers.IntegerField())
+    def get_items_to_follow(self, order: Order) -> int:
+        return sum(
+            1
+            for line in order.lines.all()
+            if line.qty_ordered - line.qty_cancelled - line.qty_delivered > 0
+        )
 
     class Meta:
         model = Order
-        fields = (
+        fields: tuple[str, ...] = (
             "id",
             "number",
             "status",
@@ -159,10 +170,19 @@ class OrderSerializer(serializers.ModelSerializer[Order]):
             "grand_total",
             "rejection_reason",
             "cancellation_reason",
+            "items_to_follow",
             "lines",
             "fulfilments",
             "history",
         )
+        read_only_fields: tuple[str, ...] = fields
+
+
+class StaffOrderSerializer(OrderSerializer):
+    """The distributor's view adds the credit approval (not shown to the shop)."""
+
+    class Meta(OrderSerializer.Meta):
+        fields = (*OrderSerializer.Meta.fields, "credit_approved_value")
         read_only_fields = fields
 
 
@@ -172,6 +192,7 @@ class OrderRowSerializer(serializers.ModelSerializer[Order]):
     retailer = serializers.UUIDField(source="retailer_id", read_only=True)
     retailer_name = serializers.CharField(source="retailer.shop_name", read_only=True)
     line_count = serializers.IntegerField(read_only=True)
+    items_to_follow = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Order
@@ -179,6 +200,7 @@ class OrderRowSerializer(serializers.ModelSerializer[Order]):
             "id",
             "number",
             "status",
+            "items_to_follow",
             "backorder_state",
             "hold_reason",
             "retailer",
@@ -329,6 +351,12 @@ class BackorderGroupSerializer(serializers.Serializer[Any]):
     available = qty(help_text="Free stock that could be allocated now.")
     proposed = qty(help_text="Held for proposals awaiting confirmation.")
     skipped_credit = serializers.IntegerField(help_text="Waiting lines of shops over the limit.")
+    blocked = serializers.IntegerField(
+        help_text="Waiting lines of blocked shops (never allocated)."
+    )
+    approved_over_limit = serializers.IntegerField(
+        help_text="Waiting lines on orders approved from a credit hold."
+    )
 
 
 class WaitingLineSerializer(serializers.ModelSerializer[OrderLine]):
@@ -338,6 +366,10 @@ class WaitingLineSerializer(serializers.ModelSerializer[OrderLine]):
     retailer = serializers.UUIDField(source="order.retailer_id", read_only=True)
     retailer_name = serializers.CharField(source="order.retailer.shop_name", read_only=True)
     over_credit_limit = serializers.SerializerMethodField()
+    approved_over_limit = serializers.SerializerMethodField(
+        help_text="The order was approved from a credit hold: its backorders are covered."
+    )
+    shop_blocked = serializers.SerializerMethodField(help_text="Blocked shops never get stock.")
 
     class Meta:
         model = OrderLine
@@ -353,8 +385,18 @@ class WaitingLineSerializer(serializers.ModelSerializer[OrderLine]):
             "qty_backordered",
             "unit_price",
             "over_credit_limit",
+            "approved_over_limit",
+            "shop_blocked",
         )
         read_only_fields = fields
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_approved_over_limit(self, line: OrderLine) -> bool:
+        return line.order.credit_approved_value is not None
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_shop_blocked(self, line: OrderLine) -> bool:
+        return bool(line.order.retailer.status == "BLOCKED")
 
     @extend_schema_field(serializers.BooleanField())
     def get_over_credit_limit(self, line: OrderLine) -> bool:
@@ -407,6 +449,13 @@ class AllocateSerializer(serializers.Serializer[Any]):
     )
     auto = serializers.BooleanField(
         default=False, help_text="Offer the free stock to waiting orders, oldest first."
+    )
+    override_reason = serializers.CharField(
+        max_length=300,
+        allow_blank=True,
+        required=False,
+        default="",
+        help_text="credit.manage only: allocate to a shop over its credit limit (audited).",
     )
 
 

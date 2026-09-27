@@ -129,6 +129,7 @@ class ShopRepeatItemSerializer(ShopProductSerializer):
 
 class ShopOrderRowSerializer(serializers.ModelSerializer[Order]):
     line_count = serializers.IntegerField(read_only=True)
+    items_to_follow = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Order
@@ -136,6 +137,7 @@ class ShopOrderRowSerializer(serializers.ModelSerializer[Order]):
             "id",
             "number",
             "status",
+            "items_to_follow",
             "backorder_state",
             "placed_at",
             "placed_by_label",

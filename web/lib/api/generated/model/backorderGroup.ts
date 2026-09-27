@@ -30,4 +30,8 @@ export interface BackorderGroup {
   proposed: string;
   /** Waiting lines of shops over the limit. */
   skipped_credit: number;
+  /** Waiting lines of blocked shops (never allocated). */
+  blocked: number;
+  /** Waiting lines on orders approved from a credit hold. */
+  approved_over_limit: number;
 }

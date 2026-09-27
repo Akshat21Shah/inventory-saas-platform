@@ -45,6 +45,8 @@ export interface ShopOrder {
   readonly grand_total: string;
   readonly rejection_reason: string;
   readonly cancellation_reason: string;
+  /** Products still to be delivered ("N items to follow"). */
+  readonly items_to_follow: number;
   readonly lines: readonly OrderLine[];
   readonly fulfilments: readonly Fulfilment[];
   readonly history: readonly ShopHistory[];

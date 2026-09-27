@@ -84,10 +84,47 @@ def test_pack_dispatch_deliver(accepted):
     with tenant_context(t.pk):
         fulfilment.deliver(shipment.pk, by=owner)
     order, lines = _state(t, accepted["order"])
-    # Delivered, but B still waits on backorder: not completed yet.
-    assert (order.status, order.backorder_state) == ("DELIVERED", "OPEN")
+    # Delivered, but B still waits on backorder: "Partly delivered, 1 item to follow".
+    assert (order.status, order.backorder_state) == ("PARTLY_DELIVERED", "OPEN")
     assert lines["A"].qty_delivered == 5
+    with tenant_context(t.pk):
+        delivered = order.history.get(event="DELIVER")
+        assert fulfilment.items_to_follow(order) == 1
+    assert (delivered.to_status, delivered.payload["items_to_follow"]) == ("PARTLY_DELIVERED", 1)
     check_invariants(t)
+
+
+def test_partly_delivered_while_a_later_shipment_is_on_its_way(tenant_a):
+    """One shipment delivered, a backorder shipment dispatched: still "Partly delivered" (not
+    the less advanced DISPATCHED); completed when the last one arrives."""
+    from apps.inventory import receipts
+    from apps.orders import backorders
+
+    shop = make_shop(tenant_a)
+    a = make_product(tenant_a, "A")
+    b = make_product(tenant_a, "B")
+    add_stock(tenant_a, a, "2")
+    owner = make_staff_in(tenant_a, "OWNER")
+    order = place(tenant_a, shop, (a, "2"), (b, "3"))
+    with tenant_context(tenant_a.pk):
+        transitions.accept_order(order.pk, by=owner)
+        first = Fulfilment.objects.get(order=order)
+        fulfilment.pack(first.pk, {}, by=owner)
+        fulfilment.dispatch(first.pk, Transport("", "", ""), by=owner)
+        fulfilment.deliver(first.pk, by=owner)
+        receipts.create_and_post(
+            receipts.ReceiptInput(lines=[receipts.LineInput(b.pk, D("3"))]), by=owner
+        )
+        [proposal] = order.lines.get(product=b).allocations.all()
+        [second] = backorders.confirm([proposal.pk], by=owner)
+        fulfilment.pack(second.pk, {}, by=owner)
+        fulfilment.dispatch(second.pk, Transport("", "", ""), by=owner)
+        order.refresh_from_db()
+        assert (order.status, fulfilment.items_to_follow(order)) == ("PARTLY_DELIVERED", 1)
+        fulfilment.deliver(second.pk, by=owner)
+        order.refresh_from_db()
+    assert order.status == "COMPLETED"
+    check_invariants(tenant_a)
 
 
 def test_completed_when_everything_is_delivered_and_nothing_waits(tenant_a):

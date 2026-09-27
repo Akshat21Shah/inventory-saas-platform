@@ -81,7 +81,7 @@ def _detail(request: Request, order_id: UUID, status: int = 200) -> Response:
     order = selectors.order_detail(order_id, user=_user(request))
     if order is None:
         raise NotFound()
-    return Response(s.OrderSerializer(order).data, status=status)
+    return Response(s.StaffOrderSerializer(order).data, status=status)
 
 
 # --- Orders --------------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ class OrderListCreateView(Guarded, generics.ListAPIView[Order]):
         operation_id="orders_place_on_behalf",
         tags=TAGS,
         request=s.StaffPlaceOrderSerializer,
-        responses={201: s.OrderSerializer},
+        responses={201: s.StaffOrderSerializer},
         parameters=[IDEMPOTENCY],
     )
     @idempotent("orders.place_on_behalf")
@@ -159,7 +159,7 @@ class OrderCountsView(Guarded):
 class OrderDetailView(Guarded):
     required_permission = VIEW
 
-    @extend_schema(operation_id="orders_retrieve", tags=TAGS, responses=s.OrderSerializer)
+    @extend_schema(operation_id="orders_retrieve", tags=TAGS, responses=s.StaffOrderSerializer)
     def get(self, request: Request, order_id: UUID) -> Response:
         return _detail(request, order_id)
 
@@ -171,7 +171,7 @@ class OrderAcceptView(Guarded):
         operation_id="orders_accept",
         tags=TAGS,
         request=None,
-        responses=s.OrderSerializer,
+        responses=s.StaffOrderSerializer,
         parameters=[IDEMPOTENCY],
     )
     @idempotent("orders.accept")
@@ -188,7 +188,7 @@ class OrderRejectView(Guarded):
         operation_id="orders_reject",
         tags=TAGS,
         request=s.RequiredReasonSerializer,
-        responses=s.OrderSerializer,
+        responses=s.StaffOrderSerializer,
     )
     def post(self, request: Request, order_id: UUID) -> Response:
         data = s.RequiredReasonSerializer(data=request.data)
@@ -208,7 +208,7 @@ class OrderCancelView(Guarded):
         operation_id="orders_cancel",
         tags=TAGS,
         request=s.RequiredReasonSerializer,
-        responses=s.OrderSerializer,
+        responses=s.StaffOrderSerializer,
     )
     def post(self, request: Request, order_id: UUID) -> Response:
         data = s.RequiredReasonSerializer(data=request.data)
@@ -230,7 +230,7 @@ class OrderLinesView(Guarded):
         operation_id="orders_modify",
         tags=TAGS,
         request=s.ModifyOrderSerializer,
-        responses=s.OrderSerializer,
+        responses=s.StaffOrderSerializer,
     )
     def patch(self, request: Request, order_id: UUID) -> Response:
         data = s.ModifyOrderSerializer(data=request.data)
@@ -253,7 +253,10 @@ class HoldApproveView(Guarded):
     required_permission = CREDIT
 
     @extend_schema(
-        operation_id="orders_hold_approve", tags=TAGS, request=None, responses=s.OrderSerializer
+        operation_id="orders_hold_approve",
+        tags=TAGS,
+        request=None,
+        responses=s.StaffOrderSerializer,
     )
     def post(self, request: Request, order_id: UUID) -> Response:
         _visible_order(request, order_id)
@@ -268,7 +271,7 @@ class HoldRejectView(Guarded):
         operation_id="orders_hold_reject",
         tags=TAGS,
         request=s.RequiredReasonSerializer,
-        responses=s.OrderSerializer,
+        responses=s.StaffOrderSerializer,
     )
     def post(self, request: Request, order_id: UUID) -> Response:
         data = s.RequiredReasonSerializer(data=request.data)
@@ -287,7 +290,7 @@ class CancelBackorderView(Guarded):
         operation_id="order_lines_cancel_backorder",
         tags=TAGS,
         request=None,
-        responses=s.OrderSerializer,
+        responses=s.StaffOrderSerializer,
     )
     def post(self, request: Request, line_id: UUID) -> Response:
         order_id = (
@@ -490,7 +493,9 @@ class AllocateView(Guarded):
             )
             if visible != set(amounts):
                 raise NotFound()
-            shipments = backorders.allocate_manually(v["product"], amounts, by=user)
+            shipments = backorders.allocate_manually(
+                v["product"], amounts, by=user, override_reason=v["override_reason"]
+            )
             made = list(BackorderAllocation.objects.filter(fulfilment__in=shipments))
         rows = selectors.allocations_for(user).filter(pk__in=[a.pk for a in made])
         return Response(s.AllocationSerializer(rows.order_by("created_at"), many=True).data)

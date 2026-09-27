@@ -216,6 +216,7 @@
   11. Seed demo orders, API client — **done** (`common/demo_orders.py`); **backend checkpoint**:
      - `make seed` gives each distributor 11 orders across every board tab, through the normal services: new orders (one placed by the salesperson for a shop, one with a delivery note), a credit hold (one demo shop's limit set to ₹500, audited), a rejected and a cancelled order, orders packed, dispatched and completed, accepted orders with items waiting, and one backorder proposal to confirm. Only when a tenant has no orders yet.
      - Seeded on the running stack: 46 live pushes ran on the worker without errors. The API client is regenerated.
+  11a. Checkpoint decisions (ADR-045) — **done**: reductions take the waiting quantity first; approving a credit hold records the approved value and covers the order's backorders (a higher CURRENT price is re-checked); blocked shops never get stock (skipped and flagged, refused by hand and on confirm); manual allocation re-checks credit with an audited `credit.manage` override; PARTLY_DELIVERED ("Partly delivered", "N items to follow") replaces the order status DELIVERED, in lists, detail, timeline and filter. Each new rule has a planted-bug check.
   12–15. Frontend: shop browsing and quick ordering; cart, checkout, orders; distributor orders board and shipments; backorders and ordering on behalf
   16. E2E acceptance (incl. dropped network), responsive check, phone test over LAN — **final review**
 - Phase 3 — Inventory: **merged to `main` (PR #4, 2026-09-26)**.

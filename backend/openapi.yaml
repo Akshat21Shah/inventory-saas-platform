@@ -679,6 +679,7 @@ paths:
           - CONFIRMED
           - PROPOSED
           - REJECTED
+          - SKIPPED_BLOCKED
           - SKIPPED_CREDIT
       tags:
       - orders
@@ -1435,7 +1436,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/:
     get:
@@ -1492,10 +1493,10 @@ paths:
           - ACCEPTED
           - CANCELLED
           - COMPLETED
-          - DELIVERED
           - DISPATCHED
           - ON_HOLD
           - PACKED
+          - PARTLY_DELIVERED
           - PLACED
           - REJECTED
       - in: query
@@ -1542,7 +1543,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/{order_id}/:
     get:
@@ -1563,7 +1564,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/{order_id}/accept/:
     post:
@@ -1589,7 +1590,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/{order_id}/cancel/:
     post:
@@ -1619,7 +1620,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/{order_id}/hold/approve/:
     post:
@@ -1640,7 +1641,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/{order_id}/hold/reject/:
     post:
@@ -1667,7 +1668,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/{order_id}/lines/:
     patch:
@@ -1693,7 +1694,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/{order_id}/reject/:
     post:
@@ -1720,7 +1721,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/StaffOrder'
           description: ''
   /api/v1/orders/counts/:
     get:
@@ -6816,6 +6817,12 @@ components:
           type: boolean
           default: false
           description: Offer the free stock to waiting orders, oldest first.
+        override_reason:
+          type: string
+          default: ''
+          description: 'credit.manage only: allocate to a shop over its credit limit
+            (audited).'
+          maxLength: 300
       required:
       - product
     Allocation:
@@ -6914,12 +6921,14 @@ components:
       - CONFIRMED
       - REJECTED
       - SKIPPED_CREDIT
+      - SKIPPED_BLOCKED
       type: string
       description: |-
         * `PROPOSED` - Proposed
         * `CONFIRMED` - Confirmed
         * `REJECTED` - Rejected
         * `SKIPPED_CREDIT` - Skipped: over credit limit
+        * `SKIPPED_BLOCKED` - Skipped: shop blocked
     AllocationTriggerEnum:
       enum:
       - INWARD
@@ -7116,8 +7125,16 @@ components:
         skipped_credit:
           type: integer
           description: Waiting lines of shops over the limit.
+        blocked:
+          type: integer
+          description: Waiting lines of blocked shops (never allocated).
+        approved_over_limit:
+          type: integer
+          description: Waiting lines on orders approved from a credit hold.
       required:
+      - approved_over_limit
       - available
+      - blocked
       - lines
       - oldest_placed_at
       - product_code
@@ -9934,142 +9951,6 @@ components:
       - pincode
       - slug
       - state_code
-    Order:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        number:
-          type: string
-          readOnly: true
-        status:
-          allOf:
-          - $ref: '#/components/schemas/OrderStatusEnum'
-          readOnly: true
-        backorder_state:
-          allOf:
-          - $ref: '#/components/schemas/BackorderStateEnum'
-          readOnly: true
-        hold_reason:
-          allOf:
-          - $ref: '#/components/schemas/HoldReasonEnum'
-          readOnly: true
-        retailer:
-          type: string
-          format: uuid
-          readOnly: true
-        retailer_name:
-          type: string
-          readOnly: true
-        placed_via:
-          allOf:
-          - $ref: '#/components/schemas/PlacedViaEnum'
-          readOnly: true
-        placed_by_label:
-          type: string
-          readOnly: true
-        placed_at:
-          type: string
-          format: date-time
-          readOnly: true
-        accepted_at:
-          type: string
-          format: date-time
-          readOnly: true
-          nullable: true
-        closed_at:
-          type: string
-          format: date-time
-          readOnly: true
-          nullable: true
-        shipping_address:
-          readOnly: true
-        retailer_note:
-          type: string
-          readOnly: true
-        prices_include_tax:
-          type: boolean
-          readOnly: true
-        gross_total:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          readOnly: true
-        discount_total:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          readOnly: true
-        taxable_total:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          readOnly: true
-        tax_total:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          readOnly: true
-        round_off:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          readOnly: true
-        grand_total:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
-          readOnly: true
-        rejection_reason:
-          type: string
-          readOnly: true
-        cancellation_reason:
-          type: string
-          readOnly: true
-        lines:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrderLine'
-          readOnly: true
-        fulfilments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Fulfilment'
-          readOnly: true
-        history:
-          type: array
-          items:
-            $ref: '#/components/schemas/History'
-          readOnly: true
-      required:
-      - accepted_at
-      - backorder_state
-      - cancellation_reason
-      - closed_at
-      - discount_total
-      - fulfilments
-      - grand_total
-      - gross_total
-      - history
-      - hold_reason
-      - id
-      - lines
-      - number
-      - placed_at
-      - placed_by_label
-      - placed_via
-      - prices_include_tax
-      - rejection_reason
-      - retailer
-      - retailer_name
-      - retailer_note
-      - round_off
-      - shipping_address
-      - status
-      - tax_total
-      - taxable_total
     OrderCounts:
       type: object
       properties:
@@ -10217,6 +10098,9 @@ components:
           allOf:
           - $ref: '#/components/schemas/OrderStatusEnum'
           readOnly: true
+        items_to_follow:
+          type: integer
+          readOnly: true
         backorder_state:
           allOf:
           - $ref: '#/components/schemas/BackorderStateEnum'
@@ -10256,6 +10140,7 @@ components:
       - grand_total
       - hold_reason
       - id
+      - items_to_follow
       - line_count
       - number
       - placed_at
@@ -10271,7 +10156,7 @@ components:
       - ACCEPTED
       - PACKED
       - DISPATCHED
-      - DELIVERED
+      - PARTLY_DELIVERED
       - COMPLETED
       - REJECTED
       - CANCELLED
@@ -10282,7 +10167,7 @@ components:
         * `ACCEPTED` - Accepted
         * `PACKED` - Packed
         * `DISPATCHED` - Dispatched
-        * `DELIVERED` - Delivered
+        * `PARTLY_DELIVERED` - Partly delivered
         * `COMPLETED` - Completed
         * `REJECTED` - Rejected
         * `CANCELLED` - Cancelled
@@ -14024,6 +13909,10 @@ components:
         cancellation_reason:
           type: string
           readOnly: true
+        items_to_follow:
+          type: integer
+          readOnly: true
+          description: Products still to be delivered ("N items to follow").
         lines:
           type: array
           items:
@@ -14051,6 +13940,7 @@ components:
       - history
       - hold_reason
       - id
+      - items_to_follow
       - lines
       - number
       - placed_at
@@ -14080,6 +13970,9 @@ components:
           allOf:
           - $ref: '#/components/schemas/OrderStatusEnum'
           readOnly: true
+        items_to_follow:
+          type: integer
+          readOnly: true
         backorder_state:
           allOf:
           - $ref: '#/components/schemas/BackorderStateEnum'
@@ -14103,6 +13996,7 @@ components:
       - backorder_state
       - grand_total
       - id
+      - items_to_follow
       - line_count
       - number
       - placed_at
@@ -14510,6 +14404,156 @@ components:
       required:
       - email
       - password
+    StaffOrder:
+      type: object
+      description: The distributor's view adds the credit approval (not shown to the
+        shop).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        backorder_state:
+          allOf:
+          - $ref: '#/components/schemas/BackorderStateEnum'
+          readOnly: true
+        hold_reason:
+          allOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          readOnly: true
+        retailer:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        placed_via:
+          allOf:
+          - $ref: '#/components/schemas/PlacedViaEnum'
+          readOnly: true
+        placed_by_label:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        shipping_address:
+          readOnly: true
+        retailer_note:
+          type: string
+          readOnly: true
+        prices_include_tax:
+          type: boolean
+          readOnly: true
+        gross_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        taxable_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        tax_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        round_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        rejection_reason:
+          type: string
+          readOnly: true
+        cancellation_reason:
+          type: string
+          readOnly: true
+        items_to_follow:
+          type: integer
+          readOnly: true
+          description: Products still to be delivered ("N items to follow").
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+          readOnly: true
+        fulfilments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fulfilment'
+          readOnly: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/History'
+          readOnly: true
+        credit_approved_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+      required:
+      - accepted_at
+      - backorder_state
+      - cancellation_reason
+      - closed_at
+      - credit_approved_value
+      - discount_total
+      - fulfilments
+      - grand_total
+      - gross_total
+      - history
+      - hold_reason
+      - id
+      - items_to_follow
+      - lines
+      - number
+      - placed_at
+      - placed_by_label
+      - placed_via
+      - prices_include_tax
+      - rejection_reason
+      - retailer
+      - retailer_name
+      - retailer_note
+      - round_off
+      - shipping_address
+      - status
+      - tax_total
+      - taxable_total
     StaffPlaceOrderRequest:
       type: object
       properties:
@@ -15397,7 +15441,17 @@ components:
         over_credit_limit:
           type: boolean
           readOnly: true
+        approved_over_limit:
+          type: boolean
+          readOnly: true
+          description: 'The order was approved from a credit hold: its backorders
+            are covered.'
+        shop_blocked:
+          type: boolean
+          readOnly: true
+          description: Blocked shops never get stock.
       required:
+      - approved_over_limit
       - id
       - order
       - order_number
@@ -15408,6 +15462,7 @@ components:
       - qty_ordered
       - retailer
       - retailer_name
+      - shop_blocked
       - unit_price
     Warehouse:
       type: object

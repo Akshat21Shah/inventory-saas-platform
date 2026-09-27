@@ -12,6 +12,7 @@ export interface ShopOrderRow {
   readonly id: string;
   readonly number: string;
   readonly status: OrderStatusEnum;
+  readonly items_to_follow: number;
   readonly backorder_state: BackorderStateEnum;
   readonly placed_at: string;
   readonly placed_by_label: string;

@@ -144,10 +144,11 @@ def test_reduce_only_edits(world):
         with pytest.raises(InvalidFields):
             transitions.modify_order(order.pk, Modification({lines["A"].pk: D("0")}, []), by=owner)
     lines = _lines(t, order)
-    # A: 3 reserved + 2 backordered, cut to 2: PLAN §4.1 releases reserved stock first.
+    # A: 3 reserved + 2 backordered, cut to 2: the waiting quantity goes first, then held stock
+    # (PLAN §4.1), so the shop keeps 2 ready to send.
     assert (lines["A"].qty_reserved, lines["A"].qty_backordered, lines["A"].qty_cancelled) == (
-        D("0"),
         D("2"),
+        D("0"),
         D("3"),
     )
     assert lines["B"].qty_cancelled == 2
@@ -160,6 +161,21 @@ def test_reduce_only_edits(world):
         {"product": "B", "from": "2.000", "to": "0"},
     ]
     assert OutboxEvent.objects.filter(event_type="order.modified").count() == 1
+    check_invariants(t)
+
+
+def test_a_small_reduction_only_cancels_waiting_quantity(world):
+    t, owner = world["tenant"], world["owner"]
+    order = place(t, world["shop"], (world["a"], "5"))  # 3 held, 2 waiting
+    line = _lines(t, order)["A"]
+    with tenant_context(t.pk):
+        transitions.modify_order(order.pk, Modification({line.pk: D("4")}, []), by=owner)
+    line = _lines(t, order)["A"]
+    assert (line.qty_reserved, line.qty_backordered, line.qty_cancelled) == (
+        D("3"),
+        D("1"),
+        D("1"),
+    )
     check_invariants(t)
 
 

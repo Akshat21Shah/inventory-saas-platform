@@ -8,7 +8,19 @@ from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from django.db.models import Count, Exists, Max, Min, OuterRef, Prefetch, Q, QuerySet, Subquery, Sum
+from django.db.models import (
+    Count,
+    Exists,
+    F,
+    Max,
+    Min,
+    OuterRef,
+    Prefetch,
+    Q,
+    QuerySet,
+    Subquery,
+    Sum,
+)
 
 from apps.accounts.models import User
 from apps.catalog.models import Product
@@ -23,6 +35,7 @@ from apps.orders.models import (
     OrderStatus,
     OrderStatusHistory,
 )
+from apps.retailers.models import Retailer
 from apps.retailers.selectors import sees_own_retailers_only
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -33,7 +46,7 @@ TABS: dict[str, Q] = {
     "new": Q(status=S.PLACED),
     "on_hold": Q(status=S.ON_HOLD),
     "backorders": Q(status__in=ACCEPTED_STATUSES, backorder_state=Order.BackorderState.OPEN),
-    "in_progress": Q(status__in=(S.ACCEPTED, S.PACKED, S.DISPATCHED, S.DELIVERED)),
+    "in_progress": Q(status__in=(S.ACCEPTED, S.PACKED, S.DISPATCHED, S.PARTLY_DELIVERED)),
     "completed": Q(status__in=(S.COMPLETED, S.CANCELLED, S.REJECTED)),
 }
 
@@ -65,8 +78,16 @@ class OrderFilters:
     search: str = ""
 
 
+TO_FOLLOW = Count(
+    "lines",
+    filter=Q(lines__qty_ordered__gt=F("lines__qty_cancelled") + F("lines__qty_delivered")),
+)
+
+
 def order_list(user: User, f: OrderFilters) -> QuerySet[Order]:
-    qs = orders_for(user).annotate(line_count=Count("lines"))
+    qs = orders_for(user).annotate(
+        line_count=Count("lines", distinct=True), items_to_follow=TO_FOLLOW
+    )
     if f.tab:
         qs = qs.filter(TABS[f.tab])
     if f.status:
@@ -180,6 +201,8 @@ class BackorderGroup:
     available: Decimal
     proposed: Decimal
     skipped_credit: int
+    blocked: int  # waiting lines of blocked shops (never allocated)
+    approved_over_limit: int  # waiting lines on orders approved from a credit hold
 
 
 def backorder_queue(user: User, search: str = "") -> list[BackorderGroup]:
@@ -202,6 +225,8 @@ def backorder_queue(user: User, search: str = "") -> list[BackorderGroup]:
             lines=Count("pk"),
             oldest=Min("order__placed_at"),
             skipped_credit=Count("pk", filter=Q(skipped=True)),
+            blocked=Count("pk", filter=Q(order__retailer__status=Retailer.Status.BLOCKED)),
+            approved_over_limit=Count("pk", filter=Q(order__credit_approved_value__isnull=False)),
         )
         .order_by("oldest")
     )
@@ -230,6 +255,8 @@ def backorder_queue(user: User, search: str = "") -> list[BackorderGroup]:
             available=max(free.get(row["product_id"], Decimal("0")), Decimal("0")),
             proposed=proposed.get(row["product_id"], Decimal("0")),
             skipped_credit=row["skipped_credit"],
+            blocked=row["blocked"],
+            approved_over_limit=row["approved_over_limit"],
         )
         for row in rows
     ]
@@ -274,14 +301,16 @@ def allocation_list(
 # --- The shop's own orders (PLAN §3.9) -----------------------------------------------------------
 
 SHOP_STATES: dict[str, Q] = {
-    "open": Q(status__in=(S.PLACED, S.ON_HOLD, S.ACCEPTED, S.PACKED, S.DISPATCHED, S.DELIVERED)),
+    "open": Q(
+        status__in=(S.PLACED, S.ON_HOLD, S.ACCEPTED, S.PACKED, S.DISPATCHED, S.PARTLY_DELIVERED)
+    ),
     "closed": Q(status__in=(S.COMPLETED, S.CANCELLED, S.REJECTED)),
 }
 
 
 def shop_orders(retailer_id: UUID, state: str = "") -> QuerySet[Order]:
     qs: QuerySet[Order] = Order.objects.filter(retailer_id=retailer_id).annotate(
-        line_count=Count("lines")
+        line_count=Count("lines", distinct=True), items_to_follow=TO_FOLLOW
     )
     return qs.filter(SHOP_STATES[state]) if state else qs
 

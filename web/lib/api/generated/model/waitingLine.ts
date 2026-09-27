@@ -21,4 +21,8 @@ export interface WaitingLine {
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   readonly unit_price: string;
   readonly over_credit_limit: boolean;
+  /** The order was approved from a credit hold: its backorders are covered. */
+  readonly approved_over_limit: boolean;
+  /** Blocked shops never get stock. */
+  readonly shop_blocked: boolean;
 }
