@@ -160,7 +160,7 @@
 ## Next
 - **Phase 4 — Ordering & backorders** (branch `phase-4` from `main` 344b09c; plan approved 2026-09-27 with ADR-044, PLAN §10.2e, SPEC 1.4). Commits in order:
   1. Docs: ADR-044, PLAN (Cart per shop and user, OrderLineDiscount, §10.2e, backlog), SPEC 1.4 — **done**
-  2. Models: orders app, `ledger.RetailerAccount`, RLS, checks, append-only history
+  2. Models: orders app, `ledger.RetailerAccount`, RLS, checks, append-only history — **done**: carts per (shop, user); orders with settings/address/price snapshots and estimates; lines whose quantity buckets are checked by the database (ordered = pending + reserved + backordered + allocated + cancelled; dispatched ≤ allocated, delivered ≤ dispatched); a row per applied discount; append-only status history; shipments and their lines; backorder allocations. `ledger.RetailerAccount` (balance 0) is created with every shop and backfilled. RLS on all ten tables.
   3. Server cart + shop cart API
   4. `place_order` + races (last units, duplicate key, inward vs new order)
   5. Order state machine + accept/cancel race
