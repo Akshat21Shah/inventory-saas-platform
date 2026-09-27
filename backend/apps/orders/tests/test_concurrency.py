@@ -224,29 +224,30 @@ def test_no_deadlock_mixed_operations(make_tenant):
 
     def one(index: int, rng: random.Random) -> str:
         shop = shops[index]
-        op = rng.choice(
+        # Weighted so that stock stays short and backorders, proposals and shipments keep
+        # coming: demand outpaces goods receipts.
+        op = rng.choices(
             [
                 "place",
-                "place",
-                "accept",
                 "accept",
                 "inward",
                 "confirm",
+                "reject_allocation",
                 "ship",
                 "cancel",
                 "reject_order",
-                "reject_allocation",
                 "cancel_backorder",
-            ]
-        )
+            ],
+            weights=[6, 6, 2, 4, 1, 3, 1, 1, 1],
+        )[0]
         if op == "place":
             chosen = rng.sample(products, rng.randint(1, 3))
-            place(tenant, shop, *[(p, str(rng.randint(1, 4))) for p in chosen])
+            place(tenant, shop, *[(p, str(rng.randint(1, 6))) for p in chosen])
         elif op == "inward":
             chosen = rng.sample(products, rng.randint(1, 3))
             receipts.create_and_post(
                 receipts.ReceiptInput(
-                    lines=[receipts.LineInput(p.pk, D(rng.randint(1, 5))) for p in chosen]
+                    lines=[receipts.LineInput(p.pk, D(rng.randint(1, 4))) for p in chosen]
                 ),
                 by=owner,
             )
@@ -284,11 +285,28 @@ def test_no_deadlock_mixed_operations(make_tenant):
             fulfilment.dispatch(shipment_id, fulfilment.Transport("", "", ""), by=owner)
         return op
 
+    required = (
+        "place",
+        "accept",
+        "inward",
+        "confirm",
+        "reject_allocation",
+        "ship",
+        "cancel_backorder",
+    )
+
+    def covered() -> bool:
+        with lock:
+            return all(done.get(op, 0) > 0 for op in required)
+
     def work(index: int) -> int:
         rng = random.Random(index)
         count = 0
-        end = time.monotonic() + seconds
-        while time.monotonic() < end:
+        start = time.monotonic()
+        # Run for the set time, and on (up to 3x) until every key operation has succeeded.
+        while (elapsed := time.monotonic() - start) < seconds or (
+            elapsed < 3 * seconds and not covered()
+        ):
             with tenant_context(tenant.pk):
                 try:
                     op = one(index, rng)
@@ -300,8 +318,9 @@ def test_no_deadlock_mixed_operations(make_tenant):
         return count
 
     results, errors = parallel(6, work)
+    print("mixed operations:", sorted(done.items()))  # shown when the test fails
     assert errors == [], errors
-    assert sum(results) > 50, done
-    for op in ("place", "accept", "inward", "confirm", "ship"):
-        assert done.get(op, 0) > 0, done
+    assert sum(results) > 50, sorted(done.items())
+    missing = [op for op in required if done.get(op, 0) == 0]
+    assert not missing, (missing, sorted(done.items()))
     check_order_invariants(tenant)
