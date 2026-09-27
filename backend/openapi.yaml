@@ -4215,6 +4215,22 @@ paths:
                 items:
                   $ref: '#/components/schemas/Setting'
           description: ''
+  /api/v1/shop/addresses/:
+    get:
+      operationId: shop_addresses_list
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryAddress'
+          description: ''
   /api/v1/shop/brands/:
     get:
       operationId: shop_brands
@@ -4236,6 +4252,112 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ShopBrand'
+          description: ''
+  /api/v1/shop/cart/:
+    get:
+      operationId: shop_cart_retrieve
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+    delete:
+      operationId: shop_cart_clear
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/shop/cart/lines/{product_id}/:
+    put:
+      operationId: shop_cart_line_set
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuantityRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+    delete:
+      operationId: shop_cart_line_remove
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/shop/cart/reduce-to-available/:
+    post:
+      operationId: shop_cart_reduce_to_available
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
           description: ''
   /api/v1/shop/categories/:
     get:
@@ -6444,6 +6566,26 @@ components:
       description: |-
         * `SET` - Cost entered
         * `PENDING` - Cost pending
+    Credit:
+      type: object
+      properties:
+        limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Before this order; null without a limit.
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+      required:
+      - available
+      - limit
+      - outcome
     Dashboard:
       type: object
       properties:
@@ -6460,6 +6602,39 @@ components:
       - onboarding
       - suspended
       - total
+    DeliveryAddress:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        name:
+          type: string
+          description: The shop's name for the address.
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        pincode:
+          type: string
+        state:
+          type: string
+        is_default:
+          type: boolean
+      required:
+      - city
+      - id
+      - is_default
+      - kind
+      - line1
+      - line2
+      - name
+      - pincode
+      - state
     DependsOn:
       type: object
       properties:
@@ -8047,6 +8222,16 @@ components:
       - pincode
       - slug
       - state_code
+    OutcomeEnum:
+      enum:
+      - OK
+      - NEEDS_APPROVAL
+      - BLOCKED
+      type: string
+      description: |-
+        * `OK` - OK
+        * `NEEDS_APPROVAL` - NEEDS_APPROVAL
+        * `BLOCKED` - BLOCKED
     PaginatedAdjustmentList:
       type: object
       required:
@@ -9560,6 +9745,20 @@ components:
         * `SPECIAL` - SPECIAL
         * `PRICE_LIST` - PRICE_LIST
         * `BASE` - BASE
+    Problem:
+      type: object
+      properties:
+        code:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+        blocking:
+          type: boolean
+      required:
+      - blocking
+      - code
+      - details
     ProductDetail:
       type: object
       properties:
@@ -10043,6 +10242,234 @@ components:
       - logo_url
       - primary_color
       - slug
+    QuantityRequest:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - quantity
+    Quote:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLine'
+        item_count:
+          type: integer
+        totals:
+          allOf:
+          - $ref: '#/components/schemas/QuoteTotals'
+          readOnly: true
+        prices_include_gst:
+          type: boolean
+        backorders_enabled:
+          type: boolean
+        credit:
+          allOf:
+          - $ref: '#/components/schemas/Credit'
+          readOnly: true
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/Problem'
+        can_place:
+          type: boolean
+        address_id:
+          type: string
+          format: uuid
+          nullable: true
+        expected_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: 'Send back when placing: a price change is caught.'
+      required:
+      - backorders_enabled
+      - can_place
+      - credit
+      - expected_total
+      - item_count
+      - lines
+      - prices_include_gst
+      - problems
+      - totals
+    QuoteLine:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        product:
+          allOf:
+          - $ref: '#/components/schemas/QuoteProduct'
+          nullable: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+          description: Incl. tax, estimated.
+        ready_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Can be sent now (estimate; final when the order is placed).
+        later_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Goes on backorder (or is dropped when backorders are off).
+        stock:
+          allOf:
+          - $ref: '#/components/schemas/QuoteStock'
+          nullable: true
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/Problem'
+      required:
+      - discount_percent
+      - discount_total
+      - later_qty
+      - line_total
+      - problems
+      - product
+      - product_id
+      - quantity
+      - ready_qty
+      - stock
+      - unit_price
+    QuoteProduct:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        unit:
+          $ref: '#/components/schemas/QuoteUnit'
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/QuoteUnit'
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - code
+      - id
+      - min_order_qty
+      - name
+      - order_multiple
+      - pack_size
+      - pack_unit
+      - thumbnail_url
+      - unit
+    QuoteStock:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ShopAvailabilityLabelEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+      required:
+      - quantity
+      - status
+    QuoteTotals:
+      type: object
+      properties:
+        gross:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        taxable:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        tax:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        round_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - discount
+      - grand_total
+      - gross
+      - round_off
+      - tax
+      - taxable
+    QuoteUnit:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        allows_decimal:
+          type: boolean
+      required:
+      - allows_decimal
+      - code
+      - name
     ReasonCodeEnum:
       enum:
       - COUNT_CORRECTION
