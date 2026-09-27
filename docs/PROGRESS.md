@@ -193,7 +193,14 @@
      - Manual allocation: staff choose lines and quantities in any order (no credit re-check: a staff decision). The shop or staff can cancel what a line still waits for.
      - Stock released by a reject, cancel, short pack or cancelled shipment runs allocation after commit.
      - Races: a goods receipt vs a new order (5 rounds; the waiting order always gets the stock), and 30 s of mixed operations across 6 threads and 5 products (the invariants hold: stock vs movements, reserved = what lines and open shipments hold, backorder demand = what lines wait for). Mutation checks: allocating after commit fails the receipt race; removing the credit re-check, FIFO, AUTO confirm, GST on the price increase, or the proposal's hold each fail a test.
-  8. Distributor APIs (+ ordering on behalf), backorder queue, isolation and role tests
+  8. Distributor APIs (+ ordering on behalf), backorder queue, isolation and role tests — **done** (`apps/orders/api/`, PLAN §3.8):
+     - Orders: board tabs (new, on hold, backorders, in progress, completed) with filters (shop, salesperson, dates in IST, status, search) and counts (also proposals to confirm and shipments to pack); detail with lines, shipments and timeline; accept (Idempotency-Key), reject, cancel (before or after acceptance), modify before acceptance, credit hold approve/reject (`credit.manage`), cancel what a line still waits for.
+     - Shipments: queue, detail, pack (short packs), dispatch with transport details, deliver, cancel before dispatch.
+     - Backorders: queue grouped by product (waiting, free stock, held for proposals, shops over their limit), the waiting lines of a product in FIFO order, proposals list, bulk confirm (Idempotency-Key; one shipment per order), reject, manual or automatic allocation.
+     - Ordering for a shop: a staff cart per (shop, staff member) under `retailers/{id}/cart/`, placed with `POST orders/` (Idempotency-Key): "Placed by Priya (Sales)". Needs `orders.create_on_behalf` and the setting.
+     - Sales staff limited to their own shops (⚙ `orders.sales_visibility`) see and change only those orders, shipments, backorders and carts; other shops' records are "not found".
+     - Cancelling an accepted order now ends its open backorder proposals too.
+     - Tests: roles for every action, idempotent replay, visibility, and a cross-tenant test over all 25 new routes (reads empty or 404, every change 404, nothing changed). API client regenerated; order enums have stable names.
   9. Shop APIs: home, orders, cancel, repeat, checkout attempts
   10. Live updates (WebSocket ticket, consumer, outbox → push)
   11. Seed demo orders, API client — **backend checkpoint**

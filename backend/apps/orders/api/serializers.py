@@ -5,7 +5,14 @@ from typing import Any
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.orders.models import Order, OrderLine, OrderStatusHistory
+from apps.orders.models import (
+    BackorderAllocation,
+    Fulfilment,
+    FulfilmentLine,
+    Order,
+    OrderLine,
+    OrderStatusHistory,
+)
 from apps.pricing.api.serializers import money, qty
 
 
@@ -68,10 +75,62 @@ class HistorySerializer(serializers.ModelSerializer[OrderStatusHistory]):
         return str(row.actor.full_name or row.actor.email or row.actor.phone or "")
 
 
+class FulfilmentLineSerializer(serializers.ModelSerializer[FulfilmentLine]):
+    order_line = serializers.UUIDField(source="order_line_id", read_only=True)
+    product = serializers.UUIDField(source="product_id", read_only=True)
+    product_code = serializers.CharField(source="order_line.product_code", read_only=True)
+    product_name = serializers.CharField(source="order_line.product_name", read_only=True)
+    unit_code = serializers.CharField(source="order_line.unit_code", read_only=True)
+    ordered_price = money(source="order_line.unit_price", read_only=True)
+
+    class Meta:
+        model = FulfilmentLine
+        fields = (
+            "id",
+            "order_line",
+            "product",
+            "product_code",
+            "product_name",
+            "unit_code",
+            "quantity",
+            "qty_packed",
+            "unit_price",
+            "ordered_price",
+            "price_source",
+            "price_increased",
+            "cancelled_by_retailer_at",
+        )
+        read_only_fields = fields
+
+
+class FulfilmentSerializer(serializers.ModelSerializer[Fulfilment]):
+    lines = FulfilmentLineSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Fulfilment
+        fields: tuple[str, ...] = (
+            "id",
+            "number",
+            "kind",
+            "status",
+            "created_at",
+            "packed_at",
+            "dispatched_at",
+            "delivered_at",
+            "vehicle_number",
+            "transporter_name",
+            "lr_number",
+            "cancelled_reason",
+            "lines",
+        )
+        read_only_fields: tuple[str, ...] = fields
+
+
 class OrderSerializer(serializers.ModelSerializer[Order]):
     retailer = serializers.UUIDField(source="retailer_id", read_only=True)
     retailer_name = serializers.CharField(source="retailer.shop_name", read_only=True)
     lines = OrderLineSerializer(many=True, read_only=True)
+    fulfilments = FulfilmentSerializer(many=True, read_only=True)
     history = HistorySerializer(many=True, read_only=True)
 
     class Meta:
@@ -101,7 +160,34 @@ class OrderSerializer(serializers.ModelSerializer[Order]):
             "rejection_reason",
             "cancellation_reason",
             "lines",
+            "fulfilments",
             "history",
+        )
+        read_only_fields = fields
+
+
+class OrderRowSerializer(serializers.ModelSerializer[Order]):
+    """A row on the order board."""
+
+    retailer = serializers.UUIDField(source="retailer_id", read_only=True)
+    retailer_name = serializers.CharField(source="retailer.shop_name", read_only=True)
+    line_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "number",
+            "status",
+            "backorder_state",
+            "hold_reason",
+            "retailer",
+            "retailer_name",
+            "placed_via",
+            "placed_by_label",
+            "placed_at",
+            "grand_total",
+            "line_count",
         )
         read_only_fields = fields
 
@@ -116,3 +202,213 @@ class PlaceOrderSerializer(serializers.Serializer[Any]):
         max_length=500,
         help_text="Delivery instructions (landmark, timing).",
     )
+
+
+class StaffPlaceOrderSerializer(PlaceOrderSerializer):
+    retailer = serializers.UUIDField()
+
+
+# --- Distributor actions -------------------------------------------------------------------------
+
+
+class ReasonSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(max_length=500, allow_blank=True, required=False, default="")
+
+
+class RequiredReasonSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(max_length=500)
+
+
+class LineQuantitySerializer(serializers.Serializer[Any]):
+    line = serializers.UUIDField()
+    quantity = qty(min_value=0)
+
+
+class AdditionSerializer(serializers.Serializer[Any]):
+    product = serializers.UUIDField()
+    quantity = qty(min_value=0)
+
+
+class ModifyOrderSerializer(serializers.Serializer[Any]):
+    lines = LineQuantitySerializer(many=True, required=False, default=list)
+    additions = AdditionSerializer(many=True, required=False, default=list)
+    override_reason = serializers.CharField(
+        max_length=300,
+        allow_blank=True,
+        required=False,
+        default="",
+        help_text="credit.manage only: accept going over the credit limit (audited).",
+    )
+
+
+class PackSerializer(serializers.Serializer[Any]):
+    lines = LineQuantitySerializer(
+        many=True,
+        required=False,
+        default=list,
+        help_text="Packed quantity per shipment line; lines left out are packed in full.",
+    )
+
+
+class DispatchSerializer(serializers.Serializer[Any]):
+    vehicle_number = serializers.CharField(max_length=20, allow_blank=True, default="")
+    transporter_name = serializers.CharField(max_length=120, allow_blank=True, default="")
+    lr_number = serializers.CharField(max_length=40, allow_blank=True, default="")
+
+
+class CancelShipmentSerializer(serializers.Serializer[Any]):
+    to_backorder = serializers.BooleanField(
+        help_text="Put the quantities back on backorder (true) or cancel them (false)."
+    )
+    reason = serializers.CharField(max_length=300)
+
+
+class OrderCountsSerializer(serializers.Serializer[Any]):
+    new = serializers.IntegerField()
+    on_hold = serializers.IntegerField()
+    backorders = serializers.IntegerField()
+    in_progress = serializers.IntegerField()
+    proposals = serializers.IntegerField(help_text="Backorder allocations to confirm.")
+    to_pack = serializers.IntegerField()
+
+
+class FulfilmentRowSerializer(serializers.ModelSerializer[Fulfilment]):
+    order = serializers.UUIDField(source="order_id", read_only=True)
+    order_number = serializers.CharField(source="order.number", read_only=True)
+    retailer_name = serializers.CharField(source="order.retailer.shop_name", read_only=True)
+    line_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Fulfilment
+        fields = (
+            "id",
+            "number",
+            "kind",
+            "status",
+            "order",
+            "order_number",
+            "retailer_name",
+            "created_at",
+            "packed_at",
+            "dispatched_at",
+            "line_count",
+        )
+        read_only_fields = fields
+
+
+class FulfilmentDetailSerializer(FulfilmentSerializer):
+    order = serializers.UUIDField(source="order_id", read_only=True)
+    order_number = serializers.CharField(source="order.number", read_only=True)
+    retailer_name = serializers.CharField(source="order.retailer.shop_name", read_only=True)
+    shipping_address = serializers.JSONField(source="order.shipping_address", read_only=True)
+    retailer_note = serializers.CharField(source="order.retailer_note", read_only=True)
+
+    class Meta(FulfilmentSerializer.Meta):
+        fields = (
+            *FulfilmentSerializer.Meta.fields,
+            "order",
+            "order_number",
+            "retailer_name",
+            "shipping_address",
+            "retailer_note",
+        )
+        read_only_fields = fields
+
+
+# --- Backorders ----------------------------------------------------------------------------------
+
+
+class BackorderGroupSerializer(serializers.Serializer[Any]):
+    product_id = serializers.UUIDField()
+    product_code = serializers.CharField()
+    product_name = serializers.CharField()
+    unit_code = serializers.CharField()
+    waiting = qty(help_text="Total quantity shops wait for.")
+    lines = serializers.IntegerField()
+    oldest_placed_at = serializers.DateTimeField()
+    available = qty(help_text="Free stock that could be allocated now.")
+    proposed = qty(help_text="Held for proposals awaiting confirmation.")
+    skipped_credit = serializers.IntegerField(help_text="Waiting lines of shops over the limit.")
+
+
+class WaitingLineSerializer(serializers.ModelSerializer[OrderLine]):
+    order = serializers.UUIDField(source="order_id", read_only=True)
+    order_number = serializers.CharField(source="order.number", read_only=True)
+    placed_at = serializers.DateTimeField(source="order.placed_at", read_only=True)
+    retailer = serializers.UUIDField(source="order.retailer_id", read_only=True)
+    retailer_name = serializers.CharField(source="order.retailer.shop_name", read_only=True)
+    over_credit_limit = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderLine
+        fields = (
+            "id",
+            "order",
+            "order_number",
+            "placed_at",
+            "retailer",
+            "retailer_name",
+            "product_code",
+            "qty_ordered",
+            "qty_backordered",
+            "unit_price",
+            "over_credit_limit",
+        )
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_over_credit_limit(self, line: OrderLine) -> bool:
+        return getattr(line, "last_allocation_status", None) == "SKIPPED_CREDIT"
+
+
+class AllocationSerializer(serializers.ModelSerializer[BackorderAllocation]):
+    order = serializers.UUIDField(source="order_line.order_id", read_only=True)
+    order_number = serializers.CharField(source="order_line.order.number", read_only=True)
+    retailer_name = serializers.CharField(
+        source="order_line.order.retailer.shop_name", read_only=True
+    )
+    order_line = serializers.UUIDField(source="order_line_id", read_only=True)
+    product = serializers.UUIDField(source="product_id", read_only=True)
+    product_code = serializers.CharField(source="order_line.product_code", read_only=True)
+    product_name = serializers.CharField(source="order_line.product_name", read_only=True)
+    fulfilment = serializers.UUIDField(source="fulfilment_id", read_only=True, allow_null=True)
+
+    class Meta:
+        model = BackorderAllocation
+        fields = (
+            "id",
+            "status",
+            "trigger",
+            "quantity",
+            "order",
+            "order_number",
+            "retailer_name",
+            "order_line",
+            "product",
+            "product_code",
+            "product_name",
+            "fulfilment",
+            "note",
+            "created_at",
+            "decided_at",
+        )
+        read_only_fields = fields
+
+
+class AllocationAmountSerializer(serializers.Serializer[Any]):
+    order_line = serializers.UUIDField()
+    quantity = qty()
+
+
+class AllocateSerializer(serializers.Serializer[Any]):
+    product = serializers.UUIDField()
+    allocations = AllocationAmountSerializer(
+        many=True, required=False, default=list, help_text="Chosen lines; empty with auto."
+    )
+    auto = serializers.BooleanField(
+        default=False, help_text="Offer the free stock to waiting orders, oldest first."
+    )
+
+
+class ConfirmAllocationsSerializer(serializers.Serializer[Any]):
+    allocations = serializers.ListField(child=serializers.UUIDField(), min_length=1, max_length=200)

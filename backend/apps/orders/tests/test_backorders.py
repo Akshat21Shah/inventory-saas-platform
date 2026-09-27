@@ -388,3 +388,17 @@ def test_other_tenants_backorders_are_untouched(ctx, tenant_b):
     assert proposal is None
     with tenant_context(tenant_b.pk), pytest.raises(NotFound):
         backorders.cancel_backorder(_line(ctx, order, ctx["a"]).pk, by=b_owner)
+
+
+def test_cancelling_an_accepted_order_ends_its_proposals(ctx):
+    order = _waiting_order(ctx, make_shop(ctx["t"]), (ctx["a"], "3"))
+    _receive(ctx, (ctx["a"], "3"))
+    [proposal] = _allocations(ctx)
+    with tenant_context(ctx["t"].pk):
+        fulfilment.cancel_accepted(order.pk, reason="Shop closed", by=ctx["owner"])
+        proposal.refresh_from_db()
+        assert proposal.status == "REJECTED"
+        with pytest.raises(InvalidTransition):
+            backorders.confirm([proposal.pk], by=ctx["owner"])
+    assert _level(ctx, ctx["a"]).quantity_reserved == 0
+    check_order_invariants(ctx["t"])

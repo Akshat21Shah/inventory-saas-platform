@@ -3,6 +3,7 @@ export * from './catalog/catalog';
 export * from './imports/imports';
 export * from './inventory/inventory';
 export * from './meta/meta';
+export * from './orders/orders';
 export * from './platform/platform';
 export * from './pricing/pricing';
 export * from './public/public';

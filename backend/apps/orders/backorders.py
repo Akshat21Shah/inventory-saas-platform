@@ -305,6 +305,14 @@ def _lock_allocations(
     return orders, allocations
 
 
+def _require_open(orders: Iterable[Order]) -> None:
+    from apps.orders.transitions import InvalidTransition
+
+    closed = [order.number for order in orders if order.status not in ACCEPTED_STATUSES]
+    if closed:
+        raise InvalidTransition("Some of these orders are closed.", details={"orders": closed})
+
+
 def _require_proposed(allocations: list[BackorderAllocation]) -> None:
     from apps.orders.transitions import InvalidTransition
 
@@ -314,6 +322,14 @@ def _require_proposed(allocations: list[BackorderAllocation]) -> None:
             "Some of these were already decided.",
             details={"allocations": [str(a.pk) for a in decided]},
         )
+
+
+def void_proposals(order: Order, *, by: User | None, note: str) -> None:
+    """The order is closing: its open proposals end (their stock is released with the order's
+    lines by the caller)."""
+    BackorderAllocation.objects.filter(order_line__order=order, status=A.PROPOSED).update(
+        status=A.REJECTED, decided_by=by, decided_at=timezone.now(), note=note[:300]
+    )
 
 
 def _lock_lines(line_ids: Iterable[UUID]) -> dict[UUID, OrderLine]:
@@ -331,6 +347,7 @@ def confirm(allocation_ids: list[UUID], *, by: User) -> list[Fulfilment]:
         orders, allocations = _lock_allocations(allocation_ids)
         _require_proposed(allocations)
         lines = _lock_lines(a.order_line_id for a in allocations)
+        _require_open(orders.values())
         grouped: dict[UUID, Pairs] = defaultdict(list)
         prices: dict[UUID, Decimal] = {}
         for allocation in allocations:

@@ -601,9 +601,11 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `backorders/{product_id}` | GET | `orders.view` | waiting order lines for a product |
 | `backorders/allocate` | POST 🔑 | `orders.allocate_backorder` | manual allocation `{product, allocations:[{order_line, qty}]}` or `{product, auto:true}` |
 | `backorders/allocations` | GET | `orders.view` | proposals (`?status=PROPOSED`) |
-| `backorders/allocations/{id}/confirm` | POST 🔑 | `orders.allocate_backorder` | confirm proposal → fulfilment + invoice |
+| `backorders/allocations/confirm` | POST 🔑 | `orders.allocate_backorder` | confirm proposals `{allocations:[ids]}` (bulk) → one fulfilment per order + invoice |
 | `backorders/allocations/{id}/reject` | POST | `orders.allocate_backorder` | release; next in line gets proposed |
 | `order-lines/{id}/cancel-backorder` | POST | `orders.manage` | cancel the remaining backordered qty |
+| `fulfilments/{id}/cancel` | POST | `orders.manage` | before dispatch: `{to_backorder, reason}` (§4.2) |
+| `retailers/{id}/cart` (+ `/lines/{product_id}`, `/reduce-to-available`) | GET, DELETE / PUT, DELETE / POST | `orders.create_on_behalf` + ⚙ `orders.staff_can_place_on_behalf` | the staff member's cart for that shop (ADR-044), priced for the shop; placed with `POST orders` |
 
 ### 3.9 Retailer app — `/api/v1/shop/` (permission: Retailer; all queries scoped to `request.retailer`)
 | Endpoint | Method | Purpose |

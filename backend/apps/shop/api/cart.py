@@ -1,27 +1,24 @@
 """The shop's cart (PLAN §3.9): every response is the whole cart, priced by the server."""
 
 from decimal import Decimal
-from typing import Any
 from uuid import UUID
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.accounts.models import User
 from apps.orders import cart as carts
-from apps.orders.api.quote_serializers import DeliveryAddressSerializer, QuoteSerializer
-from apps.pricing.api.serializers import qty
+from apps.orders.api.quote_serializers import (
+    DeliveryAddressSerializer,
+    QuantitySerializer,
+    QuoteSerializer,
+)
 from apps.retailers.models import RetailerAddress
 from apps.shop.api.views import ShopView, _retailer
 from common.errors import InvalidFields
 
 ADDRESS = OpenApiParameter("address", UUID, description="A saved address (default: shipping)")
-
-
-class QuantitySerializer(serializers.Serializer[Any]):
-    quantity = qty(min_value=0)
 
 
 def _user(request: Request) -> User:

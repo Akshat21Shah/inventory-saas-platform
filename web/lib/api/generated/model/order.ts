@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { BackorderStateEnum } from './backorderStateEnum';
+import type { Fulfilment } from './fulfilment';
 import type { History } from './history';
 import type { HoldReasonEnum } from './holdReasonEnum';
 import type { OrderLine } from './orderLine';
@@ -45,5 +46,6 @@ export interface Order {
   readonly rejection_reason: string;
   readonly cancellation_reason: string;
   readonly lines: readonly OrderLine[];
+  readonly fulfilments: readonly Fulfilment[];
   readonly history: readonly History[];
 }

@@ -5,11 +5,12 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { Allocation } from './allocation';
 
-/**
- * Set a cart line's quantity (0 removes it).
- */
-export interface QuantityRequest {
-  /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
-  quantity: string;
+export interface PaginatedAllocationList {
+  /** @nullable */
+  next?: string | null;
+  /** @nullable */
+  previous?: string | null;
+  results: Allocation[];
 }

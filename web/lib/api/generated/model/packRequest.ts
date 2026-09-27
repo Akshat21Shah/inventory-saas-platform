@@ -5,11 +5,9 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { LineQuantityRequest } from './lineQuantityRequest';
 
-/**
- * Set a cart line's quantity (0 removes it).
- */
-export interface QuantityRequest {
-  /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
-  quantity: string;
+export interface PackRequest {
+  /** Packed quantity per shipment line; lines left out are packed in full. */
+  lines?: LineQuantityRequest[];
 }

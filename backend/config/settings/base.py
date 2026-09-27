@@ -207,6 +207,13 @@ SPECTACULAR_SETTINGS = {
         "AddressKindEnum": "apps.retailers.models.RetailerAddress.Kind",
         "RetailerStatusEnum": "apps.retailers.models.Retailer.Status",
         "PreferredLanguageEnum": "apps.accounts.models.LANGUAGE_CHOICES",
+        "OrderStatusEnum": "apps.orders.models.OrderStatus",
+        "FulfilmentStatusEnum": "apps.orders.models.Fulfilment.Status",
+        "FulfilmentKindEnum": "apps.orders.models.Fulfilment.Kind",
+        "AllocationStatusEnum": "apps.orders.models.BackorderAllocation.Status",
+        "AllocationTriggerEnum": "apps.orders.models.BackorderAllocation.Trigger",
+        "PriceSourceEnum": ["SPECIAL", "PRICE_LIST", "BASE"],
+        "ShipmentPriceSourceEnum": "apps.orders.models.FulfilmentLine.PriceSource",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

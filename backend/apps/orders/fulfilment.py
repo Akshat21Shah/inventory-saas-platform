@@ -314,6 +314,7 @@ def cancel_accepted(order_id: UUID, *, reason: str, by: User) -> Order:
             _return_from_shipment(order, shipment, amounts, to_backorder=False, by=by)
             shipment.status, shipment.cancelled_reason = F.CANCELLED, reason.strip()[:300]
             shipment.save(update_fields=["status", "cancelled_reason", "updated_at"])
+        backorders.void_proposals(order, by=by, note="Order cancelled")
         waiting = {
             line: _open(line)
             for line in OrderLine.objects.select_for_update().filter(order=order)

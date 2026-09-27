@@ -6,10 +6,11 @@
  * OpenAPI spec version: 1.0.0
  */
 
-/**
- * Set a cart line's quantity (0 removes it).
- */
-export interface QuantityRequest {
-  /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
-  quantity: string;
+export interface DispatchRequest {
+  /** @maxLength 20 */
+  vehicle_number?: string;
+  /** @maxLength 120 */
+  transporter_name?: string;
+  /** @maxLength 40 */
+  lr_number?: string;
 }

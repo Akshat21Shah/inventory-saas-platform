@@ -14,6 +14,12 @@ from apps.orders.quote import Quote, QuoteLine
 from apps.pricing.api.serializers import money, qty
 
 
+class QuantitySerializer(serializers.Serializer[Any]):
+    """Set a cart line's quantity (0 removes it)."""
+
+    quantity = qty(min_value=0)
+
+
 class ProblemSerializer(serializers.Serializer[Any]):
     code = serializers.CharField()
     details = serializers.DictField()

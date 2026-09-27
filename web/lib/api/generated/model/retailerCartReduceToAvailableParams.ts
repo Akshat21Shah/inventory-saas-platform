@@ -6,10 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export type RetailerCartReduceToAvailableParams = {
 /**
- * Set a cart line's quantity (0 removes it).
+ * A saved address (default: shipping)
  */
-export interface QuantityRequest {
-  /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
-  quantity: string;
-}
+address?: string;
+};

@@ -552,6 +552,182 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
           description: ''
+  /api/v1/backorders/:
+    get:
+      operationId: backorders_list
+      parameters:
+      - in: query
+        name: search
+        schema:
+          type: string
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BackorderGroup'
+          description: ''
+  /api/v1/backorders/{product_id}/:
+    get:
+      operationId: backorders_retrieve
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WaitingLine'
+          description: ''
+  /api/v1/backorders/allocate/:
+    post:
+      operationId: backorders_allocate
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllocateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Allocation'
+          description: ''
+  /api/v1/backorders/allocations/:
+    get:
+      operationId: backorder_allocations_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CONFIRMED
+          - PROPOSED
+          - REJECTED
+          - SKIPPED_CREDIT
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAllocationList'
+          description: ''
+  /api/v1/backorders/allocations/{allocation_id}/reject/:
+    post:
+      operationId: backorder_allocations_reject
+      parameters:
+      - in: path
+        name: allocation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Allocation'
+          description: ''
+  /api/v1/backorders/allocations/confirm/:
+    post:
+      operationId: backorder_allocations_confirm
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmAllocationsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Allocation'
+          description: ''
   /api/v1/brands/:
     get:
       operationId: catalog_brands_list
@@ -911,6 +1087,176 @@ paths:
                 type: string
                 format: binary
           description: Spreadsheet download
+  /api/v1/fulfilments/:
+    get:
+      operationId: fulfilments_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ALLOCATED
+          - CANCELLED
+          - DELIVERED
+          - DISPATCHED
+          - PACKED
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFulfilmentRowList'
+          description: ''
+  /api/v1/fulfilments/{fulfilment_id}/:
+    get:
+      operationId: fulfilments_retrieve
+      parameters:
+      - in: path
+        name: fulfilment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfilmentDetail'
+          description: ''
+  /api/v1/fulfilments/{fulfilment_id}/cancel/:
+    post:
+      operationId: fulfilments_cancel
+      parameters:
+      - in: path
+        name: fulfilment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelShipmentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfilmentDetail'
+          description: ''
+  /api/v1/fulfilments/{fulfilment_id}/deliver/:
+    post:
+      operationId: fulfilments_deliver
+      parameters:
+      - in: path
+        name: fulfilment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfilmentDetail'
+          description: ''
+  /api/v1/fulfilments/{fulfilment_id}/dispatch/:
+    post:
+      operationId: fulfilments_dispatch
+      parameters:
+      - in: path
+        name: fulfilment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfilmentDetail'
+          description: ''
+  /api/v1/fulfilments/{fulfilment_id}/pack/:
+    post:
+      operationId: fulfilments_pack
+      parameters:
+      - in: path
+        name: fulfilment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfilmentDetail'
+          description: ''
   /api/v1/imports/:
     get:
       operationId: imports_list
@@ -1055,6 +1401,326 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Meta'
+          description: ''
+  /api/v1/order-lines/{line_id}/cancel-backorder/:
+    post:
+      operationId: order_lines_cancel_backorder
+      parameters:
+      - in: path
+        name: line_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/:
+    get:
+      operationId: orders_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: placed_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: placed_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: salesperson
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Order number, shop name or shop code
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACCEPTED
+          - CANCELLED
+          - COMPLETED
+          - DELIVERED
+          - DISPATCHED
+          - ON_HOLD
+          - PACKED
+          - PLACED
+          - REJECTED
+      - in: query
+        name: tab
+        schema:
+          type: string
+          enum:
+          - backorders
+          - completed
+          - in_progress
+          - new
+          - on_hold
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderRowList'
+          description: ''
+    post:
+      operationId: orders_place_on_behalf
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffPlaceOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/{order_id}/:
+    get:
+      operationId: orders_retrieve
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/{order_id}/accept/:
+    post:
+      operationId: orders_accept
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/{order_id}/cancel/:
+    post:
+      operationId: orders_cancel
+      description: |-
+        Before acceptance the order is cancelled outright; after it, every open shipment and the
+        backorder go too (nothing may be dispatched yet).
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequiredReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/{order_id}/hold/approve/:
+    post:
+      operationId: orders_hold_approve
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/{order_id}/hold/reject/:
+    post:
+      operationId: orders_hold_reject
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequiredReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/{order_id}/lines/:
+    patch:
+      operationId: orders_modify
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedModifyOrderRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/{order_id}/reject/:
+    post:
+      operationId: orders_reject
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequiredReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/orders/counts/:
+    get:
+      operationId: orders_counts
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCounts'
           description: ''
   /api/v1/permissions/:
     get:
@@ -3574,6 +4240,143 @@ paths:
               schema:
                 $ref: '#/components/schemas/RetailerDetail'
           description: ''
+  /api/v1/retailers/{retailer_id}/cart/:
+    get:
+      operationId: retailer_cart_retrieve
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+    delete:
+      operationId: retailer_cart_clear
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/cart/lines/{product_id}/:
+    put:
+      operationId: retailer_cart_line_set
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuantityRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+    delete:
+      operationId: retailer_cart_line_remove
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/retailers/{retailer_id}/cart/reduce-to-available/:
+    post:
+      operationId: retailer_cart_reduce_to_available
+      parameters:
+      - in: query
+        name: address
+        schema:
+          type: string
+          format: uuid
+        description: 'A saved address (default: shipping)'
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
   /api/v1/retailers/{retailer_id}/copy-pricing/:
     post:
       operationId: retailers_copy_pricing
@@ -5409,6 +6212,19 @@ paths:
           description: ''
 components:
   schemas:
+    AdditionRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - product
+      - quantity
     Address:
       type: object
       properties:
@@ -5792,6 +6608,137 @@ components:
       - resolved_at
       - status
       - value_at_open
+    AllocateRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+        allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllocationAmountRequest'
+          description: Chosen lines; empty with auto.
+        auto:
+          type: boolean
+          default: false
+          description: Offer the free stock to waiting orders, oldest first.
+      required:
+      - product
+    Allocation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AllocationStatusEnum'
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/AllocationTriggerEnum'
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        order_line:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        fulfilment:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        note:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - decided_at
+      - fulfilment
+      - id
+      - note
+      - order
+      - order_line
+      - order_number
+      - product
+      - product_code
+      - product_name
+      - quantity
+      - retailer_name
+      - status
+      - trigger
+    AllocationAmountRequest:
+      type: object
+      properties:
+        order_line:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - order_line
+      - quantity
+    AllocationStatusEnum:
+      enum:
+      - PROPOSED
+      - CONFIRMED
+      - REJECTED
+      - SKIPPED_CREDIT
+      type: string
+      description: |-
+        * `PROPOSED` - Proposed
+        * `CONFIRMED` - Confirmed
+        * `REJECTED` - Rejected
+        * `SKIPPED_CREDIT` - Skipped: over credit limit
+    AllocationTriggerEnum:
+      enum:
+      - INWARD
+      - ADJUSTMENT_IN
+      - RELEASE
+      - MANUAL
+      type: string
+      description: |-
+        * `INWARD` - Goods received
+        * `ADJUSTMENT_IN` - Stock added
+        * `RELEASE` - Stock released
+        * `MANUAL` - Manual
     AppliedDiscount:
       type: object
       properties:
@@ -5941,6 +6888,52 @@ components:
       required:
       - id
       - name
+    BackorderGroup:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        product_code:
+          type: string
+        product_name:
+          type: string
+        unit_code:
+          type: string
+        waiting:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Total quantity shops wait for.
+        lines:
+          type: integer
+        oldest_placed_at:
+          type: string
+          format: date-time
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Free stock that could be allocated now.
+        proposed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Held for proposals awaiting confirmation.
+        skipped_credit:
+          type: integer
+          description: Waiting lines of shops over the limit.
+      required:
+      - available
+      - lines
+      - oldest_placed_at
+      - product_code
+      - product_id
+      - product_name
+      - proposed
+      - skipped_credit
+      - unit_code
+      - waiting
     BackorderStateEnum:
       enum:
       - NONE
@@ -6329,6 +7322,20 @@ components:
           maxLength: 200
       required:
       - reason
+    CancelShipmentRequest:
+      type: object
+      properties:
+        to_backorder:
+          type: boolean
+          description: Put the quantities back on backorder (true) or cancel them
+            (false).
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - reason
+      - to_backorder
     Category:
       type: object
       properties:
@@ -6497,6 +7504,18 @@ components:
             $ref: '#/components/schemas/CostInputRequest'
       required:
       - costs
+    ConfirmAllocationsRequest:
+      type: object
+      properties:
+        allocations:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 200
+          minItems: 1
+      required:
+      - allocations
     CopyApplyRequest:
       type: object
       properties:
@@ -6852,6 +7871,21 @@ components:
       description: |-
         * `PERCENT` - Percentage
         * `FLAT_PER_UNIT` - Rupees off per unit
+    DispatchRequest:
+      type: object
+      properties:
+        vehicle_number:
+          type: string
+          default: ''
+          maxLength: 20
+        transporter_name:
+          type: string
+          default: ''
+          maxLength: 120
+        lr_number:
+          type: string
+          default: ''
+          maxLength: 40
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -6960,6 +7994,312 @@ components:
       - code
       - id
       - name
+    Fulfilment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentKindEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        packed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        dispatched_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        vehicle_number:
+          type: string
+          readOnly: true
+        transporter_name:
+          type: string
+          readOnly: true
+        lr_number:
+          type: string
+          readOnly: true
+        cancelled_reason:
+          type: string
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/FulfilmentLine'
+          readOnly: true
+      required:
+      - cancelled_reason
+      - created_at
+      - delivered_at
+      - dispatched_at
+      - id
+      - kind
+      - lines
+      - lr_number
+      - number
+      - packed_at
+      - status
+      - transporter_name
+      - vehicle_number
+    FulfilmentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentKindEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        packed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        dispatched_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        vehicle_number:
+          type: string
+          readOnly: true
+        transporter_name:
+          type: string
+          readOnly: true
+        lr_number:
+          type: string
+          readOnly: true
+        cancelled_reason:
+          type: string
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/FulfilmentLine'
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        shipping_address:
+          readOnly: true
+        retailer_note:
+          type: string
+          readOnly: true
+      required:
+      - cancelled_reason
+      - created_at
+      - delivered_at
+      - dispatched_at
+      - id
+      - kind
+      - lines
+      - lr_number
+      - number
+      - order
+      - order_number
+      - packed_at
+      - retailer_name
+      - retailer_note
+      - shipping_address
+      - status
+      - transporter_name
+      - vehicle_number
+    FulfilmentKindEnum:
+      enum:
+      - INITIAL
+      - BACKORDER
+      type: string
+      description: |-
+        * `INITIAL` - First shipment
+        * `BACKORDER` - Backorder shipment
+    FulfilmentLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        order_line:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_packed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        ordered_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        price_source:
+          allOf:
+          - $ref: '#/components/schemas/ShipmentPriceSourceEnum'
+          readOnly: true
+        price_increased:
+          type: boolean
+          readOnly: true
+        cancelled_by_retailer_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - cancelled_by_retailer_at
+      - id
+      - order_line
+      - ordered_price
+      - price_increased
+      - price_source
+      - product
+      - product_code
+      - product_name
+      - qty_packed
+      - quantity
+      - unit_code
+      - unit_price
+    FulfilmentRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentKindEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentStatusEnum'
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        packed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        dispatched_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        line_count:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - dispatched_at
+      - id
+      - kind
+      - line_count
+      - number
+      - order
+      - order_number
+      - packed_at
+      - retailer_name
+      - status
+    FulfilmentStatusEnum:
+      enum:
+      - ALLOCATED
+      - PACKED
+      - DISPATCHED
+      - DELIVERED
+      - CANCELLED
+      type: string
+      description: |-
+        * `ALLOCATED` - To pack
+        * `PACKED` - Packed
+        * `DISPATCHED` - Dispatched
+        * `DELIVERED` - Delivered
+        * `CANCELLED` - Cancelled
     GridItemRequest:
       type: object
       properties:
@@ -7677,6 +9017,19 @@ components:
       required:
       - changed
       - warnings
+    LineQuantityRequest:
+      type: object
+      properties:
+        line:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - line
+      - quantity
     LoginResponse:
       type: object
       description: One shape for every sign-in step; ``status`` says what the client
@@ -8450,6 +9803,11 @@ components:
           items:
             $ref: '#/components/schemas/OrderLine'
           readOnly: true
+        fulfilments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fulfilment'
+          readOnly: true
         history:
           type: array
           items:
@@ -8461,6 +9819,7 @@ components:
       - cancellation_reason
       - closed_at
       - discount_total
+      - fulfilments
       - grand_total
       - gross_total
       - history
@@ -8481,6 +9840,29 @@ components:
       - status
       - tax_total
       - taxable_total
+    OrderCounts:
+      type: object
+      properties:
+        new:
+          type: integer
+        on_hold:
+          type: integer
+        backorders:
+          type: integer
+        in_progress:
+          type: integer
+        proposals:
+          type: integer
+          description: Backorder allocations to confirm.
+        to_pack:
+          type: integer
+      required:
+      - backorders
+      - in_progress
+      - new
+      - on_hold
+      - proposals
+      - to_pack
     OrderLine:
       type: object
       properties:
@@ -8590,6 +9972,68 @@ components:
       - ready_qty
       - unit_code
       - unit_price
+    OrderRow:
+      type: object
+      description: A row on the order board.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        backorder_state:
+          allOf:
+          - $ref: '#/components/schemas/BackorderStateEnum'
+          readOnly: true
+        hold_reason:
+          allOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          readOnly: true
+        retailer:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        placed_via:
+          allOf:
+          - $ref: '#/components/schemas/PlacedViaEnum'
+          readOnly: true
+        placed_by_label:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+      required:
+      - backorder_state
+      - grand_total
+      - hold_reason
+      - id
+      - line_count
+      - number
+      - placed_at
+      - placed_by_label
+      - placed_via
+      - retailer
+      - retailer_name
+      - status
     OrderStatusEnum:
       enum:
       - PLACED
@@ -8622,6 +10066,15 @@ components:
         * `OK` - OK
         * `NEEDS_APPROVAL` - NEEDS_APPROVAL
         * `BLOCKED` - BLOCKED
+    PackRequest:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineQuantityRequest'
+          description: Packed quantity per shipment line; lines left out are packed
+            in full.
     PaginatedAdjustmentList:
       type: object
       required:
@@ -8660,6 +10113,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Alert'
+    PaginatedAllocationList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Allocation'
     PaginatedAuditLogList:
       type: object
       required:
@@ -8736,6 +10208,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DiscountRule'
+    PaginatedFulfilmentRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FulfilmentRow'
     PaginatedGridRowList:
       type: object
       required:
@@ -8888,6 +10379,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Movement'
+    PaginatedOrderRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderRow'
     PaginatedPriceListItemList:
       type: object
       required:
@@ -9433,6 +10943,22 @@ components:
           maxLength: 40
         is_active:
           type: boolean
+    PatchedModifyOrderRequest:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineQuantityRequest'
+        additions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdditionRequest'
+        override_reason:
+          type: string
+          default: ''
+          description: 'credit.manage only: accept going over the credit limit (audited).'
+          maxLength: 300
     PatchedPlanUpdateRequest:
       type: object
       properties:
@@ -10661,6 +12187,7 @@ components:
       - slug
     QuantityRequest:
       type: object
+      description: Set a cart line's quantity (0 removes it).
       properties:
         quantity:
           type: string
@@ -11276,6 +12803,15 @@ components:
       - shop_name
       - shop_rule_count
       - special_price_count
+    RequiredReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - reason
     RetailerAccountChoice:
       type: object
       description: One of the verified phone owner's distributors (ADR-015).
@@ -11966,6 +13502,14 @@ components:
       - status
       - type
       - value
+    ShipmentPriceSourceEnum:
+      enum:
+      - ORDER_SNAPSHOT
+      - REPRICED
+      type: string
+      description: |-
+        * `ORDER_SNAPSHOT` - Order price
+        * `REPRICED` - Today's price
     ShopAvailability:
       type: object
       description: Plain labels only; the quantity only when the distributor shows
@@ -12356,6 +13900,29 @@ components:
       required:
       - email
       - password
+    StaffPlaceOrderRequest:
+      type: object
+      properties:
+        expected_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: 'The cart''s expected_total: a price change is caught.'
+        address:
+          type: string
+          format: uuid
+          nullable: true
+        note:
+          type: string
+          default: ''
+          description: Delivery instructions (landmark, timing).
+          maxLength: 500
+        retailer:
+          type: string
+          format: uuid
+      required:
+      - expected_total
+      - retailer
     StaffUser:
       type: object
       properties:
@@ -13174,6 +14741,64 @@ components:
       - thumbnail_url
       - unit
       - value
+    WaitingLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        retailer:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        qty_ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        over_credit_limit:
+          type: boolean
+          readOnly: true
+      required:
+      - id
+      - order
+      - order_number
+      - over_credit_limit
+      - placed_at
+      - product_code
+      - qty_backordered
+      - qty_ordered
+      - retailer
+      - retailer_name
+      - unit_price
     Warehouse:
       type: object
       properties:
