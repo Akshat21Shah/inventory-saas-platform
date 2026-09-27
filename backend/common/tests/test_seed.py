@@ -147,12 +147,36 @@ def test_seed_adds_demo_stock_once(settings):
     sharma = Tenant.objects.get(slug="sharma")
     with tenant_context(sharma.id):
         assert StockAdjustment.objects.count() == 3  # opening stock, shelf count, damage
-        assert StockInward.objects.filter(status="POSTED").count() == 2
+        # Two demo receipts, and the demo orders' receipt that serves a waiting backorder.
+        assert StockInward.objects.filter(status="POSTED").count() == 3
         assert StockInward.objects.filter(status="DRAFT").count() == 1
-        assert StockInward.objects.filter(cost_pending_lines__gt=0).count() == 1
+        assert StockInward.objects.filter(cost_pending_lines__gt=0).count() == 2
         assert StockLevel.objects.filter(quantity_on_hand=0).exists()
         alert_types = set(
             StockAlert.objects.filter(status="OPEN").values_list("alert_type", flat=True)
         )
-        assert alert_types == {"LOW_STOCK", "OUT_OF_STOCK"}
+        assert alert_types == {"LOW_STOCK", "OUT_OF_STOCK", "BACKORDER_DEMAND"}
     check_invariants(sharma)
+
+
+def test_seed_fills_every_order_tab_once(settings):
+    from apps.orders.models import BackorderAllocation, Order
+    from apps.orders.selectors import TABS
+    from apps.orders.tests.helpers import check_order_invariants
+
+    settings.DEBUG = True
+    call_command("seed", "--no-photos")
+    call_command("seed", "--no-photos")
+    for slug in ("sharma", "patel"):
+        tenant = Tenant.objects.get(slug=slug)
+        with tenant_context(tenant.id):
+            assert Order.objects.count() == 11, slug
+            for tab, condition in TABS.items():
+                assert Order.objects.filter(condition).exists(), (slug, tab)
+            statuses = set(Order.objects.values_list("status", flat=True))
+            assert statuses >= {"PLACED", "ON_HOLD", "ACCEPTED", "PACKED", "DISPATCHED"}
+            assert {"COMPLETED", "REJECTED", "CANCELLED"} <= statuses
+            assert Order.objects.filter(placed_via="STAFF", placed_by_label__endswith="(Sales)")
+            assert BackorderAllocation.objects.filter(status="PROPOSED").count() == 1
+            assert Order.objects.exclude(retailer_note="").exists()
+        check_order_invariants(tenant)

@@ -46,7 +46,7 @@ migrate: ## Apply migrations (as the schema owner role)
 makemigrations: ## Create migrations (host venv, owner role)
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py makemigrations
 
-seed: ## Load demo data (super admin, 2 tenants: staff, 20 shops, 200 products, prices each)
+seed: ## Load demo data (super admin, 2 tenants: staff, 20 shops, 200 products, prices, stock, orders each)
 	$(COMPOSE) exec backend python manage.py seed
 
 shell: ## Django shell inside the backend container

@@ -213,7 +213,9 @@
      - Every order and backorder event goes out through the outbox (`orders.push_live`, retried with backoff): staff get the event, order, status and shop name; shops get their own orders' events, but not the internal backorder proposals or credit skips. Messages only say what changed; the apps refetch through the API.
      - The outbox now runs local handler tasks with `apply_async` (inline in tests) instead of `send_task`.
      - Checked end to end on the running stack through port 3000 (connect, push over Redis, a reused ticket refused with 403). Tests: tickets (once only, 30 s, platform users refused), who hears what (staff, the shop, another shop, another tenant, sales staff limited to their shops), with mutation checks.
-  11. Seed demo orders, API client — **backend checkpoint**
+  11. Seed demo orders, API client — **done** (`common/demo_orders.py`); **backend checkpoint**:
+     - `make seed` gives each distributor 11 orders across every board tab, through the normal services: new orders (one placed by the salesperson for a shop, one with a delivery note), a credit hold (one demo shop's limit set to ₹500, audited), a rejected and a cancelled order, orders packed, dispatched and completed, accepted orders with items waiting, and one backorder proposal to confirm. Only when a tenant has no orders yet.
+     - Seeded on the running stack: 46 live pushes ran on the worker without errors. The API client is regenerated.
   12–15. Frontend: shop browsing and quick ordering; cart, checkout, orders; distributor orders board and shipments; backorders and ordering on behalf
   16. E2E acceptance (incl. dropped network), responsive check, phone test over LAN — **final review**
 - Phase 3 — Inventory: **merged to `main` (PR #4, 2026-09-26)**.
