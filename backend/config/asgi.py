@@ -12,12 +12,18 @@ from channels.security.websocket import AllowedHostsOriginValidator  # noqa: E40
 from django.urls import path  # noqa: E402
 
 from common.consumers import PingConsumer  # noqa: E402
+from common.live import LiveConsumer  # noqa: E402
 
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
         "websocket": AllowedHostsOriginValidator(
-            URLRouter([path("ws/v1/ping/", PingConsumer.as_asgi())])
+            URLRouter(
+                [
+                    path("ws/v1/ping/", PingConsumer.as_asgi()),
+                    path("ws/v1/", LiveConsumer.as_asgi()),
+                ]
+            )
         ),
     }
 )

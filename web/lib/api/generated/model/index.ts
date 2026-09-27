@@ -451,3 +451,4 @@ export * from './warehouse';
 export * from './warehousesListParams';
 export * from './warning';
 export * from './warningDetails';
+export * from './wsTicket';

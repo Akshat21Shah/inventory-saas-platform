@@ -207,7 +207,12 @@
      - Cancel what a line still waits for; decline a higher backorder price until the shipment is packed.
      - `checkout-attempts/{key}`: after a dropped connection the app asks whether its Idempotency-Key placed an order (`placed` with the order, or `not_found`: retry with the same key; an attempt still running then returns its result). Refused attempts leave nothing behind.
      - Tests: every action, and another shop (same tenant or another) sees and changes nothing; staff get 403 on shop routes.
-  10. Live updates (WebSocket ticket, consumer, outbox → push)
+  10. Live updates (WebSocket ticket, consumer, outbox → push) — **done** (`common/live.py`, `apps/orders/tasks.py`):
+     - `POST auth/ws-ticket`: a one-time ticket valid for 30 s (the browser can't send the access token on a WebSocket). It carries what the socket may receive, so the socket never touches the database.
+     - `/ws/v1/?ticket=…` (same origin: Next proxies `/ws/`, so phones on `make lan` reach it through port 3000): staff who may view orders join their tenant's group; a shop login joins its shop's group. Sales staff limited to their shops get only those shops' events.
+     - Every order and backorder event goes out through the outbox (`orders.push_live`, retried with backoff): staff get the event, order, status and shop name; shops get their own orders' events, but not the internal backorder proposals or credit skips. Messages only say what changed; the apps refetch through the API.
+     - The outbox now runs local handler tasks with `apply_async` (inline in tests) instead of `send_task`.
+     - Checked end to end on the running stack through port 3000 (connect, push over Redis, a reused ticket refused with 403). Tests: tickets (once only, 30 s, platform users refused), who hears what (staff, the shop, another shop, another tenant, sales staff limited to their shops), with mutation checks.
   11. Seed demo orders, API client — **backend checkpoint**
   12–15. Frontend: shop browsing and quick ordering; cart, checkout, orders; distributor orders board and shipments; backorders and ordering on behalf
   16. E2E acceptance (incl. dropped network), responsive check, phone test over LAN — **final review**
