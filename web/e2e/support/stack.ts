@@ -78,6 +78,59 @@ function base32(secret: string): Buffer {
   return Buffer.from(bytes);
 }
 
+export interface TotpState {
+  server_time: number; // seconds since the epoch, by the backend's clock
+  server_step: number;
+  last_step: number | null; // the last step the account used (replay protection)
+}
+
+/** The backend's clock and the account's last accepted 2FA step (dev-only command). */
+export function totpState(email: string): TotpState {
+  return JSON.parse(manage(["e2e_totp_state", "--email", email])) as TotpState;
+}
+
+export interface SentCode {
+  code: string;
+  step: number;
+  clientMinusServer: number; // seconds this machine's clock is ahead of the backend's
+}
+
+/**
+ * A 2FA code the backend will accept now, whatever the state of the clocks (issue: a Mac that
+ * slept leaves Docker's VM clock minutes behind until its next time sync):
+ * - computed for the backend's clock, not this machine's;
+ * - never for a step the account already used (replay protection): wait for the next step;
+ * - never in the last 3 seconds of a step, so it can't expire in flight.
+ */
+export async function freshTotp(secret: string, email: string): Promise<SentCode> {
+  for (;;) {
+    const state = totpState(email);
+    const intoStep = state.server_time % 30;
+    const used = state.last_step !== null && state.server_step <= state.last_step;
+    if (!used && intoStep < 27) {
+      return {
+        code: totp(secret, state.server_time * 1000),
+        step: state.server_step,
+        clientMinusServer: Date.now() / 1000 - state.server_time,
+      };
+    }
+    await new Promise((resolve) => setTimeout(resolve, (30 - intoStep + 0.5) * 1000));
+  }
+}
+
+/** Why the backend refused a code we sent: replay, clock skew or an invalid code. */
+export function explainRefusal(sent: SentCode, email: string): string {
+  const state = totpState(email);
+  const skew = Date.now() / 1000 - state.server_time;
+  const reason =
+    state.last_step !== null && sent.step <= state.last_step
+      ? `replay: step ${sent.step} was already used (last used ${state.last_step})`
+      : Math.abs(state.server_step - sent.step) > 1
+        ? `clock skew: sent for step ${sent.step}, the server is at step ${state.server_step}`
+        : "invalid code for the server's step (wrong key?)";
+  return `${reason}; this machine's clock is ${skew.toFixed(1)}s ahead of the backend's`;
+}
+
 /** RFC 6238 code for the current 30-second step. */
 export function totp(secret: string, now = Date.now()): string {
   const counter = Buffer.alloc(8);

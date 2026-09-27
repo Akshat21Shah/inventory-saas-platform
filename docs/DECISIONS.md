@@ -37,6 +37,17 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 | 030 | Login protection, staff 2FA, owners, subdomain & tenant lifecycle | Accepted |
 | 031 | Field-level encryption | Accepted |
 | 032 | Neutral "unavailable" tenant state, reset limit setting, trusted proxies | Accepted (amends 018, 025, 030) |
+| 033 | Phase 1 review follow-ups: platform-alias reads, branding cache, dev 2FA key, GSTIN rules | Accepted |
+| 034 | Catalog: search, product visibility and product images | Accepted |
+| 035 | Data import framework | Accepted |
+| 036 | Pricing resolution and retailer settings | Accepted |
+| 037 | Managing pricing per shop at scale | Accepted |
+| 038 | Combining discounts | Accepted (amends 036) |
+| 039 | Own brand and cost price | Accepted (amended by 042) |
+| 040 | Responsive design: cards, filter sheet, sticky actions, three checked widths | Accepted |
+| 041 | Inventory: stock movements, cost method, costs after posting, what shops see | Accepted (amended by 042) |
+| 042 | Cost permissions separate from pricing; one opening-stock document per file | Accepted (amends 039, 041; valuation access amended by 043) |
+| 043 | Stock value for Accounts; E2E 2FA codes from the backend's clock | Accepted (amends 042) |
 
 ---
 
@@ -480,7 +491,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 - **Consequences:** `resolve_price`'s single `discount` becomes a list of applied discounts plus a total. The tests cover all three modes, with slabs, flat discounts and special prices.
 
 ## ADR-039 — Own brand and cost price
-- **Status:** Accepted — 2026-09-26 (product owner).
+- **Status:** Accepted — 2026-09-26 (product owner). Cost visibility amended by ADR-042 (`costs.view` / `costs.manage` instead of the pricing permissions).
 - **Decision:**
   1. **Own brand.** A brand can be marked "own brand" (white label). The product list filters by it. Tenant setting `retailers.show_own_brand_badge` (default **off**) shows an "own brand" badge in the shop.
   2. **Cost price.** Products get an optional cost price:
@@ -502,4 +513,49 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   6. `e2e/responsive.spec.ts` visits every screen at 360, 768 and 1440 px in CI. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves full-page screenshots as the `responsive-screenshots` artifact.
   7. `CLAUDE.md` §6a makes these rules part of the definition of done.
 - **Consequences:** New screens reuse `DataTable` (`cardLayout`, `selection`), `FilterBar` and `FormActions`, and are added to the responsive check. The check runs against the full stack after the seed, so it needs the seeded demo records (`manage.py e2e_ids`).
+
+## ADR-041 — Inventory: stock movements, cost method, costs after posting, what shops see
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 plan). Amends PLAN S8 (valuation) and ADR-039 (cost price). Permissions in items 8 and 9 amended by ADR-042; the opening stock import is one adjustment per file (ADR-042).
+- **Context:** Phase 3 adds stock. Own-brand products and a cost price exist (ADR-039), manufacturing is on the backlog, and warehouse staff (no `pricing.view`) receive goods on phones.
+- **Decision:**
+  1. **One default warehouse per tenant**, created with the tenant (existing tenants backfilled). Every stock row, movement, receipt and adjustment carries the warehouse, so more warehouses can come later behind the existing `multi_warehouse` flag without a data change. A stock level is created with every product (existing products backfilled at 0).
+  2. **Stock levels** hold on hand, reserved and backordered quantities in the base unit, with database checks: all three ≥ 0 and reserved ≤ on hand. Available = on hand − reserved.
+  3. **Stock movements are append-only** (database trigger; corrections are new movements). Each stores its type, the signed change to on hand and to reserved, both balances afterwards, the unit cost and value where known, the source document (type and id), a reason and the user.
+  4. **Movement types are data, not structure.** The type is a string. The direction of each type (which way on hand and reserved move) is one table in `apps/inventory/services.py`, and there is no database constraint listing the types. **Manufacturing** (backlog) adds two types — consume raw material (on hand down) and produce finished goods (on hand up) — as two rows in that table, and a production entry is one more source document. Its movements carry the consumed value, which becomes the finished goods' cost. No table or column changes are needed.
+  5. **One write path.** Every stock change goes through one private function inside `transaction.atomic()`. It locks the stock rows with `select_for_update()` in (product, warehouse) order (PLAN §5.1 level L3), applies the change, writes the movement in the same transaction and lets the database checks reject anything negative. Top-level services retry on deadlock.
+  6. **Cost is per unit before GST.** Inward cost is entered as "Cost per unit (before GST)": the supplier's GST is input tax credit, not stock value. *Composition-scheme tenants (not supported yet, `tax.registration_type`) cannot claim input credit and would need GST-inclusive cost; that needs a new decision when composition is supported.*
+  7. **Cost method** — new tenant setting `stock.cost_method`:
+     - `WEIGHTED_AVERAGE` (**default**): posting a receipt line with a cost sets the product's cost price to (stock on hand before × current cost price + received quantity × bill cost) ÷ (stock on hand before + received quantity), rounded half-up to the paisa. If stock before was 0 or less, or the product had no cost price, the bill cost becomes the cost price.
+     - `LAST_PURCHASE`: the latest bill cost becomes the cost price.
+     - `MANUAL`: receipt costs are recorded but never change the cost price.
+     Every automatic change is audited as "updated by GRN-…". Manual edits stay possible in every mode and are audited (ADR-039). Supersedes the per-stock-level `avg_cost` of PLAN S8: the product's cost price is the one cost number.
+  8. **Receiving without costs.** Staff without `pricing.view` post receipts with quantities only, so stock is available at once; they never see or send costs. Lines posted without a cost are marked **cost pending**. A user with `pricing.manage` later adds them through a separate, audited **complete costs** action. It never changes quantities or anything else on the posted receipt, and it applies the cost method at that moment (weighted average uses the stock on hand and cost price at completion time). A "Goods receipts awaiting cost" list exists, and its count is shown to users with `pricing.view`. Users with `pricing.view` can enter costs when posting as usual.
+  9. **Valuation** is quantity on hand × the product's cost price, with category and brand totals and an Excel export, for users with `reports.stock` **and** `pricing.view`. Products without a cost price are marked, left out of the totals, and counted.
+  10. **Reorder level** can be changed by users with `products.manage` or `stock.adjust`; every change is audited.
+  11. **Adjustments** cover several products with one reason code and a required note. Each line adds, removes, or records a **counted** quantity (the server works out the difference). Stock that is reserved cannot be removed (`STOCK_RESERVED`). Adjustments are immutable and audited.
+  12. **What shops see:** "In stock", "Low stock" (setting `stock.show_low_stock_label`), "Available on backorder" (when backorders are on) or "Out of stock"; the exact quantity only with `stock.show_exact_quantity`. New tenant setting `stock.show_out_of_stock_in_shop` (default **true**): when false, products with nothing available and backorders off are hidden from the shop instead of marked "Out of stock".
+  13. **Alerts** (`LOW_STOCK`, `OUT_OF_STOCK`, `BACKORDER_DEMAND`) are evaluated in the same transaction as each stock change. A partial unique index allows one open alert per product, warehouse and type, so each fires once until resolved. Opening and resolving write outbox events (`stock.alert_opened`, `stock.alert_resolved`); notifications deliver them in Phase 6.
+  14. **Barcodes:** keyboard-wedge (USB/Bluetooth) and typed barcodes work everywhere, including over the LAN. The phone camera uses the browser's `BarcodeDetector` where available and a scanning library loaded only when the camera opens. Browsers allow the camera only on HTTPS or localhost: over `make lan` it needs a Chrome flag on the phone (documented); real camera testing is on staging.
+- **Consequences:** A product's cost price can now change without a manual edit, always with an audit entry naming the receipt. Valuation needs no separate cost history in Phase 3; weighted-average per warehouse, FIFO or batch costing would need a new decision.
+
+## ADR-042 — Cost permissions separate from pricing; one opening-stock document per file
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 backend checkpoint). Valuation access amended by ADR-043. Amends ADR-039 (who sees and sets the cost price) and ADR-041 items 8–9 and the opening stock import.
+- **Context:** Sales staff need `pricing.view` for selling prices, discounts and price lists, but must never see what goods cost the distributor. ADR-039 and ADR-041 tied cost visibility to `pricing.view`.
+- **Decision:**
+  1. **Two new permission codes.** `costs.view` controls every cost-related field and screen: the product cost price, goods-receipt costs (entered cost, cost per base unit, line and receipt totals), the "Goods receipts awaiting cost" list and count, the unit cost and value of movements, and the valuation report (`reports.stock` + `costs.view`). `costs.manage` (chosen over reusing `pricing.manage`, so changing costs is separate from changing selling prices) is needed to set a cost price, enter costs on a receipt or adjustment, complete pending costs, and import a cost column.
+  2. **Default roles:** `costs.view` for Owner, Manager and Accounts; `costs.manage` for Owner and Manager. Not Sales, not Warehouse. Sales keep `pricing.view`.
+  3. Without `costs.view` every cost field is null in API responses and cost columns are left out of templates and exports. A test walks every GET route of the tenant API as Sales and as Warehouse, with real ids, and fails if any cost figure in the database appears in any response (JSON, Excel or CSV) or any cost-named field is not null. A control test with Accounts proves the figures are findable.
+  4. Receipts can be read with `stock.inward` **or** `costs.view` (so cost staff reach "awaiting cost").
+  5. **Opening stock import: one adjustment per file**, with one line per changed row (up to 20,000). The commit re-checks the file: rows that can no longer be applied (for example, stock reserved since validation) are reported with the reason, and the rest are posted together as that one document.
+  6. The low-stock report shows how many active products have no reorder level, linking to the stock list filtered to them (`no_reorder_level=true`), where the reorder level can be set.
+- **Consequences:** Accounts can see costs and the awaiting-cost list but cannot change costs. The valuation report stays `reports.stock` + `costs.view`, so Accounts (no `reports.stock`) don't see it by default; giving them the report would be a role change, not a code change.
+
+## ADR-043 — Stock value for Accounts; E2E 2FA codes from the backend's clock
+- **Status:** Accepted — 2026-09-26 (product owner, Phase 3 final review). Amends ADR-042 item 1 (valuation access).
+- **Decision:**
+  1. **Stock value report:** `costs.view` **and** (`reports.stock` **or** `reports.financial`). Accounts (costs.view, reports.financial) now sees it; Warehouse (no costs) and Sales (neither report) still don't. Permission requirements can nest (`AllOf(("costs.view", AnyOf(("reports.stock", "reports.financial"))))`); the permission-code and role-matrix tests evaluate them the same way.
+  2. **Root cause of the flaky super admin 2FA sign-in in local E2E runs: clock skew, not replay.** The Mac slept for about five minutes during a run (`pmset` log: idle sleep 16:55:04–17:00:06 IST). Docker Desktop's VM was frozen too and its clock synchronises with the Mac only every 30 seconds (`GET /time`: no sync between 16:54:50 and 17:00:21, the VM's monotonic clock advanced 30 s across the gap). A run started right after waking computed the code with the Mac's clock while the backend's clock was still ~5 minutes behind, so the code matched no step in its ±1 window. Replay was ruled out: the helper clears the replay state first, and 30 back-to-back sign-ins passed. CI (Docker on Linux, no VM) is not exposed.
+  3. **The E2E helper no longer depends on the machines' clocks or on the reset.** `freshTotp` reads the backend's clock and last used step (`manage.py e2e_totp_state`, dev only), computes the code for the backend's step, waits for the next step when the current one was already used or less than 3 s remain, and a refusal fails at once with its reason (`replay`, `clock skew` with both steps, or `invalid`) and the clock difference.
+  4. **The server logs why a code was refused** (`mfa: code refused (replay | clock_skew:±n | invalid)`, without the code). Users still see one neutral message.
+- **Consequences:** a slept laptop or a stale container clock can no longer make the E2E suites flaky. Real users are unaffected; the ±1 step window is unchanged.
 

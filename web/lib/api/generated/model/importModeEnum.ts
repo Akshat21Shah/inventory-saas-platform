@@ -9,6 +9,8 @@
 /**
  * * `ADD_ONLY` - Add new only
  * * `ADD_OR_UPDATE` - Add new and update existing
+ * * `STOCK_ADD` - Add to stock
+ * * `STOCK_SET` - Set stock to this count
  */
 export type ImportModeEnum = typeof ImportModeEnum[keyof typeof ImportModeEnum];
 
@@ -16,4 +18,6 @@ export type ImportModeEnum = typeof ImportModeEnum[keyof typeof ImportModeEnum];
 export const ImportModeEnum = {
   ADD_ONLY: 'ADD_ONLY',
   ADD_OR_UPDATE: 'ADD_OR_UPDATE',
+  STOCK_ADD: 'STOCK_ADD',
+  STOCK_SET: 'STOCK_SET',
 } as const;

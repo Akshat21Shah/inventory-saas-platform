@@ -53,7 +53,7 @@ class ImportUploadSerializer(serializers.Serializer[Any]):
     # No default: the distributor chooses for every import (ADR-035).
     mode = serializers.ChoiceField(
         choices=ImportJob.Mode.choices,
-        error_messages={"required": "Choose “Add new only” or “Add new and update existing”."},
+        error_messages={"required": "Choose how to import the file."},
     )
     file = serializers.FileField(
         error_messages={"empty": "The file is empty.", "required": "Choose a file to upload."}

@@ -158,7 +158,100 @@
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
-- Phase 2 — Catalog, retailers, pricing (branch `phase-2`, draft PR #3; plan approved 2026-09-25 with ADR-034 … ADR-036). **All commits done; waiting for the end-of-phase review.** Then Phase 3 (inventory). Commits in order:
+- **Phase 3 — Inventory** (branch `phase-3` from `main` e117fdf; plan approved 2026-09-26 with ADR-041, PLAN §10.2b, SPEC 1.2). Commits in order:
+  1. Docs: ADR-041, PLAN v1.4 (§1.2 S8–S10, §2.7, §3.7, §5, §7.3, §8, §9.1, §10.2b), SPEC 1.2 — **done**
+  2. Models: warehouse, stock level, movement, receipts, adjustments, alerts; RLS, checks, append-only trigger, backfills — **done**: RLS on all eight tables; append-only movements and adjustments; a trigger keeps posted receipts unchanged except for completing pending costs once; one open alert per product/warehouse/type; the default warehouse is made with each tenant and every product gets a stock level (both backfilled); movement types have no database list (ADR-041).
+  3. Stock primitives (`MOVEMENT_KINDS`, lock order), cost method, concurrency tests — **done**:
+     - `lock_levels` (creates missing levels, locks in product order) and `_apply_movement`, the only writer of stock levels. Primitives: receive, add, remove, reserve, release, consume reserved. `INSUFFICIENT_STOCK` and `STOCK_RESERVED` (PLAN S4) are refused before the database checks.
+     - Cost method: settings `stock.cost_method` (WEIGHTED_AVERAGE default, LAST_PURCHASE, MANUAL) and `stock.show_out_of_stock_in_shop`. Cost arithmetic in `billing/tax.py` (`cost_per_base_unit`, `stock_value`, `weighted_average_cost`) with table and Hypothesis tests; automatic cost price changes audited with the receipt number.
+     - Concurrency tests with real threads and a barrier: 20 threads for the last unit (exactly one reserves), 20 removals from 5 (exactly 5), reservations racing removals, and a 30-second random mix across 5 products in shuffled order (no deadlock past the retry; on hand and reserved equal the movement sums). Removing the row lock makes all four fail.
+  4. Alerts: dedupe and outbox events — **done**: `apps/inventory/alerts.py` runs after every movement in the same transaction (and via `refresh_alerts` when a reorder level changes). OUT_OF_STOCK (available ≤ 0), LOW_STOCK (0 < available ≤ reorder level; never with level 0), BACKORDER_DEMAND (backordered > 0). Opening uses `ON CONFLICT DO NOTHING` on the open-alert index; `stock.alert_opened` / `stock.alert_resolved` outbox events only for rows actually opened or resolved, and they roll back with the change. Twenty concurrent evaluations open one alert. Alerts come from stock changes: a new product at zero has no alert until its stock moves.
+  5. Goods receipts: draft, post, packs, cost pending, complete costs — **done** (`apps/inventory/receipts.py`):
+     - Drafts hold supplier, bill number and date, notes and up to 500 lines. Quantities are entered in the base unit or packs (whole numbers where the unit requires it) and stored in the base unit. The cost is entered per entered unit before GST: the line keeps the bill's cost and total, and the cost per base unit to 4 decimals.
+     - Staff without `pricing.view` can't send costs. When they edit a draft, costs they can't see are kept.
+     - Posting locks the stock levels, then takes the gap-free `GRN-<year>-00001` number, then updates cost prices. It writes one movement per line and runs the cost method for lines with a cost; lines without one become "cost pending". A backorder hook (`on_stock_received`) is left for Phase 4, and posting is audited. "Save and post" does both in one transaction. The database trigger keeps posted receipts final.
+     - `complete_costs` (`pricing.manage`) fills pending lines only and applies the cost method at that moment. The "stock before" is what is on hand now minus that line's quantity (the goods are already in stock), never below zero. It is audited.
+     - Race tests: one draft posted by 10 threads posts once, and 10 receipts posted together get numbers 1–10.
+     - Test fix: threaded tests skip the after-commit Celery enqueue. Eager tasks in parallel threads could leave Celery's global "inside a task" flag set, which failed a later test in CI.
+  6. Adjustments: reason + note, add / remove / counted, reserved guard, audit — **done** (`apps/inventory/adjustments.py`):
+     - One adjustment covers up to 500 products, each at most once. It has a reason code and a required note. Lines add, remove or record a counted quantity; the server works out the difference, and a count that matches is reported as unchanged with no line written. Whole numbers where the unit requires them.
+     - Numbered `ADJ-<year>-00001`, gap-free. The DAMAGE reason writes DAMAGE movements; other removals write ADJUSTMENT_OUT. Removing reserved stock fails the whole adjustment with `STOCK_RESERVED`, naming the product and how much can be removed. Audited as `stock.adjusted` with each line's before and change.
+     - Reorder level: `set_reorder_level` (audited as `stock.reorder_level_changed`) re-checks alerts. A product edit that changes the reorder level does too; it locks the stock level before the product, the same order receipts use.
+  7. Stock APIs and reports (low stock, valuation) with isolation and role tests — **done** (`apps/inventory/api`, `selectors.py`):
+     - Routes: `warehouses/` (+ PATCH, `settings.manage`), `stock/` (search, category, brand, status IN_STOCK/LOW/OUT/BACKORDERED), `stock/summary/` (open alerts by type; receipts awaiting cost only for `pricing.view`), `stock/lookup/?code=` (barcode or code, for scanning), `stock/{product}/` (+ `reorder-level/`: `products.manage` or `stock.adjust`), `stock/movements/`, `stock/alerts/`, `stock/inwards/` (+ detail, `post/`, `complete-costs/`), `stock/adjustments/` (+ detail), `reports/stock/low-stock/` and `reports/stock/valuation/` (+ `products/`, both with Excel export).
+     - POSTs that create receipts or adjustments, post a receipt or complete costs need an Idempotency-Key; a repeat returns the original result.
+     - Receipts can be read with `stock.inward` or `pricing.view`, so pricing users can open "Goods receipts awaiting cost". Valuation needs `reports.stock` and `pricing.view`.
+     - `HasPermission` accepts `AnyOf(...)` / `AllOf(...)`, and the role matrix and permission-code tests understand them.
+     - Cost fields are null without `pricing.view`: receipt costs, movement unit cost and value, and the cost price on the stock page.
+     - Valuation rounds each product's value to the paisa before summing, so the page, the totals and the export agree. Products without a cost price are marked, left out of every total and counted. Category (full path) and brand totals are included in the export.
+     - Tests: one isolation test covers all 20 routes (lists, detail by id, writes, exports), plus hidden costs, awaiting cost, idempotent posting, pack entry and lookup, adjustment errors, reorder-level roles, filters, valuation and warehouse rename. API client regenerated.
+  8. Shop availability labels, `stock.show_out_of_stock_in_shop`, opening stock import — **done**:
+     - `apps/inventory/availability.py`: shop products carry `availability {status, quantity}`. The status is IN_STOCK, LOW_STOCK (only with `stock.show_low_stock_label`), BACKORDER (nothing available, backorders on) or OUT_OF_STOCK. The quantity is shown only with `stock.show_exact_quantity`. Available means on hand minus reserved.
+     - With backorders off and `stock.show_out_of_stock_in_shop` off, products with nothing available are hidden from lists, detail, category counts and brands.
+     - Opening stock import (`OPENING_STOCK`, needs `stock.adjust`):
+       - Columns: product code, quantity, optional "Cost per unit (before GST)" (restricted to `pricing.manage`, refused as an error without it).
+       - Modes of its own, chosen every time: "Add to stock" or "Set stock to this count". Import kinds now declare their modes.
+       - Each changed row is posted as an "Opening stock" adjustment. A cost runs the cost method, or is noted as unused when the stock goes down or the method is "Never". Stock can't be set below what is reserved.
+     - `GET stock/export/` gives today's stock as a count sheet in the same columns.
+     - The import wizard doesn't offer the new kind yet; that comes in frontend commit 12.
+     - Test fix: the per-IP sign-in limit test pins the limiter's clock, because the fixed one-minute window could split its 31 attempts (a flaky CI failure).
+  9. Seed demo stock, API client — **done; backend checkpoint**: each demo tenant gets opening stock, a shelf count that empties some products and leaves some low (so both alert types show), a posted goods receipt with costs, one posted by the warehouse without costs (awaiting cost), a draft and a damage adjustment. This happens once only (skipped when stock documents exist). Checked on the running stack: alert counts, the out-of-stock filter, valuation, and the warehouse view of a receipt awaiting cost (costs hidden; valuation refused).
+  9a. Checkpoint follow-ups (ADR-042, PLAN §10.2c, SPEC 1.3) — **done**:
+     - `costs.view` / `costs.manage`: Owner, Manager and Accounts see costs; Owner and Manager change them; not Sales or Warehouse. They replace the pricing permissions for costs everywhere: product cost price (API, import and export column, product form), receipt costs, the awaiting-cost list and count, movement cost and value, valuation, complete costs, and cost on adjustments and the opening stock import.
+     - A test walks every GET route of the tenant API as Sales and as Warehouse with real ids, and finds no cost figure in any JSON, Excel or CSV response. A control run as Accounts finds the figures. Putting the old `pricing.view` gate back on products makes the walk fail.
+     - The opening stock import is one adjustment per file. The import framework now reports rows that were valid at validation but fail the re-check at commit, instead of skipping them silently.
+     - Low-stock summary: `reports/stock/low-stock/summary/` gives the low count and the active products without a reorder level. The stock list filter `no_reorder_level=true` shows them.
+     - Dev database: the demo products' missing cost prices were backfilled (dev data only, done once from a shell).
+  10. Frontend: stock overview, product stock page, movements — **done**:
+      - `/manage/stock`: count cards (low, out, shops waiting) that filter the list. A notice links to "N goods receipts are waiting for costs" (for `costs.view`). Search, status filter (including "No reorder level", also reachable via `?status=`), category and brand. Cards on phones. "Receive goods", "Adjust stock", the count-sheet download and opening stock import appear only for staff with those permissions.
+      - `/manage/stock/[product]`: available, on hand, reserved and waiting figures; the reorder level editor (`products.manage` or `stock.adjust`); cost price (`costs.view` only); open alerts; barcodes; paginated movement history.
+      - `/manage/stock/movements`: filter by type and date. Each row links to its goods receipt or adjustment, and the value column appears only when the server sends values.
+      - A stock card on the product page. A stock sub-navigation. The sidebar "Stock" item shows the open-alert count, refreshed every minute.
+  11. Frontend: goods receipt entry — **done**:
+      - `ScanBar` (receipts, and adjustments next):
+        - a USB/Bluetooth scanner or a typed code plus Enter looks up the exact product (`stock/lookup`), and typing a name shows 44 px matches;
+        - the camera button uses the browser's `BarcodeDetector`, or else `barcode-detector` (zxing-wasm), loaded only when the camera opens. The `.wasm` is copied into `public/vendor` before `dev`/`build`, so it's served by us, never a CDN;
+        - over plain http (LAN) the camera explains that it needs https, as ADR-041 item 14 says;
+        - an unknown code can be linked to a product on the spot (`products.manage`).
+      - `/manage/stock/inwards/new` and draft editing:
+        - Phones: products as cards, the base-unit or pack choice, large −/+ steppers, and the bill details folded under "Supplier and bill" so scanning comes first.
+        - Laptops: a grid where Enter goes from quantity to cost and back to the scan bar.
+        - Scanning the same product again adds one. The cost field shows only with `costs.view`; warehouse staff see "Costs are added later…" and never send a cost.
+        - "Save as draft" / "Save and post" with a confirmation. Server messages appear next to their line.
+        - Every create, post and cost save sends an Idempotency-Key, made with `crypto.getRandomValues`. The live check on the LAN found that `crypto.randomUUID` doesn't exist on plain http, so the page had crashed there; that is fixed and tested.
+      - `/manage/stock/inwards`: All / Drafts / Posted / Waiting for costs (`costs.view`). The posted receipt shows received packs and the base-unit equivalent, and has the "Add the missing costs" form (`costs.manage`).
+      - Lockfile: regenerated with the image's npm (node:24-alpine). My local npm had dropped optional entries, which made `npm ci` fail in Docker.
+      - Checked on the running stack at 360 and 1440 px as warehouse and owner: no sideways scrolling, scanning a code adds the line and selects its quantity.
+  12. Frontend: adjustments, alerts, reports, opening stock import — **done**:
+      - `/manage/stock/adjustments/new`: reason chips (required), a required note and the same `ScanBar`. Each line is Counted (default), Add or Remove, shows what is in stock now, and has a large quantity field. It posts with an Idempotency-Key and reports how many counts matched. The adjustment list and detail pages show before and change for each line.
+      - `/manage/stock/alerts`: Open / Resolved, filter by type.
+      - `/manage/reports/low-stock`: shortfall per product, Excel export, and "N active products have no reorder level" linking to the filtered stock list.
+      - `/manage/reports/stock-valuation` (`reports.stock` + `costs.view`; others get a plain "needs cost access" message): total value, products valued, a "without a cost price" count that filters the list, category/brand totals and Excel export.
+      - `/manage/reports`: an index of the reports that exist so far.
+      - The import wizard offers "Opening stock" with its own modes ("Add to stock" / "Set stock to this count"); choosing another kind clears the mode.
+      - Checked on the running stack at 360 and 1440 px as warehouse and owner: no sideways scrolling.
+  13. Frontend: shop stock labels — **done**: product cards and the product page show the server's label (In stock, Low stock, Available on backorder, Out of stock) with the product's status colours, and "3 pieces in stock" only when the distributor shows exact stock. Nothing about stock is worked out in the shop.
+  14. E2E acceptance, responsive check, docs — **done; waiting for the final review**:
+      - `e2e/inventory-acceptance.spec.ts` (in `make e2e-stack` and CI):
+        - a new distributor imports 3 products and a shop, and sets a reorder level of 5;
+        - it receives 12 by typing the code and pressing Enter (as a scanner does), with cost 7.50, and posts: GRN-…-00001, a ₹90.00 line and total, the movement on the product page, and cost price ₹7.50;
+        - two damage adjustments (−9, −1) leave one open low-stock alert, not two;
+        - at 360 px the shop sees "Low stock" with no quantity and "Available on backorder" for a product never received, with no sideways scrolling.
+        
+        It passed locally (5/5) on the stack in localhost mode. One earlier run failed at the super admin's 2FA step ("That code didn't work"): the Mac and container clocks agree, and the next runs passed. I'll keep an eye on it.
+      - Responsive check: 15 new screens (stock, product stock, movements, alerts, receipts list/new/posted/draft, adjustments list/new/detail, reports index, low stock, stock value, stock settings). `e2e_ids` gives the receipt and adjustment ids. Two phone problems it found were fixed: the "More stock actions" button was 38 px wide, and the folded bill fields on the receiving page still took space (now a toggle that renders them only when open). All screens pass at 360/768/1440.
+      - Phone receipt cards show the line cost up front.
+      - CLAUDE.md: how to enable the camera over `make lan` (a Chrome flag on Android; typed and USB/Bluetooth scanners need nothing).
+  15. Final review follow-ups (ADR-043, PLAN §10.2d) — **done**:
+      - The stock value report is open to `costs.view` with `reports.stock` or `reports.financial`, so Accounts sees it. Requirements nest (`AllOf`/`AnyOf`), and the role matrix, permission-code test, frontend check and API test (Accounts and Manager 200, Warehouse and Sales 403) all agree.
+      - Flaky 2FA sign-in, root cause: clock skew after the Mac slept. The Docker VM clock was about 5 minutes behind until its 30-second time sync caught up; the `pmset` and Docker `GET /time` logs show it. It wasn't replay.
+      - The server now logs the refusal reason (`replay`, `clock_skew:±n`, `invalid`). The E2E helper computes the code from the backend's clock (`e2e_totp_state`), never reuses a step (it waits for the next), avoids the last 3 seconds of a step, and fails at once with the reason.
+      - Proof runs:
+        - 30 sign-ins passed with the old helper, which ruled out replay between runs.
+        - With the new helper: 20 normal sign-ins; 6 back-to-back sign-ins without the reset, landing on 6 different steps (the old helper would have been refused on 5 of them); and a deliberate replay, reported as "replay".
+        - Then the four full-stack suites 3 times in a row and the responsive check.
+- **Phase 3 acceptance (spec §12):** receipts and adjustments update stock with the right movements, alerts fire once, and the concurrency tests pass (backend threads plus the lock mutation check). Shops see the labels at 360 px.
+- Phase 2 — Catalog, retailers, pricing: **merged to `main` (PR #3, 2026-09-26)** after the product owner's manual testing (all three combination modes, special prices, shop view, cost price visibility, copy pricing, imports, responsive layouts on a real phone). Plan approved 2026-09-25 with ADR-034 … ADR-036. Commits in order:
   0. Phase 1 decisions (state code 97 accepted, PAN holder types verified) and Phase 2 ADRs
   1. Catalog models
   2. `billing/tax.py` line math

@@ -115,7 +115,7 @@ class Product(SoftDeleteMixin, TenantScopedModel):
     pack_size = QtyField(null=True, blank=True)  # base units in one pack, e.g. 1 BOX = 12 PCS
     hsn_code = models.CharField(max_length=8)
     mrp = MoneyField(null=True, blank=True)
-    # What one unit costs the distributor: staff with pricing permission only, never shops
+    # What one unit costs the distributor: staff with costs.view only, never shops
     # (ADR-039).
     cost_price = MoneyField(null=True, blank=True)
     base_price = MoneyField()

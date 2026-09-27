@@ -30,6 +30,9 @@ TENANT_PERMISSIONS: tuple[PermissionDef, ...] = (
     ),
     PermissionDef("pricing.view", "View price lists and discounts"),
     PermissionDef("pricing.manage", "Change price lists, retailer prices and discounts"),
+    # ADR-042: costs are separate from selling prices.
+    PermissionDef("costs.view", "See cost prices, goods-receipt costs and stock value"),
+    PermissionDef("costs.manage", "Change cost prices and complete goods-receipt costs"),
     PermissionDef("retailers.view", "View retailers"),
     PermissionDef("retailers.manage", "Create and edit retailers"),
     PermissionDef("credit.manage", "Credit limits and credit-hold approvals"),
@@ -96,7 +99,7 @@ _WAREHOUSE = frozenset({
     "orders.allocate_backorder", "reports.stock", "dashboard.view",
 })
 _ACCOUNTS = frozenset({
-    "products.view", "pricing.view", "retailers.view", "credit.manage", "stock.view",
+    "products.view", "pricing.view", "costs.view", "retailers.view", "credit.manage", "stock.view",
     "orders.view", "invoices.view", "invoices.manage", "compliance.manage", "payments.view",
     "ledger.view", "payments.record", "payments.reverse", "ledger.adjust", "reports.sales",
     "reports.financial", "dashboard.view",

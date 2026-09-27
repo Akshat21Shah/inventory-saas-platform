@@ -17,7 +17,10 @@ from apps.billing.tax import (
     adjust_price,
     compute_document,
     compute_line,
+    cost_per_base_unit,
     percent_of,
+    stock_value,
+    weighted_average_cost,
 )
 
 INTRA, INTER = SupplyType.INTRA, SupplyType.INTER
@@ -314,3 +317,77 @@ def test_percent_of(part, whole, expected):
 )
 def test_adjust_price(price, percent, whole, expected):
     assert adjust_price(D(price), D(percent), whole_rupees=whole) == D(expected)
+
+
+# --- Stock cost (ADR-041) ------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("cost", "per", "expected"),
+    [
+        ("100", "12", "8.3333"),  # a box of 12 at ₹100
+        ("100", "6", "16.6667"),  # half-up at the 4th decimal
+        ("12.5", "1", "12.5000"),
+        ("0", "10", "0.0000"),
+        ("1", "3", "0.3333"),
+    ],
+)
+def test_cost_per_base_unit(cost, per, expected):
+    assert cost_per_base_unit(D(cost), D(per)) == D(expected)
+
+
+def test_cost_per_base_unit_needs_a_positive_pack():
+    with pytest.raises(ValueError):
+        cost_per_base_unit(D("10"), D("0"))
+
+
+@pytest.mark.parametrize(
+    ("qty", "cost", "expected"),
+    [
+        ("3", "8.3333", "25.00"),
+        ("1.5", "2.335", "3.50"),
+        ("7", "0.0015", "0.01"),
+        ("0", "9", "0.00"),
+    ],
+)
+def test_stock_value(qty, cost, expected):
+    assert stock_value(D(qty), D(cost)) == D(expected)
+
+
+@pytest.mark.parametrize(
+    ("on_hand", "cost_price", "received", "unit_cost", "expected"),
+    [
+        ("10", "5.00", "10", "7", "6.00"),  # plain average
+        ("3", "10.00", "1", "11", "10.25"),
+        ("2", "1.00", "1", "0", "0.67"),  # half-up: 0.6666…
+        ("1", "1.00", "2", "1.0025", "1.00"),  # 1.001666… → 1.00
+        ("1", "1.00", "1", "1.01", "1.01"),  # 1.005 → half-up 1.01
+        ("0", "5.00", "4", "8.3333", "8.33"),  # no stock: the bill cost
+        ("-2", "5.00", "4", "8", "8.00"),  # negative can't happen, still the bill cost
+        ("10", None, "4", "8.125", "8.13"),  # no cost price yet: the bill cost, half-up
+        ("1000", "5.00", "0.001", "9", "5.00"),  # tiny receipt barely moves it
+    ],
+)
+def test_weighted_average_cost(on_hand, cost_price, received, unit_cost, expected):
+    cost = None if cost_price is None else D(cost_price)
+    assert weighted_average_cost(D(on_hand), cost, D(received), D(unit_cost)) == D(expected)
+
+
+def test_weighted_average_needs_a_positive_receipt():
+    with pytest.raises(ValueError):
+        weighted_average_cost(D("1"), D("1"), D("0"), D("1"))
+
+
+@settings(max_examples=300, deadline=None)
+@given(
+    on_hand=st.decimals(min_value="0.001", max_value="100000", places=3),
+    cost_price=st.decimals(min_value="0", max_value="100000", places=2),
+    received=st.decimals(min_value="0.001", max_value="100000", places=3),
+    unit_cost=st.decimals(min_value="0", max_value="100000", places=4),
+)
+def test_weighted_average_lies_between_the_two_costs(on_hand, cost_price, received, unit_cost):
+    result = weighted_average_cost(on_hand, cost_price, received, unit_cost)
+    low, high = sorted([cost_price, unit_cost])
+    paisa = D("0.01")  # rounding is monotonic, so the rounded average stays between the ends
+    assert low.quantize(paisa, "ROUND_HALF_UP") <= result <= high.quantize(paisa, "ROUND_HALF_UP")
+    assert result == result.quantize(D("0.01"))

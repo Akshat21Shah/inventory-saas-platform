@@ -2985,6 +2985,210 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicBranding'
           description: ''
+  /api/v1/reports/stock/low-stock/:
+    get:
+      operationId: reports_low_stock
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLowStockRowList'
+          description: ''
+  /api/v1/reports/stock/low-stock/export/:
+    get:
+      operationId: reports_low_stock_export
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/reports/stock/low-stock/summary/:
+    get:
+      operationId: reports_low_stock_summary
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LowStockSummary'
+          description: ''
+  /api/v1/reports/stock/valuation/:
+    get:
+      operationId: reports_stock_valuation
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Valuation'
+          description: ''
+  /api/v1/reports/stock/valuation/export/:
+    get:
+      operationId: reports_stock_valuation_export
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/reports/stock/valuation/products/:
+    get:
+      operationId: reports_stock_valuation_products
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: missing_cost
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedValuationRowList'
+          description: ''
   /api/v1/retailer-prices/:
     get:
       operationId: retailer_prices_list
@@ -4294,6 +4498,604 @@ paths:
               schema:
                 $ref: '#/components/schemas/Invitation'
           description: ''
+  /api/v1/stock/:
+    get:
+      operationId: stock_list
+      parameters:
+      - in: query
+        name: brand
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: no_reorder_level
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - BACKORDERED
+          - IN_STOCK
+          - LOW
+          - OUT
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStockRowList'
+          description: ''
+  /api/v1/stock/{product_id}/:
+    get:
+      operationId: stock_retrieve
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockDetail'
+          description: ''
+  /api/v1/stock/{product_id}/reorder-level/:
+    patch:
+      operationId: stock_reorder_level_update
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReorderLevelRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockDetail'
+          description: ''
+  /api/v1/stock/adjustments/:
+    get:
+      operationId: stock_adjustments_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdjustmentList'
+          description: ''
+    post:
+      operationId: stock_adjustments_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdjustmentDetail'
+          description: ''
+  /api/v1/stock/adjustments/{adjustment_id}/:
+    get:
+      operationId: stock_adjustments_retrieve
+      parameters:
+      - in: path
+        name: adjustment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdjustmentDetail'
+          description: ''
+  /api/v1/stock/alerts/:
+    get:
+      operationId: stock_alerts_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ''
+          - OPEN
+          - RESOLVED
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - BACKORDER_DEMAND
+          - LOW_STOCK
+          - OUT_OF_STOCK
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAlertList'
+          description: ''
+  /api/v1/stock/export/:
+    get:
+      operationId: stock_count_export
+      description: 'Today''s stock in the opening-stock columns: count, edit and import
+        with "Set stock".'
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/stock/inwards/:
+    get:
+      operationId: stock_receipts_list
+      parameters:
+      - in: query
+        name: awaiting_cost
+        schema:
+          type: boolean
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - DRAFT
+          - POSTED
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReceiptList'
+          description: ''
+    post:
+      operationId: stock_receipts_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetail'
+          description: ''
+  /api/v1/stock/inwards/{inward_id}/:
+    get:
+      operationId: stock_receipts_retrieve
+      parameters:
+      - in: path
+        name: inward_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetail'
+          description: ''
+    patch:
+      operationId: stock_receipts_update
+      parameters:
+      - in: path
+        name: inward_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReceiptInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetail'
+          description: ''
+    delete:
+      operationId: stock_receipts_destroy
+      parameters:
+      - in: path
+        name: inward_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/stock/inwards/{inward_id}/complete-costs/:
+    post:
+      operationId: stock_receipts_complete_costs
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: inward_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteCostsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetail'
+          description: ''
+  /api/v1/stock/inwards/{inward_id}/post/:
+    post:
+      operationId: stock_receipts_post
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: inward_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetail'
+          description: ''
+  /api/v1/stock/lookup/:
+    get:
+      operationId: stock_lookup
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lookup'
+          description: ''
+        '404':
+          description: No such product
+  /api/v1/stock/movements/:
+    get:
+      operationId: stock_movements_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: reference
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: reference_type
+        schema:
+          type: string
+          enum:
+          - ADJUSTMENT
+          - ALLOCATION
+          - CREDIT_NOTE
+          - FULFILMENT
+          - INWARD
+          - ORDER
+          - ORDER_LINE
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - ADJUSTMENT_IN
+          - ADJUSTMENT_OUT
+          - DAMAGE
+          - INWARD
+          - RELEASE
+          - RESERVE
+          - RETURN
+          - SALE
+          - TRANSFER_IN
+          - TRANSFER_OUT
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMovementList'
+          description: ''
+  /api/v1/stock/summary/:
+    get:
+      operationId: stock_summary
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+          description: ''
   /api/v1/units/:
     get:
       operationId: catalog_units_list
@@ -4382,6 +5184,81 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/warehouses/:
+    get:
+      operationId: warehouses_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Warehouse'
+          description: ''
+  /api/v1/warehouses/{warehouse_id}/:
+    get:
+      operationId: warehouses_retrieve
+      parameters:
+      - in: path
+        name: warehouse_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Warehouse'
+          description: ''
+    patch:
+      operationId: warehouses_update
+      parameters:
+      - in: path
+        name: warehouse_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWarehouseRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Warehouse'
+          description: ''
 components:
   schemas:
     ActorTypeEnum:
@@ -4572,6 +5449,213 @@ components:
       required:
       - changed
       - warnings
+    Adjustment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        reason_code:
+          allOf:
+          - $ref: '#/components/schemas/ReasonCodeEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - id
+      - line_count
+      - note
+      - number
+      - reason_code
+    AdjustmentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        reason_code:
+          allOf:
+          - $ref: '#/components/schemas/ReasonCodeEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdjustmentLine'
+          readOnly: true
+        unchanged:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - id
+      - line_count
+      - lines
+      - note
+      - number
+      - reason_code
+      - unchanged
+    AdjustmentInputRequest:
+      type: object
+      properties:
+        reason_code:
+          $ref: '#/components/schemas/ReasonCodeEnum'
+        note:
+          type: string
+          minLength: 1
+          maxLength: 500
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdjustmentLineInputRequest'
+      required:
+      - lines
+      - note
+      - reason_code
+    AdjustmentLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        line_no:
+          type: integer
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/StockProductRef'
+          readOnly: true
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/AdjustmentModeEnum'
+          readOnly: true
+        entered_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        quantity_change:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_hand_before:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+      required:
+      - entered_qty
+      - id
+      - line_no
+      - mode
+      - on_hand_before
+      - product
+      - quantity_change
+    AdjustmentLineInputRequest:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        mode:
+          $ref: '#/components/schemas/AdjustmentModeEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - mode
+      - product_id
+      - quantity
+    AdjustmentModeEnum:
+      enum:
+      - ADD
+      - REMOVE
+      - COUNTED
+      type: string
+      description: |-
+        * `ADD` - Add
+        * `REMOVE` - Remove
+        * `COUNTED` - Counted
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/StockProductRef'
+          readOnly: true
+        alert_type:
+          allOf:
+          - $ref: '#/components/schemas/StockAlertTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StockAlertStatusEnum'
+          readOnly: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        value_at_open:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+      required:
+      - alert_type
+      - id
+      - opened_at
+      - product
+      - resolved_at
+      - status
+      - value_at_open
     AppliedDiscount:
       type: object
       properties:
@@ -4875,6 +5959,24 @@ components:
       - favicon_url
       - logo_url
       - primary_color
+    Bucket:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        products:
+          type: integer
+        missing_cost:
+          type: integer
+      required:
+      - missing_cost
+      - name
+      - products
+      - value
     BulkActionEnum:
       enum:
       - activate
@@ -5228,6 +6330,15 @@ components:
       required:
       - choice_token
       - tenant_id
+    CompleteCostsRequest:
+      type: object
+      properties:
+        costs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostInputRequest'
+      required:
+      - costs
     CopyApplyRequest:
       type: object
       properties:
@@ -5312,6 +6423,27 @@ components:
       required:
       - copy_from
       - mode
+    CostInputRequest:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        entered_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+      required:
+      - entered_cost
+      - line_id
+    CostStatusEnum:
+      enum:
+      - SET
+      - PENDING
+      type: string
+      description: |-
+        * `SET` - Cost entered
+        * `PENDING` - Cost pending
     Dashboard:
       type: object
       properties:
@@ -5532,6 +6664,14 @@ components:
           maxLength: 200
       required:
       - enrolment_token
+    EnteredUnitEnum:
+      enum:
+      - BASE
+      - PACK
+      type: string
+      description: |-
+        * `BASE` - Base unit
+        * `PACK` - Pack
     FeatureFlag:
       type: object
       properties:
@@ -6050,6 +7190,7 @@ components:
       - SPECIAL_PRICES
       - PRICE_LIST_ITEMS
       - DISCOUNT_RULES
+      - OPENING_STOCK
       type: string
       description: |-
         * `PRODUCTS` - Products
@@ -6057,14 +7198,19 @@ components:
         * `SPECIAL_PRICES` - Special prices
         * `PRICE_LIST_ITEMS` - Price-list prices
         * `DISCOUNT_RULES` - Discount rules
+        * `OPENING_STOCK` - Opening stock
     ImportModeEnum:
       enum:
       - ADD_ONLY
       - ADD_OR_UPDATE
+      - STOCK_ADD
+      - STOCK_SET
       type: string
       description: |-
         * `ADD_ONLY` - Add new only
         * `ADD_OR_UPDATE` - Add new and update existing
+        * `STOCK_ADD` - Add to stock
+        * `STOCK_SET` - Set stock to this count
     ImportStatusEnum:
       enum:
       - VALIDATING
@@ -6280,6 +7426,205 @@ components:
         * `choose_account` - choose_account
         * `mfa_required` - mfa_required
         * `mfa_setup_required` - mfa_setup_required
+    Lookup:
+      type: object
+      description: 'A scanned or typed code: the product, its units and its stock.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        category:
+          type: string
+          readOnly: true
+          default: ''
+        brand:
+          type: string
+          readOnly: true
+          default: ''
+        is_active:
+          type: boolean
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StockStatusEnum'
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - available
+      - backordered
+      - brand
+      - category
+      - code
+      - id
+      - is_active
+      - name
+      - on_hand
+      - pack_size
+      - pack_unit
+      - reorder_level
+      - reserved
+      - status
+      - thumbnail_url
+      - unit
+    LowStockRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        category:
+          type: string
+          readOnly: true
+          default: ''
+        brand:
+          type: string
+          readOnly: true
+          default: ''
+        is_active:
+          type: boolean
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StockStatusEnum'
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        shortfall:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+      required:
+      - available
+      - backordered
+      - brand
+      - category
+      - code
+      - id
+      - is_active
+      - name
+      - on_hand
+      - pack_size
+      - pack_unit
+      - reorder_level
+      - reserved
+      - shortfall
+      - status
+      - thumbnail_url
+      - unit
+    LowStockSummary:
+      type: object
+      properties:
+        low_stock:
+          type: integer
+        without_reorder_level:
+          type: integer
+          description: 'Active products with no reorder level: they never show as
+            low.'
+      required:
+      - low_stock
+      - without_reorder_level
     Me:
       type: object
       properties:
@@ -6508,6 +7853,123 @@ components:
           maxLength: 40
       required:
       - mfa_token
+    Movement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/StockProductRef'
+          readOnly: true
+        movement_type:
+          allOf:
+          - $ref: '#/components/schemas/MovementTypeEnum'
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        delta_on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        delta_reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_hand_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reserved_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          nullable: true
+          readOnly: true
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        reference_type:
+          allOf:
+          - $ref: '#/components/schemas/ReferenceTypeEnum'
+          readOnly: true
+        reference_id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference_number:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        by:
+          type: string
+          readOnly: true
+      required:
+      - by
+      - created_at
+      - delta_on_hand
+      - delta_reserved
+      - id
+      - movement_type
+      - on_hand_after
+      - product
+      - quantity
+      - reason
+      - reference_id
+      - reference_number
+      - reference_type
+      - reserved_after
+      - unit_cost
+      - value
+    MovementTypeEnum:
+      enum:
+      - INWARD
+      - SALE
+      - RETURN
+      - ADJUSTMENT_IN
+      - ADJUSTMENT_OUT
+      - DAMAGE
+      - TRANSFER_IN
+      - TRANSFER_OUT
+      - RESERVE
+      - RELEASE
+      type: string
+      description: |-
+        * `INWARD` - Goods received
+        * `SALE` - Dispatched
+        * `RETURN` - Returned
+        * `ADJUSTMENT_IN` - Adjustment in
+        * `ADJUSTMENT_OUT` - Adjustment out
+        * `DAMAGE` - Damaged
+        * `TRANSFER_IN` - Transfer in
+        * `TRANSFER_OUT` - Transfer out
+        * `RESERVE` - Reserved for an order
+        * `RELEASE` - Reservation released
+    NullEnum:
+      enum:
+      - null
     OnboardingRequest:
       type: object
       properties:
@@ -6585,6 +8047,44 @@ components:
       - pincode
       - slug
       - state_code
+    PaginatedAdjustmentList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Adjustment'
+    PaginatedAlertList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
     PaginatedAuditLogList:
       type: object
       required:
@@ -6756,6 +8256,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Invitation'
+    PaginatedLowStockRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LowStockRow'
     PaginatedMembershipList:
       type: object
       required:
@@ -6775,6 +8294,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Membership'
+    PaginatedMovementList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movement'
     PaginatedPriceListItemList:
       type: object
       required:
@@ -6851,6 +8389,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProductList'
+    PaginatedReceiptList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Receipt'
     PaginatedReportRowList:
       type: object
       required:
@@ -6927,6 +8484,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShopProduct'
+    PaginatedStockRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockRow'
     PaginatedTenantListList:
       type: object
       required:
@@ -6965,6 +8541,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Unit'
+    PaginatedValuationRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValuationRow'
     PasswordAndFactorInputRequest:
       type: object
       properties:
@@ -7383,6 +8978,36 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedReceiptInputRequest:
+      type: object
+      properties:
+        supplier_name:
+          type: string
+          maxLength: 200
+        supplier_ref:
+          type: string
+          maxLength: 60
+        bill_number:
+          type: string
+          maxLength: 60
+        bill_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptLineInputRequest'
+    PatchedReorderLevelRequest:
+      type: object
+      properties:
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
     PatchedRetailerPriceUpdateRequest:
       type: object
       properties:
@@ -7527,6 +9152,29 @@ components:
         is_active:
           type: boolean
           default: true
+    PatchedWarehouseRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 80
+        pincode:
+          type: string
+          maxLength: 6
+        state:
+          type: string
+          minLength: 1
+          nullable: true
     Permission:
       type: object
       properties:
@@ -8395,6 +10043,22 @@ components:
       - logo_url
       - primary_color
       - slug
+    ReasonCodeEnum:
+      enum:
+      - COUNT_CORRECTION
+      - DAMAGE
+      - EXPIRY
+      - THEFT
+      - OPENING_STOCK
+      - OTHER
+      type: string
+      description: |-
+        * `COUNT_CORRECTION` - Stock count correction
+        * `DAMAGE` - Damaged
+        * `EXPIRY` - Expired
+        * `THEFT` - Lost or stolen
+        * `OPENING_STOCK` - Opening stock
+        * `OTHER` - Other
     ReasonRequest:
       type: object
       properties:
@@ -8404,6 +10068,288 @@ components:
           maxLength: 1000
       required:
       - reason
+    Receipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReceiptStatusEnum'
+          readOnly: true
+        supplier_name:
+          type: string
+          readOnly: true
+        supplier_ref:
+          type: string
+          readOnly: true
+        bill_number:
+          type: string
+          readOnly: true
+        bill_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        notes:
+          type: string
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+        total_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        cost_pending_lines:
+          type: integer
+          readOnly: true
+        posted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        posted_by:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+      required:
+      - bill_date
+      - bill_number
+      - cost_pending_lines
+      - created_at
+      - created_by
+      - id
+      - line_count
+      - notes
+      - number
+      - posted_at
+      - posted_by
+      - status
+      - supplier_name
+      - supplier_ref
+      - total_cost
+    ReceiptCreateRequest:
+      type: object
+      properties:
+        supplier_name:
+          type: string
+          maxLength: 200
+        supplier_ref:
+          type: string
+          maxLength: 60
+        bill_number:
+          type: string
+          maxLength: 60
+        bill_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptLineInputRequest'
+        post:
+          type: boolean
+          default: false
+          description: Save and post in one step (phones).
+      required:
+      - lines
+    ReceiptDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReceiptStatusEnum'
+          readOnly: true
+        supplier_name:
+          type: string
+          readOnly: true
+        supplier_ref:
+          type: string
+          readOnly: true
+        bill_number:
+          type: string
+          readOnly: true
+        bill_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        notes:
+          type: string
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+        total_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        cost_pending_lines:
+          type: integer
+          readOnly: true
+        posted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        posted_by:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptLine'
+          readOnly: true
+      required:
+      - bill_date
+      - bill_number
+      - cost_pending_lines
+      - created_at
+      - created_by
+      - id
+      - line_count
+      - lines
+      - notes
+      - number
+      - posted_at
+      - posted_by
+      - status
+      - supplier_name
+      - supplier_ref
+      - total_cost
+    ReceiptLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        line_no:
+          type: integer
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/StockProductRef'
+          readOnly: true
+        entered_unit:
+          allOf:
+          - $ref: '#/components/schemas/EnteredUnitEnum'
+          readOnly: true
+        entered_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        entered_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          nullable: true
+          readOnly: true
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          nullable: true
+          readOnly: true
+        line_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        cost_status:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/CostStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+      required:
+      - cost_status
+      - entered_cost
+      - entered_qty
+      - entered_unit
+      - id
+      - line_cost
+      - line_no
+      - product
+      - quantity
+      - unit_cost
+    ReceiptLineInputRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        product_id:
+          type: string
+          format: uuid
+        entered_unit:
+          allOf:
+          - $ref: '#/components/schemas/EnteredUnitEnum'
+          default: BASE
+        entered_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        entered_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          nullable: true
+      required:
+      - entered_qty
+      - product_id
+    ReceiptStatusEnum:
+      enum:
+      - DRAFT
+      - POSTED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `POSTED` - Posted
     RecoveryCodes:
       type: object
       properties:
@@ -8424,6 +10370,24 @@ components:
       required:
       - id
       - name
+    ReferenceTypeEnum:
+      enum:
+      - INWARD
+      - ADJUSTMENT
+      - ORDER
+      - ORDER_LINE
+      - FULFILMENT
+      - CREDIT_NOTE
+      - ALLOCATION
+      type: string
+      description: |-
+        * `INWARD` - Goods receipt
+        * `ADJUSTMENT` - Adjustment
+        * `ORDER` - Order
+        * `ORDER_LINE` - Order line
+        * `FULFILMENT` - Shipment
+        * `CREDIT_NOTE` - Credit note
+        * `ALLOCATION` - Backorder allocation
     RefreshInputRequest:
       type: object
       properties:
@@ -9158,6 +11122,33 @@ components:
       - status
       - type
       - value
+    ShopAvailability:
+      type: object
+      description: Plain labels only; the quantity only when the distributor shows
+        exact stock.
+      properties:
+        status:
+          $ref: '#/components/schemas/ShopAvailabilityLabelEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+      required:
+      - quantity
+      - status
+    ShopAvailabilityLabelEnum:
+      enum:
+      - IN_STOCK
+      - LOW_STOCK
+      - BACKORDER
+      - OUT_OF_STOCK
+      type: string
+      description: |-
+        * `IN_STOCK` - IN_STOCK
+        * `LOW_STOCK` - LOW_STOCK
+        * `BACKORDER` - BACKORDER
+        * `OUT_OF_STOCK` - OUT_OF_STOCK
     ShopBrand:
       type: object
       properties:
@@ -9310,7 +11301,12 @@ components:
           readOnly: true
         price:
           $ref: '#/components/schemas/ShopPrice'
+        availability:
+          allOf:
+          - $ref: '#/components/schemas/ShopAvailability'
+          readOnly: true
       required:
+      - availability
       - brand
       - category
       - code
@@ -9379,6 +11375,10 @@ components:
           readOnly: true
         price:
           $ref: '#/components/schemas/ShopPrice'
+        availability:
+          allOf:
+          - $ref: '#/components/schemas/ShopAvailability'
+          readOnly: true
         description:
           type: string
         images:
@@ -9391,6 +11391,7 @@ components:
             $ref: '#/components/schemas/SlabHint'
           description: Lower prices for larger quantities, e.g. 24 or more.
       required:
+      - availability
       - brand
       - category
       - code
@@ -9548,6 +11549,284 @@ components:
       required:
       - code
       - name
+    StockAlertStatusEnum:
+      enum:
+      - OPEN
+      - RESOLVED
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `RESOLVED` - Resolved
+    StockAlertTypeEnum:
+      enum:
+      - LOW_STOCK
+      - OUT_OF_STOCK
+      - BACKORDER_DEMAND
+      type: string
+      description: |-
+        * `LOW_STOCK` - Low stock
+        * `OUT_OF_STOCK` - Out of stock
+        * `BACKORDER_DEMAND` - Shops waiting
+    StockDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        category:
+          type: string
+          readOnly: true
+          default: ''
+        brand:
+          type: string
+          readOnly: true
+          default: ''
+        is_active:
+          type: boolean
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StockStatusEnum'
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        barcodes:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        open_alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+          readOnly: true
+        recent_movements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movement'
+          readOnly: true
+      required:
+      - available
+      - backordered
+      - barcodes
+      - brand
+      - category
+      - code
+      - cost_price
+      - id
+      - is_active
+      - name
+      - on_hand
+      - open_alerts
+      - pack_size
+      - pack_unit
+      - recent_movements
+      - reorder_level
+      - reserved
+      - status
+      - thumbnail_url
+      - unit
+    StockProductRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+      required:
+      - code
+      - id
+      - name
+      - pack_size
+      - pack_unit
+      - unit
+    StockRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        category:
+          type: string
+          readOnly: true
+          default: ''
+        brand:
+          type: string
+          readOnly: true
+          default: ''
+        is_active:
+          type: boolean
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StockStatusEnum'
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - available
+      - backordered
+      - brand
+      - category
+      - code
+      - id
+      - is_active
+      - name
+      - on_hand
+      - pack_size
+      - pack_unit
+      - reorder_level
+      - reserved
+      - status
+      - thumbnail_url
+      - unit
+    StockStatusEnum:
+      enum:
+      - IN_STOCK
+      - LOW
+      - OUT
+      type: string
+      description: |-
+        * `IN_STOCK` - IN_STOCK
+        * `LOW` - LOW
+        * `OUT` - OUT
+    StockUnitRef:
+      type: object
+      properties:
+        code:
+          type: string
+        allows_decimal:
+          type: boolean
+      required:
+      - allows_decimal
+      - code
     Subscription:
       type: object
       properties:
@@ -9562,6 +11841,19 @@ components:
       - plan
       - starts_at
       - status
+    Summary:
+      type: object
+      properties:
+        alerts:
+          type: object
+          additionalProperties:
+            type: integer
+        receipts_awaiting_cost:
+          type: integer
+          nullable: true
+      required:
+      - alerts
+      - receipts_awaiting_cost
     TaxOptions:
       type: object
       properties:
@@ -9909,6 +12201,175 @@ components:
         * `PLATFORM` - Platform
         * `STAFF` - Distributor staff
         * `RETAILER` - Retailer
+    Valuation:
+      type: object
+      properties:
+        total_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        products_valued:
+          type: integer
+        missing_cost:
+          type: integer
+        by_category:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bucket'
+        by_brand:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bucket'
+      required:
+      - by_brand
+      - by_category
+      - missing_cost
+      - products_valued
+      - total_value
+    ValuationRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/StockUnitRef'
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        category:
+          type: string
+          readOnly: true
+          default: ''
+        brand:
+          type: string
+          readOnly: true
+          default: ''
+        is_active:
+          type: boolean
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StockStatusEnum'
+          readOnly: true
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+      required:
+      - available
+      - backordered
+      - brand
+      - category
+      - code
+      - cost_price
+      - id
+      - is_active
+      - name
+      - on_hand
+      - pack_size
+      - pack_unit
+      - reorder_level
+      - reserved
+      - status
+      - thumbnail_url
+      - unit
+      - value
+    Warehouse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 80
+        pincode:
+          type: string
+          maxLength: 6
+        state:
+          type: string
+          nullable: true
+        is_default:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - code
+      - id
+      - is_active
+      - is_default
+      - name
     Warning:
       type: object
       properties:

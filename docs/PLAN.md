@@ -1,6 +1,6 @@
 # PLAN.md — Master Engineering Plan (v1)
 
-Status: **v1.3 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25); Phase 2 in progress.**
+Status: **v1.4 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25), Phase 2 complete (2026-09-26); Phase 3 implemented, waiting for the final review (§10.2b, §10.2c).**
 Source of truth for *what*: `docs/PROJECT_SPEC.md`. Rules for *how*: `CLAUDE.md`.
 Where this plan and the spec disagree, the spec wins until the spec is updated.
 
@@ -85,7 +85,9 @@ Legend:
 | S5 | Pack conversions | Stock and orders are in the base unit; packs are used for entry and display. **[D]** |
 | S6 | StockLevel must exist before locking | Created with the product; `ON CONFLICT DO NOTHING` safety net. **[D]** |
 | S7 | Inward corrections | DRAFT → POSTED (immutable); corrections by adjustment. **[D]** |
-| S8 | Valuation | Weighted-average cost. **[D]** |
+| S8 | Valuation | ~~Weighted-average cost per stock level.~~ Superseded by ADR-041: quantity × the product's **cost price**, which receipts update per ⚙ `stock.cost_method` (**WEIGHTED_AVERAGE** default \| LAST_PURCHASE \| MANUAL). Products without a cost price are excluded from totals and counted. **[D]** |
+| S9 | Receiving without cost | Staff without `costs.view` post quantities only; lines are **cost pending** until a `costs.manage` user runs the audited "complete costs" action, which applies the cost method at that moment (ADR-041). **[D]** |
+| S10 | Out-of-stock products in the shop | Shown as "Out of stock" by default; ⚙ `stock.show_out_of_stock_in_shop` hides them instead (only when backorders are off). **[D]** |
 
 #### Orders & backorders
 | # | Topic | Resolution |
@@ -221,12 +223,13 @@ Legend:
 ### 2.7 `inventory`
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **Warehouse** (tenant) | `code`, `name`, address fields, `state` FK, `is_default`, `is_active` | unique `(t, code)`; partial unique `(t) where is_default` |
-| **StockLevel** (tenant) | `product` FK, `warehouse` FK, `quantity_on_hand` Qty, `quantity_reserved` Qty, `quantity_backordered` Qty (denormalised open backorder demand), `avg_cost` UnitCost, `version` int | unique `(product, warehouse)`; **checks `on_hand>=0`, `reserved>=0`, `backordered>=0`, `reserved<=on_hand`**; index `(t, warehouse, product)`; available = on_hand − reserved |
-| **StockMovement** (tenant, append-only) | `product` FK, `warehouse` FK, `movement_type` (INWARD, SALE, RETURN, ADJUSTMENT_IN, ADJUSTMENT_OUT, DAMAGE, TRANSFER_IN, TRANSFER_OUT, RESERVE, RELEASE), `quantity` Qty (>0), `delta_on_hand` Qty, `delta_reserved` Qty, `on_hand_after` Qty, `reserved_after` Qty, `unit_cost` UnitCost null, `reference_type` (ORDER, ORDER_LINE, FULFILMENT, INWARD, ADJUSTMENT, CREDIT_NOTE, ALLOCATION), `reference_id` uuid, `reason` text | check `quantity>0`; index `(t, product, created_at desc)`, `(t, reference_type, reference_id)`, BRIN `created_at` |
-| **StockInward** (tenant) | `number` (GRN-2026-00012), `warehouse` FK, `supplier_name`, `supplier_ref`, `bill_number`, `bill_date`, `status` (DRAFT, POSTED), `posted_at`, `posted_by`, `notes`, `total_cost` Money | unique `(t, number)`; index `(t, status, created_at)` |
-| **StockInwardLine** (tenant) | `inward` FK, `product` FK, `entered_unit` (BASE, PACK), `entered_qty` Qty, `quantity` Qty (base unit), `unit_cost` UnitCost, `line_cost` Money | check `quantity>0` |
-| **StockAdjustment** (tenant) | `number` (ADJ-…), `warehouse` FK, `product` FK, `direction` (IN, OUT, DAMAGE), `quantity` Qty, `reason_code` (COUNT_CORRECTION, DAMAGE, EXPIRY, THEFT, OPENING_STOCK, OTHER), `note` (required) | check `quantity>0`; immutable after create |
+| **Warehouse** (tenant) | `code`, `name`, address fields, `state` FK null, `is_default`, `is_active` | unique `(t, code)`; partial unique `(t) where is_default`; created with the tenant (backfilled) |
+| **StockLevel** (tenant) | `product` FK, `warehouse` FK, `quantity_on_hand` Qty, `quantity_reserved` Qty, `quantity_backordered` Qty (denormalised open backorder demand) | unique `(product, warehouse)`; **checks `on_hand>=0`, `reserved>=0`, `backordered>=0`, `reserved<=on_hand`**; index `(t, warehouse, product)`; available = on_hand − reserved; created with the product (backfilled at 0). ~~`avg_cost`, `version`~~ dropped (ADR-041: the product's cost price is the one cost) |
+| **StockMovement** (tenant, append-only) | `product` FK, `warehouse` FK, `movement_type` varchar (INWARD, SALE, RETURN, ADJUSTMENT_IN, ADJUSTMENT_OUT, DAMAGE, TRANSFER_IN, TRANSFER_OUT, RESERVE, RELEASE; manufacturing adds CONSUME / PRODUCE later), `quantity` Qty (>0), `delta_on_hand` Qty, `delta_reserved` Qty, `on_hand_after` Qty, `reserved_after` Qty, `unit_cost` UnitCost null, `value` Money null, `reference_type` varchar (INWARD, ADJUSTMENT, ORDER, ORDER_LINE, FULFILMENT, CREDIT_NOTE, ALLOCATION; later PRODUCTION), `reference_id` uuid, `reference_number` varchar, `reason` text | check `quantity>0`; **no check on the type list** — each type's direction lives in `services.MOVEMENT_KINDS` (ADR-041); index `(t, product, created_at desc)`, `(t, reference_type, reference_id)`, `(t, movement_type, created_at)`, BRIN `created_at` |
+| **StockInward** (tenant) | `number` (GRN-2026-00012, null while DRAFT), `warehouse` FK, `supplier_name`, `supplier_ref`, `bill_number`, `bill_date` null, `status` (DRAFT, POSTED), `posted_at`, `posted_by`, `notes`, `total_cost` Money null (lines with a cost), `cost_pending_lines` int | unique `(t, number)`; index `(t, status, created_at)`; partial index `(t) where cost_pending_lines > 0` |
+| **StockInwardLine** (tenant) | `inward` FK, `line_no`, `product` FK, `entered_unit` (BASE, PACK), `entered_qty` Qty, `quantity` Qty (base unit), `unit_cost` UnitCost null (per base unit, before GST), `line_cost` Money null, `cost_status` (NONE while draft, SET, PENDING), `cost_completed_at`, `cost_completed_by` | check `quantity>0`, `unit_cost is null or unit_cost>=0`; after POST only `unit_cost`/`line_cost`/`cost_*` may change, once, from PENDING (complete costs) |
+| **StockAdjustment** (tenant) | `number` (ADJ-2026-00012), `warehouse` FK, `reason_code` (COUNT_CORRECTION, DAMAGE, EXPIRY, THEFT, OPENING_STOCK, OTHER), `note` (required) | immutable after create |
+| **StockAdjustmentLine** (tenant) | `adjustment` FK, `line_no`, `product` FK, `mode` (ADD, REMOVE, COUNTED), `entered_qty` Qty (the counted quantity for COUNTED), `quantity_change` Qty (signed, ≠ 0), `on_hand_before` Qty | check `quantity_change <> 0`; a COUNTED line with no difference is dropped (reported); immutable |
 | **StockAlert** (tenant) | `product` FK, `warehouse` FK, `alert_type` (LOW_STOCK, OUT_OF_STOCK, BACKORDER_DEMAND), `status` (OPEN, RESOLVED), `opened_at`, `resolved_at`, `value_at_open` Qty | **partial unique `(t, product, warehouse, alert_type) where status='OPEN'`** (dedupe); index `(t, status, alert_type)` |
 
 ### 2.8 `orders`
@@ -402,6 +405,8 @@ erDiagram
 | `products.manage` (incl. categories, brands, units, imports) | ✔ | ✔ | | | |
 | `pricing.view` | ✔ | ✔ | ✔ | | ✔ |
 | `pricing.manage` | ✔ | ✔ | | | |
+| `costs.view` (cost price, receipt costs, movement values, valuation; ADR-042) | ✔ | ✔ | | | ✔ |
+| `costs.manage` (set costs, complete pending costs, import costs) | ✔ | ✔ | | | |
 | `retailers.view` | ✔ | ✔ | ✔ | | ✔ |
 | `retailers.manage` | ✔ | ✔ | ✔ | | |
 | `credit.manage` (limits, hold approvals) | ✔ | ✔ | | | ✔ |
@@ -424,6 +429,8 @@ erDiagram
 | `reports.financial` | ✔ | ✔ | | | ✔ |
 | `notifications.manage` (rules, templates, delivery log, announcements) | ✔ | ✔ | | | |
 | `dashboard.view` | ✔ | ✔ | ✔ | ✔ | ✔ (content filtered by other perms) |
+
+Inventory specifics (ADR-041, ADR-042): reorder levels can be changed with `products.manage` **or** `stock.adjust`; cost fields (cost price, receipt costs, movement values) need `costs.view`; setting costs and "complete costs" need `costs.manage`; the valuation report needs `costs.view` **and** (`reports.stock` **or** `reports.financial`) (ADR-043).
 
 Row-level scope: when ⚙ `orders.sales_visibility = ASSIGNED_RETAILERS`, users whose role is SALES see only orders/retailers/invoices of retailers where `salesperson = user` (applied in selectors, tested).
 
@@ -553,14 +560,22 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | Endpoint | Method | Permission | Purpose |
 |---|---|---|---|
 | `warehouses`, `/{id}` | GET, PATCH | view: `stock.view`; PATCH: `settings.manage` | default warehouse (multi-warehouse later) |
-| `stock` | GET | `stock.view` | stock levels (filters: low, out, backordered, category, brand) |
-| `stock/{product_id}` | GET | `stock.view` | levels + reservations + open backorder demand |
-| `stock/movements` | GET | `stock.view` | movement log (filters: product, type, reference, date) |
-| `stock/inwards` | GET, POST | `stock.inward` | list / create DRAFT |
-| `stock/inwards/{id}` | GET, PATCH, DELETE | `stock.inward` | edit/delete only while DRAFT |
-| `stock/inwards/{id}/post` | POST 🔑 | `stock.inward` | post → on_hand↑, movements, then trigger backorder allocation |
-| `stock/adjustments` | GET, POST 🔑 | `stock.adjust` | create an adjustment with mandatory reason (audited) |
-| `stock/alerts` | GET | `stock.view` | open/resolved alerts |
+| `stock` | GET | `stock.view` | stock levels (filters: search, low, out, backordered, category, brand) |
+| `stock/{product_id}` | GET | `stock.view` | level + reorder level + open alerts + recent movements |
+| `stock/{product_id}/reorder-level` | PATCH | `products.manage` or `stock.adjust` | audited |
+| `stock/movements` | GET | `stock.view` | movement log (filters: product, type, reference, date); `unit_cost`/`value` only with `costs.view` |
+| `stock/lookup?code=` | GET | `stock.inward` or `stock.adjust` | product by barcode or code for scanning (base/pack units, on hand) |
+| `stock/inwards` | GET, POST | `stock.inward` | list (filters: status, cost pending) / create DRAFT |
+| `stock/inwards/{id}` | GET, PATCH, DELETE | `stock.inward` | edit/delete only while DRAFT; costs sent without `costs.view` are refused |
+| `stock/inwards/{id}/post` | POST 🔑 | `stock.inward` | post → on_hand↑, movements, cost method, backorder allocation hook (Phase 4) |
+| `stock/inwards/{id}/complete-costs` | POST 🔑 | `costs.manage` | add costs to cost-pending lines; applies the cost method; audited |
+| `stock/adjustments`, `/{id}` | GET, POST 🔑 | `stock.adjust` | multi-line adjustment with reason code + required note (audited) |
+| `stock/alerts` | GET | `stock.view` | open/resolved alerts; the counts feed the sidebar badge |
+| `stock/summary` | GET | `stock.view` | counts: open alerts by type; receipts awaiting cost (only with `costs.view`) |
+| `reports/stock/low-stock` (+ `/export`) | GET | `reports.stock` | at or below the reorder level, with shortfall |
+| `reports/stock/low-stock/summary` | GET | `reports.stock` | low-stock count and active products without a reorder level (ADR-042) |
+| `stock/export` | GET | `stock.adjust` | today's stock as a count sheet in the opening-stock columns |
+| `reports/stock/valuation` (+ `/export`) | GET | `costs.view` + (`reports.stock` or `reports.financial`) | qty × cost price, category and brand totals, missing-cost products marked and counted |
 
 ### 3.8 Orders, fulfilments, backorders (distributor)
 | Endpoint | Method | Permission | Purpose |
@@ -887,7 +902,7 @@ def release(level, qty, ref):       _apply_movement(level, RELEASE, qty, d_on_ha
 def consume_reserved(level, qty, ref):  # dispatch
                                     _apply_movement(level, SALE,    qty, d_on_hand=-qty, d_reserved=-qty, ref)
 def receive(level, qty, cost, ref): _apply_movement(level, INWARD,  qty, d_on_hand=+qty, d_reserved=0, ref)
-                                    level.avg_cost = weighted_avg(level, qty, cost)
+                                    apply_cost_method(product, on_hand_before, qty, cost, ref)   # ⚙ stock.cost_method, ADR-041
 
 # ---------- place order (apps/orders/services.py) ----------
 @idempotent(scope="orders.place") @retry_on_deadlock
@@ -1049,6 +1064,7 @@ label = IN_STOCK      if avail > product.reorder_level (or reorder_level = 0 and
         LOW_STOCK     if 0 < avail ≤ reorder_level and ⚙ stock.show_low_stock_label   (else IN_STOCK)
         BACKORDER     if avail ≤ 0 and ⚙ backorders.enabled                          ("Available on backorder")
         UNAVAILABLE   otherwise
+        (UNAVAILABLE products are hidden from the shop when ⚙ stock.show_out_of_stock_in_shop = false)
 qty   = avail if ⚙ stock.show_exact_quantity else null
 cart split per line: in_stock_qty = min(qty, max(avail,0)); backorder_qty = qty − in_stock_qty   (estimate; final at placement)
 ```
@@ -1266,11 +1282,12 @@ Shared building blocks (`components/shared`):
 | `/manage/pricing/overrides` | RetailerPriceTable |
 | `/manage/pricing/discounts`, `/[id]` | DiscountRuleTable, RuleForm (type, scope, audience, slabs, validity) |
 | `/manage/pricing/preview` | PricePreviewTool (retailer + products → resolve_price breakdown) |
-| `/manage/stock` | StockTable (on hand, reserved, available, backordered, label), filters |
+| `/manage/stock` | StockTable (on hand, reserved, available, backordered, label), filters, "Receipts awaiting cost (n)" (with `costs.view`) |
 | `/manage/stock/[productId]` | StockLevelCard, MovementHistoryTable, ReorderLevelEditor |
-| `/manage/stock/inwards`, `/new`, `/[id]` | InwardList; InwardEntryGrid (keyboard-first, barcode scan field, pack/base unit, cost), PostConfirm (shows backorders that will be allocated) |
-| `/manage/stock/adjustments` | AdjustmentForm (reason required), AdjustmentTable |
+| `/manage/stock/inwards`, `/new`, `/[id]` | InwardList (filter: awaiting cost); InwardEntry — phones: ScanBar (search / typed or wedge barcode / camera), one large quantity field per product, sticky Save / Post; laptops: keyboard grid (Enter: product → qty → cost → next row); pack/base unit; cost column only with `costs.view`; CompleteCostsForm (`costs.manage`) |
+| `/manage/stock/adjustments`, `/new`, `/[id]` | AdjustmentForm (reason code + note, lines add / remove / counted, same ScanBar), AdjustmentTable |
 | `/manage/stock/alerts`, `/manage/stock/movements` | AlertsTable; MovementsTable |
+| `/manage/reports/low-stock`, `/manage/reports/stock-valuation` | LowStockReport; ValuationReport (category/brand totals, missing costs) with Excel export |
 | `/manage/invoices`, `/[id]` | InvoiceTable (payment/e-invoice status), InvoiceView (tax breakup, PDF, IRN) |
 | `/manage/credit-notes`, `/new`, `/[id]` | CreditNoteForm (pick invoice → lines/qty, reason, restock) |
 | `/manage/payments`, `/new`, `/[id]` | RecordPaymentForm (mode-specific fields, allocation table FIFO/manual), ReceiptView, **ChequesToClear** list (clear / bounce) |
@@ -1399,18 +1416,18 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 ### Phase 3 — Inventory
 | # | Task | Size |
 |---|---|---|
-| 3.1 | Warehouse (default per tenant), StockLevel with CHECKs, StockMovement with append-only trigger | M |
-| 3.2 | Inventory primitives: `lock_levels`, `_apply_movement`, `retry_on_deadlock` wiring | M |
-| 3.3 | Stock inward draft/post, pack conversion, weighted-average cost | M |
-| 3.4 | Adjustments with mandatory reason, audit, block below reserved | S |
-| 3.5 | Alerts evaluate/dedupe + outbox events | M |
-| 3.6 | Availability selector + labels in shop APIs | S |
-| 3.7 | Concurrency tests (threads, barrier) + invariant checker | M |
-| 3.8 | Stock APIs: list, detail, movements, alerts, low-stock report | M |
-| 3.9 | Opening stock import | S |
-| 3.10 | FE: stock overview, product stock detail + movements | M |
-| 3.11 | FE: inward entry grid (keyboard-first, barcode, pack/base) | L |
-| 3.12 | FE: adjustments, alerts, low-stock report | M |
+| 3.1 | Warehouse (default per tenant), StockLevel with CHECKs, StockMovement with append-only trigger, receipts, adjustments, alerts; backfills | M |
+| 3.2 | Inventory primitives: `lock_levels`, `_apply_movement` with `MOVEMENT_KINDS`, `retry_on_deadlock`; cost method (ADR-041); concurrency tests (threads, barrier) + invariant checker | M |
+| 3.3 | Alerts evaluate/dedupe + outbox events | M |
+| 3.4 | Stock inward draft/post, pack conversion, cost pending + complete costs | M |
+| 3.5 | Adjustments: multi-line, reason + note, counted mode, block below reserved, audit | S |
+| 3.6 | Stock APIs: warehouses, list, detail, reorder level, movements, lookup, alerts, summary, low-stock and valuation reports + exports | M |
+| 3.7 | Availability labels in shop APIs; ⚙ `stock.show_out_of_stock_in_shop`; opening stock import | S |
+| 3.8 | Seed demo stock; regenerate client | S |
+| 3.9 | FE: stock overview, product stock detail + movements, stock card on the product page | M |
+| 3.10 | FE: inward entry (phone scan/search flow, laptop keyboard grid, barcode wedge + camera, pack/base), complete costs | L |
+| 3.11 | FE: adjustments, alerts, low-stock and valuation reports | M |
+| 3.12 | FE: shop availability badges; E2E acceptance; responsive check | M |
 
 ### Phase 4 — Ordering & backorders
 | # | Task | Size |
@@ -1586,6 +1603,8 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Orders | `orders.insufficient_stock_action` | enum | `FAIL` | `FAIL`, `PLACE_AVAILABLE` | — | When backorders are off and stock runs short at checkout: stop the order and show what's short, or place only the in-stock part. Depends on `backorders.enabled = false`. |
 | Stock | `stock.show_exact_quantity` | bool | `false` | — | — | Show retailers the exact quantity in stock (otherwise only "In stock / Low stock"). |
 | Stock | `stock.show_low_stock_label` | bool | `true` | — | — | Show a "Low stock" label to retailers when stock is at or below the reorder level. |
+| Stock | `stock.show_out_of_stock_in_shop` | bool | `true` | — | — | Show products with no stock to shops, marked "Out of stock". Turn off to hide them. Applies only when backorders are off (ADR-041). |
+| Stock | `stock.cost_method` | enum | `WEIGHTED_AVERAGE` | `WEIGHTED_AVERAGE`, `LAST_PURCHASE`, `MANUAL` | — | How goods receipts change a product's cost price: the average of stock and the new bill, the latest bill cost, or never (you set it yourself) (ADR-041). |
 | Stock | `backorders.enabled` | bool | `true` | — | ORDER | Let retailers order more than is in stock; the rest is sent when stock arrives. |
 | Stock | `backorders.allocation_mode` | enum | `CONFIRM` | `CONFIRM`, `AUTO` | — | When stock arrives, confirm each backorder allocation yourself, or allocate automatically (oldest orders first). |
 | Stock | `backorders.billing_price` | enum | `ORIGINAL` | `ORIGINAL`, `CURRENT` | ORDER | Price for backordered items sent later: the price when ordered, or today's price. |
@@ -1700,8 +1719,40 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 8 | Discount grid | One simple rule per shop and product; slab or dated rules read-only with a link |
 | 9 | Discount-rule import key | The rule name; rows with the same name are one rule's slabs |
 | 10 | Free-goods warning with combined modes | Per-rule check, plus "free products" in the shop pricing report |
-| 11 | Cost price | `pricing.view` to see, `pricing.manage` to change |
+| 11 | Cost price | `pricing.view` to see, `pricing.manage` to change (superseded by ADR-042: `costs.view` / `costs.manage`) |
 | 12 | What shops see of discounts | The total as amount and % ("You save ₹12 (12%)") in every mode; never rule names or counts; slab hints stay |
+
+### 10.2b Phase 3 plan decisions (2026-09-26, ADR-041)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Valuation cost | The product's cost price, updated by receipts per ⚙ `stock.cost_method`: WEIGHTED_AVERAGE (default; stock 0 or no cost price → the bill cost), LAST_PURCHASE, MANUAL. Manual edits always allowed, audited |
+| 2 | Cost basis | Per unit before GST ("Cost per unit (before GST)"); composition tenants would need GST-inclusive cost (future) |
+| 3 | Warehouse staff and costs | Post quantities only; lines are "cost pending"; `pricing.manage` completes costs later (audited, cost method applied then); "Goods receipts awaiting cost" list and count for `pricing.view` |
+| 4 | Reorder level | `products.manage` or `stock.adjust`, audited |
+| 5 | Adjustments | Multi-line, one reason code + required note, add / remove / counted per line, `STOCK_RESERVED` guard |
+| 6 | Out-of-stock in the shop | Shown as "Out of stock"; ⚙ `stock.show_out_of_stock_in_shop` (default on) hides them |
+| 7 | Camera on the LAN | Chrome flag documented for LAN testing; HTTPS camera testing on staging; typed and USB/Bluetooth scanners work on the LAN now |
+| 8 | Valuation report | In Phase 3: category/brand totals, missing costs marked and counted, Excel export; `reports.stock` + `pricing.view` |
+| — | Movement types and manufacturing | Types are data (`MOVEMENT_KINDS`), no DB list; production adds CONSUME / PRODUCE rows and a source document later |
+
+### 10.2c Phase 3 backend checkpoint (2026-09-26, ADR-042)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Late cost completion with weighted average | Stock before = on hand now − the line's quantity (never below 0) |
+| 2 | Alerts only from stock changes | Approved |
+| 3 | Low-stock report | Products with a reorder level above 0, plus a count of active products without one, linking to the filtered stock list |
+| 4 | Hiding out-of-stock products | Only when backorders are off |
+| 5 | Cost visibility | New `costs.view` / `costs.manage` (Owner, Manager, Accounts / Owner, Manager); Sales keep `pricing.view` without costs |
+| 6 | Opening stock import | One adjustment per file |
+
+### 10.2d Phase 3 final review (2026-09-26, ADR-043)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Stock value for Accounts | Yes: `costs.view` with `reports.stock` or `reports.financial` |
+| 2 | "No reorder level" link to the stock list | Approved |
+| 3 | Import commit reports rows that fail the re-check | Approved |
+| 4 | `barcode-detector` served from our own server | Approved |
+| 5 | Flaky 2FA sign-in in E2E | Root cause found (clock skew after the Mac slept) and the helper made deterministic |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

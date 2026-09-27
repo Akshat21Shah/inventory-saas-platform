@@ -27,6 +27,8 @@ from apps.catalog.models import (
     ProductTaxRate,
     Unit,
 )
+from apps.inventory import alerts as inventory_alerts
+from apps.inventory import services as inventory
 from apps.platform.models import CessType, TaxRate
 from apps.platform.selectors import get_setting
 from common.dates import today_ist
@@ -319,7 +321,7 @@ PRODUCT_FIELDS = (
     "cost_price",
 )
 PRICE_FIELDS = ("base_price", "mrp", "cost_price")
-COST_PERMISSION = "pricing.manage"  # ADR-039: seen with pricing.view, set with pricing.manage
+COST_PERMISSION = "costs.manage"  # ADR-042: seen with costs.view, set with costs.manage
 
 
 def _clean_tags(tags: Iterable[str]) -> list[str]:
@@ -486,9 +488,7 @@ def _save_product(product: Product) -> None:
 @transaction.atomic
 def _check_cost_permission(data: dict[str, Any], by: User) -> None:
     if "cost_price" in data and not by.has_permission_code(COST_PERMISSION):
-        raise InvalidFields(
-            {"cost_price": ["Only staff with the pricing permission can set the cost price."]}
-        )
+        raise InvalidFields({"cost_price": ["Only staff who manage costs can set the cost price."]})
 
 
 def create_product(
@@ -524,6 +524,7 @@ def create_product(
     if errors:
         raise InvalidFields(errors)
     _save_product(product)
+    inventory.ensure_levels_exist([product.pk], inventory.default_warehouse())
     ProductTaxRate.objects.create(
         product=product,
         gst_rate=gst_rate,
@@ -548,6 +549,10 @@ def create_product(
 def update_product(
     product_id: UUID, changes: dict[str, Any], *, by: User
 ) -> tuple[Product, list[Warning]]:
+    levels = {}
+    if "reorder_level" in changes and Product.objects.filter(pk=product_id).exists():
+        # Stock level before the product row (the inventory lock order), to re-check alerts.
+        levels = inventory.lock_levels([product_id], inventory.default_warehouse())
     product = (
         Product.objects.select_for_update().filter(pk=product_id, deleted_at__isnull=True).first()
     )
@@ -577,6 +582,9 @@ def update_product(
             audit.record(
                 "catalog.product_price_changed", target=product, target_repr=repr_, changes=prices
             )
+        if "reorder_level" in diff:
+            for level in levels.values():
+                inventory_alerts.evaluate(level, product.reorder_level)
     rate = selectors.tax_rate_on(product.pk)
     return product, price_warnings(product, rate.gst_rate if rate else None)
 

@@ -261,6 +261,14 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "\"Low stock\")."),
     _tenant("stock.show_low_stock_label", Group.STOCK, SettingType.BOOL, True,
             "Show a \"Low stock\" label to retailers when stock is at or below the reorder level."),
+    _tenant("stock.show_out_of_stock_in_shop", Group.STOCK, SettingType.BOOL, True,
+            "Show products with no stock to shops, marked \"Out of stock\". Turn off to hide them. "
+            "Applies only when backorders are off (ADR-041).",
+            depends_on=DependsOn("backorders.enabled", equals=False)),
+    _tenant("stock.cost_method", Group.STOCK, SettingType.ENUM, "WEIGHTED_AVERAGE",
+            "How goods receipts change a product's cost price: the average of your stock and the "
+            "new bill, the latest bill cost, or never (you set it yourself) (ADR-041).",
+            allowed=("WEIGHTED_AVERAGE", "LAST_PURCHASE", "MANUAL")),
     _tenant("backorders.enabled", Group.STOCK, SettingType.BOOL, True,
             "Let retailers order more than is in stock; the rest is sent when stock arrives.",
             snapshot_on=_ORDER),

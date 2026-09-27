@@ -1,19 +1,40 @@
 import { expect, type Page } from "@playwright/test";
 
-import { ADMIN, linkFromEmail, origin, randomGstin, resetLimits, totp } from "./stack";
+import {
+  ADMIN,
+  explainRefusal,
+  freshTotp,
+  linkFromEmail,
+  origin,
+  randomGstin,
+  resetLimits,
+} from "./stack";
 
-/** Signs in as the seeded super admin (password + the dev 2FA key). */
-export async function signInAsSuperAdmin(page: Page) {
-  // Each code is accepted once (replay protection); a retry reuses the current code, so clear the
-  // account's replay state and counters first instead of waiting for the next 30-second step.
-  resetLimits({ emails: [ADMIN.email] });
+/**
+ * Signs in as the seeded super admin (password + the dev 2FA key). The code comes from
+ * `freshTotp`, so it is computed for the backend's clock and never reuses a step; a refusal fails
+ * at once with the reason (replay, clock skew or invalid) instead of timing out.
+ */
+export async function signInAsSuperAdmin(page: Page, { reset = true } = {}) {
+  // Counters and lockouts (and, unless reset is false, the 2FA replay state).
+  if (reset) resetLimits({ emails: [ADMIN.email] });
   await page.goto(`${origin("admin")}/login`);
   await page.getByLabel(/email address/i).fill(ADMIN.email);
   await page.getByLabel(/^password/i).fill(ADMIN.password);
   await page.getByRole("button", { name: /^sign in$/i }).click();
-  await page.getByLabel(/6-digit code/i).fill(totp(ADMIN.totpSecret));
+  const field = page.getByLabel(/6-digit code/i);
+  await field.waitFor();
+  const sent = await freshTotp(ADMIN.totpSecret, ADMIN.email);
+  await field.fill(sent.code);
   await page.getByRole("button", { name: /verify/i }).click();
-  await page.waitForURL(`${origin("admin")}/platform`);
+  const refused = page.getByText(/that code didn't work/i);
+  const outcome = await Promise.race([
+    page.waitForURL(`${origin("admin")}/platform`).then(() => "signed-in" as const),
+    refused.waitFor().then(() => "refused" as const),
+  ]);
+  if (outcome === "refused") {
+    throw new Error(`Super admin 2FA code refused: ${explainRefusal(sent, ADMIN.email)}`);
+  }
 }
 
 export interface NewDistributor {

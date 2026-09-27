@@ -48,6 +48,7 @@ const product = (id: string, name: string, extra: Partial<ShopProduct> = {}): Sh
   order_multiple: "1.000",
   thumbnail_url: null,
   own_brand: false,
+  availability: { status: "IN_STOCK", quantity: null },
   price: {
     qty: "1.000",
     unit_price: "10.00",
@@ -147,5 +148,36 @@ describe("Product page", () => {
     mockApi({});
     renderWithIntl(<ProductPage productId="gone" />);
     await waitFor(() => expect(screen.getByText("This product isn't available")).toBeVisible());
+  });
+});
+
+describe("Stock labels", () => {
+  it("shows the server's label, and a quantity only when the distributor allows it", async () => {
+    mockApi({
+      "/api/v1/shop/categories/": () => [200, tree],
+      "/api/v1/shop/brands/": () => [200, []],
+      "/api/v1/shop/products/": () => [
+        200,
+        {
+          next: null,
+          previous: null,
+          results: [
+            product("p1", "Parle-G", { availability: { status: "LOW_STOCK", quantity: "3.000" } }),
+            product("p2", "Marie", { availability: { status: "BACKORDER", quantity: null } }),
+            product("p3", "Monaco", { availability: { status: "OUT_OF_STOCK", quantity: null } }),
+          ],
+        },
+      ],
+    });
+    renderWithIntl(<CatalogPage />);
+    const low = (await screen.findByText("Parle-G")).closest("a")!;
+    expect(within(low).getByText("Low stock")).toBeInTheDocument();
+    expect(within(low).getByText("3 pieces in stock")).toBeInTheDocument();
+    const waiting = screen.getByText("Marie").closest("a")!;
+    expect(within(waiting).getByText("Available on backorder")).toBeInTheDocument();
+    expect(within(waiting).queryByText(/in stock$/)).not.toBeInTheDocument();
+    expect(
+      within(screen.getByText("Monaco").closest("a")!).getByText("Out of stock"),
+    ).toBeVisible();
   });
 });

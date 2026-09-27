@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { MoneyText } from "@/components/shared/money-text";
 import { CardSkeleton, PageSkeleton } from "@/components/shared/skeletons";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -110,6 +111,23 @@ export function PriceBlock({
   );
 }
 
+/** "In stock", "Low stock", "Available on backorder" or "Out of stock"; the quantity only when
+ * the distributor shows exact stock (ADR-041 item 12). Never computed here. */
+function Availability({ product }: { product: Pick<ShopProduct, "availability" | "unit"> }) {
+  const t = useTranslations("shop.stock");
+  const { status, quantity } = product.availability;
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <StatusBadge status={status} />
+      {quantity !== null && Number(quantity) > 0 ? (
+        <span className="text-muted-foreground text-xs">
+          {t("left", { qty: formatQty(quantity), unit: product.unit.name })}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function OwnBrandBadge() {
   const t = useTranslations("shop");
   return (
@@ -166,6 +184,7 @@ function ProductCard({ product }: { product: ShopProduct }) {
             </span>
           ) : null}
           <PriceBlock price={product.price} mrp={product.mrp} />
+          <Availability product={product} />
           <OrderingNote product={product} />
         </span>
       </Link>
@@ -480,6 +499,7 @@ export function ProductPage({ productId }: { productId: string }) {
             ) : null}
           </div>
           <PriceBlock price={product.price} mrp={product.mrp} large />
+          <Availability product={product} />
           <OrderingNote product={product} />
           {product.pack_unit && product.pack_size ? (
             <p className="text-sm">

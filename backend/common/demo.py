@@ -19,6 +19,10 @@ from PIL import Image, ImageDraw
 from apps.accounts.models import Membership, User
 from apps.catalog import services as catalog
 from apps.catalog.models import Brand, Category, Product, Unit
+from apps.inventory import adjustments, receipts
+from apps.inventory.adjustments import AdjustmentInput, AdjustmentLineInput
+from apps.inventory.models import AdjustmentReason, StockAdjustment, StockInward
+from apps.inventory.receipts import LineInput, ReceiptInput
 from apps.platform.models import TaxRate, Tenant
 from apps.platform.validators import gstin_check_char
 from apps.pricing import services as pricing
@@ -105,6 +109,7 @@ class Summary:
     images: int = 0
     shops: int = 0
     rules: int = 0
+    stock_documents: int = 0
 
 
 def _money(value: Decimal) -> Decimal:
@@ -375,6 +380,78 @@ def _rules(
         )
 
 
+def _stock(tenant: Tenant, by: User, products: list[Product], summary: Summary) -> None:
+    """Opening stock, a shelf count that empties a few products (out of stock) and leaves some low,
+    a posted goods receipt with costs, one posted by the warehouse without costs (awaiting cost),
+    a draft and a damage adjustment. Only for a tenant with no stock documents yet, so re-running
+    the seed never adds stock twice."""
+    if StockAdjustment.objects.exists() or StockInward.objects.exists():
+        return
+    rng = random.Random(f"stock-{tenant.slug}")  # noqa: S311 - demo data, not security
+    warehouse = User.objects.get(email=f"warehouse@{tenant.slug}.example.com")
+    active = [p for p in products if p.is_active]
+
+    def adjust(reason: str, note: str, lines: list[AdjustmentLineInput], who: User) -> None:
+        for start in range(0, len(lines), adjustments.MAX_LINES):
+            adjustments.create_adjustment(
+                AdjustmentInput(reason, note, lines[start : start + adjustments.MAX_LINES]), by=who
+            )
+            summary.stock_documents += 1
+
+    def receive(header: dict[str, Any], lines: list[LineInput], who: User, post: bool) -> None:
+        if not lines:
+            return
+        data = ReceiptInput(lines=lines, **header)
+        (receipts.create_and_post if post else receipts.create_draft)(data, by=who)
+        summary.stock_documents += 1
+
+    adjust(
+        AdjustmentReason.OPENING_STOCK,
+        "Demo opening stock",
+        [AdjustmentLineInput(p.pk, "ADD", Decimal(rng.randrange(40, 400))) for p in products],
+        by,
+    )
+    counted = [
+        AdjustmentLineInput(p.pk, "COUNTED", Decimal(0 if n % 2 else rng.randrange(1, 24)))
+        for n, p in enumerate(products[6::7])
+    ]
+    adjust(AdjustmentReason.COUNT_CORRECTION, "Monthly shelf count", counted, warehouse)
+    supplier = {"supplier_name": "Demo Wholesale Pvt Ltd"}
+    receive(
+        {**supplier, "bill_number": "DW/2026/0412", "bill_date": today_ist()},
+        [
+            LineInput(
+                p.pk,
+                Decimal("2") if p.pack_unit_id else Decimal("48"),
+                "PACK" if p.pack_unit_id else "BASE",
+                (p.cost_price or Decimal("10")) * (p.pack_size or 1),
+            )
+            for p in active[1:40:6]
+        ],
+        by,
+        post=True,
+    )
+    receive(
+        {**supplier, "bill_number": "DW/2026/0419"},
+        [LineInput(p.pk, Decimal("24")) for p in active[3:12:4]],
+        warehouse,
+        post=True,
+    )
+    receive(
+        {"supplier_name": "Sai Agencies"},
+        [LineInput(p.pk, Decimal("12")) for p in active[5:7]],
+        warehouse,
+        post=False,
+    )
+    if active:
+        adjust(
+            AdjustmentReason.DAMAGE,
+            "Cartons damaged in the rain",
+            [AdjustmentLineInput(active[0].pk, "REMOVE", Decimal("2"))],
+            warehouse,
+        )
+
+
 def seed_catalog(tenant: Tenant, by: User, *, photos: bool = True) -> Summary:
     """Run inside ``tenant_context(tenant.id)``."""
     rng = random.Random(f"demo-{tenant.slug}")  # noqa: S311 - demo data, not security
@@ -383,4 +460,5 @@ def seed_catalog(tenant: Tenant, by: User, *, photos: bool = True) -> Summary:
     lists = _pricing(by, products, summary)
     shops = _shops(tenant, by, rng, lists, summary)
     _rules(by, lists, shops, products, summary)
+    _stock(tenant, by, products, summary)
     return summary

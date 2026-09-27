@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Ref } from './ref';
+import type { ShopAvailability } from './shopAvailability';
 import type { ShopImage } from './shopImage';
 import type { ShopPrice } from './shopPrice';
 import type { ShopUnit } from './shopUnit';
@@ -40,6 +41,7 @@ export interface ShopProductDetail {
   readonly thumbnail_url: string | null;
   readonly own_brand: boolean;
   price: ShopPrice;
+  readonly availability: ShopAvailability;
   description: string;
   images: ShopImage[];
   /** Lower prices for larger quantities, e.g. 24 or more. */

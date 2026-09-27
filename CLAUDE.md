@@ -166,6 +166,7 @@ URLs in dev:
 - mailpit: http://localhost:8025
 - S3: http://localhost:8333
 - After `make lan` (dev only): the same pages on `<lan-ip-with-dashes>.nip.io`, e.g. http://sharma.192-168-0-106.nip.io:3000. Only web (3000) and photos (8333) are reachable from other devices; database, Redis, API and Mailpit stay on this machine. `*.localhost` doesn't work until `make localhost`.
+- Camera barcode scanning over `make lan` (dev only, ADR-041): browsers allow the camera only on https or localhost. On an Android phone, open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, enter the tenant address (e.g. `http://sharma.192-168-0-106.nip.io:3000`; several are separated by commas), choose Enabled and relaunch Chrome. iPhones have no such switch. Typed codes and USB/Bluetooth scanners work without it; real camera testing is on staging (https).
 
 Database roles:
 - `app_user` is the runtime role, with RLS enforced.

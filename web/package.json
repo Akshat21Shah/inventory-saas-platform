@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/vendor-wasm.mjs",
     "dev": "node server.mjs",
+    "prebuild": "node scripts/vendor-wasm.mjs",
     "build": "next build",
     "start": "NODE_ENV=production node server.mjs",
     "lint": "eslint --max-warnings=0",
@@ -20,6 +22,7 @@
     "@sentry/nextjs": "^11.0.0",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-table": "^9.2.4",
+    "barcode-detector": "3.2.2",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "lucide-react": "^1.48.0",

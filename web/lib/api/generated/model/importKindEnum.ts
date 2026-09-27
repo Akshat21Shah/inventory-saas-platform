@@ -12,6 +12,7 @@
  * * `SPECIAL_PRICES` - Special prices
  * * `PRICE_LIST_ITEMS` - Price-list prices
  * * `DISCOUNT_RULES` - Discount rules
+ * * `OPENING_STOCK` - Opening stock
  */
 export type ImportKindEnum = typeof ImportKindEnum[keyof typeof ImportKindEnum];
 
@@ -22,4 +23,5 @@ export const ImportKindEnum = {
   SPECIAL_PRICES: 'SPECIAL_PRICES',
   PRICE_LIST_ITEMS: 'PRICE_LIST_ITEMS',
   DISCOUNT_RULES: 'DISCOUNT_RULES',
+  OPENING_STOCK: 'OPENING_STOCK',
 } as const;

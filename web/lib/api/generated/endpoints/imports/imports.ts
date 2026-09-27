@@ -33,7 +33,8 @@ import type {
   PriceListItemsExportParams,
   ProductsExportParams,
   RetailersExportParams,
-  SpecialPricesExportParams
+  SpecialPricesExportParams,
+  StockCountExportParams
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -1220,6 +1221,122 @@ export function useRetailersExport<TData = Awaited<ReturnType<typeof retailersEx
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getRetailersExportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type stockCountExportResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type stockCountExportResponseSuccess = (stockCountExportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type stockCountExportResponse = (stockCountExportResponseSuccess)
+
+export const getStockCountExportUrl = (params?: StockCountExportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/stock/export/?${stringifiedParams}` : `/api/v1/stock/export/`
+}
+
+/**
+ * Today's stock in the opening-stock columns: count, edit and import with "Set stock".
+ */
+export const stockCountExport = async (params?: StockCountExportParams, options?: Parameters<typeof apiFetch>[1]): Promise<stockCountExportResponse> => {
+
+  return apiFetch<stockCountExportResponse>(getStockCountExportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStockCountExportQueryKey = (params?: StockCountExportParams,) => {
+    return [
+    `/api/v1/stock/export/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getStockCountExportQueryOptions = <TData = Awaited<ReturnType<typeof stockCountExport>>, TError = unknown>(params?: StockCountExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stockCountExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStockCountExportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof stockCountExport>>> = ({ signal }) => stockCountExport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof stockCountExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type StockCountExportQueryResult = NonNullable<Awaited<ReturnType<typeof stockCountExport>>>
+export type StockCountExportQueryError = unknown
+
+
+export function useStockCountExport<TData = Awaited<ReturnType<typeof stockCountExport>>, TError = unknown>(
+ params: undefined |  StockCountExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof stockCountExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof stockCountExport>>,
+          TError,
+          Awaited<ReturnType<typeof stockCountExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStockCountExport<TData = Awaited<ReturnType<typeof stockCountExport>>, TError = unknown>(
+ params?: StockCountExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stockCountExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof stockCountExport>>,
+          TError,
+          Awaited<ReturnType<typeof stockCountExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStockCountExport<TData = Awaited<ReturnType<typeof stockCountExport>>, TError = unknown>(
+ params?: StockCountExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stockCountExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useStockCountExport<TData = Awaited<ReturnType<typeof stockCountExport>>, TError = unknown>(
+ params?: StockCountExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stockCountExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getStockCountExportQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -163,7 +163,7 @@ COLUMNS: tuple[Column, ...] = (
         "Cost price",
         ("cost", "purchase price", "landing cost", "buying price"),
         False,
-        "What one unit costs you. Never shown to shops. Needs the pricing permission.",
+        "What one unit costs you. Never shown to shops. Needs the cost permission.",
         "7.20",
     ),
 )
@@ -202,7 +202,7 @@ class ProductsKind:
     permission = "products.manage"
     key_label = LABEL["code"]
     columns = COLUMNS
-    restricted = {"cost_price": "pricing.view"}
+    restricted = {"cost_price": "costs.view"}  # ADR-042
 
     # --- reference data, loaded once per file --------------------------------------------------
 
@@ -234,7 +234,7 @@ class ProductsKind:
         deleted_codes = {p.code.lower() for p in matches if p.deleted_at is not None}
         owners = dict(ProductBarcode.objects.values_list("barcode", "product_id"))
         rates = selectors.tax_rates_on([p.pk for p in existing.values()])
-        can_cost = by.has_permission_code("pricing.manage")
+        can_cost = by.has_permission_code("costs.manage")
         seen_codes: dict[str, int] = {}
         seen_barcodes: dict[str, int] = {}
         plans: list[RowPlan] = []
@@ -270,8 +270,8 @@ class ProductsKind:
             if v.get("cost_price") and not can_cost:
                 plan.error(
                     LABEL["cost_price"],
-                    "You can't set cost prices. Remove this column or ask someone with the "
-                    "pricing permission.",
+                    "You can't set cost prices. Remove this column or ask someone who "
+                    "manages costs.",
                 )
                 continue
             if product is None:

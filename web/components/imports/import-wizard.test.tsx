@@ -63,13 +63,44 @@ describe("ImportStartPage", () => {
     await userEvent.upload(screen.getByLabelText("Choose an Excel or CSV file"), file);
     const check = screen.getByRole("button", { name: "Check the file" });
     expect(check).toBeDisabled();
-    expect(screen.getByText("Choose what should happen to existing rows first.")).toBeVisible();
+    expect(screen.getByText("Choose an option in step 2 first.")).toBeVisible();
 
     await userEvent.click(screen.getByRole("radio", { name: /^Add new and update existing/ }));
     await userEvent.click(check);
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/manage/imports/job-1"));
     const body = calls.find((c) => c.method === "POST")?.body as FormData;
     expect([body.get("kind"), body.get("mode")]).toEqual(["PRODUCTS", "ADD_OR_UPDATE"]);
+  });
+});
+
+describe("opening stock import", () => {
+  it("offers add-to-stock or set-to-count, never the record modes", async () => {
+    search = new URLSearchParams("kind=OPENING_STOCK");
+    const calls = mockApi({
+      "POST /api/v1/imports/": () => [201, job({ kind: "OPENING_STOCK", status: "VALIDATING" })],
+    });
+    renderWithIntl(<ImportStartPage />);
+    expect(screen.getByRole("radio", { name: /^Opening stock/ })).toBeChecked();
+    expect(screen.getByText("How should the quantities be used?")).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: /^Add new only/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: /^Set stock to this count/ }));
+    await userEvent.upload(
+      screen.getByLabelText("Choose an Excel or CSV file"),
+      new File(["x"], "count.xlsx"),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Check the file" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
+    const body = calls.find((c) => c.method === "POST")?.body as FormData;
+    expect([body.get("kind"), body.get("mode")]).toEqual(["OPENING_STOCK", "STOCK_SET"]);
+  });
+
+  it("clears the mode when another kind is chosen", async () => {
+    search = new URLSearchParams("kind=OPENING_STOCK");
+    renderWithIntl(<ImportStartPage />);
+    await userEvent.click(screen.getByRole("radio", { name: /^Add to stock/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /^Products/ }));
+    expect(screen.getByRole("radio", { name: /^Add new only/ })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Add new and update existing/ })).not.toBeChecked();
   });
 });
 

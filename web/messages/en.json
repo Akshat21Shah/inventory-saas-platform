@@ -152,7 +152,8 @@
     "cart": "Cart",
     "account": "Account",
     "mainNavigation": "Main navigation",
-    "impersonations": "Support sessions"
+    "impersonations": "Support sessions",
+    "needsAttention": "need attention"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -197,7 +198,12 @@
     "EXPIRED": "Expired",
     "PENDING": "Waiting",
     "REVOKED": "Cancelled",
-    "BLOCKED": "On hold"
+    "BLOCKED": "On hold",
+    "LOW": "Low stock",
+    "OUT": "Out of stock",
+    "OUT_OF_STOCK": "Out of stock",
+    "DRAFT": "Draft",
+    "POSTED": "Posted"
   },
   "table": {
     "emptyTitle": "No records yet",
@@ -252,7 +258,9 @@
     "TAX_RATE_NOT_CANCELLABLE": "Only a GST change that hasn't started yet can be cancelled.",
     "PREVIEW_OUT_OF_DATE": "The matching products changed since the preview. Preview again before confirming.",
     "RETAILER_ON_HOLD": "Your account is on hold. Please contact your distributor.",
-    "PRICE_UNAVAILABLE": "This product can't be sold right now."
+    "PRICE_UNAVAILABLE": "This product can't be sold right now.",
+    "INSUFFICIENT_STOCK": "There isn't enough stock for this.",
+    "STOCK_RESERVED": "Part of this stock is reserved for orders, so it can't be removed."
   },
   "designSystem": {
     "title": "Design system",
@@ -431,6 +439,19 @@
       "show_low_stock_label": {
         "label": "Show a \"Low stock\" label",
         "description": "Show a \"Low stock\" label to retailers when stock is at or below the reorder level."
+      },
+      "show_out_of_stock_in_shop": {
+        "label": "Show out-of-stock products to shops",
+        "description": "Shops see products with no stock, marked \"Out of stock\". Turn off to hide them until stock arrives. Only matters when backorders are off."
+      },
+      "cost_method": {
+        "label": "How goods receipts change the cost price",
+        "description": "When you receive goods with a cost, the product's cost price can follow the average of your stock and the new bill, the latest bill, or stay as you set it. You can always change a cost price by hand.",
+        "options": {
+          "WEIGHTED_AVERAGE": "Average of stock and new bill",
+          "LAST_PURCHASE": "Latest bill cost",
+          "MANUAL": "Never (I set it myself)"
+        }
       }
     },
     "backorders": {
@@ -1299,7 +1320,7 @@
       "create": "Add product",
       "save": "Save changes",
       "costPrice": "Cost price",
-      "costHint": "What one unit costs you. Only staff with pricing access see it; shops never do.",
+      "costHint": "What one unit costs you, before GST. Only staff with cost access see it; shops never do.",
       "cancel": "Cancel"
     },
     "taxRates": {
@@ -1399,30 +1420,36 @@
       "RETAILERS": "Retailers",
       "SPECIAL_PRICES": "Special prices",
       "PRICE_LIST_ITEMS": "Price-list prices",
-      "DISCOUNT_RULES": "Discounts"
+      "DISCOUNT_RULES": "Discounts",
+      "OPENING_STOCK": "Opening stock"
     },
     "kindHint": {
       "PRODUCTS": "Codes, names, prices, GST, categories and brands.",
       "RETAILERS": "Shops with mobile numbers, GSTIN, addresses and price lists.",
       "SPECIAL_PRICES": "One price per shop and product. Shops by mobile number or code.",
       "PRICE_LIST_ITEMS": "Prices on your price lists, by list name and product code.",
-      "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab."
+      "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab.",
+      "OPENING_STOCK": "How much of each product you have, by product code; optionally its cost. The whole file becomes one stock adjustment."
     },
     "template": "Download the {kind} template",
     "modeTitle": "What should happen to rows that already exist?",
     "mode": {
       "ADD_ONLY": "Add new only",
-      "ADD_OR_UPDATE": "Add new and update existing"
+      "ADD_OR_UPDATE": "Add new and update existing",
+      "STOCK_ADD": "Add to stock",
+      "STOCK_SET": "Set stock to this count"
     },
     "modeHint": {
       "ADD_ONLY": "New rows are added. Rows that already exist are reported as errors and nothing about them changes.",
-      "ADD_OR_UPDATE": "New rows are added and existing ones are updated. Only the columns in your file change; a blank cell means “no change”. You'll see every change before anything is saved."
+      "ADD_OR_UPDATE": "New rows are added and existing ones are updated. Only the columns in your file change; a blank cell means “no change”. You'll see every change before anything is saved.",
+      "STOCK_ADD": "Each quantity is added to what is in stock now.",
+      "STOCK_SET": "Stock becomes exactly the quantity in the file (for example after a count). You'll see the old and new stock of every product before anything is saved."
     },
     "fileTitle": "Choose the file",
     "chooseFile": "Choose an Excel or CSV file",
     "fileHint": "Excel (.xlsx) or CSV, saved from Excel is fine.",
     "check": "Check the file",
-    "chooseModeFirst": "Choose what should happen to existing rows first.",
+    "chooseModeFirst": "Choose an option in step 2 first.",
     "nothingSavedYet": "We check every row first and show you the result. Nothing is saved until you confirm.",
     "report": "Download the full report",
     "checking": "Checking your file…",
@@ -1437,7 +1464,8 @@
       "RETAILERS": "Go to retailers",
       "SPECIAL_PRICES": "Go to special prices",
       "PRICE_LIST_ITEMS": "Go to price lists",
-      "DISCOUNT_RULES": "Go to discounts"
+      "DISCOUNT_RULES": "Go to discounts",
+      "OPENING_STOCK": "Go to stock"
     },
     "counts": {
       "new": "New",
@@ -1472,7 +1500,8 @@
       "COMMITTING": "Importing",
       "COMMITTED": "Imported"
     },
-    "pastImports": "Past imports"
+    "pastImports": "Past imports",
+    "stockModeTitle": "How should the quantities be used?"
   },
   "retailers": {
     "list": {
@@ -1934,7 +1963,10 @@
       "goneBody": "It may be out of the catalog for now.",
       "orderingSoon": "Ordering from the app is coming soon. Until then, please order from your distributor as usual."
     },
-    "ownBrand": "Own brand"
+    "ownBrand": "Own brand",
+    "stock": {
+      "left": "{qty} {unit} in stock"
+    }
   },
   "filters": {
     "button": "Filters",
@@ -1943,5 +1975,329 @@
     "description": "Narrow down the list.",
     "clear": "Clear filters",
     "show": "Show results"
+  },
+  "stock": {
+    "nav": {
+      "label": "Stock sections",
+      "overview": "Overview",
+      "receipts": "Goods received",
+      "adjustments": "Adjustments",
+      "alerts": "Alerts",
+      "movements": "Movements",
+      "lowStock": "Low stock",
+      "valuation": "Stock value",
+      "settings": "Settings"
+    },
+    "movementTypes": {
+      "INWARD": "Goods received",
+      "SALE": "Dispatched",
+      "RETURN": "Returned",
+      "ADJUSTMENT_IN": "Added",
+      "ADJUSTMENT_OUT": "Removed",
+      "DAMAGE": "Damaged",
+      "TRANSFER_IN": "Transfer in",
+      "TRANSFER_OUT": "Transfer out",
+      "RESERVE": "Reserved for an order",
+      "RELEASE": "Reservation released"
+    },
+    "alertTypes": {
+      "LOW_STOCK": "Low stock",
+      "OUT_OF_STOCK": "Out of stock",
+      "BACKORDER_DEMAND": "Shops waiting"
+    },
+    "overview": {
+      "title": "Stock",
+      "description": "What you have, what is reserved for orders and what needs restocking.",
+      "receive": "Receive goods",
+      "adjust": "Adjust stock",
+      "more": "More stock actions",
+      "exportCount": "Download count sheet",
+      "importStock": "Import opening stock",
+      "awaitingCost": "{count, plural, one {# goods receipt is} other {# goods receipts are}} waiting for costs.",
+      "addCosts": "Add costs",
+      "lowStock": "Low stock",
+      "outOfStock": "Out of stock",
+      "shopsWaiting": "Shops waiting",
+      "product": "Product",
+      "available": "Available",
+      "status": "Status",
+      "onHand": "On hand",
+      "reserved": "Reserved",
+      "reorderLevel": "Reorder level",
+      "notSet": "Not set",
+      "category": "Category",
+      "brand": "Brand",
+      "search": "Search stock",
+      "searchPlaceholder": "Name, code or barcode",
+      "anyStatus": "Any stock status",
+      "allCategories": "All categories",
+      "allBrands": "All brands",
+      "statuses": {
+        "IN_STOCK": "In stock",
+        "LOW": "Low stock",
+        "OUT": "Out of stock",
+        "BACKORDERED": "Shops waiting",
+        "NO_REORDER_LEVEL": "No reorder level"
+      },
+      "noMatchTitle": "No products match",
+      "noMatchBody": "Try another search or clear the filters.",
+      "emptyTitle": "No products yet",
+      "emptyBody": "Add products first; their stock appears here."
+    },
+    "detail": {
+      "back": "All stock",
+      "receive": "Receive goods",
+      "adjust": "Adjust",
+      "productDetails": "Product details",
+      "available": "Available",
+      "onHand": "On hand",
+      "reserved": "Reserved for orders",
+      "backordered": "Shops waiting for",
+      "movements": "Stock movements",
+      "noMovements": "No stock movements yet",
+      "reorderTitle": "Reorder level",
+      "reorderHelp": "You'll get a low-stock alert when the available stock falls to this level.",
+      "reorderLabel": "Reorder at ({unit})",
+      "notSet": "Not set",
+      "save": "Save",
+      "reorderSaved": "Reorder level saved",
+      "costTitle": "Cost price",
+      "perUnit": "per {unit}, before GST",
+      "noCost": "No cost price yet",
+      "alertsTitle": "Open alerts",
+      "noAlerts": "No open alerts",
+      "barcodes": "Barcodes",
+      "stockTitle": "Stock",
+      "stockUnavailable": "Stock isn't available right now.",
+      "stockLink": "Stock and movements"
+    },
+    "movements": {
+      "title": "Stock movements",
+      "description": "Every change to stock, newest first. Movements are never edited; corrections are new movements.",
+      "when": "When",
+      "product": "Product",
+      "type": "What happened",
+      "change": "Change",
+      "onHandAfter": "On hand after",
+      "reference": "Document",
+      "reason": "Reason",
+      "by": "By",
+      "value": "Value",
+      "allTypes": "All movements",
+      "from": "From",
+      "to": "To",
+      "emptyTitle": "No stock movements",
+      "emptyBody": "Receiving goods and adjustments show up here."
+    },
+    "scan": {
+      "label": "Scan or search a product",
+      "placeholder": "Scan a barcode or type a name or code",
+      "linkPlaceholder": "Search the product for this barcode",
+      "camera": "Scan with the camera",
+      "cameraTitle": "Scan a barcode",
+      "cameraHelp": "Point the camera at the barcode. It is read automatically.",
+      "cameraNeedsHttps": "The camera only works on a secure (https) connection. Type the code, or use a USB or Bluetooth scanner.",
+      "cameraDenied": "The camera couldn't be opened. Allow camera access for this site, or type the code.",
+      "cameraUnsupported": "This browser can't read barcodes with the camera. Type the code, or use a scanner.",
+      "notFound": "No product has the barcode or code {code}.",
+      "link": "Link this barcode to a product",
+      "linkingHelp": "Choose the product that has barcode {code}. It will be saved on the product.",
+      "linked": "Barcode {code} saved on {name}",
+      "cancel": "Cancel",
+      "matches": "Matching products",
+      "inStock": "In stock:"
+    },
+    "receipts": {
+      "title": "Goods received",
+      "description": "Receipts of goods from suppliers. Posting one adds the stock at once.",
+      "receive": "Receive goods",
+      "filter": "Show",
+      "all": "All",
+      "drafts": "Drafts",
+      "posted": "Posted",
+      "awaitingCost": "Waiting for costs",
+      "receipt": "Receipt",
+      "draft": "Draft",
+      "supplier": "Supplier",
+      "bill": "Bill no.",
+      "lines": "Lines",
+      "status": "Status",
+      "total": "Cost",
+      "by": "By",
+      "costPending": "{count, plural, one {# line} other {# lines}} waiting for cost",
+      "noneAwaiting": "Nothing is waiting for costs",
+      "noneAwaitingBody": "Every posted receipt has its costs.",
+      "emptyTitle": "No goods received yet",
+      "emptyBody": "Receive goods when a supplier's delivery arrives."
+    },
+    "receipt": {
+      "back": "All goods received",
+      "newTitle": "Receive goods",
+      "draftTitle": "Draft receipt",
+      "newBody": "Scan or search each product, enter what arrived, then post to add it to stock.",
+      "supplier": "Supplier",
+      "billNumber": "Bill no.",
+      "billDate": "Bill date",
+      "supplierRef": "Supplier ref.",
+      "notes": "Notes",
+      "linesTitle": "{count, plural, =0 {Products} one {# product} other {# products}}",
+      "linesCaption": "Products received",
+      "product": "Product",
+      "unit": "Unit",
+      "quantity": "Quantity",
+      "costColumn": "Cost (before GST)",
+      "actions": "Actions",
+      "packOf": "{pack} of {size} {unit}",
+      "qtyFor": "Quantity of {name} in {unit}",
+      "less": "One less {name}",
+      "more": "One more {name}",
+      "remove": "Remove {name}",
+      "costPer": "Cost per {unit} (before GST)",
+      "costOptional": "Optional",
+      "noCostNote": "Costs are added later by someone who manages costs.",
+      "emptyLines": "No products yet. Scan a barcode or search above.",
+      "addedAgain": "{name}: one more added",
+      "noLines": "Add at least one product.",
+      "fixLines": "Some lines need attention.",
+      "saveAsDraft": "Save as draft",
+      "saveDraft": "Save draft",
+      "saveAndPost": "Save and post",
+      "post": "Post",
+      "postTitle": "Post this receipt ({count, plural, one {# product} other {# products}})?",
+      "postBody": "The stock goes up now. A posted receipt can't be changed; fix a mistake with a stock adjustment.",
+      "posted": "Posted: the stock is updated",
+      "saved": "Draft saved",
+      "deleteDraft": "Delete draft",
+      "deleteTitle": "Delete this draft?",
+      "deleteBody": "Nothing was added to stock yet.",
+      "deleted": "Draft deleted",
+      "received": "Received",
+      "equals": "=",
+      "lineCost": "Line cost",
+      "costStatus": "Cost",
+      "pending": "Waiting for cost",
+      "costEntered": "Entered",
+      "linesPending": "{count, plural, one {# line} other {# lines}} waiting for cost",
+      "postedBy": "Posted by",
+      "totalCost": "Total cost (before GST)",
+      "completeTitle": "Add the missing costs",
+      "completeHelp": "Enter the cost from the supplier's bill, before GST. Quantities don't change.",
+      "saveCosts": "{count, plural, =0 {Save costs} one {Save # cost} other {Save # costs}}",
+      "costsSaved": "{count, plural, one {# cost saved} other {# costs saved}}",
+      "billDetails": "Supplier and bill"
+    },
+    "reasons": {
+      "COUNT_CORRECTION": "Stock count",
+      "DAMAGE": "Damaged",
+      "EXPIRY": "Expired",
+      "THEFT": "Lost or stolen",
+      "OPENING_STOCK": "Opening stock",
+      "OTHER": "Other"
+    },
+    "adjustment": {
+      "back": "All adjustments",
+      "newTitle": "Adjust stock",
+      "newBody": "Correct stock after a count, damage or loss. Every adjustment keeps its reason and note.",
+      "reason": "Why is the stock changing?",
+      "note": "Note",
+      "noteHint": "Required. For example: \"Monthly count, rack B\".",
+      "linesTitle": "{count, plural, =0 {Products} one {# product} other {# products}}",
+      "emptyLines": "No products yet. Scan a barcode or search above.",
+      "inStockNow": "now {qty} {unit}",
+      "how": "How to change {name}",
+      "modeColumn": "How",
+      "modes": {
+        "COUNTED": "Counted",
+        "ADD": "Add",
+        "REMOVE": "Remove"
+      },
+      "qtyLabel": {
+        "COUNTED": "Counted quantity of {name} in {unit}",
+        "ADD": "Quantity of {name} to add, in {unit}",
+        "REMOVE": "Quantity of {name} to remove, in {unit}"
+      },
+      "qtyPlaceholder": {
+        "COUNTED": "Counted",
+        "ADD": "Add",
+        "REMOVE": "Remove"
+      },
+      "remove": "Remove {name}",
+      "save": "{count, plural, =0 {Save adjustment} one {Save adjustment (# product)} other {Save adjustment (# products)}}",
+      "saved": "{number} saved",
+      "savedWithUnchanged": "{number} saved. {count, plural, one {# count matched} other {# counts matched}} the stock, so nothing changed there.",
+      "product": "Product",
+      "before": "Before",
+      "change": "Change"
+    },
+    "adjustments": {
+      "title": "Stock adjustments",
+      "description": "Corrections to stock with their reasons. Adjustments can't be edited; a mistake is fixed with another adjustment.",
+      "new": "Adjust stock",
+      "number": "Adjustment",
+      "reason": "Reason",
+      "note": "Note",
+      "lines": "Products",
+      "when": "When",
+      "by": "By",
+      "emptyTitle": "No adjustments yet",
+      "emptyBody": "Adjust stock after a count, or when goods are damaged or lost."
+    },
+    "alerts": {
+      "title": "Stock alerts",
+      "description": "Products that are low, out of stock or have shops waiting. Alerts close by themselves when stock comes back.",
+      "show": "Show",
+      "open": "Open",
+      "resolvedTab": "Resolved",
+      "product": "Product",
+      "type": "Alert",
+      "atTheTime": "Stock at the time",
+      "since": "Since",
+      "opened": "Opened",
+      "resolved": "Resolved",
+      "allTypes": "All alerts",
+      "noneOpen": "No open alerts",
+      "noneOpenBody": "Everything is above its reorder level.",
+      "noneResolved": "No resolved alerts yet"
+    },
+    "reports": {
+      "indexTitle": "Reports",
+      "indexDescription": "More reports (sales, receivables) come with ordering and billing.",
+      "noReports": "No reports for your role",
+      "noReportsBody": "Ask the owner if you need stock reports.",
+      "lowTitle": "Low stock",
+      "lowDescription": "Products at or below their reorder level, with how much you are short.",
+      "valuationTitle": "Stock value",
+      "valuationDescription": "What your stock is worth at cost price, before GST, by category and brand.",
+      "exportExcel": "Download Excel",
+      "category": "Category",
+      "brand": "Brand",
+      "allCategories": "All categories",
+      "allBrands": "All brands",
+      "product": "Product",
+      "available": "Available",
+      "reorderLevel": "Reorder level",
+      "shortBy": "Short by",
+      "onHand": "On hand",
+      "costPrice": "Cost price",
+      "value": "Value",
+      "products": "Products",
+      "noCost": "No cost price",
+      "withoutReorder": "{count, plural, one {# active product has} other {# active products have}} no reorder level, so they never show as low.",
+      "setThem": "Set them",
+      "noLowTitle": "Nothing is low",
+      "noLowBody": "Every product with a reorder level has more than that in stock.",
+      "totalValue": "Total value (before GST)",
+      "productsValued": "Products valued",
+      "withoutCost": "Without a cost price",
+      "missingNote": "Products without a cost price are not in the totals. Tap the count to see them.",
+      "productsTitle": "Products in stock",
+      "missingTitle": "Products in stock without a cost price",
+      "noCostPrice": "No cost price",
+      "totalsBy": "Totals by",
+      "none": "(none)",
+      "noStock": "No stock",
+      "noStockBody": "Products appear here once they are in stock.",
+      "valuationNoAccess": "This report shows costs, so it needs cost access. Ask the owner if you need it."
+    }
   }
 }
