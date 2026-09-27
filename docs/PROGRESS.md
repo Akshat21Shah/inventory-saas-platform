@@ -181,7 +181,11 @@
      - Approving a credit hold reserves or backorders parked quantities by the normal rules (audited).
      - Order totals are recomputed through `billing/tax.py` for what stays open.
      - Race: accept vs cancel on the same order, 10 rounds: exactly one wins each time and the other gets `INVALID_STATE_TRANSITION`.
-  6. Shipments: pack, short pack, dispatch, deliver, derived status
+  6. Shipments: pack, short pack, dispatch, deliver, derived status — **done** (`apps/orders/fulfilment.py`):
+     - Pack records the packed quantity per line (0 to the shipment's quantity). The short remainder is released and goes back on backorder, or is cancelled, per the order's snapshot (not today's setting); the history and `order.short_supplied` record it. Packing nothing cancels the shipment.
+     - Dispatch: SALE movements consume the reservation, transport details (vehicle, transporter, LR) are kept, and Phase 5 will issue the invoice here. Deliver is done by `orders.fulfil` staff.
+     - Staff can cancel a shipment before dispatch (to backorder or cancelled, their choice), or the whole accepted order (every open shipment and the backorder). Neither is possible once anything is dispatched.
+     - Order status is derived: COMPLETED when every shipment is delivered and nothing waits, otherwise the least advanced shipment; `backorder_state` stays in step. Freed stock calls the backorder hook.
   7. Backorders: queue, allocation, proposals, cancel remainder, repriced cancel, mixed-operations race
   8. Distributor APIs (+ ordering on behalf), isolation and role tests
   9. Shop APIs: home, orders, cancel, repeat, checkout attempts

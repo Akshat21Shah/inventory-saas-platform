@@ -16,7 +16,7 @@ from apps.audit import services as audit
 from apps.inventory import services as stock
 from apps.inventory.availability import ShopStockRules
 from apps.inventory.models import ReferenceType, StockLevel
-from apps.orders import credit
+from apps.orders import backorders, credit
 from apps.orders.models import (
     Fulfilment,
     FulfilmentLine,
@@ -121,6 +121,7 @@ def release_quantities(
         if remaining > 0:
             raise ValueError("more released than the line holds")
         line.save()
+    backorders.after_stock_released([line.product_id for line in lines])
 
 
 def _open_quantity(line: OrderLine) -> Decimal:
