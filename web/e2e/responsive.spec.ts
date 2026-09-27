@@ -41,6 +41,12 @@ interface Ids {
 function pages(ids: Ids) {
   const staff = [
     "/manage",
+    "/manage/orders",
+    ...(ids.order ? [`/manage/orders/${ids.order}`] : []),
+    "/manage/orders/shipments",
+    "/manage/orders/new",
+    "/manage/backorders",
+    ...(ids.backorder_product ? [`/manage/backorders/${ids.backorder_product}`] : []),
     "/manage/products",
     "/manage/products/new",
     `/manage/products/${ids.product}`,
