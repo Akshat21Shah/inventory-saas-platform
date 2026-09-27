@@ -80,3 +80,35 @@ def add_address(
             is_default=default,
         )
         return address
+
+
+def place(
+    tenant: Any,
+    shop: Retailer,
+    *lines: tuple[Any, str],
+    via: str = "RETAILER_APP",
+    by: User | None = None,
+) -> Any:
+    """Place an order directly through the service (no cart), at the current prices."""
+    from apps.inventory.availability import ShopStockRules
+    from apps.orders.cart import live_rules
+    from apps.orders.quote import build_quote
+    from apps.orders.services import Placement, place_order
+
+    items = [(product.pk, D(qty)) for product, qty in lines]
+    with tenant_context(tenant.pk):
+        quote = build_quote(
+            shop,
+            items,
+            rules=live_rules(tenant.pk),
+            stock_rules=ShopStockRules.for_tenant(tenant.pk),
+        )
+        return place_order(
+            Placement(
+                retailer=shop,
+                placed_by=by or shop_user(shop),
+                via=via,
+                items=items,
+                expected_total=quote.totals.grand_total,
+            )
+        )

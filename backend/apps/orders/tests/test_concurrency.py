@@ -114,3 +114,41 @@ def test_ten_duplicate_submissions_make_one_order(make_tenant):
     assert len({order_id for _, order_id in results}) == 1
     with tenant_context(tenant.pk):
         assert Order.objects.count() == 1
+
+
+def test_accept_and_cancel_at_the_same_moment(make_tenant):
+    """Ten rounds: a shop cancels while staff accept the same order. Exactly one wins; the other
+    is told the order moved on, and stock is never left half released."""
+    from apps.accounts.tests.factories import make_staff_in
+    from apps.orders import transitions
+    from apps.orders.tests.helpers import place
+
+    tenant = make_tenant()
+    owner = make_staff_in(tenant, "OWNER")
+    product = make_product(tenant)
+    add_stock(tenant, product, "50")
+    shop = make_shop(tenant)
+    outcomes = []
+    for _ in range(10):
+        order = place(tenant, shop, (product, "2"))
+
+        def act(index: int, order_id=order.pk) -> str:
+            with tenant_context(tenant.pk):
+                if index == 0:
+                    transitions.accept_order(order_id, by=owner)
+                    return "accepted"
+                transitions.cancel_order(order_id, by=shop_user(shop), retailer_id=shop.pk)
+                return "cancelled"
+
+        results, errors = parallel(2, act)
+        assert len(results) == 1 and len(errors) == 1, (results, errors)
+        assert isinstance(errors[0], transitions.InvalidTransition)
+        with tenant_context(tenant.pk):
+            status = Order.objects.get(pk=order.pk).status
+        assert status == {"accepted": "ACCEPTED", "cancelled": "CANCELLED"}[results[0]]
+        outcomes.append(results[0])
+    with tenant_context(tenant.pk):
+        accepted = Order.objects.filter(status="ACCEPTED").count()
+        level = StockLevel.objects.get(product=product)
+    assert level.quantity_reserved == 2 * accepted  # cancelled orders released theirs
+    check_invariants(tenant)

@@ -13,7 +13,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.billing.tax import round2
+from apps.billing.tax import (
+    ComponentRounding,
+    RoundOffMethod,
+    SupplyType,
+    compute_document,
+    compute_line,
+    round2,
+)
 from apps.inventory import services as stock
 from apps.inventory.availability import ShopStockRules
 from apps.inventory.models import ReferenceType, StockLevel
@@ -144,6 +151,52 @@ def emit(event_type: str, order: Order, **payload: Any) -> None:
     )
 
 
+def recompute_totals(order: Order, lines: list[OrderLine]) -> None:
+    """The order's estimates for what stays open (ordered - cancelled), through billing/tax.py
+    with the order's snapshot (supply type, price basis, rounding). Saves the order."""
+    snap = order.settings_snapshot
+    rounding = ComponentRounding(snap.get("tax.component_rounding", "HALF_UP"))
+    taxes = []
+    for line in lines:
+        open_qty = line.qty_ordered - line.qty_cancelled
+        if open_qty <= 0:
+            continue
+        taxes.append(
+            compute_line(
+                qty=open_qty,
+                unit_price=line.unit_price,
+                rate=line.gst_rate,
+                supply_type=SupplyType(order.supply_type),
+                discount_amount=round2(line.discount_amount * open_qty / line.qty_ordered),
+                cess_rate=line.cess_rate,
+                inclusive=order.prices_include_tax,
+                rounding=rounding,
+            )
+        )
+    totals = compute_document(
+        taxes,
+        round_to_rupee=bool(snap.get("invoicing.round_to_rupee", True)),
+        round_off_method=RoundOffMethod(snap.get("invoicing.round_off_method", "NEAREST")),
+    )
+    order.gross_total = sum((x.gross for x in taxes), ZERO)
+    order.discount_total = sum((x.discount for x in taxes), ZERO)
+    order.taxable_total = totals.taxable
+    order.tax_total = totals.cgst + totals.sgst + totals.igst + totals.cess
+    order.round_off = totals.round_off
+    order.grand_total = totals.grand_total
+    order.save(
+        update_fields=[
+            "gross_total",
+            "discount_total",
+            "taxable_total",
+            "tax_total",
+            "round_off",
+            "grand_total",
+            "updated_at",
+        ]
+    )
+
+
 def line_value(line: OrderLine, quantity: Decimal) -> Decimal:
     """Estimated value incl. GST of part of a line (its estimate is for the ordered quantity)."""
     if line.qty_ordered <= 0:
@@ -177,9 +230,14 @@ class Placement:
 
 
 def place_order(placement: Placement) -> Order:
-    """Idempotency is the API's (Idempotency-Key, ADR-005): this runs inside that transaction."""
+    """Idempotency is the API's (Idempotency-Key, ADR-005): this runs inside that transaction.
+    With automatic acceptance (snapshot), the order is accepted right after it commits."""
+    from apps.orders.transitions import schedule_auto_accept
+
     with transaction.atomic():
-        return _place(placement)
+        order = _place(placement)
+        schedule_auto_accept(order)
+        return order
 
 
 def _place(p: Placement) -> Order:
@@ -270,6 +328,8 @@ def _place(p: Placement) -> Order:
             )
         if row.qty_backordered:
             stock.change_backordered(level, row.qty_backordered)
+    if any(cancelled for _, _, cancelled in plan):  # PLACE_AVAILABLE dropped some
+        recompute_totals(order, list(order.lines.all()))
     record(
         order,
         OrderEvent.HOLD if status == OrderStatus.ON_HOLD else OrderEvent.PLACE,
@@ -319,8 +379,8 @@ def _totals(quote: Quote) -> dict[str, Decimal]:
     taxed = [line.tax for line in quote.lines if line.tax is not None]
     t = quote.totals
     return {
-        "gross_total": sum((x.gross_excl for x in taxed), ZERO),
-        "discount_total": sum((x.discount_excl for x in taxed), ZERO),
+        "gross_total": sum((x.gross for x in taxed), ZERO),
+        "discount_total": sum((x.discount for x in taxed), ZERO),
         "taxable_total": t.taxable,
         "tax_total": t.cgst + t.sgst + t.igst + t.cess,
         "round_off": t.round_off,
@@ -361,8 +421,8 @@ def _create_line(
         qty_reserved=reserved,
         qty_backordered=later,
         qty_cancelled=cancelled,
-        gross_amount=tax.gross_excl,
-        discount_amount=tax.discount_excl,
+        gross_amount=tax.gross,  # on the order's price basis (incl. GST when prices include it)
+        discount_amount=price.discount_total,
         taxable_amount=tax.taxable,
         tax_amount=tax.tax,
         line_total=tax.line_total,

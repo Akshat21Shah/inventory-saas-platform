@@ -174,7 +174,13 @@
      - Saved with the order: `ORD-<year>-000001`, snapshots of product, price (every discount rule in its own row, in the order applied), address, place of supply, settings and totals, plus "Placed by Priya (Sales)" for staff orders. The PLACE/HOLD history, the `order.placed` / `order.on_hold` outbox event and emptying the cart happen in the same transaction.
      - Shop API `POST shop/orders/` (Idempotency-Key): a retry returns the same order (`Idempotent-Replayed: true`).
      - Races: 20 shops ordering 3 each against 10 in stock reserve exactly 10 (with the stock lock removed, 60 were reserved), and 10 simultaneous submissions with one key make one order.
-  5. Order state machine + accept/cancel race
+  5. Order state machine + accept/cancel race — **done** (`apps/orders/transitions.py`; shop account then order then stock in every function):
+     - Accept (manual, or automatic after the placing transaction commits when the snapshot says AUTO): reserved quantities become shipment `ORD-…/1` (the stock stays reserved until dispatch), and `backorder_state` is OPEN when something waits. An all-backordered order is accepted with no shipment.
+     - Reject (reason required) and cancel (the shop, own orders only, before acceptance; or staff): pending, reserved and backordered quantities are released to cancelled, and the stock and shops-waiting counters are updated.
+     - Modify before acceptance: REDUCE_ONLY by default, releasing pending, then reserved, then backordered as PLAN §4.1 says. FULL_EDIT (snapshot) can raise quantities or add products; an increase becomes a new line at today's price, so each line keeps its ordered price. Credit is re-checked for additions, and a breach is refused unless a `credit.manage` user gives an override reason (audited). At least one item must remain, and the diff goes into the history and the `order.modified` event.
+     - Approving a credit hold reserves or backorders parked quantities by the normal rules (audited).
+     - Order totals are recomputed through `billing/tax.py` for what stays open.
+     - Race: accept vs cancel on the same order, 10 rounds: exactly one wins each time and the other gets `INVALID_STATE_TRANSITION`.
   6. Shipments: pack, short pack, dispatch, deliver, derived status
   7. Backorders: queue, allocation, proposals, cancel remainder, repriced cancel, mixed-operations race
   8. Distributor APIs (+ ordering on behalf), isolation and role tests

@@ -180,7 +180,8 @@ class OrderLine(TenantScopedModel):
     qty_cancelled = QtyField(default=0)
     qty_dispatched = QtyField(default=0)
     qty_delivered = QtyField(default=0)
-    # Estimates for the ordered quantity (not cancelled).
+    # Estimates for the ordered quantity, on the order's price basis (incl. GST when prices
+    # include it). The order's totals are recomputed from these for what stays open.
     gross_amount = MoneyField(default=0)
     discount_amount = MoneyField(default=0)
     taxable_amount = MoneyField(default=0)
