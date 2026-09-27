@@ -50,6 +50,8 @@ class Newest(CursorPagination):
 
 
 class ShopOrdersView(ShopView):
+    pagination_class = Newest  # documents the list as a cursor page
+
     @extend_schema(
         operation_id="shop_orders_list",
         tags=TAGS,

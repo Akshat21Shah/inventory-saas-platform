@@ -147,16 +147,32 @@ export function SidebarShell({
 }
 
 /** Mobile-first retailer shell: bottom navigation with large (≥ 44px) targets, icon + label. */
+/** A count on a nav icon (e.g. items in the cart); the label is read out with it. */
+function CountBadge({ count, label }: { count?: number; label: string }) {
+  if (!count) return null;
+  return (
+    <span
+      aria-label={label}
+      className="bg-destructive text-destructive-foreground absolute -top-1.5 -right-2.5 min-w-5 rounded-full px-1 text-center text-[11px] leading-5 font-semibold tabular-nums"
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 export function BottomNavShell({
   title,
   items,
   children,
   banner,
+  badges,
 }: {
   title: string;
   items: NavItem[];
   children: ReactNode;
   banner?: ReactNode;
+  /** Counts on nav icons, by label key (e.g. the cart's item count). */
+  badges?: Partial<Record<string, number>>;
 }) {
   const pathname = usePathname();
   const t = useTranslations();
@@ -185,7 +201,13 @@ export function BottomNavShell({
                           : "text-primary-foreground/90 hover:bg-primary-foreground/15",
                       )}
                     >
-                      <Icon aria-hidden className="size-4" />
+                      <span className="relative">
+                        <Icon aria-hidden className="size-4" />
+                        <CountBadge
+                          count={badges?.[labelKey]}
+                          label={t("nav.itemCount", { count: badges?.[labelKey] ?? 0 })}
+                        />
+                      </span>
                       {t(`nav.${labelKey}`)}
                     </Link>
                   </li>
@@ -219,7 +241,13 @@ export function BottomNavShell({
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
-                  <Icon aria-hidden className="size-5" />
+                  <span className="relative">
+                    <Icon aria-hidden className="size-5" />
+                    <CountBadge
+                      count={badges?.[labelKey]}
+                      label={t("nav.itemCount", { count: badges?.[labelKey] ?? 0 })}
+                    />
+                  </span>
                   {t(`nav.${labelKey}`)}
                 </Link>
               </li>

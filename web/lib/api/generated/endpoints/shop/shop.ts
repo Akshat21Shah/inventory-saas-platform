@@ -28,6 +28,7 @@ import type {
   CancelOrderRequest,
   CheckoutAttempt,
   DeliveryAddress,
+  PaginatedShopOrderRowList,
   PaginatedShopProductList,
   PlaceOrderRequest,
   QuantityRequest,
@@ -42,7 +43,6 @@ import type {
   ShopCategory,
   ShopHome,
   ShopOrder,
-  ShopOrderRow,
   ShopOrdersListParams,
   ShopProductDetail,
   ShopProductsParams
@@ -1240,7 +1240,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getShopOrderLineCancelBackorderMutationOptions(options), queryClient);
     }
     export type shopOrdersListResponse200 = {
-  data: ShopOrderRow[]
+  data: PaginatedShopOrderRowList
   status: 200
 }
 

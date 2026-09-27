@@ -209,6 +209,7 @@ export * from './paginatedReceiptList';
 export * from './paginatedReportRowList';
 export * from './paginatedRetailerListList';
 export * from './paginatedRetailerPriceList';
+export * from './paginatedShopOrderRowList';
 export * from './paginatedShopProductList';
 export * from './paginatedStockRowList';
 export * from './paginatedTenantListList';

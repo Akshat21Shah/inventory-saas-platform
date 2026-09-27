@@ -1,12 +1,15 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ShopProduct, ShopProductDetail } from "@/lib/api/generated/model";
 import { mockApi } from "@/tests/mock-api";
 import { renderWithIntl } from "@/tests/render";
 
-import { CatalogPage, ProductPage, ShopHome } from "./catalog";
+import { CartProvider } from "./cart-state";
+import { CatalogPage, ProductPage } from "./catalog";
+import { ShopHome } from "./home";
 
 const auth: { me: { retailer: { shop_name: string; on_hold: boolean } } } = {
   me: { retailer: { shop_name: "Ganesh Kirana", on_hold: false } },
@@ -18,6 +21,9 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/shop",
   useSearchParams: () => new URLSearchParams(),
 }));
+
+/** Shop screens run inside the cart (the stepper on every product). */
+const renderShop = (ui: ReactElement) => renderWithIntl(<CartProvider>{ui}</CartProvider>);
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -66,7 +72,7 @@ describe("Shop home", () => {
   it("greets the shop, shows categories and the on-hold notice", async () => {
     auth.me.retailer.on_hold = true;
     mockApi({ "/api/v1/shop/categories/": () => [200, tree] });
-    renderWithIntl(<ShopHome />);
+    renderShop(<ShopHome />);
     expect(screen.getByRole("heading", { name: "Hello, Ganesh Kirana" })).toBeVisible();
     expect(
       screen.getByText("Your account is on hold. Please contact your distributor."),
@@ -113,7 +119,7 @@ describe("Catalog", () => {
             ];
       },
     });
-    renderWithIntl(<CatalogPage categoryId="c-food" />);
+    renderShop(<CatalogPage categoryId="c-food" />);
     const parle = (await screen.findByText("Parle-G")).closest("a")!;
     expect(within(parle).getByText("₹9.50")).toBeVisible();
     expect(within(parle).getByText("₹10.00")).toHaveClass("line-through");
@@ -139,14 +145,14 @@ describe("Product page", () => {
       slab_hints: [{ min_qty: "24.000", net_unit_price: "9.50" }],
     };
     mockApi({ "/api/v1/shop/products/p1/": () => [200, detail] });
-    const { unmount } = renderWithIntl(<ProductPage productId="p1" />);
+    const { unmount } = renderShop(<ProductPage productId="p1" />);
     expect(await screen.findByText("Buy more, pay less")).toBeVisible();
     const slab = screen.getByText(/24 or more:/).closest("li")!;
     expect(within(slab).getByText("₹9.50")).toBeVisible();
     unmount();
 
     mockApi({});
-    renderWithIntl(<ProductPage productId="gone" />);
+    renderShop(<ProductPage productId="gone" />);
     await waitFor(() => expect(screen.getByText("This product isn't available")).toBeVisible());
   });
 });
@@ -169,7 +175,7 @@ describe("Stock labels", () => {
         },
       ],
     });
-    renderWithIntl(<CatalogPage />);
+    renderShop(<CatalogPage />);
     const low = (await screen.findByText("Parle-G")).closest("a")!;
     expect(within(low).getByText("Low stock")).toBeInTheDocument();
     expect(within(low).getByText("3 pieces in stock")).toBeInTheDocument();

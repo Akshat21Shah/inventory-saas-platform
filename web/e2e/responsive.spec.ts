@@ -32,6 +32,10 @@ interface Ids {
   receipt: string | null;
   draft_receipt: string | null;
   adjustment: string | null;
+  shop_order: string | null;
+  order: string | null;
+  fulfilment: string | null;
+  backorder_product: string | null;
 }
 
 function pages(ids: Ids) {
@@ -101,6 +105,9 @@ function pages(ids: Ids) {
     "/shop/catalog",
     "/shop/search?q=parle",
     `/shop/products/${ids.product}`,
+    "/shop/cart",
+    "/shop/orders",
+    ...(ids.shop_order ? [`/shop/orders/${ids.shop_order}`] : []),
     "/shop/account",
   ];
   return { staff, platform, shop };

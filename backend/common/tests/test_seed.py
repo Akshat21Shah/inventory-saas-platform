@@ -130,8 +130,13 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "receipt",
         "draft_receipt",
         "adjustment",
+        "shop_order",
+        "order",
+        "fulfilment",
+        "backorder_product",
     }
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
+    assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("e2e_ids")

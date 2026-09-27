@@ -7,6 +7,8 @@ import { useEffect, type ReactNode } from "react";
 import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
 import { RequireArea } from "@/components/auth/require-area";
 import { BottomNavShell, type NavItem } from "@/components/shared/app-shell";
+import { CartProvider, useCart } from "@/components/shop/cart-state";
+import { ShopLiveUpdates } from "@/components/shop/live";
 
 // Bottom navigation per spec §8: Home, Search/Catalog, Cart, Orders, Account.
 const ITEMS: NavItem[] = [
@@ -24,14 +26,34 @@ function useServiceWorker() {
   }, []);
 }
 
+function Shell({ title, children }: { title: string; children: ReactNode }) {
+  const { count } = useCart();
+  return (
+    <BottomNavShell
+      title={title}
+      items={ITEMS}
+      banner={<ImpersonationBanner />}
+      badges={{ cart: count }}
+    >
+      {children}
+    </BottomNavShell>
+  );
+}
+
 export function RetailerShell({ title, children }: { title: string; children: ReactNode }) {
   useServiceWorker();
   const pathname = usePathname();
   const shell = (
-    <BottomNavShell title={title} items={ITEMS} banner={<ImpersonationBanner />}>
-      {children}
-    </BottomNavShell>
+    <CartProvider>
+      <Shell title={title}>{children}</Shell>
+    </CartProvider>
   );
   // The offline page is the service worker's fallback: it must render without a session.
-  return pathname === "/shop/offline" ? shell : <RequireArea area="shop">{shell}</RequireArea>;
+  if (pathname === "/shop/offline") return shell;
+  return (
+    <RequireArea area="shop">
+      <ShopLiveUpdates />
+      {shell}
+    </RequireArea>
+  );
 }
