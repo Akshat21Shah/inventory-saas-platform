@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { BackorderStateEnum } from './backorderStateEnum';
-import type { HoldReasonEnum } from './holdReasonEnum';
+import type { OrderRowHoldReason } from './orderRowHoldReason';
 import type { OrderStatusEnum } from './orderStatusEnum';
 import type { PlacedViaEnum } from './placedViaEnum';
 
@@ -19,7 +19,13 @@ export interface OrderRow {
   readonly status: OrderStatusEnum;
   readonly items_to_follow: number;
   readonly backorder_state: BackorderStateEnum;
-  readonly hold_reason: HoldReasonEnum;
+  /**
+     * Why it waits for approval; blank when it doesn't.
+     *
+     * * `CREDIT_LIMIT` - Over the credit limit
+     * * `OVERDUE` - Overdue invoices
+     */
+  readonly hold_reason: typeof OrderRowHoldReason[keyof typeof OrderRowHoldReason];
   readonly retailer: string;
   readonly retailer_name: string;
   readonly placed_via: PlacedViaEnum;

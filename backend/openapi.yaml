@@ -7256,6 +7256,9 @@ components:
       - line1
       - pincode
       - state_code
+    BlankEnum:
+      enum:
+      - ''
     BlockRequest:
       type: object
       properties:
@@ -10104,9 +10107,15 @@ components:
           - $ref: '#/components/schemas/BackorderStateEnum'
           readOnly: true
         hold_reason:
-          allOf:
-          - $ref: '#/components/schemas/HoldReasonEnum'
           readOnly: true
+          description: |-
+            Why it waits for approval; blank when it doesn't.
+
+            * `CREDIT_LIMIT` - Over the credit limit
+            * `OVERDUE` - Overdue invoices
+          oneOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         retailer:
           type: string
           format: uuid
@@ -13851,9 +13860,15 @@ components:
           - $ref: '#/components/schemas/BackorderStateEnum'
           readOnly: true
         hold_reason:
-          allOf:
-          - $ref: '#/components/schemas/HoldReasonEnum'
           readOnly: true
+          description: |-
+            Why it waits for approval; blank when it doesn't.
+
+            * `CREDIT_LIMIT` - Over the credit limit
+            * `OVERDUE` - Overdue invoices
+          oneOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         retailer:
           type: string
           format: uuid
@@ -14442,9 +14457,15 @@ components:
           - $ref: '#/components/schemas/BackorderStateEnum'
           readOnly: true
         hold_reason:
-          allOf:
-          - $ref: '#/components/schemas/HoldReasonEnum'
           readOnly: true
+          description: |-
+            Why it waits for approval; blank when it doesn't.
+
+            * `CREDIT_LIMIT` - Over the credit limit
+            * `OVERDUE` - Overdue invoices
+          oneOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         retailer:
           type: string
           format: uuid

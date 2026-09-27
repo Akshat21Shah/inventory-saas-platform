@@ -131,6 +131,12 @@ class OrderSerializer(serializers.ModelSerializer[Order]):
     retailer_name = serializers.CharField(source="retailer.shop_name", read_only=True)
     lines = OrderLineSerializer(many=True, read_only=True)
     fulfilments = FulfilmentSerializer(many=True, read_only=True)
+    hold_reason = serializers.ChoiceField(
+        choices=Order.HoldReason.choices,
+        allow_blank=True,
+        read_only=True,
+        help_text="Why it waits for approval; blank when it doesn't.",
+    )
     history = HistorySerializer(many=True, read_only=True)
     items_to_follow = serializers.SerializerMethodField(
         help_text='Products still to be delivered ("N items to follow").'
@@ -191,6 +197,12 @@ class OrderRowSerializer(serializers.ModelSerializer[Order]):
 
     retailer = serializers.UUIDField(source="retailer_id", read_only=True)
     retailer_name = serializers.CharField(source="retailer.shop_name", read_only=True)
+    hold_reason = serializers.ChoiceField(
+        choices=Order.HoldReason.choices,
+        allow_blank=True,
+        read_only=True,
+        help_text="Why it waits for approval; blank when it doesn't.",
+    )
     line_count = serializers.IntegerField(read_only=True)
     items_to_follow = serializers.IntegerField(read_only=True)
 

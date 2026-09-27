@@ -8,10 +8,10 @@
 import type { BackorderStateEnum } from './backorderStateEnum';
 import type { Fulfilment } from './fulfilment';
 import type { History } from './history';
-import type { HoldReasonEnum } from './holdReasonEnum';
 import type { OrderLine } from './orderLine';
 import type { OrderStatusEnum } from './orderStatusEnum';
 import type { PlacedViaEnum } from './placedViaEnum';
+import type { StaffOrderHoldReason } from './staffOrderHoldReason';
 
 /**
  * The distributor's view adds the credit approval (not shown to the shop).
@@ -21,7 +21,13 @@ export interface StaffOrder {
   readonly number: string;
   readonly status: OrderStatusEnum;
   readonly backorder_state: BackorderStateEnum;
-  readonly hold_reason: HoldReasonEnum;
+  /**
+     * Why it waits for approval; blank when it doesn't.
+     *
+     * * `CREDIT_LIMIT` - Over the credit limit
+     * * `OVERDUE` - Overdue invoices
+     */
+  readonly hold_reason: typeof StaffOrderHoldReason[keyof typeof StaffOrderHoldReason];
   readonly retailer: string;
   readonly retailer_name: string;
   readonly placed_via: PlacedViaEnum;

@@ -38,9 +38,20 @@ import { OnHoldNotice } from "./catalog";
 import { useCart } from "./cart-state";
 import { QuantityStepper } from "./quantity-stepper";
 
-/** A problem from the server in plain words (codes from apps/orders/quote.py). */
-function ProblemText({ problem, unit }: { problem: Problem; unit?: string }) {
-  const t = useTranslations("shop.cart.problems");
+/** A problem from the server in plain words (codes from apps/orders/quote.py), worded for the
+ * shop, or for staff ordering on its behalf. */
+export function ProblemText({
+  problem,
+  unit,
+  audience = "shop",
+}: {
+  problem: Problem;
+  unit?: string;
+  audience?: "shop" | "staff";
+}) {
+  const t = useTranslations(
+    audience === "shop" ? "shop.cart.problems" : "orders.onBehalf.problems",
+  );
   const d = problem.details as Record<string, string | undefined>;
   const qty = (value?: string) => (value ? formatQty(value) : "");
   switch (problem.code) {

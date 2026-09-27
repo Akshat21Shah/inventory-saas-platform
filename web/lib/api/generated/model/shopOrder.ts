@@ -7,18 +7,24 @@
  */
 import type { BackorderStateEnum } from './backorderStateEnum';
 import type { Fulfilment } from './fulfilment';
-import type { HoldReasonEnum } from './holdReasonEnum';
 import type { OrderLine } from './orderLine';
 import type { OrderStatusEnum } from './orderStatusEnum';
 import type { PlacedViaEnum } from './placedViaEnum';
 import type { ShopHistory } from './shopHistory';
+import type { ShopOrderHoldReason } from './shopOrderHoldReason';
 
 export interface ShopOrder {
   readonly id: string;
   readonly number: string;
   readonly status: OrderStatusEnum;
   readonly backorder_state: BackorderStateEnum;
-  readonly hold_reason: HoldReasonEnum;
+  /**
+     * Why it waits for approval; blank when it doesn't.
+     *
+     * * `CREDIT_LIMIT` - Over the credit limit
+     * * `OVERDUE` - Overdue invoices
+     */
+  readonly hold_reason: typeof ShopOrderHoldReason[keyof typeof ShopOrderHoldReason];
   readonly retailer: string;
   readonly retailer_name: string;
   readonly placed_via: PlacedViaEnum;

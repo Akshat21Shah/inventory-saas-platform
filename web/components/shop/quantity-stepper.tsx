@@ -19,23 +19,43 @@ export interface Orderable {
   unit: { name: string };
 }
 
-/** "Add" until the product is in the cart, then − quantity +. The quantity can also be typed.
- * Taps show at once; the cart on the server follows (cart-state). */
-export function QuantityStepper({
-  product,
-  disabled,
-  className,
-  wide,
-}: {
+/** The shop's stepper, bound to its cart: taps show at once; the cart on the server follows
+ * (cart-state). */
+export function QuantityStepper(props: {
   product: Orderable;
   disabled?: boolean;
   className?: string;
   /** Full-width "Add" (product page). */
   wide?: boolean;
 }) {
-  const t = useTranslations("shop.order");
   const { quantityOf, setQuantity } = useCart();
-  const qty = quantityOf(product.id);
+  return (
+    <StepperControl
+      {...props}
+      qty={quantityOf(props.product.id)}
+      onSet={(quantity) => setQuantity(props.product.id, quantity)}
+    />
+  );
+}
+
+/** "Add" until there is a quantity, then − quantity + (the quantity can also be typed). Steps
+ * start at the product's minimum and follow its multiple; the server still checks. */
+export function StepperControl({
+  product,
+  qty,
+  onSet,
+  disabled,
+  className,
+  wide,
+}: {
+  product: Orderable;
+  qty: string;
+  onSet: (quantity: string) => void;
+  disabled?: boolean;
+  className?: string;
+  wide?: boolean;
+}) {
+  const t = useTranslations("shop.order");
   // What the shop is typing, for the quantity it started from (a new quantity replaces it).
   const [draft, setDraft] = useState<{ text: string; from: string } | null>(null);
   const typed = draft && draft.from === qty ? draft.text : null;
@@ -48,7 +68,7 @@ export function QuantityStepper({
         disabled={disabled}
         className={cn("min-h-11 gap-2", wide ? "w-full" : "min-w-24", className)}
         aria-label={t("addNamed", { name: product.name })}
-        onClick={() => setQuantity(product.id, firstQty(min, multiple))}
+        onClick={() => onSet(firstQty(min, multiple))}
       >
         <ShoppingCart aria-hidden className="size-4" />
         {t("add")}
@@ -62,7 +82,7 @@ export function QuantityStepper({
     const value = typed.trim() === "" ? "0" : typed.trim();
     setDraft(null);
     if (toMilli(value) === null) return;
-    setQuantity(product.id, value);
+    onSet(value);
   };
 
   return (
@@ -77,7 +97,7 @@ export function QuantityStepper({
         size="icon"
         className="size-11 shrink-0"
         aria-label={t("less", { name: product.name })}
-        onClick={() => setQuantity(product.id, previousQty(qty, min, multiple))}
+        onClick={() => onSet(previousQty(qty, min, multiple))}
       >
         <Minus aria-hidden />
       </Button>
@@ -96,7 +116,7 @@ export function QuantityStepper({
         className="size-11 shrink-0"
         aria-label={t("more", { name: product.name })}
         disabled={disabled}
-        onClick={() => setQuantity(product.id, nextQty(qty, min, multiple))}
+        onClick={() => onSet(nextQty(qty, min, multiple))}
       >
         <Plus aria-hidden />
       </Button>
