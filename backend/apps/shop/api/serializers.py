@@ -10,6 +10,9 @@ from apps.catalog.api.serializers import ImageUrlsSerializer, RefSerializer, fir
 from apps.catalog.images import variant_urls
 from apps.catalog.models import ProductImage
 from apps.inventory.availability import LABELS, availability
+from apps.orders.api.quote_serializers import QuoteSerializer
+from apps.orders.api.serializers import OrderSerializer
+from apps.orders.models import Order, OrderStatusHistory
 from apps.pricing.api.serializers import money, qty
 
 
@@ -113,3 +116,91 @@ class ShopCategorySerializer(serializers.Serializer[Any]):
 class ShopBrandSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     name = serializers.CharField()
+
+
+# --- Orders (PLAN §3.9, ADR-044) -----------------------------------------------------------------
+
+
+class ShopRepeatItemSerializer(ShopProductSerializer):
+    """A "Repeat last order" card: the product as today, with last time's quantity."""
+
+    last_quantity = qty()
+
+
+class ShopOrderRowSerializer(serializers.ModelSerializer[Order]):
+    line_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "number",
+            "status",
+            "backorder_state",
+            "placed_at",
+            "placed_by_label",
+            "grand_total",
+            "line_count",
+        )
+        read_only_fields = fields
+
+
+class ShopHistorySerializer(serializers.ModelSerializer[OrderStatusHistory]):
+    """The shop's timeline: what happened and when, not which staff member did it."""
+
+    class Meta:
+        model = OrderStatusHistory
+        fields = ("id", "created_at", "event", "to_status", "actor_type", "note", "payload")
+        read_only_fields = fields
+
+
+class ShopOrderSerializer(OrderSerializer):
+    history = ShopHistorySerializer(many=True, read_only=True)  # type: ignore[assignment]
+
+
+class ShopLastOrderSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    number = serializers.CharField()
+    placed_at = serializers.DateTimeField()
+    items = ShopRepeatItemSerializer(many=True, help_text="Products still available to order.")
+
+
+class ShopCreditSerializer(serializers.Serializer[Any]):
+    limit = money(allow_null=True)
+    available = money(allow_null=True, help_text="Null without a limit.")
+
+
+class ShopHomeSerializer(serializers.Serializer[Any]):
+    recent_orders = ShopOrderRowSerializer(many=True)
+    last_order = ShopLastOrderSerializer(allow_null=True)
+    open_orders = serializers.IntegerField()
+    waiting_items = serializers.IntegerField(help_text="Products on backorder for the shop.")
+    credit = ShopCreditSerializer()
+
+
+class CancelOrderSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(max_length=500, allow_blank=True, required=False, default="")
+
+
+class SkippedProductSerializer(serializers.Serializer[Any]):
+    product_id = serializers.UUIDField()
+    name = serializers.CharField()
+
+
+class RepeatResultSerializer(serializers.Serializer[Any]):
+    cart = QuoteSerializer()
+    skipped = SkippedProductSerializer(
+        many=True, help_text="Products that can't be ordered any more."
+    )
+
+
+class CheckoutAttemptSerializer(serializers.Serializer[Any]):
+    status = serializers.ChoiceField(
+        choices=["placed", "not_found"],
+        help_text=(
+            "placed: the order exists (show it). not_found: nothing was placed with this key; "
+            "retry with the same key."
+        ),
+    )
+    order = serializers.UUIDField(allow_null=True)
+    number = serializers.CharField(allow_null=True)

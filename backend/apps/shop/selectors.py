@@ -166,3 +166,22 @@ def shop_brands(retailer: Retailer, category_id: UUID | None = None) -> QuerySet
         .filter(pk__in=products.filter(brand__isnull=False).values("brand_id"))
         .order_by("name", "pk")
     )
+
+
+def repeat_items(retailer: Retailer, wanted: list[tuple[UUID, Decimal]]) -> list[dict[str, Any]]:
+    """Product cards for "Repeat last order": products the shop can still see, priced today, in
+    the order's line order, each with the quantity ordered last time."""
+    ids = [product_id for product_id, _ in wanted]
+    found = {
+        p.pk: p
+        for p in visible_products(retailer)
+        .filter(pk__in=ids)
+        .select_related("brand", "category", "unit", "pack_unit")
+        .prefetch_related(_ready_images())
+    }
+    products = [found[pid] for pid in ids if pid in found]
+    last = dict(wanted)
+    return [
+        {"product": p, "price": r, "last_quantity": last[p.pk]}
+        for p, r in priced(retailer, products)
+    ]

@@ -25,12 +25,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CancelOrderRequest,
+  CheckoutAttempt,
   DeliveryAddress,
-  Order,
   PaginatedShopProductList,
   PlaceOrderRequest,
   QuantityRequest,
   Quote,
+  RepeatResult,
   ShopBrand,
   ShopBrandsParams,
   ShopCartLineRemoveParams,
@@ -38,6 +40,10 @@ import type {
   ShopCartReduceToAvailableParams,
   ShopCartRetrieveParams,
   ShopCategory,
+  ShopHome,
+  ShopOrder,
+  ShopOrderRow,
+  ShopOrdersListParams,
   ShopProductDetail,
   ShopProductsParams
 } from '../../model';
@@ -858,8 +864,496 @@ export function useShopCategories<TData = Awaited<ReturnType<typeof shopCategori
 
 
 
+export type shopCheckoutAttemptResponse200 = {
+  data: CheckoutAttempt
+  status: 200
+}
+
+export type shopCheckoutAttemptResponseSuccess = (shopCheckoutAttemptResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopCheckoutAttemptResponse = (shopCheckoutAttemptResponseSuccess)
+
+export const getShopCheckoutAttemptUrl = (key: string,) => {
+
+
+
+
+  return `/api/v1/shop/checkout-attempts/${key}/`
+}
+
+/**
+ * Did the checkout attempt with this Idempotency-Key place an order? Only this user's own
+ * attempts; an attempt still running shows as not found, and retrying with the same key then
+ * waits for it and returns its result.
+ */
+export const shopCheckoutAttempt = async (key: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopCheckoutAttemptResponse> => {
+
+  return apiFetch<shopCheckoutAttemptResponse>(getShopCheckoutAttemptUrl(key),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopCheckoutAttemptQueryKey = (key: string,) => {
+    return [
+    `/api/v1/shop/checkout-attempts/${key}/`
+    ] as const;
+    }
+
+
+export const getShopCheckoutAttemptQueryOptions = <TData = Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError = unknown>(key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopCheckoutAttemptQueryKey(key);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopCheckoutAttempt>>> = ({ signal }) => shopCheckoutAttempt(key, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: key !== null && key !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopCheckoutAttemptQueryResult = NonNullable<Awaited<ReturnType<typeof shopCheckoutAttempt>>>
+export type ShopCheckoutAttemptQueryError = unknown
+
+
+export function useShopCheckoutAttempt<TData = Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError = unknown>(
+ key: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopCheckoutAttempt>>,
+          TError,
+          Awaited<ReturnType<typeof shopCheckoutAttempt>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopCheckoutAttempt<TData = Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError = unknown>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopCheckoutAttempt>>,
+          TError,
+          Awaited<ReturnType<typeof shopCheckoutAttempt>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopCheckoutAttempt<TData = Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError = unknown>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopCheckoutAttempt<TData = Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError = unknown>(
+ key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckoutAttempt>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopCheckoutAttemptQueryOptions(key,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopFulfilmentLineCancelRepricedResponse200 = {
+  data: ShopOrder
+  status: 200
+}
+
+export type shopFulfilmentLineCancelRepricedResponseSuccess = (shopFulfilmentLineCancelRepricedResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopFulfilmentLineCancelRepricedResponse = (shopFulfilmentLineCancelRepricedResponseSuccess)
+
+export const getShopFulfilmentLineCancelRepricedUrl = (lineId: string,) => {
+
+
+
+
+  return `/api/v1/shop/fulfilment-lines/${lineId}/cancel-repriced/`
+}
+
+export const shopFulfilmentLineCancelRepriced = async (lineId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopFulfilmentLineCancelRepricedResponse> => {
+
+  return apiFetch<shopFulfilmentLineCancelRepricedResponse>(getShopFulfilmentLineCancelRepricedUrl(lineId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopFulfilmentLineCancelRepricedMutationKey = () => ['shopFulfilmentLineCancelRepriced'] as const;
+
+export const getShopFulfilmentLineCancelRepricedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopFulfilmentLineCancelRepriced>>, TError,ShopFulfilmentLineCancelRepricedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopFulfilmentLineCancelRepriced>>, TError,ShopFulfilmentLineCancelRepricedMutationVariables, TContext> => {
+
+const mutationKey = getShopFulfilmentLineCancelRepricedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopFulfilmentLineCancelRepriced>>, ShopFulfilmentLineCancelRepricedMutationVariables> = (props) => {
+          const {lineId} = props ?? {};
+
+          return  shopFulfilmentLineCancelRepriced(lineId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopFulfilmentLineCancelRepricedMutationResult = NonNullable<Awaited<ReturnType<typeof shopFulfilmentLineCancelRepriced>>>
+
+    export type ShopFulfilmentLineCancelRepricedMutationError = unknown
+    export type ShopFulfilmentLineCancelRepricedMutationVariables = {lineId: string}
+
+    export const useShopFulfilmentLineCancelRepriced = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopFulfilmentLineCancelRepriced>>, TError,ShopFulfilmentLineCancelRepricedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopFulfilmentLineCancelRepriced>>,
+        TError,
+        ShopFulfilmentLineCancelRepricedMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopFulfilmentLineCancelRepricedMutationOptions(options), queryClient);
+    }
+    export type shopHomeResponse200 = {
+  data: ShopHome
+  status: 200
+}
+
+export type shopHomeResponseSuccess = (shopHomeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopHomeResponse = (shopHomeResponseSuccess)
+
+export const getShopHomeUrl = () => {
+
+
+
+
+  return `/api/v1/shop/home/`
+}
+
+export const shopHome = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopHomeResponse> => {
+
+  return apiFetch<shopHomeResponse>(getShopHomeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopHomeQueryKey = () => {
+    return [
+    `/api/v1/shop/home/`
+    ] as const;
+    }
+
+
+export const getShopHomeQueryOptions = <TData = Awaited<ReturnType<typeof shopHome>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopHome>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopHomeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopHome>>> = ({ signal }) => shopHome({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopHome>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopHomeQueryResult = NonNullable<Awaited<ReturnType<typeof shopHome>>>
+export type ShopHomeQueryError = unknown
+
+
+export function useShopHome<TData = Awaited<ReturnType<typeof shopHome>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopHome>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopHome>>,
+          TError,
+          Awaited<ReturnType<typeof shopHome>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopHome<TData = Awaited<ReturnType<typeof shopHome>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopHome>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopHome>>,
+          TError,
+          Awaited<ReturnType<typeof shopHome>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopHome<TData = Awaited<ReturnType<typeof shopHome>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopHome>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopHome<TData = Awaited<ReturnType<typeof shopHome>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopHome>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopHomeQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopOrderLineCancelBackorderResponse200 = {
+  data: ShopOrder
+  status: 200
+}
+
+export type shopOrderLineCancelBackorderResponseSuccess = (shopOrderLineCancelBackorderResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopOrderLineCancelBackorderResponse = (shopOrderLineCancelBackorderResponseSuccess)
+
+export const getShopOrderLineCancelBackorderUrl = (lineId: string,) => {
+
+
+
+
+  return `/api/v1/shop/order-lines/${lineId}/cancel-backorder/`
+}
+
+export const shopOrderLineCancelBackorder = async (lineId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopOrderLineCancelBackorderResponse> => {
+
+  return apiFetch<shopOrderLineCancelBackorderResponse>(getShopOrderLineCancelBackorderUrl(lineId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopOrderLineCancelBackorderMutationKey = () => ['shopOrderLineCancelBackorder'] as const;
+
+export const getShopOrderLineCancelBackorderMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrderLineCancelBackorder>>, TError,ShopOrderLineCancelBackorderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopOrderLineCancelBackorder>>, TError,ShopOrderLineCancelBackorderMutationVariables, TContext> => {
+
+const mutationKey = getShopOrderLineCancelBackorderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopOrderLineCancelBackorder>>, ShopOrderLineCancelBackorderMutationVariables> = (props) => {
+          const {lineId} = props ?? {};
+
+          return  shopOrderLineCancelBackorder(lineId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopOrderLineCancelBackorderMutationResult = NonNullable<Awaited<ReturnType<typeof shopOrderLineCancelBackorder>>>
+
+    export type ShopOrderLineCancelBackorderMutationError = unknown
+    export type ShopOrderLineCancelBackorderMutationVariables = {lineId: string}
+
+    export const useShopOrderLineCancelBackorder = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrderLineCancelBackorder>>, TError,ShopOrderLineCancelBackorderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopOrderLineCancelBackorder>>,
+        TError,
+        ShopOrderLineCancelBackorderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopOrderLineCancelBackorderMutationOptions(options), queryClient);
+    }
+    export type shopOrdersListResponse200 = {
+  data: ShopOrderRow[]
+  status: 200
+}
+
+export type shopOrdersListResponseSuccess = (shopOrdersListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopOrdersListResponse = (shopOrdersListResponseSuccess)
+
+export const getShopOrdersListUrl = (params?: ShopOrdersListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/shop/orders/?${stringifiedParams}` : `/api/v1/shop/orders/`
+}
+
+export const shopOrdersList = async (params?: ShopOrdersListParams, options?: Parameters<typeof apiFetch>[1]): Promise<shopOrdersListResponse> => {
+
+  return apiFetch<shopOrdersListResponse>(getShopOrdersListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopOrdersListQueryKey = (params?: ShopOrdersListParams,) => {
+    return [
+    `/api/v1/shop/orders/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getShopOrdersListQueryOptions = <TData = Awaited<ReturnType<typeof shopOrdersList>>, TError = unknown>(params?: ShopOrdersListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopOrdersListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopOrdersList>>> = ({ signal }) => shopOrdersList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopOrdersList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopOrdersListQueryResult = NonNullable<Awaited<ReturnType<typeof shopOrdersList>>>
+export type ShopOrdersListQueryError = unknown
+
+
+export function useShopOrdersList<TData = Awaited<ReturnType<typeof shopOrdersList>>, TError = unknown>(
+ params: undefined |  ShopOrdersListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopOrdersList>>,
+          TError,
+          Awaited<ReturnType<typeof shopOrdersList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopOrdersList<TData = Awaited<ReturnType<typeof shopOrdersList>>, TError = unknown>(
+ params?: ShopOrdersListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopOrdersList>>,
+          TError,
+          Awaited<ReturnType<typeof shopOrdersList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopOrdersList<TData = Awaited<ReturnType<typeof shopOrdersList>>, TError = unknown>(
+ params?: ShopOrdersListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopOrdersList<TData = Awaited<ReturnType<typeof shopOrdersList>>, TError = unknown>(
+ params?: ShopOrdersListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopOrdersListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type shopOrdersPlaceResponse201 = {
-  data: Order
+  data: ShopOrder
   status: 201
 }
 
@@ -950,6 +1444,285 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getShopOrdersPlaceMutationOptions(options), queryClient);
+    }
+    export type shopOrderResponse200 = {
+  data: ShopOrder
+  status: 200
+}
+
+export type shopOrderResponseSuccess = (shopOrderResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopOrderResponse = (shopOrderResponseSuccess)
+
+export const getShopOrderUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/shop/orders/${orderId}/`
+}
+
+export const shopOrder = async (orderId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopOrderResponse> => {
+
+  return apiFetch<shopOrderResponse>(getShopOrderUrl(orderId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopOrderQueryKey = (orderId: string,) => {
+    return [
+    `/api/v1/shop/orders/${orderId}/`
+    ] as const;
+    }
+
+
+export const getShopOrderQueryOptions = <TData = Awaited<ReturnType<typeof shopOrder>>, TError = unknown>(orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopOrderQueryKey(orderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopOrder>>> = ({ signal }) => shopOrder(orderId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: orderId !== null && orderId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopOrder>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopOrderQueryResult = NonNullable<Awaited<ReturnType<typeof shopOrder>>>
+export type ShopOrderQueryError = unknown
+
+
+export function useShopOrder<TData = Awaited<ReturnType<typeof shopOrder>>, TError = unknown>(
+ orderId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrder>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopOrder>>,
+          TError,
+          Awaited<ReturnType<typeof shopOrder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopOrder<TData = Awaited<ReturnType<typeof shopOrder>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrder>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopOrder>>,
+          TError,
+          Awaited<ReturnType<typeof shopOrder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopOrder<TData = Awaited<ReturnType<typeof shopOrder>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopOrder<TData = Awaited<ReturnType<typeof shopOrder>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopOrderQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopOrderCancelResponse200 = {
+  data: ShopOrder
+  status: 200
+}
+
+export type shopOrderCancelResponseSuccess = (shopOrderCancelResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopOrderCancelResponse = (shopOrderCancelResponseSuccess)
+
+export const getShopOrderCancelUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/shop/orders/${orderId}/cancel/`
+}
+
+export const shopOrderCancel = async (orderId: string,
+    cancelOrderRequest?: CancelOrderRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopOrderCancelResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopOrderCancelResponse>(getShopOrderCancelUrl(orderId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(cancelOrderRequest)
+  }
+);}
+
+
+
+
+
+export const getShopOrderCancelMutationKey = () => ['shopOrderCancel'] as const;
+
+export const getShopOrderCancelMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrderCancel>>, TError,ShopOrderCancelMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopOrderCancel>>, TError,ShopOrderCancelMutationVariables, TContext> => {
+
+const mutationKey = getShopOrderCancelMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopOrderCancel>>, ShopOrderCancelMutationVariables> = (props) => {
+          const {orderId,data} = props ?? {};
+
+          return  shopOrderCancel(orderId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopOrderCancelMutationResult = NonNullable<Awaited<ReturnType<typeof shopOrderCancel>>>
+    export type ShopOrderCancelMutationBody = CancelOrderRequest | undefined
+    export type ShopOrderCancelMutationError = unknown
+    export type ShopOrderCancelMutationVariables = {orderId: string;data?: CancelOrderRequest}
+
+    export const useShopOrderCancel = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrderCancel>>, TError,ShopOrderCancelMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopOrderCancel>>,
+        TError,
+        ShopOrderCancelMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopOrderCancelMutationOptions(options), queryClient);
+    }
+    export type shopOrderRepeatResponse200 = {
+  data: RepeatResult
+  status: 200
+}
+
+export type shopOrderRepeatResponseSuccess = (shopOrderRepeatResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopOrderRepeatResponse = (shopOrderRepeatResponseSuccess)
+
+export const getShopOrderRepeatUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/shop/orders/${orderId}/repeat/`
+}
+
+export const shopOrderRepeat = async (orderId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopOrderRepeatResponse> => {
+
+  return apiFetch<shopOrderRepeatResponse>(getShopOrderRepeatUrl(orderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopOrderRepeatMutationKey = () => ['shopOrderRepeat'] as const;
+
+export const getShopOrderRepeatMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrderRepeat>>, TError,ShopOrderRepeatMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopOrderRepeat>>, TError,ShopOrderRepeatMutationVariables, TContext> => {
+
+const mutationKey = getShopOrderRepeatMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopOrderRepeat>>, ShopOrderRepeatMutationVariables> = (props) => {
+          const {orderId} = props ?? {};
+
+          return  shopOrderRepeat(orderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopOrderRepeatMutationResult = NonNullable<Awaited<ReturnType<typeof shopOrderRepeat>>>
+
+    export type ShopOrderRepeatMutationError = unknown
+    export type ShopOrderRepeatMutationVariables = {orderId: string}
+
+    export const useShopOrderRepeat = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopOrderRepeat>>, TError,ShopOrderRepeatMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopOrderRepeat>>,
+        TError,
+        ShopOrderRepeatMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopOrderRepeatMutationOptions(options), queryClient);
     }
     export type shopProductsResponse200 = {
   data: PaginatedShopProductList

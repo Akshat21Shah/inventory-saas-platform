@@ -17,5 +17,28 @@ urlpatterns = [
         name="shop-cart-reduce",
     ),
     path("addresses/", c.ShopAddressesView.as_view(), name="shop-addresses"),
+    path("home/", o.ShopHomeView.as_view(), name="shop-home"),
     path("orders/", o.ShopOrdersView.as_view(), name="shop-orders"),
+    path("orders/<uuid:order_id>/", o.ShopOrderDetailView.as_view(), name="shop-order"),
+    path(
+        "orders/<uuid:order_id>/cancel/", o.ShopOrderCancelView.as_view(), name="shop-order-cancel"
+    ),
+    path(
+        "orders/<uuid:order_id>/repeat/", o.ShopOrderRepeatView.as_view(), name="shop-order-repeat"
+    ),
+    path(
+        "order-lines/<uuid:line_id>/cancel-backorder/",
+        o.ShopCancelBackorderView.as_view(),
+        name="shop-order-line-cancel-backorder",
+    ),
+    path(
+        "fulfilment-lines/<uuid:line_id>/cancel-repriced/",
+        o.ShopCancelRepricedView.as_view(),
+        name="shop-fulfilment-line-cancel-repriced",
+    ),
+    path(
+        "checkout-attempts/<str:key>/",
+        o.ShopCheckoutAttemptView.as_view(),
+        name="shop-checkout-attempt",
+    ),
 ]

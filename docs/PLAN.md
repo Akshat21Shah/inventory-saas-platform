@@ -627,6 +627,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `orders/{id}/repeat` | POST | copy lines into the cart at current prices; returns the cart + skipped items |
 | `order-lines/{id}/cancel-backorder` | POST | cancel the remaining backorder |
 | `fulfilment-lines/{id}/cancel-repriced` | POST | cancel a backorder quantity whose price **increased** (CURRENT pricing), allowed until the shipment is packed |
+| `checkout-attempts/{key}` | GET | did this Idempotency-Key place an order: `placed` (+ order) or `not_found` (retry with the same key) (ADR-044) |
 | `invoices`, `invoices/{id}` | GET | my invoices |
 | `invoices/{id}/pdf` | GET | signed URL |
 | `ledger` | GET | statement (date range) with running balance |

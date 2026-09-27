@@ -269,3 +269,58 @@ def allocation_list(
     if product_id:
         qs = qs.filter(product_id=product_id)
     return qs
+
+
+# --- The shop's own orders (PLAN §3.9) -----------------------------------------------------------
+
+SHOP_STATES: dict[str, Q] = {
+    "open": Q(status__in=(S.PLACED, S.ON_HOLD, S.ACCEPTED, S.PACKED, S.DISPATCHED, S.DELIVERED)),
+    "closed": Q(status__in=(S.COMPLETED, S.CANCELLED, S.REJECTED)),
+}
+
+
+def shop_orders(retailer_id: UUID, state: str = "") -> QuerySet[Order]:
+    qs: QuerySet[Order] = Order.objects.filter(retailer_id=retailer_id).annotate(
+        line_count=Count("lines")
+    )
+    return qs.filter(SHOP_STATES[state]) if state else qs
+
+
+def shop_order(retailer_id: UUID, order_id: UUID) -> Order | None:
+    found = order_detail(order_id)
+    return found if found is not None and found.retailer_id == retailer_id else None
+
+
+def last_order(retailer_id: UUID) -> Order | None:
+    """The latest order worth repeating (not rejected or cancelled before anything was sent)."""
+    found: Order | None = (
+        Order.objects.filter(retailer_id=retailer_id)
+        .exclude(status__in=(S.REJECTED, S.CANCELLED))
+        .prefetch_related(Prefetch("lines", queryset=OrderLine.objects.order_by("line_no")))
+        .order_by("-placed_at", "-id")
+        .first()
+    )
+    return found
+
+
+def repeat_quantities(order: Order) -> list[tuple[UUID, Decimal]]:
+    """What the shop asked for on each line (less what was cancelled), in line order."""
+    wanted: dict[UUID, Decimal] = {}
+    for line in order.lines.all():
+        qty = Decimal(line.qty_ordered)
+        if qty > 0:
+            wanted[line.product_id] = wanted.get(line.product_id, Decimal("0")) + qty
+    return list(wanted.items())
+
+
+def waiting_items(retailer_id: UUID) -> int:
+    return (
+        OrderLine.objects.filter(
+            order__retailer_id=retailer_id,
+            order__status__in=ACCEPTED_STATUSES,
+            qty_backordered__gt=0,
+        )
+        .values("product_id")
+        .distinct()
+        .count()
+    )

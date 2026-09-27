@@ -5178,7 +5178,118 @@ paths:
                 items:
                   $ref: '#/components/schemas/ShopCategory'
           description: ''
+  /api/v1/shop/checkout-attempts/{key}/:
+    get:
+      operationId: shop_checkout_attempt
+      description: |-
+        Did the checkout attempt with this Idempotency-Key place an order? Only this user's own
+        attempts; an attempt still running shows as not found, and retrying with the same key then
+        waits for it and returns its result.
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutAttempt'
+          description: ''
+  /api/v1/shop/fulfilment-lines/{line_id}/cancel-repriced/:
+    post:
+      operationId: shop_fulfilment_line_cancel_repriced
+      parameters:
+      - in: path
+        name: line_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopOrder'
+          description: ''
+  /api/v1/shop/home/:
+    get:
+      operationId: shop_home
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopHome'
+          description: ''
+  /api/v1/shop/order-lines/{line_id}/cancel-backorder/:
+    post:
+      operationId: shop_order_line_cancel_backorder
+      parameters:
+      - in: path
+        name: line_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopOrder'
+          description: ''
   /api/v1/shop/orders/:
+    get:
+      operationId: shop_orders_list
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - closed
+          - open
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopOrderRow'
+          description: ''
     post:
       operationId: shop_orders_place
       parameters:
@@ -5202,7 +5313,75 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: '#/components/schemas/ShopOrder'
+          description: ''
+  /api/v1/shop/orders/{order_id}/:
+    get:
+      operationId: shop_order
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopOrder'
+          description: ''
+  /api/v1/shop/orders/{order_id}/cancel/:
+    post:
+      operationId: shop_order_cancel
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelOrderRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopOrder'
+          description: ''
+  /api/v1/shop/orders/{order_id}/repeat/:
+    post:
+      operationId: shop_order_repeat
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepeatResult'
           description: ''
   /api/v1/shop/products/:
     get:
@@ -7313,6 +7492,13 @@ components:
       description: |-
         * `PERCENT` - Percentage of taxable value
         * `SPECIFIC_PER_UNIT` - Fixed amount per unit (reserved)
+    CancelOrderRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
     CancelRateRequest:
       type: object
       properties:
@@ -7482,6 +7668,36 @@ components:
       required:
       - changed
       - warnings
+    CheckoutAttempt:
+      type: object
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CheckoutAttemptStatusEnum'
+          description: |-
+            placed: the order exists (show it). not_found: nothing was placed with this key; retry with the same key.
+
+            * `placed` - placed
+            * `not_found` - not_found
+        order:
+          type: string
+          format: uuid
+          nullable: true
+        number:
+          type: string
+          nullable: true
+      required:
+      - number
+      - order
+      - status
+    CheckoutAttemptStatusEnum:
+      enum:
+      - placed
+      - not_found
+      type: string
+      description: |-
+        * `placed` - placed
+        * `not_found` - not_found
     ChooseTenantInputRequest:
       type: object
       properties:
@@ -12774,6 +12990,19 @@ components:
       description: |-
         * `REGULAR` - Regular
         * `COMPOSITION` - Composition (reserved)
+    RepeatResult:
+      type: object
+      properties:
+        cart:
+          $ref: '#/components/schemas/Quote'
+        skipped:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkippedProduct'
+          description: Products that can't be ordered any more.
+      required:
+      - cart
+      - skipped
     ReportRow:
       type: object
       properties:
@@ -13572,6 +13801,84 @@ components:
       - level
       - name
       - product_count
+    ShopCredit:
+      type: object
+      properties:
+        limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Null without a limit.
+      required:
+      - available
+      - limit
+    ShopHistory:
+      type: object
+      description: 'The shop''s timeline: what happened and when, not which staff
+        member did it.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        event:
+          allOf:
+          - $ref: '#/components/schemas/EventEnum'
+          readOnly: true
+        to_status:
+          type: string
+          readOnly: true
+        actor_type:
+          allOf:
+          - $ref: '#/components/schemas/HistoryActorTypeEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        payload:
+          readOnly: true
+      required:
+      - actor_type
+      - created_at
+      - event
+      - id
+      - note
+      - payload
+      - to_status
+    ShopHome:
+      type: object
+      properties:
+        recent_orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopOrderRow'
+        last_order:
+          allOf:
+          - $ref: '#/components/schemas/ShopLastOrder'
+          nullable: true
+        open_orders:
+          type: integer
+        waiting_items:
+          type: integer
+          description: Products on backorder for the shop.
+        credit:
+          $ref: '#/components/schemas/ShopCredit'
+      required:
+      - credit
+      - last_order
+      - open_orders
+      - recent_orders
+      - waiting_items
     ShopImage:
       type: object
       properties:
@@ -13588,6 +13895,205 @@ components:
       - alt_text
       - id
       - urls
+    ShopLastOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        placed_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopRepeatItem'
+          description: Products still available to order.
+      required:
+      - id
+      - items
+      - number
+      - placed_at
+    ShopOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        backorder_state:
+          allOf:
+          - $ref: '#/components/schemas/BackorderStateEnum'
+          readOnly: true
+        hold_reason:
+          allOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          readOnly: true
+        retailer:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_name:
+          type: string
+          readOnly: true
+        placed_via:
+          allOf:
+          - $ref: '#/components/schemas/PlacedViaEnum'
+          readOnly: true
+        placed_by_label:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        shipping_address:
+          readOnly: true
+        retailer_note:
+          type: string
+          readOnly: true
+        prices_include_tax:
+          type: boolean
+          readOnly: true
+        gross_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        taxable_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        tax_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        round_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        rejection_reason:
+          type: string
+          readOnly: true
+        cancellation_reason:
+          type: string
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+          readOnly: true
+        fulfilments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fulfilment'
+          readOnly: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopHistory'
+          readOnly: true
+      required:
+      - accepted_at
+      - backorder_state
+      - cancellation_reason
+      - closed_at
+      - discount_total
+      - fulfilments
+      - grand_total
+      - gross_total
+      - history
+      - hold_reason
+      - id
+      - lines
+      - number
+      - placed_at
+      - placed_by_label
+      - placed_via
+      - prices_include_tax
+      - rejection_reason
+      - retailer
+      - retailer_name
+      - retailer_note
+      - round_off
+      - shipping_address
+      - status
+      - tax_total
+      - taxable_total
+    ShopOrderRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        backorder_state:
+          allOf:
+          - $ref: '#/components/schemas/BackorderStateEnum'
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        placed_by_label:
+          type: string
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+      required:
+      - backorder_state
+      - grand_total
+      - id
+      - line_count
+      - number
+      - placed_at
+      - placed_by_label
+      - status
     ShopPrice:
       type: object
       properties:
@@ -13811,6 +14317,85 @@ components:
       - code
       - id
       - shop_name
+    ShopRepeatItem:
+      type: object
+      description: 'A "Repeat last order" card: the product as today, with last time''s
+        quantity.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        brand:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          nullable: true
+        unit:
+          $ref: '#/components/schemas/ShopUnit'
+        pack_unit:
+          allOf:
+          - $ref: '#/components/schemas/ShopUnit'
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        min_order_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        order_multiple:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        own_brand:
+          type: boolean
+          readOnly: true
+        price:
+          $ref: '#/components/schemas/ShopPrice'
+        availability:
+          allOf:
+          - $ref: '#/components/schemas/ShopAvailability'
+          readOnly: true
+        last_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - availability
+      - brand
+      - category
+      - code
+      - id
+      - last_quantity
+      - min_order_qty
+      - mrp
+      - name
+      - order_multiple
+      - own_brand
+      - pack_size
+      - pack_unit
+      - price
+      - thumbnail_url
+      - unit
     ShopUnit:
       type: object
       properties:
@@ -13821,6 +14406,17 @@ components:
       required:
       - code
       - name
+    SkippedProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - name
+      - product_id
     Slab:
       type: object
       properties:

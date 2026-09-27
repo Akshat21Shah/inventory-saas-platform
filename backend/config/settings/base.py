@@ -214,6 +214,8 @@ SPECTACULAR_SETTINGS = {
         "AllocationTriggerEnum": "apps.orders.models.BackorderAllocation.Trigger",
         "PriceSourceEnum": ["SPECIAL", "PRICE_LIST", "BASE"],
         "ShipmentPriceSourceEnum": "apps.orders.models.FulfilmentLine.PriceSource",
+        "AuditLogActorTypeEnum": "apps.audit.models.AuditLog.ActorType",
+        "HistoryActorTypeEnum": "apps.orders.models.OrderStatusHistory.ActorType",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

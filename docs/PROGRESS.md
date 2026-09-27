@@ -201,7 +201,12 @@
      - Sales staff limited to their own shops (⚙ `orders.sales_visibility`) see and change only those orders, shipments, backorders and carts; other shops' records are "not found".
      - Cancelling an accepted order now ends its open backorder proposals too.
      - Tests: roles for every action, idempotent replay, visibility, and a cross-tenant test over all 25 new routes (reads empty or 404, every change 404, nothing changed). API client regenerated; order enums have stable names.
-  9. Shop APIs: home, orders, cancel, repeat, checkout attempts
+  9. Shop APIs: home, orders, cancel, repeat, checkout attempts — **done** (`apps/shop/api/orders.py`, PLAN §3.9):
+     - Home: the 5 latest orders, "Repeat last order" as product cards (today's price and availability, with last time's quantity; products no longer offered are left out), open orders, products waiting on backorder, and available credit.
+     - Orders: list (open or closed), detail with lines, shipments and timeline (the shop sees what happened, not which staff member did it; staff orders say "Placed by Priya (Sales)"), cancel before acceptance, repeat into the cart (adds to what is there; returns the products that can't be ordered any more).
+     - Cancel what a line still waits for; decline a higher backorder price until the shipment is packed.
+     - `checkout-attempts/{key}`: after a dropped connection the app asks whether its Idempotency-Key placed an order (`placed` with the order, or `not_found`: retry with the same key; an attempt still running then returns its result). Refused attempts leave nothing behind.
+     - Tests: every action, and another shop (same tenant or another) sees and changes nothing; staff get 403 on shop routes.
   10. Live updates (WebSocket ticket, consumer, outbox → push)
   11. Seed demo orders, API client — **backend checkpoint**
   12–15. Frontend: shop browsing and quick ordering; cart, checkout, orders; distributor orders board and shipments; backorders and ordering on behalf
