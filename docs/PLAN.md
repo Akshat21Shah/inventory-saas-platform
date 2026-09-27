@@ -1,6 +1,6 @@
 # PLAN.md — Master Engineering Plan (v1)
 
-Status: **v1.4 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25), Phase 2 complete (2026-09-26); Phase 3 implemented, waiting for the final review (§10.2b, §10.2c).**
+Status: **v1.4 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25), Phase 2 complete (2026-09-26); Phase 3 complete (2026-09-26); Phase 4 in progress (§10.2e).**
 Source of truth for *what*: `docs/PROJECT_SPEC.md`. Rules for *how*: `CLAUDE.md`.
 Where this plan and the spec disagree, the spec wins until the spec is updated.
 
@@ -235,10 +235,11 @@ Legend:
 ### 2.8 `orders`
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **Cart** (tenant) | `retailer` FK (unique), `notes`, `updated_at` | unique `retailer` |
+| **Cart** (tenant) | `retailer` FK, `user` FK (the shop's login, or the staff member ordering on its behalf; ADR-044), `notes`, `updated_at` | unique `(retailer, user)` |
 | **CartLine** (tenant) | `cart` FK, `product` FK, `quantity` Qty, `last_seen_unit_price` Money (for `PRICE_CHANGED` detection) | unique `(cart, product)`; check `quantity>0` |
 | **Order** (tenant) | `number` (`ORD-2026-000123`), `retailer` FK, `placed_by` FK→User, `placed_via` (RETAILER_APP, STAFF), `status` (PLACED, ON_HOLD, ACCEPTED, PACKED, DISPATCHED, DELIVERED, **COMPLETED**, REJECTED, CANCELLED), `settings_snapshot` jsonb (registry keys flagged `snapshot: order`, see §9), `confirmation_pdf_key` null, `backorder_state` (NONE, OPEN, CLOSED), `hold_reason` (CREDIT_LIMIT), `billing_address` jsonb, `shipping_address` jsonb, `place_of_supply` FK→State, `prices_include_tax` bool, estimates: `gross_total`, `discount_total`, `taxable_total`, `tax_total`, `round_off`, `grand_total` (Money), `reserved_value` Money, `backordered_value` Money, `retailer_note`, `internal_note`, `placed_at`, `accepted_at`, `accepted_by`, `closed_at`, `rejection_reason`, `cancellation_reason`, `cancelled_by` | unique `(t, number)`; `(t, status, placed_at desc)`, `(t, retailer, placed_at desc)`, `(t, backorder_state)`; check totals ≥ 0 |
 | **OrderLine** (tenant) | `order` FK, `line_no`, `product` FK, snapshot: `product_code`, `product_name`, `hsn_code`, `unit_code`; price snapshot: `base_price`, `unit_price`, `price_source` (OVERRIDE, PRICE_LIST, BASE), `discount_rule` FK null, `discount_type`, `discount_value`, `gst_rate`, `cess_rate`; quantities (Qty): `qty_ordered`, `qty_pending` (on credit hold without reservation, when `credit.hold_reserves_stock=false`), `qty_reserved` (held, not yet in a fulfilment), `qty_backordered` (waiting), `qty_allocated` (moved into fulfilments), `qty_cancelled`; counters: `qty_invoiced`, `qty_dispatched`, `qty_delivered`; estimates: `gross_amount`, `discount_amount`, `taxable_amount`, `tax_amount`, `line_total` | unique `(order, line_no)`; **check `qty_ordered = qty_pending + qty_reserved + qty_backordered + qty_allocated + qty_cancelled`**; all qty ≥ 0; partial index `(t, product, created_at) where qty_backordered > 0` (backorder queue) |
+| **OrderLineDiscount** (tenant) | `order_line` FK, `position`, `rule` FK null (kept if the rule is deleted), `rule_name`, `discount_type`, `value`, `amount` Money | every rule applied, in order (ADR-038 item 3); unique `(order_line, position)` |
 | **OrderStatusHistory** (tenant, append-only) | `order` FK, `from_status`, `to_status`, `event` (PLACE, HOLD, APPROVE_HOLD, ACCEPT, REJECT, CANCEL, MODIFY, PACK, DISPATCH, DELIVER, BACKORDER_ALLOCATED, BACKORDER_CANCELLED), `actor` FK null, `actor_type` (RETAILER, STAFF, SYSTEM), `note`, `payload` jsonb (diffs) | index `(t, order, created_at)` |
 | **Fulfilment** (tenant) | `order` FK, `number` (`ORD-2026-000123/2`), `kind` (INITIAL, BACKORDER), `status` (ALLOCATED, PACKED, DISPATCHED, DELIVERED, CANCELLED), `warehouse` FK, `invoice` FK null (1:1), `vehicle_number`, `transporter_name`, `lr_number`, `packed_at`, `dispatched_at`, `delivered_at`, `cancelled_reason` | unique `(t, number)`; `(t, status, created_at)` |
 | **FulfilmentLine** (tenant) | `fulfilment` FK, `order_line` FK, `product` FK, `quantity` Qty, `qty_packed` Qty null, `unit_price` Money (order snapshot, or re-resolved when `backorders.billing_price=CURRENT`), `price_source` (ORDER_SNAPSHOT, REPRICED), `price_increased` bool, `cancelled_by_retailer_at` null | unique `(fulfilment, order_line)`; check `quantity>0` |
@@ -1549,6 +1550,8 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Free-goods schemes ("buy X get Y free") | Until then, a discount rule, special price or price-list price that brings a net price to zero hides the product from those shops (ADR-034). Saving one shows the `FREE_GOODS` warning (ADR-036). |
 | Manufacturing / production | Raw materials, recipes (bill of materials), production entries that consume raw materials and produce finished goods, with cost roll-up into the finished goods' cost price. Builds on own brand and cost price (ADR-039). |
 | Margin reports | Own brand vs traded margins from cost price (ADR-039), with Phase 8 reports. |
+| Shop confirms delivery | The shop marks a shipment received in the app (ADR-044 item 5). |
+| Proof of delivery code | A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
 
 ---
 
@@ -1753,6 +1756,17 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 3 | Import commit reports rows that fail the re-check | Approved |
 | 4 | `barcode-detector` served from our own server | Approved |
 | 5 | Flaky 2FA sign-in in E2E | Root cause found (clock skew after the Mac slept) and the helper made deterministic |
+
+### 10.2e Phase 4 plan decisions (2026-09-27, ADR-044)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Credit before billing | Ledger balance 0; open order value = everything not yet dispatched, until Phase 5 |
+| 2 | Invoice and Order Confirmation | Dispatch without an invoice; the confirmation is the order page with live updates (PDF in Phase 5); notification events written now for Phase 6 |
+| 3 | Staff ordering on behalf | A separate cart per (shop, staff member); the order shows "Placed by Priya (Sales)" |
+| 4 | Delivery address | Saved addresses only, default shipping pre-selected; place of supply = the address's state; note = delivery instructions |
+| 5 | Delivered | Marked by `orders.fulfil` staff; shop confirmation and proof-of-delivery code on the backlog |
+| + | Flaky connections | Idempotency-Key kept per checkout attempt (across reloads); unknown outcome → ask the server (`shop/checkout-attempts/{key}`) before retrying; E2E drops the network |
+| + | Quick ordering | Stepper and "Add" on search, category and repeat-order cards; cart count badge; 3 taps from search to a placed order |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

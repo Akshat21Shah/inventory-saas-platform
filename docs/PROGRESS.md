@@ -158,6 +158,21 @@
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
+- **Phase 4 — Ordering & backorders** (branch `phase-4` from `main` 344b09c; plan approved 2026-09-27 with ADR-044, PLAN §10.2e, SPEC 1.4). Commits in order:
+  1. Docs: ADR-044, PLAN (Cart per shop and user, OrderLineDiscount, §10.2e, backlog), SPEC 1.4 — **done**
+  2. Models: orders app, `ledger.RetailerAccount`, RLS, checks, append-only history
+  3. Server cart + shop cart API
+  4. `place_order` + races (last units, duplicate key, inward vs new order)
+  5. Order state machine + accept/cancel race
+  6. Shipments: pack, short pack, dispatch, deliver, derived status
+  7. Backorders: queue, allocation, proposals, cancel remainder, repriced cancel, mixed-operations race
+  8. Distributor APIs (+ ordering on behalf), isolation and role tests
+  9. Shop APIs: home, orders, cancel, repeat, checkout attempts
+  10. Live updates (WebSocket ticket, consumer, outbox → push)
+  11. Seed demo orders, API client — **backend checkpoint**
+  12–15. Frontend: shop browsing and quick ordering; cart, checkout, orders; distributor orders board and shipments; backorders and ordering on behalf
+  16. E2E acceptance (incl. dropped network), responsive check, phone test over LAN — **final review**
+- Phase 3 — Inventory: **merged to `main` (PR #4, 2026-09-26)**.
 - **Phase 3 — Inventory** (branch `phase-3` from `main` e117fdf; plan approved 2026-09-26 with ADR-041, PLAN §10.2b, SPEC 1.2). Commits in order:
   1. Docs: ADR-041, PLAN v1.4 (§1.2 S8–S10, §2.7, §3.7, §5, §7.3, §8, §9.1, §10.2b), SPEC 1.2 — **done**
   2. Models: warehouse, stock level, movement, receipts, adjustments, alerts; RLS, checks, append-only trigger, backfills — **done**: RLS on all eight tables; append-only movements and adjustments; a trigger keeps posted receipts unchanged except for completing pending costs once; one open alert per product/warehouse/type; the default warehouse is made with each tenant and every product gets a stock level (both backfilled); movement types have no database list (ADR-041).
