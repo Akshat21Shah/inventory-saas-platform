@@ -1,8 +1,9 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.5. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.6. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.6 (2026-09-29)** — Phase 6 plan (ADR-048): WhatsApp opt-in consent, compulsory events, secure document links, quiet hours, payment-reminder cadence and pauses, handover reminders, GST rate-change warning job, per-tenant WhatsApp sender, WhatsApp cost estimate.
 - **1.5 (2026-09-28)** — Phase 5 plan (ADR-046): invoice/credit-note/receipt number format, Order Confirmation PDF, return dispositions per line and return reasons, salesman collections with handover tracking, ageing basis setting, automatic use of advances with reallocation.
 - **1.1 (2026-09-24)** — Product-owner decisions applied:
   - per-shipment fulfilment model and the COMPLETED status;
@@ -313,7 +314,12 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - Key events: order placed/accepted/rejected/modified/dispatched/delivered, backorder allocated, invoice issued (with PDF link), payment received, payment reminder (scheduled for overdue), low/out-of-stock, backorder demand, e-invoice failure, credit hold.
 - Templates per tenant with platform defaults; WhatsApp templates must match pre-approved templates (store template name + variables).
 - Delivery log with status, provider response, retries; failures visible to distributor admin and super admin.
-- Retailer notification preferences (within allowed channels).
+- Retailer notification preferences (within allowed channels). Events the distributor marks compulsory (by default invoices, credit notes, bounced cheques, payment reminders) can't be switched off; in-app never can.
+- WhatsApp only to shops that opted in (in the app, recorded by staff with confirmation, or imported), with timestamp and source; opting out is always possible. The rules screen shows the opted-in count and an estimated monthly WhatsApp cost per event (platform price per message category).
+- Invoices, credit notes, receipts, refund vouchers and the Order Confirmation are sent as secure links (one document, no sign-in, 30 days by default, revocable) that always show the current document.
+- Quiet hours (default 21:00–08:00) hold reminders and other non-urgent WhatsApp, SMS and email until morning; messages about what the shop just did go at once; in-app is never held.
+- Payment reminders on a configurable cadence (default 2 days before due, then 3, 7, 15, 30 days overdue, then every 15 days), one message per shop listing its overdue bills; staff with credit management can pause them per shop. Handover reminders to salesmen and Accounts after a set number of days. A daily GST rate-change warning 7 days ahead.
+- One platform WhatsApp number for now, naming the distributor in every message; a distributor's own number can be connected later.
 
 ### 5.14 Dashboards & reports
 - **Distributor dashboard** ("what needs action today"): new orders, on-hold orders, backorders ready to allocate, low/out-of-stock count, overdue receivables, today's sales, pending e-invoices.
