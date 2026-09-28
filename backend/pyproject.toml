@@ -24,6 +24,7 @@ dependencies = [
     "boto3>=1.40",
     "pillow>=11.3",
     "openpyxl>=3.1",
+    "weasyprint>=70.0",
 ]
 
 [dependency-groups]
@@ -69,7 +70,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "\\.venv/"]
 
 [[tool.mypy.overrides]]
-module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*", "boto3.*", "botocore.*"]
+module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*", "boto3.*", "botocore.*", "weasyprint.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

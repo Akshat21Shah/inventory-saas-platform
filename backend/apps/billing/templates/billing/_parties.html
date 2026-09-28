@@ -1,0 +1,24 @@
+<div class="parties">
+  <div>
+    <div class="label">Bill to</div>
+    <p><b>{{ buyer.name }}</b>{% if buyer.code %} <span class="muted">({{ buyer.code }})</span>{% endif %}</p>
+    {% with a=buyer.billing_address|default:buyer.shipping_address %}
+      {% if a %}<p>{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}</p>
+      <p>{{ a.city }}{% if a.district and a.district != a.city %}, {{ a.district }}{% endif %} - {{ a.pincode }}</p>
+      <p>{{ a.state }} ({{ a.state_code }})</p>{% endif %}
+    {% endwith %}
+    {% if buyer.contact %}<p>{{ buyer.contact }}{% if buyer.phone %} · {{ buyer.phone }}{% endif %}</p>{% endif %}
+    <p><b>GSTIN</b> {{ buyer.gstin|default:"Unregistered" }}</p>
+  </div>
+  {% if buyer.shipping_address and buyer.billing_address and buyer.shipping_address.id != buyer.billing_address.id %}
+  <div>
+    <div class="label">Ship to</div>
+    {% with a=buyer.shipping_address %}
+      <p><b>{{ buyer.name }}</b></p>
+      <p>{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}</p>
+      <p>{{ a.city }}{% if a.district and a.district != a.city %}, {{ a.district }}{% endif %} - {{ a.pincode }}</p>
+      <p>{{ a.state }} ({{ a.state_code }})</p>
+    {% endwith %}
+  </div>
+  {% endif %}
+</div>

@@ -1,0 +1,40 @@
+<style>
+  @page { size: A4; margin: 12mm 11mm 14mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Noto Sans", "DejaVu Sans", sans-serif; font-size: 7.5pt; color: #666; } }
+  * { box-sizing: border-box; }
+  body { font-family: "Noto Sans", "DejaVu Sans", sans-serif; font-size: 8.5pt; color: #111; margin: 0; }
+  .page + .page { page-break-before: always; }
+  h1 { font-size: 14pt; margin: 0 0 2pt; }
+  h2 { font-size: 13pt; margin: 0; letter-spacing: 0.5pt; text-transform: uppercase; }
+  p { margin: 1pt 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5pt solid #111; padding-bottom: 6pt; }
+  .top .title { text-align: right; }
+  .copy { font-size: 8pt; text-transform: uppercase; border: 0.75pt solid #111; padding: 1.5pt 5pt; display: inline-block; margin-top: 3pt; }
+  .note-strong { font-weight: bold; margin-top: 3pt; }
+  table { width: 100%; border-collapse: collapse; }
+  .meta { margin: 6pt 0; }
+  .meta td { padding: 1.5pt 4pt 1.5pt 0; vertical-align: top; }
+  .meta td.k { color: #555; width: 18%; }
+  .parties { display: flex; gap: 10pt; margin-bottom: 6pt; }
+  .parties > div { flex: 1; border: 0.75pt solid #bbb; padding: 4pt 6pt; }
+  .label { font-size: 7pt; text-transform: uppercase; color: #555; letter-spacing: 0.4pt; margin-bottom: 2pt; }
+  .lines th, .lines td, .summary th, .summary td { border: 0.5pt solid #999; padding: 2.5pt 3pt; vertical-align: top; }
+  .lines th, .summary th { background: #eee; font-weight: 600; font-size: 7.5pt; }
+  .lines thead { display: table-header-group; }
+  .lines tr { page-break-inside: avoid; }
+  .n { text-align: right; white-space: nowrap; }
+  .c { text-align: center; }
+  .muted { color: #555; font-size: 7.5pt; }
+  .totals { width: 45%; margin-left: auto; margin-top: 4pt; }
+  .totals td { padding: 1.5pt 3pt; }
+  .totals tr.grand td { font-weight: bold; font-size: 10pt; border-top: 1pt solid #111; }
+  .words { margin: 4pt 0 6pt; }
+  .summary { margin-top: 6pt; }
+  .bottom { display: flex; gap: 10pt; margin-top: 10pt; page-break-inside: avoid; }
+  .bottom > div { flex: 1; }
+  .sign { text-align: right; }
+  .sign .space { height: 36pt; }
+  .sign img { max-height: 36pt; }
+  .flag { border: 0.75pt solid #b45309; color: #7c2d12; padding: 3pt 5pt; margin-top: 6pt; }
+  .irn { display: flex; gap: 8pt; border: 0.75pt solid #bbb; padding: 4pt 6pt; margin-top: 6pt; }
+  .irn img { width: 80pt; height: 80pt; }
+</style>

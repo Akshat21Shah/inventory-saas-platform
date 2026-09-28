@@ -278,6 +278,8 @@ S3_BUCKET = env("S3_BUCKET", default="inventory-dev")
 # Anonymous read, no listing (ADR-034); served through the CDN in production.
 S3_PUBLIC_BUCKET = env("S3_PUBLIC_BUCKET", default="inventory-public-dev")
 PUBLIC_ASSETS_BASE_URL = env("PUBLIC_ASSETS_BASE_URL", default="")  # empty = S3 public endpoint
+# Invoices, credit notes, receipts, order confirmations (ADR-046): "weasyprint" or "fake" (tests).
+PDF_RENDERER = env("PDF_RENDERER", default="weasyprint")
 S3_ACCESS_KEY = env("S3_ACCESS_KEY", default="")
 S3_SECRET_KEY = env("S3_SECRET_KEY", default="")
 S3_REGION = env("S3_REGION", default="ap-south-1")

@@ -1,0 +1,7 @@
+<div class="seller">
+  <h1>{{ seller.trade_name|default:seller.legal_name }}</h1>
+  {% if seller.trade_name and seller.trade_name != seller.legal_name %}<p>{{ seller.legal_name }}</p>{% endif %}
+  <p>{{ seller.address }}</p>
+  <p>{{ seller.state }} ({{ seller.state_code }}){% if seller.phone %} · {{ seller.phone }}{% endif %}{% if seller.email %} · {{ seller.email }}{% endif %}</p>
+  <p><b>GSTIN</b> {{ seller.gstin }}{% if seller.pan %} · <b>PAN</b> {{ seller.pan }}{% endif %}</p>
+</div>

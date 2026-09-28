@@ -175,6 +175,10 @@ def accept_order(order_id: UUID, *, by: User | None) -> Order:
             update_fields=["status", "backorder_state", "accepted_at", "accepted_by", "updated_at"]
         )
         emit("order.accepted", order)
+        if order.settings_snapshot.get("orders.send_confirmation_on_accept", True):
+            from apps.billing import documents
+
+            documents.create_confirmation(order)  # ADR-046 item 2; its PDF follows
         if ready:
             from apps.billing import invoicing
 

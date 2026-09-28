@@ -27,4 +27,5 @@ LOGGING["root"]["level"] = "WARNING"
 ALLOW_MOCK_INTEGRATIONS = True
 OTP_FIXED_CODE = None  # tests read real random codes from the mock SMS outbox
 STORAGE_BACKEND = "memory"
+PDF_RENDERER = "fake"  # tests that print real PDFs switch to weasyprint where it is installed
 TRUSTED_PROXIES = ["127.0.0.1"]  # the test client plays the Next.js proxy

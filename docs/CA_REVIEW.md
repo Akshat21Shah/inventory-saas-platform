@@ -8,7 +8,10 @@ software uses the defaults described below.
 in rupees that come from the software itself. Settings a distributor can change are marked
 *(setting)*, with the default named. Section 14 lists the questions we would like you to answer
 with a yes or no (and a note where needed). Sample documents are in `docs/ca/`:
-`sample-invoice.pdf` and `sample-credit-note.pdf`.
+`sample-invoice.pdf` (Example 5 in section 5, as the shop receives it),
+`sample-invoice-copies.pdf` (the same invoice in the three labelled copies staff print) and
+`sample-credit-note.pdf` (CN 1 in section 9: 3 of the first line returned damaged). They are
+printed by the software from the same figures; the business names and GSTINs are made up.
 
 ---
 

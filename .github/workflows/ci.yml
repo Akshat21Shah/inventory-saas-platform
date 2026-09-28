@@ -51,6 +51,12 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_DB: inventory
         run: sh infra/postgres/init.sh
+      - name: PDF libraries (WeasyPrint) and a font with the rupee sign
+        working-directory: .
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends \
+            libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-noto-core
       - run: uv sync --frozen
       - name: Lint
         run: uv run ruff check . && uv run ruff format --check .

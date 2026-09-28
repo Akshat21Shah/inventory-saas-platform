@@ -63,7 +63,7 @@ class ReturnLine:
     disposition: str = Disposition.RETURN_TO_STOCK
 
 
-def _as_tax(line: InvoiceLine) -> LineTax:
+def line_tax(line: InvoiceLine) -> LineTax:
     """The invoice line's rates and amounts, as the tax engine's line."""
     return LineTax(
         gross=line.gross_amount,
@@ -250,8 +250,8 @@ def _quantity_parts(invoice: Invoice, wanted: dict[UUID, tuple[Decimal, str]]) -
             qty,
             invoiced_qty=Decimal(line.quantity),
             remaining_qty=remaining_qty,
-            line=_as_tax(line),
-            remaining=Components.of(_as_tax(line)).minus(done),
+            line=line_tax(line),
+            remaining=Components.of(line_tax(line)).minus(done),
             rounding=rounding,
         )
         parts.append(_Part(line, qty, credit, disposition))
@@ -363,13 +363,13 @@ def issue_price_adjustment(
             if line is None:
                 raise InvalidFields({"lines": ["That line isn't on this invoice."]})
             _, done = _credited(line)
-            left = Components.of(_as_tax(line)).minus(done)
+            left = Components.of(line_tax(line)).minus(done)
             if taxable > left.taxable:
                 raise InvalidFields(
                     {"lines": [f"{line.description}: at most ₹{left.taxable} can be credited."]}
                 )
             credit = credit_for_taxable(
-                taxable, rates=_as_tax(line), remaining=left, rounding=rounding
+                taxable, rates=line_tax(line), remaining=left, rounding=rounding
             )
             parts.append(_Part(line, QTY_ZERO, credit))
         parts.sort(key=lambda p: p.line.line_no)
