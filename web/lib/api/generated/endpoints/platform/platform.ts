@@ -44,6 +44,7 @@ import type {
   PaginatedHsnHintList,
   PaginatedImpersonationSessionList,
   PaginatedMembershipList,
+  PaginatedPlatformFailureList,
   PaginatedTenantListList,
   PatchedCessTypeUpdateRequest,
   PatchedFeatureFlagRequest,
@@ -56,22 +57,29 @@ import type {
   PlanRequest,
   PlatformAuditLogsParams,
   PlatformCessTypesListParams,
+  PlatformFailure,
   PlatformFeatureFlagsListParams,
   PlatformHsnHintsListParams,
   PlatformImpersonationsListParams,
+  PlatformNotificationFailuresParams,
+  PlatformNotificationTemplatesParams,
   PlatformPlansListParams,
   PlatformTaxRatesListParams,
+  PlatformTemplate,
   PlatformTenantFeatures200,
   PlatformTenantUsersParams,
   PlatformTenantsListParams,
   PlatformTenantsSlugAvailableParams,
+  PlatformTextInputRequest,
   ReasonRequest,
   Setting,
   SlugAvailability,
   Subscription,
   TaxRate,
   TaxRateRequest,
-  TenantDetail
+  TenantDetail,
+  TextPreview,
+  TextPreviewInputRequest
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -1487,6 +1495,500 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getPlatformImpersonationsStartMutationOptions(options), queryClient);
+    }
+    export type platformNotificationFailuresResponse200 = {
+  data: PaginatedPlatformFailureList
+  status: 200
+}
+
+export type platformNotificationFailuresResponseSuccess = (platformNotificationFailuresResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformNotificationFailuresResponse = (platformNotificationFailuresResponseSuccess)
+
+export const getPlatformNotificationFailuresUrl = (params?: PlatformNotificationFailuresParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/platform/notification-failures/?${stringifiedParams}` : `/api/v1/platform/notification-failures/`
+}
+
+export const platformNotificationFailures = async (params?: PlatformNotificationFailuresParams, options?: Parameters<typeof apiFetch>[1]): Promise<platformNotificationFailuresResponse> => {
+
+  return apiFetch<platformNotificationFailuresResponse>(getPlatformNotificationFailuresUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformNotificationFailuresQueryKey = (params?: PlatformNotificationFailuresParams,) => {
+    return [
+    `/api/v1/platform/notification-failures/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPlatformNotificationFailuresQueryOptions = <TData = Awaited<ReturnType<typeof platformNotificationFailures>>, TError = unknown>(params?: PlatformNotificationFailuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationFailures>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformNotificationFailuresQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformNotificationFailures>>> = ({ signal }) => platformNotificationFailures(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformNotificationFailures>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformNotificationFailuresQueryResult = NonNullable<Awaited<ReturnType<typeof platformNotificationFailures>>>
+export type PlatformNotificationFailuresQueryError = unknown
+
+
+export function usePlatformNotificationFailures<TData = Awaited<ReturnType<typeof platformNotificationFailures>>, TError = unknown>(
+ params: undefined |  PlatformNotificationFailuresParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationFailures>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformNotificationFailures>>,
+          TError,
+          Awaited<ReturnType<typeof platformNotificationFailures>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformNotificationFailures<TData = Awaited<ReturnType<typeof platformNotificationFailures>>, TError = unknown>(
+ params?: PlatformNotificationFailuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationFailures>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformNotificationFailures>>,
+          TError,
+          Awaited<ReturnType<typeof platformNotificationFailures>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformNotificationFailures<TData = Awaited<ReturnType<typeof platformNotificationFailures>>, TError = unknown>(
+ params?: PlatformNotificationFailuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationFailures>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformNotificationFailures<TData = Awaited<ReturnType<typeof platformNotificationFailures>>, TError = unknown>(
+ params?: PlatformNotificationFailuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationFailures>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformNotificationFailuresQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformNotificationFailureRetryResponse200 = {
+  data: PlatformFailure
+  status: 200
+}
+
+export type platformNotificationFailureRetryResponseSuccess = (platformNotificationFailureRetryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformNotificationFailureRetryResponse = (platformNotificationFailureRetryResponseSuccess)
+
+export const getPlatformNotificationFailureRetryUrl = (notificationId: string,) => {
+
+
+
+
+  return `/api/v1/platform/notification-failures/${notificationId}/retry/`
+}
+
+export const platformNotificationFailureRetry = async (notificationId: string, options?: Parameters<typeof apiFetch>[1]): Promise<platformNotificationFailureRetryResponse> => {
+
+  return apiFetch<platformNotificationFailureRetryResponse>(getPlatformNotificationFailureRetryUrl(notificationId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformNotificationFailureRetryMutationKey = () => ['platformNotificationFailureRetry'] as const;
+
+export const getPlatformNotificationFailureRetryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationFailureRetry>>, TError,PlatformNotificationFailureRetryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformNotificationFailureRetry>>, TError,PlatformNotificationFailureRetryMutationVariables, TContext> => {
+
+const mutationKey = getPlatformNotificationFailureRetryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformNotificationFailureRetry>>, PlatformNotificationFailureRetryMutationVariables> = (props) => {
+          const {notificationId} = props ?? {};
+
+          return  platformNotificationFailureRetry(notificationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformNotificationFailureRetryMutationResult = NonNullable<Awaited<ReturnType<typeof platformNotificationFailureRetry>>>
+
+    export type PlatformNotificationFailureRetryMutationError = unknown
+    export type PlatformNotificationFailureRetryMutationVariables = {notificationId: string}
+
+    export const usePlatformNotificationFailureRetry = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationFailureRetry>>, TError,PlatformNotificationFailureRetryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformNotificationFailureRetry>>,
+        TError,
+        PlatformNotificationFailureRetryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformNotificationFailureRetryMutationOptions(options), queryClient);
+    }
+    export type platformNotificationTemplatesResponse200 = {
+  data: PlatformTemplate[]
+  status: 200
+}
+
+export type platformNotificationTemplatesResponseSuccess = (platformNotificationTemplatesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformNotificationTemplatesResponse = (platformNotificationTemplatesResponseSuccess)
+
+export const getPlatformNotificationTemplatesUrl = (params?: PlatformNotificationTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/platform/notification-templates/?${stringifiedParams}` : `/api/v1/platform/notification-templates/`
+}
+
+export const platformNotificationTemplates = async (params?: PlatformNotificationTemplatesParams, options?: Parameters<typeof apiFetch>[1]): Promise<platformNotificationTemplatesResponse> => {
+
+  return apiFetch<platformNotificationTemplatesResponse>(getPlatformNotificationTemplatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformNotificationTemplatesQueryKey = (params?: PlatformNotificationTemplatesParams,) => {
+    return [
+    `/api/v1/platform/notification-templates/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPlatformNotificationTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof platformNotificationTemplates>>, TError = unknown>(params?: PlatformNotificationTemplatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformNotificationTemplatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformNotificationTemplates>>> = ({ signal }) => platformNotificationTemplates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformNotificationTemplates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformNotificationTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof platformNotificationTemplates>>>
+export type PlatformNotificationTemplatesQueryError = unknown
+
+
+export function usePlatformNotificationTemplates<TData = Awaited<ReturnType<typeof platformNotificationTemplates>>, TError = unknown>(
+ params: undefined |  PlatformNotificationTemplatesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationTemplates>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformNotificationTemplates>>,
+          TError,
+          Awaited<ReturnType<typeof platformNotificationTemplates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformNotificationTemplates<TData = Awaited<ReturnType<typeof platformNotificationTemplates>>, TError = unknown>(
+ params?: PlatformNotificationTemplatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationTemplates>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformNotificationTemplates>>,
+          TError,
+          Awaited<ReturnType<typeof platformNotificationTemplates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformNotificationTemplates<TData = Awaited<ReturnType<typeof platformNotificationTemplates>>, TError = unknown>(
+ params?: PlatformNotificationTemplatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformNotificationTemplates<TData = Awaited<ReturnType<typeof platformNotificationTemplates>>, TError = unknown>(
+ params?: PlatformNotificationTemplatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformNotificationTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformNotificationTemplatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformNotificationTemplateUpdateResponse200 = {
+  data: PlatformTemplate
+  status: 200
+}
+
+export type platformNotificationTemplateUpdateResponseSuccess = (platformNotificationTemplateUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformNotificationTemplateUpdateResponse = (platformNotificationTemplateUpdateResponseSuccess)
+
+export const getPlatformNotificationTemplateUpdateUrl = (event: string,
+    channel: string,) => {
+
+
+
+
+  return `/api/v1/platform/notification-templates/${event}/${channel}/`
+}
+
+export const platformNotificationTemplateUpdate = async (event: string,
+    channel: string,
+    platformTextInputRequest: PlatformTextInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<platformNotificationTemplateUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<platformNotificationTemplateUpdateResponse>(getPlatformNotificationTemplateUpdateUrl(event,channel),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(platformTextInputRequest)
+  }
+);}
+
+
+
+
+
+export const getPlatformNotificationTemplateUpdateMutationKey = () => ['platformNotificationTemplateUpdate'] as const;
+
+export const getPlatformNotificationTemplateUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTemplateUpdate>>, TError,PlatformNotificationTemplateUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTemplateUpdate>>, TError,PlatformNotificationTemplateUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformNotificationTemplateUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformNotificationTemplateUpdate>>, PlatformNotificationTemplateUpdateMutationVariables> = (props) => {
+          const {event,channel,data} = props ?? {};
+
+          return  platformNotificationTemplateUpdate(event,channel,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformNotificationTemplateUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformNotificationTemplateUpdate>>>
+    export type PlatformNotificationTemplateUpdateMutationBody = PlatformTextInputRequest
+    export type PlatformNotificationTemplateUpdateMutationError = unknown
+    export type PlatformNotificationTemplateUpdateMutationVariables = {event: string;channel: string;data: PlatformTextInputRequest}
+
+    export const usePlatformNotificationTemplateUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTemplateUpdate>>, TError,PlatformNotificationTemplateUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformNotificationTemplateUpdate>>,
+        TError,
+        PlatformNotificationTemplateUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformNotificationTemplateUpdateMutationOptions(options), queryClient);
+    }
+    export type platformNotificationTextPreviewResponse200 = {
+  data: TextPreview
+  status: 200
+}
+
+export type platformNotificationTextPreviewResponseSuccess = (platformNotificationTextPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformNotificationTextPreviewResponse = (platformNotificationTextPreviewResponseSuccess)
+
+export const getPlatformNotificationTextPreviewUrl = () => {
+
+
+
+
+  return `/api/v1/platform/notification-templates/preview/`
+}
+
+export const platformNotificationTextPreview = async (textPreviewInputRequest: TextPreviewInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<platformNotificationTextPreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<platformNotificationTextPreviewResponse>(getPlatformNotificationTextPreviewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(textPreviewInputRequest)
+  }
+);}
+
+
+
+
+
+export const getPlatformNotificationTextPreviewMutationKey = () => ['platformNotificationTextPreview'] as const;
+
+export const getPlatformNotificationTextPreviewMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTextPreview>>, TError,PlatformNotificationTextPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTextPreview>>, TError,PlatformNotificationTextPreviewMutationVariables, TContext> => {
+
+const mutationKey = getPlatformNotificationTextPreviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformNotificationTextPreview>>, PlatformNotificationTextPreviewMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformNotificationTextPreview(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformNotificationTextPreviewMutationResult = NonNullable<Awaited<ReturnType<typeof platformNotificationTextPreview>>>
+    export type PlatformNotificationTextPreviewMutationBody = TextPreviewInputRequest
+    export type PlatformNotificationTextPreviewMutationError = unknown
+    export type PlatformNotificationTextPreviewMutationVariables = {data: TextPreviewInputRequest}
+
+    export const usePlatformNotificationTextPreview = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTextPreview>>, TError,PlatformNotificationTextPreviewMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformNotificationTextPreview>>,
+        TError,
+        PlatformNotificationTextPreviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformNotificationTextPreviewMutationOptions(options), queryClient);
     }
     export type platformPlansListResponse200 = {
   data: Plan[]

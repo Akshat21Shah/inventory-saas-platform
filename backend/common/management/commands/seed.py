@@ -21,6 +21,7 @@ from apps.catalog.defaults import ensure_default_units
 from apps.catalog.models import Unit
 from apps.inventory.defaults import ensure_default_warehouse
 from apps.inventory.models import Warehouse
+from apps.notifications.demo import seed_notifications
 from apps.platform.models import Plan, Subscription, Tenant, TenantBranding, TenantProfile
 from apps.platform.validators import gstin_check_char
 from apps.retailers.models import Retailer
@@ -135,6 +136,7 @@ class Command(BaseCommand):
                 # Shipments dispatched before invoices existed (Phase 4 data, ADR-046 item 3).
                 late_invoices = invoice_tenant(tenant.id)
                 paid = seed_billing(tenant, owner)
+                opted_in = seed_notifications(tenant, owner)
             self.stdout.write(
                 f"{'created' if created else 'updated'} tenant {tenant.slug}: "
                 f"+{summary.products} products, +{summary.images} photos, "
@@ -142,6 +144,7 @@ class Command(BaseCommand):
                 f"+{summary.stock_documents} stock documents, +{summary.orders} orders"
                 + (f", {late_invoices} earlier shipments invoiced" if late_invoices else "")
                 + (f", +{paid} payments" if paid else "")
+                + f", {opted_in} shops on WhatsApp"
             )
         self.stdout.write(self.style.SUCCESS("seed complete"))
 

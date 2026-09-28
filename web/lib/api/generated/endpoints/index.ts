@@ -4,6 +4,7 @@ export * from './catalog/catalog';
 export * from './imports/imports';
 export * from './inventory/inventory';
 export * from './meta/meta';
+export * from './notifications/notifications';
 export * from './orders/orders';
 export * from './payments/payments';
 export * from './platform/platform';

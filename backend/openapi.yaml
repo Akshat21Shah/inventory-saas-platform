@@ -5,6 +5,111 @@ info:
   description: Multi-tenant B2B inventory & ordering platform. All money values are
     decimal strings.
 paths:
+  /api/v1/announcements/:
+    get:
+      operationId: announcements
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAnnouncementList'
+          description: ''
+    post:
+      operationId: announcement_create
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+          description: ''
+  /api/v1/announcements/{announcement_id}/:
+    get:
+      operationId: announcement
+      parameters:
+      - in: path
+        name: announcement_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+          description: ''
+    put:
+      operationId: announcement_update
+      parameters:
+      - in: path
+        name: announcement_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+          description: ''
   /api/v1/audit-logs/:
     get:
       operationId: audit_logs_list
@@ -1268,6 +1373,59 @@ paths:
                 type: string
                 format: binary
           description: Spreadsheet download
+  /api/v1/document-links/:
+    get:
+      operationId: document_links
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - CREDIT_NOTE
+          - INVOICE
+          - ORDER_CONFIRMATION
+          - RECEIPT
+          - REFUND_VOUCHER
+        required: true
+      - in: query
+        name: object_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentLinkRow'
+          description: ''
+  /api/v1/document-links/revoke/:
+    post:
+      operationId: document_links_revoke
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentRefRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Revoked'
+          description: ''
   /api/v1/fulfilments/:
     get:
       operationId: fulfilments_list
@@ -1759,6 +1917,431 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Meta'
+          description: ''
+  /api/v1/notification-deliveries/:
+    get:
+      operationId: notification_deliveries
+      parameters:
+      - in: query
+        name: channel
+        schema:
+          type: string
+          enum:
+          - EMAIL
+          - IN_APP
+          - SMS
+          - WHATSAPP
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: query
+        name: event
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: retailer
+        schema:
+          type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FAILED
+          - PENDING
+          - SENDING
+          - SENT
+          - SKIPPED
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDeliveryRowList'
+          description: ''
+  /api/v1/notification-deliveries/{notification_id}/:
+    get:
+      operationId: notification_delivery
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetail'
+          description: ''
+  /api/v1/notification-deliveries/{notification_id}/retry/:
+    post:
+      operationId: notification_delivery_retry
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetail'
+          description: ''
+  /api/v1/notification-deliveries/counts/:
+    get:
+      operationId: notification_delivery_counts
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryCounts'
+          description: ''
+  /api/v1/notification-preferences/:
+    get:
+      operationId: notification_preferences
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreferenceRow'
+          description: ''
+    put:
+      operationId: notification_preferences_update
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreferenceRow'
+          description: ''
+  /api/v1/notification-rules/:
+    get:
+      operationId: notification_rules
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RulesMatrix'
+          description: ''
+  /api/v1/notification-rules/{event}/:
+    put:
+      operationId: notification_rules_update
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RulesUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rule'
+          description: ''
+    delete:
+      operationId: notification_rules_reset
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/notification-templates/{event}/:
+    get:
+      operationId: notification_texts
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: locale
+        schema:
+          type: string
+          enum:
+          - en
+          - hi
+          - mr
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Text'
+          description: ''
+  /api/v1/notification-templates/{event}/{channel}/:
+    put:
+      operationId: notification_text_update
+      parameters:
+      - in: path
+        name: channel
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Text'
+          description: ''
+    delete:
+      operationId: notification_text_reset
+      parameters:
+      - in: path
+        name: channel
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: locale
+        schema:
+          type: string
+          enum:
+          - en
+          - hi
+          - mr
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/notification-templates/preview/:
+    post:
+      operationId: notification_text_preview
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextPreviewInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TextPreview'
+          description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_inbox
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: unread
+        schema:
+          type: boolean
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInboxItemList'
+          description: ''
+  /api/v1/notifications/{notification_id}/read/:
+    post:
+      operationId: notifications_mark_read
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkedRead'
+          description: ''
+  /api/v1/notifications/read-all/:
+    post:
+      operationId: notifications_mark_all_read
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkedRead'
+          description: ''
+  /api/v1/notifications/unread-count/:
+    get:
+      operationId: notifications_unread_count
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCount'
           description: ''
   /api/v1/order-lines/{line_id}/cancel-backorder/:
     post:
@@ -2903,6 +3486,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImpersonationStarted'
+          description: ''
+  /api/v1/platform/notification-failures/:
+    get:
+      operationId: platform_notification_failures
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: tenant
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPlatformFailureList'
+          description: ''
+  /api/v1/platform/notification-failures/{notification_id}/retry/:
+    post:
+      operationId: platform_notification_failure_retry
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformFailure'
+          description: ''
+  /api/v1/platform/notification-templates/:
+    get:
+      operationId: platform_notification_templates
+      parameters:
+      - in: query
+        name: event
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlatformTemplate'
+          description: ''
+  /api/v1/platform/notification-templates/{event}/{channel}/:
+    put:
+      operationId: platform_notification_template_update
+      parameters:
+      - in: path
+        name: channel
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformTextInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformTemplate'
+          description: ''
+  /api/v1/platform/notification-templates/preview/:
+    post:
+      operationId: platform_notification_text_preview
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextPreviewInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TextPreview'
           description: ''
   /api/v1/platform/plans/:
     get:
@@ -5764,6 +6495,69 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedPriceSheetRowList'
           description: ''
+  /api/v1/retailers/{retailer_id}/reminder-pause/:
+    get:
+      operationId: retailer_reminder_pause
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReminderPauseState'
+          description: ''
+    post:
+      operationId: retailer_reminder_pause_set
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReminderPauseInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReminderPauseState'
+          description: ''
+    delete:
+      operationId: retailer_reminder_pause_end
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/retailers/{retailer_id}/resend-welcome/:
     post:
       operationId: retailers_resend_welcome
@@ -5801,6 +6595,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RetailerDetail'
+          description: ''
+  /api/v1/retailers/{retailer_id}/whatsapp-consent/:
+    get:
+      operationId: retailer_whatsapp_consent
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentState'
+          description: ''
+    put:
+      operationId: retailer_whatsapp_consent_update
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffConsentInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentState'
           description: ''
   /api/v1/retailers/bulk/:
     post:
@@ -6231,6 +7072,22 @@ paths:
                 items:
                   $ref: '#/components/schemas/DeliveryAddress'
           description: ''
+  /api/v1/shop/announcements/:
+    get:
+      operationId: shop_announcements
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopAnnouncement'
+          description: ''
   /api/v1/shop/brands/:
     get:
       operationId: shop_brands
@@ -6563,6 +7420,135 @@ paths:
               schema:
                 $ref: '#/components/schemas/Statement'
           description: ''
+  /api/v1/shop/notification-preferences/:
+    get:
+      operationId: shop_notification_preferences
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreferenceRow'
+          description: ''
+    put:
+      operationId: shop_notification_preferences_update
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreferenceRow'
+          description: ''
+  /api/v1/shop/notifications/:
+    get:
+      operationId: shop_notifications
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: unread
+        schema:
+          type: boolean
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInboxItemList'
+          description: ''
+  /api/v1/shop/notifications/{notification_id}/read/:
+    post:
+      operationId: shop_notifications_mark_read
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkedRead'
+          description: ''
+  /api/v1/shop/notifications/read-all/:
+    post:
+      operationId: shop_notifications_mark_all_read
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkedRead'
+          description: ''
+  /api/v1/shop/notifications/unread-count/:
+    get:
+      operationId: shop_notifications_unread_count
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCount'
+          description: ''
   /api/v1/shop/order-lines/{line_id}/cancel-backorder/:
     post:
       operationId: shop_order_line_cancel_backorder
@@ -6864,6 +7850,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShopProductDetail'
+          description: ''
+  /api/v1/shop/whatsapp-consent/:
+    get:
+      operationId: shop_whatsapp_consent
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentState'
+          description: ''
+    put:
+      operationId: shop_whatsapp_consent_update
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopConsentInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentState'
+          description: ''
+  /api/v1/shop/whatsapp-consent/prompted/:
+    post:
+      operationId: shop_whatsapp_consent_prompted
+      description: 'The one-time question was shown and closed without an answer:
+        don''t ask again.'
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentState'
           description: ''
   /api/v1/staff/:
     get:
@@ -7648,6 +8683,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Summary'
           description: ''
+  /api/v1/tax/upcoming-rate-changes/:
+    get:
+      operationId: tax_upcoming_rate_changes
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RateChange'
+          description: ''
   /api/v1/units/:
     get:
       operationId: catalog_units_list
@@ -8368,6 +9419,72 @@ components:
         * `RELEASE` - Stock released
         * `RETURN` - Goods returned
         * `MANUAL` - Manual
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 1000
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+        send_whatsapp:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - id
+      - published_at
+      - starts_at
+      - title
+    AnnouncementRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+        send_whatsapp:
+          type: boolean
+      required:
+      - body
+      - starts_at
+      - title
     Applied:
       type: object
       description: 'Money matched to this document: a payment, credit-note credit
@@ -9312,6 +10429,34 @@ components:
           minItems: 1
       required:
       - allocations
+    ConsentState:
+      type: object
+      properties:
+        opted_in:
+          type: boolean
+        source:
+          type: string
+        opted_in_at:
+          type: string
+          format: date-time
+          nullable: true
+        opted_out_at:
+          type: string
+          format: date-time
+          nullable: true
+        prompt:
+          type: boolean
+          description: Show the one-time question after sign-in.
+        whatsapp_available:
+          type: boolean
+          description: The distributor sends WhatsApp messages at all.
+      required:
+      - opted_in
+      - opted_in_at
+      - opted_out_at
+      - prompt
+      - source
+      - whatsapp_available
     CopyApplyRequest:
       type: object
       properties:
@@ -9780,6 +10925,182 @@ components:
       - name
       - pincode
       - state
+    DeliveryAttempt:
+      type: object
+      properties:
+        attempt_no:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        provider:
+          type: string
+          maxLength: 30
+        status:
+          type: string
+          maxLength: 8
+        error:
+          type: string
+          maxLength: 500
+        duration_ms:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attempt_no
+      - created_at
+      - provider
+      - status
+    DeliveryCounts:
+      type: object
+      properties:
+        PENDING:
+          type: integer
+        SENDING:
+          type: integer
+        SENT:
+          type: integer
+        FAILED:
+          type: integer
+        SKIPPED:
+          type: integer
+      required:
+      - FAILED
+      - PENDING
+      - SENDING
+      - SENT
+      - SKIPPED
+    DeliveryDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_code:
+          type: string
+          maxLength: 40
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        status:
+          $ref: '#/components/schemas/NotificationStatusEnum'
+        skip_reason:
+          oneOf:
+          - $ref: '#/components/schemas/NotificationSkipReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        recipient_name:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+          default: ''
+        address:
+          type: string
+          maxLength: 254
+        title:
+          type: string
+          maxLength: 200
+        attempts:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        last_error:
+          type: string
+          maxLength: 500
+        send_after:
+          type: string
+          format: date-time
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        body:
+          type: string
+        provider:
+          type: string
+          maxLength: 30
+        delivery_attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryAttempt'
+          readOnly: true
+      required:
+      - body
+      - channel
+      - created_at
+      - delivery_attempts
+      - event_code
+      - id
+      - recipient_name
+      - shop_name
+      - title
+    DeliveryRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_code:
+          type: string
+          maxLength: 40
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        status:
+          $ref: '#/components/schemas/NotificationStatusEnum'
+        skip_reason:
+          oneOf:
+          - $ref: '#/components/schemas/NotificationSkipReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        recipient_name:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+          default: ''
+        address:
+          type: string
+          maxLength: 254
+        title:
+          type: string
+          maxLength: 200
+        attempts:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        last_error:
+          type: string
+          maxLength: 500
+        send_after:
+          type: string
+          format: date-time
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - channel
+      - created_at
+      - event_code
+      - id
+      - recipient_name
+      - shop_name
+      - title
     DependsOn:
       type: object
       properties:
@@ -9999,6 +11320,61 @@ components:
       required:
       - status
       - url
+    DocumentLinkKindEnum:
+      enum:
+      - INVOICE
+      - CREDIT_NOTE
+      - RECEIPT
+      - REFUND_VOUCHER
+      - ORDER_CONFIRMATION
+      type: string
+      description: |-
+        * `INVOICE` - Invoice
+        * `CREDIT_NOTE` - Credit note
+        * `RECEIPT` - Receipt
+        * `REFUND_VOUCHER` - Refund voucher
+        * `ORDER_CONFIRMATION` - Order Confirmation
+    DocumentLinkRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/DocumentLinkKindEnum'
+        object_id:
+          type: string
+          format: uuid
+        expires_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        open_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        last_opened_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_live:
+          type: boolean
+          readOnly: true
+      required:
+      - created_at
+      - expires_at
+      - id
+      - is_live
+      - kind
+      - object_id
     DocumentRef:
       type: object
       properties:
@@ -10010,6 +11386,17 @@ components:
       required:
       - id
       - number
+    DocumentRefRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/DocumentLinkKindEnum'
+        object_id:
+          type: string
+          format: uuid
+      required:
+      - kind
+      - object_id
     DocumentSeries:
       type: object
       properties:
@@ -10230,6 +11617,39 @@ components:
         * `BACKORDER_ALLOCATED` - Backorder allocated
         * `BACKORDER_CANCELLED` - Backorder cancelled
         * `COMPLETE` - Completed
+    EventRules:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        group:
+          type: string
+        urgent:
+          type: boolean
+        category:
+          $ref: '#/components/schemas/WhatsAppCategoryEnum'
+        shop_facing:
+          type: boolean
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+        customised:
+          type: boolean
+        whatsapp:
+          $ref: '#/components/schemas/WhatsAppEstimate'
+      required:
+      - category
+      - code
+      - customised
+      - group
+      - label
+      - rules
+      - shop_facing
+      - urgent
+      - whatsapp
     FeatureFlag:
       type: object
       properties:
@@ -11220,6 +12640,43 @@ components:
       - file
       - kind
       - mode
+    InboxItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_code:
+          type: string
+          maxLength: 40
+        title:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+        path:
+          type: string
+          readOnly: true
+        is_read:
+          type: boolean
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - event_code
+      - id
+      - is_read
+      - path
+      - title
     Invitation:
       type: object
       properties:
@@ -12038,6 +13495,13 @@ components:
       required:
       - low_stock
       - without_reorder_level
+    MarkedRead:
+      type: object
+      properties:
+        marked:
+          type: integer
+      required:
+      - marked
     Me:
       type: object
       properties:
@@ -12436,6 +13900,70 @@ components:
         * `TRANSFER_OUT` - Transfer out
         * `RESERVE` - Reserved for an order
         * `RELEASE` - Reservation released
+    NotificationChannelEnum:
+      enum:
+      - IN_APP
+      - EMAIL
+      - WHATSAPP
+      - SMS
+      type: string
+      description: |-
+        * `IN_APP` - In-app
+        * `EMAIL` - Email
+        * `WHATSAPP` - WhatsApp
+        * `SMS` - SMS
+    NotificationRecipientEnum:
+      enum:
+      - SHOP
+      - SALESPERSON
+      - COLLECTOR
+      - STAFF_PERMISSION
+      - OWNERS
+      type: string
+      description: |-
+        * `SHOP` - The shop
+        * `SALESPERSON` - The shop's salesperson
+        * `COLLECTOR` - The salesman who collected
+        * `STAFF_PERMISSION` - Staff who can…
+        * `OWNERS` - Owners
+    NotificationSkipReasonEnum:
+      enum:
+      - NO_ADDRESS
+      - NO_WHATSAPP_OPT_IN
+      - TURNED_OFF
+      - FEATURE_OFF
+      - PAUSED
+      type: string
+      description: |-
+        * `NO_ADDRESS` - No email or mobile number
+        * `NO_WHATSAPP_OPT_IN` - The shop has not agreed to WhatsApp
+        * `TURNED_OFF` - Switched off by the recipient
+        * `FEATURE_OFF` - WhatsApp is not enabled
+        * `PAUSED` - Reminders paused for this shop
+    NotificationStatusEnum:
+      enum:
+      - PENDING
+      - SENDING
+      - SENT
+      - FAILED
+      - SKIPPED
+      type: string
+      description: |-
+        * `PENDING` - Waiting to be sent
+        * `SENDING` - Being sent
+        * `SENT` - Sent
+        * `FAILED` - Failed
+        * `SKIPPED` - Not sent
+    NotificationTextSourceEnum:
+      enum:
+      - tenant
+      - platform
+      - catalogue
+      type: string
+      description: |-
+        * `tenant` - tenant
+        * `platform` - platform
+        * `catalogue` - catalogue
     NullEnum:
       enum:
       - null
@@ -12857,6 +14385,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Allocation'
+    PaginatedAnnouncementList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Announcement'
     PaginatedAuditLogList:
       type: object
       required:
@@ -12933,6 +14480,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreditNoteRow'
+    PaginatedDeliveryRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryRow'
     PaginatedDiscountRuleList:
       type: object
       required:
@@ -13047,6 +14613,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ImportJobList'
+    PaginatedInboxItemList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboxItem'
     PaginatedInvitationList:
       type: object
       required:
@@ -13180,6 +14765,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaymentRow'
+    PaginatedPlatformFailureList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformFailure'
     PaginatedPriceListItemList:
       type: object
       required:
@@ -14521,6 +16125,147 @@ components:
       required:
       - code
       - name
+    PlatformFailure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_code:
+          type: string
+          maxLength: 40
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        status:
+          $ref: '#/components/schemas/NotificationStatusEnum'
+        skip_reason:
+          oneOf:
+          - $ref: '#/components/schemas/NotificationSkipReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        recipient_name:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+          default: ''
+        address:
+          type: string
+          maxLength: 254
+        title:
+          type: string
+          maxLength: 200
+        attempts:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        last_error:
+          type: string
+          maxLength: 500
+        send_after:
+          type: string
+          format: date-time
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        tenant_id:
+          type: string
+          format: uuid
+          readOnly: true
+        tenant_name:
+          type: string
+          readOnly: true
+      required:
+      - channel
+      - created_at
+      - event_code
+      - id
+      - recipient_name
+      - shop_name
+      - tenant_id
+      - tenant_name
+      - title
+    PlatformTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_code:
+          type: string
+          maxLength: 40
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        locale:
+          type: string
+          default: en
+          maxLength: 5
+        subject:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+        whatsapp_template_name:
+          type: string
+          maxLength: 100
+        whatsapp_language:
+          type: string
+          maxLength: 10
+        whatsapp_category:
+          oneOf:
+          - $ref: '#/components/schemas/WhatsAppCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        variables: {}
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - channel
+      - event_code
+      - id
+      - updated_at
+    PlatformTextInputRequest:
+      type: object
+      properties:
+        locale:
+          allOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          default: en
+        subject:
+          type: string
+          default: ''
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        whatsapp_template_name:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 100
+        whatsapp_language:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 10
+        whatsapp_category:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/WhatsAppCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - body
     Position:
       type: object
       properties:
@@ -14554,6 +16299,55 @@ components:
       - overdue
       - owed
       - unapplied_credit
+    PreferenceChannel:
+      type: object
+      properties:
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        enabled:
+          type: boolean
+        locked:
+          type: boolean
+      required:
+      - channel
+      - enabled
+      - locked
+    PreferenceInputRequest:
+      type: object
+      properties:
+        event:
+          type: string
+          minLength: 1
+          maxLength: 40
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        enabled:
+          type: boolean
+      required:
+      - channel
+      - enabled
+      - event
+    PreferenceRow:
+      type: object
+      properties:
+        event:
+          type: string
+        label:
+          type: string
+        group:
+          type: string
+        compulsory:
+          type: boolean
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreferenceChannel'
+      required:
+      - channels
+      - compulsory
+      - event
+      - group
+      - label
     PreferredLanguageEnum:
       enum:
       - en
@@ -15550,6 +17344,34 @@ components:
       - allows_decimal
       - code
       - name
+    RateChange:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        product:
+          type: string
+        code:
+          type: string
+        effective_from:
+          type: string
+          format: date
+        old_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        new_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+      required:
+      - code
+      - effective_from
+      - new_rate
+      - old_rate
+      - product
+      - product_id
     ReallocateRequest:
       type: object
       properties:
@@ -16270,6 +18092,50 @@ components:
       description: |-
         * `REGULAR` - Regular
         * `COMPOSITION` - Composition (reserved)
+    ReminderPause:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          type: string
+          maxLength: 300
+        until:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - reason
+    ReminderPauseInputRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+        until:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - reason
+    ReminderPauseState:
+      type: object
+      properties:
+        pause:
+          allOf:
+          - $ref: '#/components/schemas/ReminderPause'
+          nullable: true
+      required:
+      - pause
     RepeatResult:
       type: object
       properties:
@@ -16758,6 +18624,13 @@ components:
         * `WRONG_ITEM` - Wrong item
         * `EXCESS_SUPPLY` - Excess supply
         * `OTHER` - Other
+    Revoked:
+      type: object
+      properties:
+        revoked:
+          type: integer
+      required:
+      - revoked
     Role:
       type: object
       properties:
@@ -16801,6 +18674,33 @@ components:
       description: |-
         * `PAISA` - PAISA
         * `RUPEE` - RUPEE
+    Rule:
+      type: object
+      properties:
+        recipient:
+          $ref: '#/components/schemas/NotificationRecipientEnum'
+        permission:
+          type: string
+          default: ''
+          maxLength: 60
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationChannelEnum'
+          maxItems: 4
+        enabled:
+          type: boolean
+          default: true
+        compulsory:
+          type: boolean
+          default: false
+        is_default:
+          type: boolean
+          readOnly: true
+      required:
+      - channels
+      - is_default
+      - recipient
     RuleBrief:
       type: object
       properties:
@@ -16823,6 +18723,70 @@ components:
       - is_active
       - name
       - value
+    RuleRequest:
+      type: object
+      properties:
+        recipient:
+          $ref: '#/components/schemas/NotificationRecipientEnum'
+        permission:
+          type: string
+          default: ''
+          maxLength: 60
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationChannelEnum'
+          maxItems: 4
+        enabled:
+          type: boolean
+          default: true
+        compulsory:
+          type: boolean
+          default: false
+      required:
+      - channels
+      - recipient
+    RulesMatrix:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventRules'
+        recipients:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Channels each recipient can use.
+        whatsapp_feature_enabled:
+          type: boolean
+        prices_set:
+          type: boolean
+        whatsapp_cost_30_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        shops:
+          $ref: '#/components/schemas/ShopConsentCount'
+      required:
+      - events
+      - prices_set
+      - recipients
+      - shops
+      - whatsapp_cost_30_days
+      - whatsapp_feature_enabled
+    RulesUpdateRequest:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRequest'
+      required:
+      - rules
     Salesperson:
       type: object
       properties:
@@ -17067,6 +19031,31 @@ components:
       - orders_blocked_for_overdue
       - overdue_bills
       - position
+    ShopAnnouncement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 1000
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - body
+      - id
+      - starts_at
+      - title
     ShopAvailability:
       type: object
       description: Plain labels only; the quantity only when the distributor shows
@@ -17129,6 +19118,23 @@ components:
       - level
       - name
       - product_count
+    ShopConsentCount:
+      type: object
+      properties:
+        opted_in:
+          type: integer
+        shops:
+          type: integer
+      required:
+      - opted_in
+      - shops
+    ShopConsentInputRequest:
+      type: object
+      properties:
+        agreed:
+          type: boolean
+      required:
+      - agreed
     ShopCredit:
       type: object
       properties:
@@ -17855,6 +19861,17 @@ components:
       required:
       - id
       - price
+    StaffConsentInputRequest:
+      type: object
+      properties:
+        agreed:
+          type: boolean
+        confirmed:
+          type: boolean
+          default: false
+          description: Staff confirm the shop agreed (needed to opt in).
+      required:
+      - agreed
     StaffLoginInputRequest:
       type: object
       properties:
@@ -18789,6 +20806,82 @@ components:
       - pending_invitations
       - retailers
       - staff
+    Text:
+      type: object
+      properties:
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+        subject:
+          type: string
+        body:
+          type: string
+        source:
+          $ref: '#/components/schemas/NotificationTextSourceEnum'
+        editable:
+          type: boolean
+        variables:
+          type: array
+          items:
+            type: string
+      required:
+      - body
+      - channel
+      - editable
+      - source
+      - subject
+      - variables
+    TextInputRequest:
+      type: object
+      properties:
+        locale:
+          allOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          default: en
+        subject:
+          type: string
+          default: ''
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - body
+    TextPreview:
+      type: object
+      properties:
+        subject:
+          type: string
+        body:
+          type: string
+      required:
+      - body
+      - subject
+    TextPreviewInputRequest:
+      type: object
+      properties:
+        locale:
+          allOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          default: en
+        subject:
+          type: string
+          default: ''
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        event:
+          type: string
+          minLength: 1
+          maxLength: 40
+        channel:
+          $ref: '#/components/schemas/NotificationChannelEnum'
+      required:
+      - body
+      - channel
+      - event
     TokenResponse:
       type: object
       properties:
@@ -18902,6 +20995,13 @@ components:
       - code
       - name
       - uqc
+    UnreadCount:
+      type: object
+      properties:
+        unread:
+          type: integer
+      required:
+      - unread
     UsedFor:
       type: object
       description: 'Where money went: an invoice, a debit adjustment (old bill, debit)
@@ -19200,6 +21300,38 @@ components:
       - code
       - details
       - message
+    WhatsAppCategoryEnum:
+      enum:
+      - UTILITY
+      - MARKETING
+      - AUTHENTICATION
+      type: string
+      description: |-
+        * `UTILITY` - Utility
+        * `MARKETING` - Marketing
+        * `AUTHENTICATION` - Authentication
+    WhatsAppEstimate:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        messages_30_days:
+          type: integer
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,4})?$
+          nullable: true
+        cost_30_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - cost_30_days
+      - enabled
+      - messages_30_days
+      - price
     WsTicket:
       type: object
       properties:

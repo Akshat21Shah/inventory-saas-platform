@@ -45,6 +45,12 @@ def test_seed_is_idempotent(settings):
         assert CreditNote.objects.count() == 1
         assert Refund.objects.count() == 1
     check_ledger(sharma)
+    # Demo notifications (Phase 6): half the shops on WhatsApp, one announcement, once.
+    from apps.notifications.models import Announcement
+
+    with tenant_context(sharma.id):
+        assert Retailer.objects.filter(whatsapp_opt_in=True).count() == 10
+        assert Announcement.objects.count() == 1
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):

@@ -690,18 +690,22 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `notifications/unread-count` | GET | own | badge |
 | `notifications/{id}/read`, `notifications/read-all` | POST | own | — |
 | `device-tokens` | POST, DELETE | own | push registration (Phase 11) |
-| `notification-rules` | GET, PUT | `notifications.manage` | event → recipients → channels matrix, compulsory flags, WhatsApp cost estimate and opted-in shop count |
-| `notification-templates`, `/{id}`, `/preview` | GET, PUT, POST | `notifications.manage` | tenant overrides with preview |
-| `notification-deliveries` | GET | `notifications.manage` | delivery log with attempts (filters: status, channel, event) |
+| `notification-preferences` | GET, PUT | staff (own) | per event and channel within the rules; in-app locked |
+| `notification-rules`, `/{event}` | GET; PUT, DELETE | `notifications.manage` | event → recipients → channels matrix, compulsory flags, WhatsApp cost estimate and opted-in shop count; replace one event's rules, or reset them to the defaults (audited) |
+| `notification-templates/{event}`, `/{event}/{channel}`, `/preview` | GET; PUT, DELETE; POST | `notifications.manage` | the texts in force per channel (`?locale=`); the tenant's own in-app or email text, or back to the platform's; preview with sample values (WhatsApp and SMS texts: super admin only) |
+| `notification-deliveries`, `/counts`, `/{id}` | GET | `notifications.manage` | delivery log (filters: status, channel, event, shop, dates, search), totals per status for 7 days, one message with its attempts |
 | `notification-deliveries/{id}/retry` | POST | `notifications.manage` | manual retry |
 | `announcements`, `/{id}` | CRUD | `notifications.manage` | retailer home announcements |
-| `document-links/revoke` | POST | the document's manage permission | revoke every link to one document (audited) |
-| `retailers/{id}/reminder-pause` | POST, DELETE | `credit.manage` | pause / resume payment reminders (reason, optional end date; audited) |
-| `retailers/{id}/whatsapp-consent` | PUT | `retailers.manage` | record opt-in (confirmation required) or opt-out (audited) |
-| `/api/v1/public/documents/{token}` | GET | 🌐 token | 302 to a fresh 5-minute link to the current PDF; 404 when expired or revoked |
+| `document-links`, `document-links/revoke` | GET, POST | the document's manage permission | a document's links (opens, expiry); revoke every link to one document (audited) |
+| `retailers/{id}/reminder-pause` | GET, POST, DELETE | `credit.manage` (GET also `ledger.view`) | pause / resume payment reminders (reason, optional end date; audited) |
+| `retailers/{id}/whatsapp-consent` | GET, PUT | `retailers.view` / `retailers.manage` | record opt-in (confirmation required) or opt-out (audited) |
+| `tax/upcoming-rate-changes` | GET | `products.view` | GST rate changes in the next 30 days (dashboard card) |
+| `platform/notification-templates`, `/{event}/{channel}`, `/preview` | GET, PUT, POST | `platform.settings.manage` | the platform's default texts incl. approved WhatsApp templates |
+| `platform/notification-failures`, `/{id}/retry` | GET, POST | `platform.tenants.manage` | failed messages across tenants (audited platform alias), retry |
+| `/api/v1/public/documents/{token}` | GET | 🌐 token, on the tenant's address | 302 to a fresh 5-minute link to the current PDF; otherwise a short page: being prepared (200), expired or revoked (410), unknown (404) |
 | shop: `notifications`, `notifications/unread-count`, `/{id}/read`, `/read-all` | GET, POST | shop | the shop's notification centre |
 | shop: `notification-preferences` | GET, PUT | shop | per event and channel within the rules; compulsory ones locked |
-| shop: `whatsapp-consent` | GET, PUT | shop | opt in / out; `prompted` for the one-time prompt |
+| shop: `whatsapp-consent`, `/prompted` | GET, PUT, POST | shop | opt in / out; `prompted` records that the one-time question was shown |
 | shop: `announcements` | GET | shop | current announcements (also on `home`) |
 | `dashboard` | GET | `dashboard.view` | "what needs action today" cards, filtered by the user's permissions |
 | `reports` | GET | any staff | available report catalogue for this user |

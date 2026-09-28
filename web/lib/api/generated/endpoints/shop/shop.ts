@@ -27,19 +27,25 @@ import type {
 import type {
   CancelOrderRequest,
   CheckoutAttempt,
+  ConsentState,
   DeliveryAddress,
   DocumentLink,
   InvoiceDetail,
+  MarkedRead,
+  PaginatedInboxItemList,
   PaginatedInvoiceRowList,
   PaginatedPaymentRowList,
   PaginatedShopOrderRowList,
   PaginatedShopProductList,
   PaymentDetail,
   PlaceOrderRequest,
+  PreferenceInputRequest,
+  PreferenceRow,
   QuantityRequest,
   Quote,
   RepeatResult,
   ShopAccount,
+  ShopAnnouncement,
   ShopBrand,
   ShopBrandsParams,
   ShopCartLineRemoveParams,
@@ -47,15 +53,18 @@ import type {
   ShopCartReduceToAvailableParams,
   ShopCartRetrieveParams,
   ShopCategory,
+  ShopConsentInputRequest,
   ShopHome,
   ShopInvoicesListParams,
   ShopLedgerParams,
+  ShopNotificationsParams,
   ShopOrder,
   ShopOrdersListParams,
   ShopPaymentsListParams,
   ShopProductDetail,
   ShopProductsParams,
-  Statement
+  Statement,
+  UnreadCount
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -281,6 +290,112 @@ export function useShopAddressesList<TData = Awaited<ReturnType<typeof shopAddre
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getShopAddressesListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopAnnouncementsResponse200 = {
+  data: ShopAnnouncement[]
+  status: 200
+}
+
+export type shopAnnouncementsResponseSuccess = (shopAnnouncementsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopAnnouncementsResponse = (shopAnnouncementsResponseSuccess)
+
+export const getShopAnnouncementsUrl = () => {
+
+
+
+
+  return `/api/v1/shop/announcements/`
+}
+
+export const shopAnnouncements = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopAnnouncementsResponse> => {
+
+  return apiFetch<shopAnnouncementsResponse>(getShopAnnouncementsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopAnnouncementsQueryKey = () => {
+    return [
+    `/api/v1/shop/announcements/`
+    ] as const;
+    }
+
+
+export const getShopAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof shopAnnouncements>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopAnnouncementsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopAnnouncements>>> = ({ signal }) => shopAnnouncements({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopAnnouncements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopAnnouncementsQueryResult = NonNullable<Awaited<ReturnType<typeof shopAnnouncements>>>
+export type ShopAnnouncementsQueryError = unknown
+
+
+export function useShopAnnouncements<TData = Awaited<ReturnType<typeof shopAnnouncements>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAnnouncements>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopAnnouncements>>,
+          TError,
+          Awaited<ReturnType<typeof shopAnnouncements>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopAnnouncements<TData = Awaited<ReturnType<typeof shopAnnouncements>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAnnouncements>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopAnnouncements>>,
+          TError,
+          Awaited<ReturnType<typeof shopAnnouncements>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopAnnouncements<TData = Awaited<ReturnType<typeof shopAnnouncements>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopAnnouncements<TData = Awaited<ReturnType<typeof shopAnnouncements>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopAnnouncementsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1830,6 +1945,582 @@ export function useShopLedger<TData = Awaited<ReturnType<typeof shopLedger>>, TE
 
 
 
+export type shopNotificationPreferencesResponse200 = {
+  data: PreferenceRow[]
+  status: 200
+}
+
+export type shopNotificationPreferencesResponseSuccess = (shopNotificationPreferencesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopNotificationPreferencesResponse = (shopNotificationPreferencesResponseSuccess)
+
+export const getShopNotificationPreferencesUrl = () => {
+
+
+
+
+  return `/api/v1/shop/notification-preferences/`
+}
+
+export const shopNotificationPreferences = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopNotificationPreferencesResponse> => {
+
+  return apiFetch<shopNotificationPreferencesResponse>(getShopNotificationPreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopNotificationPreferencesQueryKey = () => {
+    return [
+    `/api/v1/shop/notification-preferences/`
+    ] as const;
+    }
+
+
+export const getShopNotificationPreferencesQueryOptions = <TData = Awaited<ReturnType<typeof shopNotificationPreferences>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationPreferences>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopNotificationPreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopNotificationPreferences>>> = ({ signal }) => shopNotificationPreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopNotificationPreferences>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopNotificationPreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof shopNotificationPreferences>>>
+export type ShopNotificationPreferencesQueryError = unknown
+
+
+export function useShopNotificationPreferences<TData = Awaited<ReturnType<typeof shopNotificationPreferences>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationPreferences>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopNotificationPreferences>>,
+          TError,
+          Awaited<ReturnType<typeof shopNotificationPreferences>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopNotificationPreferences<TData = Awaited<ReturnType<typeof shopNotificationPreferences>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationPreferences>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopNotificationPreferences>>,
+          TError,
+          Awaited<ReturnType<typeof shopNotificationPreferences>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopNotificationPreferences<TData = Awaited<ReturnType<typeof shopNotificationPreferences>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationPreferences>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopNotificationPreferences<TData = Awaited<ReturnType<typeof shopNotificationPreferences>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationPreferences>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopNotificationPreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopNotificationPreferencesUpdateResponse200 = {
+  data: PreferenceRow[]
+  status: 200
+}
+
+export type shopNotificationPreferencesUpdateResponseSuccess = (shopNotificationPreferencesUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopNotificationPreferencesUpdateResponse = (shopNotificationPreferencesUpdateResponseSuccess)
+
+export const getShopNotificationPreferencesUpdateUrl = () => {
+
+
+
+
+  return `/api/v1/shop/notification-preferences/`
+}
+
+export const shopNotificationPreferencesUpdate = async (preferenceInputRequest: PreferenceInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopNotificationPreferencesUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopNotificationPreferencesUpdateResponse>(getShopNotificationPreferencesUpdateUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(preferenceInputRequest)
+  }
+);}
+
+
+
+
+
+export const getShopNotificationPreferencesUpdateMutationKey = () => ['shopNotificationPreferencesUpdate'] as const;
+
+export const getShopNotificationPreferencesUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopNotificationPreferencesUpdate>>, TError,ShopNotificationPreferencesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopNotificationPreferencesUpdate>>, TError,ShopNotificationPreferencesUpdateMutationVariables, TContext> => {
+
+const mutationKey = getShopNotificationPreferencesUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopNotificationPreferencesUpdate>>, ShopNotificationPreferencesUpdateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  shopNotificationPreferencesUpdate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopNotificationPreferencesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof shopNotificationPreferencesUpdate>>>
+    export type ShopNotificationPreferencesUpdateMutationBody = PreferenceInputRequest
+    export type ShopNotificationPreferencesUpdateMutationError = unknown
+    export type ShopNotificationPreferencesUpdateMutationVariables = {data: PreferenceInputRequest}
+
+    export const useShopNotificationPreferencesUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopNotificationPreferencesUpdate>>, TError,ShopNotificationPreferencesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopNotificationPreferencesUpdate>>,
+        TError,
+        ShopNotificationPreferencesUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopNotificationPreferencesUpdateMutationOptions(options), queryClient);
+    }
+    export type shopNotificationsResponse200 = {
+  data: PaginatedInboxItemList
+  status: 200
+}
+
+export type shopNotificationsResponseSuccess = (shopNotificationsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopNotificationsResponse = (shopNotificationsResponseSuccess)
+
+export const getShopNotificationsUrl = (params?: ShopNotificationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/shop/notifications/?${stringifiedParams}` : `/api/v1/shop/notifications/`
+}
+
+export const shopNotifications = async (params?: ShopNotificationsParams, options?: Parameters<typeof apiFetch>[1]): Promise<shopNotificationsResponse> => {
+
+  return apiFetch<shopNotificationsResponse>(getShopNotificationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopNotificationsQueryKey = (params?: ShopNotificationsParams,) => {
+    return [
+    `/api/v1/shop/notifications/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getShopNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof shopNotifications>>, TError = unknown>(params?: ShopNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopNotificationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopNotifications>>> = ({ signal }) => shopNotifications(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopNotifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof shopNotifications>>>
+export type ShopNotificationsQueryError = unknown
+
+
+export function useShopNotifications<TData = Awaited<ReturnType<typeof shopNotifications>>, TError = unknown>(
+ params: undefined |  ShopNotificationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotifications>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof shopNotifications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopNotifications<TData = Awaited<ReturnType<typeof shopNotifications>>, TError = unknown>(
+ params?: ShopNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotifications>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof shopNotifications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopNotifications<TData = Awaited<ReturnType<typeof shopNotifications>>, TError = unknown>(
+ params?: ShopNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopNotifications<TData = Awaited<ReturnType<typeof shopNotifications>>, TError = unknown>(
+ params?: ShopNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopNotificationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopNotificationsMarkReadResponse200 = {
+  data: MarkedRead
+  status: 200
+}
+
+export type shopNotificationsMarkReadResponseSuccess = (shopNotificationsMarkReadResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopNotificationsMarkReadResponse = (shopNotificationsMarkReadResponseSuccess)
+
+export const getShopNotificationsMarkReadUrl = (notificationId: string,) => {
+
+
+
+
+  return `/api/v1/shop/notifications/${notificationId}/read/`
+}
+
+export const shopNotificationsMarkRead = async (notificationId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopNotificationsMarkReadResponse> => {
+
+  return apiFetch<shopNotificationsMarkReadResponse>(getShopNotificationsMarkReadUrl(notificationId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopNotificationsMarkReadMutationKey = () => ['shopNotificationsMarkRead'] as const;
+
+export const getShopNotificationsMarkReadMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopNotificationsMarkRead>>, TError,ShopNotificationsMarkReadMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopNotificationsMarkRead>>, TError,ShopNotificationsMarkReadMutationVariables, TContext> => {
+
+const mutationKey = getShopNotificationsMarkReadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopNotificationsMarkRead>>, ShopNotificationsMarkReadMutationVariables> = (props) => {
+          const {notificationId} = props ?? {};
+
+          return  shopNotificationsMarkRead(notificationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopNotificationsMarkReadMutationResult = NonNullable<Awaited<ReturnType<typeof shopNotificationsMarkRead>>>
+
+    export type ShopNotificationsMarkReadMutationError = unknown
+    export type ShopNotificationsMarkReadMutationVariables = {notificationId: string}
+
+    export const useShopNotificationsMarkRead = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopNotificationsMarkRead>>, TError,ShopNotificationsMarkReadMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopNotificationsMarkRead>>,
+        TError,
+        ShopNotificationsMarkReadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopNotificationsMarkReadMutationOptions(options), queryClient);
+    }
+    export type shopNotificationsMarkAllReadResponse200 = {
+  data: MarkedRead
+  status: 200
+}
+
+export type shopNotificationsMarkAllReadResponseSuccess = (shopNotificationsMarkAllReadResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopNotificationsMarkAllReadResponse = (shopNotificationsMarkAllReadResponseSuccess)
+
+export const getShopNotificationsMarkAllReadUrl = () => {
+
+
+
+
+  return `/api/v1/shop/notifications/read-all/`
+}
+
+export const shopNotificationsMarkAllRead = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopNotificationsMarkAllReadResponse> => {
+
+  return apiFetch<shopNotificationsMarkAllReadResponse>(getShopNotificationsMarkAllReadUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopNotificationsMarkAllReadMutationKey = () => ['shopNotificationsMarkAllRead'] as const;
+
+export const getShopNotificationsMarkAllReadMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopNotificationsMarkAllRead>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopNotificationsMarkAllRead>>, TError,void, TContext> => {
+
+const mutationKey = getShopNotificationsMarkAllReadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopNotificationsMarkAllRead>>, void> = () => {
+
+
+          return  shopNotificationsMarkAllRead(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopNotificationsMarkAllReadMutationResult = NonNullable<Awaited<ReturnType<typeof shopNotificationsMarkAllRead>>>
+
+    export type ShopNotificationsMarkAllReadMutationError = unknown
+
+
+    export const useShopNotificationsMarkAllRead = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopNotificationsMarkAllRead>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopNotificationsMarkAllRead>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getShopNotificationsMarkAllReadMutationOptions(options), queryClient);
+    }
+    export type shopNotificationsUnreadCountResponse200 = {
+  data: UnreadCount
+  status: 200
+}
+
+export type shopNotificationsUnreadCountResponseSuccess = (shopNotificationsUnreadCountResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopNotificationsUnreadCountResponse = (shopNotificationsUnreadCountResponseSuccess)
+
+export const getShopNotificationsUnreadCountUrl = () => {
+
+
+
+
+  return `/api/v1/shop/notifications/unread-count/`
+}
+
+export const shopNotificationsUnreadCount = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopNotificationsUnreadCountResponse> => {
+
+  return apiFetch<shopNotificationsUnreadCountResponse>(getShopNotificationsUnreadCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopNotificationsUnreadCountQueryKey = () => {
+    return [
+    `/api/v1/shop/notifications/unread-count/`
+    ] as const;
+    }
+
+
+export const getShopNotificationsUnreadCountQueryOptions = <TData = Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopNotificationsUnreadCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>> = ({ signal }) => shopNotificationsUnreadCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopNotificationsUnreadCountQueryResult = NonNullable<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>>
+export type ShopNotificationsUnreadCountQueryError = unknown
+
+
+export function useShopNotificationsUnreadCount<TData = Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopNotificationsUnreadCount>>,
+          TError,
+          Awaited<ReturnType<typeof shopNotificationsUnreadCount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopNotificationsUnreadCount<TData = Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopNotificationsUnreadCount>>,
+          TError,
+          Awaited<ReturnType<typeof shopNotificationsUnreadCount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopNotificationsUnreadCount<TData = Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopNotificationsUnreadCount<TData = Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopNotificationsUnreadCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopNotificationsUnreadCountQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type shopOrderLineCancelBackorderResponse200 = {
   data: ShopOrder
   status: 200
@@ -3057,3 +3748,284 @@ export function useShopProduct<TData = Awaited<ReturnType<typeof shopProduct>>, 
 
 
 
+export type shopWhatsappConsentResponse200 = {
+  data: ConsentState
+  status: 200
+}
+
+export type shopWhatsappConsentResponseSuccess = (shopWhatsappConsentResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopWhatsappConsentResponse = (shopWhatsappConsentResponseSuccess)
+
+export const getShopWhatsappConsentUrl = () => {
+
+
+
+
+  return `/api/v1/shop/whatsapp-consent/`
+}
+
+export const shopWhatsappConsent = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopWhatsappConsentResponse> => {
+
+  return apiFetch<shopWhatsappConsentResponse>(getShopWhatsappConsentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopWhatsappConsentQueryKey = () => {
+    return [
+    `/api/v1/shop/whatsapp-consent/`
+    ] as const;
+    }
+
+
+export const getShopWhatsappConsentQueryOptions = <TData = Awaited<ReturnType<typeof shopWhatsappConsent>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopWhatsappConsent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopWhatsappConsentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopWhatsappConsent>>> = ({ signal }) => shopWhatsappConsent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopWhatsappConsent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopWhatsappConsentQueryResult = NonNullable<Awaited<ReturnType<typeof shopWhatsappConsent>>>
+export type ShopWhatsappConsentQueryError = unknown
+
+
+export function useShopWhatsappConsent<TData = Awaited<ReturnType<typeof shopWhatsappConsent>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopWhatsappConsent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopWhatsappConsent>>,
+          TError,
+          Awaited<ReturnType<typeof shopWhatsappConsent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopWhatsappConsent<TData = Awaited<ReturnType<typeof shopWhatsappConsent>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopWhatsappConsent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopWhatsappConsent>>,
+          TError,
+          Awaited<ReturnType<typeof shopWhatsappConsent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopWhatsappConsent<TData = Awaited<ReturnType<typeof shopWhatsappConsent>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopWhatsappConsent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopWhatsappConsent<TData = Awaited<ReturnType<typeof shopWhatsappConsent>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopWhatsappConsent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopWhatsappConsentQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopWhatsappConsentUpdateResponse200 = {
+  data: ConsentState
+  status: 200
+}
+
+export type shopWhatsappConsentUpdateResponseSuccess = (shopWhatsappConsentUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopWhatsappConsentUpdateResponse = (shopWhatsappConsentUpdateResponseSuccess)
+
+export const getShopWhatsappConsentUpdateUrl = () => {
+
+
+
+
+  return `/api/v1/shop/whatsapp-consent/`
+}
+
+export const shopWhatsappConsentUpdate = async (shopConsentInputRequest: ShopConsentInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopWhatsappConsentUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopWhatsappConsentUpdateResponse>(getShopWhatsappConsentUpdateUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(shopConsentInputRequest)
+  }
+);}
+
+
+
+
+
+export const getShopWhatsappConsentUpdateMutationKey = () => ['shopWhatsappConsentUpdate'] as const;
+
+export const getShopWhatsappConsentUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopWhatsappConsentUpdate>>, TError,ShopWhatsappConsentUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopWhatsappConsentUpdate>>, TError,ShopWhatsappConsentUpdateMutationVariables, TContext> => {
+
+const mutationKey = getShopWhatsappConsentUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopWhatsappConsentUpdate>>, ShopWhatsappConsentUpdateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  shopWhatsappConsentUpdate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopWhatsappConsentUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof shopWhatsappConsentUpdate>>>
+    export type ShopWhatsappConsentUpdateMutationBody = ShopConsentInputRequest
+    export type ShopWhatsappConsentUpdateMutationError = unknown
+    export type ShopWhatsappConsentUpdateMutationVariables = {data: ShopConsentInputRequest}
+
+    export const useShopWhatsappConsentUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopWhatsappConsentUpdate>>, TError,ShopWhatsappConsentUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopWhatsappConsentUpdate>>,
+        TError,
+        ShopWhatsappConsentUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopWhatsappConsentUpdateMutationOptions(options), queryClient);
+    }
+    export type shopWhatsappConsentPromptedResponse200 = {
+  data: ConsentState
+  status: 200
+}
+
+export type shopWhatsappConsentPromptedResponseSuccess = (shopWhatsappConsentPromptedResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopWhatsappConsentPromptedResponse = (shopWhatsappConsentPromptedResponseSuccess)
+
+export const getShopWhatsappConsentPromptedUrl = () => {
+
+
+
+
+  return `/api/v1/shop/whatsapp-consent/prompted/`
+}
+
+/**
+ * The one-time question was shown and closed without an answer: don't ask again.
+ */
+export const shopWhatsappConsentPrompted = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopWhatsappConsentPromptedResponse> => {
+
+  return apiFetch<shopWhatsappConsentPromptedResponse>(getShopWhatsappConsentPromptedUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopWhatsappConsentPromptedMutationKey = () => ['shopWhatsappConsentPrompted'] as const;
+
+export const getShopWhatsappConsentPromptedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopWhatsappConsentPrompted>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopWhatsappConsentPrompted>>, TError,void, TContext> => {
+
+const mutationKey = getShopWhatsappConsentPromptedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopWhatsappConsentPrompted>>, void> = () => {
+
+
+          return  shopWhatsappConsentPrompted(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopWhatsappConsentPromptedMutationResult = NonNullable<Awaited<ReturnType<typeof shopWhatsappConsentPrompted>>>
+
+    export type ShopWhatsappConsentPromptedMutationError = unknown
+
+
+    export const useShopWhatsappConsentPrompted = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopWhatsappConsentPrompted>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopWhatsappConsentPrompted>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getShopWhatsappConsentPromptedMutationOptions(options), queryClient);
+    }

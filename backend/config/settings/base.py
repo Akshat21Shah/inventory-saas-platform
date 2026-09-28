@@ -256,6 +256,13 @@ SPECTACULAR_SETTINGS = {
         "RefundModeEnum": "apps.payments.models.Refund.Mode",
         "RefundStatusEnum": "apps.payments.models.Refund.Status",
         "AgeingBasisEnum": ["INVOICE_DATE", "DUE_DATE"],
+        "NotificationChannelEnum": "apps.notifications.models.Channel",
+        "NotificationRecipientEnum": "apps.notifications.models.Recipient",
+        "NotificationStatusEnum": "apps.notifications.models.Notification.Status",
+        "NotificationSkipReasonEnum": "apps.notifications.models.Notification.SkipReason",
+        "DocumentLinkKindEnum": "apps.notifications.models.DocumentLink.Kind",
+        "WhatsAppCategoryEnum": "apps.notifications.models.WhatsAppCategory",
+        "NotificationTextSourceEnum": ["tenant", "platform", "catalogue"],
         "LoginStatusEnum": [
             "authenticated",
             "handoff",
