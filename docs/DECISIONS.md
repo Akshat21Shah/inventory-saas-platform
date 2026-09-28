@@ -48,6 +48,8 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 | 041 | Inventory: stock movements, cost method, costs after posting, what shops see | Accepted (amended by 042) |
 | 042 | Cost permissions separate from pricing; one opening-stock document per file | Accepted (amends 039, 041; valuation access amended by 043) |
 | 043 | Stock value for Accounts; E2E 2FA codes from the backend's clock | Accepted (amends 042) |
+| 044 | Ordering before billing: credit stub, staff carts, addresses, flaky-network checkout, quick ordering | Accepted |
+| 045 | Reductions, credit at allocation, blocked shops, partly delivered | Accepted |
 
 ---
 
@@ -558,4 +560,27 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   3. **The E2E helper no longer depends on the machines' clocks or on the reset.** `freshTotp` reads the backend's clock and last used step (`manage.py e2e_totp_state`, dev only), computes the code for the backend's step, waits for the next step when the current one was already used or less than 3 s remain, and a refusal fails at once with its reason (`replay`, `clock skew` with both steps, or `invalid`) and the clock difference.
   4. **The server logs why a code was refused** (`mfa: code refused (replay | clock_skew:±n | invalid)`, without the code). Users still see one neutral message.
 - **Consequences:** a slept laptop or a stale container clock can no longer make the E2E suites flaky. Real users are unaffected; the ±1 step window is unchanged.
+
+## ADR-044 — Ordering before billing: credit stub, staff carts, addresses, flaky-network checkout, quick ordering
+- **Status:** Accepted — 2026-09-27 (product owner, Phase 4 plan).
+- **Context:** Phase 4 adds carts, orders, shipments and backorders, but invoices and the ledger arrive in Phase 5 and message delivery in Phase 6. Shops order from phones on unreliable connections, and ordering must take at most 3 taps from search.
+- **Decision:**
+  1. **Credit stub until Phase 5.** Exposure = ledger balance (0 until the ledger exists) + value (incl. GST) of every open order quantity **not yet dispatched** + this order. Phase 5 replaces "not yet dispatched" with "not yet invoiced" (the same in the default ON_DISPATCH mode). The fixed formula of ADR-013, the limit semantics and the breach settings apply unchanged. A minimal `ledger.RetailerAccount` row (balance 0) exists from Phase 4 as the per-shop lock (lock order level L1), created with each shop and backfilled.
+  2. **No invoice yet.** Dispatch moves the stock (SALE movements) without an invoice; the dispatch step is where Phase 5 issues it. The Order Confirmation is the shop's order page with live updates; its PDF comes with the Phase 5 renderer. Every "retailer is notified" event is written to the outbox now, for Phase 6 to deliver.
+  3. **Staff carts.** A salesman ordering for a shop has a separate cart per (shop, staff member); the shop's own cart is never touched. The order records who placed it and how; the shop sees it in the order list and timeline ("Placed by Priya (Sales)").
+  4. **Delivery address.** The shop picks one of its saved addresses (default shipping pre-selected); shops cannot add addresses in the app. GST place of supply is the chosen address's state (ADR-010). The checkout note is for delivery instructions (landmark, timing).
+  5. **Delivered** is marked by staff with `orders.fulfil` in v1. Shop confirmation of delivery and a one-time delivery code (proof of delivery) are on the backlog.
+  6. **Checkout on a flaky connection.** The shop app creates the Idempotency-Key once per checkout attempt and keeps it (across page reloads) until the order succeeds or the cart changes. Every retry after a network failure reuses the key, so no duplicate order can be created. When the outcome of a submission is unknown, the app asks the server about that key (`GET shop/checkout-attempts/{key}`: none, in progress, placed with the order, or failed with the error) before letting the shop try again. An E2E test drops the network during submission and retries.
+  7. **Quick ordering.** The quantity stepper and "Add" are on product cards in search results, category lists and "Repeat last order", not only on the product page. The bottom navigation's cart shows the item count. A product in stock can go from search to a placed order in 3 taps (Add, Cart, Place order).
+- **Consequences:** Credit limits work in demos before billing exists; nothing about credit changes for shops when Phase 5 arrives in the default invoice mode. Staff and shop never overwrite each other's carts. A double tap, a reload or a dropped connection during checkout can't create two orders.
+
+## ADR-045 — Reductions, credit at allocation, blocked shops, partly delivered
+- **Status:** Accepted — 2026-09-28 (product owner, Phase 4 backend checkpoint).
+- **Context:** The Phase 4 backend checkpoint raised four questions: which quantity a reduction takes first, how backorders of an order approved over the credit limit are treated, whether manual allocation re-checks credit, and how an order with some shipments delivered and more to come is shown.
+- **Decision:**
+  1. **Reducing an order before acceptance** takes the waiting (backordered) quantity first, then held stock, so the shop keeps what is ready to send. (A full cancel or reject releases everything either way.)
+  2. **Backorders of an order approved from a credit hold.** Approving the hold records the approved value on the order (`credit_approved_value`, its grand total then, backorders included). Allocations for that order are not skipped for the credit limit. Exceptions: (a) under the CURRENT backorder billing price, a price above the order price adds value that wasn't approved, and that extra is checked against the limit as normal; (b) a blocked shop never receives stock, automatically or by hand: it is skipped and flagged (`SKIPPED_BLOCKED`), and confirming an older proposal for it is refused. The queue shows "Approved over limit" and "Shop blocked" on those lines.
+  3. **Manual allocation re-checks credit** by the same rules. For a shop over its limit (or taken over it by a higher CURRENT price) it is refused unless the user has `credit.manage` and gives an override reason; the override is audited (`credit.override_applied`) and noted on the allocation. Other users (e.g. Warehouse) see why it's blocked.
+  4. **Partly delivered.** While at least one shipment is delivered and something is still to follow (waiting, proposed, or in a shipment not yet delivered), the order's status is PARTLY_DELIVERED ("Partly delivered"), with "N items to follow" (order lines with quantity not yet delivered or cancelled), for shops and staff: in lists, detail, the timeline and the status filter. It replaces the order status DELIVERED. COMPLETED is unchanged.
+- **Consequences:** Approving a hold is a real decision about the whole order, and staff never have to approve it twice. Blocked shops can't be sent stock by mistake. Every credit exception at allocation leaves an audit trail. Shops see at a glance that more is coming.
 

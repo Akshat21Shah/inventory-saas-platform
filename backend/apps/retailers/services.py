@@ -13,6 +13,7 @@ from django.utils import timezone
 from apps.accounts.models import Membership, User
 from apps.accounts.tokens import revoke_all_refresh_tokens
 from apps.audit import services as audit
+from apps.ledger.models import RetailerAccount
 from apps.platform.gst import gstin_problem
 from apps.platform.models import State
 from apps.platform.selectors import get_setting
@@ -247,6 +248,7 @@ def create_retailer(
             retailer.save()
     except IntegrityError as exc:
         raise InvalidFields({"mobile": ["Another shop already uses this mobile number."]}) from exc
+    RetailerAccount.objects.create(retailer=retailer)  # the per-shop lock (ADR-044)
     _login(retailer, by=created_by)
     if billing is not None:
         _address(retailer, RetailerAddress.Kind.BILLING, billing, default=True)

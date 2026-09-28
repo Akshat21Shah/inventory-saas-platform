@@ -110,6 +110,7 @@ class Summary:
     shops: int = 0
     rules: int = 0
     stock_documents: int = 0
+    orders: int = 0
 
 
 def _money(value: Decimal) -> Decimal:
@@ -461,4 +462,7 @@ def seed_catalog(tenant: Tenant, by: User, *, photos: bool = True) -> Summary:
     shops = _shops(tenant, by, rng, lists, summary)
     _rules(by, lists, shops, products, summary)
     _stock(tenant, by, products, summary)
+    from common.demo_orders import seed_orders
+
+    summary.orders = seed_orders(tenant, by)
     return summary

@@ -1,6 +1,6 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.3. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.4. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
 - **1.1 (2026-09-24)** — Product-owner decisions applied:
@@ -12,6 +12,7 @@ Version 1.3. This is the source of truth for what to build. Working rules are in
   - configurability principle and settings registry (§13);
   - payments (advances, cheques);
   - backorder FIFO policy.
+- **1.4 (2026-09-27)** — Phase 4 decisions (ADR-044): credit stub before billing, staff carts per shop and staff member, saved delivery addresses, flaky-network checkout, quick ordering from product cards.
 - **1.3 (2026-09-26)** — Cost permissions (`costs.view` / `costs.manage`) separate from pricing; one opening-stock adjustment per file; low-stock report counts products without a reorder level (ADR-042).
 - **1.2 (2026-09-26)** — Phase 3 plan decisions (ADR-041): cost method setting, receiving without cost ("complete costs" later), valuation at cost price in Phase 3, multi-line adjustments with counted quantities, out-of-stock products in the shop setting, movement types open for manufacturing.
 
@@ -251,6 +252,8 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - Distributor views: separate tabs for New, On hold, Backorders, In progress, Completed; filters by retailer, date, salesperson, status.
 - Retailer views: order list, order detail with status timeline, clear indication of backordered items and expected handling.
 - Reorder: "Repeat this order" copies lines into the cart with current prices.
+- Quick ordering: the quantity stepper and "Add" are on product cards in search results, category lists and "Repeat last order"; the cart in the bottom navigation shows the item count; a product in stock goes from search to a placed order in 3 taps (ADR-044).
+- Checkout: the shop picks a saved delivery address (default shipping pre-selected; place of supply follows its state) and can add delivery instructions. A submission on a poor connection is retried with the same key, so it can never create two orders (ADR-044).
 
 ### 5.9 Backorders
 - Backordered quantities appear in a dedicated distributor queue, grouped by product, showing total demand and waiting retailers (oldest first).

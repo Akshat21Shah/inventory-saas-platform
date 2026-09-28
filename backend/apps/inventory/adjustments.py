@@ -119,7 +119,9 @@ def create_adjustment(
     note = data.note.strip()
     with transaction.atomic():
         warehouse = services.default_warehouse()
-        levels = services.lock_levels([line.product_id for line in data.lines], warehouse)
+        product_ids = [line.product_id for line in data.lines]
+        waiting = services.hold_waiting_orders(product_ids)  # L1, L2 before stock (L3)
+        levels = services.lock_levels(product_ids, warehouse)
         year = today_ist().year
         number = f"ADJ-{year}-{next_value('ADJ', str(year)):05d}"
         adjustment = StockAdjustment.objects.create(
@@ -188,6 +190,11 @@ def create_adjustment(
         if not rows:
             raise InvalidFields({"lines": ["Nothing changes: every count matches the stock."]})
         StockAdjustmentLine.objects.bulk_create(sorted(rows, key=lambda row: row.line_no))
+        added = {row.product_id: levels[row.product_id] for row in rows if row.quantity_change > 0}
+        if added:
+            services.serve_backorders(
+                added, waiting, trigger="ADJUSTMENT_IN", source_id=adjustment.pk, by=by
+            )
         audit.record(
             "stock.adjusted",
             target=adjustment,

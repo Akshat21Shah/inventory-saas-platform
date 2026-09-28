@@ -14,7 +14,13 @@ const TONES: Record<string, StatusTone> = {
   PACKED: "progress",
   DISPATCHED: "progress",
   DELIVERED: "success",
+  PARTLY_DELIVERED: "info",
   COMPLETED: "success",
+  ALLOCATED: "progress",
+  PROPOSED: "info",
+  CONFIRMED: "success",
+  SKIPPED_CREDIT: "warning",
+  SKIPPED_BLOCKED: "warning",
   REJECTED: "danger",
   CANCELLED: "neutral",
   IN_STOCK: "success",
@@ -47,9 +53,18 @@ export function statusTone(status: string): StatusTone {
   return TONES[status] ?? "neutral";
 }
 
-/** Colour is always paired with a text label (never colour alone). */
-export function StatusBadge({ status, className }: { status: string; className?: string }) {
-  const t = useTranslations("status");
+/** Colour is always paired with a text label (never colour alone). `labels` picks the wording
+ * where one code means different things (an order's ACCEPTED vs an invitation's). */
+export function StatusBadge({
+  status,
+  className,
+  labels = "status",
+}: {
+  status: string;
+  className?: string;
+  labels?: "status" | "orderStatus" | "shipmentStatus" | "allocationStatus";
+}) {
+  const t = useTranslations(labels);
   const tone = statusTone(status);
   return (
     <span

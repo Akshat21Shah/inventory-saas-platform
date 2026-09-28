@@ -1,5 +1,6 @@
 """Print the ids of seeded Sharma records as JSON, so the responsive E2E check can open detail
-pages (a product, a shop, a price list, a discount rule, goods receipts, an adjustment). Dev only:
+pages (a product, a shop, a price list, a discount rule, goods receipts, an adjustment, orders,
+a shipment, a product on backorder). Dev only:
 refuses unless DEBUG is on."""
 
 import json
@@ -11,6 +12,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.catalog.models import Product
 from apps.dataio.models import ImportJob
 from apps.inventory.models import StockAdjustment, StockInward
+from apps.orders.models import Fulfilment, Order, OrderLine
 from apps.platform.models import Tenant
 from apps.pricing.models import DiscountRule, PriceList
 from apps.retailers.models import Retailer
@@ -47,5 +49,19 @@ class Command(BaseCommand):
                 "receipt": _first(StockInward.objects.filter(status="POSTED")),
                 "draft_receipt": _first(StockInward.objects.filter(status="DRAFT")),
                 "adjustment": _first(StockAdjustment.objects.all()),
+                # Orders (Phase 4): the E2E shop's own order, and staff detail pages.
+                "shop_order": _first(Order.objects.filter(retailer__mobile="+919876500001")),
+                "order": _first(Order.objects.filter(backorder_state="OPEN")),
+                "fulfilment": _first(Fulfilment.objects.all()),
+                "backorder_product": (
+                    str(product_id)
+                    if (
+                        product_id := OrderLine.objects.filter(qty_backordered__gt=0)
+                        .order_by("created_at")
+                        .values_list("product_id", flat=True)
+                        .first()
+                    )
+                    else None
+                ),
             }
         self.stdout.write(json.dumps(ids))

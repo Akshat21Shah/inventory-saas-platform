@@ -51,7 +51,8 @@ import type {
   RetailerOtpRequestResponse,
   RetailerOtpVerifyInputRequest,
   StaffLoginInputRequest,
-  TokenResponse
+  TokenResponse,
+  WsTicket
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -2340,4 +2341,83 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getAuthTokenRefreshMutationOptions(options), queryClient);
+    }
+    export type authWsTicketResponse200 = {
+  data: WsTicket
+  status: 200
+}
+
+export type authWsTicketResponseSuccess = (authWsTicketResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authWsTicketResponse = (authWsTicketResponseSuccess)
+
+export const getAuthWsTicketUrl = () => {
+
+
+
+
+  return `/api/v1/auth/ws-ticket/`
+}
+
+export const authWsTicket = async ( options?: Parameters<typeof apiFetch>[1]): Promise<authWsTicketResponse> => {
+
+  return apiFetch<authWsTicketResponse>(getAuthWsTicketUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAuthWsTicketMutationKey = () => ['authWsTicket'] as const;
+
+export const getAuthWsTicketMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authWsTicket>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authWsTicket>>, TError,void, TContext> => {
+
+const mutationKey = getAuthWsTicketMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authWsTicket>>, void> = () => {
+
+
+          return  authWsTicket(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthWsTicketMutationResult = NonNullable<Awaited<ReturnType<typeof authWsTicket>>>
+
+    export type AuthWsTicketMutationError = unknown
+
+
+    export const useAuthWsTicket = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authWsTicket>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof authWsTicket>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAuthWsTicketMutationOptions(options), queryClient);
     }

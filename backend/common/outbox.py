@@ -81,14 +81,16 @@ def dispatch_event(event_id: str) -> bool:
             return False  # already dispatched or being dispatched by another worker
         event.attempts += 1
         try:
+            kwargs = {
+                "event_id": str(event.id),
+                "tenant_id": str(event.tenant_id) if event.tenant_id else None,
+            }
             for task_name in handlers_for(event.event_type):
-                current_app.send_task(
-                    task_name,
-                    kwargs={
-                        "event_id": str(event.id),
-                        "tenant_id": str(event.tenant_id) if event.tenant_id else None,
-                    },
-                )
+                task = current_app.tasks.get(task_name)
+                if task is not None:  # a local task: apply_async honours eager mode (tests)
+                    task.apply_async(kwargs=kwargs)
+                else:
+                    current_app.send_task(task_name, kwargs=kwargs)
         except Exception as exc:
             event.last_error = repr(exc)[:2000]
             event.save(update_fields=["attempts", "last_error", "updated_at"])

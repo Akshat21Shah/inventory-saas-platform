@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.accounts.api import staff_views, views
+from apps.accounts.api import live, staff_views, views
 
 urlpatterns = [
     path("staff/login/", views.StaffLoginView.as_view(), name="auth-staff-login"),
@@ -9,6 +9,7 @@ urlpatterns = [
     path("token/refresh/", views.TokenRefreshView.as_view(), name="auth-token-refresh"),
     path("logout/", views.LogoutView.as_view(), name="auth-logout"),
     path("me/", views.MeView.as_view(), name="auth-me"),
+    path("ws-ticket/", live.WsTicketView.as_view(), name="auth-ws-ticket"),
     path("staff/mfa/verify/", views.StaffMfaVerifyView.as_view(), name="auth-staff-mfa-verify"),
     path(
         "staff/mfa/enrol/start/",

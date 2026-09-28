@@ -159,13 +159,22 @@ def compute_line(
     rate: Decimal,
     supply_type: SupplyType,
     discount: Discount | None = None,
+    discount_amount: Decimal | None = None,
     cess_rate: Decimal = ZERO,
     inclusive: bool = False,
     rounding: ComponentRounding = ComponentRounding.HALF_UP,
 ) -> LineTax:
     """One invoice/order line (PLAN §6.2). Each component is rounded independently to paise."""
     gross = line_gross(qty, unit_price, rounding)
-    disc = line_discount(gross, qty, discount, rounding)
+    if discount is not None and discount_amount is not None:
+        raise ValueError("pass either a discount rule or a discount amount, not both")
+    # ``discount_amount``: already worked out for the line by pricing (several rules combined,
+    # ADR-038), on the same price basis as ``unit_price``; never more than the gross.
+    disc = (
+        min(round2(discount_amount, rounding), gross)
+        if discount_amount is not None
+        else line_discount(gross, qty, discount, rounding)
+    )
     if inclusive:
         # Back the tax out at line level; the discount column is derived so the columns
         # reconcile (a ±0.01 line tolerance is absorbed by the document round-off, PLAN M6).

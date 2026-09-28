@@ -28,8 +28,12 @@ import type {
   ShopProductsParams,
 } from "@/lib/api/generated/model";
 import { formatQty } from "@/lib/format";
+import { isZero } from "@/lib/qty";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";
+
+import { useCart } from "./cart-state";
+import { QuantityStepper } from "./quantity-stepper";
 
 /** Children arrive as plain objects with the same shape. */
 const childrenOf = (c: ShopCategory) => c.children as unknown as ShopCategory[];
@@ -167,12 +171,28 @@ function OrderingNote({
   );
 }
 
-function ProductCard({ product }: { product: ShopProduct }) {
+/** "Out of stock" means it can't be ordered now (with backorders on, the server says "Available
+ * on backorder" instead); the label comes from the server. */
+function orderable(product: Pick<ShopProduct, "availability">): boolean {
+  return product.availability.status !== "OUT_OF_STOCK";
+}
+
+/** A product with its price, stock and the order stepper, so it can be added without opening it
+ * (search, categories and "Repeat last order", ADR-044). */
+export function ProductCard({
+  product,
+  lastQuantity,
+}: {
+  product: ShopProduct;
+  /** "Repeat last order": what the shop ordered last time. */
+  lastQuantity?: string;
+}) {
+  const t = useTranslations("shop.order");
   return (
-    <li>
+    <li className="flex flex-col gap-3 rounded-xl border p-3">
       <Link
         href={`/shop/products/${product.id}`}
-        className="hover:bg-muted/50 flex min-h-24 gap-3 rounded-xl border p-3"
+        className="hover:bg-muted/50 -m-1 flex min-h-20 gap-3 rounded-lg p-1"
       >
         <Thumb url={product.thumbnail_url} className="size-20 shrink-0 rounded-lg" />
         <span className="min-w-0 flex-1 space-y-1">
@@ -188,6 +208,14 @@ function ProductCard({ product }: { product: ShopProduct }) {
           <OrderingNote product={product} />
         </span>
       </Link>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground min-w-0 text-xs">
+          {lastQuantity
+            ? t("lastTime", { qty: formatQty(lastQuantity), unit: product.unit.name })
+            : null}
+        </span>
+        <QuantityStepper product={product} disabled={!orderable(product)} className="shrink-0" />
+      </div>
     </li>
   );
 }
@@ -240,7 +268,7 @@ function ProductList({ params }: { params: ShopProductsParams }) {
   );
 }
 
-function SearchBox({ initial = "" }: { initial?: string }) {
+export function SearchBox({ initial = "" }: { initial?: string }) {
   const t = useTranslations("shop");
   const router = useRouter();
   const [text, setText] = useState(initial);
@@ -269,7 +297,7 @@ function SearchBox({ initial = "" }: { initial?: string }) {
   );
 }
 
-function CategoryTiles({ categories }: { categories: ShopCategory[] }) {
+export function CategoryTiles({ categories }: { categories: ShopCategory[] }) {
   const t = useTranslations("shop");
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -290,47 +318,6 @@ function CategoryTiles({ categories }: { categories: ShopCategory[] }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-export function ShopHome() {
-  const t = useTranslations("shop");
-  const { me } = useAuth();
-  const categories = useShopCategories();
-  const tree = categories.data?.data ?? [];
-  return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">
-          {me?.retailer ? t("hello", { shop: me.retailer.shop_name }) : t("catalogTitle")}
-        </h1>
-        <p className="text-muted-foreground text-sm">{t("homeBody")}</p>
-      </div>
-      <OnHoldNotice />
-      <SearchBox />
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t("categories")}</h2>
-          <Link
-            href="/shop/catalog"
-            className="text-brand-700 inline-flex min-h-11 items-center text-sm font-medium hover:underline"
-          >
-            {t("allProducts")}
-          </Link>
-        </div>
-        {categories.isLoading ? (
-          <CardSkeleton />
-        ) : categories.error ? (
-          <ErrorState error={categories.error} onRetry={() => void categories.refetch()} />
-        ) : tree.length ? (
-          <CategoryTiles categories={tree} />
-        ) : (
-          <Button asChild variant="outline" className="min-h-11 w-full">
-            <Link href="/shop/catalog">{t("allProducts")}</Link>
-          </Button>
-        )}
-      </section>
-    </div>
   );
 }
 
@@ -441,6 +428,24 @@ export function SearchPage() {
   );
 }
 
+function ProductOrderBox({ product }: { product: ShopProduct }) {
+  const t = useTranslations("shop.order");
+  const { quantityOf } = useCart();
+  const inCart = !isZero(quantityOf(product.id));
+  return (
+    <section className="space-y-3 rounded-xl border p-4" aria-label={t("orderBox")}>
+      <QuantityStepper product={product} disabled={!orderable(product)} wide />
+      {!orderable(product) ? (
+        <p className="text-muted-foreground text-sm">{t("cantOrder")}</p>
+      ) : inCart ? (
+        <Button asChild variant="outline" className="min-h-11 w-full">
+          <Link href="/shop/cart">{t("goToCart")}</Link>
+        </Button>
+      ) : null}
+    </section>
+  );
+}
+
 export function ProductPage({ productId }: { productId: string }) {
   const t = useTranslations("shop.product");
   const ts = useTranslations("shop");
@@ -527,9 +532,7 @@ export function ProductPage({ productId }: { productId: string }) {
           {product.description ? (
             <p className="text-sm whitespace-pre-line">{product.description}</p>
           ) : null}
-          <p className="text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
-            {t("orderingSoon")}
-          </p>
+          <ProductOrderBox product={product} />
         </div>
       </div>
     </div>

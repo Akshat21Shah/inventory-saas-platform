@@ -391,3 +391,47 @@ def test_weighted_average_lies_between_the_two_costs(on_hand, cost_price, receiv
     paisa = D("0.01")  # rounding is monotonic, so the rounded average stays between the ends
     assert low.quantize(paisa, "ROUND_HALF_UP") <= result <= high.quantize(paisa, "ROUND_HALF_UP")
     assert result == result.quantize(D("0.01"))
+
+
+# --- A discount amount worked out by pricing (combined rules, ADR-038) ----------------------------
+
+
+def test_compute_line_takes_a_precomputed_discount_amount():
+    by_rule = compute_line(
+        qty=D("10"), unit_price=D("100"), rate=D("18"), supply_type=INTRA, discount=pct("10")
+    )
+    by_amount = compute_line(
+        qty=D("10"), unit_price=D("100"), rate=D("18"), supply_type=INTRA, discount_amount=D("100")
+    )
+    assert by_amount == by_rule
+
+
+def test_a_discount_amount_never_exceeds_the_gross():
+    line = compute_line(
+        qty=D("1"), unit_price=D("5"), rate=D("5"), supply_type=INTER, discount_amount=D("9")
+    )
+    assert (line.discount, line.taxable, line.line_total) == (D("5.00"), D("0.00"), D("0.00"))
+
+
+def test_inclusive_prices_with_a_discount_amount():
+    line = compute_line(
+        qty=D("2"),
+        unit_price=D("118"),
+        rate=D("18"),
+        supply_type=INTRA,
+        discount_amount=D("23.60"),
+        inclusive=True,
+    )
+    assert line.taxable == D("180.00") and line.line_total == D("212.40")
+
+
+def test_rule_and_amount_together_are_refused():
+    with pytest.raises(ValueError):
+        compute_line(
+            qty=D("1"),
+            unit_price=D("1"),
+            rate=D("5"),
+            supply_type=INTRA,
+            discount=pct("1"),
+            discount_amount=D("0.01"),
+        )

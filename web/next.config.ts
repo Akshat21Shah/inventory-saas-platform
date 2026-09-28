@@ -29,6 +29,8 @@ const nextConfig: NextConfig = {
       { source: "/api/:path*/", destination: `${apiInternalUrl}/api/:path*/` },
       { source: "/api/:path*", destination: `${apiInternalUrl}/api/:path*` },
       { source: "/health/:path*", destination: `${apiInternalUrl}/health/:path*` },
+      // Live updates (WebSocket): same origin, so phones on "make lan" reach it through port 3000.
+      { source: "/ws/:path*/", destination: `${apiInternalUrl}/ws/:path*/` },
     ];
   },
   async headers() {

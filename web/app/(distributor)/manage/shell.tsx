@@ -20,7 +20,9 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
 import { RequireArea } from "@/components/auth/require-area";
 import { SidebarShell, type NavItem } from "@/components/shared/app-shell";
+import { DistributorLiveUpdates } from "@/components/orders/live";
 import { useStockSummary } from "@/lib/api/generated/endpoints/inventory/inventory";
+import { useOrdersCounts } from "@/lib/api/generated/endpoints/orders/orders";
 
 const ITEMS: NavItem[] = [
   { href: "/manage", labelKey: "dashboard", icon: LayoutDashboard },
@@ -36,14 +38,22 @@ const ITEMS: NavItem[] = [
   { href: "/manage/settings/business", labelKey: "settings", icon: Settings },
 ];
 
-/** Open stock alerts next to "Stock" (refreshed every minute). */
+/** What needs action next to the nav items: new and held orders, backorder proposals to
+ * confirm, open stock alerts (refreshed every minute and on live order events). */
 function useNavBadges(): Partial<Record<string, number>> {
   const { me, can } = useAuth();
   const summary = useStockSummary({
     query: { enabled: Boolean(me) && can("stock.view"), refetchInterval: 60_000 },
   });
+  const counts = useOrdersCounts({
+    query: { enabled: Boolean(me) && can("orders.view"), refetchInterval: 60_000 },
+  }).data?.data;
   const alerts = summary.data?.data.alerts ?? {};
-  return { stock: Object.values(alerts).reduce((total, n) => total + n, 0) };
+  return {
+    stock: Object.values(alerts).reduce((total, n) => total + n, 0),
+    orders: (counts?.new ?? 0) + (counts?.on_hold ?? 0),
+    backorders: counts?.proposals ?? 0,
+  };
 }
 
 function Shell({ title, children }: { title: string; children: ReactNode }) {
@@ -63,6 +73,7 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
 export function DistributorShell({ title, children }: { title: string; children: ReactNode }) {
   return (
     <RequireArea area="manage">
+      <DistributorLiveUpdates />
       <Shell title={title}>{children}</Shell>
     </RequireArea>
   );

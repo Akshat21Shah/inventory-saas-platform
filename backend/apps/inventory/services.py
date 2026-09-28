@@ -175,6 +175,42 @@ def refresh_alerts(product_ids: Iterable[UUID], warehouse: Warehouse | None = No
         alerts.evaluate(level)
 
 
+def change_backordered(level: StockLevel, delta: Decimal) -> None:
+    """Shops' open backorder demand for a locked level (order services keep it in step). Not a
+    stock movement: nothing physical moves. Re-checks the BACKORDER_DEMAND alert."""
+    level.quantity_backordered = level.quantity_backordered + delta
+    if level.quantity_backordered < 0:
+        raise ValueError("backorder demand can't go below zero")
+    level.save(update_fields=["quantity_backordered", "updated_at"])
+    alerts.evaluate(level)
+
+
+# --- Stock increases serve waiting backorders first (PLAN §5.2, ADR-014) ------------------------
+
+
+def hold_waiting_orders(product_ids: Iterable[UUID]) -> Any:
+    """Before locking the stock rows of an increase: lock the shops and orders waiting for these
+    products (L1, L2 sit above stock in the lock order). Pass the result to ``serve_backorders``."""
+    from apps.orders import backorders  # orders builds on inventory; imported when used
+
+    return backorders.before_stock_increase(product_ids)
+
+
+def serve_backorders(
+    levels: dict[UUID, StockLevel],
+    waiting: Any,
+    *,
+    trigger: str,
+    source_id: UUID,
+    by: User | None,
+) -> None:
+    """In the same transaction as the increase: waiting backorders get the stock (FIFO) before
+    any new order can take it."""
+    from apps.orders import backorders
+
+    backorders.allocate_locked(levels, waiting, trigger=trigger, source_id=source_id, by=by)
+
+
 # --- Primitives for other services (receipts, adjustments, orders in Phase 4) -----------------
 
 
