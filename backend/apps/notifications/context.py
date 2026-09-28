@@ -41,7 +41,7 @@ def current_tenant() -> Tenant:
     return Tenant.objects.get(pk=require_tenant_id())
 
 
-def _listing(items: list[str]) -> str:
+def listing(items: list[str]) -> str:
     shown = ", ".join(items[:LIST_LIMIT])
     more = len(items) - LIST_LIMIT
     return f"{shown} and {more} more" if more > 0 else shown
@@ -71,11 +71,11 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         "reason": p.get("reason") or order.rejection_reason or order.cancellation_reason,
     }
     if "changes" in p:
-        values["changes"] = _listing(
+        values["changes"] = listing(
             [f"{c['product']} {qty(c['from'])}→{qty(c['to'])}" for c in p["changes"]]
         )
     if "lines" in p:
-        values["items"] = _listing(
+        values["items"] = listing(
             [f"{line['product']} {qty(line['short'])} short" for line in p["lines"]]
         )
     if "shipment" in p:

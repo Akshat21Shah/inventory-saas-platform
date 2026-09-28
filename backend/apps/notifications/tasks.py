@@ -1,5 +1,6 @@
 """Notification background work (thin: calls the consumer and delivery services)."""
 
+from typing import Any
 from uuid import UUID
 
 from celery import shared_task
@@ -38,9 +39,60 @@ def send_due_for_tenant(*, tenant_id: str) -> int:
 @shared_task(name="notifications.send_due")
 def send_due() -> int:
     """Every minute: each active tenant sends its retries, held and lost messages."""
+    return _each_tenant(send_due_for_tenant)
+
+
+# --- Daily jobs (the beat runs them in UTC; the times are IST) -----------------------------------
+
+
+def _each_tenant(task: Any) -> int:
     from apps.platform.models import Tenant
 
-    tenants = Tenant.objects.exclude(status=Tenant.Status.SUSPENDED).values_list("pk", flat=True)
+    tenants = list(
+        Tenant.objects.exclude(status=Tenant.Status.SUSPENDED).values_list("pk", flat=True)
+    )
     for tenant_id in tenants:
-        send_due_for_tenant.apply_async(kwargs={"tenant_id": str(tenant_id)})
+        task.apply_async(kwargs={"tenant_id": str(tenant_id)})
     return len(tenants)
+
+
+@shared_task(name="notifications.payment_reminders_for_tenant", base=TenantTask)
+def payment_reminders_for_tenant(*, tenant_id: str) -> int:
+    from apps.notifications import jobs
+    from common.dates import today_ist
+
+    return jobs.payment_reminders(today_ist())
+
+
+@shared_task(name="notifications.handover_reminders_for_tenant", base=TenantTask)
+def handover_reminders_for_tenant(*, tenant_id: str) -> int:
+    from apps.notifications import jobs
+    from common.dates import today_ist
+
+    return jobs.handover_reminders(today_ist())
+
+
+@shared_task(name="notifications.rate_change_warnings_for_tenant", base=TenantTask)
+def rate_change_warnings_for_tenant(*, tenant_id: str) -> int:
+    from apps.notifications import jobs
+    from common.dates import today_ist
+
+    return jobs.rate_change_warnings(today_ist())
+
+
+@shared_task(name="notifications.payment_reminders")
+def payment_reminders() -> int:
+    """Daily 10:00 IST."""
+    return _each_tenant(payment_reminders_for_tenant)
+
+
+@shared_task(name="notifications.handover_reminders")
+def handover_reminders() -> int:
+    """Daily 09:00 IST."""
+    return _each_tenant(handover_reminders_for_tenant)
+
+
+@shared_task(name="notifications.rate_change_warnings")
+def rate_change_warnings() -> int:
+    """Daily 08:30 IST."""
+    return _each_tenant(rate_change_warnings_for_tenant)

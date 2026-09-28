@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import environ
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parents[2]  # backend/
 REPO_DIR = BASE_DIR.parent
@@ -157,6 +158,19 @@ CELERY_BEAT_SCHEDULE = {
     "login-records-purge": {"task": "accounts.purge_expired_login_records", "schedule": 3600.0},
     "impersonation-expiry": {"task": "accounts.expire_impersonation_sessions", "schedule": 60.0},
     "notifications-send-due": {"task": "notifications.send_due", "schedule": 60.0},
+    # Daily notification jobs (ADR-048), IST times written in UTC (CELERY_TIMEZONE).
+    "notifications-rate-change-warnings": {
+        "task": "notifications.rate_change_warnings",
+        "schedule": crontab(hour=3, minute=0),  # 08:30 IST
+    },
+    "notifications-handover-reminders": {
+        "task": "notifications.handover_reminders",
+        "schedule": crontab(hour=3, minute=30),  # 09:00 IST
+    },
+    "notifications-payment-reminders": {
+        "task": "notifications.payment_reminders",
+        "schedule": crontab(hour=4, minute=30),  # 10:00 IST
+    },
 }
 
 CHANNEL_LAYERS = {

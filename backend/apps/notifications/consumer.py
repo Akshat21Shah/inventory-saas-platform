@@ -16,6 +16,7 @@ from django.utils import timezone
 from apps.accounts.models import Membership, User
 from apps.accounts.permissions import OWNER_ROLE
 from apps.notifications import context as contexts
+from apps.notifications import quiet
 from apps.notifications.catalog import EVENTS
 from apps.notifications.models import Channel, Notification, NotificationPreference, Recipient
 from apps.notifications.render import render
@@ -197,10 +198,10 @@ def _skip_reason(
     turned_off: set[tuple[UUID, str]],
     paused: bool,
 ) -> str:
-    if channel == Channel.IN_APP:
-        return ""  # never switched off, never paused (ADR-048 item 7)
     if paused:
-        return SKIP.PAUSED
+        return SKIP.PAUSED  # payment reminders paused for the shop: every channel
+    if channel == Channel.IN_APP:
+        return ""  # never switched off (ADR-048 item 7)
     if channel == Channel.WHATSAPP and not whatsapp_on:
         return SKIP.FEATURE_OFF
     if channel == Channel.WHATSAPP and target.retailer and not target.retailer.whatsapp_opt_in:
@@ -231,6 +232,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
     whatsapp_on = is_feature_enabled("whatsapp", tenant.pk)
     paused = bool(ctx.extra.get("paused"))
     now = timezone.now()
+    hold = None if event.urgent else quiet.current_hold(now)  # quiet hours (item 9)
     rows: list[Notification] = []
     document_link = ""
 
@@ -303,6 +305,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                     ),
                     skip_reason=reason,
                     sent_at=now if in_app else None,
+                    send_after=hold if not in_app and not reason else None,
                     provider="in_app" if in_app else "",
                 )
             )
