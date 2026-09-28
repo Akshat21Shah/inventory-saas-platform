@@ -569,7 +569,13 @@ def cancel_backorder(line_id: UUID, *, by: User, retailer_id: UUID | None = None
             by=by,
             payload={"product": line.product_code, "quantity": f"{quantity:f}"},
         )
-        emit("backorder.cancelled", order, product=line.product_code, quantity=f"{quantity:f}")
+        emit(
+            "backorder.cancelled",
+            order,
+            product=line.product_code,
+            quantity=f"{quantity:f}",
+            by="retailer" if retailer_id else "staff",
+        )
         derive_status(order, by=by)
     return line
 
