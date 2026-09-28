@@ -8,6 +8,7 @@ All arithmetic is ``Decimal``. Quantities have 3 decimals, money 2, rates 3.
 """
 
 from dataclasses import dataclass
+from datetime import date, timedelta
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, ROUND_HALF_UP, Decimal
 from enum import StrEnum
 
@@ -246,6 +247,239 @@ def compute_document(
         sgst=sum((line.sgst for line in lines), ZERO),
         igst=sum((line.igst for line in lines), ZERO),
         cess=sum((line.cess for line in lines), ZERO),
+        lines_total=lines_total,
+        round_off=grand - lines_total,
+        grand_total=grand,
+    )
+
+
+# --- Documents: words, HSN summary, dates (PLAN §6.1, §6.4) --------------------------------------
+
+_ONES = [
+    "Zero",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+]
+_TENS = ["_", "_", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+
+
+def _below_hundred(n: int) -> str:
+    if n < 20:
+        return _ONES[n]
+    tens, ones = divmod(n, 10)
+    return _TENS[tens] + (f" {_ONES[ones]}" if ones else "")
+
+
+def _below_thousand(n: int) -> str:
+    hundreds, rest = divmod(n, 100)
+    parts = [f"{_ONES[hundreds]} Hundred"] if hundreds else []
+    if rest:
+        parts.append(_below_hundred(rest))
+    return " ".join(parts)
+
+
+def _indian_words(n: int) -> str:
+    """Whole rupees in the Indian system: crore, lakh, thousand, hundred."""
+    if n == 0:
+        return "Zero"
+    crore, n = divmod(n, 10_000_000)
+    lakh, n = divmod(n, 100_000)
+    thousand, n = divmod(n, 1000)
+    parts = []
+    if crore:
+        parts.append(f"{_indian_words(crore)} Crore")
+    if lakh:
+        parts.append(f"{_below_hundred(lakh)} Lakh")
+    if thousand:
+        parts.append(f"{_below_hundred(thousand)} Thousand")
+    if n:
+        parts.append(_below_thousand(n))
+    return " ".join(parts)
+
+
+def amount_in_words(amount: Decimal) -> str:
+    """ "Rupees One Thousand Four Hundred Fifty Seven Only"; paise when there are any:
+    "Rupees One Crore ... and Ninety Paise Only". Printed on invoices (Indian system)."""
+    if amount < 0:
+        raise ValueError("amounts in words are for amounts of zero or more")
+    paise_total = int(amount.quantize(PAISA) * 100)
+    rupees, paise = divmod(paise_total, 100)
+    words = f"Rupees {_indian_words(rupees)}"
+    if paise:
+        words += f" and {_below_hundred(paise)} Paise"
+    return f"{words} Only"
+
+
+@dataclass(frozen=True)
+class HsnRow:
+    hsn: str
+    rate: Decimal  # the GST rate (CGST + SGST, or IGST)
+    taxable: Decimal
+    cgst: Decimal
+    sgst: Decimal
+    igst: Decimal
+    cess: Decimal
+
+    @property
+    def tax(self) -> Decimal:
+        return self.cgst + self.sgst + self.igst + self.cess
+
+
+def hsn_summary(lines: list[tuple[str, Decimal, LineTax]]) -> list[HsnRow]:
+    """The invoice's HSN-wise summary: line components summed by (HSN, rate), never recomputed
+    (PLAN §6.1). ``lines`` are (hsn code, GST rate, line tax)."""
+    groups: dict[tuple[str, Decimal], list[LineTax]] = {}
+    for hsn, rate, line in lines:
+        groups.setdefault((hsn, rate), []).append(line)
+    return [
+        HsnRow(
+            hsn=hsn,
+            rate=rate,
+            taxable=sum((x.taxable for x in group), ZERO),
+            cgst=sum((x.cgst for x in group), ZERO),
+            sgst=sum((x.sgst for x in group), ZERO),
+            igst=sum((x.igst for x in group), ZERO),
+            cess=sum((x.cess for x in group), ZERO),
+        )
+        for (hsn, rate), group in sorted(groups.items())
+    ]
+
+
+def financial_year(day: date) -> str:
+    """Indian financial year (April to March) of an IST date: 2026-09-28 → "2026-27"."""
+    start = day.year if day.month >= 4 else day.year - 1
+    return f"{start}-{str(start + 1)[-2:]}"
+
+
+def fy_short(fy: str) -> str:
+    """ "2026-27" → "26-27" (the part printed in document numbers)."""
+    return fy[2:]
+
+
+def due_date(invoice_date: date, terms_days: int) -> date:
+    """Invoice date plus the shop's payment terms (ADR-046)."""
+    return invoice_date + timedelta(days=terms_days)
+
+
+# --- Credit notes: proration without drift (PLAN §6.5) --------------------------------------------
+
+
+@dataclass(frozen=True)
+class Components:
+    """The money parts of an invoice line (or what is left of it after earlier credit notes)."""
+
+    taxable: Decimal
+    cgst: Decimal
+    sgst: Decimal
+    igst: Decimal
+    cess: Decimal
+
+    @property
+    def total(self) -> Decimal:
+        return self.taxable + self.cgst + self.sgst + self.igst + self.cess
+
+    def minus(self, other: "Components") -> "Components":
+        return Components(
+            taxable=self.taxable - other.taxable,
+            cgst=self.cgst - other.cgst,
+            sgst=self.sgst - other.sgst,
+            igst=self.igst - other.igst,
+            cess=self.cess - other.cess,
+        )
+
+    @classmethod
+    def of(cls, line: LineTax) -> "Components":
+        return cls(line.taxable, line.cgst, line.sgst, line.igst, line.cess)
+
+
+def credit_for_taxable(
+    taxable: Decimal,
+    *,
+    rates: LineTax,
+    remaining: Components,
+    rounding: ComponentRounding = ComponentRounding.HALF_UP,
+) -> Components:
+    """Credit ``taxable`` (before tax) against an invoice line: taxes at the invoice line's rates
+    (``rates``: the original line's rate fields). A credit that reaches what is left of the line
+    takes exactly the remainder of every component, so the line is reversed with no paisa left."""
+    if taxable <= 0:
+        raise ValueError("a credit needs a taxable value above zero")
+    if taxable >= remaining.taxable:
+        return remaining
+
+    def tax(rate: Decimal, left: Decimal) -> Decimal:
+        return min(round2(taxable * rate / HUNDRED, rounding), left)
+
+    return Components(
+        taxable=taxable,
+        cgst=tax(rates.cgst_rate, remaining.cgst),
+        sgst=tax(rates.sgst_rate, remaining.sgst),
+        igst=tax(rates.igst_rate, remaining.igst),
+        cess=tax(rates.cess_rate, remaining.cess),
+    )
+
+
+def credit_for_quantity(
+    qty: Decimal,
+    *,
+    invoiced_qty: Decimal,
+    remaining_qty: Decimal,
+    line: LineTax,
+    remaining: Components,
+    rounding: ComponentRounding = ComponentRounding.HALF_UP,
+) -> Components:
+    """Credit ``qty`` of an invoice line: the same share of its taxable value, taxes at its rates;
+    the credit that uses up the line's quantity takes exactly what is left (PLAN §6.5)."""
+    if qty <= 0 or qty > remaining_qty:
+        raise ValueError("credit between zero and the quantity not yet credited")
+    if qty == remaining_qty:
+        return remaining
+    taxable = round2(line.taxable * qty / invoiced_qty, rounding)
+    if taxable <= 0:  # a share worth less than a paisa: nothing yet; the last return takes it
+        return Components(ZERO, ZERO, ZERO, ZERO, ZERO)
+    return credit_for_taxable(taxable, rates=line, remaining=remaining, rounding=rounding)
+
+
+def credit_note_totals(
+    lines: list[Components],
+    *,
+    round_to_rupee: bool,
+    round_off_method: RoundOffMethod,
+    invoice_left: Decimal | None = None,
+) -> DocumentTotals:
+    """A credit note's totals, rounded like an invoice. When it uses up the whole invoice
+    (``invoice_left`` = invoice grand total - earlier credit notes' grand totals), its grand
+    total is exactly that amount, so the invoice's balance lands on zero (PLAN §6.5)."""
+    lines_total = sum((x.total for x in lines), ZERO)
+    if invoice_left is not None:
+        grand = invoice_left
+    elif round_to_rupee:
+        grand = lines_total.quantize(RUPEE, _RUPEE_MODES[round_off_method]).quantize(PAISA)
+    else:
+        grand = lines_total
+    return DocumentTotals(
+        taxable=sum((x.taxable for x in lines), ZERO),
+        cgst=sum((x.cgst for x in lines), ZERO),
+        sgst=sum((x.sgst for x in lines), ZERO),
+        igst=sum((x.igst for x in lines), ZERO),
+        cess=sum((x.cess for x in lines), ZERO),
         lines_total=lines_total,
         round_off=grand - lines_total,
         grand_total=grand,

@@ -160,7 +160,10 @@
 ## Next
 - **Phase 5 — Billing, GST, ledger, credit control** (branch `phase-5` from `main` ac84f63; plan approved 2026-09-28 with ADR-046, PLAN §10.2g, SPEC 1.5). Commits in order:
   1. Docs: ADR-046, PLAN (§10.2g, return dispositions, salesman collections, ageing basis, backlog), SPEC 1.5, `docs/CA_REVIEW.md` first draft — **done**
-  2. Tax engine: amount in words, HSN summary, FY helpers, credit-note proration; §6.3 examples, exhaustive matrix, property tests
+  2. Tax engine: amount in words, HSN summary, FY helpers, credit-note proration; §6.3 examples, exhaustive matrix, property tests — **done** (`apps/billing/tax.py`):
+     - Amount in words in the Indian system (lakh, crore, paise); HSN-wise summary summed from the lines; financial year of an IST date ("2026-27", "26-27" in numbers); due date = invoice date + terms.
+     - Credit notes (§6.5): a partial return takes the same share of the line's taxable value, taxes at the invoice line's rates; the return that uses up a line takes exactly what is left; the credit note that uses up the invoice takes the invoice total minus earlier credit notes, so the balance lands on zero. A share worth less than a paisa credits nothing until the last return (found by Hypothesis).
+     - Tests: the §6.3 examples (Ex 11 comes with invoice issuing), the §6.4 matrix (8 rates × 2 supply types × 4 discounts × 4 quantities × 4 prices under all 16 setting combinations, checking every invoice invariant), a guard that the matrix covers every allowed setting value, words for 0 to 100 crore, FY boundaries in IST, and a property test that returns in any number of parts reverse a line exactly.
   3. Models: billing, ledger, payments; RLS, checks, append-only and immutability triggers; `OrderLine.qty_invoiced`
   4. Numbering service (gapless, FY in IST, ≤ 16 characters) with a race test
   5. Ledger posting, opening balances (adjustment + import), adjustments
