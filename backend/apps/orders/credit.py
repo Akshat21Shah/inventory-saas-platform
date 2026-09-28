@@ -15,6 +15,7 @@ from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.db.models.functions import Coalesce
 
 from apps.billing.tax import round2
+from apps.ledger import services as ledger
 from apps.ledger.models import RetailerAccount
 from apps.orders.models import OPEN_STATUSES, OrderLine
 from apps.retailers.models import Retailer
@@ -93,23 +94,10 @@ def check(
 
 
 def lock_account(retailer_id: UUID) -> RetailerAccount:
-    """Lock level L1: serialises a shop's orders and credit checks (PLAN §5.1). The row is made
-    with the shop; this creates it if an older shop somehow lacks one."""
-    RetailerAccount.objects.get_or_create(retailer_id=retailer_id)
-    account: RetailerAccount = RetailerAccount.objects.select_for_update().get(
-        retailer_id=retailer_id
-    )
-    return account
+    """Lock level L1 (see ``apps.ledger.services.lock_account``)."""
+    return ledger.lock_account(retailer_id)
 
 
 def lock_accounts(retailer_ids: list[UUID]) -> dict[UUID, RetailerAccount]:
-    """Several shops' accounts, always in retailer id order (L1)."""
-    ids = sorted(set(retailer_ids))
-    for retailer_id in ids:
-        RetailerAccount.objects.get_or_create(retailer_id=retailer_id)
-    rows = (
-        RetailerAccount.objects.select_for_update()
-        .filter(retailer_id__in=ids)
-        .order_by("retailer_id")
-    )
-    return {row.retailer_id: row for row in rows}
+    """Several shops' accounts in retailer id order (L1)."""
+    return ledger.lock_accounts(retailer_ids)
