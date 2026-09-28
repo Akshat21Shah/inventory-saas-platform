@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { DocumentButton } from "@/components/billing/document-button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -24,6 +25,7 @@ import {
   shopOrderCancel,
   shopOrderLineCancelBackorder,
   shopOrderRepeat,
+  shopOrdersConfirmation,
   shopOrdersList,
   useShopOrder,
 } from "@/lib/api/generated/endpoints/shop/shop";
@@ -191,6 +193,39 @@ function Lines({ order }: { order: ShopOrder }) {
   );
 }
 
+/** The order's bills and its Order Confirmation, to download (Phase 5). */
+function OrderDocuments({ order }: { order: ShopOrder }) {
+  const t = useTranslations("shop.orders");
+  if (!order.invoices.length && !order.has_confirmation) return null;
+  return (
+    <section className="space-y-2 border-b pb-4" aria-labelledby="order-documents">
+      <h2 id="order-documents" className="font-semibold">
+        {t("documents")}
+      </h2>
+      {order.invoices.length ? (
+        <ul className="divide-y text-sm">
+          {order.invoices.map((bill) => (
+            <li key={bill.id}>
+              <Link
+                href={`/shop/invoices/${bill.id}`}
+                className="flex min-h-11 items-center justify-between gap-2"
+              >
+                <span className="font-medium">{bill.number}</span>
+                <MoneyText value={bill.grand_total} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {order.has_confirmation ? (
+        <DocumentButton fetchLink={() => shopOrdersConfirmation(order.id)}>
+          {t("confirmation")}
+        </DocumentButton>
+      ) : null}
+    </section>
+  );
+}
+
 function Shipment({ order, shipment }: { order: ShopOrder; shipment: Fulfilment }) {
   const t = useTranslations("shop.orders");
   const refresh = useRefresh(order.id);
@@ -353,6 +388,7 @@ export function OrderPage({ orderId }: { orderId: string }) {
           </section>
         </div>
         <aside className="space-y-4 rounded-xl border p-4">
+          <OrderDocuments order={order} />
           <dl className="space-y-1 text-sm">
             <div className="flex justify-between">
               <dt>{t("gst")}</dt>

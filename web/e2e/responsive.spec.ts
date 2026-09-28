@@ -40,6 +40,7 @@ interface Ids {
   credit_note: string | null;
   payment: string | null;
   refund: string | null;
+  shop_invoice: string | null;
 }
 
 function pages(ids: Ids) {
@@ -137,6 +138,11 @@ function pages(ids: Ids) {
     "/shop/orders",
     ...(ids.shop_order ? [`/shop/orders/${ids.shop_order}`] : []),
     "/shop/account",
+    "/shop/account/security",
+    "/shop/invoices",
+    ...(ids.shop_invoice ? [`/shop/invoices/${ids.shop_invoice}`] : []),
+    "/shop/statement",
+    "/shop/payments",
   ];
   return { staff, platform, shop };
 }

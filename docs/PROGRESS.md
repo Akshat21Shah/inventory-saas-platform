@@ -253,7 +253,11 @@
      - Business settings: GSTIN, legal name and state are read-only after the first invoice, with a note; the super admin's tenant page has "Change GST identity" (with a reason) once it is locked, and the normal edit keeps those fields read-only.
      - Invoice settings: "Document numbers" shows each series' next number and how many were issued this year; those who manage settings change a prefix (from the next number). New API `settings/document-series` (any staff reads; `settings.manage` changes; audited; isolation test).
      - Tests: 6 component tests (numbering, dashboard money, GST lock in settings and on the platform page, overdue hold wording with the order's invoices and confirmation).
-  15. Frontend: shop invoices, statement, outstanding
+  15. Frontend: the shop's bills, statement, payments and account — **done**:
+     - `/shop/account` is the account menu: what the shop owes and what is overdue, its credit with the distributor and how much it can still order, a notice when orders wait because of overdue bills; links to My bills, Statement, My payments and the profile (moved to `/shop/account/security`); Sign out.
+     - `/shop/invoices` (To pay, Overdue, Paid; days late or pay-by date), `/shop/invoices/{id}` (still to pay, download the bill (the original), items with quantities returned, totals, credit notes to download), `/shop/statement` (dates, balance before and after, each entry with the balance), `/shop/payments` (amount, date, mode, who collected it, bounced or waiting to clear, receipt).
+     - Home: "You owe ₹X · ₹Y overdue" (or "You have credit of") linking to the account; order page: its bills and the Order Confirmation download.
+     - Tests: 3 component tests; the shop screens are in the responsive check.
   16. E2E acceptance (both invoice timings), responsive check, phone test — **final review**
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.
 - **Phase 4 — Ordering & backorders** — **complete; final review approved 2026-09-28, PR #5** (branch `phase-4` from `main` 344b09c; plan approved 2026-09-27 with ADR-044, PLAN §10.2e, SPEC 1.4). Commits in order:

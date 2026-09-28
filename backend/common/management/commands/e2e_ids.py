@@ -70,5 +70,6 @@ class Command(BaseCommand):
                 "credit_note": _first(CreditNote.objects.all()),
                 "payment": _first(Payment.objects.filter(handover_status="WITH_SALESMAN")),
                 "refund": _first(Refund.objects.all()),
+                "shop_invoice": _first(Invoice.objects.filter(retailer__mobile="+919876500001")),
             }
         self.stdout.write(json.dumps(ids))

@@ -2070,7 +2070,9 @@
         "waiting": "{qty} waiting for stock",
         "cancelled": "{qty} cancelled"
       },
-      "onHoldOverdue": "You have overdue bills, so your distributor will approve this order before accepting it."
+      "onHoldOverdue": "You have overdue bills, so your distributor will approve this order before accepting it.",
+      "documents": "Bills and documents",
+      "confirmation": "Order Confirmation"
     },
     "live": {
       "order_accepted": "Order {number} was accepted.",
@@ -2133,6 +2135,63 @@
         "CREDIT_LIMIT_EXCEEDED": "This order is over your credit limit ({amount} available). Please pay your dues or contact your distributor.",
         "OVERDUE_INVOICES": "You have overdue bills. Please pay them or contact your distributor.",
         "OTHER": "Something in your cart needs a change."
+      }
+    },
+    "money": {
+      "title": "My account",
+      "summary": "What you owe",
+      "youOwe": "You owe",
+      "inCredit": "You have credit of",
+      "overdue": "{amount} is overdue",
+      "overdueLabel": "Overdue",
+      "creditWithUs": "Your credit with us",
+      "canOrder": "You can still order for",
+      "blocked": "You have overdue bills. New orders wait for your distributor's approval until they are paid.",
+      "overdueBills": "{count, plural, one {# bill is overdue} other {# bills are overdue}}. Please pay soon.",
+      "menu": "Account",
+      "bills": "My bills",
+      "statement": "Statement",
+      "payments": "My payments",
+      "profile": "Your profile",
+      "state": {
+        "unpaid": "To pay",
+        "overdue": "Overdue",
+        "paid": "Paid"
+      },
+      "noBills": {
+        "unpaid": "Nothing to pay",
+        "overdue": "No overdue bills",
+        "paid": "No paid bills yet"
+      },
+      "daysLate": "{days, plural, one {# day late} other {# days late}}",
+      "dueOn": "Pay by {date}",
+      "newer": "Newer",
+      "older": "Older",
+      "notFound": "This bill isn't available",
+      "billHeading": "Bill {number}",
+      "forOrder": "Order {number}",
+      "stillToPay": "Still to pay",
+      "downloadBill": "Download bill",
+      "items": "Items",
+      "returned": "{qty} returned",
+      "total": "Bill total",
+      "paid": "Paid",
+      "credited": "Returns and credits",
+      "creditNotes": "Credit notes",
+      "download": "Download",
+      "statementBody": "Your bills, payments and credits in date order, with the balance after each.",
+      "from": "From",
+      "to": "To",
+      "balanceOn": "Balance on {date}",
+      "noEntries": "Nothing in these dates",
+      "balance": "Balance",
+      "noPayments": "No payments yet",
+      "collectedBy": "collected by {name}",
+      "receipt": "Receipt",
+      "status": {
+        "BOUNCED": "Cheque bounced",
+        "REVERSED": "Cancelled",
+        "PENDING_CLEARANCE": "Waiting for the cheque to clear"
       }
     }
   },
