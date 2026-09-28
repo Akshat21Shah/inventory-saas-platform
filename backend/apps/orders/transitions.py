@@ -175,6 +175,11 @@ def accept_order(order_id: UUID, *, by: User | None) -> Order:
             update_fields=["status", "backorder_state", "accepted_at", "accepted_by", "updated_at"]
         )
         emit("order.accepted", order)
+        if ready:
+            from apps.billing import invoicing
+
+            if invoicing.timing(order) == "ON_ACCEPTANCE":  # ADR-007
+                invoicing.issue_invoice_for_fulfilment(shipment, trigger="ON_ACCEPTANCE", by=by)
     return order
 
 

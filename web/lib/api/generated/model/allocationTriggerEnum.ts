@@ -10,6 +10,7 @@
  * * `INWARD` - Goods received
  * * `ADJUSTMENT_IN` - Stock added
  * * `RELEASE` - Stock released
+ * * `RETURN` - Goods returned
  * * `MANUAL` - Manual
  */
 export type AllocationTriggerEnum = typeof AllocationTriggerEnum[keyof typeof AllocationTriggerEnum];
@@ -19,5 +20,6 @@ export const AllocationTriggerEnum = {
   INWARD: 'INWARD',
   ADJUSTMENT_IN: 'ADJUSTMENT_IN',
   RELEASE: 'RELEASE',
+  RETURN: 'RETURN',
   MANUAL: 'MANUAL',
 } as const;

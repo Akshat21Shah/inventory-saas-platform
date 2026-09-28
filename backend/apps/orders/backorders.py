@@ -190,10 +190,21 @@ def _flag_skipped(
 def _billing_price(order: Order, line: OrderLine, quantity: Decimal) -> tuple[Decimal, bool]:
     """(unit price, repriced) per the order's snapshot of ⚙ backorders.billing_price: the order
     price, or the shop's price today (the order price when there is none today)."""
+    price, repriced, _ = _billing_terms(order, line, quantity)
+    return price, repriced
+
+
+def _billing_terms(
+    order: Order, line: OrderLine, quantity: Decimal
+) -> tuple[Decimal, bool, Decimal | None]:
+    """(unit price, repriced, discount): with CURRENT pricing, today's price and today's discount
+    for ``quantity`` (invoiced from the shipment); otherwise the order's (discount ``None``)."""
     if order.settings_snapshot.get("backorders.billing_price") != "CURRENT":
-        return line.unit_price, False
+        return line.unit_price, False, None
     [result] = resolve_prices(order.retailer, [(line.product, quantity)])
-    return (result.unit_price if result.valid else line.unit_price), True
+    if not result.valid:
+        return line.unit_price, True, None
+    return result.unit_price, True, result.discount_total
 
 
 def _extra_value(order: Order, line: OrderLine, quantity: Decimal, price: Decimal) -> Decimal:
@@ -270,7 +281,7 @@ def _confirm_locked(
     now = timezone.now()
     increased: list[str] = []
     for allocation, line in sorted(pairs, key=lambda pair: pair[1].product_id):
-        price, repriced = _billing_price(order, line, allocation.quantity)
+        price, repriced, discount = _billing_terms(order, line, allocation.quantity)
         if prices is not None and allocation.pk in prices:
             price = prices[allocation.pk]
         higher = repriced and price > line.unit_price
@@ -288,6 +299,7 @@ def _confirm_locked(
                 else FulfilmentLine.PriceSource.ORDER_SNAPSHOT
             ),
             price_increased=higher,
+            discount_amount=discount,
         )
         line.qty_reserved -= allocation.quantity
         line.qty_allocated += allocation.quantity
@@ -316,7 +328,17 @@ def _confirm_locked(
         price_increased=increased,
     )
     derive_status(order, by=by)
+    _invoice_at_allocation(order, shipment, by=by)
     return shipment
+
+
+def _invoice_at_allocation(order: Order, shipment: Fulfilment, *, by: User | None) -> None:
+    """With ⚙ invoicing.timing ON_ACCEPTANCE (order snapshot), a confirmed backorder shipment is
+    invoiced at once (ADR-007)."""
+    from apps.billing import invoicing
+
+    if invoicing.timing(order) == "ON_ACCEPTANCE":
+        invoicing.issue_invoice_for_fulfilment(shipment, trigger="ON_ALLOCATION", by=by)
 
 
 def _lock_allocations(
@@ -579,6 +601,9 @@ def cancel_repriced(fulfilment_line_id: UUID, *, by: User, retailer_id: UUID) ->
         if shipment.status != Fulfilment.Status.ALLOCATED:
             raise InvalidTransition("This shipment is already packed.")
         level = stock.lock_levels([product_id], shipment.warehouse)[product_id]  # L3
+        from apps.billing.credit_notes import credit_unsupplied
+
+        credit_unsupplied({fl: fl.quantity}, kind="CANCELLATION", by=by)  # if invoiced already
         line = _lock_lines([line_id])[line_id]  # L4
         ref = stock.Ref(ReferenceType.FULFILMENT, shipment.pk, shipment.number)
         stock.release(level, fl.quantity, ref, by=by)
@@ -619,7 +644,17 @@ def after_stock_released(product_ids: Iterable[UUID]) -> None:
     _after_commit_allocate(list(product_ids))
 
 
-def _after_commit_allocate(product_ids: list[UUID], exclude_line_ids: Iterable[UUID] = ()) -> None:
+def after_stock_returned(product_ids: Iterable[UUID]) -> None:
+    """Goods a shop returned to stock (a return credit note) may serve older backorders."""
+    _after_commit_allocate(list(product_ids), trigger=Trigger.RETURN)
+
+
+def _after_commit_allocate(
+    product_ids: list[UUID],
+    exclude_line_ids: Iterable[UUID] = (),
+    *,
+    trigger: str = Trigger.RELEASE,
+) -> None:
     if not product_ids:
         return
     tenant_id = require_tenant_id()
@@ -627,7 +662,7 @@ def _after_commit_allocate(product_ids: list[UUID], exclude_line_ids: Iterable[U
 
     def run() -> None:
         with tenant_context(tenant_id):
-            run_allocation(ids, trigger=Trigger.RELEASE, exclude_line_ids=excluded)
+            run_allocation(ids, trigger=trigger, exclude_line_ids=excluded)
 
     transaction.on_commit(run)
 

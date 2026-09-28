@@ -6932,12 +6932,14 @@ components:
       - INWARD
       - ADJUSTMENT_IN
       - RELEASE
+      - RETURN
       - MANUAL
       type: string
       description: |-
         * `INWARD` - Goods received
         * `ADJUSTMENT_IN` - Stock added
         * `RELEASE` - Stock released
+        * `RETURN` - Goods returned
         * `MANUAL` - Manual
     AppliedDiscount:
       type: object
@@ -9083,6 +9085,7 @@ components:
       - PRICE_LIST_ITEMS
       - DISCOUNT_RULES
       - OPENING_STOCK
+      - OPENING_BALANCES
       type: string
       description: |-
         * `PRODUCTS` - Products
@@ -9091,6 +9094,7 @@ components:
         * `PRICE_LIST_ITEMS` - Price-list prices
         * `DISCOUNT_RULES` - Discount rules
         * `OPENING_STOCK` - Opening stock
+        * `OPENING_BALANCES` - Opening balances
     ImportModeEnum:
       enum:
       - ADD_ONLY

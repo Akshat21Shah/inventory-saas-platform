@@ -134,9 +134,15 @@ def _return_from_shipment(
     *,
     to_backorder: bool,
     by: User | None,
+    correction: str = "CANCELLATION",
 ) -> None:
     """Take quantities back out of a shipment: stock released, and the quantity waits again on
-    backorder, or is cancelled. Freed stock may serve older backorders after commit."""
+    backorder, or is cancelled. Freed stock may serve older backorders after commit. When the
+    shipment was already invoiced (ON_ACCEPTANCE), a credit note (``correction``: SHORT_SUPPLY
+    or CANCELLATION) is issued first (ADR-046 item 4)."""
+    from apps.billing.credit_notes import credit_unsupplied
+
+    credit_unsupplied(amounts, kind=correction, by=by)
     lines = sorted(amounts, key=lambda fl: fl.product_id)
     levels = stock.lock_levels([fl.product_id for fl in lines], shipment.warehouse)
     for fl in lines:
@@ -185,7 +191,9 @@ def pack(fulfilment_id: UUID, packed: dict[UUID, Decimal], *, by: User) -> Fulfi
                 short[fl] = fl.quantity - fl.qty_packed
         to_backorder = bool(order.settings_snapshot.get("backorders.enabled", True))
         if short:
-            _return_from_shipment(order, shipment, short, to_backorder=to_backorder, by=by)
+            _return_from_shipment(
+                order, shipment, short, to_backorder=to_backorder, by=by, correction="SHORT_SUPPLY"
+            )
             details = [
                 {"product": fl.order_line.product_code, "short": f"{q.normalize():f}"}
                 for fl, q in short.items()
@@ -256,6 +264,10 @@ def dispatch(fulfilment_id: UUID, transport: Transport, *, by: User) -> Fulfilme
         )
         emit("order.dispatched", order, shipment=shipment.number)
         derive_status(order, by=by)
+        from apps.billing import invoicing
+
+        if invoicing.timing(order) == "ON_DISPATCH":  # ADR-007: the packed quantity
+            invoicing.issue_invoice_for_fulfilment(shipment, trigger="ON_DISPATCH", by=by)
     return shipment
 
 

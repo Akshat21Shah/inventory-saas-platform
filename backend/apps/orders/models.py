@@ -367,6 +367,9 @@ class FulfilmentLine(TenantScopedModel):
         max_length=14, choices=PriceSource.choices, default=PriceSource.ORDER_SNAPSHOT
     )
     price_increased = models.BooleanField(default=False)
+    # Repriced shipments (⚙ backorders.billing_price CURRENT): the discount at today's price for
+    # the shipment quantity; null = the order line's discount, in proportion (Phase 5 invoices).
+    discount_amount = MoneyField(null=True, blank=True)
     cancelled_by_retailer_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -398,6 +401,7 @@ class BackorderAllocation(TenantScopedModel):
         INWARD = "INWARD", "Goods received"
         ADJUSTMENT_IN = "ADJUSTMENT_IN", "Stock added"
         RELEASE = "RELEASE", "Stock released"
+        RETURN = "RETURN", "Goods returned"
         MANUAL = "MANUAL", "Manual"
 
     order_line = models.ForeignKey(OrderLine, on_delete=models.PROTECT, related_name="allocations")

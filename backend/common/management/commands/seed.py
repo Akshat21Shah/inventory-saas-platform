@@ -16,6 +16,7 @@ from django.utils import timezone
 from apps.accounts.mfa import DEV_TOTP_SECRET
 from apps.accounts.models import Membership, Role, User
 from apps.accounts.permissions import PLATFORM_ADMIN_ROLE
+from apps.billing.management.commands.invoice_phase4_shipments import invoice_tenant
 from apps.catalog.defaults import ensure_default_units
 from apps.catalog.models import Unit
 from apps.inventory.defaults import ensure_default_warehouse
@@ -130,11 +131,14 @@ class Command(BaseCommand):
                     self._shop(*shop)
                 owner = User.objects.get(email=f"owner@{tenant.slug}.example.com")
                 summary = seed_catalog(tenant, owner, photos=not options["no_photos"])
+                # Shipments dispatched before invoices existed (Phase 4 data, ADR-046 item 3).
+                late_invoices = invoice_tenant(tenant.id)
             self.stdout.write(
                 f"{'created' if created else 'updated'} tenant {tenant.slug}: "
                 f"+{summary.products} products, +{summary.images} photos, "
                 f"+{summary.shops} shops, +{summary.rules} discounts, "
                 f"+{summary.stock_documents} stock documents, +{summary.orders} orders"
+                + (f", {late_invoices} earlier shipments invoiced" if late_invoices else "")
             )
         self.stdout.write(self.style.SUCCESS("seed complete"))
 

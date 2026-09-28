@@ -259,7 +259,7 @@ class CreditNote(_TaxDocument):
     )
     reason_note = models.CharField(max_length=500, blank=True, default="")
     issued_automatically = models.BooleanField(default=False)
-    applied_to_invoice = MoneyField(default=0)
+    applied_to_invoice = MoneyField(default=0)  # applied to its own invoice when issued
     unapplied_amount = MoneyField(default=0)  # running: credit not yet used
 
     class Meta:
@@ -272,7 +272,7 @@ class CreditNote(_TaxDocument):
                 condition=Q(applied_to_invoice__gte=0)
                 & Q(applied_to_invoice__lte=F("grand_total"))
                 & Q(unapplied_amount__gte=0)
-                & Q(unapplied_amount__lte=F("grand_total") - F("applied_to_invoice")),
+                & Q(unapplied_amount__lte=F("grand_total")),
                 name="credit_note_application",
             ),
             models.CheckConstraint(
