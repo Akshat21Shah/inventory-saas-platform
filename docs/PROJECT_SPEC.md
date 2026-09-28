@@ -1,8 +1,9 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.4. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.5. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.5 (2026-09-28)** — Phase 5 plan (ADR-046): invoice/credit-note/receipt number format, Order Confirmation PDF, return dispositions per line and return reasons, salesman collections with handover tracking, ageing basis setting, automatic use of advances with reallocation.
 - **1.1 (2026-09-24)** — Product-owner decisions applied:
   - per-shipment fulfilment model and the COMPLETED status;
   - invoice timing setting (default at dispatch) and the Order Confirmation document;
@@ -285,7 +286,7 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - Every invoice reconciles to the paisa. All logic lives in `billing/tax.py`, with exhaustive tests covering every setting value.
 - Invoice content: tenant legal details + GSTIN, retailer details + GSTIN (if any), invoice no/date, place of supply, lines with HSN, qty, unit, rate, discount, taxable value, tax breakup, totals in figures and words, bank details, terms, signatory, and e-invoice IRN + QR code when applicable.
 - PDF generated asynchronously (HTML template → PDF), stored in S3, accessible via signed URL.
-- Credit notes for returns/cancellations after invoicing (append to ledger as credits).
+- Credit notes for returns/cancellations after invoicing (append to ledger as credits). For returns, each line says what happened to the goods: returned to stock (default), received damaged (written off), or not physically returned; a return reason is required (ADR-046).
 - Invoices are immutable once issued; corrections via credit note.
 
 ### 5.11 E-invoice & e-way bill (feature-flagged per tenant)
@@ -303,6 +304,8 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - Cheques are credited on receipt (default, with an automatic reversing entry if the cheque bounces) or only on clearance (setting).
 - **Online payments** (feature-flagged, OFF by default): tenant connects its own gateway account (Razorpay first; adapter interface allows Cashfree etc.). Money settles to the distributor. Retailer can pay an invoice, the outstanding amount, or a custom amount via UPI, cards, net banking. Payment confirmed only via verified webhook; reconciliation job for missed webhooks. Sandbox keys in non-production.
 - Receipts generated for every payment.
+- **Salesman collections** (ADR-046): sales staff with `payments.collect` record cash, cheque and UPI collections from their own shops (setting, default on). The shop is credited and gets a receipt at once; the payment stays "With salesman" until Accounts/Manager/Owner confirm "Handed over". A pending-handover report per salesman.
+- Receivables ageing by invoice date (default) or days past due (setting). Advances are applied automatically to new invoices, oldest money first; staff can reverse and reallocate an allocation.
 
 ### 5.13 Notifications
 - Channels: in-app (notification centre + real-time), email, WhatsApp (Business API), push (mobile, later), SMS (OTP only by default).

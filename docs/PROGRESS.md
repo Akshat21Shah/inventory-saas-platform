@@ -158,6 +158,21 @@
   - Deferred to later phases: invoice series (5), GST/gateway credentials (7), `ws-ticket` (4), platform dashboard KPIs (8), notification templates (6). Retailer is a stub until Phase 2.
 
 ## Next
+- **Phase 5 — Billing, GST, ledger, credit control** (branch `phase-5` from `main` ac84f63; plan approved 2026-09-28 with ADR-046, PLAN §10.2g, SPEC 1.5). Commits in order:
+  1. Docs: ADR-046, PLAN (§10.2g, return dispositions, salesman collections, ageing basis, backlog), SPEC 1.5, `docs/CA_REVIEW.md` first draft — **done**
+  2. Tax engine: amount in words, HSN summary, FY helpers, credit-note proration; §6.3 examples, exhaustive matrix, property tests
+  3. Models: billing, ledger, payments; RLS, checks, append-only and immutability triggers; `OrderLine.qty_invoiced`
+  4. Numbering service (gapless, FY in IST, ≤ 16 characters) with a race test
+  5. Ledger posting, opening balances (adjustment + import), adjustments
+  6. Invoice issuing for both timings, invoice-date rates and warning, snapshots, advances applied; the Phase 4 dev command
+  7. Credit notes: returns with dispositions, value adjustments, automatic short-supply / cancellation, exact remainders
+  8. Payments: offline modes, FIFO/manual allocation, advances, cheques, reversals, salesman collections and handover; reconciliation property test
+  9. Credit control: real exposure, overdue blocking, holds; outstanding, overdue, ageing
+  10. PDFs: invoice (three copies for staff), credit note, receipt, Order Confirmation; background rendering, storage, signed links; CA sample PDFs
+  11. APIs (staff, shop), GST identity lock (5.13), isolation and role tests, demo billing, API client — **backend checkpoint**
+  12–15. Frontend: invoices and credit notes; payments, receivables and ledger; credit holds and settings; shop invoices, statement, outstanding
+  16. E2E acceptance (both invoice timings), responsive check, phone test — **final review**
+- Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.
 - **Phase 4 — Ordering & backorders** — **complete; final review approved 2026-09-28, PR #5** (branch `phase-4` from `main` 344b09c; plan approved 2026-09-27 with ADR-044, PLAN §10.2e, SPEC 1.4). Commits in order:
   1. Docs: ADR-044, PLAN (Cart per shop and user, OrderLineDiscount, §10.2e, backlog), SPEC 1.4 — **done**
   2. Models: orders app, `ledger.RetailerAccount`, RLS, checks, append-only history — **done**: carts per (shop, user); orders with settings/address/price snapshots and estimates; lines whose quantity buckets are checked by the database (ordered = pending + reserved + backordered + allocated + cancelled; dispatched ≤ allocated, delivered ≤ dispatched); a row per applied discount; append-only status history; shipments and their lines; backorder allocations. `ledger.RetailerAccount` (balance 0) is created with every shop and backfilled. RLS on all ten tables.
