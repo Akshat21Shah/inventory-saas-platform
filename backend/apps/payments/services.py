@@ -1,0 +1,520 @@
+"""Offline payments (PLAN §4.6, spec 5.12, ADR-017/022/046).
+
+- Recording: cash, bank transfer and UPI are credited to the shop at once; a cheque follows
+  ⚙ payments.cheque_credit_timing (snapshotted on the payment): credited when received (reversed
+  automatically if it bounces) or only when it clears. A receipt number (RCT/…) is issued either
+  way.
+- Matching: the payment first pays the dues the user chose, then anything else owed, the earliest
+  due first; what is left is the shop's credit (⚙ payments.hold_advances). With advances off, a
+  payment above what the shop owes is refused (``PAYMENT_EXCEEDS_OUTSTANDING``).
+- Salesman collections (ADR-046 item 6): recorded the same way, from shops the salesman can see,
+  "With salesman" until a ``payments.record`` user confirms "Handed over" (audited).
+- Undoing: a bounced cheque or a payment entered in error is reversed with a PAYMENT_REVERSAL
+  debit; its allocations are undone, and the shop's other money then covers what it can.
+- Reallocation (ADR-046 item 10): an allocation (automatic or not) can be undone and the money
+  matched to other dues (audited).
+
+Lock order: the shop's account (L1), the payment and the dues (L5), the receipt series (L6).
+"""
+
+from dataclasses import dataclass, field
+from datetime import date
+from decimal import Decimal
+from typing import Any, cast
+from uuid import UUID
+
+from django.db import transaction
+from django.utils import timezone
+
+from apps.accounts.models import User
+from apps.audit import services as audit
+from apps.billing import numbering
+from apps.billing.models import CreditNote, DocumentType, Invoice
+from apps.ledger import allocation
+from apps.ledger import services as ledger
+from apps.ledger.allocation import CREDIT_KINDS, DEBIT_KINDS, Source, Target
+from apps.ledger.models import Allocation, EntryType, LedgerAdjustment, LedgerEntry
+from apps.payments.models import Payment
+from apps.platform.selectors import get_setting
+from apps.retailers.models import Retailer
+from apps.retailers.selectors import retailer_for
+from common import outbox
+from common.dates import today_ist
+from common.db import retry_on_deadlock
+from common.error_codes import ErrorCode
+from common.errors import DomainError, InvalidFields, NotFound
+from common.tenancy import require_tenant_id
+
+ZERO = Decimal("0.00")
+PAISA = Decimal("0.01")
+
+
+class PaymentExceedsOutstanding(DomainError):
+    code = ErrorCode.PAYMENT_EXCEEDS_OUTSTANDING
+    default_message = "This is more than the shop owes."
+
+
+class InvalidPaymentState(DomainError):
+    status_code = 409
+    code = ErrorCode.INVALID_STATE_TRANSITION
+    default_message = "This payment can't be changed that way now."
+
+
+@dataclass(frozen=True)
+class DueAmount:
+    """A due to pay first: an invoice or a debit adjustment (an opening balance or a debit)."""
+
+    target_type: str  # INVOICE | ADJUSTMENT
+    target_id: UUID
+    amount: Decimal
+
+
+@dataclass(frozen=True)
+class PaymentInput:
+    retailer_id: UUID
+    amount: Decimal
+    mode: str
+    payment_date: date
+    reference_no: str = ""
+    cheque_number: str = ""
+    cheque_date: date | None = None
+    bank_name: str = ""
+    notes: str = ""
+    pay_first: tuple[DueAmount, ...] = field(default_factory=tuple)
+
+
+def _validate(data: PaymentInput) -> None:
+    errors: dict[str, list[str]] = {}
+    if data.amount <= 0 or data.amount != data.amount.quantize(PAISA):
+        errors["amount"] = ["Enter an amount above zero, in rupees and paise."]
+    if data.mode not in Payment.Mode.values:
+        errors["mode"] = ["Choose cash, cheque, bank transfer or UPI."]
+    if data.mode == Payment.Mode.CHEQUE and not data.cheque_number.strip():
+        errors["cheque_number"] = ["Enter the cheque number."]
+    if data.payment_date > today_ist():
+        errors["payment_date"] = ["The payment date can't be in the future."]
+    chosen = [(d.target_type, d.target_id) for d in data.pay_first]
+    if len(set(chosen)) != len(chosen) or any(d.amount <= 0 for d in data.pay_first):
+        errors["pay_first"] = ["Choose each due once, with an amount above zero."]
+    elif sum((d.amount for d in data.pay_first), ZERO) > data.amount:
+        errors["pay_first"] = ["The amounts chosen add up to more than the payment."]
+    if errors:
+        raise InvalidFields(errors)
+
+
+def _target(retailer_id: UUID, target_type: str, target_id: UUID) -> Target:
+    """A due of this shop, locked (L5)."""
+    found: Target | None
+    if target_type == "INVOICE":
+        found = (
+            Invoice.objects.select_for_update()
+            .filter(pk=target_id, retailer_id=retailer_id, status="ISSUED")
+            .first()
+        )
+    elif target_type == "ADJUSTMENT":
+        found = (
+            LedgerAdjustment.objects.select_for_update()
+            .filter(pk=target_id, retailer_id=retailer_id, kind__in=DEBIT_KINDS)
+            .first()
+        )
+    else:
+        found = None
+    if found is None:
+        raise InvalidFields({"pay_first": ["One of the chosen dues isn't this shop's."]})
+    return cast(Target, found)
+
+
+def _source(retailer_id: UUID, source_type: str, source_id: UUID) -> Source:
+    """Money of this shop that can be matched to dues, locked (L5)."""
+    found: Source | None
+    if source_type == "PAYMENT":
+        found = (
+            Payment.objects.select_for_update()
+            .filter(pk=source_id, retailer_id=retailer_id, credited=True)
+            .first()
+        )
+    elif source_type == "CREDIT_NOTE":
+        found = (
+            CreditNote.objects.select_for_update()
+            .filter(pk=source_id, retailer_id=retailer_id, status="ISSUED")
+            .first()
+        )
+    elif source_type == "ADJUSTMENT":
+        found = (
+            LedgerAdjustment.objects.select_for_update()
+            .filter(pk=source_id, retailer_id=retailer_id, kind__in=CREDIT_KINDS)
+            .first()
+        )
+    else:
+        found = None
+    if found is None:
+        raise NotFound()
+    return cast(Source, found)
+
+
+def _credit(
+    payment: Payment, *, on: date, pay_first: list[tuple[Target, Decimal]], by: User | None
+) -> None:
+    """Post the payment to the locked account and match it: the chosen dues, then the rest."""
+    account = ledger.lock_account(payment.retailer_id)
+    ledger.post(
+        account,
+        EntryType.PAYMENT,
+        credit=payment.amount,
+        entry_date=on,
+        ref=ledger.Reference("PAYMENT", payment.pk, payment.number),
+        narration=f"{payment.get_mode_display()} received",
+        by=by,
+    )
+    payment.credited = True
+    payment.unapplied_amount = payment.amount
+    payment.save(update_fields=["credited", "unapplied_amount", "updated_at"])
+    ledger.add_unapplied(account, payment.amount)
+    for target, amount in pay_first:
+        if amount > target.balance_due:
+            raise InvalidFields({"pay_first": ["More than is still owed on a chosen due."]})
+        allocation.apply(account, payment, target, amount, automatic=False, by=by)
+    allocation.settle(account, by=by)  # oldest money first, for whatever is still owed
+
+
+def _emit(event: str, payment: Payment, **extra: Any) -> None:
+    outbox.emit(
+        event,
+        aggregate_type="Payment",
+        aggregate_id=payment.pk,
+        payload={
+            "payment_id": str(payment.pk),
+            "number": payment.number,
+            "retailer_id": str(payment.retailer_id),
+            "amount": f"{payment.amount:.2f}",
+            "mode": payment.mode,
+            "status": payment.status,
+            "collected_by": str(payment.collected_by_id or ""),
+            **extra,
+        },
+    )
+
+
+def _record(data: PaymentInput, *, by: User | None, collected: bool) -> Payment:
+    _validate(data)
+    tenant_id = require_tenant_id()
+    retailer = Retailer.objects.filter(pk=data.retailer_id, deleted_at__isnull=True).first()
+    if retailer is None:
+        raise NotFound()
+    account = ledger.lock_account(retailer.pk)  # L1
+    cheque = data.mode == Payment.Mode.CHEQUE
+    timing = (
+        str(get_setting("payments.cheque_credit_timing", tenant_id))
+        if cheque
+        else Payment.CreditTiming.ON_RECEIPT
+    )
+    credit_now = timing == Payment.CreditTiming.ON_RECEIPT
+    if data.pay_first and not credit_now:
+        raise InvalidFields({"pay_first": ["A cheque is matched to dues when it clears."]})
+    if not get_setting("payments.hold_advances", tenant_id) and data.amount > account.balance:
+        raise PaymentExceedsOutstanding(
+            details={"outstanding": f"{max(account.balance, ZERO):.2f}"}
+        )
+    pay_first = [
+        (_target(retailer.pk, d.target_type, d.target_id), d.amount) for d in data.pay_first
+    ]  # L5
+    _series, number = numbering.next_number(DocumentType.RECEIPT, today_ist())  # L6
+    payment: Payment = Payment.objects.create(
+        number=number,
+        retailer=retailer,
+        amount=data.amount,
+        mode=data.mode,
+        status=Payment.Status.RECEIVED if credit_now else Payment.Status.PENDING_CLEARANCE,
+        credit_timing=timing,
+        payment_date=data.payment_date,
+        reference_no=data.reference_no.strip()[:60],
+        cheque_number=data.cheque_number.strip()[:20],
+        cheque_date=data.cheque_date if cheque else None,
+        bank_name=data.bank_name.strip()[:120],
+        notes=data.notes.strip()[:500],
+        recorded_by=by,
+        collected_by=by if collected else None,
+        handover_status=(
+            Payment.Handover.WITH_SALESMAN if collected else Payment.Handover.NOT_TRACKED
+        ),
+        created_by=by,
+    )
+    if credit_now:
+        _credit(payment, on=data.payment_date, pay_first=pay_first, by=by)
+    payment.refresh_from_db()
+    _emit("payment.received", payment)
+    return payment
+
+
+@retry_on_deadlock()
+def record_payment(data: PaymentInput, *, by: User | None) -> Payment:
+    """Payments recorded in the office (``payments.record``)."""
+    with transaction.atomic():
+        return _record(data, by=by, collected=False)
+
+
+@retry_on_deadlock()
+def collect_payment(data: PaymentInput, *, by: User) -> Payment:
+    """A salesman's collection from a shop they can see (``payments.collect``); it is "With
+    salesman" until handed over. Matched oldest first; choosing dues is left to the office."""
+    if not get_setting("payments.sales_can_collect", require_tenant_id()):
+        raise DomainError(
+            "Sales staff can't record collections.",
+            code=ErrorCode.PERMISSION_DENIED,
+            status_code=403,
+        )
+    if retailer_for(by, data.retailer_id) is None:
+        raise NotFound()
+    if data.pay_first:
+        raise InvalidFields({"pay_first": ["Collections are matched oldest first."]})
+    with transaction.atomic():
+        return _record(data, by=by, collected=True)
+
+
+def _locked_payment(payment_id: UUID) -> Payment:
+    """The shop's account (L1), then the payment (L5)."""
+    found = Payment.objects.filter(pk=payment_id).values_list("retailer_id", flat=True)
+    retailer_id = found.first()
+    if retailer_id is None:
+        raise NotFound()
+    ledger.lock_account(retailer_id)
+    payment: Payment = Payment.objects.select_for_update().get(pk=payment_id)
+    return payment
+
+
+def _undo_credit(payment: Payment, *, reason: str, by: User | None) -> None:
+    """Take back a credited payment: its allocations, then a reversing debit."""
+    account = ledger.lock_account(payment.retailer_id)
+    for row in allocation.live_allocations(payment=payment):
+        allocation.reverse(account, row, by=by, reason=reason)
+    payment.refresh_from_db()
+    original = LedgerEntry.objects.get(
+        reference_type="PAYMENT", reference_id=payment.pk, entry_type=EntryType.PAYMENT
+    )
+    ledger.post(
+        account,
+        EntryType.PAYMENT_REVERSAL,
+        debit=payment.amount,
+        entry_date=today_ist(),
+        ref=ledger.Reference("PAYMENT", payment.pk, payment.number),
+        narration=reason,
+        by=by,
+        reverses=original,
+    )
+    ledger.add_unapplied(account, -payment.unapplied_amount)
+    payment.unapplied_amount = ZERO
+    payment.credited = False
+    payment.save(update_fields=["unapplied_amount", "credited", "updated_at"])
+    allocation.settle(account, by=by)  # the shop's other money covers what it can
+
+
+def _require_reason(reason: str) -> str:
+    if not reason.strip():
+        raise InvalidFields({"reason": ["Say why."]})
+    return reason.strip()[:300]
+
+
+@retry_on_deadlock()
+def clear_cheque(payment_id: UUID, *, on: date | None = None, by: User | None) -> Payment:
+    """The bank cleared the cheque. Credited now if it was waiting for clearance."""
+    cleared_on = on or today_ist()
+    with transaction.atomic():
+        payment = _locked_payment(payment_id)
+        if payment.mode != Payment.Mode.CHEQUE or payment.status not in (
+            Payment.Status.PENDING_CLEARANCE,
+            Payment.Status.RECEIVED,
+        ):
+            raise InvalidPaymentState()
+        if cleared_on > today_ist() or cleared_on < payment.payment_date:
+            raise InvalidFields({"on": ["Choose a date between the payment date and today."]})
+        waiting = payment.status == Payment.Status.PENDING_CLEARANCE
+        payment.status = Payment.Status.CLEARED
+        payment.cleared_at = timezone.now()
+        payment.save(update_fields=["status", "cleared_at", "updated_at"])
+        if waiting:
+            _credit(payment, on=cleared_on, pay_first=[], by=by)
+            payment.refresh_from_db()
+        _emit("payment.cleared", payment)
+        return payment
+
+
+@retry_on_deadlock()
+def bounce_cheque(payment_id: UUID, *, reason: str, by: User | None) -> Payment:
+    """The cheque bounced: if it was credited, the credit and its allocations are reversed."""
+    note = _require_reason(reason)
+    with transaction.atomic():
+        payment = _locked_payment(payment_id)
+        if payment.mode != Payment.Mode.CHEQUE or payment.status not in (
+            Payment.Status.PENDING_CLEARANCE,
+            Payment.Status.RECEIVED,
+        ):
+            raise InvalidPaymentState()
+        if payment.credited:
+            _undo_credit(payment, reason=f"Cheque {payment.cheque_number} bounced: {note}", by=by)
+        payment.status = Payment.Status.BOUNCED
+        payment.reversed_at = timezone.now()
+        payment.reversal_reason = note
+        payment.save(update_fields=["status", "reversed_at", "reversal_reason", "updated_at"])
+        audit.record(
+            "payments.cheque_bounced",
+            target=payment,
+            target_repr=payment.number,
+            metadata={"amount": str(payment.amount), "reason": note},
+        )
+        _emit("payment.reversed", payment, reason=note)
+        return payment
+
+
+@retry_on_deadlock()
+def reverse_payment(payment_id: UUID, *, reason: str, by: User | None) -> Payment:
+    """A payment entered in error (``payments.reverse``)."""
+    note = _require_reason(reason)
+    with transaction.atomic():
+        payment = _locked_payment(payment_id)
+        if payment.status not in (
+            Payment.Status.RECEIVED,
+            Payment.Status.CLEARED,
+            Payment.Status.PENDING_CLEARANCE,
+        ):
+            raise InvalidPaymentState()
+        if payment.credited:
+            _undo_credit(payment, reason=f"Reversed: {note}", by=by)
+        payment.status = Payment.Status.REVERSED
+        payment.reversed_at = timezone.now()
+        payment.reversal_reason = note
+        payment.save(update_fields=["status", "reversed_at", "reversal_reason", "updated_at"])
+        audit.record(
+            "payments.reversed",
+            target=payment,
+            target_repr=payment.number,
+            metadata={"amount": str(payment.amount), "reason": note},
+        )
+        _emit("payment.reversed", payment, reason=note)
+        return payment
+
+
+def hand_over(payment_ids: list[UUID], *, by: User) -> list[Payment]:
+    """Confirm that salesmen handed these collections over (``payments.record``). Already handed
+    over is fine; a payment not collected by a salesman is refused."""
+    with transaction.atomic():
+        payments = list(
+            Payment.objects.select_for_update().filter(pk__in=set(payment_ids)).order_by("pk")
+        )
+        if len(payments) != len(set(payment_ids)):
+            raise NotFound()
+        if any(p.handover_status == Payment.Handover.NOT_TRACKED for p in payments):
+            raise InvalidFields({"payments": ["Only collections by sales staff are handed over."]})
+        now = timezone.now()
+        for payment in payments:
+            if payment.handover_status == Payment.Handover.HANDED_OVER:
+                continue
+            payment.handover_status = Payment.Handover.HANDED_OVER
+            payment.handed_over_at = now
+            payment.handed_over_by = by
+            payment.save(
+                update_fields=[
+                    "handover_status",
+                    "handed_over_at",
+                    "handed_over_by",
+                    "updated_at",
+                ]
+            )
+            audit.record(
+                "payments.handed_over",
+                target=payment,
+                target_repr=payment.number,
+                metadata={
+                    "amount": str(payment.amount),
+                    "collected_by": str(payment.collected_by_id),
+                },
+            )
+        return payments
+
+
+# --- Allocation by hand (ADR-046 item 10) -----------------------------------------------------
+
+
+@retry_on_deadlock()
+def allocate(
+    retailer_id: UUID,
+    *,
+    source_type: str,
+    source_id: UUID,
+    to: list[DueAmount],
+    by: User,
+    reason: str = "",
+) -> list[Allocation]:
+    """Match unused money (a payment, credit-note credit or a credit adjustment) to dues."""
+    if not to or any(d.amount <= 0 for d in to):
+        raise InvalidFields({"to": ["Choose at least one due, with an amount above zero."]})
+    with transaction.atomic():
+        account = ledger.lock_account(retailer_id)  # L1
+        source = _source(retailer_id, source_type, source_id)
+        made = []
+        for due in to:
+            target = _target(retailer_id, due.target_type, due.target_id)
+            made.append(
+                allocation.apply(
+                    account, source, target, due.amount, automatic=False, by=by, reason=reason
+                )
+            )
+        audit.record(
+            "payments.allocated",
+            target_type="Allocation",
+            target_id=made[0].pk,
+            target_repr=f"{source_type} {source_id}",
+            metadata={
+                "retailer_id": str(retailer_id),
+                "to": [
+                    {"type": d.target_type, "id": str(d.target_id), "amount": str(d.amount)}
+                    for d in to
+                ],
+                "reason": reason,
+            },
+        )
+        return made
+
+
+@retry_on_deadlock()
+def reallocate(
+    allocation_id: UUID, *, to: list[DueAmount], reason: str, by: User
+) -> tuple[Allocation, list[Allocation]]:
+    """Undo an allocation (automatic or by hand) and, optionally, match the money to other dues
+    in the same step. Without ``to`` the money stays unused until the next match."""
+    note = _require_reason(reason)
+    with transaction.atomic():
+        found = Allocation.objects.filter(pk=allocation_id).values_list("retailer_id", flat=True)
+        retailer_id = found.first()
+        if retailer_id is None:
+            raise NotFound()
+        account = ledger.lock_account(retailer_id)  # L1
+        row: Allocation = Allocation.objects.select_related(
+            "payment", "credit_note", "credit_adjustment", "invoice", "debit_adjustment"
+        ).get(pk=allocation_id)
+        undo = allocation.reverse(account, row, by=by, reason=note)
+        source: Source = row.payment or row.credit_note or row.credit_adjustment  # type: ignore[assignment]
+        source = type(source).objects.select_for_update().get(pk=source.pk)
+        made = []
+        for due in to:
+            target = _target(retailer_id, due.target_type, due.target_id)
+            made.append(
+                allocation.apply(
+                    account, source, target, due.amount, automatic=False, by=by, reason=note
+                )
+            )
+        audit.record(
+            "payments.allocation_reversed",
+            target=row,
+            target_repr=f"{row.amount}",
+            metadata={
+                "retailer_id": str(retailer_id),
+                "automatic": row.automatic,
+                "amount": str(row.amount),
+                "reason": note,
+                "reallocated": [
+                    {"type": d.target_type, "id": str(d.target_id), "amount": str(d.amount)}
+                    for d in to
+                ],
+            },
+        )
+        return undo, made

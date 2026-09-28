@@ -264,7 +264,8 @@
     "STOCK_RESERVED": "Part of this stock is reserved for orders, so it can't be removed.",
     "CART_NOT_READY": "Your cart needs a change before you can place the order.",
     "PRICE_CHANGED": "Some prices changed. Please check your cart and place the order again.",
-    "CREDIT_LIMIT_EXCEEDED": "This order is over the credit limit."
+    "CREDIT_LIMIT_EXCEEDED": "This order is over the credit limit.",
+    "PAYMENT_EXCEEDS_OUTSTANDING": "This is more than the shop owes. Advances are turned off in your settings."
   },
   "designSystem": {
     "title": "Design system",
@@ -509,6 +510,20 @@
         "options": {
           "ON_RECEIPT": "When the cheque is received",
           "ON_CLEARANCE": "When the cheque clears"
+        }
+      },
+      "sales_can_collect": {
+        "label": "Sales staff can collect payments",
+        "description": "Let sales staff record payments they collect from their shops (tracked until handed over)."
+      }
+    },
+    "receivables": {
+      "ageing_basis": {
+        "label": "Age dues by",
+        "description": "Age receivables by days since the invoice date, or by days past the due date.",
+        "options": {
+          "INVOICE_DATE": "Days since the invoice date",
+          "DUE_DATE": "Days past the due date"
         }
       }
     },

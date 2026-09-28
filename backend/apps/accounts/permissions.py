@@ -50,6 +50,9 @@ TENANT_PERMISSIONS: tuple[PermissionDef, ...] = (
     PermissionDef("payments.view", "View payments"),
     PermissionDef("ledger.view", "View retailer ledgers and outstanding"),
     PermissionDef("payments.record", "Record payments"),
+    PermissionDef(
+        "payments.collect", "Record payments collected from own shops (until handed over)"
+    ),
     PermissionDef("payments.reverse", "Reverse payments"),
     PermissionDef("ledger.adjust", "Post ledger adjustments"),
     PermissionDef("reports.sales", "Sales reports for all retailers"),
@@ -92,7 +95,7 @@ class SystemRoleDef:
 _SALES = frozenset({
     "products.view", "pricing.view", "retailers.view", "retailers.manage", "stock.view",
     "orders.view", "orders.manage", "orders.create_on_behalf", "invoices.view", "payments.view",
-    "ledger.view", "reports.sales_own", "dashboard.view",
+    "payments.collect", "ledger.view", "reports.sales_own", "dashboard.view",
 })
 _WAREHOUSE = frozenset({
     "products.view", "stock.view", "stock.inward", "stock.adjust", "orders.view", "orders.fulfil",
@@ -106,10 +109,12 @@ _ACCOUNTS = frozenset({
 })
 # fmt: on
 _OWNER_ONLY = {"settings.manage", "branding.manage", "staff.manage", "audit.view"}
+# Sales staff's own-shop variants; the office holds the full permissions instead.
+_SALES_ONLY = {"reports.sales_own", "payments.collect"}
 
 SYSTEM_ROLES: tuple[SystemRoleDef, ...] = (
-    SystemRoleDef("OWNER", "Owner", _ALL_TENANT - {"reports.sales_own"}),
-    SystemRoleDef("MANAGER", "Manager", _ALL_TENANT - _OWNER_ONLY - {"reports.sales_own"}),
+    SystemRoleDef("OWNER", "Owner", _ALL_TENANT - _SALES_ONLY),
+    SystemRoleDef("MANAGER", "Manager", _ALL_TENANT - _OWNER_ONLY - _SALES_ONLY),
     SystemRoleDef("SALES", "Sales", _SALES),
     SystemRoleDef("WAREHOUSE", "Warehouse", _WAREHOUSE),
     SystemRoleDef("ACCOUNTS", "Accounts", _ACCOUNTS),

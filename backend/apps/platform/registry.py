@@ -293,6 +293,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    _tenant("payments.sales_can_collect", Group.CREDIT_PAYMENTS, SettingType.BOOL, True,
+            "Let sales staff record payments they collect from their shops (tracked until handed "
+            "over)."),
+    _tenant("receivables.ageing_basis", Group.CREDIT_PAYMENTS, SettingType.ENUM, "INVOICE_DATE",
+            "Age receivables by days since the invoice date, or by days past the due date.",
+            allowed=("INVOICE_DATE", "DUE_DATE")),
     # --- Tenant: Pricing (ADR-036) --------------------------------------------------------------
     _tenant("pricing.discounts_on_special_prices", Group.PRICING, SettingType.BOOL, True,
             "Apply discount rules on top of a shop's special prices. Turn off to treat a special "
