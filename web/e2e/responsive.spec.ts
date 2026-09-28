@@ -36,6 +36,8 @@ interface Ids {
   order: string | null;
   fulfilment: string | null;
   backorder_product: string | null;
+  invoice: string | null;
+  credit_note: string | null;
 }
 
 function pages(ids: Ids) {
@@ -47,6 +49,12 @@ function pages(ids: Ids) {
     "/manage/orders/new",
     "/manage/backorders",
     ...(ids.backorder_product ? [`/manage/backorders/${ids.backorder_product}`] : []),
+    "/manage/invoices",
+    ...(ids.invoice ? [`/manage/invoices/${ids.invoice}`] : []),
+    "/manage/invoices/credit-notes",
+    "/manage/invoices/credit-notes/new",
+    ...(ids.invoice ? [`/manage/invoices/credit-notes/new?invoice=${ids.invoice}`] : []),
+    ...(ids.credit_note ? [`/manage/invoices/credit-notes/${ids.credit_note}`] : []),
     "/manage/products",
     "/manage/products/new",
     `/manage/products/${ids.product}`,

@@ -9,6 +9,7 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.billing.models import CreditNote, Invoice
 from apps.catalog.models import Product
 from apps.dataio.models import ImportJob
 from apps.inventory.models import StockAdjustment, StockInward
@@ -63,5 +64,8 @@ class Command(BaseCommand):
                     )
                     else None
                 ),
+                # Billing (Phase 5): an invoice with a credit note, and that credit note.
+                "invoice": _first(Invoice.objects.filter(credit_notes__isnull=False)),
+                "credit_note": _first(CreditNote.objects.all()),
             }
         self.stdout.write(json.dumps(ids))

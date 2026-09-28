@@ -12411,6 +12411,34 @@ components:
       - on_hold
       - proposals
       - to_pack
+    OrderInvoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        invoice_date:
+          type: string
+          format: date
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        payment_status:
+          type: string
+      required:
+      - balance_due
+      - grand_total
+      - id
+      - invoice_date
+      - number
+      - payment_status
     OrderLine:
       type: object
       properties:
@@ -17167,6 +17195,16 @@ components:
           items:
             $ref: '#/components/schemas/Fulfilment'
           readOnly: true
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderInvoice'
+          readOnly: true
+        has_confirmation:
+          type: boolean
+          readOnly: true
+          description: An Order Confirmation PDF exists (made at acceptance when the
+            setting is on).
         history:
           type: array
           items:
@@ -17181,9 +17219,11 @@ components:
       - fulfilments
       - grand_total
       - gross_total
+      - has_confirmation
       - history
       - hold_reason
       - id
+      - invoices
       - items_to_follow
       - lines
       - number
@@ -17779,6 +17819,16 @@ components:
           items:
             $ref: '#/components/schemas/Fulfilment'
           readOnly: true
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderInvoice'
+          readOnly: true
+        has_confirmation:
+          type: boolean
+          readOnly: true
+          description: An Order Confirmation PDF exists (made at acceptance when the
+            setting is on).
         history:
           type: array
           items:
@@ -17800,9 +17850,11 @@ components:
       - fulfilments
       - grand_total
       - gross_total
+      - has_confirmation
       - history
       - hold_reason
       - id
+      - invoices
       - items_to_follow
       - lines
       - number

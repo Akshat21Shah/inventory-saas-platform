@@ -74,6 +74,8 @@ function order(extra: Partial<StaffOrder> = {}): StaffOrder {
     fulfilments: [],
     history: [],
     credit_approved_value: null,
+    invoices: [],
+    has_confirmation: false,
     ...extra,
   };
 }

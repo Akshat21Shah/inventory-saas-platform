@@ -227,6 +227,7 @@ export * from './movementTypeEnum';
 export * from './nullEnum';
 export * from './onboardingRequest';
 export * from './orderCounts';
+export * from './orderInvoice';
 export * from './orderLine';
 export * from './orderRef';
 export * from './orderRow';

@@ -140,11 +140,19 @@ def order_detail(order_id: UUID, *, user: User | None = None) -> Order | None:
                     )
                 ),
             ),
+            Prefetch("invoices", queryset=_invoices_by_date()),
         )
+        .select_related("confirmation")
         .filter(pk=order_id)
         .first()
     )
     return found
+
+
+def _invoices_by_date() -> QuerySet[Any]:
+    from apps.billing.models import Invoice
+
+    return Invoice.objects.order_by("invoice_date", "created_at")
 
 
 # --- Shipments -----------------------------------------------------------------------------------

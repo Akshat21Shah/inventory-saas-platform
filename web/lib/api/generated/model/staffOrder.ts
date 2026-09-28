@@ -8,6 +8,7 @@
 import type { BackorderStateEnum } from './backorderStateEnum';
 import type { Fulfilment } from './fulfilment';
 import type { History } from './history';
+import type { OrderInvoice } from './orderInvoice';
 import type { OrderLine } from './orderLine';
 import type { OrderStatusEnum } from './orderStatusEnum';
 import type { PlacedViaEnum } from './placedViaEnum';
@@ -58,6 +59,9 @@ export interface StaffOrder {
   readonly items_to_follow: number;
   readonly lines: readonly OrderLine[];
   readonly fulfilments: readonly Fulfilment[];
+  readonly invoices: readonly OrderInvoice[];
+  /** An Order Confirmation PDF exists (made at acceptance when the setting is on). */
+  readonly has_confirmation: boolean;
   readonly history: readonly History[];
   /**
      * @nullable
