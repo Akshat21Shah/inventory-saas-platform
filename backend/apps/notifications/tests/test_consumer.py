@@ -128,7 +128,7 @@ def test_whatsapp_needs_the_feature_and_the_shops_consent(world):
     assert (second.status, second.skip_reason) == ("SKIPPED", SKIP.NO_WHATSAPP_OPT_IN)
     consent(world["shop"])
     third = placed_for_shop()
-    assert (third.status, third.skip_reason, third.address) == ("PENDING", "", world["shop"].mobile)
+    assert (third.status, third.skip_reason, third.address) == ("SENT", "", world["shop"].mobile)
     assert third.body.startswith(f"{world['t'].name}:")  # names the distributor first
     assert third.data["whatsapp"]["template"] == "b2b_order_placed_for_shop"
     assert third.data["whatsapp"]["category"] == "UTILITY"
@@ -147,8 +147,8 @@ def test_an_invoice_goes_by_email_and_its_compulsory_channels_ignore_preferences
         invoice = ship_invoice(world["t"], world["shop"], world["owner"], (world["product"], "2"))
     found = {n.channel: n for n in rows(world, "invoice.issued")}
     assert set(found) == {"IN_APP", "EMAIL", "WHATSAPP"}
-    assert (found["EMAIL"].status, found["EMAIL"].address) == ("PENDING", "shop@example.com")
-    assert found["WHATSAPP"].status == "PENDING"
+    assert (found["EMAIL"].status, found["EMAIL"].address) == ("SENT", "shop@example.com")
+    assert found["WHATSAPP"].status == "SENT"
     assert found["IN_APP"].status == "SENT"
     assert found["EMAIL"].data["document"] == {"kind": "INVOICE", "id": str(invoice.pk)}
     assert found["EMAIL"].data["compulsory"] is True

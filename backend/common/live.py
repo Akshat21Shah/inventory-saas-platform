@@ -5,8 +5,9 @@ ticket (``POST /api/v1/auth/ws-ticket``, 30 s) and connects to ``/ws/v1/?ticket=
 carries everything the connection may receive; the socket never touches the database.
 
 Groups (T5, per tenant): staff who may view orders join ``orders.<tenant>``; a shop's logins join
-``shop.<retailer>``. Messages only say what changed (event, order, status): clients refetch
-through the API, which applies the permissions again. Sales staff limited to their own shops get
+``shop.<retailer>``; everyone joins ``user.<tenant>.<user>`` for their notification bell. Messages
+only say what changed (event, order, status): clients refetch through the API, which applies the
+permissions again. Sales staff limited to their own shops get
 only their shops' events.
 """
 
@@ -42,6 +43,11 @@ def shop_group(retailer_id: UUID | str) -> str:
     return f"shop.{retailer_id}"
 
 
+def user_group(tenant_id: UUID | str, user_id: UUID | str) -> str:
+    """One person in one tenant (their notification bell)."""
+    return f"user.{tenant_id}.{user_id}"
+
+
 def issue_ticket(grant: Grant) -> str:
     ticket = secrets.token_urlsafe(32)
     cache.set(f"{_PREFIX}{ticket}", asdict(grant), timeout=TICKET_SECONDS)
@@ -60,9 +66,10 @@ def redeem_ticket(ticket: str) -> Grant | None:
 
 
 def groups_for(grant: Grant) -> list[str]:
+    own = user_group(grant.tenant_id, grant.user_id)
     if grant.retailer_id:
-        return [shop_group(grant.retailer_id)]
-    return [orders_group(grant.tenant_id)] if grant.orders else []
+        return [shop_group(grant.retailer_id), own]
+    return [orders_group(grant.tenant_id), own] if grant.orders else [own]
 
 
 class LiveConsumer(AsyncJsonWebsocketConsumer):  # type: ignore[misc]

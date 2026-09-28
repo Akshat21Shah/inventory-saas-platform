@@ -156,6 +156,7 @@ CELERY_BEAT_SCHEDULE = {
     "idempotency-purge": {"task": "common.idempotency.purge_expired", "schedule": 3600.0},
     "login-records-purge": {"task": "accounts.purge_expired_login_records", "schedule": 3600.0},
     "impersonation-expiry": {"task": "accounts.expire_impersonation_sessions", "schedule": 60.0},
+    "notifications-send-due": {"task": "notifications.send_due", "schedule": 60.0},
 }
 
 CHANNEL_LAYERS = {
@@ -293,6 +294,14 @@ OTP_RESEND_AFTER_SECONDS = 30
 # when a mock is configured without the allowance.
 ALLOW_MOCK_INTEGRATIONS = env.bool("ALLOW_MOCK_INTEGRATIONS", default=False)
 SMS_PROVIDER = env("SMS_PROVIDER", default="mock")
+# Notifications (ADR-048). Email: "django" (Mailpit in dev, in-memory in tests) or "ses".
+EMAIL_PROVIDER = env("EMAIL_PROVIDER", default="django")
+SES_REGION = env("SES_REGION", default="ap-south-1")
+SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
+# WhatsApp: only "mock" until a provider is chosen (TODO(verify), PROGRESS pre-production 8).
+WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
+WHATSAPP_PLATFORM_NUMBER = env("WHATSAPP_PLATFORM_NUMBER", default="")
+WHATSAPP_PLATFORM_NAME = env("WHATSAPP_PLATFORM_NAME", default="Inventory Platform")
 # Object storage (ADR-027): "s3" (AWS in prod, SeaweedFS in dev) or "memory" (tests).
 STORAGE_BACKEND = env("STORAGE_BACKEND", default="s3")
 S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", default="")  # empty = AWS

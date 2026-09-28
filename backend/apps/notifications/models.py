@@ -111,6 +111,7 @@ class NotificationRule(TenantScopedModel):
 class Notification(TenantScopedModel):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Waiting to be sent"
+        SENDING = "SENDING", "Being sent"
         SENT = "SENT", "Sent"
         FAILED = "FAILED", "Failed"
         SKIPPED = "SKIPPED", "Not sent"

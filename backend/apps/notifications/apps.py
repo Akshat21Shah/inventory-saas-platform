@@ -8,6 +8,7 @@ class NotificationsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self) -> None:
+        from apps.notifications import checks, tasks  # noqa: F401  (deploy checks; tasks by name)
         from apps.notifications.consumer import HANDLED_EVENTS
         from common.outbox import register_handler
 
