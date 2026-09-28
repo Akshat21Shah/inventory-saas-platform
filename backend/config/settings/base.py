@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.ledger",
     "apps.orders",
     "apps.billing",
+    "apps.payments",
     "apps.dataio",
     "apps.shop",
 ]

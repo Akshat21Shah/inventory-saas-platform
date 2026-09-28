@@ -1,4 +1,5 @@
-"""Custom migration operations: Row-Level Security and append-only tables (ADR-002)."""
+"""Custom migration operations: Row-Level Security, append-only tables and immutable documents
+(ADR-002, ADR-011)."""
 
 from typing import Any
 
@@ -135,3 +136,73 @@ class MakeAppendOnly(migrations.operations.base.Operation):
 
     def deconstruct(self) -> tuple[str, list[Any], dict[str, Any]]:
         return (self.__class__.__qualname__, [self.model_name], {})
+
+
+IMMUTABLE_FUNCTION = """
+CREATE OR REPLACE FUNCTION common_guard_immutable() RETURNS trigger AS $$
+DECLARE
+    old_row jsonb := to_jsonb(OLD);
+    new_row jsonb := to_jsonb(NEW);
+    col text;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'immutable table %: DELETE is not allowed', TG_TABLE_NAME
+            USING ERRCODE = 'restrict_violation';
+    END IF;
+    FOREACH col IN ARRAY TG_ARGV LOOP
+        old_row := old_row - col;
+        new_row := new_row - col;
+    END LOOP;
+    IF old_row IS DISTINCT FROM new_row THEN
+        RAISE EXCEPTION 'immutable table %: only % may change', TG_TABLE_NAME, TG_ARGV
+            USING ERRCODE = 'restrict_violation';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+"""
+
+
+class MakeImmutableExcept(migrations.operations.base.Operation):
+    """Issued documents (ADR-011): no DELETE, and UPDATE may change only ``columns`` (running
+    payment, PDF and e-invoice columns). ``updated_at`` is always allowed."""
+
+    reversible = True
+
+    def __init__(self, model_name: str, columns: list[str]) -> None:
+        self.model_name = model_name
+        self.columns = columns
+
+    def state_forwards(self, app_label: str, state: ProjectState) -> None:
+        pass
+
+    def database_forwards(
+        self,
+        app_label: str,
+        schema_editor: BaseDatabaseSchemaEditor,
+        from_state: ProjectState,
+        to_state: ProjectState,
+    ) -> None:
+        table = _table(app_label, self.model_name, to_state, schema_editor)
+        allowed = ", ".join(f"'{c}'" for c in [*self.columns, "updated_at"])
+        schema_editor.execute(IMMUTABLE_FUNCTION, params=None)
+        schema_editor.execute(
+            f"CREATE TRIGGER immutable_guard BEFORE UPDATE OR DELETE ON {table} "
+            f"FOR EACH ROW EXECUTE FUNCTION common_guard_immutable({allowed})"
+        )
+
+    def database_backwards(
+        self,
+        app_label: str,
+        schema_editor: BaseDatabaseSchemaEditor,
+        from_state: ProjectState,
+        to_state: ProjectState,
+    ) -> None:
+        table = _table(app_label, self.model_name, from_state, schema_editor)
+        schema_editor.execute(f"DROP TRIGGER IF EXISTS immutable_guard ON {table}")
+
+    def describe(self) -> str:
+        return f"Make {self.model_name} immutable except {', '.join(self.columns)}"
+
+    def deconstruct(self) -> tuple[str, list[Any], dict[str, Any]]:
+        return (self.__class__.__qualname__, [self.model_name, self.columns], {})
