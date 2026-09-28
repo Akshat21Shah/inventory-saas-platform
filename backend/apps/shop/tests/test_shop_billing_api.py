@@ -90,6 +90,7 @@ def test_my_statement_and_account(world):
             "OPENING_DEBIT",
             D("50.00"),
             on=TODAY - timedelta(days=10),
+            due_date=TODAY - timedelta(days=10),
             narration="Old books",
             by=None,
         )

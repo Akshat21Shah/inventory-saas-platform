@@ -331,8 +331,8 @@ def clear_cheque(payment_id: UUID, *, on: date | None = None, by: User | None) -
         payment.status = Payment.Status.CLEARED
         payment.cleared_at = timezone.now()
         payment.save(update_fields=["status", "cleared_at", "updated_at"])
-        if waiting:
-            _credit(payment, on=cleared_on, pay_first=[], by=by)
+        if waiting:  # the payment's own date drives the ledger and statements (2026-09-28)
+            _credit(payment, on=payment.payment_date, pay_first=[], by=by)
             payment.refresh_from_db()
         _emit("payment.cleared", payment)
         return payment
@@ -349,6 +349,9 @@ def bounce_cheque(payment_id: UUID, *, reason: str, by: User | None) -> Payment:
             Payment.Status.RECEIVED,
         ):
             raise InvalidPaymentState()
+        if payment.handover_status == Payment.Handover.WITH_SALESMAN:
+            # A bounced cheque must have come back to the office (2026-09-28).
+            _hand_over(payment, by=by, automatic="cheque bounced")
         if payment.credited:
             _undo_credit(payment, reason=f"Cheque {payment.cheque_number} bounced: {note}", by=by)
         payment.status = Payment.Status.BOUNCED
@@ -379,15 +382,30 @@ def reverse_payment(payment_id: UUID, *, reason: str, by: User | None) -> Paymen
             raise InvalidPaymentState()
         if payment.credited:
             _undo_credit(payment, reason=f"Reversed: {note}", by=by)
+        was_with_salesman = payment.handover_status == Payment.Handover.WITH_SALESMAN
+        if was_with_salesman:  # entered in error: there is no money to hand over (2026-09-28)
+            payment.handover_status = Payment.Handover.NOT_NEEDED
         payment.status = Payment.Status.REVERSED
         payment.reversed_at = timezone.now()
         payment.reversal_reason = note
-        payment.save(update_fields=["status", "reversed_at", "reversal_reason", "updated_at"])
+        payment.save(
+            update_fields=[
+                "status",
+                "reversed_at",
+                "reversal_reason",
+                "handover_status",
+                "updated_at",
+            ]
+        )
         audit.record(
             "payments.reversed",
             target=payment,
             target_repr=payment.number,
-            metadata={"amount": str(payment.amount), "reason": note},
+            metadata={
+                "amount": str(payment.amount),
+                "reason": note,
+                "left_pending_handover": was_with_salesman,
+            },
         )
         _emit("payment.reversed", payment, reason=note)
         return payment
@@ -402,33 +420,38 @@ def hand_over(payment_ids: list[UUID], *, by: User) -> list[Payment]:
         )
         if len(payments) != len(set(payment_ids)):
             raise NotFound()
-        if any(p.handover_status == Payment.Handover.NOT_TRACKED for p in payments):
-            raise InvalidFields({"payments": ["Only collections by sales staff are handed over."]})
-        now = timezone.now()
+        if any(
+            p.handover_status in (Payment.Handover.NOT_TRACKED, Payment.Handover.NOT_NEEDED)
+            for p in payments
+        ):
+            raise InvalidFields(
+                {"payments": ["Only collections still with sales staff can be handed over."]}
+            )
         for payment in payments:
-            if payment.handover_status == Payment.Handover.HANDED_OVER:
-                continue
-            payment.handover_status = Payment.Handover.HANDED_OVER
-            payment.handed_over_at = now
-            payment.handed_over_by = by
-            payment.save(
-                update_fields=[
-                    "handover_status",
-                    "handed_over_at",
-                    "handed_over_by",
-                    "updated_at",
-                ]
-            )
-            audit.record(
-                "payments.handed_over",
-                target=payment,
-                target_repr=payment.number,
-                metadata={
-                    "amount": str(payment.amount),
-                    "collected_by": str(payment.collected_by_id),
-                },
-            )
+            if payment.handover_status == Payment.Handover.WITH_SALESMAN:
+                _hand_over(payment, by=by)
         return payments
+
+
+def _hand_over(payment: Payment, *, by: User | None, automatic: str = "") -> None:
+    """Record that the collection reached the office (audited, naming who recorded it)."""
+    payment.handover_status = Payment.Handover.HANDED_OVER
+    payment.handed_over_at = timezone.now()
+    payment.handed_over_by = by
+    payment.save(
+        update_fields=["handover_status", "handed_over_at", "handed_over_by", "updated_at"]
+    )
+    audit.record(
+        "payments.handed_over",
+        target=payment,
+        target_repr=payment.number,
+        metadata={
+            "amount": str(payment.amount),
+            "collected_by": str(payment.collected_by_id),
+            "recorded_by": str(by.pk) if by else "",
+            "automatic": automatic,
+        },
+    )
 
 
 # --- Allocation by hand (ADR-046 item 10) -----------------------------------------------------

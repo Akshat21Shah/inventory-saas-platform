@@ -2169,6 +2169,7 @@ paths:
           type: string
           enum:
           - HANDED_OVER
+          - NOT_NEEDED
           - NOT_TRACKED
           - WITH_SALESMAN
       - in: query
@@ -9829,6 +9830,18 @@ components:
       properties:
         position:
           $ref: '#/components/schemas/Position'
+        credit_held_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Unused credit the shop has although advances are off (for example
+            a cheque that cleared after its bills were paid); null when advances are
+            on or there is none.
+        financial_year_start:
+          type: string
+          format: date
+          description: Payments dated before this belong to an earlier financial year.
         dues:
           type: array
           items:
@@ -9838,7 +9851,9 @@ components:
           items:
             $ref: '#/components/schemas/MoneySource'
       required:
+      - credit_held_while_advances_off
       - dues
+      - financial_year_start
       - position
       - unused_money
     EInvoiceStatusEnum:
@@ -10474,11 +10489,13 @@ components:
       - NOT_TRACKED
       - WITH_SALESMAN
       - HANDED_OVER
+      - NOT_NEEDED
       type: string
       description: |-
         * `NOT_TRACKED` - Not tracked
         * `WITH_SALESMAN` - With salesman
         * `HANDED_OVER` - Handed over
+        * `NOT_NEEDED` - Nothing to hand over
     History:
       type: object
       properties:
@@ -11391,6 +11408,9 @@ components:
         due_date:
           type: string
           format: date
+        bill_number:
+          type: string
+          maxLength: 40
         narration:
           type: string
           maxLength: 300
@@ -11427,6 +11447,17 @@ components:
         date:
           type: string
           format: date
+          description: 'For an old bill: the original bill date.'
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          description: Debits only; the shop's payment terms after the date if empty.
+        bill_number:
+          type: string
+          default: ''
+          description: Old bills only.
+          maxLength: 40
         narration:
           type: string
           minLength: 1
@@ -13795,6 +13826,18 @@ components:
           readOnly: true
         receipt_pdf_status:
           $ref: '#/components/schemas/PdfStatusEnum'
+        dated_in_previous_financial_year:
+          type: boolean
+          description: |-
+            The receipt is numbered in the year it was recorded; the payment is accounted on its
+            own date, which here falls in an earlier financial year (2026-09-28).
+          readOnly: true
+        held_as_credit_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
         cheque_date:
           type: string
           format: date
@@ -13834,8 +13877,10 @@ components:
       - amount
       - collected_by_name
       - credit_timing
+      - dated_in_previous_financial_year
       - handed_over_by_name
       - handover_status
+      - held_as_credit_while_advances_off
       - id
       - mode
       - number
@@ -13912,11 +13957,25 @@ components:
           readOnly: true
         receipt_pdf_status:
           $ref: '#/components/schemas/PdfStatusEnum'
+        dated_in_previous_financial_year:
+          type: boolean
+          description: |-
+            The receipt is numbered in the year it was recorded; the payment is accounted on its
+            own date, which here falls in an earlier financial year (2026-09-28).
+          readOnly: true
+        held_as_credit_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
       required:
       - amount
       - collected_by_name
       - credit_timing
+      - dated_in_previous_financial_year
       - handover_status
+      - held_as_credit_while_advances_off
       - id
       - mode
       - number
@@ -17530,6 +17589,11 @@ components:
           $ref: '#/components/schemas/ShopRef'
         position:
           $ref: '#/components/schemas/Position'
+        credit_held_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
         credit_limit:
           type: string
           format: decimal
@@ -17563,6 +17627,7 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
       required:
       - closing_balance
+      - credit_held_while_advances_off
       - credit_limit
       - date_from
       - date_to

@@ -58,7 +58,7 @@ def test_receivables_ageing_and_summary(world):
         str(world["shop"].pk),
         "359.00",
         "100.00",
-        40,
+        10,  # the old bill (40 days ago) was due after the 30-day terms
     )
     assert page["totals"]["owed"] == "359.00" and page["count"] == 1
     assert c.get("/api/v1/receivables/?search=nobody").json()["results"] == []

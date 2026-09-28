@@ -219,6 +219,13 @@
      - Sales staff limited to their own shops see only those shops' invoices, credit notes, payments, receivables and statements; other shops' are "not found".
      - Demo billing in `make seed`: opening balances (one 45 days overdue, one advance), a bank transfer paying an invoice, a UPI part payment, a cheque credited on receipt, a salesman's cash collection waiting for handover, and a return credit note. The worker prints every PDF.
      - Tests: 24 API tests (roles, visibility, idempotent replays, PDF links, filters) plus a cross-tenant test for every new route (38). The seed test checks the demo billing and reconciles the ledger. API client regenerated; the new enums have stable names.
+  11b. Checkpoint rules (ADR-047) — **done**:
+     - Old bills: an opening balance may be several unpaid old bills per shop, each with its bill date, a due date (the shop's terms after the bill date if empty) and an optional bill number (once per shop); they age and fall overdue like invoices. The import has columns shop, amount, bill number, bill date (required), due date, note. An opening advance stays once per shop.
+     - Payment dates: the payment's own date is the ledger entry date, also for a cheque credited when it clears; payments dated in an earlier financial year than recorded are flagged (`dated_in_previous_financial_year`), and the dues response gives the financial year's start for the form's warning. CA question 21.
+     - Credit kept although advances are off is shown on the payment and the shop's account.
+     - Handover: a collection reversed as an error becomes "Nothing to hand over" and leaves the report; bouncing a cheque still with the salesman records its handover first (audited, naming the user).
+     - Tests: 5 new (payment date, earlier year, advances-off notice, both handover rules) plus updated ledger, import and credit-control tests.
+  11c. Refunds from a shop's credit (`RFD` series, voucher PDF, reconciliation test)
   12–15. Frontend: invoices and credit notes; payments, receivables and ledger; credit holds and settings; shop invoices, statement, outstanding
   16. E2E acceptance (both invoice timings), responsive check, phone test — **final review**
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.

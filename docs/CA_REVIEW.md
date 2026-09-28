@@ -313,6 +313,14 @@ Credit notes show the same details plus the invoice they correct (number and dat
   charged on them.
 - Salesmen may record collections in the field; the shop is credited and gets a receipt at once,
   and the office later confirms the money was handed over.
+- A receipt is numbered in the financial year in which it is recorded, but the payment is dated
+  and accounted on the day it was actually received. A payment received on 30 March and recorded
+  on 2 April gets a number in the new year's series (`RCT/27-28/…`) and appears in the shop's
+  account on 30 March; staff see a warning that it belongs to the earlier year.
+- Old bills from before the software carry their original bill date and due date, so they age
+  and become overdue like invoices.
+- A shop's credit balance can be paid back by a numbered refund voucher (`RFD/26-27/000001`),
+  never more than the credit the shop has.
 
 ---
 
@@ -352,3 +360,5 @@ Please answer yes or no, with a note where the answer is no.
 | 18 | For shops without a GSTIN, is the same invoice (name, address, state, no GSTIN) acceptable? | | |
 | 19 | Is a plain payment receipt, without GST, acceptable for advances received from shops for goods? | | |
 | 20 | Is a minimum of 4 HSN digits on invoices acceptable as the default (distributors can require 6 or 8)? | | |
+| 21 | Receipt numbered in the year it is recorded, but dated and accounted on the actual payment date — acceptable? | | |
+| 22 | Is a refund voucher in its own series (`RFD/26-27/000001`), paying back a shop's credit balance by cash, bank transfer or UPI, acceptable? | | |

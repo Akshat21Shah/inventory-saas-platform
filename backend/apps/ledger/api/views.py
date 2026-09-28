@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
+from apps.billing.tax import fy_start
 from apps.ledger import selectors
 from apps.ledger import services as ledger
 from apps.ledger.api import serializers as s
@@ -197,6 +198,7 @@ def statement_for(shop: Retailer, request: Request) -> dict[str, Any]:
     return {
         "retailer": shop,
         "position": selectors.outstanding(shop.pk),
+        "credit_held_while_advances_off": selectors.credit_held_while_advances_off(shop.pk),
         "credit_limit": shop.credit_limit,
         "date_from": found.date_from,
         "date_to": found.date_to,
@@ -219,6 +221,8 @@ class RetailerDuesView(Guarded):
         shop = _shop(request, retailer_id)
         body = {
             "position": selectors.outstanding(shop.pk),
+            "credit_held_while_advances_off": selectors.credit_held_while_advances_off(shop.pk),
+            "financial_year_start": fy_start(today_ist()),
             "dues": selectors.open_dues([shop.pk]),
             "unused_money": selectors.open_money(shop.pk),
         }
@@ -250,5 +254,7 @@ class AdjustmentsView(Guarded):
             on=v["date"],
             narration=v["narration"],
             by=_user(request),
+            due_date=v["due_date"],
+            bill_number=v["bill_number"],
         )
         return Response(s.LedgerAdjustmentSerializer(adjustment).data, status=201)

@@ -370,3 +370,16 @@ def receivable_rows(
             }
         )
     return used, out
+
+
+def credit_held_while_advances_off(retailer_id: UUID) -> Decimal | None:
+    """Unused credit a shop holds although ⚙ payments.hold_advances is off (a cheque that cleared
+    after the bills were paid, credit-note excess): shown to staff as a notice (2026-09-28)."""
+    if get_setting("payments.hold_advances"):
+        return None
+    credit = (
+        RetailerAccount.objects.filter(retailer_id=retailer_id)
+        .values_list("unapplied_credit", flat=True)
+        .first()
+    )
+    return credit if credit else None

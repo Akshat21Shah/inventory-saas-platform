@@ -34,6 +34,7 @@ class Payment(TenantScopedModel):
         NOT_TRACKED = "NOT_TRACKED", "Not tracked"  # recorded in the office (payments.record)
         WITH_SALESMAN = "WITH_SALESMAN", "With salesman"
         HANDED_OVER = "HANDED_OVER", "Handed over"
+        NOT_NEEDED = "NOT_NEEDED", "Nothing to hand over"  # reversed as entered in error
 
     number = models.CharField(max_length=16)  # receipt number, RCT/26-27/000001
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")

@@ -87,6 +87,7 @@ class StatementLineSerializer(serializers.Serializer[Any]):
 class StatementSerializer(serializers.Serializer[Any]):
     retailer = ShopRefSerializer()
     position = PositionSerializer()
+    credit_held_while_advances_off = money(allow_null=True)
     credit_limit = money(allow_null=True)
     date_from = serializers.DateField()
     date_to = serializers.DateField()
@@ -118,6 +119,14 @@ class MoneySourceSerializer(serializers.Serializer[Any]):
 
 class DuesSerializer(serializers.Serializer[Any]):
     position = PositionSerializer()
+    credit_held_while_advances_off = money(
+        allow_null=True,
+        help_text="Unused credit the shop has although advances are off (for example a cheque "
+        "that cleared after its bills were paid); null when advances are on or there is none.",
+    )
+    financial_year_start = serializers.DateField(
+        help_text="Payments dated before this belong to an earlier financial year."
+    )
     dues = DueSerializer(many=True)
     unused_money = MoneySourceSerializer(many=True)
 
@@ -126,7 +135,16 @@ class LedgerAdjustmentCreateSerializer(serializers.Serializer[Any]):
     retailer = serializers.UUIDField()
     kind = serializers.ChoiceField(choices=LedgerAdjustment.Kind.choices)
     amount = money(min_value=0)
-    date = serializers.DateField()
+    date = serializers.DateField(help_text="For an old bill: the original bill date.")
+    due_date = serializers.DateField(
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Debits only; the shop's payment terms after the date if empty.",
+    )
+    bill_number = serializers.CharField(
+        max_length=40, required=False, allow_blank=True, default="", help_text="Old bills only."
+    )
     narration = serializers.CharField(max_length=300)
 
 
@@ -146,6 +164,7 @@ class LedgerAdjustmentSerializer(serializers.ModelSerializer[LedgerAdjustment]):
             "amount",
             "adjustment_date",
             "due_date",
+            "bill_number",
             "narration",
             "balance_due",
             "unapplied_amount",

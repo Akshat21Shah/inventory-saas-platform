@@ -368,6 +368,11 @@ def financial_year(day: date) -> str:
     return f"{start}-{str(start + 1)[-2:]}"
 
 
+def fy_start(day: date) -> date:
+    """1 April of the financial year an IST date falls in."""
+    return date(day.year if day.month >= 4 else day.year - 1, 4, 1)
+
+
 def fy_short(fy: str) -> str:
     """ "2026-27" → "26-27" (the part printed in document numbers)."""
     return fy[2:]

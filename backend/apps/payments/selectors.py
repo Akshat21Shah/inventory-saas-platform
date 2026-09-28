@@ -22,8 +22,8 @@ class PendingHandover:
 
 
 def collections_pending_handover() -> list[PendingHandover]:
-    """Per salesman: collections still "With salesman" (count, amount, oldest payment date).
-    Reversed and bounced collections count too: the cash or cheque is still with them."""
+    """Per salesman: money actually with them (count, amount, oldest payment date). Collections
+    reversed as errors leave the list; bounced cheques were handed over first (2026-09-28)."""
     rows = (
         Payment.objects.filter(handover_status=Payment.Handover.WITH_SALESMAN)
         .values("collected_by", "collected_by__full_name")

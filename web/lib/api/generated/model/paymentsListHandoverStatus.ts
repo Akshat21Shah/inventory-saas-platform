@@ -11,6 +11,7 @@ export type PaymentsListHandoverStatus = typeof PaymentsListHandoverStatus[keyof
 
 export const PaymentsListHandoverStatus = {
   HANDED_OVER: 'HANDED_OVER',
+  NOT_NEEDED: 'NOT_NEEDED',
   NOT_TRACKED: 'NOT_TRACKED',
   WITH_SALESMAN: 'WITH_SALESMAN',
 } as const;

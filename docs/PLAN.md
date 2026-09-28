@@ -274,7 +274,7 @@ Legend:
 ### 2.12 `payments`
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **Payment** (tenant) | `number` (receipt no.), `retailer` FK, `amount` Money, `source` (OFFLINE, GATEWAY), `mode` (CASH, CHEQUE, BANK_TRANSFER, UPI_OFFLINE, ONLINE), `status` (PENDING_CLEARANCE, RECEIVED, CLEARED, CAPTURED, REVERSED, BOUNCED), `credit_timing` (ON_RECEIPT, ON_CLEARANCE; snapshot for cheques), `cleared_at` null, `payment_date` date, `reference_no`, `cheque_number`, `cheque_date`, `bank_name`, `collected_by` FK null, `handover_status` (NOT_TRACKED, WITH_SALESMAN, HANDED_OVER; ADR-046), `handed_over_at`, `handed_over_by`, `notes`, `allocated_amount`, `unapplied_amount`, `reversed_at`, `reversal_reason`, `gateway_payment_id` null, `receipt_pdf_key` | unique `(t, number)`; check `amount>0`, `unapplied_amount>=0`; unique `(t, gateway_payment_id)` where not null; `(t, retailer, payment_date)` |
+| **Payment** (tenant) | `number` (receipt no.), `retailer` FK, `amount` Money, `source` (OFFLINE, GATEWAY), `mode` (CASH, CHEQUE, BANK_TRANSFER, UPI_OFFLINE, ONLINE), `status` (PENDING_CLEARANCE, RECEIVED, CLEARED, CAPTURED, REVERSED, BOUNCED), `credit_timing` (ON_RECEIPT, ON_CLEARANCE; snapshot for cheques), `cleared_at` null, `payment_date` date, `reference_no`, `cheque_number`, `cheque_date`, `bank_name`, `collected_by` FK null, `handover_status` (NOT_TRACKED, WITH_SALESMAN, HANDED_OVER, NOT_NEEDED; ADR-046/047), `handed_over_at`, `handed_over_by`, `notes`, `allocated_amount`, `unapplied_amount`, `reversed_at`, `reversal_reason`, `gateway_payment_id` null, `receipt_pdf_key` | unique `(t, number)`; check `amount>0`, `unapplied_amount>=0`; unique `(t, gateway_payment_id)` where not null; `(t, retailer, payment_date)` |
 | ~~PaymentAllocation~~ | replaced by `ledger.Allocation` (§2.11) | |
 | **GatewayConfig** (tenant, Phase 7) | `provider` (RAZORPAY), `mode` (TEST, LIVE), `key_id`, `key_secret`, `webhook_secret` (encrypted), `is_active`, `verified_at` | unique `(t, provider)` |
 | **PaymentIntent** (tenant, Phase 7) | `retailer` FK, `purpose` (INVOICE, OUTSTANDING, CUSTOM), `invoice` FK null, `amount` Money, `provider`, `provider_order_id` unique, `status` (CREATED, ATTEMPTED, PAID, FAILED, EXPIRED), `payment` FK null, `expires_at` | `(t, status, created_at)` |
@@ -660,7 +660,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `receivables` | GET | `ledger.view` | per-retailer outstanding, overdue, last payment |
 | `receivables/ageing` | GET | `ledger.view` | 0–30 / 31–60 / 61–90 / 90+ |
 | `retailers/{id}/ledger` | GET | `ledger.view` | statement with running balance (export) |
-| `ledger/adjustments` | POST 🔑 | `ledger.adjust` | opening balance / debit / credit adjustment with narration (audited) |
+| `ledger/adjustments` | POST 🔑 | `ledger.adjust` | old bill (bill date, due date, bill number; several per shop) / opening advance / debit / credit adjustment with narration (audited; ADR-047) |
 | `payments` | GET, POST 🔑 | view: `payments.view`; create: `payments.record` | record an offline payment with FIFO or manual allocation |
 | `payments/{id}` | GET | `payments.view` | detail + allocations |
 | `payments/{id}/allocate` | POST | `payments.record` | allocate unapplied amount to invoices |

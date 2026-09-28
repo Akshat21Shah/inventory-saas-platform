@@ -10,6 +10,7 @@
  * * `NOT_TRACKED` - Not tracked
  * * `WITH_SALESMAN` - With salesman
  * * `HANDED_OVER` - Handed over
+ * * `NOT_NEEDED` - Nothing to hand over
  */
 export type HandoverStatusEnum = typeof HandoverStatusEnum[keyof typeof HandoverStatusEnum];
 
@@ -18,4 +19,5 @@ export const HandoverStatusEnum = {
   NOT_TRACKED: 'NOT_TRACKED',
   WITH_SALESMAN: 'WITH_SALESMAN',
   HANDED_OVER: 'HANDED_OVER',
+  NOT_NEEDED: 'NOT_NEEDED',
 } as const;

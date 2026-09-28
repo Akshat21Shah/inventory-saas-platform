@@ -113,7 +113,6 @@ _ENTRY_FOR = {
     LedgerAdjustment.Kind.DEBIT: EntryType.DEBIT_ADJUSTMENT,
     LedgerAdjustment.Kind.CREDIT: EntryType.CREDIT_ADJUSTMENT,
 }
-OPENING = (LedgerAdjustment.Kind.OPENING_DEBIT, LedgerAdjustment.Kind.OPENING_CREDIT)
 
 
 def _create_adjustment(
@@ -124,6 +123,8 @@ def _create_adjustment(
     on: date,
     narration: str,
     by: User | None,
+    due_date: date | None = None,
+    bill_number: str = "",
 ) -> LedgerAdjustment:
     from apps.ledger import allocation
 
@@ -131,21 +132,34 @@ def _create_adjustment(
         raise InvalidFields({"amount": ["Enter an amount above zero, in rupees and paise."]})
     if not narration.strip():
         raise InvalidFields({"narration": ["Say what this adjustment is for."]})
+    debit = kind in (LedgerAdjustment.Kind.OPENING_DEBIT, LedgerAdjustment.Kind.DEBIT)
+    if debit and due_date is not None and due_date < on:
+        raise InvalidFields({"due_date": ["The due date can't be before the bill date."]})
+    bill_number = bill_number.strip()[:40] if kind == LedgerAdjustment.Kind.OPENING_DEBIT else ""
     account = lock_account(retailer.pk)  # L1
     if (
-        kind in OPENING
-        and LedgerEntry.objects.filter(
-            retailer=retailer, entry_type=EntryType.OPENING_BALANCE
+        kind == LedgerAdjustment.Kind.OPENING_CREDIT
+        and LedgerAdjustment.objects.filter(
+            retailer=retailer, kind=LedgerAdjustment.Kind.OPENING_CREDIT
         ).exists()
     ):
-        raise InvalidFields({"kind": ["This shop already has an opening balance."]})
+        raise InvalidFields({"kind": ["This shop already has an opening advance."]})
+    if (
+        bill_number
+        and LedgerAdjustment.objects.filter(
+            retailer=retailer, kind=LedgerAdjustment.Kind.OPENING_DEBIT, bill_number=bill_number
+        ).exists()
+    ):
+        raise InvalidFields({"bill_number": ["This old bill is already in the shop's account."]})
     adjustment = LedgerAdjustment(
         retailer=retailer,
         kind=kind,
         amount=amount,
         adjustment_date=on,
-        # Opening dues are due at once; a debit adjustment follows the shop's payment terms.
-        due_date=on if kind in OPENING else due_after(on, retailer.payment_terms_days),
+        # Old bills and debits fall due after the shop's payment terms unless a date is given
+        # (2026-09-28); credits have no due date of their own.
+        due_date=(due_date or due_after(on, retailer.payment_terms_days)) if debit else on,
+        bill_number=bill_number,
         narration=narration.strip()[:300],
         created_by=by,
     )
@@ -154,7 +168,8 @@ def _create_adjustment(
     else:
         adjustment.unapplied_amount = amount
     adjustment.save()
-    ref = Reference("ADJUSTMENT", adjustment.pk, adjustment.get_kind_display())
+    label = f"{adjustment.get_kind_display()} {bill_number}".strip()
+    ref = Reference("ADJUSTMENT", adjustment.pk, label[:40])
     if adjustment.is_debit:
         post(
             account,
@@ -182,7 +197,14 @@ def _create_adjustment(
         "ledger.adjustment_posted",
         target=adjustment,
         target_repr=f"{retailer.code} {retailer.shop_name}",
-        metadata={"kind": kind, "amount": str(amount), "narration": adjustment.narration},
+        metadata={
+            "kind": kind,
+            "amount": str(amount),
+            "date": str(on),
+            "due_date": str(adjustment.due_date),
+            "bill_number": bill_number,
+            "narration": adjustment.narration,
+        },
     )
     return adjustment
 
@@ -196,12 +218,25 @@ def post_adjustment(
     on: date,
     narration: str,
     by: User | None,
+    due_date: date | None = None,
+    bill_number: str = "",
 ) -> LedgerAdjustment:
-    """An opening balance (once per shop) or a manual debit/credit, with a narration."""
+    """An opening bill (several per shop, each with its bill date and due date), an opening
+    advance (once per shop), or a manual debit/credit, with a narration. A debit's due date
+    defaults to its date plus the shop's payment terms."""
     if kind not in LedgerAdjustment.Kind.values:
         raise InvalidFields({"kind": ["Choose the kind of adjustment."]})
     with transaction.atomic():
         retailer = Retailer.objects.filter(pk=retailer_id, deleted_at__isnull=True).first()
         if retailer is None:
             raise NotFound()
-        return _create_adjustment(retailer, kind, amount, on=on, narration=narration, by=by)
+        return _create_adjustment(
+            retailer,
+            kind,
+            amount,
+            on=on,
+            narration=narration,
+            by=by,
+            due_date=due_date,
+            bill_number=bill_number,
+        )

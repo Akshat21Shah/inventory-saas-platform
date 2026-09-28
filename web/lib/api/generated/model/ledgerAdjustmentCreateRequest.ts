@@ -12,7 +12,18 @@ export interface LedgerAdjustmentCreateRequest {
   kind: LedgerAdjustmentKindEnum;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   amount: string;
+  /** For an old bill: the original bill date. */
   date: string;
+  /**
+     * Debits only; the shop's payment terms after the date if empty.
+     * @nullable
+     */
+  due_date?: string | null;
+  /**
+     * Old bills only.
+     * @maxLength 40
+     */
+  bill_number?: string;
   /**
      * @minLength 1
      * @maxLength 300

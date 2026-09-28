@@ -15,6 +15,8 @@ export interface LedgerAdjustment {
   amount: string;
   adjustment_date: string;
   due_date: string;
+  /** @maxLength 40 */
+  bill_number?: string;
   /** @maxLength 300 */
   narration: string;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */

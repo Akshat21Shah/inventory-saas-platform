@@ -37,6 +37,16 @@ export interface PaymentDetail {
   handover_status: HandoverStatusEnum;
   readonly collected_by_name: string;
   receipt_pdf_status: PdfStatusEnum;
+  /**
+     * The receipt is numbered in the year it was recorded; the payment is accounted on its
+     * own date, which here falls in an earlier financial year (2026-09-28).
+     */
+  readonly dated_in_previous_financial_year: boolean;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  readonly held_as_credit_while_advances_off: string | null;
   /** @nullable */
   cheque_date?: string | null;
   /** @maxLength 120 */

@@ -16,6 +16,11 @@ export interface Statement {
      * @nullable
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
      */
+  credit_held_while_advances_off: string | null;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
   credit_limit: string | null;
   date_from: string;
   date_to: string;

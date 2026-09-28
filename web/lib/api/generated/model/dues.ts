@@ -11,6 +11,14 @@ import type { Position } from './position';
 
 export interface Dues {
   position: Position;
+  /**
+     * Unused credit the shop has although advances are off (for example a cheque that cleared after its bills were paid); null when advances are on or there is none.
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  credit_held_while_advances_off: string | null;
+  /** Payments dated before this belong to an earlier financial year. */
+  financial_year_start: string;
   dues: Due[];
   unused_money: MoneySource[];
 }

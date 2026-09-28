@@ -1,13 +1,18 @@
 """Payments, collections and allocations (PLAN §3.10, ADR-046 items 6 and 10)."""
 
+from decimal import Decimal
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.billing.api.serializers import UsedForSerializer
 from apps.billing.models import PdfStatus
+from apps.billing.tax import fy_start
 from apps.payments.models import Payment
+from apps.platform.selectors import get_setting
 from apps.pricing.api.serializers import ShopRefSerializer, money
+from common.dates import to_ist
 
 
 class PaymentRowSerializer(serializers.ModelSerializer[Payment]):
@@ -20,6 +25,8 @@ class PaymentRowSerializer(serializers.ModelSerializer[Payment]):
     unapplied_amount = money(help_text="Credited but not yet matched to dues.")
     collected_by_name = serializers.SerializerMethodField()
     receipt_pdf_status = serializers.ChoiceField(choices=PdfStatus.choices)
+    dated_in_previous_financial_year = serializers.SerializerMethodField()
+    held_as_credit_while_advances_off = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -39,7 +46,21 @@ class PaymentRowSerializer(serializers.ModelSerializer[Payment]):
             "handover_status",
             "collected_by_name",
             "receipt_pdf_status",
+            "dated_in_previous_financial_year",
+            "held_as_credit_while_advances_off",
         ]
+
+    def get_dated_in_previous_financial_year(self, payment: Payment) -> bool:
+        """The receipt is numbered in the year it was recorded; the payment is accounted on its
+        own date, which here falls in an earlier financial year (2026-09-28)."""
+        return fy_start(payment.payment_date) < fy_start(to_ist(payment.created_at).date())
+
+    @extend_schema_field(money(allow_null=True))
+    def get_held_as_credit_while_advances_off(self, payment: Payment) -> str | None:
+        """Money of this payment kept as credit although advances are off."""
+        if payment.unapplied_amount <= 0 or get_setting("payments.hold_advances"):
+            return None
+        return f"{Decimal(payment.unapplied_amount):.2f}"
 
     def get_collected_by_name(self, payment: Payment) -> str:
         return payment.collected_by.full_name if payment.collected_by else ""

@@ -63,13 +63,14 @@ def _limit(world, limit):
 
 
 def _opening_debt(world, amount="100.00", days_ago=20):
-    """An opening balance is due at once: ``days_ago`` days overdue."""
+    """An old bill that was due ``days_ago`` days ago."""
     with tenant_context(world["t"].pk):
         ledger.post_adjustment(
             world["shop"].pk,
             "OPENING_DEBIT",
             D(amount),
             on=TODAY - timedelta(days=days_ago),
+            due_date=TODAY - timedelta(days=days_ago),
             narration="Old books",
             by=None,
         )
@@ -203,14 +204,15 @@ class TestReceivables:
         shop = world["shop"]
         with tenant_context(world["t"].pk):
             for kind, amount, days_ago in (
-                ("OPENING_DEBIT", "100.00", 95),  # due at once: 95 days late
+                ("OPENING_DEBIT", "100.00", 95),  # due on its bill date: 95 days late
                 ("DEBIT", "400.00", 70),  # due 40 days ago
                 ("DEBIT", "200.00", 45),  # due 15 days ago
                 ("DEBIT", "300.00", 10),  # due in 20 days
             ):
+                on = TODAY - timedelta(days=days_ago)
                 ledger.post_adjustment(
-                    shop.pk, kind, D(amount), on=TODAY - timedelta(days=days_ago),
-                    narration=kind, by=None,
+                    shop.pk, kind, D(amount), on=on, narration=kind, by=None,
+                    due_date=on if kind == "OPENING_DEBIT" else None,
                 )  # fmt: skip
             other = make_shop(world["t"], "9876500066")
             ledger.post_adjustment(

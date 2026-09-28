@@ -1,6 +1,9 @@
-"""Opening balances import (PLAN task 5.5, ADR-046): what each shop owed (or had paid in advance)
-when the distributor started using the platform. One row per shop, matched by mobile number or
-shop code; each becomes the shop's opening balance in its account (once per shop, audited)."""
+"""Opening balances import (PLAN task 5.5, ADR-046, ADR-047): what each shop owed (or had paid in
+advance) when the distributor started using the platform. Shops are matched by mobile number or
+shop code. A shop may have several unpaid old bills, one row each, with the bill's date and due
+date (the shop's payment terms after the bill date if empty), so they age and fall overdue like
+invoices; a bill number already imported for the shop is refused. An advance (a minus amount) is
+once per shop. Every row is audited."""
 
 from collections.abc import Iterable
 from datetime import date
@@ -13,7 +16,7 @@ from apps.accounts.models import User
 from apps.dataio.kinds.base import Column, RowPlan
 from apps.dataio.parsing import Sheet, parse_date, parse_decimal
 from apps.ledger import services as ledger
-from apps.ledger.models import EntryType, LedgerEntry
+from apps.ledger.models import LedgerAdjustment
 from apps.retailers.models import Retailer
 from common.dates import today_ist
 from common.phone import normalize_indian_mobile
@@ -37,12 +40,29 @@ COLUMNS: tuple[Column, ...] = (
         "12500.00",
     ),
     C(
-        "as_of",
-        "As of date",
-        ("date", "balance date"),
+        "bill_number",
+        "Bill number",
+        ("invoice number", "bill no", "invoice no", "reference"),
         False,
-        "The date of the balance (DD-MM-YYYY). Today if empty.",
-        "31-03-2026",
+        "The old bill's number, if known. Each bill number is imported once per shop.",
+        "SD/25-26/0412",
+    ),
+    C(
+        "bill_date",
+        "Bill date",
+        ("as of date", "date", "balance date", "invoice date"),
+        True,
+        "The date of the old bill, or of the advance (DD-MM-YYYY).",
+        "15-02-2026",
+    ),
+    C(
+        "due_date",
+        "Due date",
+        ("due", "due on", "payment due"),
+        False,
+        "When the bill was due (DD-MM-YYYY). The shop's payment terms after the bill date if "
+        "empty.",
+        "17-03-2026",
     ),
     C(
         "note",
@@ -54,6 +74,21 @@ COLUMNS: tuple[Column, ...] = (
     ),
 )
 LABEL = {c.name: c.label for c in COLUMNS}
+
+
+def _date(plan: RowPlan, v: dict[str, str], field: str, *, required: bool) -> date | None:
+    if not v.get(field):
+        if required:
+            plan.error(LABEL[field], "Enter the date, like 15-02-2026.")
+        return None
+    try:
+        day = parse_date(v[field])
+    except ValueError:
+        plan.error(LABEL[field], "Use a date like 15-02-2026.")
+        return None
+    if field == "bill_date" and day > today_ist():
+        plan.error(LABEL[field], "The date can't be in the future.")
+    return day
 
 
 def _shops() -> tuple[dict[str, Retailer], dict[str, Retailer]]:
@@ -91,12 +126,18 @@ class OpeningBalancesKind:
 
     def plan(self, sheet: Sheet, mode: str, by: User) -> list[RowPlan]:
         by_mobile, by_code = _shops()
-        already = set(
-            LedgerEntry.objects.filter(entry_type=EntryType.OPENING_BALANCE).values_list(
+        advances = set(
+            LedgerAdjustment.objects.filter(kind=LedgerAdjustment.Kind.OPENING_CREDIT).values_list(
                 "retailer_id", flat=True
             )
         )
-        seen: dict[UUID, int] = {}
+        bills = set(
+            LedgerAdjustment.objects.filter(kind=LedgerAdjustment.Kind.OPENING_DEBIT)
+            .exclude(bill_number="")
+            .values_list("retailer_id", "bill_number")
+        )
+        seen_advance: dict[UUID, int] = {}
+        seen_bill: dict[tuple[UUID, str], int] = {}
         plans: list[RowPlan] = []
         for row in sheet.rows:
             v = row.values
@@ -114,45 +155,61 @@ class OpeningBalancesKind:
                     plan.action = "UNCHANGED"
             except ValueError:
                 plan.error(LABEL["amount"], "Enter the amount in rupees and paise, e.g. 12500.00.")
-            as_of = today_ist()
-            if v.get("as_of"):
-                try:
-                    as_of = parse_date(v["as_of"])
-                except ValueError:
-                    plan.error(LABEL["as_of"], "Use a date like 31-03-2026.")
-                if as_of > today_ist():
-                    plan.error(LABEL["as_of"], "The date can't be in the future.")
+            bill_date = _date(plan, v, "bill_date", required=True)
+            due = _date(plan, v, "due_date", required=False)
+            if bill_date and due and due < bill_date:
+                plan.error(LABEL["due_date"], "The due date can't be before the bill date.")
+            number = v.get("bill_number", "").strip()[:40]
             if shop is None or amount is None or not plan.ok or plan.action == "UNCHANGED":
                 continue
-            plan.key = shop.code
-            if shop.pk in already:
-                plan.error(LABEL["shop"], "This shop already has an opening balance.")
-                continue
-            if shop.pk in seen:
-                plan.error(LABEL["shop"], f"This shop is also in row {seen[shop.pk]}.")
-                continue
-            seen[shop.pk] = row.number
+            plan.key = f"{shop.code} {number}".strip()
+            if amount < 0:
+                if shop.pk in advances:
+                    plan.error(LABEL["shop"], "This shop already has an opening advance.")
+                    continue
+                if shop.pk in seen_advance:
+                    plan.error(
+                        LABEL["amount"],
+                        f"This shop's advance is also in row {seen_advance[shop.pk]}.",
+                    )
+                    continue
+                seen_advance[shop.pk] = row.number
+            elif number:
+                if (shop.pk, number) in bills:
+                    plan.error(LABEL["bill_number"], "This bill is already in the shop's account.")
+                    continue
+                if (shop.pk, number) in seen_bill:
+                    plan.error(
+                        LABEL["bill_number"],
+                        f"This bill is also in row {seen_bill[(shop.pk, number)]}.",
+                    )
+                    continue
+                seen_bill[(shop.pk, number)] = row.number
             plan.action = "NEW"
             plan.target_id = shop.pk
-            plan.changes = {"Opening balance": ["", f"{amount:.2f}"]}
+            what = "Opening advance" if amount < 0 else f"Old bill {number}".strip()
+            plan.changes = {what: ["", f"{abs(amount):.2f}"]}
             plan.data = {
                 "retailer_id": shop.pk,
                 "amount": amount,
-                "as_of": as_of,
+                "bill_date": bill_date,
+                "due_date": due,
+                "bill_number": number,
                 "note": v.get("note", "").strip() or "Opening balance (import)",
             }
         return plans
 
     def apply(self, row: RowPlan, *, by: User, cache: dict[str, Any]) -> None:
         amount = row.data["amount"]
-        as_of: date = row.data["as_of"]
         ledger.post_adjustment(
             row.data["retailer_id"],
             "OPENING_DEBIT" if amount > 0 else "OPENING_CREDIT",
             abs(amount),
-            on=as_of,
+            on=row.data["bill_date"],
             narration=row.data["note"],
             by=by,
+            due_date=row.data["due_date"],
+            bill_number=row.data["bill_number"],
         )
 
     def export_rows(self) -> Iterable[dict[str, str]]:

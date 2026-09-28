@@ -114,8 +114,9 @@ class LedgerAdjustment(TenantScopedModel):
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     kind = models.CharField(max_length=14, choices=Kind.choices)
     amount = MoneyField()
-    adjustment_date = models.DateField()
+    adjustment_date = models.DateField()  # for an opening bill: the original bill date
     due_date = models.DateField()  # debits age and fall due like invoices
+    bill_number = models.CharField(max_length=40, blank=True, default="")  # old bill, if known
     narration = models.CharField(max_length=300)
     # Running: debits' balance still owed; credits' credit still unused.
     balance_due = MoneyField(default=0)
@@ -133,6 +134,14 @@ class LedgerAdjustment(TenantScopedModel):
                 & Q(unapplied_amount__gte=0)
                 & Q(unapplied_amount__lte=F("amount")),
                 name="adjustment_running",
+            ),
+            models.CheckConstraint(
+                condition=Q(due_date__gte=F("adjustment_date")), name="adjustment_due_after_date"
+            ),
+            models.UniqueConstraint(
+                fields=["tenant", "retailer", "bill_number"],
+                condition=Q(kind="OPENING_DEBIT") & ~Q(bill_number=""),
+                name="uniq_opening_bill",
             ),
         ]
         indexes = [
