@@ -103,3 +103,25 @@ def set_prefix(document_type: str, prefix: str, *, day: date, by: User) -> Docum
             changes=audit.diff({"prefix": before}, {"prefix": prefix}),
         )
     return series
+
+
+def overview(day: date) -> list[dict[str, object]]:
+    """Each series for the financial year of ``day``: its prefix and the next number it will
+    give (nothing is created or reserved)."""
+    fy = financial_year(day)
+    current = {s.document_type: s for s in DocumentSeries.objects.filter(fy=fy)}
+    rows: list[dict[str, object]] = []
+    for document_type in DocumentType:
+        series = current.get(document_type.value)
+        prefix = series.prefix if series else default_prefix(document_type.value)
+        number = series.next_number if series else 1
+        rows.append(
+            {
+                "document_type": document_type.value,
+                "prefix": prefix,
+                "fy": fy,
+                "next_number": format_number(prefix, fy, number, series.padding if series else 6),
+                "issued": number - 1,
+            }
+        )
+    return rows

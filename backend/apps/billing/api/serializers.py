@@ -8,6 +8,7 @@ from rest_framework import serializers
 from apps.billing.models import (
     CreditNote,
     CreditNoteLine,
+    DocumentType,
     EInvoiceStatus,
     Invoice,
     PaymentStatus,
@@ -291,3 +292,16 @@ class CreditNoteCreateSerializer(serializers.Serializer[Any]):
     )
     note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     lines = CreditNoteLineInputSerializer(many=True)
+
+
+class DocumentSeriesSerializer(serializers.Serializer[Any]):
+    document_type = serializers.ChoiceField(choices=DocumentType.choices)
+    prefix = serializers.CharField()
+    fy = serializers.CharField(help_text="Financial year, e.g. 2026-27.")
+    next_number = serializers.CharField(help_text="The number the next document will get.")
+    issued = serializers.IntegerField(help_text="Documents numbered this financial year.")
+
+
+class DocumentSeriesChangeSerializer(serializers.Serializer[Any]):
+    document_type = serializers.ChoiceField(choices=DocumentType.choices)
+    prefix = serializers.CharField(max_length=3, help_text="1 to 3 capital letters or digits.")

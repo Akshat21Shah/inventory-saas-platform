@@ -42,38 +42,63 @@ import { todayInIndia } from "./shop-picker";
 const BUCKETS = ["d0_30", "d31_60", "d61_90", "d90_plus"] as const;
 
 /** Owed, overdue and collections to hand over, for the dashboard and receivables page. */
-export function ReceivablesCards() {
+export function ReceivablesCards({ linked = false }: { linked?: boolean }) {
   const t = useTranslations("billing.receivables");
   const { can } = useAuth();
   const summary = useReceivablesSummary({ query: { enabled: can("ledger.view") } }).data?.data;
   if (!summary) return null;
+  const cards = [
+    {
+      key: "owed",
+      href: "/manage/receivables",
+      label: t("owed"),
+      value: summary.owed,
+      icon: IndianRupee,
+    },
+    {
+      key: "overdue",
+      href: "/manage/receivables",
+      label: t("overdueShops", { count: summary.shops_overdue }),
+      value: summary.overdue,
+      icon: Store,
+    },
+    {
+      key: "week",
+      href: "/manage/receivables",
+      label: t("dueThisWeek"),
+      value: summary.due_this_week,
+      icon: CalendarClock,
+    },
+    summary.collections_pending_handover !== null
+      ? {
+          key: "salesmen",
+          href: "/manage/payments/handover",
+          label: t("withSalesmen"),
+          value: summary.collections_pending_handover,
+          icon: HandCoins,
+        }
+      : {
+          key: "credit",
+          href: "/manage/receivables",
+          label: t("unusedCredit"),
+          value: summary.unapplied_credit,
+          icon: Wallet,
+        },
+  ];
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <KpiCard label={t("owed")} value={formatMoney(summary.owed)} icon={IndianRupee} />
-      <KpiCard
-        label={t("overdueShops", { count: summary.shops_overdue })}
-        value={formatMoney(summary.overdue)}
-        icon={Store}
-      />
-      <KpiCard
-        label={t("dueThisWeek")}
-        value={formatMoney(summary.due_this_week)}
-        icon={CalendarClock}
-      />
-      {summary.collections_pending_handover !== null ? (
-        <KpiCard
-          label={t("withSalesmen")}
-          value={formatMoney(summary.collections_pending_handover)}
-          icon={HandCoins}
-        />
-      ) : (
-        <KpiCard
-          label={t("unusedCredit")}
-          value={formatMoney(summary.unapplied_credit)}
-          icon={Wallet}
-        />
-      )}
-    </div>
+    <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => (
+        <li key={card.key}>
+          {linked ? (
+            <Link href={card.href} className="block rounded-xl focus-visible:ring-2">
+              <KpiCard label={card.label} value={formatMoney(card.value)} icon={card.icon} />
+            </Link>
+          ) : (
+            <KpiCard label={card.label} value={formatMoney(card.value)} icon={card.icon} />
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

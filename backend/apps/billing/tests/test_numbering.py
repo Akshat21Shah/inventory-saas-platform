@@ -13,6 +13,7 @@ from apps.billing import numbering
 from apps.billing.models import DocumentSeries, DocumentType
 from common.errors import InvalidFields
 from common.tenancy import tenant_context
+from common.testing.isolation import covers
 
 SEPT = date(2026, 9, 28)
 MARCH = date(2027, 3, 31)
@@ -100,3 +101,34 @@ def test_numbers_are_only_taken_inside_the_issuing_transaction(make_tenant):
     tenant = make_tenant()
     with tenant_context(tenant.pk), pytest.raises(RuntimeError):
         numbering.next_number(DocumentType.INVOICE, SEPT)
+
+
+@pytest.mark.django_db
+@covers("document-series")
+def test_the_numbering_settings_api(tenant_a, tenant_b):
+    """Any staff member sees the series and the next numbers; only settings.manage changes a
+    prefix, from the next number (ADR-046 item 1)."""
+    from apps.orders.tests.helpers import client_for
+
+    owner = client_for(tenant_a, make_staff_in(tenant_a, "OWNER"))
+    sales = client_for(tenant_a, make_staff_in(tenant_a, "SALES"))
+    rows = {r["document_type"]: r for r in sales.get("/api/v1/settings/document-series/").json()}
+    assert set(rows) == {"INVOICE", "CREDIT_NOTE", "RECEIPT", "REFUND"}
+    assert rows["REFUND"]["next_number"].startswith("RFD/") and rows["INVOICE"]["issued"] == 0
+    body = {"document_type": "INVOICE", "prefix": "sd"}
+    assert sales.patch("/api/v1/settings/document-series/", body, format="json").status_code == 403
+    changed = owner.patch("/api/v1/settings/document-series/", body, format="json").json()
+    assert next(r for r in changed if r["document_type"] == "INVOICE")["next_number"].startswith(
+        "SD/"
+    )
+    bad = owner.patch(
+        "/api/v1/settings/document-series/",
+        {"document_type": "INVOICE", "prefix": "S-D"},
+        format="json",
+    )
+    assert bad.status_code == 400
+    outsider = client_for(tenant_b, make_staff_in(tenant_b, "OWNER"))
+    theirs = {
+        r["document_type"]: r for r in outsider.get("/api/v1/settings/document-series/").json()
+    }
+    assert theirs["INVOICE"]["prefix"] == "INV"  # their own series, untouched

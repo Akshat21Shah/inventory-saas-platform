@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
-from apps.billing import credit_notes, documents, selectors
+from apps.billing import credit_notes, documents, numbering, selectors
 from apps.billing.api import serializers as s
 from apps.billing.credit_notes import ReturnLine
 from apps.billing.models import (
@@ -28,9 +28,10 @@ from apps.billing.models import (
     PaymentStatus,
 )
 from apps.orders import selectors as order_selectors
+from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
 from common.idempotency import idempotent
-from common.permissions import HasPermission
+from common.permissions import HasPermission, StaffReadsOrHasPermission
 
 VIEW, MANAGE = "invoices.view", "invoices.manage"
 IDEMPOTENCY = OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, True)
@@ -343,3 +344,40 @@ class OrderConfirmationView(Guarded):
             raise NotFound()
         body, status = documents.link(confirmation.pdf_key, confirmation.pdf_status)
         return Response(body, status=status)
+
+
+# --- Numbering (ADR-046 item 1) ---------------------------------------------------------------
+
+
+class DocumentSeriesView(APIView):
+    """Invoice, credit note, receipt and refund numbering: any staff member may read; changing
+    a prefix needs ``settings.manage`` and applies from the next number (audited)."""
+
+    permission_classes = [StaffReadsOrHasPermission]
+    required_permission = "settings.manage"
+
+    @extend_schema(
+        operation_id="settings_document_series",
+        tags=["settings"],
+        responses=s.DocumentSeriesSerializer(many=True),
+    )
+    def get(self, request: Request) -> Response:
+        return Response(s.DocumentSeriesSerializer(numbering.overview(today_ist()), many=True).data)
+
+    @extend_schema(
+        operation_id="settings_document_series_change",
+        tags=["settings"],
+        request=s.DocumentSeriesChangeSerializer,
+        responses=s.DocumentSeriesSerializer(many=True),
+    )
+    def patch(self, request: Request) -> Response:
+        data = s.DocumentSeriesChangeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        with transaction.atomic():
+            numbering.set_prefix(
+                data.validated_data["document_type"],
+                data.validated_data["prefix"],
+                day=today_ist(),
+                by=_user(request),
+            )
+        return Response(s.DocumentSeriesSerializer(numbering.overview(today_ist()), many=True).data)

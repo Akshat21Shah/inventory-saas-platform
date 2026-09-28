@@ -5996,6 +5996,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/Business'
           description: ''
+  /api/v1/settings/document-series/:
+    get:
+      operationId: settings_document_series
+      description: |-
+        Invoice, credit note, receipt and refund numbering: any staff member may read; changing
+        a prefix needs ``settings.manage`` and applies from the next number (audited).
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentSeries'
+          description: ''
+    patch:
+      operationId: settings_document_series_change
+      description: |-
+        Invoice, credit note, receipt and refund numbering: any staff member may read; changing
+        a prefix needs ``settings.manage`` and applies from the next number (audited).
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentSeriesChangeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentSeries'
+          description: ''
   /api/v1/settings/features/:
     get:
       operationId: settings_features
@@ -9918,6 +9960,40 @@ components:
       required:
       - id
       - number
+    DocumentSeries:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        prefix:
+          type: string
+        fy:
+          type: string
+          description: Financial year, e.g. 2026-27.
+        next_number:
+          type: string
+          description: The number the next document will get.
+        issued:
+          type: integer
+          description: Documents numbered this financial year.
+      required:
+      - document_type
+      - fy
+      - issued
+      - next_number
+      - prefix
+    DocumentTypeEnum:
+      enum:
+      - INVOICE
+      - CREDIT_NOTE
+      - RECEIPT
+      - REFUND
+      type: string
+      description: |-
+        * `INVOICE` - Tax invoice
+        * `CREDIT_NOTE` - Credit note
+        * `RECEIPT` - Payment receipt
+        * `REFUND` - Refund voucher
     Due:
       type: object
       properties:
@@ -13587,6 +13663,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SlabInputRequest'
+    PatchedDocumentSeriesChangeRequest:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        prefix:
+          type: string
+          minLength: 1
+          description: 1 to 3 capital letters or digits.
+          maxLength: 3
     PatchedFeatureFlagRequest:
       type: object
       properties:

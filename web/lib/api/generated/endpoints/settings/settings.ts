@@ -31,10 +31,12 @@ import type {
   BankDetailsInputRequest,
   Branding,
   Business,
+  DocumentSeries,
   FeatureToggleRequest,
   PaginatedAuditLogList,
   PatchedBrandingRequest,
   PatchedBusinessRequest,
+  PatchedDocumentSeriesChangeRequest,
   PatchedSettingValuesRequest,
   Setting,
   TenantFeature
@@ -946,6 +948,213 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getSettingsBusinessUpdateMutationOptions(options), queryClient);
+    }
+    export type settingsDocumentSeriesResponse200 = {
+  data: DocumentSeries[]
+  status: 200
+}
+
+export type settingsDocumentSeriesResponseSuccess = (settingsDocumentSeriesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type settingsDocumentSeriesResponse = (settingsDocumentSeriesResponseSuccess)
+
+export const getSettingsDocumentSeriesUrl = () => {
+
+
+
+
+  return `/api/v1/settings/document-series/`
+}
+
+/**
+ * Invoice, credit note, receipt and refund numbering: any staff member may read; changing
+ * a prefix needs ``settings.manage`` and applies from the next number (audited).
+ */
+export const settingsDocumentSeries = async ( options?: Parameters<typeof apiFetch>[1]): Promise<settingsDocumentSeriesResponse> => {
+
+  return apiFetch<settingsDocumentSeriesResponse>(getSettingsDocumentSeriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSettingsDocumentSeriesQueryKey = () => {
+    return [
+    `/api/v1/settings/document-series/`
+    ] as const;
+    }
+
+
+export const getSettingsDocumentSeriesQueryOptions = <TData = Awaited<ReturnType<typeof settingsDocumentSeries>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsDocumentSeries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSettingsDocumentSeriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof settingsDocumentSeries>>> = ({ signal }) => settingsDocumentSeries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof settingsDocumentSeries>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SettingsDocumentSeriesQueryResult = NonNullable<Awaited<ReturnType<typeof settingsDocumentSeries>>>
+export type SettingsDocumentSeriesQueryError = unknown
+
+
+export function useSettingsDocumentSeries<TData = Awaited<ReturnType<typeof settingsDocumentSeries>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsDocumentSeries>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof settingsDocumentSeries>>,
+          TError,
+          Awaited<ReturnType<typeof settingsDocumentSeries>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSettingsDocumentSeries<TData = Awaited<ReturnType<typeof settingsDocumentSeries>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsDocumentSeries>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof settingsDocumentSeries>>,
+          TError,
+          Awaited<ReturnType<typeof settingsDocumentSeries>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSettingsDocumentSeries<TData = Awaited<ReturnType<typeof settingsDocumentSeries>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsDocumentSeries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSettingsDocumentSeries<TData = Awaited<ReturnType<typeof settingsDocumentSeries>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsDocumentSeries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSettingsDocumentSeriesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type settingsDocumentSeriesChangeResponse200 = {
+  data: DocumentSeries[]
+  status: 200
+}
+
+export type settingsDocumentSeriesChangeResponseSuccess = (settingsDocumentSeriesChangeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type settingsDocumentSeriesChangeResponse = (settingsDocumentSeriesChangeResponseSuccess)
+
+export const getSettingsDocumentSeriesChangeUrl = () => {
+
+
+
+
+  return `/api/v1/settings/document-series/`
+}
+
+/**
+ * Invoice, credit note, receipt and refund numbering: any staff member may read; changing
+ * a prefix needs ``settings.manage`` and applies from the next number (audited).
+ */
+export const settingsDocumentSeriesChange = async (patchedDocumentSeriesChangeRequest?: PatchedDocumentSeriesChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<settingsDocumentSeriesChangeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<settingsDocumentSeriesChangeResponse>(getSettingsDocumentSeriesChangeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(patchedDocumentSeriesChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getSettingsDocumentSeriesChangeMutationKey = () => ['settingsDocumentSeriesChange'] as const;
+
+export const getSettingsDocumentSeriesChangeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof settingsDocumentSeriesChange>>, TError,SettingsDocumentSeriesChangeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof settingsDocumentSeriesChange>>, TError,SettingsDocumentSeriesChangeMutationVariables, TContext> => {
+
+const mutationKey = getSettingsDocumentSeriesChangeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof settingsDocumentSeriesChange>>, SettingsDocumentSeriesChangeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  settingsDocumentSeriesChange(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SettingsDocumentSeriesChangeMutationResult = NonNullable<Awaited<ReturnType<typeof settingsDocumentSeriesChange>>>
+    export type SettingsDocumentSeriesChangeMutationBody = PatchedDocumentSeriesChangeRequest | undefined
+    export type SettingsDocumentSeriesChangeMutationError = unknown
+    export type SettingsDocumentSeriesChangeMutationVariables = {data?: PatchedDocumentSeriesChangeRequest}
+
+    export const useSettingsDocumentSeriesChange = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof settingsDocumentSeriesChange>>, TError,SettingsDocumentSeriesChangeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof settingsDocumentSeriesChange>>,
+        TError,
+        SettingsDocumentSeriesChangeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSettingsDocumentSeriesChangeMutationOptions(options), queryClient);
     }
     export type settingsFeaturesResponse200 = {
   data: TenantFeature[]

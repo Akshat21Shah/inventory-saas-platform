@@ -894,7 +894,15 @@
       "actAs": "Support session",
       "actAsTitle": "Start a support session as {name}?",
       "actAsBody": "A new tab opens in their account in view-only mode. The session is recorded, visible to the distributor's owners, and ends automatically.",
-      "startSession": "Start session"
+      "startSession": "Start session",
+      "gstIdentity": {
+        "open": "Change GST identity",
+        "title": "Change the GST identity",
+        "body": "This business has issued invoices, so its GSTIN, legal name and state change only here, with a reason. Invoices already issued keep their details.",
+        "reason": "Reason (kept in the audit log)",
+        "save": "Change",
+        "saved": "GST identity changed."
+      }
     },
     "plans": {
       "title": "Plans",
@@ -1088,7 +1096,8 @@
       "save": "Save changes",
       "saved": "Business details saved.",
       "readOnly": "Only the owner can change these details.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "gstLocked": "Your GSTIN, legal name and state are fixed now that you have issued invoices. To change them, contact the platform team."
     },
     "bank": {
       "title": "Bank details",
@@ -2060,7 +2069,8 @@
         "pending": "{qty} waiting for approval",
         "waiting": "{qty} waiting for stock",
         "cancelled": "{qty} cancelled"
-      }
+      },
+      "onHoldOverdue": "You have overdue bills, so your distributor will approve this order before accepting it."
     },
     "live": {
       "order_accepted": "Order {number} was accepted.",
@@ -2516,7 +2526,8 @@
       "new": "New orders",
       "onHold": "Waiting for credit approval",
       "proposals": "Backorders to confirm",
-      "toPack": "Shipments to pack"
+      "toPack": "Shipments to pack",
+      "money": "Money to collect"
     },
     "live": {
       "placed": "New order {number} from {shop}",
@@ -2615,7 +2626,8 @@
         "cancelled": "{qty} cancelled"
       },
       "documents": "Invoices and documents",
-      "confirmation": "Order Confirmation"
+      "confirmation": "Order Confirmation",
+      "onHoldOverdue": "This shop has overdue bills, so the order waits for someone who manages credit."
     },
     "shipment": {
       "backorder": "backorder",
@@ -3190,6 +3202,21 @@
       "DEBIT_ADJUSTMENT": "Debit adjustment",
       "CREDIT_ADJUSTMENT": "Credit adjustment",
       "REFUND": "Refund"
+    },
+    "numbering": {
+      "title": "Document numbers",
+      "body": "Each number is a prefix, the financial year and a 6-digit number, like INV/26-27/000001. Numbering restarts every April with no gaps. A new prefix applies from the next number; numbers already issued keep theirs.",
+      "types": {
+        "INVOICE": "Tax invoices",
+        "CREDIT_NOTE": "Credit notes",
+        "RECEIPT": "Payment receipts",
+        "REFUND": "Refund vouchers"
+      },
+      "next": "Next: {number}",
+      "issued": "{count, plural, =0 {none issued this year} one {# issued this year} other {# issued this year}}",
+      "prefix": "Prefix",
+      "save": "Save",
+      "saved": "Prefix changed. It applies from the next number."
     }
   },
   "paymentStatus": {

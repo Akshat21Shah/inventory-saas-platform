@@ -247,7 +247,13 @@
      - `/manage/receivables`: summary cards (owed, overdue shops, due this week, with salesmen), ageing by days since the bill or days past due, totals per bucket, search and overdue-only, pages.
      - `/manage/retailers/{id}/ledger`: the shop's position and credit limit, statement by dates with opening, running and closing balances linking to each document, "Record payment", "Refund credit", "Adjustment" (old bill with bill date, due date and number; opening advance; debit; credit). The shop page links to it.
      - Tests: 6 component tests (bills paid first and the earlier-year warning, collection mode, a refusal, payment notices and actions by permission, bulk handover, ageing basis). New screens in the responsive check; the seed adds a refund and `e2e_ids` a payment and a refund.
-  14–15. Frontend: dashboard, credit holds and settings; shop invoices, statement, outstanding
+  14. Frontend: dashboard, credit holds and settings — **done**:
+     - Dashboard: "Money to collect" cards (owed, overdue shops, due in the next 7 days, with salesmen or unused credit) linking to receivables and the handover page, for users who see receivables.
+     - Orders on hold say why: over the credit limit, or overdue bills (staff and shop order pages).
+     - Business settings: GSTIN, legal name and state are read-only after the first invoice, with a note; the super admin's tenant page has "Change GST identity" (with a reason) once it is locked, and the normal edit keeps those fields read-only.
+     - Invoice settings: "Document numbers" shows each series' next number and how many were issued this year; those who manage settings change a prefix (from the next number). New API `settings/document-series` (any staff reads; `settings.manage` changes; audited; isolation test).
+     - Tests: 6 component tests (numbering, dashboard money, GST lock in settings and on the platform page, overdue hold wording with the order's invoices and confirmation).
+  15. Frontend: shop invoices, statement, outstanding
   16. E2E acceptance (both invoice timings), responsive check, phone test — **final review**
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.
 - **Phase 4 — Ordering & backorders** — **complete; final review approved 2026-09-28, PR #5** (branch `phase-4` from `main` 344b09c; plan approved 2026-09-27 with ADR-044, PLAN §10.2e, SPEC 1.4). Commits in order:

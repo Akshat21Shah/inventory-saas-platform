@@ -532,7 +532,9 @@ export function StaffOrderPage({ orderId }: { orderId: string }) {
           <OrderActions order={order} />
         </div>
         {order.status === "ON_HOLD" ? (
-          <p className="bg-warning/15 rounded-xl p-3 text-sm">{t("onHold")}</p>
+          <p className="bg-warning/15 rounded-xl p-3 text-sm">
+            {t(order.hold_reason === "OVERDUE" ? "onHoldOverdue" : "onHold")}
+          </p>
         ) : null}
         {order.credit_approved_value ? (
           <p className="bg-info/10 rounded-xl p-3 text-sm">

@@ -316,7 +316,9 @@ export function OrderPage({ orderId }: { orderId: string }) {
         </p>
       </div>
       {order.status === "ON_HOLD" ? (
-        <p className="bg-warning/15 rounded-xl p-3 text-sm">{t("onHold")}</p>
+        <p className="bg-warning/15 rounded-xl p-3 text-sm">
+          {t(order.hold_reason === "OVERDUE" ? "onHoldOverdue" : "onHold")}
+        </p>
       ) : null}
       {order.rejection_reason ? (
         <p className="bg-destructive/10 rounded-xl p-3 text-sm">

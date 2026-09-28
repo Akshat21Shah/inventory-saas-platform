@@ -19,6 +19,7 @@ urlpatterns = [
         v.CreditNoteRegeneratePdfView.as_view(),
         name="credit-note-regenerate-pdf",
     ),
+    path("settings/document-series/", v.DocumentSeriesView.as_view(), name="document-series"),
     path(
         "orders/<uuid:order_id>/confirmation/",
         v.OrderConfirmationView.as_view(),

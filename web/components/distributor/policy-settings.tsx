@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentNumbering } from "@/components/billing/numbering";
 import { RegistrySettingsForm } from "@/components/shared/registry-settings-form";
 import { PageSkeleton } from "@/components/shared/skeletons";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export function PolicySettings({ group }: { group: string }) {
   return (
     <>
       <PageHeader title={t(`nav.policies.${group}`)} description={t(`policyBodies.${group}`)} />
+      {group === "invoicing" ? <DocumentNumbering /> : null}
       {query.isLoading ? (
         <PageSkeleton />
       ) : query.error || !query.data ? (

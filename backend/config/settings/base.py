@@ -219,6 +219,7 @@ SPECTACULAR_SETTINGS = {
         "HistoryActorTypeEnum": "apps.orders.models.OrderStatusHistory.ActorType",
         "HoldReasonEnum": "apps.orders.models.Order.HoldReason",
         "InvoicePaymentStatusEnum": "apps.billing.models.PaymentStatus",
+        "DocumentTypeEnum": "apps.billing.models.DocumentType",
         "PdfStatusEnum": "apps.billing.models.PdfStatus",
         "EInvoiceStatusEnum": "apps.billing.models.EInvoiceStatus",
         "InvoiceTriggerEnum": "apps.billing.models.Invoice.Trigger",

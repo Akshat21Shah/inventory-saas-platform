@@ -99,11 +99,14 @@ function BusinessForm({ business, canEdit }: { business: Business; canEdit: bool
     }
   }
 
+  // Task 5.13: after the first invoice the GST identity changes only through the platform team.
+  const locked = business.gst_identity_locked;
+  const identity = (key: string) => locked && ["legal_name", "gstin", "state_code"].includes(key);
   const input = (key: EditableKey, label: string, upper = false) => (
     <FormField key={key} label={label} error={form.fieldErrors[key]}>
       <Input
         className="h-10"
-        readOnly={!canEdit}
+        readOnly={!canEdit || identity(key)}
         value={form.values[key]}
         onChange={(e) => form.set(key, upper ? e.target.value.toUpperCase() : e.target.value)}
       />
@@ -125,12 +128,17 @@ function BusinessForm({ business, canEdit }: { business: Business; canEdit: bool
           <CardDescription>{t("detailsBody")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
+          {locked ? (
+            <p className="bg-muted rounded-lg p-3 text-sm sm:col-span-2" role="note">
+              {t("gstLocked")}
+            </p>
+          ) : null}
           {input("name", tf("name"))}
           {input("legal_name", tf("legal_name"))}
           {input("gstin", tf("gstin"), true)}
           <FormField label={tf("state_code")} error={form.fieldErrors.state_code}>
             <Select
-              disabled={!canEdit}
+              disabled={!canEdit || locked}
               value={form.values.state_code}
               onValueChange={(v) => form.set("state_code", v)}
             >
