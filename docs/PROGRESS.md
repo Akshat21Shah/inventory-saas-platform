@@ -258,7 +258,8 @@
      - `/shop/invoices` (To pay, Overdue, Paid; days late or pay-by date), `/shop/invoices/{id}` (still to pay, download the bill (the original), items with quantities returned, totals, credit notes to download), `/shop/statement` (dates, balance before and after, each entry with the balance), `/shop/payments` (amount, date, mode, who collected it, bounced or waiting to clear, receipt).
      - Home: "You owe ₹X · ₹Y overdue" (or "You have credit of") linking to the account; order page: its bills and the Order Confirmation download.
      - Tests: 3 component tests; the shop screens are in the responsive check.
-  16. E2E acceptance (both invoice timings), responsive check, phone test — **final review**
+  16. E2E acceptance (both invoice timings) and responsive check — **done** (`web/e2e/billing-acceptance.spec.ts`, in `make e2e-stack` and CI): a fresh distributor; at dispatch the invoice is issued for what was packed, printed by the worker (the PDF link is polled until ready), paid in full from the shop's account page with a receipt; one unit comes back on a credit note, kept as credit, and part of it is refunded with a voucher; the shop at 360 px sees its credit, the paid bill with "1 returned", the bill PDF, its statement (invoice, payment, credit note, refund) and the receipt. After switching invoicing to "when the order is accepted", the next order is invoiced at acceptance with its Order Confirmation, and cancelling it issues a credit note automatically (the invoice ends fully credited). The responsive sweep covers the 27 new screens; its first run found 40 px back links, overlapping header links on phones and a 13 px overflow on the statement at 768 px, all fixed.
+  17. Final review — the real-phone test is the product owner's (LAN mode).
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.
 - **Phase 4 — Ordering & backorders** — **complete; final review approved 2026-09-28, PR #5** (branch `phase-4` from `main` 344b09c; plan approved 2026-09-27 with ADR-044, PLAN §10.2e, SPEC 1.4). Commits in order:
   1. Docs: ADR-044, PLAN (Cart per shop and user, OrderLineDiscount, §10.2e, backlog), SPEC 1.4 — **done**
@@ -612,6 +613,8 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 | 7 | Production public bucket and CDN for product images: anonymous `GetObject` only (no `ListBucket`), `Cache-Control` passed through, `PUBLIC_ASSETS_BASE_URL` set to the CDN (ADR-034) | `backend/common/storage.py`, infra (Phase 10) | AWS S3 / CloudFront documentation | Lead engineer | Open (before staging) |
 
 ## Known issues / pending
-- ADR-009 (tax engine & rounding) is pending CA confirmation, needed before Phase 5.
+- ADR-009 (tax engine & rounding) is still pending CA confirmation: `docs/CA_REVIEW.md` (22 questions) and the sample PDFs in `docs/ca/` go to the CA; the defaults stay until then.
+- PDFs render only where WeasyPrint's libraries are installed (the backend image, CI). Host-run backend code on macOS can't print them unless `PDF_RENDERER=fake`.
+- A refund can't be reversed in the app yet; a wrong refund is corrected with a ledger adjustment. Shop return requests are on the backlog.
 - Production domain to be supplied before staging (ADR-019).
 - Next.js dev-server redirects built from `request.url` use the dev server's own host when the Host header is forged (curl). Real browsers are unaffected. Revisit if a reverse proxy sits in front in dev.
