@@ -225,7 +225,11 @@
      - Credit kept although advances are off is shown on the payment and the shop's account.
      - Handover: a collection reversed as an error becomes "Nothing to hand over" and leaves the report; bouncing a cheque still with the salesman records its handover first (audited, naming the user).
      - Tests: 5 new (payment date, earlier year, advances-off notice, both handover rules) plus updated ledger, import and credit-control tests.
-  11c. Refunds from a shop's credit (`RFD` series, voucher PDF, reconciliation test)
+  11c. Refunds from a shop's credit — **done** (ADR-047 item 4):
+     - `Refund` (own series `RFD/26-27/000001`): cash, bank transfer or UPI, dated (never in the future), never more than the shop's unused credit (`REFUND_EXCEEDS_CREDIT` with what is available). A REFUND ledger debit; the refund is a target in the allocation engine, covered at once by the shop's unused money, oldest first. If that money is undone later (a bounced cheque, a reversal), the refund is owed again: it shows in the shop's dues and receivables, counts for overdue blocking and is covered by the next money. The money used for a refund can't be moved by hand.
+     - Audited (`payments.refund_recorded`), outbox `refund.recorded`, refund voucher PDF (paid to, amount in words, the credits it used, signatures).
+     - API: `refunds` (list, record with an Idempotency-Key), `refunds/{id}` (the credit it used), `/voucher`, `/regenerate-voucher`; payments and credit notes show a refund they paid for.
+     - Tests: 5 (oldest credit first and the voucher; the limit and validation; a bounced cheque making the refund owed; a refund after a return; API roles and isolation). The reconciliation property test gained a refund step (about 13% of examples pay one back, as many are refused); skipping the credit use fails it.
   12–15. Frontend: invoices and credit notes; payments, receivables and ledger; credit holds and settings; shop invoices, statement, outstanding
   16. E2E acceptance (both invoice timings), responsive check, phone test — **final review**
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.

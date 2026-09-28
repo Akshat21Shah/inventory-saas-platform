@@ -1,5 +1,6 @@
 """Reconciliation (PLAN §4.5, §8): whatever happens, in any order and under any payment settings,
-each shop's ledger balance = invoices - credited payments - credit notes ± adjustments, and
+each shop's ledger balance = invoices - credited payments - credit notes ± adjustments + refunds,
+and
 = what is still owed - unused credit (``check_ledger``, after every step)."""
 
 from decimal import Decimal as D
@@ -18,11 +19,13 @@ from apps.billing.tests.helpers import ship_invoice
 from apps.inventory.tests.helpers import make_product
 from apps.ledger import services as ledger
 from apps.ledger.allocation import live_allocations
+from apps.ledger.models import RetailerAccount
 from apps.ledger.tests.helpers import check_ledger
 from apps.orders.tests.helpers import add_stock, make_shop
 from apps.payments import services as payments
 from apps.payments.models import Payment
 from apps.payments.services import PaymentInput
+from apps.platform.selectors import get_setting
 from apps.platform.services import set_tenant_settings
 from common.dates import today_ist
 from common.errors import DomainError
@@ -41,6 +44,11 @@ step = st.one_of(
     st.tuples(st.just("return"), pick, st.sampled_from(["1", "2"])),
     st.tuples(st.just("adjust"), st.sampled_from(["DEBIT", "CREDIT"]), money),
     st.tuples(st.just("reallocate"), pick),
+    st.tuples(  # a share of the shop's credit; above 100% is refused
+        st.just("refund"),
+        st.sampled_from(["CASH", "BANK_TRANSFER", "UPI"]),
+        st.integers(min_value=1, max_value=120),
+    ),
 )
 
 
@@ -89,8 +97,19 @@ def _run(world, shop, action):
             ledger.post_adjustment(
                 shop.pk, action[1], action[2], on=today_ist(), narration="Test", by=owner
             )
+        elif kind == "refund":  # may be refused: never more than the shop's credit
+            credit = RetailerAccount.objects.get(retailer=shop).unapplied_credit
+            if credit == 0 and get_setting("payments.hold_advances"):  # an advance to pay back
+                payments.record_payment(
+                    PaymentInput(shop.pk, D("500.00"), "CASH", today_ist()), by=owner
+                )
+                credit = RetailerAccount.objects.get(retailer=shop).unapplied_credit
+            amount = max((credit * action[2] / 100).quantize(D("0.01")), D("0.01"))
+            payments.record_refund(
+                payments.RefundInput(shop.pk, amount, action[1], today_ist()), by=owner
+            )
         elif kind == "reallocate":
-            rows = live_allocations(retailer_id=shop.pk)
+            rows = [r for r in live_allocations(retailer_id=shop.pk) if not r.refund_id]
             if rows:
                 row = rows[action[1] % len(rows)]
                 payments.reallocate(row.pk, to=[], reason="Move", by=owner)
@@ -128,6 +147,7 @@ def test_the_ledger_always_reconciles(world, hold_advances, cheque_timing, steps
                 event(f"{action[0]} refused: {refused.code}")
                 assert refused.code in (
                     "PAYMENT_EXCEEDS_OUTSTANDING",
+                    "REFUND_EXCEEDS_CREDIT",
                     "INVALID_STATE_TRANSITION",
                     "VALIDATION_ERROR",
                 ), refused.code

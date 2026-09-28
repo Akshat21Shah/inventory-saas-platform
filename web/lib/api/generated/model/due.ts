@@ -5,10 +5,10 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { DueTypeEnum } from './dueTypeEnum';
+import type { AllocationTargetTypeEnum } from './allocationTargetTypeEnum';
 
 export interface Due {
-  kind: DueTypeEnum;
+  kind: AllocationTargetTypeEnum;
   id: string;
   number: string;
   document_date: string;

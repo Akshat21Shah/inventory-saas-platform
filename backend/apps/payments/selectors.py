@@ -8,7 +8,7 @@ from uuid import UUID
 from django.db.models import Count, Min, Q, QuerySet, Sum
 
 from apps.accounts.models import User
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from apps.retailers.selectors import sees_own_retailers_only
 
 
@@ -113,7 +113,26 @@ def payment_detail(
     if payment is not None:
         payment.used_for_rows = used_for_rows(  # type: ignore[attr-defined]
             Allocation.objects.filter(payment=payment)
-            .select_related("invoice", "debit_adjustment")
+            .select_related("invoice", "debit_adjustment", "refund")
             .order_by("created_at")
         )
     return payment
+
+
+def refunds_for(user: User) -> QuerySet[Refund]:
+    qs = Refund.objects.select_related("retailer", "recorded_by")
+    return qs.filter(retailer__salesperson=user) if sees_own_retailers_only(user) else qs
+
+
+def refund_detail(refund_id: UUID, *, user: User) -> Refund | None:
+    from apps.ledger.models import Allocation
+    from apps.ledger.selectors import applied_rows
+
+    refund: Refund | None = refunds_for(user).filter(pk=refund_id).first()
+    if refund is not None:
+        refund.paid_from_rows = applied_rows(  # type: ignore[attr-defined]
+            Allocation.objects.filter(refund=refund)
+            .select_related("payment", "credit_note", "credit_adjustment")
+            .order_by("created_at")
+        )
+    return refund

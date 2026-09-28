@@ -22,7 +22,7 @@ from apps.ledger.models import Allocation
 from apps.ledger.selectors import used_for_rows
 from apps.payments import selectors, services
 from apps.payments.api import serializers as s
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from apps.payments.services import DueAmount, PaymentInput
 from apps.retailers.selectors import retailer_for
 from common.errors import InvalidFields, NotFound
@@ -376,4 +376,102 @@ class ReceiptRegenerateView(Guarded):
         payment = _payment(request, payment_id)
         with transaction.atomic():
             documents.regenerate("receipt", payment.pk)
+        return Response({"status": "PENDING", "url": None}, status=202)
+
+
+# --- Refunds (ADR-047) ------------------------------------------------------------------------
+
+
+def _refund(request: Request, refund_id: UUID) -> Refund:
+    found: Refund | None = selectors.refunds_for(_user(request)).filter(pk=refund_id).first()
+    if found is None:
+        raise NotFound()
+    return found
+
+
+class RefundListCreateView(Guarded, generics.ListAPIView[Refund]):
+    required_permissions = {"GET": VIEW, "POST": RECORD}
+    serializer_class = s.RefundSerializer
+    pagination_class = Newest
+
+    def get_queryset(self) -> QuerySet[Refund]:
+        if getattr(self, "swagger_fake_view", False):
+            return Refund.objects.unscoped().none()
+        qs = selectors.refunds_for(_user(self.request))
+        retailer = _uuid(self.request.query_params.get("retailer"), "retailer")
+        return qs.filter(retailer_id=retailer) if retailer else qs
+
+    @extend_schema(
+        operation_id="refunds_list", tags=TAGS, parameters=[OpenApiParameter("retailer", UUID)]
+    )
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        operation_id="refunds_record",
+        tags=TAGS,
+        request=s.RefundCreateSerializer,
+        responses={201: s.RefundDetailSerializer},
+        parameters=[IDEMPOTENCY],
+        description="Pay a shop back from its credit balance (never more than it has).",
+    )
+    @idempotent("payments.refunds.record")
+    def post(self, request: Request) -> Response:
+        data = s.RefundCreateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        shop = _visible_shop(request, v["retailer"])
+        refund = services.record_refund(
+            services.RefundInput(
+                retailer_id=shop,
+                amount=v["amount"],
+                mode=v["mode"],
+                refund_date=v["refund_date"],
+                reference_no=v["reference_no"],
+                notes=v["notes"],
+            ),
+            by=_user(request),
+        )
+        detail = selectors.refund_detail(refund.pk, user=_user(request))
+        return Response(s.RefundDetailSerializer(detail).data, status=201)
+
+
+class RefundDetailView(Guarded):
+    required_permission = VIEW
+
+    @extend_schema(operation_id="refunds_retrieve", tags=TAGS, responses=s.RefundDetailSerializer)
+    def get(self, request: Request, refund_id: UUID) -> Response:
+        refund = selectors.refund_detail(refund_id, user=_user(request))
+        if refund is None:
+            raise NotFound()
+        return Response(s.RefundDetailSerializer(refund).data)
+
+
+class RefundVoucherView(Guarded):
+    required_permission = VIEW
+
+    @extend_schema(
+        operation_id="refunds_voucher",
+        tags=TAGS,
+        responses={200: DocumentLinkSerializer, 202: DocumentLinkSerializer},
+    )
+    def get(self, request: Request, refund_id: UUID) -> Response:
+        refund = _refund(request, refund_id)
+        body, status = documents.link(refund.voucher_pdf_key, refund.voucher_pdf_status)
+        return Response(body, status=status)
+
+
+class RefundRegenerateVoucherView(Guarded):
+    required_permission = RECORD
+
+    @extend_schema(
+        operation_id="refunds_regenerate_voucher",
+        tags=TAGS,
+        request=None,
+        responses={202: DocumentLinkSerializer},
+    )
+    def post(self, request: Request, refund_id: UUID) -> Response:
+        refund = _refund(request, refund_id)
+        with transaction.atomic():
+            documents.regenerate("refund", refund.pk)
         return Response({"status": "PENDING", "url": None}, status=202)

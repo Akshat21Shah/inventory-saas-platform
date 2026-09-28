@@ -267,7 +267,8 @@
     "CREDIT_LIMIT_EXCEEDED": "This order is over the credit limit.",
     "OVERDUE_INVOICES": "There are overdue bills to pay first.",
     "GST_IDENTITY_LOCKED": "The GSTIN, legal name and state can't be changed after the first invoice. Please contact the platform team.",
-    "PAYMENT_EXCEEDS_OUTSTANDING": "This is more than the shop owes. Advances are turned off in your settings."
+    "PAYMENT_EXCEEDS_OUTSTANDING": "This is more than the shop owes. Advances are turned off in your settings.",
+    "REFUND_EXCEEDS_CREDIT": "This is more than the shop's credit balance."
   },
   "designSystem": {
     "title": "Design system",

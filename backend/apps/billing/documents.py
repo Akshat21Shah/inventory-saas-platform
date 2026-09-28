@@ -3,8 +3,8 @@
 - Tax invoice: the shop's original, and one PDF with three labelled copies for staff (original for
   recipient, duplicate for transporter, triplicate for supplier). An IRN and QR block only when
   the invoice has an IRN (Phase 7).
-- Credit note (with the invoice it corrects), payment receipt, Order Confirmation ("This is not a
-  tax invoice.").
+- Credit note (with the invoice it corrects), payment receipt, refund voucher (ADR-047), Order
+  Confirmation ("This is not a tax invoice.").
 
 Rendering runs in background tasks, after the document is saved: the HTML is built in a short
 transaction, rendered and stored with none held, and the result recorded in another. Files are
@@ -31,7 +31,7 @@ from apps.billing.pdf import get_renderer
 from apps.billing.tax import amount_in_words, hsn_summary
 from apps.ledger.allocation import live_allocations
 from apps.orders.models import Order
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from apps.platform.models import Tenant
 from common.storage import get_storage
 from common.tenancy import require_tenant_id, tenant_transaction
@@ -148,6 +148,8 @@ def receipt_context(payment: Payment) -> dict[str, Any]:
             applied.append((row.invoice.number, row.amount))
         elif row.debit_adjustment is not None:
             applied.append((row.debit_adjustment.get_kind_display(), row.amount))
+        elif row.refund is not None:
+            applied.append((f"Refund {row.refund.number}", row.amount))
     return {
         "doc": payment,
         "seller": seller_snapshot(tenant),
@@ -170,6 +172,41 @@ def render_receipt(payment_id: UUID) -> None:
     with tenant_transaction(tenant_id):
         Payment.objects.filter(pk=payment_id).update(
             receipt_pdf_key=key, receipt_pdf_status=PdfStatus.READY
+        )
+
+
+# --- Refund vouchers (ADR-047) ---------------------------------------------------------------
+
+
+def refund_context(refund: Refund) -> dict[str, Any]:
+    tenant = Tenant.objects.select_related("state").get(pk=refund.tenant_id)
+    sources: list[tuple[str, Any]] = []
+    for row in live_allocations(refund=refund):
+        if row.payment is not None:
+            sources.append((f"Payment {row.payment.number}", row.amount))
+        elif row.credit_note is not None:
+            sources.append((f"Credit note {row.credit_note.number}", row.amount))
+        elif row.credit_adjustment is not None:
+            sources.append((row.credit_adjustment.get_kind_display(), row.amount))
+    return {
+        "doc": refund,
+        "seller": seller_snapshot(tenant),
+        "shop": refund.retailer,
+        "words": amount_in_words(refund.amount),
+        "sources": sources,
+    }
+
+
+def render_refund(refund_id: UUID) -> None:
+    tenant_id = require_tenant_id()
+    with tenant_transaction(tenant_id):
+        refund = Refund.objects.select_related("retailer").get(pk=refund_id)
+        html = render_to_string("billing/refund.html", refund_context(refund))
+        key = document_key(tenant_id, "refunds", refund.number)
+    get_storage().put(key, get_renderer().render(html), PDF)
+    with tenant_transaction(tenant_id):
+        Refund.objects.filter(pk=refund_id).update(
+            voucher_pdf_key=key, voucher_pdf_status=PdfStatus.READY
         )
 
 
@@ -259,6 +296,7 @@ RENDERERS = {
     "credit_note": render_credit_note,
     "receipt": render_receipt,
     "order_confirmation": render_confirmation,
+    "refund": render_refund,
 }
 
 
@@ -270,6 +308,8 @@ def mark_failed(kind: str, object_id: UUID) -> None:
             CreditNote.objects.filter(pk=object_id).update(pdf_status=PdfStatus.FAILED)
         elif kind == "receipt":
             Payment.objects.filter(pk=object_id).update(receipt_pdf_status=PdfStatus.FAILED)
+        elif kind == "refund":
+            Refund.objects.filter(pk=object_id).update(voucher_pdf_status=PdfStatus.FAILED)
         else:
             OrderConfirmation.objects.filter(pk=object_id).update(pdf_status=PdfStatus.FAILED)
 
@@ -298,6 +338,8 @@ def regenerate(kind: str, object_id: UUID) -> None:
         CreditNote.objects.filter(pk=object_id).update(pdf_status=PdfStatus.PENDING)
     elif kind == "receipt":
         Payment.objects.filter(pk=object_id).update(receipt_pdf_status=PdfStatus.PENDING)
+    elif kind == "refund":
+        Refund.objects.filter(pk=object_id).update(voucher_pdf_status=PdfStatus.PENDING)
     else:
         OrderConfirmation.objects.filter(pk=object_id).update(pdf_status=PdfStatus.PENDING)
     transaction.on_commit(lambda: enqueue(kind, object_id, tenant_id))

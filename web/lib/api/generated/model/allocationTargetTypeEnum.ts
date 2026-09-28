@@ -8,18 +8,14 @@
 
 /**
  * * `INVOICE` - INVOICE
- * * `CREDIT_NOTE` - CREDIT_NOTE
- * * `PAYMENT` - PAYMENT
  * * `ADJUSTMENT` - ADJUSTMENT
  * * `REFUND` - REFUND
  */
-export type LedgerReferenceTypeEnum = typeof LedgerReferenceTypeEnum[keyof typeof LedgerReferenceTypeEnum];
+export type AllocationTargetTypeEnum = typeof AllocationTargetTypeEnum[keyof typeof AllocationTargetTypeEnum];
 
 
-export const LedgerReferenceTypeEnum = {
+export const AllocationTargetTypeEnum = {
   INVOICE: 'INVOICE',
-  CREDIT_NOTE: 'CREDIT_NOTE',
-  PAYMENT: 'PAYMENT',
   ADJUSTMENT: 'ADJUSTMENT',
   REFUND: 'REFUND',
 } as const;

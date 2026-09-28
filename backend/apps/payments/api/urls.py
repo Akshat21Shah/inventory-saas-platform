@@ -17,6 +17,14 @@ urlpatterns = [
         v.ReceiptRegenerateView.as_view(),
         name="payment-regenerate-receipt",
     ),
+    path("refunds/", v.RefundListCreateView.as_view(), name="refunds"),
+    path("refunds/<uuid:refund_id>/", v.RefundDetailView.as_view(), name="refund"),
+    path("refunds/<uuid:refund_id>/voucher/", v.RefundVoucherView.as_view(), name="refund-voucher"),
+    path(
+        "refunds/<uuid:refund_id>/regenerate-voucher/",
+        v.RefundRegenerateVoucherView.as_view(),
+        name="refund-regenerate-voucher",
+    ),
     path(
         "reports/collections-pending-handover/",
         v.PendingHandoverView.as_view(),

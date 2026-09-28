@@ -234,7 +234,9 @@ SPECTACULAR_SETTINGS = {
         "HandoverStatusEnum": "apps.payments.models.Payment.Handover",
         "DueTypeEnum": ["INVOICE", "ADJUSTMENT"],
         "MoneySourceTypeEnum": ["PAYMENT", "CREDIT_NOTE", "ADJUSTMENT"],
-        "LedgerReferenceTypeEnum": ["INVOICE", "CREDIT_NOTE", "PAYMENT", "ADJUSTMENT"],
+        "LedgerReferenceTypeEnum": ["INVOICE", "CREDIT_NOTE", "PAYMENT", "ADJUSTMENT", "REFUND"],
+        "AllocationTargetTypeEnum": ["INVOICE", "ADJUSTMENT", "REFUND"],
+        "RefundModeEnum": "apps.payments.models.Refund.Mode",
         "AgeingBasisEnum": ["INVOICE_DATE", "DUE_DATE"],
         "LoginStatusEnum": [
             "authenticated",

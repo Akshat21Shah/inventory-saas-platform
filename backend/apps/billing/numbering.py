@@ -24,6 +24,7 @@ DEFAULT_PREFIXES = {
     DocumentType.INVOICE: None,  # ⚙ platform.default_invoice_prefix ("INV")
     DocumentType.CREDIT_NOTE: "CN",
     DocumentType.RECEIPT: "RCT",
+    DocumentType.REFUND: "RFD",
 }
 
 

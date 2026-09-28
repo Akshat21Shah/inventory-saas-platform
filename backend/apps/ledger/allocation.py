@@ -1,7 +1,8 @@
 """Matching money to what is owed (ADR-017, ADR-046 item 10).
 
 Sources: payments, credit-note credit, credit adjustments (their ``unapplied_amount``).
-Targets: invoices and debit adjustments (their ``balance_due``).
+Targets: invoices and debit adjustments (their ``balance_due``), and refunds, which are covered
+from the shop's credit in full when recorded (ADR-047).
 Allocations never change the ledger balance: they only say which dues are paid. Every function
 here runs on a shop whose account is locked (L1); the source and target rows (L5) belong to it.
 """
@@ -15,12 +16,12 @@ from apps.accounts.models import User
 from apps.billing.models import CreditNote, Invoice, PaymentStatus
 from apps.ledger.models import Allocation, LedgerAdjustment, RetailerAccount
 from apps.ledger.services import add_unapplied
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from common.errors import InvalidFields
 
 ZERO = Decimal("0.00")
 Source = Payment | CreditNote | LedgerAdjustment
-Target = Invoice | LedgerAdjustment
+Target = Invoice | LedgerAdjustment | Refund
 CREDIT_KINDS = (LedgerAdjustment.Kind.OPENING_CREDIT, LedgerAdjustment.Kind.CREDIT)
 DEBIT_KINDS = (LedgerAdjustment.Kind.OPENING_DEBIT, LedgerAdjustment.Kind.DEBIT)
 
@@ -36,6 +37,8 @@ def _source_date(source: Source) -> date:
 def _target_key(target: Target) -> tuple[date, date, Any]:
     if isinstance(target, Invoice):
         return (target.due_date, target.invoice_date, target.created_at)
+    if isinstance(target, Refund):
+        return (target.refund_date, target.refund_date, target.created_at)
     return (target.due_date, target.adjustment_date, target.created_at)
 
 
@@ -64,6 +67,8 @@ def open_targets(retailer_id: Any) -> list[Target]:
         *LedgerAdjustment.objects.select_for_update().filter(
             retailer_id=retailer_id, kind__in=DEBIT_KINDS, balance_due__gt=0
         ),
+        # A refund paid from money that later bounced or was reversed is owed again.
+        *Refund.objects.select_for_update().filter(retailer_id=retailer_id, balance_due__gt=0),
     ]
     return sorted(rows, key=_target_key)
 
@@ -112,6 +117,8 @@ def _fields(source: Source, target: Target) -> dict[str, Any]:
         fields["credit_adjustment"] = source
     if isinstance(target, Invoice):
         fields["invoice"] = target
+    elif isinstance(target, Refund):
+        fields["refund"] = target
     else:
         fields["debit_adjustment"] = target
     return fields
@@ -175,7 +182,9 @@ def reverse(
     source: Source = (
         allocation.payment or allocation.credit_note or allocation.credit_adjustment  # type: ignore[assignment]
     )
-    target: Target = allocation.invoice or allocation.debit_adjustment  # type: ignore[assignment]
+    target: Target = (
+        allocation.invoice or allocation.debit_adjustment or allocation.refund  # type: ignore[assignment]
+    )
     source = type(source).objects.select_for_update().get(pk=source.pk)
     target = type(target).objects.select_for_update().get(pk=target.pk)
     undo: Allocation = Allocation.objects.create(

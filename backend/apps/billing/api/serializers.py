@@ -115,10 +115,10 @@ class AppliedSerializer(serializers.Serializer[Any]):
 
 
 class UsedForSerializer(serializers.Serializer[Any]):
-    """Where money went: an invoice or a debit adjustment (opening balance, debit)."""
+    """Where money went: an invoice, a debit adjustment (old bill, debit) or a refund."""
 
     id = serializers.UUIDField()
-    target_type = serializers.ChoiceField(choices=["INVOICE", "ADJUSTMENT"])
+    target_type = serializers.ChoiceField(choices=["INVOICE", "ADJUSTMENT", "REFUND"])
     target_id = serializers.UUIDField()
     target_number = serializers.CharField()
     amount = money(help_text="Negative when it undoes an earlier allocation.")

@@ -17,6 +17,7 @@ class DocumentType(models.TextChoices):
     INVOICE = "INVOICE", "Tax invoice"
     CREDIT_NOTE = "CREDIT_NOTE", "Credit note"
     RECEIPT = "RECEIPT", "Payment receipt"
+    REFUND = "REFUND", "Refund voucher"
 
 
 class DocumentSeries(TenantScopedModel):

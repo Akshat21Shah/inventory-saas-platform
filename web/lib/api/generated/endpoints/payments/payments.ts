@@ -31,6 +31,7 @@ import type {
   HandoverRequest,
   HandoverResult,
   PaginatedPaymentRowList,
+  PaginatedRefundList,
   PaymentAllocateRequest,
   PaymentDetail,
   PaymentReasonRequest,
@@ -38,7 +39,10 @@ import type {
   PendingHandover,
   ReallocateRequest,
   ReallocationResult,
-  RecordPaymentRequest
+  RecordPaymentRequest,
+  RefundCreateRequest,
+  RefundDetail,
+  RefundsListParams
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -1227,7 +1231,512 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getPaymentsHandoverMutationOptions(options), queryClient);
     }
-    export type reportsCollectionsPendingHandoverResponse200 = {
+    export type refundsListResponse200 = {
+  data: PaginatedRefundList
+  status: 200
+}
+
+export type refundsListResponseSuccess = (refundsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type refundsListResponse = (refundsListResponseSuccess)
+
+export const getRefundsListUrl = (params?: RefundsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/refunds/?${stringifiedParams}` : `/api/v1/refunds/`
+}
+
+export const refundsList = async (params?: RefundsListParams, options?: Parameters<typeof apiFetch>[1]): Promise<refundsListResponse> => {
+
+  return apiFetch<refundsListResponse>(getRefundsListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefundsListQueryKey = (params?: RefundsListParams,) => {
+    return [
+    `/api/v1/refunds/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getRefundsListQueryOptions = <TData = Awaited<ReturnType<typeof refundsList>>, TError = unknown>(params?: RefundsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRefundsListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof refundsList>>> = ({ signal }) => refundsList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof refundsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RefundsListQueryResult = NonNullable<Awaited<ReturnType<typeof refundsList>>>
+export type RefundsListQueryError = unknown
+
+
+export function useRefundsList<TData = Awaited<ReturnType<typeof refundsList>>, TError = unknown>(
+ params: undefined |  RefundsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refundsList>>,
+          TError,
+          Awaited<ReturnType<typeof refundsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefundsList<TData = Awaited<ReturnType<typeof refundsList>>, TError = unknown>(
+ params?: RefundsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refundsList>>,
+          TError,
+          Awaited<ReturnType<typeof refundsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefundsList<TData = Awaited<ReturnType<typeof refundsList>>, TError = unknown>(
+ params?: RefundsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRefundsList<TData = Awaited<ReturnType<typeof refundsList>>, TError = unknown>(
+ params?: RefundsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRefundsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type refundsRecordResponse201 = {
+  data: RefundDetail
+  status: 201
+}
+
+export type refundsRecordResponseSuccess = (refundsRecordResponse201) & {
+  headers: Headers;
+};
+;
+
+export type refundsRecordResponse = (refundsRecordResponseSuccess)
+
+export const getRefundsRecordUrl = () => {
+
+
+
+
+  return `/api/v1/refunds/`
+}
+
+/**
+ * Pay a shop back from its credit balance (never more than it has).
+ */
+export const refundsRecord = async (refundCreateRequest: RefundCreateRequest, options?: Parameters<typeof apiFetch>[1]): Promise<refundsRecordResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<refundsRecordResponse>(getRefundsRecordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(refundCreateRequest)
+  }
+);}
+
+
+
+
+
+export const getRefundsRecordMutationKey = () => ['refundsRecord'] as const;
+
+export const getRefundsRecordMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundsRecord>>, TError,RefundsRecordMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundsRecord>>, TError,RefundsRecordMutationVariables, TContext> => {
+
+const mutationKey = getRefundsRecordMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundsRecord>>, RefundsRecordMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  refundsRecord(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundsRecordMutationResult = NonNullable<Awaited<ReturnType<typeof refundsRecord>>>
+    export type RefundsRecordMutationBody = RefundCreateRequest
+    export type RefundsRecordMutationError = unknown
+    export type RefundsRecordMutationVariables = {data: RefundCreateRequest}
+
+    export const useRefundsRecord = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundsRecord>>, TError,RefundsRecordMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof refundsRecord>>,
+        TError,
+        RefundsRecordMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRefundsRecordMutationOptions(options), queryClient);
+    }
+    export type refundsRetrieveResponse200 = {
+  data: RefundDetail
+  status: 200
+}
+
+export type refundsRetrieveResponseSuccess = (refundsRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type refundsRetrieveResponse = (refundsRetrieveResponseSuccess)
+
+export const getRefundsRetrieveUrl = (refundId: string,) => {
+
+
+
+
+  return `/api/v1/refunds/${refundId}/`
+}
+
+export const refundsRetrieve = async (refundId: string, options?: Parameters<typeof apiFetch>[1]): Promise<refundsRetrieveResponse> => {
+
+  return apiFetch<refundsRetrieveResponse>(getRefundsRetrieveUrl(refundId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefundsRetrieveQueryKey = (refundId: string,) => {
+    return [
+    `/api/v1/refunds/${refundId}/`
+    ] as const;
+    }
+
+
+export const getRefundsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof refundsRetrieve>>, TError = unknown>(refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRefundsRetrieveQueryKey(refundId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof refundsRetrieve>>> = ({ signal }) => refundsRetrieve(refundId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: refundId !== null && refundId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof refundsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RefundsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof refundsRetrieve>>>
+export type RefundsRetrieveQueryError = unknown
+
+
+export function useRefundsRetrieve<TData = Awaited<ReturnType<typeof refundsRetrieve>>, TError = unknown>(
+ refundId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refundsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof refundsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefundsRetrieve<TData = Awaited<ReturnType<typeof refundsRetrieve>>, TError = unknown>(
+ refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refundsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof refundsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefundsRetrieve<TData = Awaited<ReturnType<typeof refundsRetrieve>>, TError = unknown>(
+ refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRefundsRetrieve<TData = Awaited<ReturnType<typeof refundsRetrieve>>, TError = unknown>(
+ refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRefundsRetrieveQueryOptions(refundId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type refundsRegenerateVoucherResponse202 = {
+  data: DocumentLink
+  status: 202
+}
+
+export type refundsRegenerateVoucherResponseSuccess = (refundsRegenerateVoucherResponse202) & {
+  headers: Headers;
+};
+;
+
+export type refundsRegenerateVoucherResponse = (refundsRegenerateVoucherResponseSuccess)
+
+export const getRefundsRegenerateVoucherUrl = (refundId: string,) => {
+
+
+
+
+  return `/api/v1/refunds/${refundId}/regenerate-voucher/`
+}
+
+export const refundsRegenerateVoucher = async (refundId: string, options?: Parameters<typeof apiFetch>[1]): Promise<refundsRegenerateVoucherResponse> => {
+
+  return apiFetch<refundsRegenerateVoucherResponse>(getRefundsRegenerateVoucherUrl(refundId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefundsRegenerateVoucherMutationKey = () => ['refundsRegenerateVoucher'] as const;
+
+export const getRefundsRegenerateVoucherMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundsRegenerateVoucher>>, TError,RefundsRegenerateVoucherMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundsRegenerateVoucher>>, TError,RefundsRegenerateVoucherMutationVariables, TContext> => {
+
+const mutationKey = getRefundsRegenerateVoucherMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundsRegenerateVoucher>>, RefundsRegenerateVoucherMutationVariables> = (props) => {
+          const {refundId} = props ?? {};
+
+          return  refundsRegenerateVoucher(refundId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundsRegenerateVoucherMutationResult = NonNullable<Awaited<ReturnType<typeof refundsRegenerateVoucher>>>
+
+    export type RefundsRegenerateVoucherMutationError = unknown
+    export type RefundsRegenerateVoucherMutationVariables = {refundId: string}
+
+    export const useRefundsRegenerateVoucher = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundsRegenerateVoucher>>, TError,RefundsRegenerateVoucherMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof refundsRegenerateVoucher>>,
+        TError,
+        RefundsRegenerateVoucherMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRefundsRegenerateVoucherMutationOptions(options), queryClient);
+    }
+    export type refundsVoucherResponse200 = {
+  data: DocumentLink
+  status: 200
+}
+
+export type refundsVoucherResponse202 = {
+  data: DocumentLink
+  status: 202
+}
+
+export type refundsVoucherResponseSuccess = (refundsVoucherResponse200 | refundsVoucherResponse202) & {
+  headers: Headers;
+};
+;
+
+export type refundsVoucherResponse = (refundsVoucherResponseSuccess)
+
+export const getRefundsVoucherUrl = (refundId: string,) => {
+
+
+
+
+  return `/api/v1/refunds/${refundId}/voucher/`
+}
+
+export const refundsVoucher = async (refundId: string, options?: Parameters<typeof apiFetch>[1]): Promise<refundsVoucherResponse> => {
+
+  return apiFetch<refundsVoucherResponse>(getRefundsVoucherUrl(refundId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefundsVoucherQueryKey = (refundId: string,) => {
+    return [
+    `/api/v1/refunds/${refundId}/voucher/`
+    ] as const;
+    }
+
+
+export const getRefundsVoucherQueryOptions = <TData = Awaited<ReturnType<typeof refundsVoucher>>, TError = unknown>(refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsVoucher>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRefundsVoucherQueryKey(refundId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof refundsVoucher>>> = ({ signal }) => refundsVoucher(refundId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: refundId !== null && refundId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof refundsVoucher>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RefundsVoucherQueryResult = NonNullable<Awaited<ReturnType<typeof refundsVoucher>>>
+export type RefundsVoucherQueryError = unknown
+
+
+export function useRefundsVoucher<TData = Awaited<ReturnType<typeof refundsVoucher>>, TError = unknown>(
+ refundId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsVoucher>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refundsVoucher>>,
+          TError,
+          Awaited<ReturnType<typeof refundsVoucher>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefundsVoucher<TData = Awaited<ReturnType<typeof refundsVoucher>>, TError = unknown>(
+ refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsVoucher>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refundsVoucher>>,
+          TError,
+          Awaited<ReturnType<typeof refundsVoucher>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefundsVoucher<TData = Awaited<ReturnType<typeof refundsVoucher>>, TError = unknown>(
+ refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsVoucher>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRefundsVoucher<TData = Awaited<ReturnType<typeof refundsVoucher>>, TError = unknown>(
+ refundId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refundsVoucher>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRefundsVoucherQueryOptions(refundId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type reportsCollectionsPendingHandoverResponse200 = {
   data: PendingHandover[]
   status: 200
 }

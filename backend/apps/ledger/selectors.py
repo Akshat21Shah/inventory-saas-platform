@@ -19,6 +19,7 @@ from django.db.models import Sum
 from apps.billing.models import Invoice
 from apps.ledger.allocation import CREDIT_KINDS, DEBIT_KINDS
 from apps.ledger.models import Allocation, LedgerAdjustment, LedgerEntry, RetailerAccount
+from apps.payments.models import Refund
 from apps.platform.selectors import get_setting
 from common.dates import today_ist
 
@@ -28,7 +29,7 @@ BUCKETS = ("not_due", "d0_30", "d31_60", "d61_90", "d90_plus")
 
 @dataclass(frozen=True)
 class Due:
-    kind: str  # INVOICE | ADJUSTMENT
+    kind: str  # INVOICE | ADJUSTMENT | REFUND
     id: UUID
     retailer_id: UUID
     number: str
@@ -45,10 +46,12 @@ def open_dues(retailer_ids: Iterable[UUID] | None = None) -> list[Due]:
     """Everything still owed, the earliest due first."""
     invoices = Invoice.objects.filter(status="ISSUED", balance_due__gt=0)
     debits = LedgerAdjustment.objects.filter(kind__in=DEBIT_KINDS, balance_due__gt=0)
+    refunds = Refund.objects.filter(balance_due__gt=0)  # uncovered after a bounce or reversal
     if retailer_ids is not None:
         ids = list(retailer_ids)
         invoices = invoices.filter(retailer_id__in=ids)
         debits = debits.filter(retailer_id__in=ids)
+        refunds = refunds.filter(retailer_id__in=ids)
     rows = [
         Due("INVOICE", i.pk, i.retailer_id, i.number, i.invoice_date, i.due_date, i.grand_total,
             i.balance_due)
@@ -60,6 +63,10 @@ def open_dues(retailer_ids: Iterable[UUID] | None = None) -> list[Due]:
         Due("ADJUSTMENT", a.pk, a.retailer_id, a.get_kind_display(), a.adjustment_date,
             a.due_date, a.amount, a.balance_due)
         for a in debits
+    ] + [
+        Due("REFUND", r.pk, r.retailer_id, r.number, r.refund_date, r.refund_date, r.amount,
+            r.balance_due)
+        for r in refunds
     ]  # fmt: skip
     return sorted(rows, key=lambda d: (d.due_date, d.document_date, d.number))
 
@@ -208,7 +215,7 @@ def applied_rows(allocations: Iterable[Allocation]) -> list[dict[str, Any]]:
 
 
 def used_for_rows(allocations: Iterable[Allocation]) -> list[dict[str, Any]]:
-    """Where a payment's or credit's money went."""
+    """Where a payment's or credit's money went: dues it paid, or a refund."""
     rows = list(allocations)
     undone = _undone(rows)
     out = []
@@ -218,6 +225,8 @@ def used_for_rows(allocations: Iterable[Allocation]) -> list[dict[str, Any]]:
         elif a.debit_adjustment is not None:
             kind, target = "ADJUSTMENT", a.debit_adjustment.pk
             number = a.debit_adjustment.get_kind_display()
+        elif a.refund is not None:
+            kind, target, number = "REFUND", a.refund.pk, a.refund.number
         else:  # pragma: no cover - a check constraint requires one target
             continue
         out.append(

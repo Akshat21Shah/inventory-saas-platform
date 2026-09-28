@@ -15,6 +15,7 @@ PDF_EVENTS: dict[str, tuple[str, str]] = {
     "credit_note.issued": ("credit_note", "credit_note_id"),
     "payment.received": ("receipt", "payment_id"),
     "order_confirmation.created": ("order_confirmation", "confirmation_id"),
+    "refund.recorded": ("refund", "refund_id"),
 }
 
 

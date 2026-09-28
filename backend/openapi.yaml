@@ -4530,6 +4530,145 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReceivablesSummary'
           description: ''
+  /api/v1/refunds/:
+    get:
+      operationId: refunds_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRefundList'
+          description: ''
+    post:
+      operationId: refunds_record
+      description: Pay a shop back from its credit balance (never more than it has).
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundDetail'
+          description: ''
+  /api/v1/refunds/{refund_id}/:
+    get:
+      operationId: refunds_retrieve
+      parameters:
+      - in: path
+        name: refund_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundDetail'
+          description: ''
+  /api/v1/refunds/{refund_id}/regenerate-voucher/:
+    post:
+      operationId: refunds_regenerate_voucher
+      parameters:
+      - in: path
+        name: refund_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/refunds/{refund_id}/voucher/:
+    get:
+      operationId: refunds_voucher
+      parameters:
+      - in: path
+        name: refund_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
   /api/v1/reports/collections-pending-handover/:
     get:
       operationId: reports_collections_pending_handover
@@ -8113,6 +8252,16 @@ components:
         * `REJECTED` - Rejected
         * `SKIPPED_CREDIT` - Skipped: over credit limit
         * `SKIPPED_BLOCKED` - Skipped: shop blocked
+    AllocationTargetTypeEnum:
+      enum:
+      - INVOICE
+      - ADJUSTMENT
+      - REFUND
+      type: string
+      description: |-
+        * `INVOICE` - INVOICE
+        * `ADJUSTMENT` - ADJUSTMENT
+        * `REFUND` - REFUND
     AllocationTriggerEnum:
       enum:
       - INWARD
@@ -9773,7 +9922,7 @@ components:
       type: object
       properties:
         kind:
-          $ref: '#/components/schemas/DueTypeEnum'
+          $ref: '#/components/schemas/AllocationTargetTypeEnum'
         id:
           type: string
           format: uuid
@@ -9909,6 +10058,7 @@ components:
       - PAYMENT
       - PAYMENT_REVERSAL
       - DEBIT_ADJUSTMENT
+      - REFUND
       - CREDIT_ADJUSTMENT
       type: string
       description: |-
@@ -9918,6 +10068,7 @@ components:
         * `PAYMENT` - Payment
         * `PAYMENT_REVERSAL` - Payment reversed
         * `DEBIT_ADJUSTMENT` - Debit adjustment
+        * `REFUND` - Refund paid
         * `CREDIT_ADJUSTMENT` - Credit adjustment
     EventEnum:
       enum:
@@ -11486,12 +11637,14 @@ components:
       - CREDIT_NOTE
       - PAYMENT
       - ADJUSTMENT
+      - REFUND
       type: string
       description: |-
         * `INVOICE` - INVOICE
         * `CREDIT_NOTE` - CREDIT_NOTE
         * `PAYMENT` - PAYMENT
         * `ADJUSTMENT` - ADJUSTMENT
+        * `REFUND` - REFUND
     LineQuantityRequest:
       type: object
       properties:
@@ -12966,6 +13119,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Receipt'
+    PaginatedRefundList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Refund'
     PaginatedReportRowList:
       type: object
       required:
@@ -15771,6 +15943,131 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        refund_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/RefundModeEnum'
+        reference_no:
+          type: string
+          maxLength: 60
+        notes:
+          type: string
+          maxLength: 500
+        recorded_by_name:
+          type: string
+          readOnly: true
+        voucher_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+      required:
+      - amount
+      - id
+      - mode
+      - number
+      - recorded_by_name
+      - refund_date
+      - retailer
+      - voucher_pdf_status
+    RefundCreateRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/RefundModeEnum'
+        refund_date:
+          type: string
+          format: date
+        reference_no:
+          type: string
+          default: ''
+          maxLength: 60
+        notes:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - amount
+      - mode
+      - refund_date
+      - retailer
+    RefundDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        refund_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/RefundModeEnum'
+        reference_no:
+          type: string
+          maxLength: 60
+        notes:
+          type: string
+          maxLength: 500
+        recorded_by_name:
+          type: string
+          readOnly: true
+        voucher_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        paid_from:
+          type: array
+          items:
+            $ref: '#/components/schemas/Applied'
+      required:
+      - amount
+      - id
+      - mode
+      - number
+      - paid_from
+      - recorded_by_name
+      - refund_date
+      - retailer
+      - voucher_pdf_status
+    RefundModeEnum:
+      enum:
+      - CASH
+      - BANK_TRANSFER
+      - UPI
+      type: string
+      description: |-
+        * `CASH` - Cash
+        * `BANK_TRANSFER` - Bank transfer
+        * `UPI` - UPI
     RegistrationTypeEnum:
       enum:
       - REGULAR
@@ -18389,14 +18686,14 @@ components:
       - uqc
     UsedFor:
       type: object
-      description: 'Where money went: an invoice or a debit adjustment (opening balance,
-        debit).'
+      description: 'Where money went: an invoice, a debit adjustment (old bill, debit)
+        or a refund.'
       properties:
         id:
           type: string
           format: uuid
         target_type:
-          $ref: '#/components/schemas/DueTypeEnum'
+          $ref: '#/components/schemas/AllocationTargetTypeEnum'
         target_id:
           type: string
           format: uuid

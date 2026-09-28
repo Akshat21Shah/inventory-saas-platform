@@ -34,7 +34,7 @@ from apps.ledger import allocation
 from apps.ledger import services as ledger
 from apps.ledger.allocation import CREDIT_KINDS, DEBIT_KINDS, Source, Target
 from apps.ledger.models import Allocation, EntryType, LedgerAdjustment, LedgerEntry
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import retailer_for
@@ -514,6 +514,8 @@ def reallocate(
         row: Allocation = Allocation.objects.select_related(
             "payment", "credit_note", "credit_adjustment", "invoice", "debit_adjustment"
         ).get(pk=allocation_id)
+        if row.refund_id:
+            raise InvalidFields({"allocation": ["The money used for a refund can't be moved."]})
         undo = allocation.reverse(account, row, by=by, reason=note)
         source: Source = row.payment or row.credit_note or row.credit_adjustment  # type: ignore[assignment]
         source = type(source).objects.select_for_update().get(pk=source.pk)
@@ -541,3 +543,93 @@ def reallocate(
             },
         )
         return undo, made
+
+
+# --- Refunds (ADR-047 item 4) -----------------------------------------------------------------
+
+
+class RefundExceedsCredit(DomainError):
+    code = ErrorCode.REFUND_EXCEEDS_CREDIT
+    default_message = "This is more than the shop's credit balance."
+
+
+@dataclass(frozen=True)
+class RefundInput:
+    retailer_id: UUID
+    amount: Decimal
+    mode: str
+    refund_date: date
+    reference_no: str = ""
+    notes: str = ""
+
+
+@retry_on_deadlock()
+def record_refund(data: RefundInput, *, by: User | None) -> Refund:
+    """Pay a shop back from its credit balance (``payments.record``): a ledger debit covered by
+    the shop's unused money, oldest first; its own series (RFD/…); audited; a refund voucher."""
+    errors: dict[str, list[str]] = {}
+    if data.amount <= 0 or data.amount != data.amount.quantize(PAISA):
+        errors["amount"] = ["Enter an amount above zero, in rupees and paise."]
+    if data.mode not in Refund.Mode.values:
+        errors["mode"] = ["Choose cash, bank transfer or UPI."]
+    if data.refund_date > today_ist():
+        errors["refund_date"] = ["The date can't be in the future."]
+    if errors:
+        raise InvalidFields(errors)
+    with transaction.atomic():
+        retailer = Retailer.objects.filter(pk=data.retailer_id, deleted_at__isnull=True).first()
+        if retailer is None:
+            raise NotFound()
+        account = ledger.lock_account(retailer.pk)  # L1
+        if data.amount > account.unapplied_credit:
+            raise RefundExceedsCredit(details={"available": f"{account.unapplied_credit:.2f}"})
+        sources = allocation.open_sources(retailer.pk)  # L5, oldest money first
+        _series, number = numbering.next_number(DocumentType.REFUND, today_ist())  # L6
+        refund: Refund = Refund.objects.create(
+            number=number,
+            retailer=retailer,
+            amount=data.amount,
+            mode=data.mode,
+            refund_date=data.refund_date,
+            reference_no=data.reference_no.strip()[:60],
+            notes=data.notes.strip()[:500],
+            recorded_by=by,
+            balance_due=data.amount,
+            created_by=by,
+        )
+        ledger.post(
+            account,
+            EntryType.REFUND,
+            debit=refund.amount,
+            entry_date=refund.refund_date,
+            ref=ledger.Reference("REFUND", refund.pk, number),
+            narration=f"Refund by {refund.get_mode_display().lower()}",
+            by=by,
+        )
+        allocation.settle(account, by=by, sources=sources, targets=[refund])
+        refund.refresh_from_db()
+        if refund.balance_due != 0:  # pragma: no cover - guarded by the credit check above
+            raise RuntimeError("a refund must be covered by the shop's credit")
+        audit.record(
+            "payments.refund_recorded",
+            target=refund,
+            target_repr=number,
+            metadata={
+                "retailer_id": str(retailer.pk),
+                "amount": str(refund.amount),
+                "mode": refund.mode,
+                "date": str(refund.refund_date),
+            },
+        )
+        outbox.emit(
+            "refund.recorded",
+            aggregate_type="Refund",
+            aggregate_id=refund.pk,
+            payload={
+                "refund_id": str(refund.pk),
+                "number": number,
+                "retailer_id": str(retailer.pk),
+                "amount": f"{refund.amount:.2f}",
+            },
+        )
+        return refund

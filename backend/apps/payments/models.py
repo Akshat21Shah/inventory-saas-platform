@@ -95,3 +95,44 @@ class Payment(TenantScopedModel):
 
     def __str__(self) -> str:
         return self.number
+
+
+class Refund(TenantScopedModel):
+    """Money paid back to a shop from its credit balance (ADR-047 item 4). It debits the ledger and
+    uses the shop's unused money oldest first (a target in the allocation engine, covered in
+    full when recorded). Own number series (RFD/26-27/000001) and a refund voucher."""
+
+    class Mode(models.TextChoices):
+        CASH = "CASH", "Cash"
+        BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
+        UPI = "UPI", "UPI"
+
+    number = models.CharField(max_length=16)
+    retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
+    amount = MoneyField()
+    mode = models.CharField(max_length=13, choices=Mode.choices)
+    refund_date = models.DateField()  # IST; the ledger entry date
+    reference_no = models.CharField(max_length=60, blank=True, default="")
+    notes = models.CharField(max_length=500, blank=True, default="")
+    recorded_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    balance_due = MoneyField(default=0)  # running: not yet covered by credit (0 once recorded)
+    voucher_pdf_key = models.CharField(max_length=255, blank=True, default="")
+    voucher_pdf_status = models.CharField(max_length=8, default="PENDING")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uniq_refund_number"),
+            models.CheckConstraint(condition=Q(amount__gt=0), name="refund_amount_pos"),
+            models.CheckConstraint(
+                condition=Q(balance_due__gte=0) & Q(balance_due__lte=F("amount")),
+                name="refund_balance",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "retailer", "refund_date"], name="refund_retailer_idx")
+        ]
+
+    def __str__(self) -> str:
+        return self.number

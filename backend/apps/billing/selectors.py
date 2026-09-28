@@ -154,7 +154,7 @@ def credit_note_detail(
     if note is not None:
         note.used_for_rows = used_for_rows(  # type: ignore[attr-defined]
             Allocation.objects.filter(credit_note=note)
-            .select_related("invoice", "debit_adjustment")
+            .select_related("invoice", "debit_adjustment", "refund")
             .order_by("created_at")
         )
     return note

@@ -74,7 +74,7 @@ class StatementLineSerializer(serializers.Serializer[Any]):
     entry_date = serializers.DateField()
     entry_type = serializers.ChoiceField(choices=EntryType.choices)
     reference_type = serializers.ChoiceField(
-        choices=["INVOICE", "CREDIT_NOTE", "PAYMENT", "ADJUSTMENT"]
+        choices=["INVOICE", "CREDIT_NOTE", "PAYMENT", "ADJUSTMENT", "REFUND"]
     )
     reference_id = serializers.UUIDField()
     reference_number = serializers.CharField()
@@ -99,7 +99,7 @@ class StatementSerializer(serializers.Serializer[Any]):
 
 
 class DueSerializer(serializers.Serializer[Any]):
-    kind = serializers.ChoiceField(choices=["INVOICE", "ADJUSTMENT"])
+    kind = serializers.ChoiceField(choices=["INVOICE", "ADJUSTMENT", "REFUND"])
     id = serializers.UUIDField()
     number = serializers.CharField()
     document_date = serializers.DateField()

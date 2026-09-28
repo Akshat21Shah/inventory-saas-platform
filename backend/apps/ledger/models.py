@@ -53,6 +53,7 @@ class EntryType(models.TextChoices):
     PAYMENT = "PAYMENT", "Payment"
     PAYMENT_REVERSAL = "PAYMENT_REVERSAL", "Payment reversed"
     DEBIT_ADJUSTMENT = "DEBIT_ADJUSTMENT", "Debit adjustment"
+    REFUND = "REFUND", "Refund paid"
     CREDIT_ADJUSTMENT = "CREDIT_ADJUSTMENT", "Credit adjustment"
 
 
@@ -191,6 +192,13 @@ class Allocation(TenantScopedModel):
         blank=True,
         related_name="allocations",
     )
+    refund = models.ForeignKey(  # money paid back uses the shop's credit (ADR-047)
+        "payments.Refund",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="allocations",
+    )
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     amount = MoneyField()  # negative for a reversal
     automatic = models.BooleanField(default=False)  # FIFO or advances applied at issue
@@ -225,8 +233,11 @@ class Allocation(TenantScopedModel):
                 name="allocation_one_source",
             ),
             models.CheckConstraint(
-                condition=Q(invoice__isnull=False, debit_adjustment__isnull=True)
-                | Q(invoice__isnull=True, debit_adjustment__isnull=False),
+                condition=Q(
+                    invoice__isnull=False, debit_adjustment__isnull=True, refund__isnull=True
+                )
+                | Q(invoice__isnull=True, debit_adjustment__isnull=False, refund__isnull=True)
+                | Q(invoice__isnull=True, debit_adjustment__isnull=True, refund__isnull=False),
                 name="allocation_one_target",
             ),
             models.CheckConstraint(

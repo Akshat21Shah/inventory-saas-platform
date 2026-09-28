@@ -5,14 +5,14 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { DueTypeEnum } from './dueTypeEnum';
+import type { AllocationTargetTypeEnum } from './allocationTargetTypeEnum';
 
 /**
- * Where money went: an invoice or a debit adjustment (opening balance, debit).
+ * Where money went: an invoice, a debit adjustment (old bill, debit) or a refund.
  */
 export interface UsedFor {
   id: string;
-  target_type: DueTypeEnum;
+  target_type: AllocationTargetTypeEnum;
   target_id: string;
   target_number: string;
   /**

@@ -1,5 +1,6 @@
 """The ledger's invariants (PLAN §4.5), checked after every money test and in the
-reconciliation property test."""
+reconciliation property test: balance = invoices - credited payments - credit notes
+± adjustments + refunds = what is owed - unused credit."""
 
 from decimal import Decimal
 from typing import Any
@@ -8,7 +9,7 @@ from django.db.models import Sum
 
 from apps.billing.models import CreditNote, Invoice
 from apps.ledger.models import Allocation, LedgerAdjustment, LedgerEntry, RetailerAccount
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from common.tenancy import tenant_context
 
 ZERO = Decimal("0")
@@ -38,12 +39,14 @@ def check_ledger(tenant: Any) -> None:
             adjustments = LedgerAdjustment.objects.filter(retailer_id=shop)
             debit_adj = adjustments.filter(kind__in=("OPENING_DEBIT", "DEBIT"))
             credit_adj = adjustments.filter(kind__in=("OPENING_CREDIT", "CREDIT"))
+            refunds = Refund.objects.filter(retailer_id=shop)
             expected = (
                 _sum(invoices, "grand_total")
                 - _sum(credited_payments, "amount")
                 - _sum(notes, "grand_total")
                 + _sum(debit_adj, "amount")
                 - _sum(credit_adj, "amount")
+                + _sum(refunds, "amount")
             )
             assert account.balance == expected, (shop, account.balance, expected)
 
@@ -53,7 +56,11 @@ def check_ledger(tenant: Any) -> None:
                 + _sum(credit_adj, "unapplied_amount")
             )
             assert account.unapplied_credit == unapplied, shop
-            owed = _sum(invoices, "balance_due") + _sum(debit_adj, "balance_due")
+            owed = (
+                _sum(invoices, "balance_due")
+                + _sum(debit_adj, "balance_due")
+                + _sum(refunds, "balance_due")
+            )
             assert account.balance == owed - unapplied, (shop, account.balance, owed, unapplied)
 
             for invoice in invoices:
@@ -73,3 +80,6 @@ def check_ledger(tenant: Any) -> None:
             for adj in credit_adj:
                 used = _sum(Allocation.objects.filter(credit_adjustment=adj), "amount")
                 assert adj.unapplied_amount == adj.amount - used
+            for refund in refunds:  # covered by credit; owed again if that money is undone
+                covered = _sum(Allocation.objects.filter(refund=refund), "amount")
+                assert refund.balance_due == refund.amount - covered, refund.number

@@ -25,7 +25,7 @@ from apps.ledger import services as ledger
 from apps.ledger.allocation import DEBIT_KINDS
 from apps.ledger.models import LedgerAdjustment, RetailerAccount
 from apps.orders.models import OPEN_STATUSES, OrderLine
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from common.dates import today_ist
@@ -128,7 +128,13 @@ def oldest_overdue(retailer_id: UUID, *, on: date | None = None) -> date | None:
         .values_list("due_date", flat=True)
         .first()
     )
-    found = [d for d in (invoice, debit) if d is not None]
+    refund = (
+        Refund.objects.filter(retailer_id=retailer_id, balance_due__gt=0, refund_date__lt=cutoff)
+        .order_by("refund_date")
+        .values_list("refund_date", flat=True)
+        .first()
+    )
+    found = [d for d in (invoice, debit, refund) if d is not None]
     return min(found) if found else None
 
 

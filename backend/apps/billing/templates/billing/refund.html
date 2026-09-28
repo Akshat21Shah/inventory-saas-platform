@@ -1,0 +1,49 @@
+{% load documents %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Refund voucher {{ doc.number }}</title>
+  {% include "billing/_style.html" %}
+</head>
+<body>
+<section class="page">
+  <header class="top">
+    {% include "billing/_seller.html" %}
+    <div class="title"><h2>Refund voucher</h2></div>
+  </header>
+
+  <table class="meta">
+    <tr><td class="k">Voucher no.</td><td><b>{{ doc.number }}</b></td><td class="k">Date</td><td>{{ doc.refund_date|day }}</td></tr>
+    <tr>
+      <td class="k">Paid to</td><td><b>{{ shop.shop_name }}</b> <span class="muted">({{ shop.code }})</span></td>
+      <td class="k">Mode</td><td>{{ doc.get_mode_display }}</td>
+    </tr>
+    {% if doc.reference_no %}<tr><td class="k">Reference</td><td colspan="3">{{ doc.reference_no }}</td></tr>{% endif %}
+  </table>
+
+  <table class="totals" style="width:60%; margin-left:0">
+    <tr class="grand"><td>Amount paid back</td><td class="n">{{ doc.amount|rupees }}</td></tr>
+  </table>
+  <p class="words"><b>In words:</b> {{ words }}</p>
+
+  <p style="margin-top:4pt">Paid from the shop's credit balance:</p>
+  <table class="summary" style="width:60%">
+    <thead><tr><th>Credit from</th><th class="n">Amount (₹)</th></tr></thead>
+    <tbody>
+      {% for number, value in sources %}<tr><td>{{ number }}</td><td class="n">{{ value|amount }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% if doc.notes %}<p class="muted" style="margin-top:4pt">{{ doc.notes }}</p>{% endif %}
+
+  <div class="bottom">
+    <div><p>Received by</p><div class="sign"><div class="space"></div></div><p class="muted">Name and signature of the shop</p></div>
+    <div class="sign">
+      <p>For <b>{{ seller.legal_name }}</b></p>
+      <div class="space"></div>
+      <p>{{ seller.signatory|default:"" }}</p>
+      <p class="muted">Authorised signatory</p>
+    </div>
+  </div>
+</section>
+</body>
+</html>

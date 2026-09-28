@@ -6,10 +6,10 @@ from typing import Any
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.billing.api.serializers import UsedForSerializer
+from apps.billing.api.serializers import AppliedSerializer, UsedForSerializer
 from apps.billing.models import PdfStatus
 from apps.billing.tax import fy_start
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from apps.platform.selectors import get_setting
 from apps.pricing.api.serializers import ShopRefSerializer, money
 from common.dates import to_ist
@@ -166,3 +166,47 @@ class PendingHandoverSerializer(serializers.Serializer[Any]):
 class ReallocationResultSerializer(serializers.Serializer[Any]):
     reversal = UsedForSerializer()
     reallocated = UsedForSerializer(many=True)
+
+
+class RefundSerializer(serializers.ModelSerializer[Refund]):
+    retailer = ShopRefSerializer()
+    amount = money()
+    mode = serializers.ChoiceField(choices=Refund.Mode.choices)
+    voucher_pdf_status = serializers.ChoiceField(choices=PdfStatus.choices)
+    recorded_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Refund
+        fields = [
+            "id",
+            "number",
+            "refund_date",
+            "retailer",
+            "amount",
+            "mode",
+            "reference_no",
+            "notes",
+            "recorded_by_name",
+            "voucher_pdf_status",
+        ]
+
+    def get_recorded_by_name(self, refund: Refund) -> str:
+        return refund.recorded_by.full_name if refund.recorded_by else ""
+
+
+class RefundDetailSerializer(RefundSerializer):
+    paid_from = AppliedSerializer(many=True, source="paid_from_rows")
+
+    class Meta(RefundSerializer.Meta):
+        fields = [*RefundSerializer.Meta.fields, "paid_from"]
+
+
+class RefundCreateSerializer(serializers.Serializer[Any]):
+    retailer = serializers.UUIDField()
+    amount = money(min_value=0)
+    mode = serializers.ChoiceField(choices=Refund.Mode.choices)
+    refund_date = serializers.DateField()
+    reference_no = serializers.CharField(
+        max_length=60, required=False, allow_blank=True, default=""
+    )
+    notes = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
