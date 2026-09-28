@@ -28,10 +28,10 @@ from apps.orders.models import (
 from apps.orders.quote import build_quote
 from apps.orders.services import (
     CartNotReady,
-    CreditLimitExceeded,
     NotEnoughStock,
     _create_line,
     _problems,
+    credit_refusal,
     emit,
     order_rules,
     recompute_totals,
@@ -321,7 +321,8 @@ def _add_lines(
         rules=rules,
         stock_rules=ShopStockRules.for_tenant(order.tenant_id),
     )
-    problems = [p for p in quote.blocking if p.code != "CREDIT_LIMIT_EXCEEDED"]
+    credit_codes = ("CREDIT_LIMIT_EXCEEDED", "OVERDUE_INVOICES")
+    problems = [p for p in quote.blocking if p.code not in credit_codes]
     if problems:
         raise CartNotReady(details={"problems": _problems(problems)})
     added = quote.totals.grand_total
@@ -329,9 +330,7 @@ def _add_lines(
     status = credit.check(order.retailer, added, breach_action="BLOCK")
     if status.breached:
         if not (override_reason.strip() and by.has_permission_code("credit.manage")):
-            raise CreditLimitExceeded(
-                details={"limit": str(status.limit), "exposure": str(status.exposure)}
-            )
+            raise credit_refusal(status)
         audit.record(
             "credit.override_applied",
             target=order,

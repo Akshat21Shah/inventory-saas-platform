@@ -217,6 +217,7 @@ SPECTACULAR_SETTINGS = {
         "ShipmentPriceSourceEnum": "apps.orders.models.FulfilmentLine.PriceSource",
         "AuditLogActorTypeEnum": "apps.audit.models.AuditLog.ActorType",
         "HistoryActorTypeEnum": "apps.orders.models.OrderStatusHistory.ActorType",
+        "HoldReasonEnum": "apps.orders.models.Order.HoldReason",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

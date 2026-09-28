@@ -218,7 +218,10 @@ def build_quote(
                 )
             )
     status = credit.check(retailer, totals.grand_total, breach_action=rules.breach_action)
-    if status.outcome == credit.CreditOutcome.BLOCKED:
+    overdue = status.reason == credit.BreachReason.OVERDUE
+    if status.outcome == credit.CreditOutcome.BLOCKED and overdue:
+        problems.append(Problem("OVERDUE_INVOICES", {"oldest_due": str(status.oldest_due)}))
+    elif status.outcome == credit.CreditOutcome.BLOCKED:
         problems.append(
             Problem(
                 "CREDIT_LIMIT_EXCEEDED",
@@ -226,7 +229,9 @@ def build_quote(
             )
         )
     elif status.outcome == credit.CreditOutcome.NEEDS_APPROVAL:
-        problems.append(Problem("CREDIT_APPROVAL_NEEDED", blocking=False))
+        problems.append(
+            Problem("CREDIT_APPROVAL_NEEDED", {"reason": status.reason}, blocking=False)
+        )
     return Quote(
         lines=lines,
         totals=totals,

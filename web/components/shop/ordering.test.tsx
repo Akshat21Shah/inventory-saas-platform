@@ -72,7 +72,7 @@ function quote(lines: Array<{ id: string; qty: string; later?: string }>): Quote
     },
     prices_include_gst: false,
     backorders_enabled: true,
-    credit: { limit: null, available: null, outcome: "OK" },
+    credit: { limit: null, available: null, outcome: "OK", reason: "" },
     problems: [],
     can_place: lines.length > 0,
     address_id: null,
@@ -263,5 +263,37 @@ describe("Checkout on a poor connection", () => {
     expect(screen.getByText("Comes later, when stock arrives")).toBeVisible();
     await user.click(screen.getByRole("button", { name: /Place order/ }));
     expect(await screen.findByText(/prices changed/i)).toBeVisible();
+  });
+
+  it("says why an order waits for approval, or can't be placed, when bills are overdue", async () => {
+    const waiting: Quote = {
+      ...quote([{ id: "p1", qty: "6.000" }]),
+      credit: { limit: null, available: null, outcome: "NEEDS_APPROVAL", reason: "OVERDUE" },
+      problems: [
+        { code: "CREDIT_APPROVAL_NEEDED", details: { reason: "OVERDUE" }, blocking: false },
+      ],
+    };
+    const blocked: Quote = {
+      ...waiting,
+      credit: { ...waiting.credit, outcome: "BLOCKED" },
+      problems: [
+        { code: "OVERDUE_INVOICES", details: { oldest_due: "2026-08-01" }, blocking: true },
+      ],
+      can_place: false,
+    };
+    let current = waiting;
+    mockApi({
+      "/api/v1/shop/cart/": () => [200, current],
+      "/api/v1/shop/addresses/": () => [200, []],
+    });
+    const first = renderShop(<CartPage />);
+    expect(
+      await screen.findByText(/You have overdue bills. Your distributor will approve/),
+    ).toBeVisible();
+    first.unmount();
+    current = blocked;
+    renderShop(<CartPage />);
+    expect(await screen.findByText(/You have overdue bills. Please pay them/)).toBeVisible();
+    expect(screen.getByRole("button", { name: /Place order/ })).toBeDisabled();
   });
 });

@@ -51,7 +51,7 @@ def test_prices_tax_and_the_backorder_split_come_from_the_server(tenant_a):
     }
     assert cart["expected_total"] == "567.00" and cart["item_count"] == 2
     assert cart["can_place"] is True and cart["problems"] == []
-    assert cart["credit"] == {"limit": None, "available": None, "outcome": "OK"}
+    assert cart["credit"] == {"limit": None, "available": None, "outcome": "OK", "reason": ""}
     # 0 removes the line; DELETE does the same; clearing empties the cart.
     assert len(_set(client, b, "0")["lines"]) == 1
     assert client.delete(f"{API}/cart/lines/{a.pk}/").json()["lines"] == []
@@ -124,9 +124,14 @@ def test_credit_note_and_blocked_shops(tenant_a):
         Retailer.objects.filter(pk=shop.pk).update(credit_limit=D("300"))
     client = shop_client(tenant_a, shop)
     cart = _set(client, product, "4")  # 420 > 300
-    assert cart["credit"] == {"limit": "300.00", "available": "300.00", "outcome": "NEEDS_APPROVAL"}
+    assert cart["credit"] == {
+        "limit": "300.00",
+        "available": "300.00",
+        "outcome": "NEEDS_APPROVAL",
+        "reason": "CREDIT_LIMIT",
+    }
     assert cart["problems"] == [
-        {"code": "CREDIT_APPROVAL_NEEDED", "details": {}, "blocking": False}
+        {"code": "CREDIT_APPROVAL_NEEDED", "details": {"reason": "CREDIT_LIMIT"}, "blocking": False}
     ]
     assert cart["can_place"] is True  # it goes on hold for approval
     settings(tenant_a, credit__breach_action="BLOCK")

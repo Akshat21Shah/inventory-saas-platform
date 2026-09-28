@@ -221,14 +221,16 @@ def _credit_allows(
     """The waiting quantity is already in the shop's exposure at its order price. An order approved
     from a credit hold is covered for its approved value, backorders included; only a higher
     billing price adds to it, and that extra is checked against the limit as normal
-    (2026-09-28)."""
+    (2026-09-28). Otherwise a shop overdue for too long is skipped too (ADR-046 item 9)."""
     limit = order.retailer.credit_limit
-    if limit is None:
-        return True
     if price is None:
         price, _ = _billing_price(order, line, quantity)
     extra = _extra_value(order, line, quantity, price)
     if order.credit_approved_value is not None and extra == 0:
+        return True
+    if credit.oldest_overdue(order.retailer_id) is not None:  # ADR-046 item 9
+        return False
+    if limit is None:
         return True
     return bool(credit.exposure(order.retailer_id) + extra <= Decimal(limit))
 
@@ -458,7 +460,7 @@ def allocate_manually(
     covered); a shop over its limit is refused unless a ``credit.manage`` user overrides with a
     reason, which is audited (2026-09-28)."""
     from apps.audit import services as audit
-    from apps.orders.services import CreditLimitExceeded
+    from apps.orders.services import credit_refusal
 
     if not amounts or any(q <= 0 for q in amounts.values()):
         raise InvalidFields({"allocations": ["Choose waiting lines and quantities above 0."]})
@@ -491,20 +493,19 @@ def allocate_manually(
                     overridden.append(order)
                 continue
             status = credit.check(order.retailer, ZERO, breach_action="BLOCK")
-            raise CreditLimitExceeded(
-                f"{order.retailer.shop_name} is over its credit limit."
+            overdue = status.reason == credit.BreachReason.OVERDUE
+            raise credit_refusal(
+                status,
+                f"{order.retailer.shop_name} "
+                + ("has overdue invoices." if overdue else "is over its credit limit.")
                 + (
                     " Give a reason to allocate anyway."
                     if can_override
                     else " Someone who manages credit can allocate it."
                 ),
-                details={
-                    "order": order.number,
-                    "retailer": order.retailer.shop_name,
-                    "limit": str(status.limit),
-                    "exposure": str(status.exposure),
-                    "can_override": can_override,
-                },
+                order=order.number,
+                retailer=order.retailer.shop_name,
+                can_override=can_override,
             )
         for order in overridden:
             audit.record(

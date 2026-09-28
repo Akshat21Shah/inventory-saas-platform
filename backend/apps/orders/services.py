@@ -67,6 +67,24 @@ class CreditLimitExceeded(DomainError):
     default_message = "This order is over the credit limit."
 
 
+class OverdueInvoices(DomainError):
+    status_code = 422
+    code = ErrorCode.OVERDUE_INVOICES
+    default_message = "There are overdue invoices to pay first."
+
+
+def credit_refusal(
+    status: credit.CreditStatus, message: str | None = None, **details: Any
+) -> DomainError:
+    """The error for a breached credit check: over the limit, or overdue for too long."""
+    if status.reason == credit.BreachReason.OVERDUE:
+        return OverdueInvoices(message, details={"oldest_due": str(status.oldest_due), **details})
+    return CreditLimitExceeded(
+        message,
+        details={"limit": str(status.limit), "exposure": str(status.exposure), **details},
+    )
+
+
 class NotEnoughStock(DomainError):
     status_code = 409
     code = ErrorCode.INSUFFICIENT_STOCK
@@ -257,8 +275,13 @@ def _place(p: Placement) -> Order:
         stock_rules=ShopStockRules.for_tenant(tenant_id),
         address_id=p.address_id,
     )
-    # Stock problems are decided below, under the lock; the rest must be fixed first.
-    stock_codes = {"NOT_ENOUGH_STOCK", "PARTLY_AVAILABLE", "CREDIT_LIMIT_EXCEEDED"}
+    # Stock and credit problems are decided below, under the lock; the rest must be fixed first.
+    stock_codes = {
+        "NOT_ENOUGH_STOCK",
+        "PARTLY_AVAILABLE",
+        "CREDIT_LIMIT_EXCEEDED",
+        "OVERDUE_INVOICES",
+    }
     other = [x for x in quote.blocking if x.code not in stock_codes]
     if other:
         raise CartNotReady(details={"problems": _problems(other)})
@@ -281,13 +304,7 @@ def _place(p: Placement) -> Order:
     status = OrderStatus.PLACED
     hold_without_stock = False
     if check.outcome == credit.CreditOutcome.BLOCKED:
-        raise CreditLimitExceeded(
-            details={
-                "limit": str(check.limit),
-                "exposure": str(check.exposure),
-                "order_total": str(open_value),
-            }
-        )
+        raise credit_refusal(check, order_total=str(open_value))
     if check.outcome == credit.CreditOutcome.NEEDS_APPROVAL:
         status = OrderStatus.ON_HOLD
         hold_without_stock = not bool(snapshot.get("credit.hold_reserves_stock", True))
@@ -300,7 +317,7 @@ def _place(p: Placement) -> Order:
         placed_via=p.via,
         placed_by_label=staff_label(p.placed_by) if p.via == Order.PlacedVia.STAFF else "",
         status=status,
-        hold_reason=Order.HoldReason.CREDIT_LIMIT if status == OrderStatus.ON_HOLD else "",
+        hold_reason=check.reason if status == OrderStatus.ON_HOLD else "",
         settings_snapshot=snapshot,
         shipping_address=_address_json(quote.address),
         billing_address=_address_json(

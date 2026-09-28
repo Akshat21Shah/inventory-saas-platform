@@ -265,6 +265,7 @@
     "CART_NOT_READY": "Your cart needs a change before you can place the order.",
     "PRICE_CHANGED": "Some prices changed. Please check your cart and place the order again.",
     "CREDIT_LIMIT_EXCEEDED": "This order is over the credit limit.",
+    "OVERDUE_INVOICES": "There are overdue bills to pay first.",
     "PAYMENT_EXCEEDS_OUTSTANDING": "This is more than the shop owes. Advances are turned off in your settings."
   },
   "designSystem": {
@@ -2097,6 +2098,7 @@
       "total": "Total",
       "estimate": "The final amount is on your invoice.",
       "needsApproval": "This order is over your credit limit. Your distributor will approve it before accepting.",
+      "needsApprovalOverdue": "You have overdue bills. Your distributor will approve this order before accepting.",
       "unknownOutcome": "The connection dropped while placing your order. Tap Try again: we'll check first, so it can't be placed twice.",
       "offline": "No connection. Tap Try again when you're back online. Your order hasn't been placed twice.",
       "place": "Place order · {total}",
@@ -2115,6 +2117,7 @@
         "MIN_ORDER_VALUE": "The smallest order is {amount} (with GST).",
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "This order is over your credit limit ({amount} available). Please pay your dues or contact your distributor.",
+        "OVERDUE_INVOICES": "You have overdue bills. Please pay them or contact your distributor.",
         "OTHER": "Something in your cart needs a change."
       }
     }
@@ -2730,6 +2733,7 @@
       "cartEmpty": "Search for products to add them.",
       "later": "{qty} comes later (backorder)",
       "needsApproval": "This order is over the shop's credit limit; it will wait for approval.",
+      "needsApprovalOverdue": "The shop has overdue invoices; this order will wait for approval.",
       "place": "Place order · {total}",
       "placed": "Order {number} placed",
       "problems": {
@@ -2742,6 +2746,7 @@
         "MIN_ORDER_VALUE": "The smallest order is {amount} (with GST).",
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "Over the shop's credit limit ({amount} available).",
+        "OVERDUE_INVOICES": "The shop has overdue invoices to pay first.",
         "OTHER": "Something in the cart needs a change."
       }
     }

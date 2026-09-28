@@ -89,6 +89,7 @@ export * from './copyRequest';
 export * from './costInputRequest';
 export * from './costStatusEnum';
 export * from './credit';
+export * from './creditReason';
 export * from './dashboard';
 export * from './deliveryAddress';
 export * from './dependsOn';

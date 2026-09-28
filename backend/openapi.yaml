@@ -7887,10 +7887,20 @@ components:
           description: Before this order; null without a limit.
         outcome:
           $ref: '#/components/schemas/OutcomeEnum'
+        reason:
+          description: |-
+            Why it needs approval or is blocked: over the limit, or overdue invoices.
+
+            * `CREDIT_LIMIT` - Over the credit limit
+            * `OVERDUE` - Overdue invoices
+          oneOf:
+          - $ref: '#/components/schemas/HoldReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
       required:
       - available
       - limit
       - outcome
+      - reason
     Dashboard:
       type: object
       properties:
