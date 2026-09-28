@@ -408,7 +408,7 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
     <>
       <Link
         href="/manage/invoices"
-        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline"
+        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {t("back")}
@@ -420,14 +420,18 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
               {t("heading", { number: invoice.number })}
               <StatusBadge status={invoice.payment_status} />
             </h1>
-            <p className="text-muted-foreground text-sm">
-              <Link href={`/manage/retailers/${invoice.retailer.id}`} className="hover:underline">
+            <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 text-sm">
+              <Link
+                href={`/manage/retailers/${invoice.retailer.id}`}
+                className="inline-flex min-h-10 items-center hover:underline max-md:min-h-11"
+              >
                 {invoice.retailer.shop_name}
               </Link>
-              {" · "}
               <DateText value={invoice.invoice_date} />
-              {" · "}
-              <Link href={`/manage/orders/${invoice.order.id}`} className="hover:underline">
+              <Link
+                href={`/manage/orders/${invoice.order.id}`}
+                className="inline-flex min-h-10 items-center hover:underline max-md:min-h-11"
+              >
                 {t("forOrder", { number: invoice.order.number })}
               </Link>
             </p>

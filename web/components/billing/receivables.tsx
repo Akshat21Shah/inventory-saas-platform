@@ -445,7 +445,7 @@ export function RetailerLedgerPage({ retailerId }: { retailerId: string }) {
     <>
       <Link
         href={`/manage/retailers/${retailerId}`}
-        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline"
+        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {statement.retailer.shop_name}
@@ -543,7 +543,7 @@ export function RetailerLedgerPage({ retailerId }: { retailerId: string }) {
               return (
                 <li
                   key={line.id}
-                  className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 p-3 md:grid-cols-[7rem_1fr_7rem_7rem_7rem]"
+                  className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 p-3 md:grid-cols-[7rem_1fr_8rem_11rem]"
                 >
                   <span className="text-muted-foreground text-xs md:text-sm">
                     <DateText value={line.entry_date} />
@@ -571,7 +571,6 @@ export function RetailerLedgerPage({ retailerId }: { retailerId: string }) {
                       </span>
                     )}
                   </span>
-                  <span className="hidden md:block" />
                   <span className="text-muted-foreground text-right text-xs max-md:col-span-2 md:text-sm">
                     {t("balance")} <MoneyText value={line.balance} />
                   </span>

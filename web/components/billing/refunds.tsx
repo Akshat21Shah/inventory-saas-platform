@@ -279,7 +279,7 @@ export function RefundDetailPage({ refundId }: { refundId: string }) {
     <>
       <Link
         href="/manage/payments/refunds"
-        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline"
+        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {t("back")}
