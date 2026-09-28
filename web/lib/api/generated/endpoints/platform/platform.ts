@@ -32,6 +32,7 @@ import type {
   FeatureFlag,
   FeatureToggle,
   FeatureToggleRequest,
+  GstIdentityChangeRequest,
   HsnHint,
   HsnHintRequest,
   HsnImportRequest,
@@ -2893,6 +2894,103 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getPlatformTenantFeatureSetMutationOptions(options), queryClient);
+    }
+    export type platformTenantsChangeGstIdentityResponse200 = {
+  data: TenantDetail
+  status: 200
+}
+
+export type platformTenantsChangeGstIdentityResponseSuccess = (platformTenantsChangeGstIdentityResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformTenantsChangeGstIdentityResponse = (platformTenantsChangeGstIdentityResponseSuccess)
+
+export const getPlatformTenantsChangeGstIdentityUrl = (tenantId: string,) => {
+
+
+
+
+  return `/api/v1/platform/tenants/${tenantId}/gst-identity/`
+}
+
+/**
+ * Task 5.13: change a locked GST identity (GSTIN, legal name, state) with a reason.
+ */
+export const platformTenantsChangeGstIdentity = async (tenantId: string,
+    gstIdentityChangeRequest: GstIdentityChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<platformTenantsChangeGstIdentityResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<platformTenantsChangeGstIdentityResponse>(getPlatformTenantsChangeGstIdentityUrl(tenantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(gstIdentityChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getPlatformTenantsChangeGstIdentityMutationKey = () => ['platformTenantsChangeGstIdentity'] as const;
+
+export const getPlatformTenantsChangeGstIdentityMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsChangeGstIdentity>>, TError,PlatformTenantsChangeGstIdentityMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantsChangeGstIdentity>>, TError,PlatformTenantsChangeGstIdentityMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantsChangeGstIdentityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantsChangeGstIdentity>>, PlatformTenantsChangeGstIdentityMutationVariables> = (props) => {
+          const {tenantId,data} = props ?? {};
+
+          return  platformTenantsChangeGstIdentity(tenantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantsChangeGstIdentityMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantsChangeGstIdentity>>>
+    export type PlatformTenantsChangeGstIdentityMutationBody = GstIdentityChangeRequest
+    export type PlatformTenantsChangeGstIdentityMutationError = unknown
+    export type PlatformTenantsChangeGstIdentityMutationVariables = {tenantId: string;data: GstIdentityChangeRequest}
+
+    export const usePlatformTenantsChangeGstIdentity = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantsChangeGstIdentity>>, TError,PlatformTenantsChangeGstIdentityMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantsChangeGstIdentity>>,
+        TError,
+        PlatformTenantsChangeGstIdentityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantsChangeGstIdentityMutationOptions(options), queryClient);
     }
     export type platformTenantOwnerResendInviteResponse202 = {
   data: void

@@ -60,10 +60,12 @@ class TenantDetailSerializer(TenantListSerializer):
     usage = serializers.SerializerMethodField()
     owner = serializers.SerializerMethodField()
     features = serializers.SerializerMethodField()
+    gst_identity_locked = serializers.SerializerMethodField()
 
     class Meta(TenantListSerializer.Meta):
         fields = [
             *TenantListSerializer.Meta.fields,
+            "gst_identity_locked",
             "legal_name",
             "pan",
             "registration_type",
@@ -92,6 +94,18 @@ class TenantDetailSerializer(TenantListSerializer):
     @extend_schema_field(serializers.DictField(child=serializers.BooleanField()))
     def get_features(self, obj: Tenant) -> dict[str, bool]:
         return dict(self.context["features"])
+
+    def get_gst_identity_locked(self, obj: Tenant) -> bool:
+        """After the first invoice, GSTIN, legal name and state change only through the separate
+        GST identity action."""
+        return bool(self.context["gst_identity_locked"])
+
+
+class GstIdentityChangeSerializer(serializers.Serializer[Any]):
+    legal_name = serializers.CharField(max_length=200, required=False)
+    gstin = serializers.CharField(max_length=30, required=False)
+    state_code = serializers.CharField(max_length=2, required=False)
+    reason = serializers.CharField(max_length=1000)
 
 
 class OnboardingSerializer(serializers.Serializer[Any]):

@@ -22,6 +22,11 @@ export interface TenantDetail {
   readonly city: string;
   readonly plan: PlanRef;
   readonly created_at: string;
+  /**
+     * After the first invoice, GSTIN, legal name and state change only through the separate
+     * GST identity action.
+     */
+  readonly gst_identity_locked: boolean;
   readonly legal_name: string;
   readonly pan: string;
   readonly registration_type: RegistrationTypeEnum;

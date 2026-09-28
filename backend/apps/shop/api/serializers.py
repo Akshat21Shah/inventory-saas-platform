@@ -172,12 +172,18 @@ class ShopCreditSerializer(serializers.Serializer[Any]):
     available = money(allow_null=True, help_text="Null without a limit.")
 
 
+class ShopOutstandingSerializer(serializers.Serializer[Any]):
+    balance = money(help_text="What the shop owes after its unused credit (minus: in credit).")
+    overdue = money()
+
+
 class ShopHomeSerializer(serializers.Serializer[Any]):
     recent_orders = ShopOrderRowSerializer(many=True)
     last_order = ShopLastOrderSerializer(allow_null=True)
     open_orders = serializers.IntegerField()
     waiting_items = serializers.IntegerField(help_text="Products on backorder for the shop.")
     credit = ShopCreditSerializer()
+    outstanding = ShopOutstandingSerializer()
 
 
 class CancelOrderSerializer(serializers.Serializer[Any]):

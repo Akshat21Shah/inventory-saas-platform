@@ -177,6 +177,7 @@ def _create_adjustment(
         )
         add_unapplied(account, amount)
     allocation.settle(account, by=by)  # unused credit meets what is owed, oldest first
+    adjustment.refresh_from_db()  # matching changed it through another instance
     audit.record(
         "ledger.adjustment_posted",
         target=adjustment,

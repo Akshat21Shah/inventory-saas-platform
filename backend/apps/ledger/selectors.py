@@ -17,8 +17,8 @@ from uuid import UUID
 from django.db.models import Sum
 
 from apps.billing.models import Invoice
-from apps.ledger.allocation import DEBIT_KINDS
-from apps.ledger.models import LedgerAdjustment, RetailerAccount
+from apps.ledger.allocation import CREDIT_KINDS, DEBIT_KINDS
+from apps.ledger.models import Allocation, LedgerAdjustment, LedgerEntry, RetailerAccount
 from apps.platform.selectors import get_setting
 from common.dates import today_ist
 
@@ -168,3 +168,205 @@ def receivables_summary(
             credit.aggregate(total=Sum("unapplied_credit"))["total"] or ZERO
         ),
     }
+
+
+# --- Allocations, for document pages ------------------------------------------------------------
+
+
+def _undone(allocations: list[Allocation]) -> set[Any]:
+    return {a.reverses_id for a in allocations if a.reverses_id}
+
+
+def applied_rows(allocations: Iterable[Allocation]) -> list[dict[str, Any]]:
+    """Money matched to a due (an invoice or debit adjustment), with where it came from."""
+    rows = list(allocations)
+    undone = _undone(rows)
+    out = []
+    for a in rows:
+        if a.payment is not None:
+            kind, source, number = "PAYMENT", a.payment.pk, a.payment.number
+        elif a.credit_note is not None:
+            kind, source, number = "CREDIT_NOTE", a.credit_note.pk, a.credit_note.number
+        elif a.credit_adjustment is not None:
+            kind, source = "ADJUSTMENT", a.credit_adjustment.pk
+            number = a.credit_adjustment.get_kind_display()
+        else:  # pragma: no cover - a check constraint requires one source
+            continue
+        out.append(
+            {
+                "id": a.pk,
+                "source_type": kind,
+                "source_id": source,
+                "source_number": number,
+                "amount": a.amount,
+                "automatic": a.automatic,
+                "reversed": a.pk in undone,
+                "created_at": a.created_at,
+            }
+        )
+    return out
+
+
+def used_for_rows(allocations: Iterable[Allocation]) -> list[dict[str, Any]]:
+    """Where a payment's or credit's money went."""
+    rows = list(allocations)
+    undone = _undone(rows)
+    out = []
+    for a in rows:
+        if a.invoice is not None:
+            kind, target, number = "INVOICE", a.invoice.pk, a.invoice.number
+        elif a.debit_adjustment is not None:
+            kind, target = "ADJUSTMENT", a.debit_adjustment.pk
+            number = a.debit_adjustment.get_kind_display()
+        else:  # pragma: no cover - a check constraint requires one target
+            continue
+        out.append(
+            {
+                "id": a.pk,
+                "target_type": kind,
+                "target_id": target,
+                "target_number": number,
+                "amount": a.amount,
+                "automatic": a.automatic,
+                "reversed": a.pk in undone,
+                "created_at": a.created_at,
+            }
+        )
+    return out
+
+
+# --- Statement ----------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class StatementLine:
+    id: UUID
+    entry_date: date
+    entry_type: str
+    reference_type: str
+    reference_id: UUID
+    reference_number: str
+    narration: str
+    debit: Decimal
+    credit: Decimal
+    balance: Decimal
+
+
+@dataclass(frozen=True)
+class Statement:
+    date_from: date
+    date_to: date
+    opening_balance: Decimal
+    lines: list[StatementLine]
+    closing_balance: Decimal
+    total_debits: Decimal
+    total_credits: Decimal
+
+
+def statement(retailer_id: UUID, date_from: date, date_to: date) -> Statement:
+    """Entries dated in the range, in date order, with a running balance from the balance before
+    it (a backdated entry, such as an opening balance, appears on its date)."""
+    entries = LedgerEntry.objects.filter(retailer_id=retailer_id)
+    before = entries.filter(entry_date__lt=date_from).aggregate(d=Sum("debit"), c=Sum("credit"))
+    opening = Decimal(before["d"] or ZERO) - Decimal(before["c"] or ZERO)
+    running = opening
+    lines: list[StatementLine] = []
+    for e in entries.filter(entry_date__gte=date_from, entry_date__lte=date_to).order_by(
+        "entry_date", "created_at", "id"
+    ):
+        running += e.debit - e.credit
+        lines.append(
+            StatementLine(
+                id=e.pk,
+                entry_date=e.entry_date,
+                entry_type=e.entry_type,
+                reference_type=e.reference_type,
+                reference_id=e.reference_id,
+                reference_number=e.reference_number,
+                narration=e.narration,
+                debit=e.debit,
+                credit=e.credit,
+                balance=running,
+            )
+        )
+    return Statement(
+        date_from=date_from,
+        date_to=date_to,
+        opening_balance=opening,
+        lines=lines,
+        closing_balance=running,
+        total_debits=sum((line.debit for line in lines), ZERO),
+        total_credits=sum((line.credit for line in lines), ZERO),
+    )
+
+
+def open_money(retailer_id: UUID) -> list[dict[str, Any]]:
+    """Unused money a user can match to dues: payments, credit-note credit, credit adjustments."""
+    from apps.billing.models import CreditNote
+    from apps.payments.models import Payment
+
+    rows: list[dict[str, Any]] = [
+        {"source_type": "PAYMENT", "id": p.pk, "number": p.number, "date": p.payment_date,
+         "amount": p.amount, "unapplied_amount": p.unapplied_amount}
+        for p in Payment.objects.filter(retailer_id=retailer_id, unapplied_amount__gt=0)
+    ] + [
+        {"source_type": "CREDIT_NOTE", "id": n.pk, "number": n.number, "date": n.note_date,
+         "amount": n.grand_total, "unapplied_amount": n.unapplied_amount}
+        for n in CreditNote.objects.filter(retailer_id=retailer_id, unapplied_amount__gt=0)
+    ] + [
+        {"source_type": "ADJUSTMENT", "id": a.pk, "number": a.get_kind_display(),
+         "date": a.adjustment_date, "amount": a.amount, "unapplied_amount": a.unapplied_amount}
+        for a in LedgerAdjustment.objects.filter(
+            retailer_id=retailer_id, kind__in=CREDIT_KINDS, unapplied_amount__gt=0
+        )
+    ]  # fmt: skip
+    return sorted(rows, key=lambda r: (r["date"], r["number"]))
+
+
+# --- Receivables per shop -----------------------------------------------------------------------
+
+
+def receivable_rows(
+    retailer_ids: list[UUID], *, on: date | None = None, basis: str | None = None
+) -> tuple[str, list[dict[str, Any]]]:
+    """The receivables and ageing tables: each shop with a balance or unused credit, with its
+    name, salesperson, credit limit and last payment; the most overdue first."""
+    from apps.payments.models import Payment
+    from apps.retailers.models import Retailer
+
+    today = on or today_ist()
+    used, rows = ageing(retailer_ids, on=today, basis=basis)
+    shops = {
+        r.pk: r
+        for r in Retailer.objects.filter(pk__in=[row.retailer_id for row in rows]).select_related(
+            "salesperson"
+        )
+    }
+    last_paid: dict[UUID, tuple[date, Decimal]] = {}
+    for p in (
+        Payment.objects.filter(retailer_id__in=list(shops), credited=True)
+        .order_by("retailer_id", "-payment_date", "-created_at")
+        .distinct("retailer_id")
+    ):
+        last_paid[p.retailer_id] = (p.payment_date, p.amount)
+    out = []
+    for row in rows:
+        shop = shops[row.retailer_id]
+        paid = last_paid.get(row.retailer_id)
+        out.append(
+            {
+                "retailer": shop,
+                "salesperson_name": shop.salesperson.full_name if shop.salesperson else "",
+                "credit_limit": shop.credit_limit,
+                "buckets": row.buckets,
+                "owed": row.owed,
+                "overdue": row.overdue,
+                "unapplied_credit": row.unapplied_credit,
+                "net": row.net,
+                "oldest_due": row.oldest_due,
+                "days_overdue": (today - row.oldest_due).days if row.oldest_due else 0,
+                "last_payment_date": paid[0] if paid else None,
+                "last_payment_amount": paid[1] if paid else None,
+            }
+        )
+    return used, out

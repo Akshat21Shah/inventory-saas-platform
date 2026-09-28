@@ -959,6 +959,172 @@ paths:
                 items:
                   $ref: '#/components/schemas/CategoryTreeNode'
           description: ''
+  /api/v1/credit-notes/:
+    get:
+      operationId: credit_notes_list
+      parameters:
+      - in: query
+        name: automatic
+        schema:
+          type: boolean
+        description: Issued automatically
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: invoice
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - CANCELLATION
+          - PRICE_ADJUSTMENT
+          - RETURN
+          - SHORT_SUPPLY
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Credit note, invoice or shop name
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCreditNoteRowList'
+          description: ''
+    post:
+      operationId: credit_notes_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditNoteCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditNoteDetail'
+          description: ''
+  /api/v1/credit-notes/{note_id}/:
+    get:
+      operationId: credit_notes_retrieve
+      parameters:
+      - in: path
+        name: note_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditNoteDetail'
+          description: ''
+  /api/v1/credit-notes/{note_id}/pdf/:
+    get:
+      operationId: credit_notes_pdf
+      parameters:
+      - in: path
+        name: note_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/credit-notes/{note_id}/regenerate-pdf/:
+    post:
+      operationId: credit_notes_regenerate_pdf
+      parameters:
+      - in: path
+        name: note_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
   /api/v1/discount-rules/:
     get:
       operationId: discount_rules_list
@@ -1403,6 +1569,183 @@ paths:
                 type: string
                 format: binary
           description: Spreadsheet download
+  /api/v1/invoices/:
+    get:
+      operationId: invoices_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: einvoice_status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - FAILED
+          - GENERATED
+          - NOT_APPLICABLE
+          - PENDING
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: overdue
+        schema:
+          type: boolean
+        description: Only past the due date with a balance
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: payment_status
+        schema:
+          type: string
+          enum:
+          - PAID
+          - PARTIAL
+          - UNPAID
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Invoice, order, shop name or code
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvoiceRowList'
+          description: ''
+  /api/v1/invoices/{invoice_id}/:
+    get:
+      operationId: invoices_retrieve
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDetail'
+          description: ''
+  /api/v1/invoices/{invoice_id}/pdf/:
+    get:
+      operationId: invoices_pdf
+      parameters:
+      - in: query
+        name: copies
+        schema:
+          type: boolean
+        description: The three labelled copies (original, duplicate, triplicate) in
+          one PDF, for printing
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/invoices/{invoice_id}/regenerate-pdf/:
+    post:
+      operationId: invoices_regenerate_pdf
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/ledger/adjustments/:
+    post:
+      operationId: ledger_adjustments_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - receivables
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LedgerAdjustmentCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerAdjustment'
+          description: ''
   /api/v1/meta/:
     get:
       operationId: meta_retrieve
@@ -1622,6 +1965,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/StaffOrder'
           description: ''
+  /api/v1/orders/{order_id}/confirmation/:
+    get:
+      operationId: orders_confirmation
+      description: Not found when the order has no confirmation (not accepted yet,
+        or the setting was off when it was placed).
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
   /api/v1/orders/{order_id}/hold/approve/:
     post:
       operationId: orders_hold_approve
@@ -1736,6 +2108,370 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderCounts'
+          description: ''
+  /api/v1/payment-allocations/{allocation_id}/reverse/:
+    post:
+      operationId: payment_allocations_reverse
+      description: Undo an allocation (automatic or by hand) and optionally match
+        the money to other dues in the same step. Audited.
+      parameters:
+      - in: path
+        name: allocation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReallocateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReallocationResult'
+          description: ''
+  /api/v1/payments/:
+    get:
+      operationId: payments_list
+      parameters:
+      - in: query
+        name: collected_by
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: handover_status
+        schema:
+          type: string
+          enum:
+          - HANDED_OVER
+          - NOT_TRACKED
+          - WITH_SALESMAN
+      - in: query
+        name: mode
+        schema:
+          type: string
+          enum:
+          - BANK_TRANSFER
+          - CASH
+          - CHEQUE
+          - UPI
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Receipt, shop, reference or cheque
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - BOUNCED
+          - CLEARED
+          - PENDING_CLEARANCE
+          - RECEIVED
+          - REVERSED
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentRowList'
+          description: ''
+    post:
+      operationId: payments_record
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordPaymentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/{payment_id}/:
+    get:
+      operationId: payments_retrieve
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/{payment_id}/allocate/:
+    post:
+      operationId: payments_allocate
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentAllocateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/{payment_id}/bounce/:
+    post:
+      operationId: payments_bounce
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/{payment_id}/clear/:
+    post:
+      operationId: payments_clear
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClearRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/{payment_id}/receipt/:
+    get:
+      operationId: payments_receipt
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/payments/{payment_id}/regenerate-receipt/:
+    post:
+      operationId: payments_regenerate_receipt
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/payments/{payment_id}/reverse/:
+    post:
+      operationId: payments_reverse
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/collect/:
+    post:
+      operationId: payments_collect
+      description: A salesman's collection from one of their shops. It is credited
+        to the shop at once and stays "With salesman" until someone who records payments
+        confirms it was handed over.
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/handover/:
+    post:
+      operationId: payments_handover
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandoverRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandoverResult'
           description: ''
   /api/v1/permissions/:
     get:
@@ -2516,6 +3252,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeatureToggle'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/gst-identity/:
+    post:
+      operationId: platform_tenants_change_gst_identity
+      description: 'Task 5.13: change a locked GST identity (GSTIN, legal name, state)
+        with a reason.'
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GstIdentityChangeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDetail'
           description: ''
   /api/v1/platform/tenants/{tenant_id}/owner/resend-invite/:
     post:
@@ -3666,6 +4431,120 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicBranding'
           description: ''
+  /api/v1/receivables/:
+    get:
+      operationId: receivables_list
+      parameters:
+      - in: query
+        name: overdue
+        schema:
+          type: boolean
+        description: Only shops with something overdue
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: salesperson
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Shop name, code or mobile
+      tags:
+      - receivables
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceivablesPage'
+          description: ''
+  /api/v1/receivables/ageing/:
+    get:
+      operationId: receivables_ageing
+      parameters:
+      - in: query
+        name: basis
+        schema:
+          type: string
+          enum:
+          - DUE_DATE
+          - INVOICE_DATE
+        description: Defaults to the receivables.ageing_basis setting
+      - in: query
+        name: overdue
+        schema:
+          type: boolean
+        description: Only shops with something overdue
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: salesperson
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Shop name, code or mobile
+      tags:
+      - receivables
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceivablesPage'
+          description: ''
+  /api/v1/receivables/summary/:
+    get:
+      operationId: receivables_summary
+      tags:
+      - receivables
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceivablesSummary'
+          description: ''
+  /api/v1/reports/collections-pending-handover/:
+    get:
+      operationId: reports_collections_pending_handover
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingHandover'
+          description: ''
   /api/v1/reports/stock/low-stock/:
     get:
       operationId: reports_low_stock
@@ -4580,6 +5459,30 @@ paths:
                 items:
                   $ref: '#/components/schemas/GridPreviewRow'
           description: ''
+  /api/v1/retailers/{retailer_id}/dues/:
+    get:
+      operationId: retailers_dues
+      description: |-
+        What the shop owes (earliest due first) and its unused money: for recording a payment and
+        choosing what it pays, or matching credit by hand.
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - receivables
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dues'
+          description: ''
   /api/v1/retailers/{retailer_id}/free-products/:
     get:
       operationId: retailers_free_products
@@ -4602,6 +5505,39 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FreeProduct'
+          description: ''
+  /api/v1/retailers/{retailer_id}/ledger/:
+    get:
+      operationId: retailers_ledger
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Defaults to 90 days ago
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: Defaults to today
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - receivables
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statement'
           description: ''
   /api/v1/retailers/{retailer_id}/prices/:
     get:
@@ -5033,6 +5969,20 @@ paths:
                 items:
                   $ref: '#/components/schemas/Setting'
           description: ''
+  /api/v1/shop/account/:
+    get:
+      operationId: shop_account
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopAccount'
+          description: ''
   /api/v1/shop/addresses/:
     get:
       operationId: shop_addresses_list
@@ -5217,6 +6167,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/CheckoutAttempt'
           description: ''
+  /api/v1/shop/credit-notes/{note_id}/pdf/:
+    get:
+      operationId: shop_credit_notes_pdf
+      parameters:
+      - in: path
+        name: note_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
   /api/v1/shop/fulfilment-lines/{line_id}/cancel-repriced/:
     post:
       operationId: shop_fulfilment_line_cancel_repriced
@@ -5251,6 +6228,108 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShopHome'
+          description: ''
+  /api/v1/shop/invoices/:
+    get:
+      operationId: shop_invoices_list
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - overdue
+          - paid
+          - unpaid
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvoiceRowList'
+          description: ''
+  /api/v1/shop/invoices/{invoice_id}/:
+    get:
+      operationId: shop_invoices_retrieve
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDetail'
+          description: ''
+  /api/v1/shop/invoices/{invoice_id}/pdf/:
+    get:
+      operationId: shop_invoices_pdf
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/shop/ledger/:
+    get:
+      operationId: shop_ledger
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statement'
           description: ''
   /api/v1/shop/order-lines/{line_id}/cancel-backorder/:
     post:
@@ -5375,6 +6454,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/ShopOrder'
           description: ''
+  /api/v1/shop/orders/{order_id}/confirmation/:
+    get:
+      operationId: shop_orders_confirmation
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
   /api/v1/shop/orders/{order_id}/repeat/:
     post:
       operationId: shop_order_repeat
@@ -5395,6 +6501,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RepeatResult'
+          description: ''
+  /api/v1/shop/payments/:
+    get:
+      operationId: shop_payments_list
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentRowList'
+          description: ''
+  /api/v1/shop/payments/{payment_id}/:
+    get:
+      operationId: shop_payments_retrieve
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/shop/payments/{payment_id}/receipt/:
+    get:
+      operationId: shop_payments_receipt
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
           description: ''
   /api/v1/shop/products/:
     get:
@@ -6759,6 +7936,14 @@ components:
         * `ADD` - Add
         * `REMOVE` - Remove
         * `COUNTED` - Counted
+    AgeingBasisEnum:
+      enum:
+      - INVOICE_DATE
+      - DUE_DATE
+      type: string
+      description: |-
+        * `INVOICE_DATE` - INVOICE_DATE
+        * `DUE_DATE` - DUE_DATE
     Alert:
       type: object
       properties:
@@ -6941,6 +8126,42 @@ components:
         * `RELEASE` - Stock released
         * `RETURN` - Goods returned
         * `MANUAL` - Manual
+    Applied:
+      type: object
+      description: 'Money matched to this document: a payment, credit-note credit
+        or a credit adjustment.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        source_type:
+          $ref: '#/components/schemas/MoneySourceTypeEnum'
+        source_id:
+          type: string
+          format: uuid
+        source_number:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Negative when it undoes an earlier allocation.
+        automatic:
+          type: boolean
+        reversed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - amount
+      - automatic
+      - created_at
+      - id
+      - reversed
+      - source_id
+      - source_number
+      - source_type
     AppliedDiscount:
       type: object
       properties:
@@ -7341,6 +8562,36 @@ components:
       - name
       - products
       - value
+    Buckets:
+      type: object
+      properties:
+        not_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Only when ageing by days past the due date.
+        d0_30:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        d31_60:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        d61_90:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        d90_plus:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - d0_30
+      - d31_60
+      - d61_90
+      - d90_plus
+      - not_due
     BulkActionEnum:
       enum:
       - activate
@@ -7500,11 +8751,17 @@ components:
         has_signatory_image:
           type: boolean
           readOnly: true
+        gst_identity_locked:
+          type: boolean
+          readOnly: true
+          description: After the first invoice the GSTIN, legal name and state are
+            read-only.
       required:
       - address_line1
       - address_line2
       - city
       - email
+      - gst_identity_locked
       - gstin
       - has_signatory_image
       - invoice_footer
@@ -7745,6 +9002,53 @@ components:
       required:
       - choice_token
       - tenant_id
+    ClearRequest:
+      type: object
+      properties:
+        'on':
+          type: string
+          format: date
+          nullable: true
+    CollectRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        payment_date:
+          type: string
+          format: date
+        reference_no:
+          type: string
+          default: ''
+          maxLength: 60
+        cheque_number:
+          type: string
+          default: ''
+          maxLength: 20
+        cheque_date:
+          type: string
+          format: date
+          nullable: true
+        bank_name:
+          type: string
+          default: ''
+          maxLength: 120
+        notes:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - amount
+      - mode
+      - payment_date
+      - retailer
     CompleteCostsRequest:
       type: object
       properties:
@@ -7901,6 +9205,290 @@ components:
       - limit
       - outcome
       - reason
+    CreditNoteCreateKindEnum:
+      enum:
+      - RETURN
+      - PRICE_ADJUSTMENT
+      type: string
+      description: |-
+        * `RETURN` - RETURN
+        * `PRICE_ADJUSTMENT` - PRICE_ADJUSTMENT
+    CreditNoteCreateRequest:
+      type: object
+      properties:
+        invoice:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/CreditNoteCreateKindEnum'
+        reason:
+          default: ''
+          description: |-
+            Required for returns.
+
+            * `DAMAGED` - Damaged
+            * `EXPIRED` - Expired
+            * `WRONG_ITEM` - Wrong item
+            * `EXCESS_SUPPLY` - Excess supply
+            * `OTHER` - Other
+          oneOf:
+          - $ref: '#/components/schemas/ReturnReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditNoteLineInputRequest'
+      required:
+      - invoice
+      - kind
+      - lines
+    CreditNoteDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        note_date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/CreditNoteKindEnum'
+        return_reason:
+          oneOf:
+          - $ref: '#/components/schemas/ReturnReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        issued_automatically:
+          type: boolean
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        invoice:
+          $ref: '#/components/schemas/DocumentRef'
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        applied_to_invoice:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credit not yet used for other dues.
+        pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        seller: {}
+        buyer: {}
+        place_of_supply:
+          $ref: '#/components/schemas/Place'
+        supply_type:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        reason_note:
+          type: string
+        totals:
+          $ref: '#/components/schemas/Totals'
+        amount_in_words:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditNoteLine'
+        used_for:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsedFor'
+      required:
+      - amount_in_words
+      - applied_to_invoice
+      - buyer
+      - grand_total
+      - id
+      - invoice
+      - kind
+      - lines
+      - note_date
+      - number
+      - pdf_status
+      - place_of_supply
+      - reason_note
+      - retailer
+      - return_reason
+      - seller
+      - supply_type
+      - totals
+      - unapplied_amount
+      - used_for
+    CreditNoteKindEnum:
+      enum:
+      - RETURN
+      - SHORT_SUPPLY
+      - CANCELLATION
+      - PRICE_ADJUSTMENT
+      type: string
+      description: |-
+        * `RETURN` - Return
+        * `SHORT_SUPPLY` - Short supply
+        * `CANCELLATION` - Cancellation
+        * `PRICE_ADJUSTMENT` - Price adjustment
+    CreditNoteLine:
+      type: object
+      properties:
+        line_no:
+          type: integer
+        invoice_line_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        product_code:
+          type: string
+        hsn_code:
+          type: string
+        unit_code:
+          type: string
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        disposition:
+          oneOf:
+          - $ref: '#/components/schemas/DispositionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        taxable_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cgst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        sgst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        igst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cess_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - cess_amount
+      - cgst_amount
+      - description
+      - disposition
+      - gst_rate
+      - hsn_code
+      - igst_amount
+      - invoice_line_id
+      - line_no
+      - line_total
+      - product_code
+      - quantity
+      - sgst_amount
+      - taxable_value
+      - unit_code
+    CreditNoteLineInputRequest:
+      type: object
+      properties:
+        invoice_line:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: 'Returns: how many came back.'
+        disposition:
+          allOf:
+          - $ref: '#/components/schemas/DispositionEnum'
+          default: RETURN_TO_STOCK
+        taxable_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: 'Price adjustments: the taxable value to credit.'
+      required:
+      - invoice_line
+    CreditNoteRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        note_date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/CreditNoteKindEnum'
+        return_reason:
+          oneOf:
+          - $ref: '#/components/schemas/ReturnReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        issued_automatically:
+          type: boolean
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        invoice:
+          $ref: '#/components/schemas/DocumentRef'
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        applied_to_invoice:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credit not yet used for other dues.
+        pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+      required:
+      - applied_to_invoice
+      - grand_total
+      - id
+      - invoice
+      - kind
+      - note_date
+      - number
+      - pdf_status
+      - retailer
+      - return_reason
+      - unapplied_amount
+    CreditTimingEnum:
+      enum:
+      - ON_RECEIPT
+      - ON_CLEARANCE
+      type: string
+      description: |-
+        * `ON_RECEIPT` - When received
+        * `ON_CLEARANCE` - When cleared
     Dashboard:
       type: object
       properties:
@@ -8146,6 +9734,127 @@ components:
           type: string
           default: ''
           maxLength: 40
+    DispositionEnum:
+      enum:
+      - RETURN_TO_STOCK
+      - DAMAGED
+      - NOT_RETURNED
+      type: string
+      description: |-
+        * `RETURN_TO_STOCK` - Return to stock
+        * `DAMAGED` - Received damaged
+        * `NOT_RETURNED` - Not physically returned
+    DocumentLink:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Valid for 5 minutes; null until READY.
+      required:
+      - status
+      - url
+    DocumentRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+      required:
+      - id
+      - number
+    Due:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/DueTypeEnum'
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        document_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - balance_due
+      - document_date
+      - due_date
+      - id
+      - kind
+      - number
+    DueAmountRequest:
+      type: object
+      properties:
+        target_type:
+          $ref: '#/components/schemas/DueTypeEnum'
+        target_id:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - target_id
+      - target_type
+    DueTypeEnum:
+      enum:
+      - INVOICE
+      - ADJUSTMENT
+      type: string
+      description: |-
+        * `INVOICE` - INVOICE
+        * `ADJUSTMENT` - ADJUSTMENT
+    Dues:
+      type: object
+      properties:
+        position:
+          $ref: '#/components/schemas/Position'
+        dues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Due'
+        unused_money:
+          type: array
+          items:
+            $ref: '#/components/schemas/MoneySource'
+      required:
+      - dues
+      - position
+      - unused_money
+    EInvoiceStatusEnum:
+      enum:
+      - NOT_APPLICABLE
+      - PENDING
+      - GENERATED
+      - FAILED
+      - CANCELLED
+      type: string
+      description: |-
+        * `NOT_APPLICABLE` - Not applicable
+        * `PENDING` - Pending
+        * `GENERATED` - Generated
+        * `FAILED` - Failed
+        * `CANCELLED` - Cancelled
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -8177,6 +9886,24 @@ components:
       description: |-
         * `BASE` - Base unit
         * `PACK` - Pack
+    EntryTypeEnum:
+      enum:
+      - OPENING_BALANCE
+      - INVOICE
+      - CREDIT_NOTE
+      - PAYMENT
+      - PAYMENT_REVERSAL
+      - DEBIT_ADJUSTMENT
+      - CREDIT_ADJUSTMENT
+      type: string
+      description: |-
+        * `OPENING_BALANCE` - Opening balance
+        * `INVOICE` - Invoice
+        * `CREDIT_NOTE` - Credit note
+        * `PAYMENT` - Payment
+        * `PAYMENT_REVERSAL` - Payment reversed
+        * `DEBIT_ADJUSTMENT` - Debit adjustment
+        * `CREDIT_ADJUSTMENT` - Credit adjustment
     EventEnum:
       enum:
       - PLACE
@@ -8669,6 +10396,27 @@ components:
       - price
       - product
       - simple
+    GstIdentityChangeRequest:
+      type: object
+      properties:
+        legal_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          minLength: 1
+          maxLength: 30
+        state_code:
+          type: string
+          minLength: 1
+          maxLength: 2
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
     GstRateOption:
       type: object
       properties:
@@ -8700,6 +10448,37 @@ components:
           maxLength: 200
       required:
       - code
+    HandoverRequest:
+      type: object
+      properties:
+        payments:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 500
+          minItems: 1
+      required:
+      - payments
+    HandoverResult:
+      type: object
+      properties:
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRow'
+      required:
+      - payments
+    HandoverStatusEnum:
+      enum:
+      - NOT_TRACKED
+      - WITH_SALESMAN
+      - HANDED_OVER
+      type: string
+      description: |-
+        * `NOT_TRACKED` - Not tracked
+        * `WITH_SALESMAN` - With salesman
+        * `HANDED_OVER` - Handed over
     History:
       type: object
       properties:
@@ -9244,6 +11023,317 @@ components:
           maxLength: 200
       required:
       - token
+    InvoiceDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        order:
+          $ref: '#/components/schemas/OrderRef'
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        payment_status:
+          $ref: '#/components/schemas/InvoicePaymentStatusEnum'
+        days_overdue:
+          type: integer
+          description: Days past the due date while something is owed; 0 otherwise.
+          readOnly: true
+        issued_trigger:
+          $ref: '#/components/schemas/InvoiceTriggerEnum'
+        rate_differs_from_order:
+          type: boolean
+        pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        einvoice_status:
+          $ref: '#/components/schemas/EInvoiceStatusEnum'
+        seller: {}
+        buyer: {}
+        place_of_supply:
+          $ref: '#/components/schemas/Place'
+        supply_type:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        prices_include_tax:
+          type: boolean
+        reverse_charge:
+          type: boolean
+        totals:
+          $ref: '#/components/schemas/Totals'
+        amount_in_words:
+          type: string
+        amount_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        amount_credited:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        settings_snapshot: {}
+        fulfilment_id:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLine'
+        credit_notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditNoteRow'
+        applied:
+          type: array
+          items:
+            $ref: '#/components/schemas/Applied'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - ack_date
+      - ack_no
+      - amount_credited
+      - amount_in_words
+      - amount_paid
+      - applied
+      - balance_due
+      - buyer
+      - credit_notes
+      - days_overdue
+      - due_date
+      - einvoice_status
+      - fulfilment_id
+      - grand_total
+      - id
+      - invoice_date
+      - irn
+      - issued_trigger
+      - lines
+      - number
+      - order
+      - payment_status
+      - pdf_status
+      - place_of_supply
+      - retailer
+      - seller
+      - supply_type
+      - totals
+    InvoiceLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        line_no:
+          type: integer
+        product_id:
+          type: string
+          format: uuid
+        product_code:
+          type: string
+        description:
+          type: string
+        hsn_code:
+          type: string
+        unit_code:
+          type: string
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        gross_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        taxable_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cgst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        sgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        sgst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        igst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        igst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cess_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        cess_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        order_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        rate_differs_from_order:
+          type: boolean
+        credited_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Already credited by credit notes.
+      required:
+      - cess_amount
+      - cess_rate
+      - cgst_amount
+      - cgst_rate
+      - credited_quantity
+      - description
+      - discount_amount
+      - gross_amount
+      - gst_rate
+      - hsn_code
+      - id
+      - igst_amount
+      - igst_rate
+      - line_no
+      - line_total
+      - order_rate
+      - product_code
+      - product_id
+      - quantity
+      - rate_differs_from_order
+      - sgst_amount
+      - sgst_rate
+      - taxable_value
+      - unit_code
+      - unit_price
+    InvoicePaymentStatusEnum:
+      enum:
+      - UNPAID
+      - PARTIAL
+      - PAID
+      type: string
+      description: |-
+        * `UNPAID` - Unpaid
+        * `PARTIAL` - Partly paid
+        * `PAID` - Paid
+    InvoiceRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        order:
+          $ref: '#/components/schemas/OrderRef'
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        payment_status:
+          $ref: '#/components/schemas/InvoicePaymentStatusEnum'
+        days_overdue:
+          type: integer
+          description: Days past the due date while something is owed; 0 otherwise.
+          readOnly: true
+        issued_trigger:
+          $ref: '#/components/schemas/InvoiceTriggerEnum'
+        rate_differs_from_order:
+          type: boolean
+        pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        einvoice_status:
+          $ref: '#/components/schemas/EInvoiceStatusEnum'
+      required:
+      - balance_due
+      - days_overdue
+      - due_date
+      - einvoice_status
+      - grand_total
+      - id
+      - invoice_date
+      - issued_trigger
+      - number
+      - order
+      - payment_status
+      - pdf_status
+      - retailer
+    InvoiceTriggerEnum:
+      enum:
+      - ON_DISPATCH
+      - ON_ACCEPTANCE
+      - ON_ALLOCATION
+      - AFTER_DISPATCH
+      type: string
+      description: |-
+        * `ON_DISPATCH` - At dispatch
+        * `ON_ACCEPTANCE` - At acceptance
+        * `ON_ALLOCATION` - At backorder allocation
+        * `AFTER_DISPATCH` - After dispatch (Phase 4 data)
     ItemInputRequest:
       type: object
       properties:
@@ -9279,6 +11369,98 @@ components:
       required:
       - changed
       - warnings
+    LedgerAdjustment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/LedgerAdjustmentKindEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        adjustment_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        narration:
+          type: string
+          maxLength: 300
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - adjustment_date
+      - amount
+      - balance_due
+      - due_date
+      - id
+      - kind
+      - narration
+      - retailer_id
+      - unapplied_amount
+    LedgerAdjustmentCreateRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/LedgerAdjustmentKindEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        narration:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - amount
+      - date
+      - kind
+      - narration
+      - retailer
+    LedgerAdjustmentKindEnum:
+      enum:
+      - OPENING_DEBIT
+      - OPENING_CREDIT
+      - DEBIT
+      - CREDIT
+      type: string
+      description: |-
+        * `OPENING_DEBIT` - Opening balance (owed)
+        * `OPENING_CREDIT` - Opening balance (advance)
+        * `DEBIT` - Debit adjustment
+        * `CREDIT` - Credit adjustment
+    LedgerReferenceTypeEnum:
+      enum:
+      - INVOICE
+      - CREDIT_NOTE
+      - PAYMENT
+      - ADJUSTMENT
+      type: string
+      description: |-
+        * `INVOICE` - INVOICE
+        * `CREDIT_NOTE` - CREDIT_NOTE
+        * `PAYMENT` - PAYMENT
+        * `ADJUSTMENT` - ADJUSTMENT
     LineQuantityRequest:
       type: object
       properties:
@@ -9772,6 +11954,44 @@ components:
           maxLength: 40
       required:
       - mfa_token
+    MoneySource:
+      type: object
+      properties:
+        source_type:
+          $ref: '#/components/schemas/MoneySourceTypeEnum'
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        date:
+          type: string
+          format: date
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - date
+      - id
+      - number
+      - source_type
+      - unapplied_amount
+    MoneySourceTypeEnum:
+      enum:
+      - PAYMENT
+      - CREDIT_NOTE
+      - ADJUSTMENT
+      type: string
+      description: |-
+        * `PAYMENT` - PAYMENT
+        * `CREDIT_NOTE` - CREDIT_NOTE
+        * `ADJUSTMENT` - ADJUSTMENT
     Movement:
       type: object
       properties:
@@ -9830,7 +12050,7 @@ components:
           readOnly: true
         reference_type:
           allOf:
-          - $ref: '#/components/schemas/ReferenceTypeEnum'
+          - $ref: '#/components/schemas/MovementReferenceTypeEnum'
           readOnly: true
         reference_id:
           type: string
@@ -9862,6 +12082,24 @@ components:
       - reserved_after
       - unit_cost
       - value
+    MovementReferenceTypeEnum:
+      enum:
+      - INWARD
+      - ADJUSTMENT
+      - ORDER
+      - ORDER_LINE
+      - FULFILMENT
+      - CREDIT_NOTE
+      - ALLOCATION
+      type: string
+      description: |-
+        * `INWARD` - Goods receipt
+        * `ADJUSTMENT` - Adjustment
+        * `ORDER` - Order
+        * `ORDER_LINE` - Order line
+        * `FULFILMENT` - Shipment
+        * `CREDIT_NOTE` - Credit note
+        * `ALLOCATION` - Backorder allocation
     MovementTypeEnum:
       enum:
       - INWARD
@@ -10098,6 +12336,17 @@ components:
       - ready_qty
       - unit_code
       - unit_price
+    OrderRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+      required:
+      - id
+      - number
     OrderRow:
       type: object
       description: A row on the order board.
@@ -10325,6 +12574,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Category'
+    PaginatedCreditNoteRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditNoteRow'
     PaginatedDiscountRuleList:
       type: object
       required:
@@ -10458,6 +12726,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Invitation'
+    PaginatedInvoiceRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceRow'
     PaginatedLowStockRowList:
       type: object
       required:
@@ -10534,6 +12821,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrderRow'
+    PaginatedPaymentRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRow'
     PaginatedPriceListItemList:
       type: object
       required:
@@ -11431,6 +13737,241 @@ components:
           type: string
           minLength: 1
           nullable: true
+    PaymentAllocateRequest:
+      type: object
+      properties:
+        to:
+          type: array
+          items:
+            $ref: '#/components/schemas/DueAmountRequest'
+        reason:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - to
+    PaymentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        payment_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        credit_timing:
+          $ref: '#/components/schemas/CreditTimingEnum'
+        credited:
+          type: boolean
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credited but not yet matched to dues.
+        reference_no:
+          type: string
+          maxLength: 60
+        cheque_number:
+          type: string
+          maxLength: 20
+        handover_status:
+          $ref: '#/components/schemas/HandoverStatusEnum'
+        collected_by_name:
+          type: string
+          readOnly: true
+        receipt_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        cheque_date:
+          type: string
+          format: date
+          nullable: true
+        bank_name:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+        recorded_by_name:
+          type: string
+          readOnly: true
+        handed_over_at:
+          type: string
+          format: date-time
+          nullable: true
+        handed_over_by_name:
+          type: string
+          readOnly: true
+        cleared_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversal_reason:
+          type: string
+          maxLength: 300
+        used_for:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsedFor'
+      required:
+      - amount
+      - collected_by_name
+      - credit_timing
+      - handed_over_by_name
+      - handover_status
+      - id
+      - mode
+      - number
+      - payment_date
+      - receipt_pdf_status
+      - recorded_by_name
+      - retailer
+      - status
+      - unapplied_amount
+      - used_for
+    PaymentModeEnum:
+      enum:
+      - CASH
+      - CHEQUE
+      - BANK_TRANSFER
+      - UPI
+      type: string
+      description: |-
+        * `CASH` - Cash
+        * `CHEQUE` - Cheque
+        * `BANK_TRANSFER` - Bank transfer
+        * `UPI` - UPI
+    PaymentReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - reason
+    PaymentRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        payment_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        credit_timing:
+          $ref: '#/components/schemas/CreditTimingEnum'
+        credited:
+          type: boolean
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credited but not yet matched to dues.
+        reference_no:
+          type: string
+          maxLength: 60
+        cheque_number:
+          type: string
+          maxLength: 20
+        handover_status:
+          $ref: '#/components/schemas/HandoverStatusEnum'
+        collected_by_name:
+          type: string
+          readOnly: true
+        receipt_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+      required:
+      - amount
+      - collected_by_name
+      - credit_timing
+      - handover_status
+      - id
+      - mode
+      - number
+      - payment_date
+      - receipt_pdf_status
+      - retailer
+      - status
+      - unapplied_amount
+    PaymentStatusEnum:
+      enum:
+      - RECEIVED
+      - PENDING_CLEARANCE
+      - CLEARED
+      - BOUNCED
+      - REVERSED
+      type: string
+      description: |-
+        * `RECEIVED` - Received
+        * `PENDING_CLEARANCE` - Waiting for the cheque to clear
+        * `CLEARED` - Cheque cleared
+        * `BOUNCED` - Cheque bounced
+        * `REVERSED` - Reversed
+    PdfStatusEnum:
+      enum:
+      - PENDING
+      - READY
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Being prepared
+        * `READY` - Ready
+        * `FAILED` - Failed
+    PendingHandover:
+      type: object
+      properties:
+        salesman_id:
+          type: string
+          format: uuid
+        salesman_name:
+          type: string
+        count:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        oldest:
+          type: string
+          format: date
+      required:
+      - amount
+      - count
+      - oldest
+      - salesman_id
+      - salesman_name
     Permission:
       type: object
       properties:
@@ -11455,6 +13996,16 @@ components:
       required:
       - full_name
       - id
+    Place:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
     PlaceOrderRequest:
       type: object
       properties:
@@ -11573,6 +14124,39 @@ components:
       required:
       - code
       - name
+    Position:
+      type: object
+      properties:
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: 'Net: owed minus unused credit.'
+        owed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        overdue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unapplied_credit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        oldest_due:
+          type: string
+          format: date
+          nullable: true
+        days_overdue:
+          type: integer
+      required:
+      - balance
+      - days_overdue
+      - oldest_due
+      - overdue
+      - owed
+      - unapplied_credit
     PreferredLanguageEnum:
       enum:
       - en
@@ -12569,6 +15153,33 @@ components:
       - allows_decimal
       - code
       - name
+    ReallocateRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+        to:
+          type: array
+          items:
+            $ref: '#/components/schemas/DueAmountRequest'
+          description: Where the money goes instead; leave empty to keep it as unused
+            credit.
+      required:
+      - reason
+    ReallocationResult:
+      type: object
+      properties:
+        reversal:
+          $ref: '#/components/schemas/UsedFor'
+        reallocated:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsedFor'
+      required:
+      - reallocated
+      - reversal
     ReasonCodeEnum:
       enum:
       - COUNT_CORRECTION
@@ -12876,6 +15487,204 @@ components:
       description: |-
         * `DRAFT` - Draft
         * `POSTED` - Posted
+    ReceivableRow:
+      type: object
+      properties:
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        salesperson_name:
+          type: string
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        buckets:
+          $ref: '#/components/schemas/Buckets'
+        owed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Every due's balance.
+        overdue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Past its due date.
+        unapplied_credit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Money paid or credited, not yet used.
+        net:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Owed minus unused credit (the ledger balance).
+        oldest_due:
+          type: string
+          format: date
+          nullable: true
+          description: Earliest overdue due date.
+        days_overdue:
+          type: integer
+        last_payment_date:
+          type: string
+          format: date
+          nullable: true
+        last_payment_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - buckets
+      - credit_limit
+      - days_overdue
+      - last_payment_amount
+      - last_payment_date
+      - net
+      - oldest_due
+      - overdue
+      - owed
+      - retailer
+      - salesperson_name
+      - unapplied_credit
+    ReceivablesPage:
+      type: object
+      properties:
+        basis:
+          $ref: '#/components/schemas/AgeingBasisEnum'
+        totals:
+          $ref: '#/components/schemas/ReceivablesTotals'
+        count:
+          type: integer
+          description: Shops in the table (every page).
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceivableRow'
+      required:
+      - basis
+      - count
+      - page
+      - page_size
+      - results
+      - totals
+    ReceivablesSummary:
+      type: object
+      properties:
+        owed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        overdue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        shops_overdue:
+          type: integer
+        due_this_week:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unapplied_credit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        collections_pending_handover:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: With salesmen, not yet handed over (payments.record only).
+      required:
+      - collections_pending_handover
+      - due_this_week
+      - overdue
+      - owed
+      - shops_overdue
+      - unapplied_credit
+    ReceivablesTotals:
+      type: object
+      properties:
+        buckets:
+          $ref: '#/components/schemas/Buckets'
+        owed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        overdue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        unapplied_credit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        net:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        shops:
+          type: integer
+      required:
+      - buckets
+      - net
+      - overdue
+      - owed
+      - shops
+      - unapplied_credit
+    RecordPaymentRequest:
+      type: object
+      properties:
+        retailer:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        payment_date:
+          type: string
+          format: date
+        reference_no:
+          type: string
+          default: ''
+          maxLength: 60
+        cheque_number:
+          type: string
+          default: ''
+          maxLength: 20
+        cheque_date:
+          type: string
+          format: date
+          nullable: true
+        bank_name:
+          type: string
+          default: ''
+          maxLength: 120
+        notes:
+          type: string
+          default: ''
+          maxLength: 500
+        pay_first:
+          type: array
+          items:
+            $ref: '#/components/schemas/DueAmountRequest'
+          description: Dues to pay first; the rest goes to the earliest dues, then
+            is kept as credit.
+      required:
+      - amount
+      - mode
+      - payment_date
+      - retailer
     RecoveryCodes:
       type: object
       properties:
@@ -12896,24 +15705,6 @@ components:
       required:
       - id
       - name
-    ReferenceTypeEnum:
-      enum:
-      - INWARD
-      - ADJUSTMENT
-      - ORDER
-      - ORDER_LINE
-      - FULFILMENT
-      - CREDIT_NOTE
-      - ALLOCATION
-      type: string
-      description: |-
-        * `INWARD` - Goods receipt
-        * `ADJUSTMENT` - Adjustment
-        * `ORDER` - Order
-        * `ORDER_LINE` - Order line
-        * `FULFILMENT` - Shipment
-        * `CREDIT_NOTE` - Credit note
-        * `ALLOCATION` - Backorder allocation
     RefreshInputRequest:
       type: object
       properties:
@@ -13403,6 +16194,20 @@ components:
       required:
       - mobile
       - shop_name
+    ReturnReasonEnum:
+      enum:
+      - DAMAGED
+      - EXPIRED
+      - WRONG_ITEM
+      - EXCESS_SUPPLY
+      - OTHER
+      type: string
+      description: |-
+        * `DAMAGED` - Damaged
+        * `EXPIRED` - Expired
+        * `WRONG_ITEM` - Wrong item
+        * `EXCESS_SUPPLY` - Excess supply
+        * `OTHER` - Other
     Role:
       type: object
       properties:
@@ -13678,6 +16483,40 @@ components:
       description: |-
         * `ORDER_SNAPSHOT` - Order price
         * `REPRICED` - Today's price
+    ShopAccount:
+      type: object
+      properties:
+        position:
+          $ref: '#/components/schemas/Position'
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        available_credit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Null without a limit.
+        ageing_basis:
+          $ref: '#/components/schemas/AgeingBasisEnum'
+        ageing:
+          $ref: '#/components/schemas/Buckets'
+        overdue_bills:
+          type: integer
+        orders_blocked_for_overdue:
+          type: boolean
+          description: New orders wait for approval or are refused until overdue bills
+            are paid.
+      required:
+      - ageing
+      - ageing_basis
+      - available_credit
+      - credit_limit
+      - orders_blocked_for_overdue
+      - overdue_bills
+      - position
     ShopAvailability:
       type: object
       description: Plain labels only; the quantity only when the distributor shows
@@ -13812,10 +16651,13 @@ components:
           description: Products on backorder for the shop.
         credit:
           $ref: '#/components/schemas/ShopCredit'
+        outstanding:
+          $ref: '#/components/schemas/ShopOutstanding'
       required:
       - credit
       - last_order
       - open_orders
+      - outstanding
       - recent_orders
       - waiting_items
     ShopImage:
@@ -14048,6 +16890,21 @@ components:
       - placed_at
       - placed_by_label
       - status
+    ShopOutstanding:
+      type: object
+      properties:
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: 'What the shop owes after its unused credit (minus: in credit).'
+        overdue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - balance
+      - overdue
     ShopPrice:
       type: object
       properties:
@@ -14666,6 +17523,99 @@ components:
       required:
       - code
       - name
+    Statement:
+      type: object
+      properties:
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        position:
+          $ref: '#/components/schemas/Position'
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        opening_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementLine'
+        total_debits:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        total_credits:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        closing_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - closing_balance
+      - credit_limit
+      - date_from
+      - date_to
+      - lines
+      - opening_balance
+      - position
+      - retailer
+      - total_credits
+      - total_debits
+    StatementLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entry_date:
+          type: string
+          format: date
+        entry_type:
+          $ref: '#/components/schemas/EntryTypeEnum'
+        reference_type:
+          $ref: '#/components/schemas/LedgerReferenceTypeEnum'
+        reference_id:
+          type: string
+          format: uuid
+        reference_number:
+          type: string
+        narration:
+          type: string
+        debit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        credit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Running balance after this entry.
+      required:
+      - balance
+      - credit
+      - debit
+      - entry_date
+      - entry_type
+      - id
+      - narration
+      - reference_id
+      - reference_number
+      - reference_type
     StockAlertStatusEnum:
       enum:
       - OPEN
@@ -14971,6 +17921,14 @@ components:
       required:
       - alerts
       - receipts_awaiting_cost
+    SupplyTypeEnum:
+      enum:
+      - INTRA
+      - INTER
+      type: string
+      description: |-
+        * `INTRA` - INTRA
+        * `INTER` - INTER
     TaxOptions:
       type: object
       properties:
@@ -15073,6 +18031,12 @@ components:
           type: string
           format: date-time
           readOnly: true
+        gst_identity_locked:
+          type: boolean
+          description: |-
+            After the first invoice, GSTIN, legal name and state change only through the separate
+            GST identity action.
+          readOnly: true
         legal_name:
           type: string
           readOnly: true
@@ -15128,6 +18092,7 @@ components:
       - created_at
       - email
       - features
+      - gst_identity_locked
       - gstin
       - id
       - legal_name
@@ -15258,6 +18223,55 @@ components:
       required:
       - access
       - access_expires_at
+    Totals:
+      type: object
+      properties:
+        gross_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        taxable_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cgst_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        sgst_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        igst_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        cess_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        round_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - cess_total
+      - cgst_total
+      - discount_total
+      - grand_total
+      - gross_total
+      - igst_total
+      - round_off
+      - sgst_total
+      - taxable_total
     Unit:
       type: object
       properties:
@@ -15308,6 +18322,42 @@ components:
       - code
       - name
       - uqc
+    UsedFor:
+      type: object
+      description: 'Where money went: an invoice or a debit adjustment (opening balance,
+        debit).'
+      properties:
+        id:
+          type: string
+          format: uuid
+        target_type:
+          $ref: '#/components/schemas/DueTypeEnum'
+        target_id:
+          type: string
+          format: uuid
+        target_number:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Negative when it undoes an earlier allocation.
+        automatic:
+          type: boolean
+        reversed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - amount
+      - automatic
+      - created_at
+      - id
+      - reversed
+      - target_id
+      - target_number
+      - target_type
     UserTypeEnum:
       enum:
       - PLATFORM

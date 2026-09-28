@@ -40,6 +40,7 @@ const tenant = (overrides: Partial<Detail> = {}): Detail => ({
   usage: { staff: 2, retailers: 0, pending_invitations: 1 },
   owner: { email: "owner@sharma.example", full_name: "Asha Sharma", status: "JOINED" },
   features: {},
+  gst_identity_locked: false,
   ...overrides,
 });
 

@@ -15,10 +15,10 @@
  * * `CREDIT_NOTE` - Credit note
  * * `ALLOCATION` - Backorder allocation
  */
-export type ReferenceTypeEnum = typeof ReferenceTypeEnum[keyof typeof ReferenceTypeEnum];
+export type MovementReferenceTypeEnum = typeof MovementReferenceTypeEnum[keyof typeof MovementReferenceTypeEnum];
 
 
-export const ReferenceTypeEnum = {
+export const MovementReferenceTypeEnum = {
   INWARD: 'INWARD',
   ADJUSTMENT: 'ADJUSTMENT',
   ORDER: 'ORDER',

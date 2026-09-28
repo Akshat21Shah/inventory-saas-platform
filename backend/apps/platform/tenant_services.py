@@ -166,6 +166,27 @@ def _tenant(tenant_id: UUID, *, lock: bool = False) -> Tenant:
     return tenant
 
 
+GST_IDENTITY = ("gstin", "legal_name", "state_id")
+
+
+class GstIdentityLocked(DomainError):
+    status_code = 409
+    code = ErrorCode.GST_IDENTITY_LOCKED
+    default_message = (
+        "The GSTIN, legal name and state can't be changed after the first invoice. "
+        "Ask the platform team."
+    )
+
+
+def gst_identity_locked(tenant_id: UUID) -> bool:
+    """Task 5.13: once the business has issued an invoice, its GST identity is fixed (issued
+    invoices keep their own snapshot either way)."""
+    from apps.billing.models import Invoice
+
+    with transaction.atomic(), tenant_context(tenant_id):  # RLS needs the tenant set
+        return Invoice.objects.exists()
+
+
 @transaction.atomic
 def update_tenant(
     tenant_id: UUID, changes: dict[str, Any], *, by: User, confirm_slug_change: bool = False
@@ -187,6 +208,10 @@ def update_tenant(
         setattr(tenant, field, value)
     if tenant.slug != before["slug"] and not confirm_slug_change:
         raise SlugChangeNotConfirmed()
+    if any(getattr(tenant, f) != before[f] for f in GST_IDENTITY) and gst_identity_locked(
+        tenant.pk
+    ):
+        raise GstIdentityLocked(details={"fields": [f for f in GST_IDENTITY if f in changes]})
     _check_gst_identity(tenant)
     _validate_tenant(tenant)
     diff = audit.diff(before, {f: getattr(tenant, f) for f in allowed})
@@ -203,6 +228,40 @@ def update_tenant(
         )
     old_slug = before["slug"]
     transaction.on_commit(lambda: invalidate_tenant_info(tenant.pk, old_slug))
+    return tenant
+
+
+@transaction.atomic
+def change_gst_identity(
+    tenant_id: UUID, changes: dict[str, Any], *, reason: str, by: User
+) -> Tenant:
+    """The super admin's separate action for a locked GST identity (task 5.13): a reason, an
+    audit entry; invoices already issued keep their snapshot."""
+    if not reason.strip():
+        raise InvalidFields({"reason": ["Say why the GST identity is changing."]})
+    tenant = _tenant(tenant_id, lock=True)
+    before = {f: getattr(tenant, f) for f in (*GST_IDENTITY, "pan")}
+    for field in GST_IDENTITY:
+        if field in changes:
+            value = changes[field].strip()
+            if field == "gstin":
+                value = normalize_gstin(value)
+                tenant.pan = value[2:12]
+            setattr(tenant, field, value)
+    _check_gst_identity(tenant)
+    _validate_tenant(tenant)
+    diff = audit.diff(before, {f: getattr(tenant, f) for f in (*GST_IDENTITY, "pan")})
+    if not diff:
+        return tenant
+    tenant.save()
+    audit.record(
+        "tenant.gst_identity_changed",
+        target=tenant,
+        tenant_id=tenant.pk,
+        changes=diff,
+        metadata={"reason": reason.strip(), "locked": gst_identity_locked(tenant.pk)},
+    )
+    transaction.on_commit(lambda: invalidate_tenant_info(tenant.pk))
     return tenant
 
 

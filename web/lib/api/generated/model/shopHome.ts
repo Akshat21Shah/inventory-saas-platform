@@ -8,6 +8,7 @@
 import type { ShopCredit } from './shopCredit';
 import type { ShopLastOrder } from './shopLastOrder';
 import type { ShopOrderRow } from './shopOrderRow';
+import type { ShopOutstanding } from './shopOutstanding';
 
 export interface ShopHome {
   recent_orders: ShopOrderRow[];
@@ -16,4 +17,5 @@ export interface ShopHome {
   /** Products on backorder for the shop. */
   waiting_items: number;
   credit: ShopCredit;
+  outstanding: ShopOutstanding;
 }

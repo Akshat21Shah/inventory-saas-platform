@@ -17,7 +17,7 @@ from apps.accounts.models import User
 from apps.audit import selectors as audit_selectors
 from apps.audit.api.serializers import AuditFilterSerializer, AuditLogSerializer
 from apps.audit.models import AuditLog
-from apps.platform import registry, services, tenant_settings_services
+from apps.platform import registry, services, tenant_services, tenant_settings_services
 from apps.platform.api import tenant_serializers as s
 from apps.platform.api.serializers import (
     FeatureToggleSerializer,
@@ -66,6 +66,7 @@ def _business(tenant: Tenant, profile: TenantProfile) -> dict[str, Any]:
         "invoice_footer": profile.invoice_footer,
         "signatory_name": profile.signatory_name,
         "has_signatory_image": bool(profile.signatory_image),
+        "gst_identity_locked": tenant_services.gst_identity_locked(tenant.pk),
     }
 
 

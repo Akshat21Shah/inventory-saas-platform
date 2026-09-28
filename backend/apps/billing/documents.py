@@ -272,3 +272,32 @@ def mark_failed(kind: str, object_id: UUID) -> None:
             Payment.objects.filter(pk=object_id).update(receipt_pdf_status=PdfStatus.FAILED)
         else:
             OrderConfirmation.objects.filter(pk=object_id).update(pdf_status=PdfStatus.FAILED)
+
+
+def link(key: str, status: str) -> tuple[dict[str, Any], int]:
+    """The API's answer for a document download: the signed link when ready; 202 while it is
+    being prepared."""
+    ready = status == PdfStatus.READY and bool(key)
+    return (
+        {"status": status, "url": download_url(key) if ready else None},
+        202 if status == PdfStatus.PENDING else 200,
+    )
+
+
+def regenerate(kind: str, object_id: UUID) -> None:
+    """Print a document again (after a failure, or a template fix): PENDING now, rendered after
+    commit."""
+    from django.db import transaction
+
+    from apps.billing.tasks import regenerate as enqueue
+
+    tenant_id = require_tenant_id()
+    if kind == "invoice":
+        Invoice.objects.filter(pk=object_id).update(pdf_status=PdfStatus.PENDING)
+    elif kind == "credit_note":
+        CreditNote.objects.filter(pk=object_id).update(pdf_status=PdfStatus.PENDING)
+    elif kind == "receipt":
+        Payment.objects.filter(pk=object_id).update(receipt_pdf_status=PdfStatus.PENDING)
+    else:
+        OrderConfirmation.objects.filter(pk=object_id).update(pdf_status=PdfStatus.PENDING)
+    transaction.on_commit(lambda: enqueue(kind, object_id, tenant_id))

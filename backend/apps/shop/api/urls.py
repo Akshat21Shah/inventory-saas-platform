@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.shop.api import billing as b
 from apps.shop.api import cart as c
 from apps.shop.api import orders as o
 from apps.shop.api import views as v
@@ -35,6 +36,30 @@ urlpatterns = [
         "fulfilment-lines/<uuid:line_id>/cancel-repriced/",
         o.ShopCancelRepricedView.as_view(),
         name="shop-fulfilment-line-cancel-repriced",
+    ),
+    path(
+        "orders/<uuid:order_id>/confirmation/",
+        b.ShopOrderConfirmationView.as_view(),
+        name="shop-order-confirmation",
+    ),
+    path("invoices/", b.ShopInvoicesView.as_view(), name="shop-invoices"),
+    path("invoices/<uuid:invoice_id>/", b.ShopInvoiceDetailView.as_view(), name="shop-invoice"),
+    path(
+        "invoices/<uuid:invoice_id>/pdf/", b.ShopInvoicePdfView.as_view(), name="shop-invoice-pdf"
+    ),
+    path(
+        "credit-notes/<uuid:note_id>/pdf/",
+        b.ShopCreditNotePdfView.as_view(),
+        name="shop-credit-note-pdf",
+    ),
+    path("ledger/", b.ShopLedgerView.as_view(), name="shop-ledger"),
+    path("account/", b.ShopAccountView.as_view(), name="shop-account"),
+    path("payments/", b.ShopPaymentsView.as_view(), name="shop-payments"),
+    path("payments/<uuid:payment_id>/", b.ShopPaymentDetailView.as_view(), name="shop-payment"),
+    path(
+        "payments/<uuid:payment_id>/receipt/",
+        b.ShopReceiptView.as_view(),
+        name="shop-payment-receipt",
     ),
     path(
         "checkout-attempts/<str:key>/",

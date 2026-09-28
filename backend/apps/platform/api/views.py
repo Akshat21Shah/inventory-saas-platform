@@ -117,6 +117,7 @@ def _tenant_detail(tenant_id: UUID) -> Any:
         "usage": platform_selectors.tenant_usage(tenant_id),
         "owner": platform_selectors.tenant_owner(tenant_id),
         "features": effective_features(tenant_id),
+        "gst_identity_locked": tenant_services.gst_identity_locked(tenant_id),
     }
     return s.TenantDetailSerializer(tenant, context=context).data
 
@@ -148,6 +149,31 @@ class TenantDetailView(CommitThenReadView):
         with transaction.atomic():
             tenant_services.update_tenant(
                 tenant_id, changes, by=_user(request), confirm_slug_change=confirm
+            )
+        return Response(_tenant_detail(tenant_id))
+
+
+class TenantGstIdentityView(CommitThenReadView):
+    """Task 5.13: change a locked GST identity (GSTIN, legal name, state) with a reason."""
+
+    required_permission = "platform.tenants.manage"
+
+    @extend_schema(
+        request=s.GstIdentityChangeSerializer,
+        responses=s.TenantDetailSerializer,
+        operation_id="platform_tenants_change_gst_identity",
+        tags=["platform"],
+    )
+    def post(self, request: Request, tenant_id: UUID) -> Response:
+        data = s.GstIdentityChangeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        changes = dict(data.validated_data)
+        reason = changes.pop("reason")
+        if "state_code" in changes:
+            changes["state_id"] = changes.pop("state_code")
+        with transaction.atomic():
+            tenant_services.change_gst_identity(
+                tenant_id, changes, reason=reason, by=_user(request)
             )
         return Response(_tenant_detail(tenant_id))
 
