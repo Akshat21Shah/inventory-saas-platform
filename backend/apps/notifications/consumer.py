@@ -173,6 +173,8 @@ def targets(code: str, ctx: contexts.EventContext) -> list[Target]:
                 shop = ctx.retailer if rule.recipient == Recipient.SHOP else None
                 target = found[user.pk] = Target(user, shop, set(), False, external)
             target.channels |= set(rule.channels)
+            if rule.recipient == Recipient.SHOP:  # e.g. an announcement also sent by WhatsApp
+                target.channels |= set(ctx.extra.get("add_channels", ()))
             target.compulsory = target.compulsory or rule.compulsory
     return list(found.values())
 

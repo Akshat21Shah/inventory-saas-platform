@@ -110,7 +110,17 @@ COLUMNS: tuple[Column, ...] = (
     C("tags", "Tags", ("group", "category"), False, "Separated by commas.", "wholesale"),
     C("preferred_language", "Language", ("lang",), False, "English, Hindi or Marathi.", "Marathi"),
     C("notes", "Notes", ("remarks", "comment"), False, "", ""),
+    C(
+        "whatsapp_opt_in",
+        "WhatsApp consent",
+        ("whatsapp opt in", "agreed to whatsapp", "whatsapp messages"),
+        False,
+        "Yes only if the shop agreed to get WhatsApp messages. No stops them.",
+        "Yes",
+    ),
 )
+YES = {"yes", "y", "true", "1", "haan", "ha"}
+NO = {"no", "n", "false", "0", "nahi"}
 LABEL = {c.name: c.label for c in COLUMNS}
 ADDRESS = ("address_line1", "address_line2", "city", "district", "pincode")
 CREDIT = ("credit_limit", "payment_terms_days")
@@ -279,6 +289,12 @@ class RetailersKind:
                 plan.error(LABEL["preferred_language"], "Write English, Hindi or Marathi.")
             else:
                 out["preferred_language"] = language
+        if v.get("whatsapp_opt_in"):
+            answer = v["whatsapp_opt_in"].strip().lower()
+            if answer in YES | NO:
+                out["whatsapp_opt_in"] = answer in YES
+            else:
+                plan.error(LABEL["whatsapp_opt_in"], "Write Yes or No.")
         address = {k: v[k] for k in ADDRESS if v.get(k)}
         if address:
             out["address"] = address
@@ -346,9 +362,12 @@ class RetailersKind:
             "city": billing.city if billing else "",
             "district": billing.district if billing else "",
             "pincode": billing.pincode if billing else "",
+            "whatsapp_opt_in": "Yes" if r.whatsapp_opt_in else "No",
         }
 
     def _display(self, name: str, value: Any) -> str:
+        if isinstance(value, bool):
+            return "Yes" if value else "No"
         if isinstance(value, Decimal):
             return f"{value:.2f}"
         if name == "tags":
@@ -358,6 +377,7 @@ class RetailersKind:
     def apply(self, row: RowPlan, *, by: User, cache: dict[str, Any]) -> None:
         data = dict(row.data)
         address = data.pop("address", None)
+        whatsapp = data.pop("whatsapp_opt_in", None)
         credit = {k: data.pop(k) for k in CREDIT if k in data}
         if row.target_id is None:
             retailer = services.create_retailer(
@@ -385,6 +405,10 @@ class RetailersKind:
                 )
         if address:
             self._save_billing(retailer, address, by)
+        if whatsapp is not None:  # the distributor vouches for the shop's answer (ADR-048 item 5)
+            from apps.notifications.consent import Source, set_whatsapp_consent
+
+            set_whatsapp_consent(retailer.pk, whatsapp, source=Source.IMPORT, by=by)
 
     def _save_billing(self, retailer: Retailer, address: dict[str, str], by: User) -> None:
         """The default billing address, created or updated with the columns given."""
@@ -443,4 +467,5 @@ class RetailersKind:
                 "tags": ", ".join(r.tags),
                 "preferred_language": names.get(r.preferred_language, r.preferred_language),
                 "notes": r.notes,
+                "whatsapp_opt_in": "Yes" if r.whatsapp_opt_in else "No",
             }

@@ -38,7 +38,7 @@ def job_event_id(*parts: object) -> UUID:
     return uuid5(NAMESPACE, ":".join(str(p) for p in parts))
 
 
-def _notify(event_id: UUID, ctx: EventContext) -> int:
+def notify(event_id: UUID, ctx: EventContext) -> int:
     tenant = current_tenant()
     ctx.values.setdefault("distributor", distributor_name(tenant))
     created = consumer.fan_out(event_id, ctx, tenant)
@@ -115,7 +115,7 @@ def payment_reminders(today: date) -> int:
             staff_path=f"/manage/retailers/{shop.pk}/ledger",
             extra={"paused": active_pause(shop.pk, today) is not None},
         )
-        _notify(job_event_id(shop.tenant_id, "payment.reminder", shop.pk, today), ctx)
+        notify(job_event_id(shop.tenant_id, "payment.reminder", shop.pk, today), ctx)
         reminded += 1
     return reminded
 
@@ -196,7 +196,7 @@ def handover_reminders(today: date) -> int:
             collector_id=salesman,
             staff_path="/manage/payments/handover",
         )
-        _notify(job_event_id(tenant_id, "handover.reminder", salesman, today), ctx)
+        notify(job_event_id(tenant_id, "handover.reminder", salesman, today), ctx)
     return len(held)
 
 
@@ -265,5 +265,5 @@ def rate_change_warnings(today: date) -> int:
         },
         staff_path="/manage/products",
     )
-    _notify(job_event_id(current_tenant().pk, "tax.rate_change_upcoming", target), ctx)
+    notify(job_event_id(current_tenant().pk, "tax.rate_change_upcoming", target), ctx)
     return len(changes)

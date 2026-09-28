@@ -144,7 +144,7 @@ def _send(claimed: Claimed) -> SendResult:
 
         from apps.accounts.adapters.sms import get_sms_sender
 
-        template = (row.data.get("whatsapp") or {}).get("template") or row.event_code
+        template = row.event_code.replace(".", "_")  # its DLT template, e.g. retailer_welcome
         get_sms_sender().send_text(row.address, row.body, sender_name=name, template=template)
         return SendResult(f"sms-{settings.SMS_PROVIDER}")
     raise PermanentDeliveryError(f"nothing sends {row.channel}")

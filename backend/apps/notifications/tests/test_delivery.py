@@ -213,7 +213,7 @@ def test_sms_goes_through_the_sms_adapter(world):
     assert (sms.phone, sms.text, sms.template) == (
         world["shop"].mobile,
         f"{world['t'].name}: welcome",
-        "retailer.welcome",
+        "retailer_welcome",  # its DLT template
     )
 
 

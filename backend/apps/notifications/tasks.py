@@ -29,8 +29,9 @@ def deliver(*, notification_id: str, tenant_id: str) -> str:
 
 @shared_task(name="notifications.send_due_for_tenant", base=TenantTask)
 def send_due_for_tenant(*, tenant_id: str) -> int:
-    from apps.notifications import delivery
+    from apps.notifications import announcements, delivery
 
+    announcements.publish_due()
     ids = delivery.due()
     delivery.enqueue(ids)
     return len(ids)
