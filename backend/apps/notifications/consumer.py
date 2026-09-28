@@ -218,6 +218,8 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
     from apps.platform.selectors import is_feature_enabled
 
     event = EVENTS[ctx.code]
+    if Notification.objects.filter(event_id=event_id).exists():
+        return 0  # a redelivered event: nothing new (and no second document link)
     people = [t for t in targets(ctx.code, ctx) if t.external or Channel.IN_APP in t.channels]
     if not people:
         return 0
@@ -230,11 +232,22 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
     paused = bool(ctx.extra.get("paused"))
     now = timezone.now()
     rows: list[Notification] = []
+    document_link = ""
+
+    def link_for_shop() -> str:
+        """One link per event, made only when a shop message will carry it."""
+        nonlocal document_link
+        if not document_link and ctx.document is not None:
+            from apps.notifications import links
+
+            document_link = links.create(ctx.document[0], ctx.document[1], tenant.slug)
+        return document_link
+
     for target in people:
         shop = target.retailer is not None
         path = ctx.shop_path if shop else ctx.staff_path
         url = web_url(path or "/", tenant_slug=tenant.slug)
-        values = {**ctx.values, "link": url, "document_link": ctx.extra.get("document_link", "")}
+        values = {**ctx.values, "link": url, "document_link": ""}
         locale = (
             (target.retailer.preferred_language if target.retailer else "")
             or target.user.preferred_language
@@ -242,9 +255,6 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
         )
         for channel in sorted(target.channels):
             if channel != Channel.IN_APP and not target.external:
-                continue
-            text = render(ctx.code, channel, values, locale)
-            if text is None:
                 continue
             address = _address(target, channel)
             reason = _skip_reason(
@@ -255,6 +265,11 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 turned_off=turned_off,
                 paused=paused,
             )
+            carries_link = shop and channel != Channel.IN_APP and not reason
+            values["document_link"] = link_for_shop() if carries_link else ""
+            text = render(ctx.code, channel, values, locale)
+            if text is None:
+                continue
             in_app = channel == Channel.IN_APP
             rows.append(
                 Notification(

@@ -4360,6 +4360,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/BulkScheduleResult'
           description: ''
+  /api/v1/public/documents/{token}/:
+    get:
+      operationId: public_document
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '302':
+          description: Redirect to a 5-minute link to the PDF
+        '200':
+          description: The document is being prepared (HTML)
+        '404':
+          description: Unknown link (HTML)
+        '410':
+          description: Expired or withdrawn link (HTML)
   /api/v1/public/states/:
     get:
       operationId: public_states_list

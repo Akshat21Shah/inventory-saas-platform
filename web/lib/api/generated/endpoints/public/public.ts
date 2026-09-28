@@ -48,6 +48,129 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
+export type publicDocumentResponse200 = {
+  data: void
+  status: 200
+}
+
+export type publicDocumentResponse302 = {
+  data: void
+  status: 302
+}
+
+export type publicDocumentResponse404 = {
+  data: void
+  status: 404
+}
+
+export type publicDocumentResponse410 = {
+  data: void
+  status: 410
+}
+
+export type publicDocumentResponseSuccess = (publicDocumentResponse200) & {
+  headers: Headers;
+};
+export type publicDocumentResponseError = (publicDocumentResponse302 | publicDocumentResponse404 | publicDocumentResponse410) & {
+  headers: Headers;
+};
+
+export type publicDocumentResponse = (publicDocumentResponseSuccess | publicDocumentResponseError)
+
+export const getPublicDocumentUrl = (token: string,) => {
+
+
+
+
+  return `/api/v1/public/documents/${token}/`
+}
+
+export const publicDocument = async (token: string, options?: Parameters<typeof apiFetch>[1]): Promise<publicDocumentResponse> => {
+
+  return apiFetch<publicDocumentResponse>(getPublicDocumentUrl(token),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPublicDocumentQueryKey = (token: string,) => {
+    return [
+    `/api/v1/public/documents/${token}/`
+    ] as const;
+    }
+
+
+export const getPublicDocumentQueryOptions = <TData = Awaited<ReturnType<typeof publicDocument>>, TError = void>(token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicDocumentQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicDocument>>> = ({ signal }) => publicDocument(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDocument>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof publicDocument>>>
+export type PublicDocumentQueryError = void
+
+
+export function usePublicDocument<TData = Awaited<ReturnType<typeof publicDocument>>, TError = void>(
+ token: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDocument>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDocument>>,
+          TError,
+          Awaited<ReturnType<typeof publicDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDocument<TData = Awaited<ReturnType<typeof publicDocument>>, TError = void>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDocument>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDocument>>,
+          TError,
+          Awaited<ReturnType<typeof publicDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDocument<TData = Awaited<ReturnType<typeof publicDocument>>, TError = void>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePublicDocument<TData = Awaited<ReturnType<typeof publicDocument>>, TError = void>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPublicDocumentQueryOptions(token,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type publicStatesListResponse200 = {
   data: State[]
   status: 200

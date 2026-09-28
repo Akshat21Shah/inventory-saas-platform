@@ -16,6 +16,7 @@ export const POLICY_GROUPS = [
   "retailers",
   "stock",
   "credit_payments",
+  "notifications",
   "security",
 ] as const;
 

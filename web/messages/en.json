@@ -580,6 +580,18 @@
       "otp_max_verify_attempts": {
         "label": "Wrong codes allowed",
         "description": "Wrong codes allowed before an OTP stops working."
+      },
+      "whatsapp_price_utility": {
+        "label": "WhatsApp price: utility",
+        "description": "Price in rupees of one WhatsApp utility message (orders, bills, payments, reminders), used for distributors' cost estimates."
+      },
+      "whatsapp_price_marketing": {
+        "label": "WhatsApp price: marketing",
+        "description": "Price in rupees of one WhatsApp marketing message (announcements)."
+      },
+      "whatsapp_price_authentication": {
+        "label": "WhatsApp price: authentication",
+        "description": "Price in rupees of one WhatsApp authentication message (sign-in codes)."
       }
     },
     "retailers": {
@@ -606,6 +618,32 @@
           "SEQUENTIAL": "Apply one after another, most specific first (10% then 5% = 14.5%)"
         }
       }
+    },
+    "notifications": {
+      "quiet_hours_start": {
+        "label": "Quiet hours start",
+        "description": "From this time, reminders and other non-urgent WhatsApp, SMS and email messages wait until quiet hours end. In-app messages are never held."
+      },
+      "quiet_hours_end": {
+        "label": "Quiet hours end",
+        "description": "When quiet hours end and held messages go out."
+      },
+      "document_link_days": {
+        "label": "Bill links work for (days)",
+        "description": "How many days a bill or receipt link sent by WhatsApp or email keeps working."
+      },
+      "payment_reminder_days": {
+        "label": "Payment reminder days",
+        "description": "Days to remind shops of their bills, separated by commas: a minus number is days before the due date, the others days after it (e.g. -2,3,7,15,30)."
+      },
+      "payment_reminder_repeat_days": {
+        "label": "Then remind every (days)",
+        "description": "After the last reminder day, remind again every this many days. 0 stops the reminders."
+      },
+      "handover_reminder_days": {
+        "label": "Handover reminder after (days)",
+        "description": "Remind salesmen of collections not handed over after this many days."
+      }
     }
   },
   "settingsForm": {
@@ -617,7 +655,8 @@
       "credit_payments": "Credit & payments",
       "security": "Security",
       "retailers": "Shops",
-      "pricing": "Pricing"
+      "pricing": "Pricing",
+      "notifications": "Notifications"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -1054,7 +1093,8 @@
         "credit_payments": "Credit & payments",
         "security": "Security",
         "pricing": "Pricing",
-        "retailers": "Shops"
+        "retailers": "Shops",
+        "notifications": "Notifications"
       },
       "features": "Modules",
       "staff": "Staff",
@@ -1069,7 +1109,8 @@
       "credit_payments": "Credit limits and how payments are handled.",
       "security": "Sign-in rules for your staff.",
       "pricing": "How discounts combine and whether they apply on top of shop special prices.",
-      "retailers": "What shops on hold can do and what shops see in the app."
+      "retailers": "What shops on hold can do and what shops see in the app.",
+      "notifications": "Quiet hours, reminders and how long bill links work."
     },
     "unknownGroup": "This settings page does not exist.",
     "noSettings": "Nothing to set here yet",
