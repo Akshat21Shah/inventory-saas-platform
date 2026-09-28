@@ -475,3 +475,23 @@ class RefundRegenerateVoucherView(Guarded):
         with transaction.atomic():
             documents.regenerate("refund", refund.pk)
         return Response({"status": "PENDING", "url": None}, status=202)
+
+
+class RefundReverseView(Guarded):
+    """A refund entered in error: the shop's credit is restored (``payments.record``)."""
+
+    required_permission = RECORD
+
+    @extend_schema(
+        operation_id="refunds_reverse",
+        tags=TAGS,
+        request=s.PaymentReasonSerializer,
+        responses=s.RefundDetailSerializer,
+    )
+    def post(self, request: Request, refund_id: UUID) -> Response:
+        data = s.PaymentReasonSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        refund = _refund(request, refund_id)
+        services.reverse_refund(refund.pk, reason=data.validated_data["reason"], by=_user(request))
+        detail = selectors.refund_detail(refund.pk, user=_user(request))
+        return Response(s.RefundDetailSerializer(detail).data)

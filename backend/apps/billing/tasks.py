@@ -16,6 +16,7 @@ PDF_EVENTS: dict[str, tuple[str, str]] = {
     "payment.received": ("receipt", "payment_id"),
     "order_confirmation.created": ("order_confirmation", "confirmation_id"),
     "refund.recorded": ("refund", "refund_id"),
+    "refund.reversed": ("refund", "refund_id"),  # printed again, marked "Reversed"
 }
 
 

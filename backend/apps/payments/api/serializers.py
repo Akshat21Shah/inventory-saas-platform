@@ -174,6 +174,7 @@ class RefundSerializer(serializers.ModelSerializer[Refund]):
     mode = serializers.ChoiceField(choices=Refund.Mode.choices)
     voucher_pdf_status = serializers.ChoiceField(choices=PdfStatus.choices)
     recorded_by_name = serializers.SerializerMethodField()
+    status = serializers.ChoiceField(choices=Refund.Status.choices)
 
     class Meta:
         model = Refund
@@ -184,10 +185,13 @@ class RefundSerializer(serializers.ModelSerializer[Refund]):
             "retailer",
             "amount",
             "mode",
+            "status",
             "reference_no",
             "notes",
             "recorded_by_name",
             "voucher_pdf_status",
+            "reversed_at",
+            "reversal_reason",
         ]
 
     def get_recorded_by_name(self, refund: Refund) -> str:

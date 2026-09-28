@@ -107,10 +107,20 @@ class Refund(TenantScopedModel):
         BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
         UPI = "UPI", "UPI"
 
+    class Status(models.TextChoices):
+        ISSUED = "ISSUED", "Paid back"
+        REVERSED = "REVERSED", "Reversed"  # entered in error: the shop's credit is restored
+
     number = models.CharField(max_length=16)
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     amount = MoneyField()
     mode = models.CharField(max_length=13, choices=Mode.choices)
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.ISSUED)
+    reversed_at = models.DateTimeField(null=True, blank=True)
+    reversed_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    reversal_reason = models.CharField(max_length=300, blank=True, default="")
     refund_date = models.DateField()  # IST; the ledger entry date
     reference_no = models.CharField(max_length=60, blank=True, default="")
     notes = models.CharField(max_length=500, blank=True, default="")

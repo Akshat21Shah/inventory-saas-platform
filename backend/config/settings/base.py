@@ -238,6 +238,7 @@ SPECTACULAR_SETTINGS = {
         "LedgerReferenceTypeEnum": ["INVOICE", "CREDIT_NOTE", "PAYMENT", "ADJUSTMENT", "REFUND"],
         "AllocationTargetTypeEnum": ["INVOICE", "ADJUSTMENT", "REFUND"],
         "RefundModeEnum": "apps.payments.models.Refund.Mode",
+        "RefundStatusEnum": "apps.payments.models.Refund.Status",
         "AgeingBasisEnum": ["INVOICE_DATE", "DUE_DATE"],
         "LoginStatusEnum": [
             "authenticated",

@@ -1,7 +1,7 @@
 """Reconciliation (PLAN §4.5, §8): whatever happens, in any order and under any payment settings,
-each shop's ledger balance = invoices - credited payments - credit notes ± adjustments + refunds,
-and
-= what is still owed - unused credit (``check_ledger``, after every step)."""
+each shop's ledger balance = invoices - credited payments - credit notes ± adjustments
++ refunds not reversed, and = what is still owed - unused credit (``check_ledger``, after every
+step)."""
 
 from decimal import Decimal as D
 
@@ -23,7 +23,7 @@ from apps.ledger.models import RetailerAccount
 from apps.ledger.tests.helpers import check_ledger
 from apps.orders.tests.helpers import add_stock, make_shop
 from apps.payments import services as payments
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Refund
 from apps.payments.services import PaymentInput
 from apps.platform.selectors import get_setting
 from apps.platform.services import set_tenant_settings
@@ -44,6 +44,7 @@ step = st.one_of(
     st.tuples(st.just("return"), pick, st.sampled_from(["1", "2"])),
     st.tuples(st.just("adjust"), st.sampled_from(["DEBIT", "CREDIT"]), money),
     st.tuples(st.just("reallocate"), pick),
+    st.tuples(st.just("reverse_refund"), pick),
     st.tuples(  # a share of the shop's credit; above 100% is refused
         st.just("refund"),
         st.sampled_from(["CASH", "BANK_TRANSFER", "UPI"]),
@@ -108,6 +109,11 @@ def _run(world, shop, action):
             payments.record_refund(
                 payments.RefundInput(shop.pk, amount, action[1], today_ist()), by=owner
             )
+        elif kind == "reverse_refund":  # refused when already reversed
+            refunds = list(Refund.objects.filter(retailer=shop).order_by("created_at"))
+            if not refunds:
+                return "skipped"
+            payments.reverse_refund(refunds[action[1] % len(refunds)].pk, reason="Error", by=owner)
         elif kind == "reallocate":
             rows = [r for r in live_allocations(retailer_id=shop.pk) if not r.refund_id]
             if rows:
@@ -141,8 +147,8 @@ def test_the_ledger_always_reconciles(world, hold_advances, cheque_timing, steps
         for action in steps:
             try:
                 with transaction.atomic():
-                    _run(world, shop, action)
-                event(f"{action[0]} done")
+                    outcome = _run(world, shop, action)
+                event(f"{action[0]} {outcome or 'done'}")
             except DomainError as refused:  # a refused step changes nothing
                 event(f"{action[0]} refused: {refused.code}")
                 assert refused.code in (

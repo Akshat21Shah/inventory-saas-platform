@@ -1,6 +1,6 @@
 """The ledger's invariants (PLAN §4.5), checked after every money test and in the
 reconciliation property test: balance = invoices - credited payments - credit notes
-± adjustments + refunds = what is owed - unused credit."""
+± adjustments + refunds not reversed = what is owed - unused credit."""
 
 from decimal import Decimal
 from typing import Any
@@ -40,13 +40,14 @@ def check_ledger(tenant: Any) -> None:
             debit_adj = adjustments.filter(kind__in=("OPENING_DEBIT", "DEBIT"))
             credit_adj = adjustments.filter(kind__in=("OPENING_CREDIT", "CREDIT"))
             refunds = Refund.objects.filter(retailer_id=shop)
+            live_refunds = refunds.filter(status="ISSUED")  # a reversal's credit cancels it
             expected = (
                 _sum(invoices, "grand_total")
                 - _sum(credited_payments, "amount")
                 - _sum(notes, "grand_total")
                 + _sum(debit_adj, "amount")
                 - _sum(credit_adj, "amount")
-                + _sum(refunds, "amount")
+                + _sum(live_refunds, "amount")
             )
             assert account.balance == expected, (shop, account.balance, expected)
 
@@ -82,4 +83,7 @@ def check_ledger(tenant: Any) -> None:
                 assert adj.unapplied_amount == adj.amount - used
             for refund in refunds:  # covered by credit; owed again if that money is undone
                 covered = _sum(Allocation.objects.filter(refund=refund), "amount")
-                assert refund.balance_due == refund.amount - covered, refund.number
+                if refund.status == "REVERSED":  # its credit is back and nothing is owed
+                    assert (refund.balance_due, covered) == (ZERO, ZERO), refund.number
+                else:
+                    assert refund.balance_due == refund.amount - covered, refund.number

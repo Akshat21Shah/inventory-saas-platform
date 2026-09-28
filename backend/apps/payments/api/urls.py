@@ -20,6 +20,7 @@ urlpatterns = [
     path("refunds/", v.RefundListCreateView.as_view(), name="refunds"),
     path("refunds/<uuid:refund_id>/", v.RefundDetailView.as_view(), name="refund"),
     path("refunds/<uuid:refund_id>/voucher/", v.RefundVoucherView.as_view(), name="refund-voucher"),
+    path("refunds/<uuid:refund_id>/reverse/", v.RefundReverseView.as_view(), name="refund-reverse"),
     path(
         "refunds/<uuid:refund_id>/regenerate-voucher/",
         v.RefundRegenerateVoucherView.as_view(),

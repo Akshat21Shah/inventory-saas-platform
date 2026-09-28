@@ -4642,6 +4642,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/refunds/{refund_id}/reverse/:
+    post:
+      operationId: refunds_reverse
+      description: 'A refund entered in error: the shop''s credit is restored (``payments.record``).'
+      parameters:
+      - in: path
+        name: refund_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentReasonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundDetail'
+          description: ''
   /api/v1/refunds/{refund_id}/voucher/:
     get:
       operationId: refunds_voucher
@@ -10135,6 +10163,7 @@ components:
       - PAYMENT_REVERSAL
       - DEBIT_ADJUSTMENT
       - REFUND
+      - REFUND_REVERSAL
       - CREDIT_ADJUSTMENT
       type: string
       description: |-
@@ -10145,6 +10174,7 @@ components:
         * `PAYMENT_REVERSAL` - Payment reversed
         * `DEBIT_ADJUSTMENT` - Debit adjustment
         * `REFUND` - Refund paid
+        * `REFUND_REVERSAL` - Refund reversed
         * `CREDIT_ADJUSTMENT` - Credit adjustment
     EventEnum:
       enum:
@@ -16078,6 +16108,8 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         mode:
           $ref: '#/components/schemas/RefundModeEnum'
+        status:
+          $ref: '#/components/schemas/RefundStatusEnum'
         reference_no:
           type: string
           maxLength: 60
@@ -16089,6 +16121,13 @@ components:
           readOnly: true
         voucher_pdf_status:
           $ref: '#/components/schemas/PdfStatusEnum'
+        reversed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversal_reason:
+          type: string
+          maxLength: 300
       required:
       - amount
       - id
@@ -16097,6 +16136,7 @@ components:
       - recorded_by_name
       - refund_date
       - retailer
+      - status
       - voucher_pdf_status
     RefundCreateRequest:
       type: object
@@ -16147,6 +16187,8 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         mode:
           $ref: '#/components/schemas/RefundModeEnum'
+        status:
+          $ref: '#/components/schemas/RefundStatusEnum'
         reference_no:
           type: string
           maxLength: 60
@@ -16158,6 +16200,13 @@ components:
           readOnly: true
         voucher_pdf_status:
           $ref: '#/components/schemas/PdfStatusEnum'
+        reversed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversal_reason:
+          type: string
+          maxLength: 300
         paid_from:
           type: array
           items:
@@ -16171,6 +16220,7 @@ components:
       - recorded_by_name
       - refund_date
       - retailer
+      - status
       - voucher_pdf_status
     RefundModeEnum:
       enum:
@@ -16182,6 +16232,14 @@ components:
         * `CASH` - Cash
         * `BANK_TRANSFER` - Bank transfer
         * `UPI` - UPI
+    RefundStatusEnum:
+      enum:
+      - ISSUED
+      - REVERSED
+      type: string
+      description: |-
+        * `ISSUED` - Paid back
+        * `REVERSED` - Reversed
     RegistrationTypeEnum:
       enum:
       - REGULAR

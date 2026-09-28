@@ -17,12 +17,15 @@ import { FormField } from "@/components/shared/form-field";
 import { FormSelect } from "@/components/shared/form-select";
 import { DateText, MoneyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
+import { ReasonDialog } from "@/components/shared/reason-dialog";
 import { CardSkeleton, PageSkeleton } from "@/components/shared/skeletons";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   refundsRecord,
+  refundsReverse,
   refundsVoucher,
   useRefundsList,
   useRefundsRetrieve,
@@ -73,6 +76,11 @@ export function RefundsPage() {
       header: t("amount"),
       cell: ({ row }) => <MoneyText value={row.original.amount} />,
     },
+    {
+      id: "status",
+      header: t("status"),
+      cell: ({ row }) => <StatusBadge status={row.original.status} labels="refundStatus" />,
+    },
   ];
   return (
     <>
@@ -107,6 +115,7 @@ export function RefundsPage() {
           shop: "primary",
           amount: "primary",
           date: "primary",
+          status: "primary",
           mode: "secondary",
         }}
       />
@@ -270,6 +279,8 @@ export function NewRefundPage() {
 export function RefundDetailPage({ refundId }: { refundId: string }) {
   const t = useTranslations("billing.refunds");
   const modes = useTranslations("billing.modes");
+  const { can } = useAuth();
+  const client = useQueryClient();
   const query = useRefundsRetrieve(refundId);
   if (query.isLoading) return <PageSkeleton />;
   if (query.error) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
@@ -287,7 +298,10 @@ export function RefundDetailPage({ refundId }: { refundId: string }) {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold">{t("heading", { number: refund.number })}</h1>
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
+              {t("heading", { number: refund.number })}
+              <StatusBadge status={refund.status} labels="refundStatus" />
+            </h1>
             <p className="text-muted-foreground text-sm">
               <Link
                 href={`/manage/retailers/${refund.retailer.id}/ledger`}
@@ -305,10 +319,35 @@ export function RefundDetailPage({ refundId }: { refundId: string }) {
               <MoneyText value={refund.amount} />
             </p>
           </div>
-          <DocumentButton fetchLink={() => refundsVoucher(refund.id)}>
-            {t("voucher")}
-          </DocumentButton>
+          <div className="flex flex-wrap gap-2">
+            <DocumentButton fetchLink={() => refundsVoucher(refund.id)}>
+              {t("voucher")}
+            </DocumentButton>
+            {refund.status === "ISSUED" && can("payments.record") ? (
+              <ReasonDialog
+                trigger={
+                  <Button variant="ghost" className="text-destructive min-h-10">
+                    {t("reverse")}
+                  </Button>
+                }
+                title={t("reverseTitle", { number: refund.number })}
+                description={t("reverseBody")}
+                reasonLabel={t("reverseReason")}
+                confirmLabel={t("reverse")}
+                destructive
+                onConfirm={async (reason) => {
+                  await refundsReverse(refund.id, { reason });
+                  void client.invalidateQueries();
+                }}
+              />
+            ) : null}
+          </div>
         </div>
+        {refund.status === "REVERSED" ? (
+          <p className="bg-muted rounded-xl p-3 text-sm">
+            {t("reversedNotice", { reason: refund.reversal_reason ?? "" })}
+          </p>
+        ) : null}
         <section className="max-w-2xl space-y-2" aria-labelledby="refund-from">
           <h2 id="refund-from" className="font-semibold">
             {t("paidFrom")}

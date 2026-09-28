@@ -8,6 +8,7 @@ import { renderWithIntl } from "@/tests/render";
 
 import { HandoverPage, NewPaymentPage, PaymentDetailPage } from "./payments";
 import { ReceivablesPage } from "./receivables";
+import { RefundDetailPage } from "./refunds";
 
 const permissions = new Set<string>();
 const auth = { me: { id: "u1", tenant: { id: "t1" } }, can: (p: string) => permissions.has(p) };
@@ -267,5 +268,56 @@ describe("Receivables", () => {
     await user.click(screen.getByRole("button", { name: "Days past due" }));
     expect(await screen.findAllByText("Not due")).not.toHaveLength(0);
     expect(calls.at(-1)!.url.searchParams.get("basis")).toBe("DUE_DATE");
+  });
+});
+
+describe("A refund", () => {
+  const refund = (status: "ISSUED" | "REVERSED") => ({
+    id: "rf1",
+    number: "RFD/26-27/000001",
+    refund_date: "2026-09-28",
+    retailer: shop,
+    amount: "200.00",
+    mode: "BANK_TRANSFER" as const,
+    status,
+    reference_no: "",
+    notes: "",
+    recorded_by_name: "Owner",
+    voucher_pdf_status: "READY" as const,
+    reversed_at: status === "REVERSED" ? "2026-09-28T12:00:00Z" : null,
+    reversal_reason: status === "REVERSED" ? "Paid to the wrong shop" : "",
+    paid_from: [],
+  });
+
+  it("is reversed with a reason by someone who records payments", async () => {
+    permissions.add("payments.record");
+    let current = refund("ISSUED");
+    const calls = mockApi({
+      "/api/v1/refunds/rf1/": () => [200, current],
+      "POST /api/v1/refunds/rf1/reverse/": () => {
+        current = refund("REVERSED");
+        return [200, current];
+      },
+    });
+    const user = userEvent.setup();
+    renderWithIntl(<RefundDetailPage refundId="rf1" />);
+    await user.click(await screen.findByRole("button", { name: "Reverse (error)" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.type(within(dialog).getByLabelText(/^Why/), "Paid to the wrong shop");
+    await user.click(within(dialog).getByRole("button", { name: "Reverse (error)" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "POST")?.body).toEqual({
+        reason: "Paid to the wrong shop",
+      }),
+    );
+    expect(await screen.findByText(/The amount is back in the shop's credit/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Reverse (error)" })).toBeNull();
+  });
+
+  it("offers no reversal without payments.record", async () => {
+    mockApi({ "/api/v1/refunds/rf1/": () => [200, refund("ISSUED")] });
+    renderWithIntl(<RefundDetailPage refundId="rf1" />);
+    expect(await screen.findByText("Paid back")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Reverse (error)" })).toBeNull();
   });
 });

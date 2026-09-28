@@ -405,6 +405,7 @@ export * from './refundCreateRequest';
 export * from './refundDetail';
 export * from './refundModeEnum';
 export * from './refundsListParams';
+export * from './refundStatusEnum';
 export * from './registrationTypeEnum';
 export * from './repeatResult';
 export * from './reportRow';

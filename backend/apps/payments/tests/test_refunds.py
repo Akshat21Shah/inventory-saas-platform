@@ -175,3 +175,79 @@ def test_refunds_api(world, tenant_b, django_capture_on_commit_callbacks):
     assert outsider.post("/api/v1/refunds/", body, format="json", **key()).status_code == 404
     with tenant_context(world["t"].pk):
         assert Refund.objects.count() == 1
+
+
+class TestReversal:
+    def test_restores_the_credit_exactly_and_marks_the_voucher(
+        self, world, django_capture_on_commit_callbacks
+    ):
+        payment = _pay(world, "500.00")
+        refund = _refund(world, "200.00")
+        with tenant_context(world["t"].pk):
+            with pytest.raises(InvalidFields):
+                services.reverse_refund(refund.pk, reason=" ", by=world["owner"])
+            with django_capture_on_commit_callbacks(execute=True):
+                reversed_ = services.reverse_refund(
+                    refund.pk, reason="Paid to the wrong shop", by=world["owner"]
+                )
+            payment.refresh_from_db()
+            entry = LedgerEntry.objects.get(entry_type="REFUND_REVERSAL")
+            assert AuditLog.objects.filter(action="payments.refund_reversed").exists()
+            with pytest.raises(DomainError):  # only once
+                services.reverse_refund(refund.pk, reason="Again", by=world["owner"])
+            reversed_.refresh_from_db()
+        account = _account(world)
+        assert (account.balance, account.unapplied_credit) == (D("-500.00"), D("500.00"))
+        assert payment.unapplied_amount == D("500.00")
+        assert (entry.credit, entry.reverses.entry_type) == (D("200.00"), "REFUND")
+        assert (reversed_.status, reversed_.reversal_reason) == (
+            "REVERSED",
+            "Paid to the wrong shop",
+        )
+        voucher = get_storage().get(reversed_.voucher_pdf_key).decode()
+        assert "Reversed" in voucher and "Paid to the wrong shop" in voucher
+        check_ledger(world["t"])
+
+    def test_the_restored_credit_pays_what_is_owed_since(self, world):
+        a = make_product(world["t"], "A", base_price=D("123.45"))
+        add_stock(world["t"], a, "10")
+        _pay(world, "300.00")
+        refund = _refund(world, "300.00")
+        invoice = ship_invoice(world["t"], world["shop"], world["owner"], (a, "2"))  # ₹259
+        with tenant_context(world["t"].pk):
+            services.reverse_refund(refund.pk, reason="Cheque not handed over", by=world["owner"])
+            invoice.refresh_from_db()
+        assert (invoice.balance_due, invoice.payment_status) == (D("0.00"), "PAID")
+        assert _account(world).unapplied_credit == D("41.00")
+        check_ledger(world["t"])
+
+    def test_a_refund_owed_again_after_a_bounce_is_cancelled(self, world):
+        cheque = _pay(world, "400.00", "CHEQUE")
+        refund = _refund(world, "400.00")
+        with tenant_context(world["t"].pk):
+            services.bounce_cheque(cheque.pk, reason="No funds", by=world["owner"])
+            assert _account(world).balance == D("400.00")  # the refund is owed
+            services.reverse_refund(refund.pk, reason="Refund not paid out", by=world["owner"])
+            refund.refresh_from_db()
+        assert (refund.status, refund.balance_due) == ("REVERSED", D("0.00"))
+        assert _account(world).balance == D("0.00")
+        check_ledger(world["t"])
+
+
+@covers("refund-reverse")
+def test_reversing_a_refund_through_the_api(world, tenant_b):
+    _pay(world, "500.00")
+    refund = _refund(world, "120.00")
+    url = f"/api/v1/refunds/{refund.pk}/reverse/"
+    sales = client_for(world["t"], make_staff_in(world["t"], "SALES"))
+    assert sales.post(url, {"reason": "x"}, format="json").status_code == 403
+    outsider = client_for(tenant_b, make_staff_in(tenant_b, "OWNER"))
+    assert outsider.post(url, {"reason": "x"}, format="json").status_code == 404
+    c = world["client"]
+    assert c.post(url, {"reason": ""}, format="json").status_code == 400
+    done = c.post(url, {"reason": "Wrong amount"}, format="json")
+    assert done.status_code == 200, done.json()
+    assert (done.json()["status"], done.json()["reversal_reason"]) == ("REVERSED", "Wrong amount")
+    assert c.post(url, {"reason": "Again"}, format="json").status_code == 409
+    listed = c.get("/api/v1/refunds/").json()["results"][0]
+    assert listed["status"] == "REVERSED"

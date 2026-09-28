@@ -14,6 +14,7 @@
  * * `PAYMENT_REVERSAL` - Payment reversed
  * * `DEBIT_ADJUSTMENT` - Debit adjustment
  * * `REFUND` - Refund paid
+ * * `REFUND_REVERSAL` - Refund reversed
  * * `CREDIT_ADJUSTMENT` - Credit adjustment
  */
 export type EntryTypeEnum = typeof EntryTypeEnum[keyof typeof EntryTypeEnum];
@@ -27,5 +28,6 @@ export const EntryTypeEnum = {
   PAYMENT_REVERSAL: 'PAYMENT_REVERSAL',
   DEBIT_ADJUSTMENT: 'DEBIT_ADJUSTMENT',
   REFUND: 'REFUND',
+  REFUND_REVERSAL: 'REFUND_REVERSAL',
   CREDIT_ADJUSTMENT: 'CREDIT_ADJUSTMENT',
 } as const;

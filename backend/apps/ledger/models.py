@@ -54,6 +54,7 @@ class EntryType(models.TextChoices):
     PAYMENT_REVERSAL = "PAYMENT_REVERSAL", "Payment reversed"
     DEBIT_ADJUSTMENT = "DEBIT_ADJUSTMENT", "Debit adjustment"
     REFUND = "REFUND", "Refund paid"
+    REFUND_REVERSAL = "REFUND_REVERSAL", "Refund reversed"
     CREDIT_ADJUSTMENT = "CREDIT_ADJUSTMENT", "Credit adjustment"
 
 

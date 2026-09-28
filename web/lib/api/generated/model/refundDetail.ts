@@ -8,6 +8,7 @@
 import type { Applied } from './applied';
 import type { PdfStatusEnum } from './pdfStatusEnum';
 import type { RefundModeEnum } from './refundModeEnum';
+import type { RefundStatusEnum } from './refundStatusEnum';
 import type { ShopRef } from './shopRef';
 
 export interface RefundDetail {
@@ -19,11 +20,16 @@ export interface RefundDetail {
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   amount: string;
   mode: RefundModeEnum;
+  status: RefundStatusEnum;
   /** @maxLength 60 */
   reference_no?: string;
   /** @maxLength 500 */
   notes?: string;
   readonly recorded_by_name: string;
   voucher_pdf_status: PdfStatusEnum;
+  /** @nullable */
+  reversed_at?: string | null;
+  /** @maxLength 300 */
+  reversal_reason?: string;
   paid_from: Applied[];
 }

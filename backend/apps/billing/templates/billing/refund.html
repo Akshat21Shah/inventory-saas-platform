@@ -9,7 +9,10 @@
 <section class="page">
   <header class="top">
     {% include "billing/_seller.html" %}
-    <div class="title"><h2>Refund voucher</h2></div>
+    <div class="title">
+      <h2>Refund voucher</h2>
+      {% if doc.status == "REVERSED" %}<p class="copy">Reversed</p>{% endif %}
+    </div>
   </header>
 
   <table class="meta">
@@ -34,6 +37,9 @@
     </tbody>
   </table>
   {% if doc.notes %}<p class="muted" style="margin-top:4pt">{{ doc.notes }}</p>{% endif %}
+  {% if doc.status == "REVERSED" %}
+    <p class="flag">Reversed on {{ doc.reversed_at|date:"d-m-Y" }}: {{ doc.reversal_reason }}. The amount is back in the shop's credit balance.</p>
+  {% endif %}
 
   <div class="bottom">
     <div><p>Received by</p><div class="sign"><div class="space"></div></div><p class="muted">Name and signature of the shop</p></div>

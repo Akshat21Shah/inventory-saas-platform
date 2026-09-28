@@ -3168,7 +3168,13 @@
         "notes": "Note",
         "cancel": "Cancel",
         "save": "Record refund"
-      }
+      },
+      "status": "Status",
+      "reverse": "Reverse (error)",
+      "reverseTitle": "Reverse refund {number}?",
+      "reverseBody": "Use this only for a refund entered by mistake. The amount goes back into the shop's credit, and the voucher is marked reversed.",
+      "reverseReason": "Why",
+      "reversedNotice": "Reversed: {reason}. The amount is back in the shop's credit."
     },
     "receivables": {
       "title": "Receivables",
@@ -3260,7 +3266,8 @@
       "PAYMENT_REVERSAL": "Payment reversed",
       "DEBIT_ADJUSTMENT": "Debit adjustment",
       "CREDIT_ADJUSTMENT": "Credit adjustment",
-      "REFUND": "Refund"
+      "REFUND": "Refund",
+      "REFUND_REVERSAL": "Refund reversed"
     },
     "numbering": {
       "title": "Document numbers",
@@ -3290,5 +3297,9 @@
     "WITH_SALESMAN": "With salesman",
     "HANDED_OVER": "Handed over",
     "NOT_NEEDED": "Nothing to hand over"
+  },
+  "refundStatus": {
+    "ISSUED": "Paid back",
+    "REVERSED": "Reversed"
   }
 }

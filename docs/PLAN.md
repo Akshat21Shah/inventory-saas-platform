@@ -674,6 +674,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `payment-allocations/{id}/reverse` | POST | `payments.record` | reverse an (automatic) allocation to reallocate it (audited) |
 | `refunds` | GET, POST 🔑 | view: `payments.view`; record: `payments.record` | pay a shop back from its credit balance (cash, bank transfer, UPI; never more than the credit; `RFD` series; audited; ADR-047) |
 | `refunds/{id}`, `/{id}/voucher`, `/{id}/regenerate-voucher` | GET / POST | `payments.view` / `payments.record` | detail (the credit it used), refund voucher PDF |
+| `refunds/{id}/reverse` | POST | `payments.record` | reverse a refund entered in error (reason; the shop's credit is restored; audited; voucher marked "Reversed") |
 | `payment-intents` | GET | `payments.view` | online payment attempts (Phase 7) |
 | `/api/v1/webhooks/payments/{provider}/{token}/` | POST | 🌐 signature-verified | gateway webhooks (Phase 7) |
 

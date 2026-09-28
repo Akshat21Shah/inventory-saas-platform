@@ -633,3 +633,73 @@ def record_refund(data: RefundInput, *, by: User | None) -> Refund:
             },
         )
         return refund
+
+
+@retry_on_deadlock()
+def reverse_refund(refund_id: UUID, *, reason: str, by: User | None) -> Refund:
+    """A refund entered in error (``payments.record``): the money it used goes back to the shop's
+    credit (and is applied to what it owes, oldest first), a REFUND_REVERSAL credit cancels the
+    debit, and the voucher is printed again marked "Reversed". Audited (ADR-047)."""
+    note = _require_reason(reason)
+    with transaction.atomic():
+        retailer_id = Refund.objects.filter(pk=refund_id).values_list("retailer_id", flat=True)
+        found = retailer_id.first()
+        if found is None:
+            raise NotFound()
+        account = ledger.lock_account(found)  # L1
+        refund: Refund = Refund.objects.select_for_update().get(pk=refund_id)  # L5
+        if refund.status != Refund.Status.ISSUED:
+            raise InvalidPaymentState("This refund was already reversed.")
+        for row in allocation.live_allocations(refund=refund):
+            allocation.reverse(account, row, by=by, reason=f"Refund reversed: {note}")
+        refund.refresh_from_db()
+        refund.status = Refund.Status.REVERSED
+        refund.balance_due = ZERO  # cancelled: nothing is owed for it any more
+        refund.reversed_at = timezone.now()
+        refund.reversed_by = by
+        refund.reversal_reason = note
+        refund.voucher_pdf_status = "PENDING"
+        refund.save(
+            update_fields=[
+                "status",
+                "balance_due",
+                "reversed_at",
+                "reversed_by",
+                "reversal_reason",
+                "voucher_pdf_status",
+                "updated_at",
+            ]
+        )
+        original = LedgerEntry.objects.get(
+            reference_type="REFUND", reference_id=refund.pk, entry_type=EntryType.REFUND
+        )
+        ledger.post(
+            account,
+            EntryType.REFUND_REVERSAL,
+            credit=refund.amount,
+            entry_date=today_ist(),
+            ref=ledger.Reference("REFUND", refund.pk, refund.number),
+            narration=f"Refund reversed: {note}",
+            by=by,
+            reverses=original,
+        )
+        allocation.settle(account, by=by)  # the restored credit pays what is owed, oldest first
+        audit.record(
+            "payments.refund_reversed",
+            target=refund,
+            target_repr=refund.number,
+            metadata={"amount": str(refund.amount), "reason": note},
+        )
+        outbox.emit(
+            "refund.reversed",
+            aggregate_type="Refund",
+            aggregate_id=refund.pk,
+            payload={
+                "refund_id": str(refund.pk),
+                "number": refund.number,
+                "retailer_id": str(refund.retailer_id),
+                "amount": f"{refund.amount:.2f}",
+                "reason": note,
+            },
+        )
+        return refund
