@@ -54,7 +54,8 @@ def world(tenant_a, django_capture_on_commit_callbacks):
 
 def fresh(world: dict[str, Any]) -> Retailer:
     with tenant_context(world["t"].pk):
-        return Retailer.objects.get(pk=world["shop"].pk)
+        shop: Retailer = Retailer.objects.get(pk=world["shop"].pk)
+        return shop
 
 
 def test_consent_from_the_app_staff_and_import(world):
