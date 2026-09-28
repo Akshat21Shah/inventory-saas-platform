@@ -316,7 +316,7 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               "Suggest GST rates from the HSN hint table on product forms and imports."),
     _platform("platform.default_invoice_prefix", Group.INVOICING, SettingType.STRING, "INV",
               "Prefix proposed when a tenant's first invoice series is created.",
-              pattern=r"[A-Z0-9]{1,6}"),
+              pattern=r"[A-Z0-9]{1,3}"),
     _platform("platform.impersonation_session_minutes", Group.SECURITY, SettingType.INT, 30,
               "Maximum length of a support impersonation session.", min_value=5, max_value=60),
     _platform("platform.login_lockout_threshold", Group.SECURITY, SettingType.INT, 5,

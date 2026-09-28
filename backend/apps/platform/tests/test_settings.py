@@ -104,7 +104,7 @@ def test_spec_defaults():
         ("orders.min_order_value", "0.50", Decimal("0.50")),
         ("orders.min_order_value", None, None),
         ("tax.hsn_min_digits", 8, 8),
-        ("platform.default_invoice_prefix", "SD24", "SD24"),
+        ("platform.default_invoice_prefix", "SD2", "SD2"),
     ],
 )
 def test_valid_values(key, value, expected):
@@ -128,7 +128,7 @@ def test_valid_values(key, value, expected):
         ("orders.acceptance_mode", "SOMETIMES", "invalid_choice"),
         ("tax.registration_type", "COMPOSITION", "reserved_choice"),
         ("platform.default_invoice_prefix", "inv", "invalid_format"),
-        ("platform.default_invoice_prefix", "TOOLONG1", "invalid_format"),
+        ("platform.default_invoice_prefix", "SD24", "invalid_format"),  # numbers ≤ 16 chars
     ],
 )
 def test_invalid_values(key, value, code):
