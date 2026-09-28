@@ -36,13 +36,14 @@ def test_seed_is_idempotent(settings):
     # Demo billing (Phase 5): run once, and the ledger reconciles.
     from apps.billing.models import CreditNote, Invoice
     from apps.ledger.tests.helpers import check_ledger
-    from apps.payments.models import Payment
+    from apps.payments.models import Payment, Refund
 
     with tenant_context(sharma.id):
         assert Invoice.objects.exists()
         assert Payment.objects.count() == 4
         assert Payment.objects.filter(handover_status="WITH_SALESMAN").count() == 1
         assert CreditNote.objects.count() == 1
+        assert Refund.objects.count() == 1
     check_ledger(sharma)
 
 

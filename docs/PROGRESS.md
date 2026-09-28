@@ -238,7 +238,16 @@
      - Order page: its invoices and the Order Confirmation download (the API now lists an order's invoices and whether a confirmation exists).
      - A shared document button opens a PDF's short-lived link, or says it is being prepared.
      - Tests: 5 component tests; the new screens are in `e2e/responsive.spec.ts` (`e2e_ids` gives an invoice and a credit note).
-  13–15. Frontend: payments, receivables and ledger; credit holds and settings; shop invoices, statement, outstanding
+  13. Frontend: payments, refunds, handover, receivables and a shop's account — **done**:
+     - `/manage/payments`: list (search, mode, status, handover, dates; "Earlier financial year" flag). "Record payment" (`payments.record`) or "Record collection" (sales staff with `payments.collect`).
+     - `/manage/payments/new`: pick the shop (or `?retailer=`), see what it owes, overdue and credit (and the advances-off notice), amount, mode, date (a warning when it falls in an earlier financial year), cheque or reference fields; the office can choose bills to pay first (the rest goes to the oldest). Collections go to the collect endpoint without bill choices. Idempotency-Key per form; refusals (e.g. more than owed with advances off) in plain words.
+     - `/manage/payments/{id}`: notices (earlier year, credit held with advances off), what it paid with "Move" (undo and reallocate with a reason), "Use the credit", "Cheque cleared" (with the date), "Cheque bounced", "Reverse", "Mark handed over", receipt download.
+     - `/manage/payments/handover`: totals per salesman and bulk "Mark handed over".
+     - `/manage/payments/refunds` (list, new with the shop's credit as the limit, detail with the credit it used and the voucher).
+     - `/manage/receivables`: summary cards (owed, overdue shops, due this week, with salesmen), ageing by days since the bill or days past due, totals per bucket, search and overdue-only, pages.
+     - `/manage/retailers/{id}/ledger`: the shop's position and credit limit, statement by dates with opening, running and closing balances linking to each document, "Record payment", "Refund credit", "Adjustment" (old bill with bill date, due date and number; opening advance; debit; credit). The shop page links to it.
+     - Tests: 6 component tests (bills paid first and the earlier-year warning, collection mode, a refusal, payment notices and actions by permission, bulk handover, ageing basis). New screens in the responsive check; the seed adds a refund and `e2e_ids` a payment and a refund.
+  14–15. Frontend: dashboard, credit holds and settings; shop invoices, statement, outstanding
   16. E2E acceptance (both invoice timings), responsive check, phone test — **final review**
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.
 - **Phase 4 — Ordering & backorders** — **complete; final review approved 2026-09-28, PR #5** (branch `phase-4` from `main` 344b09c; plan approved 2026-09-27 with ADR-044, PLAN §10.2e, SPEC 1.4). Commits in order:

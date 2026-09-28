@@ -1,5 +1,6 @@
-"""Demo billing for `make seed` (dev only): opening balances, payments in each mode, a salesman's
-collection waiting for handover, and a return credit note, so the Phase 5 screens have data.
+"""Demo billing for `make seed` (dev only): old bills and an advance, payments in each mode, a
+refund, a salesman's collection waiting for handover, and a return credit note, so the Phase 5
+screens have data.
 Runs once per tenant, after the demo orders are invoiced."""
 
 from datetime import timedelta
@@ -12,7 +13,7 @@ from apps.billing.models import Invoice
 from apps.ledger import services as ledger
 from apps.payments import services as payments
 from apps.payments.models import Payment
-from apps.payments.services import PaymentInput
+from apps.payments.services import PaymentInput, RefundInput
 from apps.platform.models import Tenant
 from apps.retailers.models import Retailer
 from common.dates import today_ist
@@ -88,6 +89,13 @@ def seed_billing(tenant: Tenant, owner: User) -> int:
             today - timedelta(days=2),
             cheque_number="004512",
             bank_name="State Bank of India",
+        ),
+        by=owner,
+    )
+    # Part of the advance paid back by bank transfer (ADR-047).
+    payments.record_refund(
+        RefundInput(
+            shops[12].pk, Decimal("200.00"), "BANK_TRANSFER", today, reference_no="NEFT01188"
         ),
         by=owner,
     )

@@ -52,7 +52,7 @@ export function PaymentsNav() {
         { href: "/manage/receivables", label: t("receivables"), permission: "ledger.view" },
         {
           href: "/manage/settings/policies/credit_payments",
-          label: t("settings"),
+          label: t("paymentSettings"),
           permission: "settings.manage",
         },
       ]}

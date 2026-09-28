@@ -38,6 +38,8 @@ interface Ids {
   backorder_product: string | null;
   invoice: string | null;
   credit_note: string | null;
+  payment: string | null;
+  refund: string | null;
 }
 
 function pages(ids: Ids) {
@@ -55,6 +57,18 @@ function pages(ids: Ids) {
     "/manage/invoices/credit-notes/new",
     ...(ids.invoice ? [`/manage/invoices/credit-notes/new?invoice=${ids.invoice}`] : []),
     ...(ids.credit_note ? [`/manage/invoices/credit-notes/${ids.credit_note}`] : []),
+    "/manage/payments",
+    "/manage/payments/new",
+    `/manage/payments/new?retailer=${ids.retailer}`,
+    ...(ids.payment ? [`/manage/payments/${ids.payment}`] : []),
+    "/manage/payments/handover",
+    "/manage/payments/refunds",
+    "/manage/payments/refunds/new",
+    ...(ids.refund ? [`/manage/payments/refunds/${ids.refund}`] : []),
+    "/manage/receivables",
+    `/manage/retailers/${ids.retailer}/ledger`,
+    "/manage/settings/policies/invoicing",
+    "/manage/settings/policies/credit_payments",
     "/manage/products",
     "/manage/products/new",
     `/manage/products/${ids.product}`,
