@@ -9,6 +9,11 @@ urlpatterns = [
     ),
     path("tenants/<uuid:tenant_id>/", v.TenantDetailView.as_view(), name="platform-tenant-detail"),
     path(
+        "tenants/<uuid:tenant_id>/gst-identity/",
+        v.TenantGstIdentityView.as_view(),
+        name="platform-tenant-gst-identity",
+    ),
+    path(
         "tenants/<uuid:tenant_id>/suspend/",
         v.TenantSuspendView.as_view(),
         name="platform-tenant-suspend",

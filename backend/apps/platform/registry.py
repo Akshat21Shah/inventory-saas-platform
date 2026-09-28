@@ -293,6 +293,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    _tenant("payments.sales_can_collect", Group.CREDIT_PAYMENTS, SettingType.BOOL, True,
+            "Let sales staff record payments they collect from their shops (tracked until handed "
+            "over)."),
+    _tenant("receivables.ageing_basis", Group.CREDIT_PAYMENTS, SettingType.ENUM, "INVOICE_DATE",
+            "Age receivables by days since the invoice date, or by days past the due date.",
+            allowed=("INVOICE_DATE", "DUE_DATE")),
     # --- Tenant: Pricing (ADR-036) --------------------------------------------------------------
     _tenant("pricing.discounts_on_special_prices", Group.PRICING, SettingType.BOOL, True,
             "Apply discount rules on top of a shop's special prices. Turn off to treat a special "
@@ -316,7 +322,7 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               "Suggest GST rates from the HSN hint table on product forms and imports."),
     _platform("platform.default_invoice_prefix", Group.INVOICING, SettingType.STRING, "INV",
               "Prefix proposed when a tenant's first invoice series is created.",
-              pattern=r"[A-Z0-9]{1,6}"),
+              pattern=r"[A-Z0-9]{1,3}"),
     _platform("platform.impersonation_session_minutes", Group.SECURITY, SettingType.INT, 30,
               "Maximum length of a support impersonation session.", min_value=5, max_value=60),
     _platform("platform.login_lockout_threshold", Group.SECURITY, SettingType.INT, 5,

@@ -47,6 +47,7 @@ const business = {
   invoice_footer: "",
   signatory_name: "",
   has_signatory_image: false,
+  gst_identity_locked: false,
 };
 
 const bank = {
@@ -70,6 +71,20 @@ describe("BusinessSettings", () => {
     expect(screen.getByLabelText(/^business name/i)).toHaveAttribute("readonly");
     expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument();
     expect(calls.some((c) => c.path.includes("bank-details"))).toBe(false);
+  });
+
+  it("keeps the GST identity read-only after the first invoice (task 5.13)", async () => {
+    auth.permissions = ["settings.manage"];
+    mockApi({
+      "/api/v1/settings/business/": () => [200, { ...business, gst_identity_locked: true }],
+      "/api/v1/settings/bank-details/": () => [200, bank],
+      "/api/v1/public/states/": () => [200, [{ code: "27", name: "Maharashtra" }]],
+    });
+    renderWithIntl(<BusinessSettings />);
+    expect(await screen.findByText(/fixed now that you have issued invoices/i)).toBeVisible();
+    expect(screen.getByLabelText(/^gstin/i)).toHaveAttribute("readonly");
+    expect(screen.getByLabelText(/^legal name/i)).toHaveAttribute("readonly");
+    expect(screen.getByLabelText(/^city/i)).not.toHaveAttribute("readonly");
   });
 
   it("sends only changed fields, and a new account number only when typed", async () => {

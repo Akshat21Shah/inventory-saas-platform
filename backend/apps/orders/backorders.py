@@ -190,10 +190,21 @@ def _flag_skipped(
 def _billing_price(order: Order, line: OrderLine, quantity: Decimal) -> tuple[Decimal, bool]:
     """(unit price, repriced) per the order's snapshot of ⚙ backorders.billing_price: the order
     price, or the shop's price today (the order price when there is none today)."""
+    price, repriced, _ = _billing_terms(order, line, quantity)
+    return price, repriced
+
+
+def _billing_terms(
+    order: Order, line: OrderLine, quantity: Decimal
+) -> tuple[Decimal, bool, Decimal | None]:
+    """(unit price, repriced, discount): with CURRENT pricing, today's price and today's discount
+    for ``quantity`` (invoiced from the shipment); otherwise the order's (discount ``None``)."""
     if order.settings_snapshot.get("backorders.billing_price") != "CURRENT":
-        return line.unit_price, False
+        return line.unit_price, False, None
     [result] = resolve_prices(order.retailer, [(line.product, quantity)])
-    return (result.unit_price if result.valid else line.unit_price), True
+    if not result.valid:
+        return line.unit_price, True, None
+    return result.unit_price, True, result.discount_total
 
 
 def _extra_value(order: Order, line: OrderLine, quantity: Decimal, price: Decimal) -> Decimal:
@@ -210,14 +221,16 @@ def _credit_allows(
     """The waiting quantity is already in the shop's exposure at its order price. An order approved
     from a credit hold is covered for its approved value, backorders included; only a higher
     billing price adds to it, and that extra is checked against the limit as normal
-    (2026-09-28)."""
+    (2026-09-28). Otherwise a shop overdue for too long is skipped too (ADR-046 item 9)."""
     limit = order.retailer.credit_limit
-    if limit is None:
-        return True
     if price is None:
         price, _ = _billing_price(order, line, quantity)
     extra = _extra_value(order, line, quantity, price)
     if order.credit_approved_value is not None and extra == 0:
+        return True
+    if credit.oldest_overdue(order.retailer_id) is not None:  # ADR-046 item 9
+        return False
+    if limit is None:
         return True
     return bool(credit.exposure(order.retailer_id) + extra <= Decimal(limit))
 
@@ -270,7 +283,7 @@ def _confirm_locked(
     now = timezone.now()
     increased: list[str] = []
     for allocation, line in sorted(pairs, key=lambda pair: pair[1].product_id):
-        price, repriced = _billing_price(order, line, allocation.quantity)
+        price, repriced, discount = _billing_terms(order, line, allocation.quantity)
         if prices is not None and allocation.pk in prices:
             price = prices[allocation.pk]
         higher = repriced and price > line.unit_price
@@ -288,6 +301,7 @@ def _confirm_locked(
                 else FulfilmentLine.PriceSource.ORDER_SNAPSHOT
             ),
             price_increased=higher,
+            discount_amount=discount,
         )
         line.qty_reserved -= allocation.quantity
         line.qty_allocated += allocation.quantity
@@ -316,7 +330,17 @@ def _confirm_locked(
         price_increased=increased,
     )
     derive_status(order, by=by)
+    _invoice_at_allocation(order, shipment, by=by)
     return shipment
+
+
+def _invoice_at_allocation(order: Order, shipment: Fulfilment, *, by: User | None) -> None:
+    """With ⚙ invoicing.timing ON_ACCEPTANCE (order snapshot), a confirmed backorder shipment is
+    invoiced at once (ADR-007)."""
+    from apps.billing import invoicing
+
+    if invoicing.timing(order) == "ON_ACCEPTANCE":
+        invoicing.issue_invoice_for_fulfilment(shipment, trigger="ON_ALLOCATION", by=by)
 
 
 def _lock_allocations(
@@ -436,7 +460,7 @@ def allocate_manually(
     covered); a shop over its limit is refused unless a ``credit.manage`` user overrides with a
     reason, which is audited (2026-09-28)."""
     from apps.audit import services as audit
-    from apps.orders.services import CreditLimitExceeded
+    from apps.orders.services import credit_refusal
 
     if not amounts or any(q <= 0 for q in amounts.values()):
         raise InvalidFields({"allocations": ["Choose waiting lines and quantities above 0."]})
@@ -469,20 +493,19 @@ def allocate_manually(
                     overridden.append(order)
                 continue
             status = credit.check(order.retailer, ZERO, breach_action="BLOCK")
-            raise CreditLimitExceeded(
-                f"{order.retailer.shop_name} is over its credit limit."
+            overdue = status.reason == credit.BreachReason.OVERDUE
+            raise credit_refusal(
+                status,
+                f"{order.retailer.shop_name} "
+                + ("has overdue invoices." if overdue else "is over its credit limit.")
                 + (
                     " Give a reason to allocate anyway."
                     if can_override
                     else " Someone who manages credit can allocate it."
                 ),
-                details={
-                    "order": order.number,
-                    "retailer": order.retailer.shop_name,
-                    "limit": str(status.limit),
-                    "exposure": str(status.exposure),
-                    "can_override": can_override,
-                },
+                order=order.number,
+                retailer=order.retailer.shop_name,
+                can_override=can_override,
             )
         for order in overridden:
             audit.record(
@@ -579,6 +602,9 @@ def cancel_repriced(fulfilment_line_id: UUID, *, by: User, retailer_id: UUID) ->
         if shipment.status != Fulfilment.Status.ALLOCATED:
             raise InvalidTransition("This shipment is already packed.")
         level = stock.lock_levels([product_id], shipment.warehouse)[product_id]  # L3
+        from apps.billing.credit_notes import credit_unsupplied
+
+        credit_unsupplied({fl: fl.quantity}, kind="CANCELLATION", by=by)  # if invoiced already
         line = _lock_lines([line_id])[line_id]  # L4
         ref = stock.Ref(ReferenceType.FULFILMENT, shipment.pk, shipment.number)
         stock.release(level, fl.quantity, ref, by=by)
@@ -619,7 +645,17 @@ def after_stock_released(product_ids: Iterable[UUID]) -> None:
     _after_commit_allocate(list(product_ids))
 
 
-def _after_commit_allocate(product_ids: list[UUID], exclude_line_ids: Iterable[UUID] = ()) -> None:
+def after_stock_returned(product_ids: Iterable[UUID]) -> None:
+    """Goods a shop returned to stock (a return credit note) may serve older backorders."""
+    _after_commit_allocate(list(product_ids), trigger=Trigger.RETURN)
+
+
+def _after_commit_allocate(
+    product_ids: list[UUID],
+    exclude_line_ids: Iterable[UUID] = (),
+    *,
+    trigger: str = Trigger.RELEASE,
+) -> None:
     if not product_ids:
         return
     tenant_id = require_tenant_id()
@@ -627,7 +663,7 @@ def _after_commit_allocate(product_ids: list[UUID], exclude_line_ids: Iterable[U
 
     def run() -> None:
         with tenant_context(tenant_id):
-            run_allocation(ids, trigger=Trigger.RELEASE, exclude_line_ids=excluded)
+            run_allocation(ids, trigger=trigger, exclude_line_ids=excluded)
 
     transaction.on_commit(run)
 

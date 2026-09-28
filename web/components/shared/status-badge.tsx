@@ -38,6 +38,15 @@ const TONES: Record<string, StatusTone> = {
   ACTIVE: "success",
   SUSPENDED: "danger",
   BLOCKED: "warning",
+  RECEIVED: "success",
+  PENDING_CLEARANCE: "warning",
+  CLEARED: "success",
+  BOUNCED: "danger",
+  REVERSED: "neutral",
+  WITH_SALESMAN: "warning",
+  HANDED_OVER: "success",
+  NOT_NEEDED: "neutral",
+  ISSUED: "success",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {
@@ -62,7 +71,14 @@ export function StatusBadge({
 }: {
   status: string;
   className?: string;
-  labels?: "status" | "orderStatus" | "shipmentStatus" | "allocationStatus";
+  labels?:
+    | "status"
+    | "orderStatus"
+    | "shipmentStatus"
+    | "allocationStatus"
+    | "paymentStatus"
+    | "handoverStatus"
+    | "refundStatus";
 }) {
   const t = useTranslations(labels);
   const tone = statusTone(status);

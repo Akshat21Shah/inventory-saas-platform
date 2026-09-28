@@ -28,12 +28,18 @@ import type {
   CancelOrderRequest,
   CheckoutAttempt,
   DeliveryAddress,
+  DocumentLink,
+  InvoiceDetail,
+  PaginatedInvoiceRowList,
+  PaginatedPaymentRowList,
   PaginatedShopOrderRowList,
   PaginatedShopProductList,
+  PaymentDetail,
   PlaceOrderRequest,
   QuantityRequest,
   Quote,
   RepeatResult,
+  ShopAccount,
   ShopBrand,
   ShopBrandsParams,
   ShopCartLineRemoveParams,
@@ -42,10 +48,14 @@ import type {
   ShopCartRetrieveParams,
   ShopCategory,
   ShopHome,
+  ShopInvoicesListParams,
+  ShopLedgerParams,
   ShopOrder,
   ShopOrdersListParams,
+  ShopPaymentsListParams,
   ShopProductDetail,
-  ShopProductsParams
+  ShopProductsParams,
+  Statement
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -69,6 +79,112 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export type shopAccountResponse200 = {
+  data: ShopAccount
+  status: 200
+}
+
+export type shopAccountResponseSuccess = (shopAccountResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopAccountResponse = (shopAccountResponseSuccess)
+
+export const getShopAccountUrl = () => {
+
+
+
+
+  return `/api/v1/shop/account/`
+}
+
+export const shopAccount = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopAccountResponse> => {
+
+  return apiFetch<shopAccountResponse>(getShopAccountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopAccountQueryKey = () => {
+    return [
+    `/api/v1/shop/account/`
+    ] as const;
+    }
+
+
+export const getShopAccountQueryOptions = <TData = Awaited<ReturnType<typeof shopAccount>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAccount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopAccountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopAccount>>> = ({ signal }) => shopAccount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopAccount>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopAccountQueryResult = NonNullable<Awaited<ReturnType<typeof shopAccount>>>
+export type ShopAccountQueryError = unknown
+
+
+export function useShopAccount<TData = Awaited<ReturnType<typeof shopAccount>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAccount>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopAccount>>,
+          TError,
+          Awaited<ReturnType<typeof shopAccount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopAccount<TData = Awaited<ReturnType<typeof shopAccount>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAccount>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopAccount>>,
+          TError,
+          Awaited<ReturnType<typeof shopAccount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopAccount<TData = Awaited<ReturnType<typeof shopAccount>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAccount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopAccount<TData = Awaited<ReturnType<typeof shopAccount>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopAccount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopAccountQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 export type shopAddressesListResponse200 = {
   data: DeliveryAddress[]
@@ -975,6 +1091,117 @@ export function useShopCheckoutAttempt<TData = Awaited<ReturnType<typeof shopChe
 
 
 
+export type shopCreditNotesPdfResponse200 = {
+  data: DocumentLink
+  status: 200
+}
+
+export type shopCreditNotesPdfResponse202 = {
+  data: DocumentLink
+  status: 202
+}
+
+export type shopCreditNotesPdfResponseSuccess = (shopCreditNotesPdfResponse200 | shopCreditNotesPdfResponse202) & {
+  headers: Headers;
+};
+;
+
+export type shopCreditNotesPdfResponse = (shopCreditNotesPdfResponseSuccess)
+
+export const getShopCreditNotesPdfUrl = (noteId: string,) => {
+
+
+
+
+  return `/api/v1/shop/credit-notes/${noteId}/pdf/`
+}
+
+export const shopCreditNotesPdf = async (noteId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopCreditNotesPdfResponse> => {
+
+  return apiFetch<shopCreditNotesPdfResponse>(getShopCreditNotesPdfUrl(noteId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopCreditNotesPdfQueryKey = (noteId: string,) => {
+    return [
+    `/api/v1/shop/credit-notes/${noteId}/pdf/`
+    ] as const;
+    }
+
+
+export const getShopCreditNotesPdfQueryOptions = <TData = Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError = unknown>(noteId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopCreditNotesPdfQueryKey(noteId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopCreditNotesPdf>>> = ({ signal }) => shopCreditNotesPdf(noteId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: noteId !== null && noteId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopCreditNotesPdfQueryResult = NonNullable<Awaited<ReturnType<typeof shopCreditNotesPdf>>>
+export type ShopCreditNotesPdfQueryError = unknown
+
+
+export function useShopCreditNotesPdf<TData = Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError = unknown>(
+ noteId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopCreditNotesPdf>>,
+          TError,
+          Awaited<ReturnType<typeof shopCreditNotesPdf>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopCreditNotesPdf<TData = Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError = unknown>(
+ noteId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopCreditNotesPdf>>,
+          TError,
+          Awaited<ReturnType<typeof shopCreditNotesPdf>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopCreditNotesPdf<TData = Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError = unknown>(
+ noteId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopCreditNotesPdf<TData = Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError = unknown>(
+ noteId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCreditNotesPdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopCreditNotesPdfQueryOptions(noteId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type shopFulfilmentLineCancelRepricedResponse200 = {
   data: ShopOrder
   status: 200
@@ -1149,6 +1376,449 @@ export function useShopHome<TData = Awaited<ReturnType<typeof shopHome>>, TError
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getShopHomeQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopInvoicesListResponse200 = {
+  data: PaginatedInvoiceRowList
+  status: 200
+}
+
+export type shopInvoicesListResponseSuccess = (shopInvoicesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopInvoicesListResponse = (shopInvoicesListResponseSuccess)
+
+export const getShopInvoicesListUrl = (params?: ShopInvoicesListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/shop/invoices/?${stringifiedParams}` : `/api/v1/shop/invoices/`
+}
+
+export const shopInvoicesList = async (params?: ShopInvoicesListParams, options?: Parameters<typeof apiFetch>[1]): Promise<shopInvoicesListResponse> => {
+
+  return apiFetch<shopInvoicesListResponse>(getShopInvoicesListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopInvoicesListQueryKey = (params?: ShopInvoicesListParams,) => {
+    return [
+    `/api/v1/shop/invoices/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getShopInvoicesListQueryOptions = <TData = Awaited<ReturnType<typeof shopInvoicesList>>, TError = unknown>(params?: ShopInvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopInvoicesListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopInvoicesList>>> = ({ signal }) => shopInvoicesList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopInvoicesListQueryResult = NonNullable<Awaited<ReturnType<typeof shopInvoicesList>>>
+export type ShopInvoicesListQueryError = unknown
+
+
+export function useShopInvoicesList<TData = Awaited<ReturnType<typeof shopInvoicesList>>, TError = unknown>(
+ params: undefined |  ShopInvoicesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopInvoicesList>>,
+          TError,
+          Awaited<ReturnType<typeof shopInvoicesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopInvoicesList<TData = Awaited<ReturnType<typeof shopInvoicesList>>, TError = unknown>(
+ params?: ShopInvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopInvoicesList>>,
+          TError,
+          Awaited<ReturnType<typeof shopInvoicesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopInvoicesList<TData = Awaited<ReturnType<typeof shopInvoicesList>>, TError = unknown>(
+ params?: ShopInvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopInvoicesList<TData = Awaited<ReturnType<typeof shopInvoicesList>>, TError = unknown>(
+ params?: ShopInvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopInvoicesListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopInvoicesRetrieveResponse200 = {
+  data: InvoiceDetail
+  status: 200
+}
+
+export type shopInvoicesRetrieveResponseSuccess = (shopInvoicesRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopInvoicesRetrieveResponse = (shopInvoicesRetrieveResponseSuccess)
+
+export const getShopInvoicesRetrieveUrl = (invoiceId: string,) => {
+
+
+
+
+  return `/api/v1/shop/invoices/${invoiceId}/`
+}
+
+export const shopInvoicesRetrieve = async (invoiceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopInvoicesRetrieveResponse> => {
+
+  return apiFetch<shopInvoicesRetrieveResponse>(getShopInvoicesRetrieveUrl(invoiceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopInvoicesRetrieveQueryKey = (invoiceId: string,) => {
+    return [
+    `/api/v1/shop/invoices/${invoiceId}/`
+    ] as const;
+    }
+
+
+export const getShopInvoicesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError = unknown>(invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopInvoicesRetrieveQueryKey(invoiceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopInvoicesRetrieve>>> = ({ signal }) => shopInvoicesRetrieve(invoiceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: invoiceId !== null && invoiceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopInvoicesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof shopInvoicesRetrieve>>>
+export type ShopInvoicesRetrieveQueryError = unknown
+
+
+export function useShopInvoicesRetrieve<TData = Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError = unknown>(
+ invoiceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopInvoicesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof shopInvoicesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopInvoicesRetrieve<TData = Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError = unknown>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopInvoicesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof shopInvoicesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopInvoicesRetrieve<TData = Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError = unknown>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopInvoicesRetrieve<TData = Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError = unknown>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopInvoicesRetrieveQueryOptions(invoiceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopInvoicesPdfResponse200 = {
+  data: DocumentLink
+  status: 200
+}
+
+export type shopInvoicesPdfResponse202 = {
+  data: DocumentLink
+  status: 202
+}
+
+export type shopInvoicesPdfResponseSuccess = (shopInvoicesPdfResponse200 | shopInvoicesPdfResponse202) & {
+  headers: Headers;
+};
+;
+
+export type shopInvoicesPdfResponse = (shopInvoicesPdfResponseSuccess)
+
+export const getShopInvoicesPdfUrl = (invoiceId: string,) => {
+
+
+
+
+  return `/api/v1/shop/invoices/${invoiceId}/pdf/`
+}
+
+export const shopInvoicesPdf = async (invoiceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopInvoicesPdfResponse> => {
+
+  return apiFetch<shopInvoicesPdfResponse>(getShopInvoicesPdfUrl(invoiceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopInvoicesPdfQueryKey = (invoiceId: string,) => {
+    return [
+    `/api/v1/shop/invoices/${invoiceId}/pdf/`
+    ] as const;
+    }
+
+
+export const getShopInvoicesPdfQueryOptions = <TData = Awaited<ReturnType<typeof shopInvoicesPdf>>, TError = unknown>(invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesPdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopInvoicesPdfQueryKey(invoiceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopInvoicesPdf>>> = ({ signal }) => shopInvoicesPdf(invoiceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: invoiceId !== null && invoiceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesPdf>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopInvoicesPdfQueryResult = NonNullable<Awaited<ReturnType<typeof shopInvoicesPdf>>>
+export type ShopInvoicesPdfQueryError = unknown
+
+
+export function useShopInvoicesPdf<TData = Awaited<ReturnType<typeof shopInvoicesPdf>>, TError = unknown>(
+ invoiceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesPdf>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopInvoicesPdf>>,
+          TError,
+          Awaited<ReturnType<typeof shopInvoicesPdf>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopInvoicesPdf<TData = Awaited<ReturnType<typeof shopInvoicesPdf>>, TError = unknown>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesPdf>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopInvoicesPdf>>,
+          TError,
+          Awaited<ReturnType<typeof shopInvoicesPdf>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopInvoicesPdf<TData = Awaited<ReturnType<typeof shopInvoicesPdf>>, TError = unknown>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesPdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopInvoicesPdf<TData = Awaited<ReturnType<typeof shopInvoicesPdf>>, TError = unknown>(
+ invoiceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopInvoicesPdf>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopInvoicesPdfQueryOptions(invoiceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopLedgerResponse200 = {
+  data: Statement
+  status: 200
+}
+
+export type shopLedgerResponseSuccess = (shopLedgerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopLedgerResponse = (shopLedgerResponseSuccess)
+
+export const getShopLedgerUrl = (params?: ShopLedgerParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/shop/ledger/?${stringifiedParams}` : `/api/v1/shop/ledger/`
+}
+
+export const shopLedger = async (params?: ShopLedgerParams, options?: Parameters<typeof apiFetch>[1]): Promise<shopLedgerResponse> => {
+
+  return apiFetch<shopLedgerResponse>(getShopLedgerUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopLedgerQueryKey = (params?: ShopLedgerParams,) => {
+    return [
+    `/api/v1/shop/ledger/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getShopLedgerQueryOptions = <TData = Awaited<ReturnType<typeof shopLedger>>, TError = unknown>(params?: ShopLedgerParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopLedger>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopLedgerQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopLedger>>> = ({ signal }) => shopLedger(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopLedger>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopLedgerQueryResult = NonNullable<Awaited<ReturnType<typeof shopLedger>>>
+export type ShopLedgerQueryError = unknown
+
+
+export function useShopLedger<TData = Awaited<ReturnType<typeof shopLedger>>, TError = unknown>(
+ params: undefined |  ShopLedgerParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopLedger>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopLedger>>,
+          TError,
+          Awaited<ReturnType<typeof shopLedger>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopLedger<TData = Awaited<ReturnType<typeof shopLedger>>, TError = unknown>(
+ params?: ShopLedgerParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopLedger>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopLedger>>,
+          TError,
+          Awaited<ReturnType<typeof shopLedger>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopLedger<TData = Awaited<ReturnType<typeof shopLedger>>, TError = unknown>(
+ params?: ShopLedgerParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopLedger>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopLedger<TData = Awaited<ReturnType<typeof shopLedger>>, TError = unknown>(
+ params?: ShopLedgerParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopLedger>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopLedgerQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1645,7 +2315,118 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getShopOrderCancelMutationOptions(options), queryClient);
     }
-    export type shopOrderRepeatResponse200 = {
+    export type shopOrdersConfirmationResponse200 = {
+  data: DocumentLink
+  status: 200
+}
+
+export type shopOrdersConfirmationResponse202 = {
+  data: DocumentLink
+  status: 202
+}
+
+export type shopOrdersConfirmationResponseSuccess = (shopOrdersConfirmationResponse200 | shopOrdersConfirmationResponse202) & {
+  headers: Headers;
+};
+;
+
+export type shopOrdersConfirmationResponse = (shopOrdersConfirmationResponseSuccess)
+
+export const getShopOrdersConfirmationUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/shop/orders/${orderId}/confirmation/`
+}
+
+export const shopOrdersConfirmation = async (orderId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopOrdersConfirmationResponse> => {
+
+  return apiFetch<shopOrdersConfirmationResponse>(getShopOrdersConfirmationUrl(orderId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopOrdersConfirmationQueryKey = (orderId: string,) => {
+    return [
+    `/api/v1/shop/orders/${orderId}/confirmation/`
+    ] as const;
+    }
+
+
+export const getShopOrdersConfirmationQueryOptions = <TData = Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError = unknown>(orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopOrdersConfirmationQueryKey(orderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopOrdersConfirmation>>> = ({ signal }) => shopOrdersConfirmation(orderId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: orderId !== null && orderId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopOrdersConfirmationQueryResult = NonNullable<Awaited<ReturnType<typeof shopOrdersConfirmation>>>
+export type ShopOrdersConfirmationQueryError = unknown
+
+
+export function useShopOrdersConfirmation<TData = Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError = unknown>(
+ orderId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopOrdersConfirmation>>,
+          TError,
+          Awaited<ReturnType<typeof shopOrdersConfirmation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopOrdersConfirmation<TData = Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopOrdersConfirmation>>,
+          TError,
+          Awaited<ReturnType<typeof shopOrdersConfirmation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopOrdersConfirmation<TData = Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopOrdersConfirmation<TData = Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopOrdersConfirmation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopOrdersConfirmationQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopOrderRepeatResponse200 = {
   data: RepeatResult
   status: 200
 }
@@ -1724,7 +2505,337 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getShopOrderRepeatMutationOptions(options), queryClient);
     }
-    export type shopProductsResponse200 = {
+    export type shopPaymentsListResponse200 = {
+  data: PaginatedPaymentRowList
+  status: 200
+}
+
+export type shopPaymentsListResponseSuccess = (shopPaymentsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopPaymentsListResponse = (shopPaymentsListResponseSuccess)
+
+export const getShopPaymentsListUrl = (params?: ShopPaymentsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/shop/payments/?${stringifiedParams}` : `/api/v1/shop/payments/`
+}
+
+export const shopPaymentsList = async (params?: ShopPaymentsListParams, options?: Parameters<typeof apiFetch>[1]): Promise<shopPaymentsListResponse> => {
+
+  return apiFetch<shopPaymentsListResponse>(getShopPaymentsListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopPaymentsListQueryKey = (params?: ShopPaymentsListParams,) => {
+    return [
+    `/api/v1/shop/payments/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getShopPaymentsListQueryOptions = <TData = Awaited<ReturnType<typeof shopPaymentsList>>, TError = unknown>(params?: ShopPaymentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopPaymentsListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopPaymentsList>>> = ({ signal }) => shopPaymentsList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopPaymentsListQueryResult = NonNullable<Awaited<ReturnType<typeof shopPaymentsList>>>
+export type ShopPaymentsListQueryError = unknown
+
+
+export function useShopPaymentsList<TData = Awaited<ReturnType<typeof shopPaymentsList>>, TError = unknown>(
+ params: undefined |  ShopPaymentsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopPaymentsList>>,
+          TError,
+          Awaited<ReturnType<typeof shopPaymentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopPaymentsList<TData = Awaited<ReturnType<typeof shopPaymentsList>>, TError = unknown>(
+ params?: ShopPaymentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopPaymentsList>>,
+          TError,
+          Awaited<ReturnType<typeof shopPaymentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopPaymentsList<TData = Awaited<ReturnType<typeof shopPaymentsList>>, TError = unknown>(
+ params?: ShopPaymentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopPaymentsList<TData = Awaited<ReturnType<typeof shopPaymentsList>>, TError = unknown>(
+ params?: ShopPaymentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopPaymentsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopPaymentsRetrieveResponse200 = {
+  data: PaymentDetail
+  status: 200
+}
+
+export type shopPaymentsRetrieveResponseSuccess = (shopPaymentsRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopPaymentsRetrieveResponse = (shopPaymentsRetrieveResponseSuccess)
+
+export const getShopPaymentsRetrieveUrl = (paymentId: string,) => {
+
+
+
+
+  return `/api/v1/shop/payments/${paymentId}/`
+}
+
+export const shopPaymentsRetrieve = async (paymentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopPaymentsRetrieveResponse> => {
+
+  return apiFetch<shopPaymentsRetrieveResponse>(getShopPaymentsRetrieveUrl(paymentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopPaymentsRetrieveQueryKey = (paymentId: string,) => {
+    return [
+    `/api/v1/shop/payments/${paymentId}/`
+    ] as const;
+    }
+
+
+export const getShopPaymentsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError = unknown>(paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopPaymentsRetrieveQueryKey(paymentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopPaymentsRetrieve>>> = ({ signal }) => shopPaymentsRetrieve(paymentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: paymentId !== null && paymentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopPaymentsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof shopPaymentsRetrieve>>>
+export type ShopPaymentsRetrieveQueryError = unknown
+
+
+export function useShopPaymentsRetrieve<TData = Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError = unknown>(
+ paymentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopPaymentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof shopPaymentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopPaymentsRetrieve<TData = Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError = unknown>(
+ paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopPaymentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof shopPaymentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopPaymentsRetrieve<TData = Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError = unknown>(
+ paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopPaymentsRetrieve<TData = Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError = unknown>(
+ paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopPaymentsRetrieveQueryOptions(paymentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopPaymentsReceiptResponse200 = {
+  data: DocumentLink
+  status: 200
+}
+
+export type shopPaymentsReceiptResponse202 = {
+  data: DocumentLink
+  status: 202
+}
+
+export type shopPaymentsReceiptResponseSuccess = (shopPaymentsReceiptResponse200 | shopPaymentsReceiptResponse202) & {
+  headers: Headers;
+};
+;
+
+export type shopPaymentsReceiptResponse = (shopPaymentsReceiptResponseSuccess)
+
+export const getShopPaymentsReceiptUrl = (paymentId: string,) => {
+
+
+
+
+  return `/api/v1/shop/payments/${paymentId}/receipt/`
+}
+
+export const shopPaymentsReceipt = async (paymentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopPaymentsReceiptResponse> => {
+
+  return apiFetch<shopPaymentsReceiptResponse>(getShopPaymentsReceiptUrl(paymentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopPaymentsReceiptQueryKey = (paymentId: string,) => {
+    return [
+    `/api/v1/shop/payments/${paymentId}/receipt/`
+    ] as const;
+    }
+
+
+export const getShopPaymentsReceiptQueryOptions = <TData = Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError = unknown>(paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopPaymentsReceiptQueryKey(paymentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopPaymentsReceipt>>> = ({ signal }) => shopPaymentsReceipt(paymentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: paymentId !== null && paymentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopPaymentsReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof shopPaymentsReceipt>>>
+export type ShopPaymentsReceiptQueryError = unknown
+
+
+export function useShopPaymentsReceipt<TData = Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError = unknown>(
+ paymentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopPaymentsReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof shopPaymentsReceipt>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopPaymentsReceipt<TData = Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError = unknown>(
+ paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopPaymentsReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof shopPaymentsReceipt>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopPaymentsReceipt<TData = Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError = unknown>(
+ paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopPaymentsReceipt<TData = Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError = unknown>(
+ paymentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopPaymentsReceipt>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopPaymentsReceiptQueryOptions(paymentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopProductsResponse200 = {
   data: PaginatedShopProductList
   status: 200
 }

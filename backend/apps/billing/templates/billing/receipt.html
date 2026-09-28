@@ -1,0 +1,55 @@
+{% load documents %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Receipt {{ doc.number }}</title>
+  {% include "billing/_style.html" %}
+</head>
+<body>
+<section class="page">
+  <header class="top">
+    {% include "billing/_seller.html" %}
+    <div class="title">
+      <h2>Payment receipt</h2>
+      {% if doc.status == "BOUNCED" %}<p class="copy">Cheque bounced</p>{% elif doc.status == "REVERSED" %}<p class="copy">Cancelled</p>{% endif %}
+    </div>
+  </header>
+
+  <table class="meta">
+    <tr><td class="k">Receipt no.</td><td><b>{{ doc.number }}</b></td><td class="k">Payment date</td><td>{{ doc.payment_date|day }}</td></tr>
+    <tr>
+      <td class="k">Received from</td><td><b>{{ shop.shop_name }}</b> <span class="muted">({{ shop.code }})</span></td>
+      <td class="k">Mode</td><td>{{ doc.get_mode_display }}</td>
+    </tr>
+    {% if doc.mode == "CHEQUE" %}
+    <tr>
+      <td class="k">Cheque</td><td>No. {{ doc.cheque_number }}{% if doc.cheque_date %} dated {{ doc.cheque_date|day }}{% endif %}</td>
+      <td class="k">Bank</td><td>{{ doc.bank_name|default:"-" }}</td>
+    </tr>
+    {% elif doc.reference_no %}
+    <tr><td class="k">Reference</td><td colspan="3">{{ doc.reference_no }}</td></tr>
+    {% endif %}
+  </table>
+
+  <table class="totals" style="width:60%; margin-left:0">
+    <tr class="grand"><td>Amount received</td><td class="n">{{ doc.amount|rupees }}</td></tr>
+  </table>
+  <p class="words"><b>In words:</b> {{ words }}</p>
+
+  {% if applied %}
+  <table class="summary" style="width:60%">
+    <thead><tr><th>Paid against</th><th class="n">Amount (₹)</th></tr></thead>
+    <tbody>
+      {% for number, value in applied %}<tr><td>{{ number }}</td><td class="n">{{ value|amount }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if doc.unapplied_amount %}<p style="margin-top:4pt">Kept as credit for future bills: {{ doc.unapplied_amount|rupees }}</p>{% endif %}
+
+  {% if subject_to_clearance %}<p class="flag">Subject to the cheque being cleared by the bank.</p>{% endif %}
+  {% if doc.notes %}<p class="muted" style="margin-top:4pt">{{ doc.notes }}</p>{% endif %}
+
+  {% include "billing/_signature.html" %}
+</section>
+</body>
+</html>

@@ -36,4 +36,6 @@ export interface Business {
   /** @maxLength 150 */
   signatory_name: string;
   readonly has_signatory_image: boolean;
+  /** After the first invoice the GSTIN, legal name and state are read-only. */
+  readonly gst_identity_locked: boolean;
 }

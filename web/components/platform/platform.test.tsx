@@ -40,6 +40,7 @@ const tenant = (overrides: Partial<Detail> = {}): Detail => ({
   usage: { staff: 2, retailers: 0, pending_invitations: 1 },
   owner: { email: "owner@sharma.example", full_name: "Asha Sharma", status: "JOINED" },
   features: {},
+  gst_identity_locked: false,
   ...overrides,
 });
 
@@ -112,6 +113,31 @@ describe("OnboardingWizard", () => {
 });
 
 describe("TenantDetail", () => {
+  it("changes a locked GST identity only through its own action, with a reason", async () => {
+    const calls = mockApi({
+      "/api/v1/platform/tenants/t1/": () => [200, tenant({ gst_identity_locked: true })],
+      "POST /api/v1/platform/tenants/t1/gst-identity/": () => [
+        200,
+        tenant({ gst_identity_locked: true, legal_name: "Sharma Traders LLP" }),
+      ],
+    });
+    renderWithIntl(<TenantDetail tenantId="t1" />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /change gst identity/i }));
+    const dialog = await screen.findByRole("dialog");
+    const name = within(dialog).getByLabelText(/legal name/i);
+    await user.clear(name);
+    await user.type(name, "Sharma Traders LLP");
+    await user.type(within(dialog).getByLabelText(/reason/i), "Constitution changed");
+    await user.click(within(dialog).getByRole("button", { name: /^change$/i }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.path.endsWith("/gst-identity/"))?.body).toEqual({
+        legal_name: "Sharma Traders LLP",
+        reason: "Constitution changed",
+      }),
+    );
+  });
+
   it("suspends only with a reason", async () => {
     const calls = mockApi({
       "/api/v1/platform/tenants/t1/": () => [200, tenant()],

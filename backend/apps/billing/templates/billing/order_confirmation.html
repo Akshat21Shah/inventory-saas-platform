@@ -1,0 +1,70 @@
+{% load documents %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Order confirmation {{ doc.order_number }}</title>
+  {% include "billing/_style.html" %}
+</head>
+<body>
+{% with seller=doc.seller buyer=doc.buyer %}
+<section class="page">
+  <header class="top">
+    {% include "billing/_seller.html" %}
+    <div class="title">
+      <h2>Order confirmation</h2>
+      <p class="note-strong">This is not a tax invoice.</p>
+    </div>
+  </header>
+
+  <table class="meta">
+    <tr><td class="k">Order no.</td><td><b>{{ doc.order_number }}</b></td><td class="k">Placed</td><td>{{ doc.placed_at|day }}</td></tr>
+    <tr>
+      <td class="k">Accepted</td><td>{{ doc.accepted_at|day }}</td>
+      <td class="k">Prices</td><td>{% if doc.prices_include_tax %}Including GST{% else %}Excluding GST{% endif %}</td>
+    </tr>
+  </table>
+
+  {% include "billing/_parties.html" %}
+
+  <table class="lines">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th class="c">HSN</th>
+        <th class="n">Qty</th>
+        <th class="n">Rate (₹)</th>
+        <th class="n">Discount (₹)</th>
+        <th class="n">Taxable (₹)</th>
+        <th class="n">GST</th>
+        <th class="n">Amount (₹)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in doc.lines %}
+      <tr>
+        <td>{{ line.name }}<br><span class="muted">{{ line.code }}{% if line.later != "0.000" %} · {{ line.later|qty }} to follow when stock arrives{% endif %}</span></td>
+        <td class="c">{{ line.hsn }}</td>
+        <td class="n">{{ line.quantity|qty }} {{ line.unit }}</td>
+        <td class="n">{{ line.unit_price|amount }}</td>
+        <td class="n">{{ line.discount|amount }}</td>
+        <td class="n">{{ line.taxable|amount }}</td>
+        <td class="n">{{ line.tax|amount }}<br><span class="muted">{{ line.gst_rate|rate }}</span></td>
+        <td class="n">{{ line.total|amount }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td>Taxable value</td><td class="n">{{ doc.totals.taxable|rupees }}</td></tr>
+    <tr><td>GST (estimate)</td><td class="n">{{ doc.totals.tax|rupees }}</td></tr>
+    {% if doc.totals.round_off != "0.00" %}<tr><td>Round off</td><td class="n">{{ doc.totals.round_off|rupees }}</td></tr>{% endif %}
+    <tr class="grand"><td>Estimated total</td><td class="n">{{ doc.totals.grand_total|rupees }}</td></tr>
+  </table>
+  <p class="muted" style="margin-top:6pt">The amount payable is on the tax invoice. Tax is worked out at the rate in force on the invoice date.</p>
+
+  <div class="bottom"><div></div><div class="sign"><p>For <b>{{ seller.legal_name }}</b></p></div></div>
+</section>
+{% endwith %}
+</body>
+</html>

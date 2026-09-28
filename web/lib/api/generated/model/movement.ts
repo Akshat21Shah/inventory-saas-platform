@@ -5,8 +5,8 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { MovementReferenceTypeEnum } from './movementReferenceTypeEnum';
 import type { MovementTypeEnum } from './movementTypeEnum';
-import type { ReferenceTypeEnum } from './referenceTypeEnum';
 import type { StockProductRef } from './stockProductRef';
 
 export interface Movement {
@@ -34,7 +34,7 @@ export interface Movement {
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
      */
   readonly value: string | null;
-  readonly reference_type: ReferenceTypeEnum;
+  readonly reference_type: MovementReferenceTypeEnum;
   readonly reference_id: string;
   readonly reference_number: string;
   readonly reason: string;

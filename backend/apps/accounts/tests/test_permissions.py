@@ -57,6 +57,7 @@ PLAN_MATRIX: dict[str, set[str]] = {
     "payments.view": {OWN, MGR, SAL, ACC},
     "ledger.view": {OWN, MGR, SAL, ACC},
     "payments.record": {OWN, MGR, ACC},
+    "payments.collect": {SAL},
     "payments.reverse": {OWN, MGR, ACC},
     "ledger.adjust": {OWN, MGR, ACC},
     "reports.sales": {OWN, MGR, ACC},

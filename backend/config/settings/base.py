@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.ledger",
     "apps.orders",
     "apps.billing",
+    "apps.payments",
     "apps.dataio",
     "apps.shop",
 ]
@@ -216,6 +217,29 @@ SPECTACULAR_SETTINGS = {
         "ShipmentPriceSourceEnum": "apps.orders.models.FulfilmentLine.PriceSource",
         "AuditLogActorTypeEnum": "apps.audit.models.AuditLog.ActorType",
         "HistoryActorTypeEnum": "apps.orders.models.OrderStatusHistory.ActorType",
+        "HoldReasonEnum": "apps.orders.models.Order.HoldReason",
+        "InvoicePaymentStatusEnum": "apps.billing.models.PaymentStatus",
+        "DocumentTypeEnum": "apps.billing.models.DocumentType",
+        "PdfStatusEnum": "apps.billing.models.PdfStatus",
+        "EInvoiceStatusEnum": "apps.billing.models.EInvoiceStatus",
+        "InvoiceTriggerEnum": "apps.billing.models.Invoice.Trigger",
+        "CreditNoteKindEnum": "apps.billing.models.CreditNote.Kind",
+        "CreditNoteCreateKindEnum": ["RETURN", "PRICE_ADJUSTMENT"],
+        "ReturnReasonEnum": "apps.billing.models.CreditNote.ReturnReason",
+        "DispositionEnum": "apps.billing.models.CreditNoteLine.Disposition",
+        "LedgerAdjustmentKindEnum": "apps.ledger.models.LedgerAdjustment.Kind",
+        "EntryTypeEnum": "apps.ledger.models.EntryType",
+        "PaymentModeEnum": "apps.payments.models.Payment.Mode",
+        "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+        "CreditTimingEnum": "apps.payments.models.Payment.CreditTiming",
+        "HandoverStatusEnum": "apps.payments.models.Payment.Handover",
+        "DueTypeEnum": ["INVOICE", "ADJUSTMENT"],
+        "MoneySourceTypeEnum": ["PAYMENT", "CREDIT_NOTE", "ADJUSTMENT"],
+        "LedgerReferenceTypeEnum": ["INVOICE", "CREDIT_NOTE", "PAYMENT", "ADJUSTMENT", "REFUND"],
+        "AllocationTargetTypeEnum": ["INVOICE", "ADJUSTMENT", "REFUND"],
+        "RefundModeEnum": "apps.payments.models.Refund.Mode",
+        "RefundStatusEnum": "apps.payments.models.Refund.Status",
+        "AgeingBasisEnum": ["INVOICE_DATE", "DUE_DATE"],
         "LoginStatusEnum": [
             "authenticated",
             "handoff",
@@ -276,6 +300,8 @@ S3_BUCKET = env("S3_BUCKET", default="inventory-dev")
 # Anonymous read, no listing (ADR-034); served through the CDN in production.
 S3_PUBLIC_BUCKET = env("S3_PUBLIC_BUCKET", default="inventory-public-dev")
 PUBLIC_ASSETS_BASE_URL = env("PUBLIC_ASSETS_BASE_URL", default="")  # empty = S3 public endpoint
+# Invoices, credit notes, receipts, order confirmations (ADR-046): "weasyprint" or "fake" (tests).
+PDF_RENDERER = env("PDF_RENDERER", default="weasyprint")
 S3_ACCESS_KEY = env("S3_ACCESS_KEY", default="")
 S3_SECRET_KEY = env("S3_SECRET_KEY", default="")
 S3_REGION = env("S3_REGION", default="ap-south-1")

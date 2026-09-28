@@ -33,6 +33,18 @@ def test_seed_is_idempotent(settings):
     admin = User.objects.get(email="admin@platform.local")
     assert admin.totp_enabled
     assert mfa.matching_step(admin.totp_secret, pyotp.TOTP(admin.totp_secret).now()) is not None
+    # Demo billing (Phase 5): run once, and the ledger reconciles.
+    from apps.billing.models import CreditNote, Invoice
+    from apps.ledger.tests.helpers import check_ledger
+    from apps.payments.models import Payment, Refund
+
+    with tenant_context(sharma.id):
+        assert Invoice.objects.exists()
+        assert Payment.objects.count() == 4
+        assert Payment.objects.filter(handover_status="WITH_SALESMAN").count() == 1
+        assert CreditNote.objects.count() == 1
+        assert Refund.objects.count() == 1
+    check_ledger(sharma)
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):
@@ -134,9 +146,15 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "order",
         "fulfilment",
         "backorder_product",
+        "invoice",
+        "credit_note",
+        "payment",
+        "refund",
+        "shop_invoice",
     }
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]
+    assert ids["invoice"] and ids["credit_note"] and ids["payment"] and ids["refund"]  # billing
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("e2e_ids")

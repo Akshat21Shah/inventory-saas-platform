@@ -264,7 +264,11 @@
     "STOCK_RESERVED": "Part of this stock is reserved for orders, so it can't be removed.",
     "CART_NOT_READY": "Your cart needs a change before you can place the order.",
     "PRICE_CHANGED": "Some prices changed. Please check your cart and place the order again.",
-    "CREDIT_LIMIT_EXCEEDED": "This order is over the credit limit."
+    "CREDIT_LIMIT_EXCEEDED": "This order is over the credit limit.",
+    "OVERDUE_INVOICES": "There are overdue bills to pay first.",
+    "GST_IDENTITY_LOCKED": "The GSTIN, legal name and state can't be changed after the first invoice. Please contact the platform team.",
+    "PAYMENT_EXCEEDS_OUTSTANDING": "This is more than the shop owes. Advances are turned off in your settings.",
+    "REFUND_EXCEEDS_CREDIT": "This is more than the shop's credit balance."
   },
   "designSystem": {
     "title": "Design system",
@@ -509,6 +513,20 @@
         "options": {
           "ON_RECEIPT": "When the cheque is received",
           "ON_CLEARANCE": "When the cheque clears"
+        }
+      },
+      "sales_can_collect": {
+        "label": "Sales staff can collect payments",
+        "description": "Let sales staff record payments they collect from their shops (tracked until handed over)."
+      }
+    },
+    "receivables": {
+      "ageing_basis": {
+        "label": "Age dues by",
+        "description": "Age receivables by days since the invoice date, or by days past the due date.",
+        "options": {
+          "INVOICE_DATE": "Days since the invoice date",
+          "DUE_DATE": "Days past the due date"
         }
       }
     },
@@ -876,7 +894,15 @@
       "actAs": "Support session",
       "actAsTitle": "Start a support session as {name}?",
       "actAsBody": "A new tab opens in their account in view-only mode. The session is recorded, visible to the distributor's owners, and ends automatically.",
-      "startSession": "Start session"
+      "startSession": "Start session",
+      "gstIdentity": {
+        "open": "Change GST identity",
+        "title": "Change the GST identity",
+        "body": "This business has issued invoices, so its GSTIN, legal name and state change only here, with a reason. Invoices already issued keep their details.",
+        "reason": "Reason (kept in the audit log)",
+        "save": "Change",
+        "saved": "GST identity changed."
+      }
     },
     "plans": {
       "title": "Plans",
@@ -1070,7 +1096,8 @@
       "save": "Save changes",
       "saved": "Business details saved.",
       "readOnly": "Only the owner can change these details.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "gstLocked": "Your GSTIN, legal name and state are fixed now that you have issued invoices. To change them, contact the platform team."
     },
     "bank": {
       "title": "Bank details",
@@ -1425,7 +1452,8 @@
       "SPECIAL_PRICES": "Special prices",
       "PRICE_LIST_ITEMS": "Price-list prices",
       "DISCOUNT_RULES": "Discounts",
-      "OPENING_STOCK": "Opening stock"
+      "OPENING_STOCK": "Opening stock",
+      "OPENING_BALANCES": "Opening balances"
     },
     "kindHint": {
       "PRODUCTS": "Codes, names, prices, GST, categories and brands.",
@@ -1433,7 +1461,8 @@
       "SPECIAL_PRICES": "One price per shop and product. Shops by mobile number or code.",
       "PRICE_LIST_ITEMS": "Prices on your price lists, by list name and product code.",
       "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab.",
-      "OPENING_STOCK": "How much of each product you have, by product code; optionally its cost. The whole file becomes one stock adjustment."
+      "OPENING_STOCK": "How much of each product you have, by product code; optionally its cost. The whole file becomes one stock adjustment.",
+      "OPENING_BALANCES": "What each shop owed you (or had paid in advance) when you started, by shop mobile or code. One per shop."
     },
     "template": "Download the {kind} template",
     "modeTitle": "What should happen to rows that already exist?",
@@ -1469,7 +1498,8 @@
       "SPECIAL_PRICES": "Go to special prices",
       "PRICE_LIST_ITEMS": "Go to price lists",
       "DISCOUNT_RULES": "Go to discounts",
-      "OPENING_STOCK": "Go to stock"
+      "OPENING_STOCK": "Go to stock",
+      "OPENING_BALANCES": "Go to shops"
     },
     "counts": {
       "new": "New",
@@ -1615,7 +1645,9 @@
       "specialPrices": "Special prices for this shop",
       "pricingTitle": "Pricing for this shop",
       "discountGrid": "Discounts by product",
-      "addDiscount": "Add a discount for this shop"
+      "addDiscount": "Add a discount for this shop",
+      "accountTitle": "Account",
+      "accountLink": "Statement and payments"
     },
     "credit": {
       "title": "Credit",
@@ -2037,7 +2069,10 @@
         "pending": "{qty} waiting for approval",
         "waiting": "{qty} waiting for stock",
         "cancelled": "{qty} cancelled"
-      }
+      },
+      "onHoldOverdue": "You have overdue bills, so your distributor will approve this order before accepting it.",
+      "documents": "Bills and documents",
+      "confirmation": "Order Confirmation"
     },
     "live": {
       "order_accepted": "Order {number} was accepted.",
@@ -2079,6 +2114,7 @@
       "total": "Total",
       "estimate": "The final amount is on your invoice.",
       "needsApproval": "This order is over your credit limit. Your distributor will approve it before accepting.",
+      "needsApprovalOverdue": "You have overdue bills. Your distributor will approve this order before accepting.",
       "unknownOutcome": "The connection dropped while placing your order. Tap Try again: we'll check first, so it can't be placed twice.",
       "offline": "No connection. Tap Try again when you're back online. Your order hasn't been placed twice.",
       "place": "Place order · {total}",
@@ -2097,7 +2133,65 @@
         "MIN_ORDER_VALUE": "The smallest order is {amount} (with GST).",
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "This order is over your credit limit ({amount} available). Please pay your dues or contact your distributor.",
+        "OVERDUE_INVOICES": "You have overdue bills. Please pay them or contact your distributor.",
         "OTHER": "Something in your cart needs a change."
+      }
+    },
+    "money": {
+      "title": "My account",
+      "summary": "What you owe",
+      "youOwe": "You owe",
+      "inCredit": "You have credit of",
+      "overdue": "{amount} is overdue",
+      "overdueLabel": "Overdue",
+      "creditWithUs": "Your credit with us",
+      "canOrder": "You can still order for",
+      "blocked": "You have overdue bills. New orders wait for your distributor's approval until they are paid.",
+      "overdueBills": "{count, plural, one {# bill is overdue} other {# bills are overdue}}. Please pay soon.",
+      "menu": "Account",
+      "bills": "My bills",
+      "statement": "Statement",
+      "payments": "My payments",
+      "profile": "Your profile",
+      "state": {
+        "unpaid": "To pay",
+        "overdue": "Overdue",
+        "paid": "Paid"
+      },
+      "noBills": {
+        "unpaid": "Nothing to pay",
+        "overdue": "No overdue bills",
+        "paid": "No paid bills yet"
+      },
+      "daysLate": "{days, plural, one {# day late} other {# days late}}",
+      "dueOn": "Pay by {date}",
+      "newer": "Newer",
+      "older": "Older",
+      "notFound": "This bill isn't available",
+      "billHeading": "Bill {number}",
+      "forOrder": "Order {number}",
+      "stillToPay": "Still to pay",
+      "downloadBill": "Download bill",
+      "items": "Items",
+      "returned": "{qty} returned",
+      "total": "Bill total",
+      "paid": "Paid",
+      "credited": "Returns and credits",
+      "creditNotes": "Credit notes",
+      "download": "Download",
+      "statementBody": "Your bills, payments and credits in date order, with the balance after each.",
+      "from": "From",
+      "to": "To",
+      "balanceOn": "Balance on {date}",
+      "noEntries": "Nothing in these dates",
+      "balance": "Balance",
+      "noPayments": "No payments yet",
+      "collectedBy": "collected by {name}",
+      "receipt": "Receipt",
+      "status": {
+        "BOUNCED": "Cheque bounced",
+        "REVERSED": "Cancelled",
+        "PENDING_CLEARANCE": "Waiting for the cheque to clear"
       }
     }
   },
@@ -2491,7 +2585,8 @@
       "new": "New orders",
       "onHold": "Waiting for credit approval",
       "proposals": "Backorders to confirm",
-      "toPack": "Shipments to pack"
+      "toPack": "Shipments to pack",
+      "money": "Money to collect"
     },
     "live": {
       "placed": "New order {number} from {shop}",
@@ -2588,7 +2683,10 @@
         "dispatched": "{qty} dispatched",
         "delivered": "{qty} delivered",
         "cancelled": "{qty} cancelled"
-      }
+      },
+      "documents": "Invoices and documents",
+      "confirmation": "Order Confirmation",
+      "onHoldOverdue": "This shop has overdue bills, so the order waits for someone who manages credit."
     },
     "shipment": {
       "backorder": "backorder",
@@ -2712,6 +2810,7 @@
       "cartEmpty": "Search for products to add them.",
       "later": "{qty} comes later (backorder)",
       "needsApproval": "This order is over the shop's credit limit; it will wait for approval.",
+      "needsApprovalOverdue": "The shop has overdue invoices; this order will wait for approval.",
       "place": "Place order · {total}",
       "placed": "Order {number} placed",
       "problems": {
@@ -2724,8 +2823,483 @@
         "MIN_ORDER_VALUE": "The smallest order is {amount} (with GST).",
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "Over the shop's credit limit ({amount} available).",
+        "OVERDUE_INVOICES": "The shop has overdue invoices to pay first.",
         "OTHER": "Something in the cart needs a change."
       }
     }
+  },
+  "billing": {
+    "document": {
+      "preparing": "The PDF is being prepared. Try again in a moment.",
+      "failed": "The PDF couldn't be prepared. Ask someone who manages invoices to print it again."
+    },
+    "nav": {
+      "label": "Invoices",
+      "invoices": "Invoices",
+      "creditNotes": "Credit notes",
+      "settings": "Invoice settings",
+      "paymentsLabel": "Payments",
+      "payments": "Payments",
+      "refunds": "Refunds",
+      "handover": "Collections to hand over",
+      "receivables": "Receivables",
+      "paymentSettings": "Credit & payment settings"
+    },
+    "invoices": {
+      "title": "Invoices",
+      "description": "Tax invoices issued to your shops, with what is still owed.",
+      "number": "Invoice",
+      "shop": "Shop",
+      "date": "Date",
+      "due": "Due",
+      "total": "Total",
+      "balance": "Still owed",
+      "status": "Payment",
+      "daysOverdue": "{days, plural, one {# day overdue} other {# days overdue}}",
+      "empty": "No invoices yet",
+      "emptyBody": "Invoices appear when orders are dispatched (or accepted, if you invoice at acceptance).",
+      "searchPlaceholder": "Invoice, order or shop",
+      "search": "Search invoices",
+      "allStatuses": "All payment states",
+      "overdueOnly": "Overdue only",
+      "from": "From",
+      "to": "To",
+      "intraTax": "GST {rate}% (CGST + SGST)",
+      "interTax": "IGST {rate}%",
+      "download": "Download PDF",
+      "printCopies": "Print 3 copies",
+      "creditNote": "Credit note",
+      "regenerating": "The PDF is being printed again.",
+      "regenerate": "Print PDF again",
+      "notFound": "This invoice isn't available",
+      "back": "Invoices",
+      "heading": "Invoice {number}",
+      "forOrder": "Order {number}",
+      "dueOn": "Due",
+      "rateDiffers": "The GST rate on some items changed after the order was placed. This invoice uses the rate in force on the invoice date.",
+      "pdfFailed": "The PDF of this invoice couldn't be printed.",
+      "items": "Items",
+      "lineMeta": "{code} · HSN {hsn} · {qty} {unit}",
+      "discount": "Discount",
+      "taxableValue": "Taxable value",
+      "orderedAt": "ordered at {rate}%",
+      "credited": "{qty} credited",
+      "creditNotes": "Credit notes",
+      "automaticNote": "Issued automatically",
+      "applied": "Paid and credited",
+      "totals": "Totals",
+      "placeOfSupply": "Place of supply: {place}"
+    },
+    "totals": {
+      "taxable": "Taxable value",
+      "cgst": "CGST",
+      "sgst": "SGST",
+      "igst": "IGST",
+      "cess": "Cess",
+      "roundOff": "Round off",
+      "invoiceTotal": "Invoice total",
+      "paid": "Paid",
+      "credited": "Credited",
+      "balanceDue": "Still owed",
+      "creditTotal": "Credit total",
+      "againstInvoice": "Used against the invoice",
+      "creditLeft": "Credit left for other bills"
+    },
+    "applied": {
+      "none": "Nothing paid or credited yet.",
+      "payment": "Payment {number}",
+      "creditNote": "Credit note {number}",
+      "undone": "Undone",
+      "automatic": "Applied automatically",
+      "byHand": "Applied by hand",
+      "reversed": "later undone"
+    },
+    "usedFor": {
+      "none": "Not used yet: kept as credit.",
+      "invoice": "Invoice {number}",
+      "refund": "Refund {number}",
+      "undone": "Undone",
+      "automatic": "Applied automatically",
+      "byHand": "Applied by hand",
+      "reversed": "later undone"
+    },
+    "creditNoteKinds": {
+      "RETURN": "Return",
+      "SHORT_SUPPLY": "Short supply",
+      "CANCELLATION": "Cancellation",
+      "PRICE_ADJUSTMENT": "Price adjustment"
+    },
+    "returnReasons": {
+      "DAMAGED": "Damaged",
+      "EXPIRED": "Expired",
+      "WRONG_ITEM": "Wrong item",
+      "EXCESS_SUPPLY": "Excess supply",
+      "OTHER": "Other"
+    },
+    "dispositions": {
+      "RETURN_TO_STOCK": "Back to stock",
+      "DAMAGED": "Received damaged",
+      "NOT_RETURNED": "Not physically returned"
+    },
+    "creditNotes": {
+      "automatic": "Issued automatically (short supply / cancellation)",
+      "title": "Credit notes",
+      "description": "Returns, price adjustments, and credit notes issued automatically for goods invoiced but not supplied.",
+      "new": "New credit note",
+      "number": "Credit note",
+      "shop": "Shop",
+      "invoice": "Invoice",
+      "kind": "Kind",
+      "date": "Date",
+      "total": "Total",
+      "creditLeft": "Credit left",
+      "empty": "No credit notes yet",
+      "emptyBody": "Credit notes you issue, and ones issued automatically, appear here.",
+      "searchPlaceholder": "Credit note, invoice or shop",
+      "search": "Search credit notes",
+      "allKinds": "All kinds",
+      "source": "Issued by",
+      "allSources": "Everyone",
+      "byStaff": "Issued by staff",
+      "notFound": "This credit note isn't available",
+      "back": "Credit notes",
+      "heading": "Credit note {number}",
+      "againstInvoice": "Against invoice {number}",
+      "download": "Download PDF",
+      "regenerating": "The PDF is being printed again.",
+      "regenerate": "Print PDF again",
+      "items": "Items",
+      "lineQty": "{qty} {unit}",
+      "valueOnly": "Value only",
+      "taxable": "Taxable",
+      "usedFor": "Where the credit went",
+      "totals": "Totals",
+      "form": {
+        "title": "New credit note",
+        "description": "Credit a shop for goods sent back or for a price agreed later. Amounts and tax are worked out for you.",
+        "pickInvoice": "Which invoice?",
+        "invoiceSearch": "Search by invoice, order or shop",
+        "noInvoices": "No invoices match",
+        "created": "Credit note {number} issued",
+        "forInvoice": "Invoice {number} · {shop}",
+        "what": "What happened?",
+        "return": "Goods came back",
+        "priceAdjustment": "Price adjustment (no goods move)",
+        "returnHint": "Enter how many came back on each line, and what happened to them.",
+        "priceHint": "Enter the taxable value to credit on each line; tax is added at the invoice's rates.",
+        "items": "Invoice items",
+        "invoiced": "{qty} {unit} invoiced · {left} can still be credited",
+        "taxableValue": "Taxable value",
+        "quantityBack": "Quantity back",
+        "upTo": "Up to {qty}",
+        "disposition": "What happened to the goods",
+        "taxableToCredit": "Taxable value to credit",
+        "taxableHint": "Before GST",
+        "reason": "Reason",
+        "note": "Note",
+        "noteHint": "Shown on the credit note. Needed for price adjustments and for \"Other\".",
+        "cancel": "Cancel",
+        "issue": "Issue credit note"
+      }
+    },
+    "shopPicker": {
+      "title": "Which shop?",
+      "search": "Shop name, code or mobile",
+      "none": "No shops match"
+    },
+    "modes": {
+      "CASH": "Cash",
+      "CHEQUE": "Cheque",
+      "BANK_TRANSFER": "Bank transfer",
+      "UPI": "UPI"
+    },
+    "position": {
+      "owed": "Owed",
+      "overdue": "Overdue",
+      "credit": "Unused credit",
+      "net": "Net balance",
+      "oldest": "{days, plural, one {Oldest bill # day overdue} other {Oldest bill # days overdue}}",
+      "heldAsCredit": "{amount} is held as credit even though advances are off."
+    },
+    "dues": {
+      "none": "Nothing is owed right now.",
+      "dueOn": "Due",
+      "owed": "owed",
+      "all": "All"
+    },
+    "payments": {
+      "title": "Payments",
+      "description": "Money received from shops, with receipts, cheques and collections by sales staff.",
+      "record": "Record payment",
+      "collect": "Record collection",
+      "number": "Receipt",
+      "shop": "Shop",
+      "date": "Date",
+      "earlierYearShort": "Earlier financial year",
+      "amount": "Amount",
+      "mode": "Mode",
+      "status": "Status",
+      "handover": "Handover",
+      "recordedInOffice": "Recorded in the office",
+      "creditLeft": "Credit left",
+      "empty": "No payments yet",
+      "emptyBody": "Payments you record, and collections by sales staff, appear here.",
+      "searchPlaceholder": "Receipt, shop, reference or cheque",
+      "search": "Search payments",
+      "allModes": "All modes",
+      "allStatuses": "All statuses",
+      "allHandovers": "All",
+      "from": "From",
+      "to": "To",
+      "earlierYear": "This payment is dated in an earlier financial year than it was recorded. Its receipt number is from this year; it counts in the shop's account on its own date.",
+      "heldAsCredit": "{amount} is held as credit even though advances are off.",
+      "form": {
+        "title": "Record payment",
+        "description": "Money received from a shop. It pays the bills you choose first, then the oldest; anything left is kept as credit.",
+        "collectTitle": "Record collection",
+        "collectDescription": "Money you collected from one of your shops. The shop is credited now; hand the money over at the office.",
+        "saved": "Payment {number} recorded",
+        "otherShop": "Choose another shop",
+        "collectHint": "This collection stays \"With salesman\" until the office confirms you handed it over. It pays the shop's oldest bills first.",
+        "amount": "Amount (₹)",
+        "mode": "How was it paid?",
+        "date": "Payment date",
+        "dateHint": "The day the money was received",
+        "chequeNumber": "Cheque number",
+        "chequeDate": "Cheque date",
+        "bank": "Bank",
+        "reference": "Reference",
+        "referenceHint": "UTR or UPI reference, if any",
+        "earlierYear": "This date is in an earlier financial year. The receipt is numbered in this year's series, and the payment counts on the date you entered.",
+        "payFirst": "Pay these bills first (optional)",
+        "payFirstHint": "Anything not chosen goes to the oldest bills first.",
+        "notes": "Note",
+        "cancel": "Cancel",
+        "save": "Record payment",
+        "saveCollection": "Record collection"
+      },
+      "detail": {
+        "back": "Payments",
+        "notFound": "This payment isn't available",
+        "heading": "Receipt {number}",
+        "receipt": "Download receipt",
+        "usedFor": "What it paid",
+        "creditLeft": "Kept as credit:",
+        "move": "Move",
+        "moveTitle": "Move the money from {number}",
+        "moveBody": "{amount} is taken off this bill. Choose where it goes instead, or leave it as credit.",
+        "reason": "Reason",
+        "allocate": "Use the credit",
+        "allocateTitle": "Use the unused credit",
+        "allocateBody": "{amount} of this payment is unused. Choose the bills it pays.",
+        "handedOver": "Mark handed over",
+        "handedOverTitle": "Did {name} hand this over?",
+        "handedOverBody": "{amount} reached the office.",
+        "clear": "Cheque cleared",
+        "clearTitle": "Cheque {number} cleared",
+        "clearedOn": "Cleared on",
+        "clearBody": "The shop was credited when the cheque was received; this records that it cleared.",
+        "clearBodyCredit": "The shop is credited now, on the payment date, and its bills are paid oldest first.",
+        "bounce": "Cheque bounced",
+        "bounceTitle": "Cheque {number} bounced",
+        "bounceReason": "What the bank said",
+        "bounceBody": "If the shop was credited, that is undone and its bills are owed again.",
+        "bounceBodyWithSalesman": "The cheque is recorded as handed over by the salesman first. If the shop was credited, that is undone.",
+        "reverse": "Reverse",
+        "reverseTitle": "Reverse {number}?",
+        "reverseBody": "Use this only for a payment entered by mistake. The shop's bills are owed again.",
+        "reverseReason": "Why",
+        "date": "Payment date",
+        "mode": "Mode",
+        "cheque": "Cheque",
+        "creditTiming": "Credited",
+        "onReceipt": "When received",
+        "onClearance": "When cleared",
+        "reference": "Reference",
+        "recordedBy": "Recorded by",
+        "collectedBy": "Collected by",
+        "handoverStatus": "Handover",
+        "handedOverAt": "Handed over",
+        "reversalReason": "Reason"
+      }
+    },
+    "handover": {
+      "title": "Collections to hand over",
+      "description": "Money sales staff collected that hasn't reached the office yet.",
+      "perSalesman": "With each salesman",
+      "nothing": "Nothing to hand over",
+      "nothingBody": "Collections by sales staff appear here until you confirm they were handed over.",
+      "count": "{count, plural, one {# collection} other {# collections}}",
+      "oldest": "oldest",
+      "done": "{count, plural, one {# collection} other {# collections}} marked handed over",
+      "markHandedOver": "Mark handed over",
+      "selectPage": "Select all on this page",
+      "selectRow": "Select {number}",
+      "selectionBar": "Selected collections"
+    },
+    "refunds": {
+      "title": "Refunds",
+      "description": "Money paid back to shops from their credit balance.",
+      "new": "New refund",
+      "number": "Voucher",
+      "shop": "Shop",
+      "date": "Date",
+      "mode": "Mode",
+      "amount": "Amount",
+      "empty": "No refunds yet",
+      "emptyBody": "Refunds you pay to shops from their credit appear here.",
+      "notFound": "This refund isn't available",
+      "back": "Refunds",
+      "heading": "Refund {number}",
+      "voucher": "Download voucher",
+      "paidFrom": "Paid from the shop's credit",
+      "recordedBy": "Recorded by {name}",
+      "form": {
+        "title": "New refund",
+        "description": "Pay a shop back from its credit balance. It can't be more than the credit the shop has.",
+        "saved": "Refund {number} recorded",
+        "otherShop": "Choose another shop",
+        "noCredit": "This shop has no credit to pay back.",
+        "amount": "Amount (₹)",
+        "upTo": "Up to ₹{amount}",
+        "mode": "How was it paid?",
+        "date": "Date",
+        "reference": "Reference",
+        "notes": "Note",
+        "cancel": "Cancel",
+        "save": "Record refund"
+      },
+      "status": "Status",
+      "reverse": "Reverse (error)",
+      "reverseTitle": "Reverse refund {number}?",
+      "reverseBody": "Use this only for a refund entered by mistake. The amount goes back into the shop's credit, and the voucher is marked reversed.",
+      "reverseReason": "Why",
+      "reversedNotice": "Reversed: {reason}. The amount is back in the shop's credit."
+    },
+    "receivables": {
+      "title": "Receivables",
+      "description": "What each shop owes, how old it is, and who is overdue.",
+      "owed": "Owed by shops",
+      "overdueShops": "{count, plural, =0 {Overdue} one {Overdue (# shop)} other {Overdue (# shops)}}",
+      "dueThisWeek": "Due in the next 7 days",
+      "withSalesmen": "With salesmen",
+      "unusedCredit": "Unused credit",
+      "shop": "Shop",
+      "owedColumn": "Owed",
+      "overdue": "Overdue",
+      "oldest": "{days, plural, one {# day} other {# days}}",
+      "bucket": {
+        "not_due": "Not due",
+        "d0_30": "0–30 days",
+        "d31_60": "31–60 days",
+        "d61_90": "61–90 days",
+        "d90_plus": "Over 90 days"
+      },
+      "credit": "Credit",
+      "lastPayment": "Last payment",
+      "salesperson": "Salesperson",
+      "basis": "Age by",
+      "by": {
+        "INVOICE_DATE": "Days since the bill",
+        "DUE_DATE": "Days past due"
+      },
+      "net": "Net",
+      "empty": "Nothing is owed",
+      "emptyBody": "Shops with bills to pay or unused credit appear here.",
+      "searchPlaceholder": "Shop name, code or mobile",
+      "search": "Search shops",
+      "overdueOnly": "Overdue only",
+      "pages": "Pages",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {pages}"
+    },
+    "statement": {
+      "notFound": "This shop's account isn't available",
+      "title": "{shop}: account",
+      "description": "Bills, payments and credits in date order, with the balance after each.",
+      "recordPayment": "Record payment",
+      "refund": "Refund credit",
+      "position": {
+        "owed": "Owed",
+        "overdue": "Overdue",
+        "credit": "Unused credit",
+        "net": "Net balance",
+        "limit": "Credit limit"
+      },
+      "noLimit": "No limit",
+      "oldest": "{days, plural, one {Oldest bill # day overdue} other {Oldest bill # days overdue}}",
+      "heldAsCredit": "{amount} is held as credit even though advances are off.",
+      "from": "From",
+      "to": "To",
+      "entries": "Entries",
+      "opening": "Balance on {date}",
+      "noEntries": "No entries in these dates",
+      "balance": "Balance",
+      "closing": "Balance on {date}",
+      "adjust": {
+        "open": "Adjustment",
+        "title": "Add an adjustment",
+        "body": "An old bill from before this software, an opening advance, or a debit or credit with a note. It is recorded in the audit log.",
+        "save": "Save",
+        "kind": "Kind",
+        "amount": "Amount (₹)",
+        "billDate": "Bill date",
+        "date": "Date",
+        "dueDate": "Due date",
+        "dueHint": "Empty: the shop's payment terms after the date",
+        "billNumber": "Old bill number",
+        "narration": "Note (shown on the statement)"
+      }
+    },
+    "adjustmentKinds": {
+      "OPENING_DEBIT": "Old bill (owed)",
+      "OPENING_CREDIT": "Opening advance",
+      "DEBIT": "Debit adjustment",
+      "CREDIT": "Credit adjustment"
+    },
+    "entryTypes": {
+      "OPENING_BALANCE": "Opening balance",
+      "INVOICE": "Invoice",
+      "CREDIT_NOTE": "Credit note",
+      "PAYMENT": "Payment",
+      "PAYMENT_REVERSAL": "Payment reversed",
+      "DEBIT_ADJUSTMENT": "Debit adjustment",
+      "CREDIT_ADJUSTMENT": "Credit adjustment",
+      "REFUND": "Refund",
+      "REFUND_REVERSAL": "Refund reversed"
+    },
+    "numbering": {
+      "title": "Document numbers",
+      "body": "Each number is a prefix, the financial year and a 6-digit number, like INV/26-27/000001. Numbering restarts every April with no gaps. A new prefix applies from the next number; numbers already issued keep theirs.",
+      "types": {
+        "INVOICE": "Tax invoices",
+        "CREDIT_NOTE": "Credit notes",
+        "RECEIPT": "Payment receipts",
+        "REFUND": "Refund vouchers"
+      },
+      "next": "Next: {number}",
+      "issued": "{count, plural, =0 {none issued this year} one {# issued this year} other {# issued this year}}",
+      "prefix": "Prefix",
+      "save": "Save",
+      "saved": "Prefix changed. It applies from the next number."
+    }
+  },
+  "paymentStatus": {
+    "RECEIVED": "Received",
+    "PENDING_CLEARANCE": "Waiting to clear",
+    "CLEARED": "Cleared",
+    "BOUNCED": "Bounced",
+    "REVERSED": "Reversed"
+  },
+  "handoverStatus": {
+    "NOT_TRACKED": "Recorded in the office",
+    "WITH_SALESMAN": "With salesman",
+    "HANDED_OVER": "Handed over",
+    "NOT_NEEDED": "Nothing to hand over"
+  },
+  "refundStatus": {
+    "ISSUED": "Paid back",
+    "REVERSED": "Reversed"
   }
 }

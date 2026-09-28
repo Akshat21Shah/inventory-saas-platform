@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import User
 from apps.catalog.models import Product
+from apps.ledger import selectors as ledger_selectors
 from apps.orders import backorders, credit, selectors, transitions
 from apps.orders import cart as carts
 from apps.orders.api.serializers import PlaceOrderSerializer
@@ -228,5 +229,6 @@ class ShopHomeView(ShopView):
             "open_orders": selectors.shop_orders(retailer.pk, "open").count(),
             "waiting_items": selectors.waiting_items(retailer.pk),
             "credit": {"limit": status.limit, "available": status.available},
+            "outstanding": ledger_selectors.outstanding(retailer.pk),
         }
         return Response(s.ShopHomeSerializer(body, context=_context(retailer)).data)

@@ -313,7 +313,9 @@ function StaffCart({ shopId }: { shopId: string }) {
                 </p>
               ))}
             {cart.credit.outcome === "NEEDS_APPROVAL" ? (
-              <p className="bg-info/10 rounded-lg p-2 text-sm">{t("needsApproval")}</p>
+              <p className="bg-info/10 rounded-lg p-2 text-sm">
+                {t(cart.credit.reason === "OVERDUE" ? "needsApprovalOverdue" : "needsApproval")}
+              </p>
             ) : null}
             <Button
               className="min-h-11 w-full"

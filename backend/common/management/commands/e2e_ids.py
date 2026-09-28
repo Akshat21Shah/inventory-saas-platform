@@ -9,10 +9,12 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.billing.models import CreditNote, Invoice
 from apps.catalog.models import Product
 from apps.dataio.models import ImportJob
 from apps.inventory.models import StockAdjustment, StockInward
 from apps.orders.models import Fulfilment, Order, OrderLine
+from apps.payments.models import Payment, Refund
 from apps.platform.models import Tenant
 from apps.pricing.models import DiscountRule, PriceList
 from apps.retailers.models import Retailer
@@ -63,5 +65,11 @@ class Command(BaseCommand):
                     )
                     else None
                 ),
+                # Billing (Phase 5): an invoice with a credit note, and that credit note.
+                "invoice": _first(Invoice.objects.filter(credit_notes__isnull=False)),
+                "credit_note": _first(CreditNote.objects.all()),
+                "payment": _first(Payment.objects.filter(handover_status="WITH_SALESMAN")),
+                "refund": _first(Refund.objects.all()),
+                "shop_invoice": _first(Invoice.objects.filter(retailer__mobile="+919876500001")),
             }
         self.stdout.write(json.dumps(ids))

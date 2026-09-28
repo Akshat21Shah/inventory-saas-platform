@@ -234,6 +234,13 @@ def add(
     )
 
 
+def return_goods(
+    level: StockLevel, quantity: Decimal, ref: Ref, *, by: User | None, reason: str = ""
+) -> StockMovement:
+    """Goods a shop sent back (a return credit note, ADR-046 item 5)."""
+    return _apply_movement(level, MovementType.RETURN, quantity, ref, by=by, reason=reason)
+
+
 def remove(
     level: StockLevel,
     quantity: Decimal,

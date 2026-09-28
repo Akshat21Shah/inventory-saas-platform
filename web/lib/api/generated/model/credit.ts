@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { CreditReason } from './creditReason';
 import type { OutcomeEnum } from './outcomeEnum';
 
 export interface Credit {
@@ -20,4 +21,11 @@ export interface Credit {
      */
   available: string | null;
   outcome: OutcomeEnum;
+  /**
+     * Why it needs approval or is blocked: over the limit, or overdue invoices.
+     *
+     * * `CREDIT_LIMIT` - Over the credit limit
+     * * `OVERDUE` - Overdue invoices
+     */
+  reason: typeof CreditReason[keyof typeof CreditReason];
 }

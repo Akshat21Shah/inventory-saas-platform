@@ -1,6 +1,6 @@
 # PLAN.md — Master Engineering Plan (v1)
 
-Status: **v1.4 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25), Phase 2 complete (2026-09-26); Phase 3 complete (2026-09-26); Phase 4 complete (2026-09-28, §10.2e, §10.2f).**
+Status: **v1.4 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25), Phase 2 complete (2026-09-26); Phase 3 complete (2026-09-26); Phase 4 complete (2026-09-28, §10.2e, §10.2f); Phase 5 in progress (§10.2g).**
 Source of truth for *what*: `docs/PROJECT_SPEC.md`. Rules for *how*: `CLAUDE.md`.
 Where this plan and the spec disagree, the spec wins until the spec is updated.
 
@@ -248,11 +248,12 @@ Legend:
 ### 2.9 `billing`
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **InvoiceSeries** (tenant) | `document_type` (INVOICE, CREDIT_NOTE, RECEIPT), `fy` char(7) (`2025-26`), `prefix` varchar(8), `padding` int=6, `next_number` bigint=1, `is_active` | unique `(t, document_type, fy)`; check that formatted max length ≤ 16 |
-| **Invoice** (tenant) | `number` varchar(16), `series` FK, `fy`, `invoice_date` date (IST), `due_date`, `order` FK, `fulfilment` FK (unique), `retailer` FK, `status` (ISSUED, CANCELLED), `seller` jsonb (legal name, GSTIN, address, state), `buyer` jsonb (name, GSTIN null, billing + shipping address), `place_of_supply` FK→State, `supply_type` (INTRA, INTER), `reverse_charge` bool=false, `prices_include_tax` bool (from the **order** snapshot), `settings_snapshot` jsonb (rounding + timing keys in effect at issue), `issued_trigger` (ON_ACCEPTANCE, ON_ALLOCATION, ON_DISPATCH); totals (Money): `gross_total`, `discount_total`, `taxable_total`, `cgst_total`, `sgst_total`, `igst_total`, `cess_total`, `round_off`, `grand_total`; `amount_in_words`; running (updated only by ledger/payment services): `amount_paid`, `amount_credited`, `balance_due`, `payment_status` (UNPAID, PARTIAL, PAID); `pdf_key`, `pdf_status` (PENDING, READY, FAILED); `einvoice_status` (NOT_APPLICABLE, PENDING, GENERATED, FAILED, CANCELLED); `irn`, `ack_no`, `ack_date`, `signed_qr` | unique `(t, number)`; unique `(t, fy, number)`; checks `grand_total>=0`, `balance_due>=0`, `abs(round_off)<1.00`; `(t, invoice_date desc)`, `(t, retailer, invoice_date)`, `(t, payment_status, due_date)`, `(t, einvoice_status)`; content columns guarded by trigger (only running/status columns updatable) |
+| **DocumentSeries** (tenant) | `document_type` (INVOICE, CREDIT_NOTE, RECEIPT), `fy` char(7) (`2026-27`), `prefix` varchar(3) (A–Z 0–9), `padding` int=6, `next_number` bigint=1 | unique `(t, document_type, fy)`; checks prefix pattern and padding 4–6, so `PFX/26-27/000001` ≤ 16 characters (ADR-046) |
+| **Invoice** (tenant) | `number` varchar(16), `series` FK, `fy`, `invoice_date` date (IST), `due_date`, `order` FK, `fulfilment` FK (unique), `retailer` FK, `status` (ISSUED, CANCELLED), `seller` jsonb (legal name, GSTIN, address, state), `buyer` jsonb (name, GSTIN null, billing + shipping address), `place_of_supply` FK→State, `supply_type` (INTRA, INTER), `reverse_charge` bool=false, `prices_include_tax` bool (from the **order** snapshot), `settings_snapshot` jsonb (rounding + timing keys in effect at issue), `issued_trigger` (ON_ACCEPTANCE, ON_ALLOCATION, ON_DISPATCH); totals (Money): `gross_total`, `discount_total`, `taxable_total`, `cgst_total`, `sgst_total`, `igst_total`, `cess_total`, `round_off`, `grand_total`; `amount_in_words`; running (updated only by ledger/payment services): `amount_paid`, `amount_credited`, `balance_due`, `payment_status` (UNPAID, PARTIAL, PAID); `pdf_key` (original), `copies_pdf_key` (three labelled copies for staff, ADR-046), `pdf_status` (PENDING, READY, FAILED); `einvoice_status` (NOT_APPLICABLE, PENDING, GENERATED, FAILED, CANCELLED); `irn`, `ack_no`, `ack_date`, `signed_qr` | unique `(t, number)`; unique `(t, fy, number)`; checks `grand_total>=0`, `balance_due>=0`, `abs(round_off)<1.00`; `(t, invoice_date desc)`, `(t, retailer, invoice_date)`, `(t, payment_status, due_date)`, `(t, einvoice_status)`; content columns guarded by trigger (only running/status columns updatable) |
 | **InvoiceLine** (tenant) | `invoice` FK, `line_no`, `order_line` FK, `fulfilment_line` FK, `product` FK, `description`, `hsn_code`, `uqc`, `unit_code`, `quantity` Qty, `unit_price` Money, `gross_amount`, `discount_amount`, `taxable_value`, `gst_rate`, `cgst_rate`, `cgst_amount`, `sgst_rate`, `sgst_amount`, `igst_rate`, `igst_amount`, `cess_rate`, `cess_amount`, `line_total`, `rate_differs_from_order` bool | unique `(invoice, line_no)`; checks amounts ≥ 0 |
-| **CreditNote** (tenant) | `number`, `series` FK, `fy`, `note_date`, `invoice` FK, `settings_snapshot` jsonb, `retailer` FK, `reason` (RETURN, CANCELLATION, SHORT_SUPPLY, PRICE_ADJUSTMENT, OTHER), `restock` bool, `status` (ISSUED, CANCELLED), totals as Invoice, `pdf_key`, `pdf_status`, `einvoice_status`, `irn`, `ack_no`, `ack_date`, `signed_qr` | unique `(t, number)` |
-| **CreditNoteLine** (tenant) | `credit_note` FK, `invoice_line` FK, `quantity` Qty (0 for pure value adjustments), `taxable_value`, tax breakup as InvoiceLine, `line_total` | service invariant: Σ credited qty/value per invoice line ≤ invoiced |
+| **CreditNote** (tenant) | `number`, `series` FK, `fy`, `note_date`, `invoice` FK, `settings_snapshot` jsonb, `retailer` FK, `reason` (returns: DAMAGED, EXPIRED, WRONG_ITEM, EXCESS_SUPPLY, OTHER with `reason_note`; SHORT_SUPPLY, CANCELLATION, PRICE_ADJUSTMENT), `issued_automatically` bool (ADR-046), `status` (ISSUED, CANCELLED), totals as Invoice, `pdf_key`, `pdf_status`, `einvoice_status`, `irn`, `ack_no`, `ack_date`, `signed_qr` | unique `(t, number)` |
+| **OrderConfirmation** (tenant) | `order` FK (unique), `content` jsonb (snapshot of items, prices, tax estimate), `pdf_key`, `pdf_status` | "This is not a tax invoice." (ADR-022, ADR-046) |
+| **CreditNoteLine** (tenant) | `credit_note` FK, `invoice_line` FK, `quantity` Qty (0 for pure value adjustments), `disposition` (RETURN_TO_STOCK default, DAMAGED, NOT_RETURNED; ADR-046), `taxable_value`, tax breakup as InvoiceLine, `line_total` | service invariant: Σ credited qty/value per invoice line ≤ invoiced |
 
 ### 2.10 `compliance` (Phase 7)
 | Model | Fields | Constraints / indexes |
@@ -266,13 +267,15 @@ Legend:
 | Model | Fields | Constraints / indexes |
 |---|---|---|
 | **RetailerAccount** (tenant) | `retailer` FK (unique), `balance` Money (+ = retailer owes, − = advance), `total_debits`, `total_credits`, `unapplied_credit` Money, `last_entry_at` | unique `retailer`; locked `FOR UPDATE` for every entry |
+| **LedgerAdjustment** (tenant) | `retailer` FK, `kind` (OPENING_DEBIT, OPENING_CREDIT, DEBIT, CREDIT), `amount`, `adjustment_date`, `due_date`, `narration`, running `balance_due` (debits) / `unapplied_amount` (credits), `created_by` | a debit is owed and ages like an invoice; a credit is usable like an advance |
+| **Allocation** (tenant, append-only) | exactly one source (`payment` / `credit_note` / `credit_adjustment`) and one target (`invoice` / `debit_adjustment`), `retailer`, `amount` (negative = reversal, with `reverses`), `automatic`, `reason`, `created_by` | replaces `PaymentAllocation`: advances and credit-note credits are matched the same way, oldest money first, and any allocation can be reversed and reallocated (ADR-046 item 10); allocations never change the balance |
 | **LedgerEntry** (tenant, append-only) | `account` FK, `retailer` FK, `entry_type` (OPENING_BALANCE, INVOICE, PAYMENT, CREDIT_NOTE, PAYMENT_REVERSAL, DEBIT_ADJUSTMENT, CREDIT_ADJUSTMENT), `entry_date` date (IST), `debit` Money, `credit` Money, `balance_after` Money, `reference_type`, `reference_id`, `narration`, `reverses` FK self null | checks `debit>=0`, `credit>=0`, `(debit>0) <> (credit>0)`; unique `reverses` where not null; `(t, retailer, created_at, id)`; unique `(t, reference_type, reference_id, entry_type)` (no double posting) |
 
 ### 2.12 `payments`
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **Payment** (tenant) | `number` (receipt no.), `retailer` FK, `amount` Money, `source` (OFFLINE, GATEWAY), `mode` (CASH, CHEQUE, BANK_TRANSFER, UPI_OFFLINE, ONLINE), `status` (PENDING_CLEARANCE, RECEIVED, CLEARED, CAPTURED, REVERSED, BOUNCED), `credit_timing` (ON_RECEIPT, ON_CLEARANCE; snapshot for cheques), `cleared_at` null, `payment_date` date, `reference_no`, `cheque_number`, `cheque_date`, `bank_name`, `collected_by` FK null, `notes`, `allocated_amount`, `unapplied_amount`, `reversed_at`, `reversal_reason`, `gateway_payment_id` null, `receipt_pdf_key` | unique `(t, number)`; check `amount>0`, `unapplied_amount>=0`; unique `(t, gateway_payment_id)` where not null; `(t, retailer, payment_date)` |
-| **PaymentAllocation** (tenant, append-only) | `payment` FK, `invoice` FK, `amount` Money (negative = reversal), `reverses` FK self null | index `(t, invoice)`, `(t, payment)` |
+| **Payment** (tenant) | `number` (receipt no.), `retailer` FK, `amount` Money, `source` (OFFLINE, GATEWAY), `mode` (CASH, CHEQUE, BANK_TRANSFER, UPI_OFFLINE, ONLINE), `status` (PENDING_CLEARANCE, RECEIVED, CLEARED, CAPTURED, REVERSED, BOUNCED), `credit_timing` (ON_RECEIPT, ON_CLEARANCE; snapshot for cheques), `cleared_at` null, `payment_date` date, `reference_no`, `cheque_number`, `cheque_date`, `bank_name`, `collected_by` FK null, `handover_status` (NOT_TRACKED, WITH_SALESMAN, HANDED_OVER, NOT_NEEDED; ADR-046/047), `handed_over_at`, `handed_over_by`, `notes`, `allocated_amount`, `unapplied_amount`, `reversed_at`, `reversal_reason`, `gateway_payment_id` null, `receipt_pdf_key` | unique `(t, number)`; check `amount>0`, `unapplied_amount>=0`; unique `(t, gateway_payment_id)` where not null; `(t, retailer, payment_date)` |
+| ~~PaymentAllocation~~ | replaced by `ledger.Allocation` (§2.11) | |
 | **GatewayConfig** (tenant, Phase 7) | `provider` (RAZORPAY), `mode` (TEST, LIVE), `key_id`, `key_secret`, `webhook_secret` (encrypted), `is_active`, `verified_at` | unique `(t, provider)` |
 | **PaymentIntent** (tenant, Phase 7) | `retailer` FK, `purpose` (INVOICE, OUTSTANDING, CUSTOM), `invoice` FK null, `amount` Money, `provider`, `provider_order_id` unique, `status` (CREATED, ATTEMPTED, PAID, FAILED, EXPIRED), `payment` FK null, `expires_at` | `(t, status, created_at)` |
 | **WebhookEvent** | `tenant` FK null, `provider`, `event_id`, `event_type`, `signature_valid` bool, `payload` jsonb, `headers` jsonb, `processing_status` (RECEIVED, PROCESSED, IGNORED, FAILED), `processed_at`, `error` | unique `(provider, event_id)` |
@@ -424,6 +427,7 @@ erDiagram
 | `compliance.manage` (e-invoice, e-way bill) | ✔ | ✔ | | | ✔ |
 | `payments.view` / `ledger.view` | ✔ | ✔ | ✔ | | ✔ |
 | `payments.record` | ✔ | ✔ | | | ✔ |
+| `payments.collect` (record collections from own shops; "With salesman" until handed over; ⚙ `payments.sales_can_collect`, ADR-046) | | | ✔ | | |
 | `payments.reverse` / `ledger.adjust` | ✔ | ✔ | | | ✔ |
 | `reports.sales` (all) / `reports.sales_own` | ✔ / – | ✔ / – | – / ✔ | | ✔ / – |
 | `reports.stock` | ✔ | ✔ | | ✔ | |
@@ -656,7 +660,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `receivables` | GET | `ledger.view` | per-retailer outstanding, overdue, last payment |
 | `receivables/ageing` | GET | `ledger.view` | 0–30 / 31–60 / 61–90 / 90+ |
 | `retailers/{id}/ledger` | GET | `ledger.view` | statement with running balance (export) |
-| `ledger/adjustments` | POST 🔑 | `ledger.adjust` | opening balance / debit / credit adjustment with narration (audited) |
+| `ledger/adjustments` | POST 🔑 | `ledger.adjust` | old bill (bill date, due date, bill number; several per shop) / opening advance / debit / credit adjustment with narration (audited; ADR-047) |
 | `payments` | GET, POST 🔑 | view: `payments.view`; create: `payments.record` | record an offline payment with FIFO or manual allocation |
 | `payments/{id}` | GET | `payments.view` | detail + allocations |
 | `payments/{id}/allocate` | POST | `payments.record` | allocate unapplied amount to invoices |
@@ -664,6 +668,13 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `payments/{id}/bounce` | POST | `payments.reverse` | cheque bounced (ON_RECEIPT: automatic reversing entry; ON_CLEARANCE: no ledger effect) |
 | `payments/{id}/reverse` | POST | `payments.reverse` | reverse a payment entered in error (reason) |
 | `payments/{id}/receipt` | GET | `payments.view` | signed URL |
+| `payments/collect` | POST 🔑 | `payments.collect` + ⚙ `payments.sales_can_collect` | a salesman's collection from an own shop ("With salesman") |
+| `payments/handover` | POST | `payments.record` | confirm "Handed over" (bulk, audited) |
+| `reports/collections-pending-handover` | GET | `payments.record` | per salesman: count, amount, oldest date |
+| `payment-allocations/{id}/reverse` | POST | `payments.record` | reverse an (automatic) allocation to reallocate it (audited) |
+| `refunds` | GET, POST 🔑 | view: `payments.view`; record: `payments.record` | pay a shop back from its credit balance (cash, bank transfer, UPI; never more than the credit; `RFD` series; audited; ADR-047) |
+| `refunds/{id}`, `/{id}/voucher`, `/{id}/regenerate-voucher` | GET / POST | `payments.view` / `payments.record` | detail (the credit it used), refund voucher PDF |
+| `refunds/{id}/reverse` | POST | `payments.record` | reverse a refund entered in error (reason; the shop's credit is restored; audited; voucher marked "Reversed") |
 | `payment-intents` | GET | `payments.view` | online payment attempts (Phase 7) |
 | `/api/v1/webhooks/payments/{provider}/{token}/` | POST | 🌐 signature-verified | gateway webhooks (Phase 7) |
 
@@ -1556,6 +1567,7 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Margin reports | Own brand vs traded margins from cost price (ADR-039), with Phase 8 reports. |
 | Shop confirms delivery | The shop marks a shipment received in the app (ADR-044 item 5). |
 | Proof of delivery code | A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
+| Shop return requests | The shop asks for a return from the app; staff approve it, which issues the return credit note (ADR-046 item 5). |
 
 ---
 
@@ -1619,6 +1631,8 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Credit & Payments | `credit.hold_reserves_stock` | bool | `true` | — | ORDER | Keep stock reserved for orders waiting for credit approval. |
 | Credit & Payments | `credit.block_overdue_after_days` | int | `null` (off) | 1–365 | — | Treat a retailer as over limit when any invoice is overdue by more than this many days. |
 | Credit & Payments | `payments.hold_advances` | bool | `true` | — | — | Keep extra money paid by a retailer as credit and use it for their next invoices. |
+| Credit & Payments | `payments.sales_can_collect` | bool | `true` | — | — | Let sales staff record payments they collect from their shops (tracked until handed over). |
+| Credit & Payments | `receivables.ageing_basis` | enum | `INVOICE_DATE` | `INVOICE_DATE`, `DUE_DATE` | — | Age receivables by days since the invoice date, or by days past the due date. |
 | Credit & Payments | `payments.cheque_credit_timing` | enum | `ON_RECEIPT` | `ON_RECEIPT`, `ON_CLEARANCE` | PAYMENT | Credit a cheque to the retailer's account when received (reversed automatically if it bounces) or only when it clears. |
 | Security | `security.require_staff_2fa` | bool | `false` | — | — | Require every staff member to set up two-step verification (an authenticator app) before they can sign in. Only owners can change this (ADR-030). |
 | Pricing | `pricing.discounts_on_special_prices` | bool | `true` | — | — (ORDER from Phase 4) | Apply discount rules on top of retailer special prices. Turn off to treat a special price as the final price (ADR-036). |
@@ -1779,6 +1793,20 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 2 | Backorders of an order approved from a credit hold | Covered for the approved value (recorded on the order); a higher CURRENT price is re-checked; blocked shops never get stock; "Approved over limit" shown in the queue |
 | 3 | Manual allocation and credit | Re-checked; over the limit is refused unless `credit.manage` overrides with a reason (audited); others see why it's blocked |
 | 4 | Partial delivery | "Partly delivered" with "N items to follow" for shops and staff; in lists, detail, timeline and the status filter |
+
+### 10.2g Phase 5 plan decisions (2026-09-28, ADR-046)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Number format | `INV/26-27/000001`, `CN/…`, `RCT/…`; prefix changeable within 16 characters; restarts each FY |
+| 2 | Order Confirmation | PDF at acceptance, "This is not a tax invoice."; downloadable from the order page |
+| 3 | Phase 4 shipments without invoices | Dev-only command: invoices dated today; `make seed` runs it |
+| 4 | ON_ACCEPTANCE corrections | Automatic SHORT_SUPPLY / CANCELLATION credit notes, marked "Issued automatically", with events |
+| 5 | Returns | Per line: return to stock (default), received damaged (RETURN + DAMAGE), not physically returned; reason required; `invoices.manage` only; shop return requests on the backlog |
+| 6 | Salesman collections | `payments.collect` for own shops; ledger and receipt at once; "With salesman" until handed over (bulk, audited); pending-handover report and dashboard total; ⚙ `payments.sales_can_collect` (default on) |
+| 7 | Invoice copies | Shop: original; staff: three labelled copies in one PDF; CA question |
+| 8 | Ageing | ⚙ `receivables.ageing_basis`: invoice date (default) or days past due; due = invoice date + payment terms |
+| 9 | Overdue blocking | Same rules as over the limit |
+| 10 | Advances | Applied automatically, oldest money first; `payments.record` can reverse and reallocate (audited) |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

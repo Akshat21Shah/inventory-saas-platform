@@ -82,6 +82,7 @@ const PERMISSION: Record<ImportKindEnum, string> = {
   PRICE_LIST_ITEMS: "pricing.manage",
   DISCOUNT_RULES: "pricing.manage",
   OPENING_STOCK: "stock.adjust",
+  OPENING_BALANCES: "ledger.adjust",
 };
 const LIST_PAGE: Record<ImportKindEnum, string> = {
   PRODUCTS: "/manage/products",
@@ -90,6 +91,8 @@ const LIST_PAGE: Record<ImportKindEnum, string> = {
   PRICE_LIST_ITEMS: "/manage/pricing/price-lists",
   DISCOUNT_RULES: "/manage/pricing/discounts",
   OPENING_STOCK: "/manage/stock",
+  // TODO(phase-5 frontend): the receivables page once it exists.
+  OPENING_BALANCES: "/manage/retailers",
 };
 const BUSY = new Set(["VALIDATING", "COMMITTING"]);
 

@@ -28,6 +28,7 @@ import {
   orderLinesCancelBackorder,
   ordersAccept,
   ordersCancel,
+  ordersConfirmation,
   ordersHoldApprove,
   ordersHoldReject,
   ordersModify,
@@ -40,11 +41,54 @@ import { formatMoney, formatQty } from "@/lib/format";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { fromMilli, toMilli } from "@/lib/qty";
 
+import { DocumentButton } from "@/components/billing/document-button";
+
 import { ActionDialog } from "./action-dialog";
 import { refreshOrders } from "./board";
 import { OrdersNav } from "./orders-nav";
 
 const ZERO = "0.000";
+
+/** The order's tax invoices (one per shipment) and its Order Confirmation (Phase 5). */
+function OrderDocuments({ order }: { order: StaffOrder }) {
+  const t = useTranslations("orders.detail");
+  const { can } = useAuth();
+  if (!order.invoices.length && !order.has_confirmation) return null;
+  return (
+    <section className="space-y-2 rounded-xl border p-4" aria-labelledby="documents-heading">
+      <h2 id="documents-heading" className="font-semibold">
+        {t("documents")}
+      </h2>
+      {order.invoices.length ? (
+        <ul className="divide-y text-sm">
+          {order.invoices.map((invoice) => (
+            <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              {can("invoices.view") ? (
+                <Link
+                  href={`/manage/invoices/${invoice.id}`}
+                  className="font-medium hover:underline"
+                >
+                  {invoice.number}
+                </Link>
+              ) : (
+                <span className="font-medium">{invoice.number}</span>
+              )}
+              <span className="flex items-center gap-2">
+                <MoneyText value={invoice.grand_total} />
+                <StatusBadge status={invoice.payment_status} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {order.has_confirmation ? (
+        <DocumentButton fetchLink={() => ordersConfirmation(order.id)}>
+          {t("confirmation")}
+        </DocumentButton>
+      ) : null}
+    </section>
+  );
+}
 
 function useApply(orderId: string) {
   const client = useQueryClient();
@@ -488,7 +532,9 @@ export function StaffOrderPage({ orderId }: { orderId: string }) {
           <OrderActions order={order} />
         </div>
         {order.status === "ON_HOLD" ? (
-          <p className="bg-warning/15 rounded-xl p-3 text-sm">{t("onHold")}</p>
+          <p className="bg-warning/15 rounded-xl p-3 text-sm">
+            {t(order.hold_reason === "OVERDUE" ? "onHoldOverdue" : "onHold")}
+          </p>
         ) : null}
         {order.credit_approved_value ? (
           <p className="bg-info/10 rounded-xl p-3 text-sm">
@@ -601,6 +647,7 @@ export function StaffOrderPage({ orderId }: { orderId: string }) {
                 </p>
               ) : null}
             </section>
+            <OrderDocuments order={order} />
             <section className="space-y-3" aria-labelledby="timeline-heading">
               <h2 id="timeline-heading" className="font-semibold">
                 {t("timeline")}

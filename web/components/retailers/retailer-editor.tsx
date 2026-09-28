@@ -920,6 +920,18 @@ export function RetailerDetailPage({ retailerId }: { retailerId: string }) {
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <RetailerForm key={retailer.updated_at} retailer={retailer} />
         <div className="space-y-6">
+          {can("ledger.view") ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{t("accountTitle")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="min-h-10 w-full">
+                  <Link href={`/manage/retailers/${retailer.id}/ledger`}>{t("accountLink")}</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : null}
           <CreditCard retailer={retailer} onChanged={refresh} />
           <AddressesCard retailer={retailer} onChanged={refresh} />
           {can("pricing.view") ? (

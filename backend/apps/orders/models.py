@@ -184,6 +184,9 @@ class OrderLine(TenantScopedModel):
     qty_cancelled = QtyField(default=0)
     qty_dispatched = QtyField(default=0)
     qty_delivered = QtyField(default=0)
+    # Invoiced so far, net of automatic short-supply/cancellation credit notes (Phase 5): what
+    # is ordered, not cancelled and not invoiced is the "not yet invoiced" order value (ADR-013).
+    qty_invoiced = QtyField(default=0)
     # Estimates for the ordered quantity, on the order's price basis (incl. GST when prices
     # include it). The order's totals are recomputed from these for what stays open.
     gross_amount = MoneyField(default=0)
@@ -221,6 +224,11 @@ class OrderLine(TenantScopedModel):
                 condition=Q(qty_dispatched__lte=F("qty_allocated"))
                 & Q(qty_delivered__lte=F("qty_dispatched")),
                 name="order_line_shipped_within_allocated",
+            ),
+            models.CheckConstraint(
+                condition=Q(qty_invoiced__gte=0)
+                & Q(qty_invoiced__lte=F("qty_ordered") - F("qty_cancelled")),
+                name="order_line_invoiced_within_open",
             ),
         ]
         indexes = [
@@ -359,6 +367,9 @@ class FulfilmentLine(TenantScopedModel):
         max_length=14, choices=PriceSource.choices, default=PriceSource.ORDER_SNAPSHOT
     )
     price_increased = models.BooleanField(default=False)
+    # Repriced shipments (⚙ backorders.billing_price CURRENT): the discount at today's price for
+    # the shipment quantity; null = the order line's discount, in proportion (Phase 5 invoices).
+    discount_amount = MoneyField(null=True, blank=True)
     cancelled_by_retailer_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -390,6 +401,7 @@ class BackorderAllocation(TenantScopedModel):
         INWARD = "INWARD", "Goods received"
         ADJUSTMENT_IN = "ADJUSTMENT_IN", "Stock added"
         RELEASE = "RELEASE", "Stock released"
+        RETURN = "RETURN", "Goods returned"
         MANUAL = "MANUAL", "Manual"
 
     order_line = models.ForeignKey(OrderLine, on_delete=models.PROTECT, related_name="allocations")

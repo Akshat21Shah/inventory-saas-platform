@@ -126,6 +126,15 @@ class FulfilmentSerializer(serializers.ModelSerializer[Fulfilment]):
         read_only_fields: tuple[str, ...] = fields
 
 
+class OrderInvoiceSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    number = serializers.CharField()
+    invoice_date = serializers.DateField()
+    grand_total = money()
+    balance_due = money()
+    payment_status = serializers.CharField()
+
+
 class OrderSerializer(serializers.ModelSerializer[Order]):
     retailer = serializers.UUIDField(source="retailer_id", read_only=True)
     retailer_name = serializers.CharField(source="retailer.shop_name", read_only=True)
@@ -141,6 +150,13 @@ class OrderSerializer(serializers.ModelSerializer[Order]):
     items_to_follow = serializers.SerializerMethodField(
         help_text='Products still to be delivered ("N items to follow").'
     )
+    invoices = OrderInvoiceSerializer(many=True, read_only=True)
+    has_confirmation = serializers.SerializerMethodField(
+        help_text="An Order Confirmation PDF exists (made at acceptance when the setting is on)."
+    )
+
+    def get_has_confirmation(self, order: Order) -> bool:
+        return hasattr(order, "confirmation")
 
     @extend_schema_field(serializers.IntegerField())
     def get_items_to_follow(self, order: Order) -> int:
@@ -179,6 +195,8 @@ class OrderSerializer(serializers.ModelSerializer[Order]):
             "items_to_follow",
             "lines",
             "fulfilments",
+            "invoices",
+            "has_confirmation",
             "history",
         )
         read_only_fields: tuple[str, ...] = fields

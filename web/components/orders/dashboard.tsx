@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { CardSkeleton } from "@/components/shared/skeletons";
+import { ReceivablesCards } from "@/components/billing/receivables";
 import { useOrdersCounts } from "@/lib/api/generated/endpoints/orders/orders";
 
 /** The distributor opens on what needs action today (spec §8). */
@@ -48,6 +49,14 @@ export function DistributorDashboard() {
           ))}
         </ul>
       )}
+      {can("ledger.view") ? (
+        <section className="mt-8 space-y-3" aria-labelledby="money-heading">
+          <h2 id="money-heading" className="text-lg font-semibold">
+            {t("money")}
+          </h2>
+          <ReceivablesCards linked />
+        </section>
+      ) : null}
     </>
   );
 }

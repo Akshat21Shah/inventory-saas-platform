@@ -1,5 +1,5 @@
-import { AccountSecurity } from "@/components/auth/account-security";
+import { ShopAccountPage } from "@/components/shop/account";
 
 export default function Page() {
-  return <AccountSecurity />;
+  return <ShopAccountPage />;
 }

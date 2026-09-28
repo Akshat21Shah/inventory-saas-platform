@@ -33,6 +33,7 @@ import type {
   CancelShipmentRequest,
   ConfirmAllocationsRequest,
   DispatchRequest,
+  DocumentLink,
   FulfilmentDetail,
   FulfilmentsListParams,
   OrderCounts,
@@ -1821,7 +1822,121 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getOrdersCancelMutationOptions(options), queryClient);
     }
-    export type ordersHoldApproveResponse200 = {
+    export type ordersConfirmationResponse200 = {
+  data: DocumentLink
+  status: 200
+}
+
+export type ordersConfirmationResponse202 = {
+  data: DocumentLink
+  status: 202
+}
+
+export type ordersConfirmationResponseSuccess = (ordersConfirmationResponse200 | ordersConfirmationResponse202) & {
+  headers: Headers;
+};
+;
+
+export type ordersConfirmationResponse = (ordersConfirmationResponseSuccess)
+
+export const getOrdersConfirmationUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/orders/${orderId}/confirmation/`
+}
+
+/**
+ * Not found when the order has no confirmation (not accepted yet, or the setting was off when it was placed).
+ */
+export const ordersConfirmation = async (orderId: string, options?: Parameters<typeof apiFetch>[1]): Promise<ordersConfirmationResponse> => {
+
+  return apiFetch<ordersConfirmationResponse>(getOrdersConfirmationUrl(orderId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOrdersConfirmationQueryKey = (orderId: string,) => {
+    return [
+    `/api/v1/orders/${orderId}/confirmation/`
+    ] as const;
+    }
+
+
+export const getOrdersConfirmationQueryOptions = <TData = Awaited<ReturnType<typeof ordersConfirmation>>, TError = unknown>(orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersConfirmation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOrdersConfirmationQueryKey(orderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ordersConfirmation>>> = ({ signal }) => ordersConfirmation(orderId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: orderId !== null && orderId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ordersConfirmation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type OrdersConfirmationQueryResult = NonNullable<Awaited<ReturnType<typeof ordersConfirmation>>>
+export type OrdersConfirmationQueryError = unknown
+
+
+export function useOrdersConfirmation<TData = Awaited<ReturnType<typeof ordersConfirmation>>, TError = unknown>(
+ orderId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersConfirmation>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersConfirmation>>,
+          TError,
+          Awaited<ReturnType<typeof ordersConfirmation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersConfirmation<TData = Awaited<ReturnType<typeof ordersConfirmation>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersConfirmation>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersConfirmation>>,
+          TError,
+          Awaited<ReturnType<typeof ordersConfirmation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersConfirmation<TData = Awaited<ReturnType<typeof ordersConfirmation>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersConfirmation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useOrdersConfirmation<TData = Awaited<ReturnType<typeof ordersConfirmation>>, TError = unknown>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersConfirmation>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getOrdersConfirmationQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type ordersHoldApproveResponse200 = {
   data: StaffOrder
   status: 200
 }

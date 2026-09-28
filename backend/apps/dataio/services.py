@@ -17,6 +17,7 @@ from openpyxl.utils import get_column_letter
 from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.dataio.kinds.base import Column, Kind, RowPlan
+from apps.dataio.kinds.ledger import OpeningBalancesKind
 from apps.dataio.kinds.pricing import DiscountRulesKind, PriceListItemsKind, SpecialPricesKind
 from apps.dataio.kinds.products import ProductsKind
 from apps.dataio.kinds.retailers import RetailersKind
@@ -38,6 +39,7 @@ KINDS: dict[str, Kind] = {
     "PRICE_LIST_ITEMS": PriceListItemsKind(),
     "DISCOUNT_RULES": DiscountRulesKind(),
     "OPENING_STOCK": OpeningStockKind(),
+    "OPENING_BALANCES": OpeningBalancesKind(),
 }
 RECORD_MODES = ("ADD_ONLY", "ADD_OR_UPDATE")
 

@@ -61,7 +61,9 @@ def test_required_permissions_follow_scope():
 def test_registry_covers_plan_catalogue():
     # PLAN §9.1 (27) + security.require_staff_2fa (ADR-030) + retailers.blocked_can_sign_in and
     # pricing.discounts_on_special_prices (ADR-036) + pricing.discount_combination (ADR-038)
-    assert len(TENANT_KEYS) == 34  # + stock.show_out_of_stock_in_shop, stock.cost_method (ADR-041)
+    # + stock.show_out_of_stock_in_shop, stock.cost_method (ADR-041)
+    # + payments.sales_can_collect, receivables.ageing_basis (ADR-046)
+    assert len(TENANT_KEYS) == 36
     assert len(PLATFORM_KEYS) == 11  # PLAN §9.2 (3) + 7 login/OTP limits (ADR-030) + reset limit
     assert "security.require_staff_2fa" in TENANT_KEYS
     assert registry.REGISTRY["retailers.blocked_can_sign_in"].default is True
@@ -104,7 +106,7 @@ def test_spec_defaults():
         ("orders.min_order_value", "0.50", Decimal("0.50")),
         ("orders.min_order_value", None, None),
         ("tax.hsn_min_digits", 8, 8),
-        ("platform.default_invoice_prefix", "SD24", "SD24"),
+        ("platform.default_invoice_prefix", "SD2", "SD2"),
     ],
 )
 def test_valid_values(key, value, expected):
@@ -128,7 +130,7 @@ def test_valid_values(key, value, expected):
         ("orders.acceptance_mode", "SOMETIMES", "invalid_choice"),
         ("tax.registration_type", "COMPOSITION", "reserved_choice"),
         ("platform.default_invoice_prefix", "inv", "invalid_format"),
-        ("platform.default_invoice_prefix", "TOOLONG1", "invalid_format"),
+        ("platform.default_invoice_prefix", "SD24", "invalid_format"),  # numbers ≤ 16 chars
     ],
 )
 def test_invalid_values(key, value, code):

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Headset, Mail, Pencil, Play, ShieldOff } from "lucide-react";
+import { Headset, Landmark, Mail, Pencil, Play, ShieldOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { FormField } from "@/components/shared/form-field";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DateText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
+import { FieldsDialog } from "@/components/shared/fields-dialog";
 import { ReasonDialog } from "@/components/shared/reason-dialog";
 import { PageSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -44,6 +45,7 @@ import {
   platformTenantSubscriptionUpdate,
   platformTenantsReactivate,
   platformTenantsSuspend,
+  platformTenantsChangeGstIdentity,
   platformTenantsUpdate,
   usePlatformAuditLogs,
   usePlatformFeatureFlagsList,
@@ -70,6 +72,52 @@ const EDITABLE = [
   "phone",
   "slug",
 ] as const;
+// Task 5.13: locked after the tenant's first invoice; changed only with GstIdentityDialog.
+const IDENTITY: readonly string[] = ["legal_name", "gstin", "state_code"];
+
+function GstIdentityDialog({ tenant, onSaved }: { tenant: Detail; onSaved: () => void }) {
+  const t = useTranslations("platform.detail.gstIdentity");
+  const fields = useTranslations("platform.onboarding.fields");
+  return (
+    <FieldsDialog
+      trigger={
+        <Button variant="outline" className="min-h-10">
+          <Landmark aria-hidden />
+          {t("open")}
+        </Button>
+      }
+      title={t("title")}
+      description={t("body")}
+      fields={[
+        { name: "legal_name", label: fields("legal_name"), required: true },
+        { name: "gstin", label: fields("gstin"), required: true },
+        { name: "state_code", label: fields("state_code"), required: true },
+        { name: "reason", label: t("reason"), required: true },
+      ]}
+      initial={{
+        legal_name: tenant.legal_name,
+        gstin: tenant.gstin,
+        state_code: tenant.state_code,
+        reason: "",
+      }}
+      submitLabel={t("save")}
+      onSubmit={async (values) => {
+        const changes = Object.fromEntries(
+          IDENTITY.filter((f) => values[f] !== String(tenant[f as keyof Detail] ?? "")).map((f) => [
+            f,
+            String(values[f]).trim(),
+          ]),
+        );
+        await platformTenantsChangeGstIdentity(tenant.id, {
+          ...changes,
+          reason: String(values.reason),
+        });
+        toast.success(t("saved"));
+        onSaved();
+      }}
+    />
+  );
+}
 
 function EditDialog({ tenant, onSaved }: { tenant: Detail; onSaved: () => void }) {
   const t = useTranslations("platform");
@@ -119,6 +167,7 @@ function EditDialog({ tenant, onSaved }: { tenant: Detail; onSaved: () => void }
                 <Input
                   className="h-10"
                   value={values[f]}
+                  readOnly={tenant.gst_identity_locked && IDENTITY.includes(f)}
                   onChange={(e) =>
                     setValues((v) => ({
                       ...v,
@@ -180,6 +229,9 @@ function Overview({ tenant, refresh }: { tenant: Detail; refresh: () => void }) 
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
         <EditDialog tenant={tenant} onSaved={refresh} />
+        {tenant.gst_identity_locked ? (
+          <GstIdentityDialog tenant={tenant} onSaved={refresh} />
+        ) : null}
         {tenant.status === "ONBOARDING" ? (
           <ConfirmDialog
             trigger={

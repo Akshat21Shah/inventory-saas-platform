@@ -417,7 +417,11 @@ export function CartPage() {
               <ProblemText problem={problem} />
             </Notice>
           ))}
-          {needsApproval ? <Notice tone="info">{t("needsApproval")}</Notice> : null}
+          {needsApproval ? (
+            <Notice tone="info">
+              {t(quote.credit.reason === "OVERDUE" ? "needsApprovalOverdue" : "needsApproval")}
+            </Notice>
+          ) : null}
           {stage.kind === "unknown" ? <Notice tone="warning">{t("unknownOutcome")}</Notice> : null}
           {stage.kind === "offline" ? (
             <p role="alert" className="bg-destructive/10 flex gap-2 rounded-xl p-3 text-sm">

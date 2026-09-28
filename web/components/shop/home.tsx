@@ -14,6 +14,7 @@ import { DateText, MoneyText } from "@/components/shared/money-text";
 import { OrderStatus } from "@/components/shared/order-status";
 import { CardSkeleton } from "@/components/shared/skeletons";
 import { Button } from "@/components/ui/button";
+import { OwedCard } from "@/components/shop/account";
 import {
   getShopCartRetrieveQueryKey,
   shopOrderRepeat,
@@ -154,6 +155,7 @@ export function ShopHome() {
         <p className="text-muted-foreground text-sm">{t("homeBody")}</p>
       </div>
       <OnHoldNotice />
+      <OwedCard />
       <SearchBox />
       <RepeatLastOrder />
       <RecentOrders />

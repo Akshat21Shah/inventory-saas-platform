@@ -1,0 +1,19 @@
+<div class="bottom">
+  <div>
+    {% if payment_details and seller.bank.account_number %}
+      <div class="label">Bank details</div>
+      <p>{{ seller.bank.account_name }}</p>
+      <p>A/c {{ seller.bank.account_number }} · IFSC {{ seller.bank.ifsc }}</p>
+      <p>{{ seller.bank.bank_name }}{% if seller.bank.branch %}, {{ seller.bank.branch }}{% endif %}</p>
+      {% if seller.bank.upi_id %}<p>UPI {{ seller.bank.upi_id }}</p>{% endif %}
+    {% endif %}
+    {% if payment_details and seller.terms %}<div class="label" style="margin-top:4pt">Terms</div><p class="muted">{{ seller.terms|linebreaksbr }}</p>{% endif %}
+  </div>
+  <div class="sign">
+    <p>For <b>{{ seller.legal_name }}</b></p>
+    <div class="space"></div>
+    <p>{{ seller.signatory|default:"" }}</p>
+    <p class="muted">Authorised signatory</p>
+  </div>
+</div>
+{% if seller.footer %}<p class="muted" style="margin-top:6pt">{{ seller.footer }}</p>{% endif %}

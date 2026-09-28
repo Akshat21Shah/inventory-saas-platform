@@ -28,10 +28,10 @@ from apps.orders.models import (
 from apps.orders.quote import build_quote
 from apps.orders.services import (
     CartNotReady,
-    CreditLimitExceeded,
     NotEnoughStock,
     _create_line,
     _problems,
+    credit_refusal,
     emit,
     order_rules,
     recompute_totals,
@@ -175,6 +175,15 @@ def accept_order(order_id: UUID, *, by: User | None) -> Order:
             update_fields=["status", "backorder_state", "accepted_at", "accepted_by", "updated_at"]
         )
         emit("order.accepted", order)
+        if order.settings_snapshot.get("orders.send_confirmation_on_accept", True):
+            from apps.billing import documents
+
+            documents.create_confirmation(order)  # ADR-046 item 2; its PDF follows
+        if ready:
+            from apps.billing import invoicing
+
+            if invoicing.timing(order) == "ON_ACCEPTANCE":  # ADR-007
+                invoicing.issue_invoice_for_fulfilment(shipment, trigger="ON_ACCEPTANCE", by=by)
     return order
 
 
@@ -316,7 +325,8 @@ def _add_lines(
         rules=rules,
         stock_rules=ShopStockRules.for_tenant(order.tenant_id),
     )
-    problems = [p for p in quote.blocking if p.code != "CREDIT_LIMIT_EXCEEDED"]
+    credit_codes = ("CREDIT_LIMIT_EXCEEDED", "OVERDUE_INVOICES")
+    problems = [p for p in quote.blocking if p.code not in credit_codes]
     if problems:
         raise CartNotReady(details={"problems": _problems(problems)})
     added = quote.totals.grand_total
@@ -324,9 +334,7 @@ def _add_lines(
     status = credit.check(order.retailer, added, breach_action="BLOCK")
     if status.breached:
         if not (override_reason.strip() and by.has_permission_code("credit.manage")):
-            raise CreditLimitExceeded(
-                details={"limit": str(status.limit), "exposure": str(status.exposure)}
-            )
+            raise credit_refusal(status)
         audit.record(
             "credit.override_applied",
             target=order,

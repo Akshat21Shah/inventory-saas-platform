@@ -74,6 +74,8 @@ function order(extra: Partial<StaffOrder> = {}): StaffOrder {
     fulfilments: [],
     history: [],
     credit_approved_value: null,
+    invoices: [],
+    has_confirmation: false,
     ...extra,
   };
 }
@@ -121,6 +123,38 @@ describe("Order page", () => {
     expect(await screen.findByRole("button", { name: "Accept" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reject" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Change quantities" })).toBeVisible();
+  });
+
+  it("says when an order waits because of overdue bills, and lists the order's invoices", async () => {
+    permissions.add("orders.view");
+    permissions.add("invoices.view");
+    mockApi({
+      "/api/v1/orders/o1/": () => [
+        200,
+        order({
+          status: "ON_HOLD",
+          hold_reason: "OVERDUE",
+          invoices: [
+            {
+              id: "i1",
+              number: "INV/26-27/000001",
+              invoice_date: "2026-09-27",
+              grand_total: "105.00",
+              balance_due: "105.00",
+              payment_status: "UNPAID",
+            },
+          ],
+          has_confirmation: true,
+        }),
+      ],
+    });
+    renderWithIntl(<StaffOrderPage orderId="o1" />);
+    expect(await screen.findByText(/This shop has overdue bills/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "INV/26-27/000001" })).toHaveAttribute(
+      "href",
+      "/manage/invoices/i1",
+    );
+    expect(screen.getByRole("button", { name: /Order Confirmation/ })).toBeVisible();
   });
 
   it("accepts with an Idempotency-Key and approves a credit hold for credit.manage", async () => {

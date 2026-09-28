@@ -36,6 +36,11 @@ interface Ids {
   order: string | null;
   fulfilment: string | null;
   backorder_product: string | null;
+  invoice: string | null;
+  credit_note: string | null;
+  payment: string | null;
+  refund: string | null;
+  shop_invoice: string | null;
 }
 
 function pages(ids: Ids) {
@@ -47,6 +52,24 @@ function pages(ids: Ids) {
     "/manage/orders/new",
     "/manage/backorders",
     ...(ids.backorder_product ? [`/manage/backorders/${ids.backorder_product}`] : []),
+    "/manage/invoices",
+    ...(ids.invoice ? [`/manage/invoices/${ids.invoice}`] : []),
+    "/manage/invoices/credit-notes",
+    "/manage/invoices/credit-notes/new",
+    ...(ids.invoice ? [`/manage/invoices/credit-notes/new?invoice=${ids.invoice}`] : []),
+    ...(ids.credit_note ? [`/manage/invoices/credit-notes/${ids.credit_note}`] : []),
+    "/manage/payments",
+    "/manage/payments/new",
+    `/manage/payments/new?retailer=${ids.retailer}`,
+    ...(ids.payment ? [`/manage/payments/${ids.payment}`] : []),
+    "/manage/payments/handover",
+    "/manage/payments/refunds",
+    "/manage/payments/refunds/new",
+    ...(ids.refund ? [`/manage/payments/refunds/${ids.refund}`] : []),
+    "/manage/receivables",
+    `/manage/retailers/${ids.retailer}/ledger`,
+    "/manage/settings/policies/invoicing",
+    "/manage/settings/policies/credit_payments",
     "/manage/products",
     "/manage/products/new",
     `/manage/products/${ids.product}`,
@@ -115,6 +138,11 @@ function pages(ids: Ids) {
     "/shop/orders",
     ...(ids.shop_order ? [`/shop/orders/${ids.shop_order}`] : []),
     "/shop/account",
+    "/shop/account/security",
+    "/shop/invoices",
+    ...(ids.shop_invoice ? [`/shop/invoices/${ids.shop_invoice}`] : []),
+    "/shop/statement",
+    "/shop/payments",
   ];
   return { staff, platform, shop };
 }

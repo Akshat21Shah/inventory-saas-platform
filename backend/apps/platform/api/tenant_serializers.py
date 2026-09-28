@@ -23,6 +23,10 @@ class BusinessSerializer(serializers.Serializer[Any]):
     invoice_footer = serializers.CharField(allow_blank=True)
     signatory_name = serializers.CharField(max_length=150, allow_blank=True)
     has_signatory_image = serializers.BooleanField(read_only=True)
+    gst_identity_locked = serializers.BooleanField(
+        read_only=True,
+        help_text="After the first invoice the GSTIN, legal name and state are read-only.",
+    )
 
 
 class BankDetailsSerializer(serializers.Serializer[Any]):

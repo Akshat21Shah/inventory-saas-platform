@@ -10,6 +10,7 @@ from rest_framework import serializers
 
 from apps.catalog.api.serializers import first_ready_thumb
 from apps.inventory.availability import LABELS
+from apps.orders.models import Order
 from apps.orders.quote import Quote, QuoteLine
 from apps.pricing.api.serializers import money, qty
 
@@ -96,6 +97,11 @@ class CreditSerializer(serializers.Serializer[Any]):
     limit = money(allow_null=True)
     available = money(allow_null=True, help_text="Before this order; null without a limit.")
     outcome = serializers.ChoiceField(choices=["OK", "NEEDS_APPROVAL", "BLOCKED"])
+    reason = serializers.ChoiceField(
+        choices=Order.HoldReason.choices,
+        allow_blank=True,
+        help_text="Why it needs approval or is blocked: over the limit, or overdue invoices.",
+    )
 
 
 class DeliveryAddressSerializer(serializers.Serializer[Any]):
@@ -148,6 +154,11 @@ class QuoteSerializer(serializers.Serializer[Any]):
         c = quote.credit
         return dict(
             CreditSerializer(
-                {"limit": c.limit, "available": c.available, "outcome": c.outcome}
+                {
+                    "limit": c.limit,
+                    "available": c.available,
+                    "outcome": c.outcome,
+                    "reason": c.reason,
+                }
             ).data
         )
