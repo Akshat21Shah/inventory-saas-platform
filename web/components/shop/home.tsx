@@ -26,6 +26,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { CategoryTiles, OnHoldNotice, ProductCard, SearchBox } from "./catalog";
+import { ShopAnnouncements, WhatsAppPrompt } from "./messages";
 
 export function OrderRowLink({ order }: { order: ShopOrderRow }) {
   const t = useTranslations("shop.orders");
@@ -154,6 +155,8 @@ export function ShopHome() {
         </h1>
         <p className="text-muted-foreground text-sm">{t("homeBody")}</p>
       </div>
+      <WhatsAppPrompt />
+      <ShopAnnouncements />
       <OnHoldNotice />
       <OwedCard />
       <SearchBox />

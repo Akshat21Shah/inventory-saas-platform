@@ -315,7 +315,13 @@
      - A bell with the unread count in the staff sidebar (laptops), the staff phone header, and the shop's header; it refreshes every minute and at once when the socket says a message arrived (every staff member's socket now carries their bell; order events still reach only order viewers).
      - `/manage/notifications` and `/shop/notifications`: newest first, unread highlighted, All / Unread, "Mark all as read", older/newer pages; opening a message marks it read and goes to its order, bill or payment. Loading, empty and error states.
      - Tests: 4 component tests (open marks read and navigates, mark all, unread filter and empty state, error, the bell's count and link). Both pages added to the responsive check.
-  10–12. Frontend: shop preferences, consent prompt and announcements; rules matrix, texts, delivery log, announcements, reminder pauses, consent and links on staff screens, GST card; platform texts and failures
+  10. Shop: messages, WhatsApp question, announcements — **done** (`web/components/shop/messages.tsx`):
+     - Account → Messages (`/shop/account/messages`): the WhatsApp switch (with the shop's number; "your distributor doesn't send WhatsApp yet" when the module is off), then each message the shop gets, grouped (orders, waiting items, bills, payments, reminders, other), with a switch per channel in shop words. In-app and required messages are locked ("Always sent"); WhatsApp switches stay off until WhatsApp is turned on.
+     - After sign-in, the shop home asks once "Get updates on WhatsApp?" when the distributor sends WhatsApp and the shop hasn't agreed: "Yes" records consent from the app; "Not now" or closing is remembered.
+     - The distributor's current announcements sit at the top of the shop home.
+     - Every event has an English label (staff wording) and every shop-facing event a shop wording; an i18n test reads the backend catalogue to keep them complete.
+     - Tests: 7 component tests (locked and switchable channels, turning WhatsApp on, WhatsApp unavailable, the question's yes / not now / not shown, announcements). The page is in the responsive check.
+  11–12. Frontend: rules matrix, texts, delivery log, announcements, reminder pauses, consent and links on staff screens, GST card; platform texts and failures
   13. E2E and responsive check — **final review**
 - Phase 5 — Billing, GST, ledger, credit control: **merged to `main` (PR #6, 2026-09-28)**.
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.

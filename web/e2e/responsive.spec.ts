@@ -140,6 +140,7 @@ function pages(ids: Ids) {
     ...(ids.shop_order ? [`/shop/orders/${ids.shop_order}`] : []),
     "/shop/account",
     "/shop/account/security",
+    "/shop/account/messages",
     "/shop/invoices",
     ...(ids.shop_invoice ? [`/shop/invoices/${ids.shop_invoice}`] : []),
     "/shop/statement",
