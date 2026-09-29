@@ -4174,6 +4174,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/TenantDetail'
           description: ''
+  /api/v1/platform/tenants/{tenant_id}/turnover-band/:
+    get:
+      operationId: platform_tenant_turnover
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turnover'
+          description: ''
+    put:
+      operationId: platform_tenant_turnover_set
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnoverInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turnover'
+          description: ''
   /api/v1/platform/tenants/{tenant_id}/users/:
     get:
       operationId: platform_tenant_users
@@ -7022,6 +7069,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantFeature'
+          description: ''
+  /api/v1/settings/gst-credentials/:
+    get:
+      operationId: gst_credentials
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GstCredentials'
+          description: ''
+    put:
+      operationId: gst_credentials_save
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GstCredentialsInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GstCredentials'
+          description: ''
+  /api/v1/settings/gst-credentials/verify/:
+    post:
+      operationId: gst_credentials_verify
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GstCredentials'
           description: ''
   /api/v1/settings/registry/:
     get:
@@ -12162,6 +12256,82 @@ components:
       - price
       - product
       - simple
+    GstCredentialStatusEnum:
+      enum:
+      - UNVERIFIED
+      - CHECKING
+      - VERIFIED
+      - FAILED
+      type: string
+      description: |-
+        * `UNVERIFIED` - Not checked
+        * `CHECKING` - Checking
+        * `VERIFIED` - Working
+        * `FAILED` - Not working
+    GstCredentials:
+      type: object
+      properties:
+        provider:
+          type: string
+        field_names:
+          type: array
+          items:
+            type: string
+          description: The provider's credential fields, in order.
+        required_fields:
+          type: array
+          items:
+            type: string
+        environment:
+          $ref: '#/components/schemas/GstEnvironmentEnum'
+        gstin:
+          type: string
+        saved:
+          type: object
+          additionalProperties:
+            type: string
+          description: Each field's last characters (empty when not saved); never
+            the value.
+        status:
+          $ref: '#/components/schemas/GstCredentialStatusEnum'
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+      required:
+      - environment
+      - field_names
+      - gstin
+      - last_error
+      - provider
+      - required_fields
+      - saved
+      - status
+      - verified_at
+    GstCredentialsInputRequest:
+      type: object
+      properties:
+        environment:
+          $ref: '#/components/schemas/GstEnvironmentEnum'
+        values:
+          type: object
+          additionalProperties:
+            type: string
+            maxLength: 500
+          description: The provider's fields; a blank one keeps the saved value.
+      required:
+      - environment
+      - values
+    GstEnvironmentEnum:
+      enum:
+      - SANDBOX
+      - PRODUCTION
+      type: string
+      description: |-
+        * `SANDBOX` - Sandbox
+        * `PRODUCTION` - Production
     GstIdentityChangeRequest:
       type: object
       properties:
@@ -21110,6 +21280,45 @@ components:
       - round_off
       - sgst_total
       - taxable_total
+    Turnover:
+      type: object
+      properties:
+        turnover_band:
+          $ref: '#/components/schemas/TurnoverBandEnum'
+        einvoice_suggested:
+          type: boolean
+        reporting_limit_applies:
+          type: boolean
+        reporting_days:
+          type: integer
+        einvoice_enabled:
+          type: boolean
+        ewaybill_enabled:
+          type: boolean
+      required:
+      - einvoice_enabled
+      - einvoice_suggested
+      - ewaybill_enabled
+      - reporting_days
+      - reporting_limit_applies
+      - turnover_band
+    TurnoverBandEnum:
+      enum:
+      - BELOW_5_CR
+      - FROM_5_TO_10_CR
+      - FROM_10_CR
+      type: string
+      description: |-
+        * `BELOW_5_CR` - BELOW_5_CR
+        * `FROM_5_TO_10_CR` - FROM_5_TO_10_CR
+        * `FROM_10_CR` - FROM_10_CR
+    TurnoverInputRequest:
+      type: object
+      properties:
+        turnover_band:
+          $ref: '#/components/schemas/TurnoverBandEnum'
+      required:
+      - turnover_band
     Unit:
       type: object
       properties:

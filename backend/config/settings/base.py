@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.billing",
     "apps.payments",
     "apps.notifications",
+    "apps.compliance",
     "apps.dataio",
     "apps.shop",
 ]
@@ -265,6 +266,8 @@ SPECTACULAR_SETTINGS = {
         "NotificationTextSourceEnum": ["tenant", "platform", "catalogue"],
         "NotificationAudienceEnum": "apps.notifications.models.Audience",
         "TemplateApprovalStatusEnum": "apps.notifications.models.ApprovalStatus",
+        "GstEnvironmentEnum": "apps.compliance.models.GstCredential.Environment",
+        "GstCredentialStatusEnum": "apps.compliance.models.GstCredential.Status",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",
@@ -323,6 +326,9 @@ SES_REGION = env("SES_REGION", default="ap-south-1")
 SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
 # WhatsApp: only "mock" until a provider is chosen (TODO(verify), PROGRESS pre-production 8).
 WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
+# The platform's GST provider for e-invoices and e-way bills (ADR-049 item 4); each distributor
+# signs in with its own credentials. Only the mock exists until one is chosen (compliance.E001).
+GSP_PROVIDER = env("GSP_PROVIDER", default="mock")
 # A real provider sends only templates it has approved (ADR-049 item 12); the mock treats every
 # template as approved. Tests switch it on to check the rule.
 WHATSAPP_REQUIRE_APPROVED_TEMPLATES = env.bool(

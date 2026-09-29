@@ -239,6 +239,7 @@
     "IDEMPOTENCY_KEY_INVALID": "Please try again.",
     "IDEMPOTENCY_KEY_REUSED": "This request was already sent with different details. Please start again.",
     "INVALID_STATE_TRANSITION": "This can't be done at the current stage.",
+    "MODULE_NOT_ENABLED": "This module isn't switched on for your business. Ask us to switch it on.",
     "INVALID_CREDENTIALS": "The email or password is incorrect. After several failed attempts, sign-in is paused for a few minutes.",
     "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
     "TENANT_UNAVAILABLE": "This account is currently unavailable. Please contact your distributor.",
@@ -269,7 +270,8 @@
     "OVERDUE_INVOICES": "There are overdue bills to pay first.",
     "GST_IDENTITY_LOCKED": "The GSTIN, legal name and state can't be changed after the first invoice. Please contact the platform team.",
     "PAYMENT_EXCEEDS_OUTSTANDING": "This is more than the shop owes. Advances are turned off in your settings.",
-    "REFUND_EXCEEDS_CREDIT": "This is more than the shop's credit balance."
+    "REFUND_EXCEEDS_CREDIT": "This is more than the shop's credit balance.",
+    "GST_CREDENTIALS_NOT_READY": "Enter your GST provider credentials in Settings and check them first."
   },
   "designSystem": {
     "title": "Design system",
@@ -593,6 +595,22 @@
       "whatsapp_price_authentication": {
         "label": "WhatsApp price: authentication",
         "description": "Price in rupees of one WhatsApp authentication message (sign-in codes)."
+      },
+      "einvoice_threshold_crore": {
+        "label": "E-invoicing suggested from (crore)",
+        "description": "E-invoicing is suggested to businesses with turnover from this many crore rupees. To be verified against the current rules."
+      },
+      "irn_limit_threshold_crore": {
+        "label": "IRN reporting-limit warning from (crore)",
+        "description": "Businesses with turnover from this many crore rupees are warned when an invoice nears the IRN reporting limit. To be verified."
+      },
+      "irn_reporting_days": {
+        "label": "IRN reporting limit (days)",
+        "description": "Days from the document date within which the IRN must be obtained, for businesses above the reporting-limit threshold. To be verified."
+      },
+      "irn_cancel_window_hours": {
+        "label": "IRN cancellation window (hours)",
+        "description": "Hours after the IRN within which it can be cancelled. To be verified."
       }
     },
     "retailers": {
@@ -645,6 +663,23 @@
         "label": "Handover reminder after (days)",
         "description": "Remind salesmen of collections not handed over after this many days."
       }
+    },
+    "compliance": {
+      "turnover_band": {
+        "label": "Annual turnover",
+        "description": "Your business's turnover band. It only decides what we suggest and warn about: e-invoicing is suggested from ₹5 crore, and from ₹10 crore we warn when an invoice is close to the IRN reporting limit.",
+        "options": {
+          "BELOW_5_CR": "Below ₹5 crore",
+          "FROM_5_TO_10_CR": "₹5 crore to ₹10 crore",
+          "FROM_10_CR": "₹10 crore and above"
+        }
+      }
+    },
+    "einvoice": {
+      "auto_generate": {
+        "label": "Get IRNs automatically",
+        "description": "Get the IRN as soon as an invoice or credit note to a shop with a GSTIN is issued. Off: staff get it with the \"Get IRN\" button."
+      }
     }
   },
   "settingsForm": {
@@ -657,7 +692,8 @@
       "security": "Security",
       "retailers": "Shops",
       "pricing": "Pricing",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "compliance": "E-invoices & e-way bills"
     },
     "default": "Default",
     "reset": "Reset to default",

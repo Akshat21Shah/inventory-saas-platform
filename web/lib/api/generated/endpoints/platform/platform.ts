@@ -80,7 +80,9 @@ import type {
   TemplateApprovalInputRequest,
   TenantDetail,
   TextPreview,
-  TextPreviewInputRequest
+  TextPreviewInputRequest,
+  Turnover,
+  TurnoverInputRequest
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -4043,6 +4045,206 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getPlatformTenantsSuspendMutationOptions(options), queryClient);
+    }
+    export type platformTenantTurnoverResponse200 = {
+  data: Turnover
+  status: 200
+}
+
+export type platformTenantTurnoverResponseSuccess = (platformTenantTurnoverResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformTenantTurnoverResponse = (platformTenantTurnoverResponseSuccess)
+
+export const getPlatformTenantTurnoverUrl = (tenantId: string,) => {
+
+
+
+
+  return `/api/v1/platform/tenants/${tenantId}/turnover-band/`
+}
+
+export const platformTenantTurnover = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<platformTenantTurnoverResponse> => {
+
+  return apiFetch<platformTenantTurnoverResponse>(getPlatformTenantTurnoverUrl(tenantId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformTenantTurnoverQueryKey = (tenantId: string,) => {
+    return [
+    `/api/v1/platform/tenants/${tenantId}/turnover-band/`
+    ] as const;
+    }
+
+
+export const getPlatformTenantTurnoverQueryOptions = <TData = Awaited<ReturnType<typeof platformTenantTurnover>>, TError = unknown>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantTurnover>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformTenantTurnoverQueryKey(tenantId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTenantTurnover>>> = ({ signal }) => platformTenantTurnover(tenantId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTenantTurnover>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformTenantTurnoverQueryResult = NonNullable<Awaited<ReturnType<typeof platformTenantTurnover>>>
+export type PlatformTenantTurnoverQueryError = unknown
+
+
+export function usePlatformTenantTurnover<TData = Awaited<ReturnType<typeof platformTenantTurnover>>, TError = unknown>(
+ tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantTurnover>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTenantTurnover>>,
+          TError,
+          Awaited<ReturnType<typeof platformTenantTurnover>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTenantTurnover<TData = Awaited<ReturnType<typeof platformTenantTurnover>>, TError = unknown>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantTurnover>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTenantTurnover>>,
+          TError,
+          Awaited<ReturnType<typeof platformTenantTurnover>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTenantTurnover<TData = Awaited<ReturnType<typeof platformTenantTurnover>>, TError = unknown>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantTurnover>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformTenantTurnover<TData = Awaited<ReturnType<typeof platformTenantTurnover>>, TError = unknown>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTenantTurnover>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformTenantTurnoverQueryOptions(tenantId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformTenantTurnoverSetResponse200 = {
+  data: Turnover
+  status: 200
+}
+
+export type platformTenantTurnoverSetResponseSuccess = (platformTenantTurnoverSetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformTenantTurnoverSetResponse = (platformTenantTurnoverSetResponseSuccess)
+
+export const getPlatformTenantTurnoverSetUrl = (tenantId: string,) => {
+
+
+
+
+  return `/api/v1/platform/tenants/${tenantId}/turnover-band/`
+}
+
+export const platformTenantTurnoverSet = async (tenantId: string,
+    turnoverInputRequest: TurnoverInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<platformTenantTurnoverSetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<platformTenantTurnoverSetResponse>(getPlatformTenantTurnoverSetUrl(tenantId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(turnoverInputRequest)
+  }
+);}
+
+
+
+
+
+export const getPlatformTenantTurnoverSetMutationKey = () => ['platformTenantTurnoverSet'] as const;
+
+export const getPlatformTenantTurnoverSetMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantTurnoverSet>>, TError,PlatformTenantTurnoverSetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTenantTurnoverSet>>, TError,PlatformTenantTurnoverSetMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTenantTurnoverSetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTenantTurnoverSet>>, PlatformTenantTurnoverSetMutationVariables> = (props) => {
+          const {tenantId,data} = props ?? {};
+
+          return  platformTenantTurnoverSet(tenantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTenantTurnoverSetMutationResult = NonNullable<Awaited<ReturnType<typeof platformTenantTurnoverSet>>>
+    export type PlatformTenantTurnoverSetMutationBody = TurnoverInputRequest
+    export type PlatformTenantTurnoverSetMutationError = unknown
+    export type PlatformTenantTurnoverSetMutationVariables = {tenantId: string;data: TurnoverInputRequest}
+
+    export const usePlatformTenantTurnoverSet = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTenantTurnoverSet>>, TError,PlatformTenantTurnoverSetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTenantTurnoverSet>>,
+        TError,
+        PlatformTenantTurnoverSetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTenantTurnoverSetMutationOptions(options), queryClient);
     }
     export type platformTenantUsersResponse200 = {
   data: PaginatedMembershipList

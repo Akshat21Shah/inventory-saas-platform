@@ -1,5 +1,6 @@
 """Platform (super admin) API serializers, and the settings-registry shape shared with tenants."""
 
+from collections.abc import Mapping
 from typing import Any
 
 from drf_spectacular.utils import extend_schema_field
@@ -296,10 +297,16 @@ class SettingSerializer(serializers.Serializer[Any]):
 
 
 def setting_rows(
-    values: dict[str, Any], scope: registry.Scope, permissions: frozenset[str]
+    values: dict[str, Any],
+    scope: registry.Scope,
+    permissions: frozenset[str],
+    features: Mapping[str, bool] | None = None,
 ) -> list[dict[str, Any]]:
+    """``features``: the tenant's modules; settings of a module that is off are left out."""
     rows = []
     for defn in registry.definitions(scope):
+        if features is not None and not registry.module_on(defn, features):
+            continue
         value = values[defn.key]
         rows.append(
             {
