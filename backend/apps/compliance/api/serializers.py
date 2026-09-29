@@ -2,7 +2,15 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.compliance.models import CancelReason, DocumentType, EInvoiceRecord, GstCredential
+from apps.compliance.ewaybill_reasons import CANCEL_REASONS, PART_B_REASONS
+from apps.compliance.models import (
+    CancelReason,
+    DocumentType,
+    EInvoiceRecord,
+    EWayBill,
+    EWayBillUpdate,
+    GstCredential,
+)
 from apps.compliance.rules import BANDS
 
 
@@ -114,3 +122,89 @@ class EInvoiceCountsSerializer(serializers.Serializer[Any]):
     near_report_by = serializers.IntegerField(
         help_text="Still without an IRN, 3 days or less from the reporting limit."
     )
+
+
+# --- E-way bills --------------------------------------------------------------------------------
+
+
+class EWayBillSummarySerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    status = serializers.ChoiceField(choices=EWayBill.Status.choices)
+    ewb_number = serializers.CharField(allow_blank=True)
+    ewb_date = serializers.DateTimeField(allow_null=True)
+    valid_until = serializers.DateTimeField(allow_null=True)
+    consignment_value = serializers.DecimalField(max_digits=14, decimal_places=2)
+    transport_mode = serializers.ChoiceField(choices=EWayBill.Mode.choices)
+    vehicle_number = serializers.CharField(allow_blank=True)
+    transporter_id = serializers.CharField(allow_blank=True)
+    transporter_name = serializers.CharField(allow_blank=True)
+    transport_doc_no = serializers.CharField(allow_blank=True)
+    transport_doc_date = serializers.DateField(allow_null=True)
+    distance_km = serializers.IntegerField(allow_null=True)
+    error_code = serializers.CharField(allow_blank=True)
+    error_message = serializers.CharField(allow_blank=True)
+    retryable = serializers.BooleanField()
+    attempts = serializers.IntegerField()
+    requested_at = serializers.DateTimeField(allow_null=True)
+    next_retry_at = serializers.DateTimeField(allow_null=True)
+    generated_at = serializers.DateTimeField(allow_null=True)
+    cancelled_at = serializers.DateTimeField(allow_null=True)
+    can_request = serializers.BooleanField(help_text='"Make e-way bill" or "Try again".')
+    can_update = serializers.BooleanField(help_text="A new vehicle (Part-B) can be given.")
+    can_cancel = serializers.BooleanField(help_text="Within the cancellation window.")
+    cancel_until = serializers.DateTimeField(allow_null=True)
+    pending_update = serializers.CharField(
+        allow_blank=True, help_text="PART_B or CANCEL while one is being sent."
+    )
+    last_update_error = serializers.CharField(allow_blank=True)
+
+
+class EWayBillUpdateRowSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(choices=EWayBillUpdate.Kind.choices)
+    status = serializers.ChoiceField(choices=EWayBillUpdate.Status.choices)
+    vehicle_number = serializers.CharField(allow_blank=True)
+    reason_code = serializers.CharField()
+    remarks = serializers.CharField(allow_blank=True)
+    error_message = serializers.CharField(allow_blank=True)
+    created_at = serializers.DateTimeField()
+    done_at = serializers.DateTimeField(allow_null=True)
+
+
+class EWayBillRowSerializer(EWayBillSummarySerializer):
+    invoice_id = serializers.UUIDField()
+    invoice_number = serializers.CharField()
+    invoice_date = serializers.DateField()
+    shop_name = serializers.CharField()
+    retailer_id = serializers.UUIDField()
+    shipment_number = serializers.CharField()
+    updates = EWayBillUpdateRowSerializer(many=True)
+
+
+class TransportInputSerializer(serializers.Serializer[Any]):
+    transport_mode = serializers.ChoiceField(
+        choices=EWayBill.Mode.choices, default=EWayBill.Mode.ROAD
+    )
+    vehicle_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    transporter_id = serializers.CharField(max_length=15, required=False, allow_blank=True)
+    transporter_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    transport_doc_no = serializers.CharField(max_length=40, required=False, allow_blank=True)
+    transport_doc_date = serializers.DateField(required=False, allow_null=True)
+    distance_km = serializers.IntegerField(min_value=1, max_value=4000, required=False)
+
+
+class PartBInputSerializer(serializers.Serializer[Any]):
+    vehicle_number = serializers.CharField(max_length=20)
+    transport_doc_no = serializers.CharField(max_length=40, required=False, allow_blank=True)
+    reason_code = serializers.ChoiceField(choices=list(PART_B_REASONS.items()))
+    remarks = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+
+
+class EWayBillCancelSerializer(serializers.Serializer[Any]):
+    reason_code = serializers.ChoiceField(choices=list(CANCEL_REASONS.items()))
+    remarks = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+
+
+class EWayBillCountsSerializer(serializers.Serializer[Any]):
+    pending = serializers.IntegerField()
+    failed = serializers.IntegerField()

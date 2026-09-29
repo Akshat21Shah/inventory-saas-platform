@@ -18,4 +18,6 @@ export interface Address {
   readonly pincode: string;
   readonly state_code: string;
   readonly is_default: boolean;
+  /** @nullable */
+  readonly distance_km: number | null;
 }

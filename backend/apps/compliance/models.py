@@ -155,3 +155,94 @@ class EInvoiceRecord(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.document_number} {self.status}"
+
+
+class EWayBill(TenantScopedModel):
+    """An invoice's e-way bill (ADR-049 item 8): generated at dispatch when the consignment is
+    worth more than the threshold, in the background (dispatch never waits), retried like IRNs;
+    its vehicle can be updated (Part-B) and it can be cancelled within the window."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Waiting to be sent"
+        SUBMITTED = "SUBMITTED", "Sent, waiting for the portal"
+        GENERATED = "GENERATED", "Generated"
+        FAILED = "FAILED", "Failed"
+        CANCELLED = "CANCELLED", "Cancelled"
+
+    class Mode(models.TextChoices):
+        ROAD = "ROAD", "Road"
+        RAIL = "RAIL", "Rail"
+        AIR = "AIR", "Air"
+        SHIP = "SHIP", "Ship"
+
+    invoice = models.ForeignKey("billing.Invoice", on_delete=models.PROTECT, related_name="+")
+    fulfilment = models.ForeignKey("orders.Fulfilment", on_delete=models.PROTECT, related_name="+")
+    status = models.CharField(max_length=9, choices=Status.choices, default=Status.PENDING)
+    consignment_value = models.DecimalField(max_digits=14, decimal_places=2)
+    ewb_number = models.CharField(max_length=20, blank=True, default="")
+    ewb_date = models.DateTimeField(null=True, blank=True)
+    valid_until = models.DateTimeField(null=True, blank=True)
+    transport_mode = models.CharField(max_length=4, choices=Mode.choices, default=Mode.ROAD)
+    vehicle_number = models.CharField(max_length=20, blank=True, default="")
+    transporter_id = models.CharField(max_length=15, blank=True, default="")
+    transporter_name = models.CharField(max_length=120, blank=True, default="")
+    transport_doc_no = models.CharField(max_length=40, blank=True, default="")
+    transport_doc_date = models.DateField(null=True, blank=True)
+    distance_km = models.PositiveIntegerField(null=True, blank=True)
+    request_document = models.JSONField(default=dict)
+    response = models.JSONField(default=dict)
+    error_code = models.CharField(max_length=30, blank=True, default="")
+    error_message = models.CharField(max_length=500, blank=True, default="")
+    retryable = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    requested_at = models.DateTimeField(null=True, blank=True)  # empty: waits for staff
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    generated_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invoice"],
+                condition=~Q(status__in=["CANCELLED", "FAILED"]),
+                name="uniq_live_ewaybill_per_invoice",
+            ),
+        ]
+        indexes = [models.Index(fields=["tenant", "status"], name="ewaybill_status_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.ewb_number or 'EWB'} {self.status}"
+
+
+class EWayBillUpdate(TenantScopedModel):
+    """Append-only history of what was asked of the portal after generation: a new vehicle
+    (Part-B) or a cancellation, and what it answered."""
+
+    class Kind(models.TextChoices):
+        PART_B = "PART_B", "Vehicle updated"
+        CANCEL = "CANCEL", "Cancelled"
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Waiting to be sent"
+        DONE = "DONE", "Done"
+        FAILED = "FAILED", "Refused"
+
+    eway_bill = models.ForeignKey(EWayBill, on_delete=models.PROTECT, related_name="updates")
+    kind = models.CharField(max_length=6, choices=Kind.choices)
+    status = models.CharField(max_length=7, choices=Status.choices, default=Status.PENDING)
+    vehicle_number = models.CharField(max_length=20, blank=True, default="")
+    transport_doc_no = models.CharField(max_length=40, blank=True, default="")
+    reason_code = models.CharField(max_length=30)
+    remarks = models.CharField(max_length=100, blank=True, default="")
+    request_document = models.JSONField(default=dict)
+    response = models.JSONField(default=dict)
+    error_message = models.CharField(max_length=500, blank=True, default="")
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    done_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["tenant", "status"], name="ewaybill_update_status_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.kind} {self.status}"

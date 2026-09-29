@@ -611,6 +611,10 @@
       "irn_cancel_window_hours": {
         "label": "IRN cancellation window (hours)",
         "description": "Hours after the IRN within which it can be cancelled. To be verified."
+      },
+      "ewaybill_cancel_window_hours": {
+        "label": "E-way bill cancellation window (hours)",
+        "description": "Hours after an e-way bill within which it can be cancelled. To be verified."
       }
     },
     "retailers": {
@@ -679,6 +683,20 @@
       "auto_generate": {
         "label": "Get IRNs automatically",
         "description": "Get the IRN as soon as an invoice or credit note to a shop with a GSTIN is issued. Off: staff get it with the \"Get IRN\" button."
+      }
+    },
+    "ewaybill": {
+      "threshold_inter_state": {
+        "label": "E-way bill above (between states)",
+        "description": "An e-way bill is made at dispatch when goods go to another state and the invoice (with tax) is worth more than this. ₹50,000 is a placeholder until verified."
+      },
+      "threshold_intra_state": {
+        "label": "E-way bill above (within the state)",
+        "description": "An e-way bill is made when goods stay within your state and the invoice (with tax) is worth more than this. States set their own limit; ₹50,000 is a placeholder until verified."
+      },
+      "auto_generate": {
+        "label": "Make e-way bills automatically",
+        "description": "Make the e-way bill at dispatch when the invoice needs one. Off: staff make it with the \"Make e-way bill\" button."
       }
     }
   },

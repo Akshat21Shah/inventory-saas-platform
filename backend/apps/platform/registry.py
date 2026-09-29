@@ -388,6 +388,17 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("einvoice.auto_generate", Group.COMPLIANCE, SettingType.BOOL, True,
             "Get the IRN automatically when an invoice or credit note to a registered shop is "
             "issued. Off: staff get it with a button.", features=("einvoice",)),
+    _tenant("ewaybill.threshold_inter_state", Group.COMPLIANCE, SettingType.MONEY,
+            Decimal("50000.00"), "An e-way bill is made for goods going to another state when "
+            "the invoice (with tax) is worth more than this (placeholder, to verify).",
+            min_value=Decimal("0"), features=("ewaybill",)),
+    _tenant("ewaybill.threshold_intra_state", Group.COMPLIANCE, SettingType.MONEY,
+            Decimal("50000.00"), "An e-way bill is made for goods within the state when the "
+            "invoice (with tax) is worth more than this; states set their own (placeholder).",
+            min_value=Decimal("0"), features=("ewaybill",)),
+    _tenant("ewaybill.auto_generate", Group.COMPLIANCE, SettingType.BOOL, True,
+            "Make the e-way bill automatically at dispatch when the invoice needs one. Off: "
+            "staff make it with a button.", features=("ewaybill",)),
     _platform("platform.einvoice_threshold_crore", Group.COMPLIANCE, SettingType.INT, 5,
               "E-invoicing is suggested for businesses with turnover from this many crore "
               "(to verify).", min_value=1, max_value=500),
@@ -399,6 +410,9 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               "above the reporting-limit threshold (to verify).", min_value=1, max_value=365),
     _platform("platform.irn_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
               "Hours after the IRN within which it can be cancelled (to verify).",
+              min_value=1, max_value=720),
+    _platform("platform.ewaybill_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
+              "Hours after an e-way bill within which it can be cancelled (to verify).",
               min_value=1, max_value=720),
     _platform("platform.whatsapp_price_utility", Group.NOTIFICATIONS, SettingType.STRING, None,
               "Price in rupees of one WhatsApp utility message (orders, bills, payments, "

@@ -72,6 +72,17 @@ def _qr(doc: Invoice | CreditNote) -> dict[str, str]:
     return extra
 
 
+def _eway_bill(invoice: Invoice) -> dict[str, Any]:
+    """The invoice's e-way bill number and validity, once generated (Phase 7). Unsaved
+    documents (the CA samples) have none."""
+    if invoice._state.adding:
+        return {}
+    from apps.compliance.models import EWayBill
+
+    found = EWayBill.objects.filter(invoice_id=invoice.pk, status="GENERATED").first()
+    return {"ewb": found} if found is not None else {}
+
+
 # --- Invoices ---------------------------------------------------------------------------------
 
 
@@ -101,6 +112,7 @@ def invoice_context(
         "has_discount": any(line.discount_amount for line in lines),
         "payment_details": True,  # bank details and terms: on invoices only
         **_qr(invoice),
+        **_eway_bill(invoice),
     }
 
 

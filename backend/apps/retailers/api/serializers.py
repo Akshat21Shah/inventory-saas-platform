@@ -27,6 +27,7 @@ class AddressSerializer(serializers.ModelSerializer[RetailerAddress]):
             "pincode",
             "state_code",
             "is_default",
+            "distance_km",
         )
         read_only_fields = fields
 
@@ -44,6 +45,13 @@ class AddressWriteSerializer(serializers.Serializer[Any]):
     pincode = serializers.CharField(max_length=10)
     state_code = serializers.CharField(max_length=2)
     is_default = serializers.BooleanField(required=False, allow_null=True, default=None)
+    distance_km = serializers.IntegerField(
+        min_value=1,
+        max_value=4000,
+        required=False,
+        allow_null=True,
+        help_text="Road distance from the distributor, for e-way bills; left out: unchanged.",
+    )
 
 
 class BillingAddressSerializer(serializers.Serializer[Any]):

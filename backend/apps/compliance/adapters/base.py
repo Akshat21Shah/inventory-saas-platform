@@ -78,6 +78,20 @@ class CancelResult:
     raw: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class EwbResult:
+    ewb_number: str
+    ewb_date: datetime
+    valid_until: datetime | None
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class PartBResult:
+    valid_until: datetime | None
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
 class GspClient(Protocol):
     def verify(self, credentials: GspCredentials) -> None:
         """Sign in with the credentials; raises GspError(AUTH_FAILED) when they don't work."""
@@ -96,3 +110,26 @@ class GspClient(Protocol):
         self, irn: str, reason_code: str, remarks: str, credentials: GspCredentials
     ) -> CancelResult:
         """Cancel an IRN within the permitted window."""
+
+    def generate_ewb(self, document: dict[str, Any], credentials: GspCredentials) -> EwbResult:
+        """Generate an e-way bill for an invoice (our e-way bill document, ``document.py``)."""
+
+    def ewb_for_document(
+        self, document: dict[str, Any], credentials: GspCredentials
+    ) -> EwbResult | None:
+        """The e-way bill already generated for this invoice, if any (after a DUPLICATE)."""
+
+    def update_part_b(
+        self,
+        ewb_number: str,
+        vehicle_number: str,
+        reason_code: str,
+        remarks: str,
+        credentials: GspCredentials,
+    ) -> PartBResult:
+        """A new vehicle for the goods (Part-B)."""
+
+    def cancel_ewb(
+        self, ewb_number: str, reason_code: str, remarks: str, credentials: GspCredentials
+    ) -> CancelResult:
+        """Cancel an e-way bill within the permitted window."""

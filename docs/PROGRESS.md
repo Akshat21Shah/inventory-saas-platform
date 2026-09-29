@@ -299,7 +299,15 @@
      - A shipment may now hold a cancelled invoice beside the one re-issued for it (one issued invoice per shipment, a partial unique constraint). The cancelled invoice's PDF is printed again marked "Cancelled", naming the invoice that replaces it.
      - The shop is told in the app ("Bill … was cancelled. Bill … replaces it." / "The goods were taken back."); email and WhatsApp texts exist for distributors who switch them on; the WhatsApp template is optional (not in the first submission batch). Hidden with the module off.
      - Tests: 10 (re-issue with a payment moved over, take back to backorder and cancelled, the window and credit notes, the request's checks, portal down retried, a refusal, a lost answer, roles and another tenant, the optional template).
-  7. E-way bill: eligibility, generation at dispatch, distance, Part-B, cancellation, number on the invoice
+  7. E-way bill: eligibility, generation at dispatch, distance, Part-B, cancellation, number on the invoice — **done** (`apps/compliance/ewaybill.py`, models `EWayBill`, `EWayBillUpdate`):
+     - Needed when the invoice (with tax) is worth more than the threshold for its direction: ⚙ `ewaybill.threshold_inter_state` / `_intra_state` (placeholder ₹50,000, to verify), shops with or without a GSTIN alike (to verify).
+     - Made at dispatch from the shipment's vehicle, transporter and LR number and the distance, in the background: dispatch never waits. With ⚙ `ewaybill.auto_generate` off, staff press "Make e-way bill". The portal down is retried like IRNs; a refusal (e.g. no distance, no vehicle) fails at once and staff "Try again" with corrected details (`POST invoices/{id}/ewaybill/`).
+     - Distance: saved per shop address (`distance_km` on addresses; left out on save = unchanged); typed at dispatch it is used for that shipment and kept on the address when the address had none. The shipment shows its distance (before dispatch, the address's).
+     - A new vehicle (Part-B, reason; `POST ewaybills/{id}/part-b/`) and cancellation within ⚙ `platform.ewaybill_cancel_window_hours` (24, to verify; `POST ewaybills/{id}/cancel/`): one change at a time, asked of the portal in the background (retried when down), each kept as an update with the portal's answer, audited.
+     - An invoice with a live e-way bill can't have its IRN cancelled until the e-way bill is cancelled; a pending one is dropped when the IRN is cancelled.
+     - The invoice PDF shows the e-way bill number, date, validity and vehicle once generated (printed again after a change).
+     - APIs (`compliance.manage`): `ewaybills/` (status, search by number, invoice, shop or vehicle), `ewaybills/{id}/` with its updates, `ewaybills/counts/`; the staff invoice page gets an `ewaybill` summary (the shop's bill view leaves it out).
+     - Tests: 12 (at dispatch above the threshold with the validity, each direction's threshold and B2C, module off, the portal down, a missing distance and "Try again", the distance kept for the shop, the button, Part-B, cancelling and then the IRN, after the window, the API with roles and another tenant, the PDF).
   8. Gateway settings and adapters (mock, Razorpay)
   9. Checkout (one active per bill), signature-verified webhooks, reconciliation
   10. APIs, isolation tests, end-to-end with the mocks, seed — **backend checkpoint**

@@ -389,7 +389,9 @@ class DispatchView(Guarded):
         v = data.validated_data
         fulfilment.dispatch(
             fulfilment_id,
-            fulfilment.Transport(v["vehicle_number"], v["transporter_name"], v["lr_number"]),
+            fulfilment.Transport(
+                v["vehicle_number"], v["transporter_name"], v["lr_number"], v["distance_km"]
+            ),
             by=_user(request),
         )
         return _shipment(request, fulfilment_id)

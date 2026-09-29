@@ -232,6 +232,7 @@ class Transport:
     vehicle_number: str = ""
     transporter_name: str = ""
     lr_number: str = ""
+    distance_km: int | None = None  # for the e-way bill (Phase 7); else the shop address's
 
 
 @retry_on_deadlock()
@@ -253,6 +254,7 @@ def dispatch(fulfilment_id: UUID, transport: Transport, *, by: User) -> Fulfilme
         shipment.vehicle_number = transport.vehicle_number.strip()[:20]
         shipment.transporter_name = transport.transporter_name.strip()[:120]
         shipment.lr_number = transport.lr_number.strip()[:40]
+        shipment.distance_km = _distance(shipment, transport.distance_km)
         shipment.status, shipment.dispatched_at = F.DISPATCHED, timezone.now()
         shipment.save()
         record(
@@ -268,7 +270,24 @@ def dispatch(fulfilment_id: UUID, transport: Transport, *, by: User) -> Fulfilme
 
         if invoicing.timing(order) == "ON_DISPATCH":  # ADR-007: the packed quantity
             invoicing.issue_invoice_for_fulfilment(shipment, trigger="ON_DISPATCH", by=by)
+        from apps.compliance.ewaybill import on_dispatched
+
+        on_dispatched(shipment)  # the e-way bill, made in the background (Phase 7)
     return shipment
+
+
+def _distance(shipment: Fulfilment, typed: int | None) -> int | None:
+    """The distance typed at dispatch (and kept on the shop address when it has none yet), else
+    the shop address's (Phase 7, e-way bills)."""
+    from apps.retailers.models import RetailerAddress
+
+    address_id = (shipment.order.shipping_address or {}).get("id")
+    address = RetailerAddress.objects.filter(pk=address_id).first() if address_id else None
+    if typed:
+        if address is not None and address.distance_km is None:
+            RetailerAddress.objects.filter(pk=address.pk).update(distance_km=typed)
+        return typed
+    return address.distance_km if address is not None else None
 
 
 @retry_on_deadlock()

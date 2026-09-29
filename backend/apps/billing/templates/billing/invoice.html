@@ -126,6 +126,10 @@
     <p class="flag">The GST rate on some items changed after the order was placed; this invoice uses the rate in force on the invoice date.</p>
   {% endif %}
 
+  {% if ewb %}
+    <p><b>E-way bill no.</b> {{ ewb.ewb_number }} · <b>Date</b> {{ ewb.ewb_date|date:"d-m-Y H:i" }}{% if ewb.valid_until %} · <b>Valid until</b> {{ ewb.valid_until|date:"d-m-Y H:i" }}{% endif %}{% if ewb.vehicle_number %} · <b>Vehicle</b> {{ ewb.vehicle_number }}{% endif %}</p>
+  {% endif %}
+
   {% if doc.irn %}
   <div class="irn">
     {% if qr %}<img src="{{ qr }}" alt="e-invoice QR code">{% endif %}

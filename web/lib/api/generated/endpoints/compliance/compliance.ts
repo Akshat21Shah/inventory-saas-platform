@@ -28,10 +28,17 @@ import type {
   EInvoiceCancelRequest,
   EInvoiceCounts,
   EInvoiceRow,
+  EWayBillCancelRequest,
+  EWayBillCounts,
+  EWayBillRow,
   EinvoicesListParams,
+  EwaybillsListParams,
   GstCredentials,
   GstCredentialsInputRequest,
-  PaginatedEInvoiceRowList
+  PaginatedEInvoiceRowList,
+  PaginatedEWayBillRowList,
+  PartBInputRequest,
+  TransportInputRequest
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -554,6 +561,519 @@ export function useEinvoicesCounts<TData = Awaited<ReturnType<typeof einvoicesCo
 
 
 
+export type ewaybillsListResponse200 = {
+  data: PaginatedEWayBillRowList
+  status: 200
+}
+
+export type ewaybillsListResponseSuccess = (ewaybillsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ewaybillsListResponse = (ewaybillsListResponseSuccess)
+
+export const getEwaybillsListUrl = (params?: EwaybillsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/ewaybills/?${stringifiedParams}` : `/api/v1/ewaybills/`
+}
+
+export const ewaybillsList = async (params?: EwaybillsListParams, options?: Parameters<typeof apiFetch>[1]): Promise<ewaybillsListResponse> => {
+
+  return apiFetch<ewaybillsListResponse>(getEwaybillsListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getEwaybillsListQueryKey = (params?: EwaybillsListParams,) => {
+    return [
+    `/api/v1/ewaybills/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getEwaybillsListQueryOptions = <TData = Awaited<ReturnType<typeof ewaybillsList>>, TError = unknown>(params?: EwaybillsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getEwaybillsListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ewaybillsList>>> = ({ signal }) => ewaybillsList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ewaybillsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type EwaybillsListQueryResult = NonNullable<Awaited<ReturnType<typeof ewaybillsList>>>
+export type EwaybillsListQueryError = unknown
+
+
+export function useEwaybillsList<TData = Awaited<ReturnType<typeof ewaybillsList>>, TError = unknown>(
+ params: undefined |  EwaybillsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ewaybillsList>>,
+          TError,
+          Awaited<ReturnType<typeof ewaybillsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEwaybillsList<TData = Awaited<ReturnType<typeof ewaybillsList>>, TError = unknown>(
+ params?: EwaybillsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ewaybillsList>>,
+          TError,
+          Awaited<ReturnType<typeof ewaybillsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEwaybillsList<TData = Awaited<ReturnType<typeof ewaybillsList>>, TError = unknown>(
+ params?: EwaybillsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useEwaybillsList<TData = Awaited<ReturnType<typeof ewaybillsList>>, TError = unknown>(
+ params?: EwaybillsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getEwaybillsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type ewaybillsRetrieveResponse200 = {
+  data: EWayBillRow
+  status: 200
+}
+
+export type ewaybillsRetrieveResponseSuccess = (ewaybillsRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ewaybillsRetrieveResponse = (ewaybillsRetrieveResponseSuccess)
+
+export const getEwaybillsRetrieveUrl = (ewaybillId: string,) => {
+
+
+
+
+  return `/api/v1/ewaybills/${ewaybillId}/`
+}
+
+export const ewaybillsRetrieve = async (ewaybillId: string, options?: Parameters<typeof apiFetch>[1]): Promise<ewaybillsRetrieveResponse> => {
+
+  return apiFetch<ewaybillsRetrieveResponse>(getEwaybillsRetrieveUrl(ewaybillId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getEwaybillsRetrieveQueryKey = (ewaybillId: string,) => {
+    return [
+    `/api/v1/ewaybills/${ewaybillId}/`
+    ] as const;
+    }
+
+
+export const getEwaybillsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError = unknown>(ewaybillId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getEwaybillsRetrieveQueryKey(ewaybillId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ewaybillsRetrieve>>> = ({ signal }) => ewaybillsRetrieve(ewaybillId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: ewaybillId !== null && ewaybillId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type EwaybillsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof ewaybillsRetrieve>>>
+export type EwaybillsRetrieveQueryError = unknown
+
+
+export function useEwaybillsRetrieve<TData = Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError = unknown>(
+ ewaybillId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ewaybillsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof ewaybillsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEwaybillsRetrieve<TData = Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError = unknown>(
+ ewaybillId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ewaybillsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof ewaybillsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEwaybillsRetrieve<TData = Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError = unknown>(
+ ewaybillId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useEwaybillsRetrieve<TData = Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError = unknown>(
+ ewaybillId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getEwaybillsRetrieveQueryOptions(ewaybillId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type ewaybillCancelResponse200 = {
+  data: EWayBillRow
+  status: 200
+}
+
+export type ewaybillCancelResponseSuccess = (ewaybillCancelResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ewaybillCancelResponse = (ewaybillCancelResponseSuccess)
+
+export const getEwaybillCancelUrl = (ewaybillId: string,) => {
+
+
+
+
+  return `/api/v1/ewaybills/${ewaybillId}/cancel/`
+}
+
+export const ewaybillCancel = async (ewaybillId: string,
+    eWayBillCancelRequest: EWayBillCancelRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ewaybillCancelResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ewaybillCancelResponse>(getEwaybillCancelUrl(ewaybillId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(eWayBillCancelRequest)
+  }
+);}
+
+
+
+
+
+export const getEwaybillCancelMutationKey = () => ['ewaybillCancel'] as const;
+
+export const getEwaybillCancelMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ewaybillCancel>>, TError,EwaybillCancelMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ewaybillCancel>>, TError,EwaybillCancelMutationVariables, TContext> => {
+
+const mutationKey = getEwaybillCancelMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ewaybillCancel>>, EwaybillCancelMutationVariables> = (props) => {
+          const {ewaybillId,data} = props ?? {};
+
+          return  ewaybillCancel(ewaybillId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EwaybillCancelMutationResult = NonNullable<Awaited<ReturnType<typeof ewaybillCancel>>>
+    export type EwaybillCancelMutationBody = EWayBillCancelRequest
+    export type EwaybillCancelMutationError = unknown
+    export type EwaybillCancelMutationVariables = {ewaybillId: string;data: EWayBillCancelRequest}
+
+    export const useEwaybillCancel = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ewaybillCancel>>, TError,EwaybillCancelMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof ewaybillCancel>>,
+        TError,
+        EwaybillCancelMutationVariables,
+        TContext
+      > => {
+      return useMutation(getEwaybillCancelMutationOptions(options), queryClient);
+    }
+    export type ewaybillPartBResponse200 = {
+  data: EWayBillRow
+  status: 200
+}
+
+export type ewaybillPartBResponseSuccess = (ewaybillPartBResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ewaybillPartBResponse = (ewaybillPartBResponseSuccess)
+
+export const getEwaybillPartBUrl = (ewaybillId: string,) => {
+
+
+
+
+  return `/api/v1/ewaybills/${ewaybillId}/part-b/`
+}
+
+export const ewaybillPartB = async (ewaybillId: string,
+    partBInputRequest: PartBInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ewaybillPartBResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ewaybillPartBResponse>(getEwaybillPartBUrl(ewaybillId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(partBInputRequest)
+  }
+);}
+
+
+
+
+
+export const getEwaybillPartBMutationKey = () => ['ewaybillPartB'] as const;
+
+export const getEwaybillPartBMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ewaybillPartB>>, TError,EwaybillPartBMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ewaybillPartB>>, TError,EwaybillPartBMutationVariables, TContext> => {
+
+const mutationKey = getEwaybillPartBMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ewaybillPartB>>, EwaybillPartBMutationVariables> = (props) => {
+          const {ewaybillId,data} = props ?? {};
+
+          return  ewaybillPartB(ewaybillId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EwaybillPartBMutationResult = NonNullable<Awaited<ReturnType<typeof ewaybillPartB>>>
+    export type EwaybillPartBMutationBody = PartBInputRequest
+    export type EwaybillPartBMutationError = unknown
+    export type EwaybillPartBMutationVariables = {ewaybillId: string;data: PartBInputRequest}
+
+    export const useEwaybillPartB = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ewaybillPartB>>, TError,EwaybillPartBMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof ewaybillPartB>>,
+        TError,
+        EwaybillPartBMutationVariables,
+        TContext
+      > => {
+      return useMutation(getEwaybillPartBMutationOptions(options), queryClient);
+    }
+    export type ewaybillsCountsResponse200 = {
+  data: EWayBillCounts
+  status: 200
+}
+
+export type ewaybillsCountsResponseSuccess = (ewaybillsCountsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ewaybillsCountsResponse = (ewaybillsCountsResponseSuccess)
+
+export const getEwaybillsCountsUrl = () => {
+
+
+
+
+  return `/api/v1/ewaybills/counts/`
+}
+
+export const ewaybillsCounts = async ( options?: Parameters<typeof apiFetch>[1]): Promise<ewaybillsCountsResponse> => {
+
+  return apiFetch<ewaybillsCountsResponse>(getEwaybillsCountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getEwaybillsCountsQueryKey = () => {
+    return [
+    `/api/v1/ewaybills/counts/`
+    ] as const;
+    }
+
+
+export const getEwaybillsCountsQueryOptions = <TData = Awaited<ReturnType<typeof ewaybillsCounts>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsCounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getEwaybillsCountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ewaybillsCounts>>> = ({ signal }) => ewaybillsCounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ewaybillsCounts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type EwaybillsCountsQueryResult = NonNullable<Awaited<ReturnType<typeof ewaybillsCounts>>>
+export type EwaybillsCountsQueryError = unknown
+
+
+export function useEwaybillsCounts<TData = Awaited<ReturnType<typeof ewaybillsCounts>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsCounts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ewaybillsCounts>>,
+          TError,
+          Awaited<ReturnType<typeof ewaybillsCounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEwaybillsCounts<TData = Awaited<ReturnType<typeof ewaybillsCounts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsCounts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ewaybillsCounts>>,
+          TError,
+          Awaited<ReturnType<typeof ewaybillsCounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEwaybillsCounts<TData = Awaited<ReturnType<typeof ewaybillsCounts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsCounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useEwaybillsCounts<TData = Awaited<ReturnType<typeof ewaybillsCounts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ewaybillsCounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getEwaybillsCountsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type invoiceEinvoiceRequestResponse200 = {
   data: EInvoiceRow
   status: 200
@@ -632,6 +1152,100 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getInvoiceEinvoiceRequestMutationOptions(options), queryClient);
+    }
+    export type invoiceEwaybillRequestResponse200 = {
+  data: EWayBillRow
+  status: 200
+}
+
+export type invoiceEwaybillRequestResponseSuccess = (invoiceEwaybillRequestResponse200) & {
+  headers: Headers;
+};
+;
+
+export type invoiceEwaybillRequestResponse = (invoiceEwaybillRequestResponseSuccess)
+
+export const getInvoiceEwaybillRequestUrl = (invoiceId: string,) => {
+
+
+
+
+  return `/api/v1/invoices/${invoiceId}/ewaybill/`
+}
+
+export const invoiceEwaybillRequest = async (invoiceId: string,
+    transportInputRequest?: TransportInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<invoiceEwaybillRequestResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<invoiceEwaybillRequestResponse>(getInvoiceEwaybillRequestUrl(invoiceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(transportInputRequest)
+  }
+);}
+
+
+
+
+
+export const getInvoiceEwaybillRequestMutationKey = () => ['invoiceEwaybillRequest'] as const;
+
+export const getInvoiceEwaybillRequestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invoiceEwaybillRequest>>, TError,InvoiceEwaybillRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof invoiceEwaybillRequest>>, TError,InvoiceEwaybillRequestMutationVariables, TContext> => {
+
+const mutationKey = getInvoiceEwaybillRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof invoiceEwaybillRequest>>, InvoiceEwaybillRequestMutationVariables> = (props) => {
+          const {invoiceId,data} = props ?? {};
+
+          return  invoiceEwaybillRequest(invoiceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InvoiceEwaybillRequestMutationResult = NonNullable<Awaited<ReturnType<typeof invoiceEwaybillRequest>>>
+    export type InvoiceEwaybillRequestMutationBody = TransportInputRequest | undefined
+    export type InvoiceEwaybillRequestMutationError = unknown
+    export type InvoiceEwaybillRequestMutationVariables = {invoiceId: string;data?: TransportInputRequest}
+
+    export const useInvoiceEwaybillRequest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invoiceEwaybillRequest>>, TError,InvoiceEwaybillRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof invoiceEwaybillRequest>>,
+        TError,
+        InvoiceEwaybillRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getInvoiceEwaybillRequestMutationOptions(options), queryClient);
     }
     export type gstCredentialsResponse200 = {
   data: GstCredentials

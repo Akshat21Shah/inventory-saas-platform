@@ -74,6 +74,14 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.credit-note.irn": "",
     "api.credit-note.ack_no": "",
     "api.credit-note.ack_date": None,
+    # E-way bills (commit 7): no bill and no distances while the module is off.
+    "api.invoice.ewaybill": None,
+    "db.orders.Fulfilment.distance_km": None,
+    "db.retailers.RetailerAddress.distance_km": None,
+    "api.fulfilment.distance_km": None,
+    "api.order.fulfilments.distance_km": None,
+    "api.shop-order.fulfilments.distance_km": None,
+    "api.retailer.addresses.distance_km": None,
 }
 
 # Random by design: stored as "<random>".

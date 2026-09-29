@@ -13,6 +13,12 @@
 
 IRNs are the SHA-256 of the document's identity, like the portal's, so they are stable. The signed
 QR is a readable stand-in (``MOCK.<base64 JSON>.MOCK``), never a real signature.
+
+E-way bills: a 12-digit number from the invoice's identity; the distance must be 1 to 4,000 km and
+road transport needs a vehicle number or the transporter's ID; valid one day per 200 km (our
+reading, to verify); the same invoice twice is a DUPLICATE; Part-B needs a live, unexpired bill;
+cancelling works once within ``platform.ewaybill_cancel_window_hours``. The scripted outcomes
+apply to e-way bill calls too.
 """
 
 import base64
@@ -27,10 +33,12 @@ from django.utils import timezone
 
 from apps.compliance.adapters.base import (
     CancelResult,
+    EwbResult,
     GspCredentials,
     GspError,
     GspErrorCode,
     IrnResult,
+    PartBResult,
 )
 
 INACTIVE_PAN = "ZZZZZ9999Z"
@@ -41,6 +49,10 @@ _TTL = None  # kept until the cache is cleared
 
 def _key(irn: str) -> str:
     return f"mockgsp:irn:{irn}"
+
+
+def _ewb_key(number: str) -> str:
+    return f"mockgsp:ewb:{number}"
 
 
 def _b64(data: dict[str, Any]) -> str:
@@ -210,3 +222,122 @@ class MockGspClient:
         now = timezone.now()
         cache.set(_key(irn), {**stored, "cancelled": True, "cancelled_at": now.isoformat()}, _TTL)
         return CancelResult(cancelled_at=now, raw={"mock": True, "irn": irn})
+
+    # --- E-way bills ---------------------------------------------------------------------------
+
+    @staticmethod
+    def ewb_number_of(document: dict[str, Any]) -> str:
+        identity = document["seller"]["gstin"] + document["document"]["number"].strip().upper()
+        return f"{int(hashlib.sha256(identity.encode()).hexdigest()[:15], 16) % 10**12:012d}"
+
+    def _scripted_failure(self) -> None:
+        scripted = self._next()
+        if scripted == "PORTAL_DOWN":
+            raise GspError(GspErrorCode.PORTAL_DOWN, "The e-way bill portal is not available.")
+        if scripted in ("TIMEOUT", "TIMEOUT_AFTER_SAVE"):
+            raise GspError(GspErrorCode.TIMEOUT, "The provider didn't answer in time.")
+
+    def _ewb_result(self, number: str, stored: dict[str, Any]) -> EwbResult:
+        until = stored.get("valid_until")
+        return EwbResult(
+            ewb_number=number,
+            ewb_date=datetime.fromisoformat(stored["ewb_date"]),
+            valid_until=datetime.fromisoformat(until) if until else None,
+            raw={"mock": True, "ewb_number": number},
+        )
+
+    def generate_ewb(self, document: dict[str, Any], credentials: GspCredentials) -> EwbResult:
+        self.verify(credentials)
+        self._scripted_failure()
+        transport = document["transport"]
+        problems = []
+        distance = transport.get("distance_km")
+        if not distance or not 1 <= int(distance) <= 4000:
+            problems.append("Enter the distance (1 to 4,000 km).")
+        if transport["mode"] == "ROAD" and not (
+            transport.get("vehicle_number") or transport.get("transporter_id")
+        ):
+            problems.append("Enter the vehicle number or the transporter's ID.")
+        for party in ("seller", "buyer"):
+            pincode = str(document[party].get("pincode", ""))
+            if len(pincode) != 6 or not pincode.isdigit():
+                problems.append(f"The {party}'s PIN code must have 6 digits.")
+        if problems:
+            raise GspError(
+                GspErrorCode.VALIDATION, "; ".join(problems), details={"problems": problems}
+            )
+        number = self.ewb_number_of(document)
+        existing = cache.get(_ewb_key(number))
+        if existing is not None and not existing["cancelled"]:
+            raise GspError(
+                GspErrorCode.DUPLICATE,
+                "An e-way bill already exists for this invoice.",
+                details={"ewb_number": number},
+            )
+        now = timezone.now()
+        days = -(-int(distance) // 200)  # one day per 200 km, rounded up (to verify)
+        stored = {
+            "ewb_date": now.isoformat(),
+            "valid_until": (now + timedelta(days=days)).isoformat(),
+            "vehicle_number": transport.get("vehicle_number", ""),
+            "cancelled": False,
+        }
+        cache.set(_ewb_key(number), stored, _TTL)
+        cache.set("mockgsp:irns", [*(cache.get("mockgsp:irns") or []), _ewb_key(number)], _TTL)
+        return self._ewb_result(number, stored)
+
+    def ewb_for_document(
+        self, document: dict[str, Any], credentials: GspCredentials
+    ) -> EwbResult | None:
+        self.verify(credentials)
+        number = self.ewb_number_of(document)
+        stored = cache.get(_ewb_key(number))
+        if stored is None or stored["cancelled"]:
+            return None
+        return self._ewb_result(number, stored)
+
+    def _live(self, ewb_number: str) -> dict[str, Any]:
+        stored = cache.get(_ewb_key(ewb_number))
+        if stored is None:
+            raise GspError(GspErrorCode.NOT_FOUND, "No such e-way bill.")
+        if stored["cancelled"]:
+            raise GspError(GspErrorCode.ALREADY_CANCELLED, "This e-way bill is cancelled.")
+        return dict(stored)
+
+    def update_part_b(
+        self,
+        ewb_number: str,
+        vehicle_number: str,
+        reason_code: str,
+        remarks: str,
+        credentials: GspCredentials,
+    ) -> PartBResult:
+        self.verify(credentials)
+        self._scripted_failure()
+        stored = self._live(ewb_number)
+        if timezone.now() > datetime.fromisoformat(stored["valid_until"]):
+            raise GspError(GspErrorCode.VALIDATION, "This e-way bill has expired.")
+        if not vehicle_number:
+            raise GspError(GspErrorCode.VALIDATION, "Enter the vehicle number.")
+        cache.set(_ewb_key(ewb_number), {**stored, "vehicle_number": vehicle_number}, _TTL)
+        return PartBResult(
+            valid_until=datetime.fromisoformat(stored["valid_until"]),
+            raw={"mock": True, "vehicle_number": vehicle_number},
+        )
+
+    def cancel_ewb(
+        self, ewb_number: str, reason_code: str, remarks: str, credentials: GspCredentials
+    ) -> CancelResult:
+        from apps.platform.selectors import get_platform_setting
+
+        self.verify(credentials)
+        self._scripted_failure()
+        stored = self._live(ewb_number)
+        hours = int(get_platform_setting("platform.ewaybill_cancel_window_hours"))
+        if timezone.now() > datetime.fromisoformat(stored["ewb_date"]) + timedelta(hours=hours):
+            raise GspError(
+                GspErrorCode.CANCEL_NOT_ALLOWED, "The time allowed for cancelling has passed."
+            )
+        now = timezone.now()
+        cache.set(_ewb_key(ewb_number), {**stored, "cancelled": True}, _TTL)
+        return CancelResult(cancelled_at=now, raw={"mock": True, "ewb_number": ewb_number})

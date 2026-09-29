@@ -15,7 +15,7 @@ from apps.billing.models import (
     PaymentStatus,
     PdfStatus,
 )
-from apps.compliance.api.serializers import EInvoiceSummarySerializer
+from apps.compliance.api.serializers import EInvoiceSummarySerializer, EWayBillSummarySerializer
 from apps.pricing.api.serializers import ShopRefSerializer, money, qty
 from common.dates import today_ist
 
@@ -194,10 +194,18 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
     ack_no = serializers.CharField()
     ack_date = serializers.DateTimeField(allow_null=True)
     einvoice = serializers.SerializerMethodField()
+    ewaybill = serializers.SerializerMethodField()
 
     @extend_schema_field(EInvoiceSummarySerializer(allow_null=True))
     def get_einvoice(self, obj: Invoice) -> dict[str, Any] | None:
         return _einvoice(obj)
+
+    @extend_schema_field(EWayBillSummarySerializer(allow_null=True))
+    def get_ewaybill(self, obj: Invoice) -> dict[str, Any] | None:
+        from apps.compliance.selectors import ewaybill_for
+
+        found = ewaybill_for(obj)
+        return dict(EWayBillSummarySerializer(found).data) if found is not None else None
 
     class Meta(InvoiceRowSerializer.Meta):
         fields = [
@@ -221,6 +229,7 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
             "ack_no",
             "ack_date",
             "einvoice",
+            "ewaybill",
         ]
 
 
@@ -229,7 +238,9 @@ class ShopInvoiceDetailSerializer(InvoiceDetailSerializer):
     on the bill and its PDF)."""
 
     class Meta(InvoiceDetailSerializer.Meta):
-        fields = [f for f in InvoiceDetailSerializer.Meta.fields if f != "einvoice"]
+        fields = [
+            f for f in InvoiceDetailSerializer.Meta.fields if f not in ("einvoice", "ewaybill")
+        ]
 
 
 def _einvoice(doc: Invoice | CreditNote) -> dict[str, Any] | None:

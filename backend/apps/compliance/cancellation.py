@@ -86,6 +86,13 @@ def _check(record: EInvoiceRecord, invoice: Invoice) -> None:
                 ]
             }
         )
+    from apps.compliance.models import EWayBill
+
+    live_bill = EWayBill.objects.filter(invoice=invoice, status__in=("SUBMITTED", "GENERATED"))
+    if live_bill.exists():
+        raise InvalidFields(
+            {"document": ["This invoice has an e-way bill. Cancel the e-way bill first."]}
+        )
     if CreditNote.objects.filter(invoice=invoice, status=DocumentStatus.ISSUED).exists():
         raise InvalidFields(
             {"document": ["This invoice has credit notes. Correct it with another credit note."]}
@@ -254,6 +261,16 @@ def _apply(record_id: UUID, cancelled_at: datetime, raw: dict[str, Any]) -> str:
         OrderLine.objects.filter(pk=line.order_line_id).update(
             qty_invoiced=F("qty_invoiced") - line.quantity
         )
+    from apps.compliance.models import EWayBill
+
+    EWayBill.objects.filter(invoice=invoice, status="PENDING").update(  # never to be sent now
+        status="FAILED",
+        error_code="INVOICE_CANCELLED",
+        error_message="The invoice was cancelled.",
+        retryable=False,
+        next_retry_at=None,
+        updated_at=timezone.now(),
+    )
     shipment = Fulfilment.objects.get(pk=invoice.fulfilment_id)
     reason = f"IRN of {invoice.number} cancelled"
     reissued: Invoice | None = None

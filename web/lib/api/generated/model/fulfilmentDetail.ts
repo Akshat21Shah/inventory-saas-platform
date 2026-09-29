@@ -24,6 +24,11 @@ export interface FulfilmentDetail {
   readonly vehicle_number: string;
   readonly transporter_name: string;
   readonly lr_number: string;
+  /**
+     * For its e-way bill: the distance given at dispatch, or before that the shop address's (null when unknown).
+     * @nullable
+     */
+  readonly distance_km: number | null;
   readonly cancelled_reason: string;
   readonly lines: readonly FulfilmentLine[];
   readonly order: string;

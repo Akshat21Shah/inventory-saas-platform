@@ -9,6 +9,7 @@ import type { Applied } from './applied';
 import type { CreditNoteRow } from './creditNoteRow';
 import type { EInvoiceStatusEnum } from './eInvoiceStatusEnum';
 import type { EInvoiceSummary } from './eInvoiceSummary';
+import type { EWayBillSummary } from './eWayBillSummary';
 import type { InvoiceLine } from './invoiceLine';
 import type { InvoicePaymentStatusEnum } from './invoicePaymentStatusEnum';
 import type { InvoiceTriggerEnum } from './invoiceTriggerEnum';
@@ -60,4 +61,5 @@ export interface InvoiceDetail {
   /** @nullable */
   ack_date: string | null;
   readonly einvoice: EInvoiceSummary | null;
+  readonly ewaybill: EWayBillSummary | null;
 }

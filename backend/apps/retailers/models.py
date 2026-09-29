@@ -116,6 +116,8 @@ class RetailerAddress(TenantScopedModel):
     pincode = models.CharField(max_length=6)
     state = models.ForeignKey("platform.State", on_delete=models.PROTECT, related_name="+")
     is_default = models.BooleanField(default=False)
+    # Road distance from the distributor, for e-way bills (Phase 7); editable at dispatch.
+    distance_km = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ["kind", "-is_default", "created_at"]

@@ -165,3 +165,22 @@ def credit_note_document(note: CreditNote) -> dict[str, Any]:
         "date": note.invoice.invoice_date.isoformat(),
     }
     return document
+
+
+def ewaybill_document(ewb: Any) -> dict[str, Any]:
+    """The e-way bill's document: its invoice plus how the goods move. A shop without a GSTIN is
+    an unregistered buyer (to verify: PROGRESS pre-production items 19-24)."""
+    document = invoice_document(ewb.invoice)
+    document["supply"]["category"] = "B2B" if ewb.invoice.buyer.get("gstin") else "B2C"
+    document["consignment_value"] = _money(ewb.consignment_value)
+    document["movement"] = {"direction": "OUTWARD", "reason": "SUPPLY"}
+    document["transport"] = {
+        "mode": ewb.transport_mode,
+        "vehicle_number": ewb.vehicle_number,
+        "transporter_id": ewb.transporter_id,
+        "transporter_name": ewb.transporter_name,
+        "doc_no": ewb.transport_doc_no,
+        "doc_date": ewb.transport_doc_date.isoformat() if ewb.transport_doc_date else None,
+        "distance_km": ewb.distance_km,
+    }
+    return document

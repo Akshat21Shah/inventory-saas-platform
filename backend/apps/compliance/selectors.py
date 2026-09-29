@@ -6,10 +6,11 @@ from datetime import date
 from typing import Any
 
 from django.db.models import Q, QuerySet
+from django.utils import timezone
 
 from apps.billing.models import CreditNote, Invoice
 from apps.compliance import rules
-from apps.compliance.models import DocumentType, EInvoiceRecord
+from apps.compliance.models import DocumentType, EInvoiceRecord, EWayBill, EWayBillUpdate
 from common.dates import today_ist
 from common.tenancy import require_tenant_id
 
@@ -126,4 +127,109 @@ def counts() -> dict[str, int]:
         "pending": sum(1 for r in open_rows if r.status in (S.PENDING, S.SUBMITTED)),
         "failed": sum(1 for r in open_rows if r.status == S.FAILED),
         "near_report_by": len(soon),
+    }
+
+
+# --- E-way bills ------------------------------------------------------------------------------
+
+
+def ewaybill_list(filters: Filters) -> QuerySet[EWayBill]:
+    rows = EWayBill.objects.select_related("invoice__retailer", "fulfilment")
+    if filters.status:
+        rows = rows.filter(status=filters.status)
+    if filters.search.strip():
+        term = filters.search.strip()
+        rows = rows.filter(
+            Q(ewb_number=term)
+            | Q(invoice__number__icontains=term)
+            | Q(invoice__retailer__shop_name__icontains=term)
+            | Q(vehicle_number__icontains="".join(term.upper().split()))
+        )
+    return rows
+
+
+def ewaybill_summary(ewb: EWayBill) -> dict[str, Any]:
+    from apps.compliance.ewaybill import cancel_window_ends
+
+    now = timezone.now()
+    pending = ewb.updates.filter(status=EWayBillUpdate.Status.PENDING).first()
+    last = ewb.updates.order_by("-created_at").first()
+    live = ewb.status == EWayBill.Status.GENERATED and pending is None
+    ends = cancel_window_ends(ewb)
+    return {
+        "id": ewb.pk,
+        "status": ewb.status,
+        "ewb_number": ewb.ewb_number,
+        "ewb_date": ewb.ewb_date,
+        "valid_until": ewb.valid_until,
+        "consignment_value": ewb.consignment_value,
+        "transport_mode": ewb.transport_mode,
+        "vehicle_number": ewb.vehicle_number,
+        "transporter_id": ewb.transporter_id,
+        "transporter_name": ewb.transporter_name,
+        "transport_doc_no": ewb.transport_doc_no,
+        "transport_doc_date": ewb.transport_doc_date,
+        "distance_km": ewb.distance_km,
+        "error_code": ewb.error_code,
+        "error_message": ewb.error_message,
+        "retryable": ewb.retryable,
+        "attempts": ewb.attempts,
+        "requested_at": ewb.requested_at,
+        "next_retry_at": ewb.next_retry_at,
+        "generated_at": ewb.generated_at,
+        "cancelled_at": ewb.cancelled_at,
+        "can_request": ewb.status == EWayBill.Status.FAILED
+        or (ewb.status == EWayBill.Status.PENDING and ewb.requested_at is None),
+        "can_update": live and not (ewb.valid_until and now > ewb.valid_until),
+        "can_cancel": live and ends is not None and now <= ends,
+        "cancel_until": ends,
+        "pending_update": pending.kind if pending else "",
+        "last_update_error": last.error_message if last and last.status == "FAILED" else "",
+    }
+
+
+def ewaybill_row(ewb: EWayBill) -> dict[str, Any]:
+    invoice = ewb.invoice
+    return {
+        **ewaybill_summary(ewb),
+        "invoice_id": invoice.pk,
+        "invoice_number": invoice.number,
+        "invoice_date": invoice.invoice_date,
+        "shop_name": invoice.retailer.shop_name,
+        "retailer_id": invoice.retailer_id,
+        "shipment_number": ewb.fulfilment.number,
+        "updates": [
+            {
+                "id": u.pk,
+                "kind": u.kind,
+                "status": u.status,
+                "vehicle_number": u.vehicle_number,
+                "reason_code": u.reason_code,
+                "remarks": u.remarks,
+                "error_message": u.error_message,
+                "created_at": u.created_at,
+                "done_at": u.done_at,
+            }
+            for u in ewb.updates.order_by("created_at")
+        ],
+    }
+
+
+def ewaybill_for(invoice: Invoice) -> dict[str, Any] | None:
+    """The invoice's e-way bill: the live one, else the latest (failed or cancelled)."""
+    rows = EWayBill.objects.filter(invoice=invoice)
+    ewb = (
+        rows.exclude(status__in=("FAILED", "CANCELLED")).first()
+        or rows.order_by("-created_at").first()
+    )
+    return ewaybill_summary(ewb) if ewb is not None else None
+
+
+def ewaybill_counts() -> dict[str, int]:
+    rows = EWayBill.objects.filter(tenant_id=require_tenant_id())
+    return {
+        "pending": rows.filter(status__in=(EWayBill.Status.PENDING, "SUBMITTED")).count(),
+        "failed": rows.filter(status=EWayBill.Status.FAILED)
+        .exclude(error_code="INVOICE_CANCELLED")
+        .count(),
     }

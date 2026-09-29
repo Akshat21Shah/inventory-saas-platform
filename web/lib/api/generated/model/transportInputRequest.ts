@@ -5,19 +5,23 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { TransportModeEnum } from './transportModeEnum';
 
-export interface DispatchRequest {
+export interface TransportInputRequest {
+  transport_mode?: TransportModeEnum;
   /** @maxLength 20 */
   vehicle_number?: string;
+  /** @maxLength 15 */
+  transporter_id?: string;
   /** @maxLength 120 */
   transporter_name?: string;
   /** @maxLength 40 */
-  lr_number?: string;
+  transport_doc_no?: string;
+  /** @nullable */
+  transport_doc_date?: string | null;
   /**
-     * Road distance for the e-way bill; default: the shop address's.
      * @minimum 1
      * @maximum 4000
-     * @nullable
      */
-  distance_km?: number | null;
+  distance_km?: number;
 }

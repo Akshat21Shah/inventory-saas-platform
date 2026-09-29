@@ -466,6 +466,8 @@ def save_address(
     for key in ADDRESS_FIELDS:
         if key in data:
             setattr(address, key, str(data[key]).strip())
+    if "distance_km" in data:  # for e-way bills (Phase 7); left out: unchanged
+        address.distance_km = data["distance_km"]
     _check_address(address)
     if address.is_default:
         RetailerAddress.objects.filter(

@@ -116,6 +116,7 @@ const detail: InvoiceDetail = {
   ack_no: "",
   ack_date: null,
   einvoice: null,
+  ewaybill: null,
 };
 
 describe("Invoices", () => {

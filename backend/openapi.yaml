@@ -1565,6 +1565,143 @@ paths:
               schema:
                 $ref: '#/components/schemas/EInvoiceCounts'
           description: ''
+  /api/v1/ewaybills/:
+    get:
+      operationId: ewaybills_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: E-way bill, invoice, shop or vehicle
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - FAILED
+          - GENERATED
+          - PENDING
+          - SUBMITTED
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEWayBillRowList'
+          description: ''
+  /api/v1/ewaybills/{ewaybill_id}/:
+    get:
+      operationId: ewaybills_retrieve
+      parameters:
+      - in: path
+        name: ewaybill_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
+          description: ''
+  /api/v1/ewaybills/{ewaybill_id}/cancel/:
+    post:
+      operationId: ewaybill_cancel
+      parameters:
+      - in: path
+        name: ewaybill_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EWayBillCancelRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
+          description: ''
+  /api/v1/ewaybills/{ewaybill_id}/part-b/:
+    post:
+      operationId: ewaybill_part_b
+      parameters:
+      - in: path
+        name: ewaybill_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartBInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
+          description: ''
+  /api/v1/ewaybills/counts/:
+    get:
+      operationId: ewaybills_counts
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillCounts'
+          description: ''
   /api/v1/fulfilments/:
     get:
       operationId: fulfilments_list
@@ -1983,6 +2120,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
+  /api/v1/invoices/{invoice_id}/ewaybill/:
+    post:
+      operationId: invoice_ewaybill_request
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransportInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
           description: ''
   /api/v1/invoices/{invoice_id}/pdf/:
     get:
@@ -9218,8 +9381,13 @@ components:
         is_default:
           type: boolean
           readOnly: true
+        distance_km:
+          type: integer
+          readOnly: true
+          nullable: true
       required:
       - city
+      - distance_km
       - district
       - id
       - is_default
@@ -9273,6 +9441,13 @@ components:
         is_default:
           type: boolean
           nullable: true
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+          nullable: true
+          description: 'Road distance from the distributor, for e-way bills; left
+            out: unchanged.'
       required:
       - city
       - kind
@@ -11620,6 +11795,12 @@ components:
           type: string
           default: ''
           maxLength: 40
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+          nullable: true
+          description: 'Road distance for the e-way bill; default: the shop address''s.'
     DispositionEnum:
       enum:
       - RETURN_TO_STOCK
@@ -12151,6 +12332,338 @@ components:
       - requested_at
       - retryable
       - status
+    EWayBillCancelRequest:
+      type: object
+      properties:
+        reason_code:
+          $ref: '#/components/schemas/IrnCancelReasonEnum'
+        remarks:
+          type: string
+          default: ''
+          maxLength: 100
+      required:
+      - reason_code
+    EWayBillCounts:
+      type: object
+      properties:
+        pending:
+          type: integer
+        failed:
+          type: integer
+      required:
+      - failed
+      - pending
+    EWayBillRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EWayBillStatusEnum'
+        ewb_number:
+          type: string
+        ewb_date:
+          type: string
+          format: date-time
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        consignment_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        transport_mode:
+          $ref: '#/components/schemas/TransportModeEnum'
+        vehicle_number:
+          type: string
+        transporter_id:
+          type: string
+        transporter_name:
+          type: string
+        transport_doc_no:
+          type: string
+        transport_doc_date:
+          type: string
+          format: date
+          nullable: true
+        distance_km:
+          type: integer
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_request:
+          type: boolean
+          description: '"Make e-way bill" or "Try again".'
+        can_update:
+          type: boolean
+          description: A new vehicle (Part-B) can be given.
+        can_cancel:
+          type: boolean
+          description: Within the cancellation window.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        pending_update:
+          type: string
+          description: PART_B or CANCEL while one is being sent.
+        last_update_error:
+          type: string
+        invoice_id:
+          type: string
+          format: uuid
+        invoice_number:
+          type: string
+        invoice_date:
+          type: string
+          format: date
+        shop_name:
+          type: string
+        retailer_id:
+          type: string
+          format: uuid
+        shipment_number:
+          type: string
+        updates:
+          type: array
+          items:
+            $ref: '#/components/schemas/EWayBillUpdateRow'
+      required:
+      - attempts
+      - can_cancel
+      - can_request
+      - can_update
+      - cancel_until
+      - cancelled_at
+      - consignment_value
+      - distance_km
+      - error_code
+      - error_message
+      - ewb_date
+      - ewb_number
+      - generated_at
+      - id
+      - invoice_date
+      - invoice_id
+      - invoice_number
+      - last_update_error
+      - next_retry_at
+      - pending_update
+      - requested_at
+      - retailer_id
+      - retryable
+      - shipment_number
+      - shop_name
+      - status
+      - transport_doc_date
+      - transport_doc_no
+      - transport_mode
+      - transporter_id
+      - transporter_name
+      - updates
+      - valid_until
+      - vehicle_number
+    EWayBillStatusEnum:
+      enum:
+      - PENDING
+      - SUBMITTED
+      - GENERATED
+      - FAILED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Waiting to be sent
+        * `SUBMITTED` - Sent, waiting for the portal
+        * `GENERATED` - Generated
+        * `FAILED` - Failed
+        * `CANCELLED` - Cancelled
+    EWayBillSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EWayBillStatusEnum'
+        ewb_number:
+          type: string
+        ewb_date:
+          type: string
+          format: date-time
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        consignment_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        transport_mode:
+          $ref: '#/components/schemas/TransportModeEnum'
+        vehicle_number:
+          type: string
+        transporter_id:
+          type: string
+        transporter_name:
+          type: string
+        transport_doc_no:
+          type: string
+        transport_doc_date:
+          type: string
+          format: date
+          nullable: true
+        distance_km:
+          type: integer
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_request:
+          type: boolean
+          description: '"Make e-way bill" or "Try again".'
+        can_update:
+          type: boolean
+          description: A new vehicle (Part-B) can be given.
+        can_cancel:
+          type: boolean
+          description: Within the cancellation window.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        pending_update:
+          type: string
+          description: PART_B or CANCEL while one is being sent.
+        last_update_error:
+          type: string
+      required:
+      - attempts
+      - can_cancel
+      - can_request
+      - can_update
+      - cancel_until
+      - cancelled_at
+      - consignment_value
+      - distance_km
+      - error_code
+      - error_message
+      - ewb_date
+      - ewb_number
+      - generated_at
+      - id
+      - last_update_error
+      - next_retry_at
+      - pending_update
+      - requested_at
+      - retryable
+      - status
+      - transport_doc_date
+      - transport_doc_no
+      - transport_mode
+      - transporter_id
+      - transporter_name
+      - valid_until
+      - vehicle_number
+    EWayBillUpdateKindEnum:
+      enum:
+      - PART_B
+      - CANCEL
+      type: string
+      description: |-
+        * `PART_B` - Vehicle updated
+        * `CANCEL` - Cancelled
+    EWayBillUpdateRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/EWayBillUpdateKindEnum'
+        status:
+          $ref: '#/components/schemas/EWayBillUpdateStatusEnum'
+        vehicle_number:
+          type: string
+        reason_code:
+          type: string
+        remarks:
+          type: string
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        done_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - done_at
+      - error_message
+      - id
+      - kind
+      - reason_code
+      - remarks
+      - status
+      - vehicle_number
+    EWayBillUpdateStatusEnum:
+      enum:
+      - PENDING
+      - DONE
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Waiting to be sent
+        * `DONE` - Done
+        * `FAILED` - Refused
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -12364,6 +12877,12 @@ components:
         lr_number:
           type: string
           readOnly: true
+        distance_km:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 'For its e-way bill: the distance given at dispatch, or before
+            that the shop address''s (null when unknown).'
         cancelled_reason:
           type: string
           readOnly: true
@@ -12377,6 +12896,7 @@ components:
       - created_at
       - delivered_at
       - dispatched_at
+      - distance_km
       - id
       - kind
       - lines
@@ -12432,6 +12952,12 @@ components:
         lr_number:
           type: string
           readOnly: true
+        distance_km:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 'For its e-way bill: the distance given at dispatch, or before
+            that the shop address''s (null when unknown).'
         cancelled_reason:
           type: string
           readOnly: true
@@ -12460,6 +12986,7 @@ components:
       - created_at
       - delivered_at
       - dispatched_at
+      - distance_km
       - id
       - kind
       - lines
@@ -13568,6 +14095,11 @@ components:
           - $ref: '#/components/schemas/EInvoiceSummary'
           nullable: true
           readOnly: true
+        ewaybill:
+          allOf:
+          - $ref: '#/components/schemas/EWayBillSummary'
+          nullable: true
+          readOnly: true
       required:
       - ack_date
       - ack_no
@@ -13582,6 +14114,7 @@ components:
       - due_date
       - einvoice
       - einvoice_status
+      - ewaybill
       - fulfilment_id
       - grand_total
       - id
@@ -15272,6 +15805,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EInvoiceRow'
+    PaginatedEWayBillRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EWayBillRow'
     PaginatedFulfilmentRowList:
       type: object
       required:
@@ -15823,6 +16375,35 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ValuationRow'
+    PartBInputReasonCodeEnum:
+      enum:
+      - BREAKDOWN
+      - TRANSSHIPMENT
+      - OTHER
+      type: string
+      description: |-
+        * `BREAKDOWN` - Vehicle broke down
+        * `TRANSSHIPMENT` - Transshipment
+        * `OTHER` - Other
+    PartBInputRequest:
+      type: object
+      properties:
+        vehicle_number:
+          type: string
+          minLength: 1
+          maxLength: 20
+        transport_doc_no:
+          type: string
+          maxLength: 40
+        reason_code:
+          $ref: '#/components/schemas/PartBInputReasonCodeEnum'
+        remarks:
+          type: string
+          default: ''
+          maxLength: 100
+      required:
+      - reason_code
+      - vehicle_number
     PasswordAndFactorInputRequest:
       type: object
       properties:
@@ -15916,6 +16497,13 @@ components:
         is_default:
           type: boolean
           nullable: true
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+          nullable: true
+          description: 'Road distance from the distributor, for e-way bills; left
+            out: unchanged.'
     PatchedBrandRequest:
       type: object
       properties:
@@ -21922,6 +22510,45 @@ components:
       - round_off
       - sgst_total
       - taxable_total
+    TransportInputRequest:
+      type: object
+      properties:
+        transport_mode:
+          allOf:
+          - $ref: '#/components/schemas/TransportModeEnum'
+          default: ROAD
+        vehicle_number:
+          type: string
+          maxLength: 20
+        transporter_id:
+          type: string
+          maxLength: 15
+        transporter_name:
+          type: string
+          maxLength: 120
+        transport_doc_no:
+          type: string
+          maxLength: 40
+        transport_doc_date:
+          type: string
+          format: date
+          nullable: true
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+    TransportModeEnum:
+      enum:
+      - ROAD
+      - RAIL
+      - AIR
+      - SHIP
+      type: string
+      description: |-
+        * `ROAD` - Road
+        * `RAIL` - Rail
+        * `AIR` - Air
+        * `SHIP` - Ship
     Turnover:
       type: object
       properties:

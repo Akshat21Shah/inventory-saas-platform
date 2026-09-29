@@ -25,4 +25,22 @@ urlpatterns = [
         v.CreditNoteEInvoiceView.as_view(),
         name="credit-note-einvoice",
     ),
+    path("ewaybills/", v.EWayBillListView.as_view(), name="ewaybills"),
+    path("ewaybills/counts/", v.EWayBillCountsView.as_view(), name="ewaybill-counts"),
+    path("ewaybills/<uuid:ewaybill_id>/", v.EWayBillDetailView.as_view(), name="ewaybill"),
+    path(
+        "ewaybills/<uuid:ewaybill_id>/part-b/",
+        v.EWayBillPartBView.as_view(),
+        name="ewaybill-part-b",
+    ),
+    path(
+        "ewaybills/<uuid:ewaybill_id>/cancel/",
+        v.EWayBillCancelView.as_view(),
+        name="ewaybill-cancel",
+    ),
+    path(
+        "invoices/<uuid:invoice_id>/ewaybill/",
+        v.InvoiceEWayBillView.as_view(),
+        name="invoice-ewaybill",
+    ),
 ]
