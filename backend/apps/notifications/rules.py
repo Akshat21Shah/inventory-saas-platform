@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 
 from apps.notifications.catalog import DEFAULT_RULES, EVENTS
-from apps.notifications.models import NotificationRule
+from apps.notifications.models import Channel, NotificationRule
 
 
 @dataclass(frozen=True)
@@ -84,8 +84,13 @@ def _as_dict(rule: EffectiveRule) -> dict[str, object]:
     }
 
 
-def _check(event_code: str, rules: list[RuleInput]) -> None:
+def _check(
+    event_code: str, rules: list[RuleInput], in_force: dict[tuple[str, str], set[str]]
+) -> None:
+    """``in_force``: the channels each recipient gets now. WhatsApp can be added only where its
+    template is approved; where it is already used, the rules editor warns instead."""
     from apps.accounts.permissions import TENANT_PERMISSIONS
+    from apps.notifications import approval
     from apps.notifications.catalog import DEFAULT_TEXTS, RECIPIENT_CHANNELS
     from apps.notifications.models import Audience, Recipient
     from common.errors import InvalidFields
@@ -118,6 +123,12 @@ def _check(event_code: str, rules: list[RuleInput]) -> None:
                 errors.append(f"{channel} can't be used for this recipient.")
             elif channel not in texts:
                 errors.append(f"There is no {channel} text for this message yet.")
+            elif (
+                channel == Channel.WHATSAPP
+                and channel not in in_force.get(rule.key, set())
+                and not approval.is_ready(event_code, audience)
+            ):
+                errors.append("This message's WhatsApp template isn't approved yet.")
     if errors:
         raise InvalidFields({"rules": list(dict.fromkeys(errors))})
 
@@ -130,8 +141,10 @@ def save_rules(event_code: str, rules: list[RuleInput]) -> list[EffectiveRule]:
 
     if event_code not in EVENTS:
         raise NotFound()
-    _check(event_code, rules)
-    before = [_as_dict(r) for r in effective_rules(event_code)]
+    current = effective_rules(event_code)
+    in_force = {(r.recipient, r.permission): set(r.channels) for r in current if r.enabled}
+    _check(event_code, rules, in_force)
+    before = [_as_dict(r) for r in current]
     defaults = {(r.recipient, r.permission): r for r in DEFAULT_RULES if r.event == event_code}
     NotificationRule.objects.filter(event_code=event_code).delete()
     given = {rule.key for rule in rules}

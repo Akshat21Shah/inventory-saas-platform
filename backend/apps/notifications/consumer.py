@@ -3,7 +3,8 @@ channels (the tenant's rules), and what each message says. One row per person an
 by (event, person, channel), so a redelivered event creates nothing new.
 
 Rows that can't be sent are kept as SKIPPED with the reason (no WhatsApp consent, no address,
-switched off, WhatsApp not enabled), so the delivery log answers "why didn't the shop get it?".
+switched off, WhatsApp not enabled, template not approved), so the delivery log answers "why
+didn't the shop get it?".
 Delivery itself is ``apps.notifications.delivery`` (after this transaction commits)."""
 
 from dataclasses import dataclass
@@ -15,8 +16,8 @@ from django.utils import timezone
 
 from apps.accounts.models import Membership, User
 from apps.accounts.permissions import OWNER_ROLE
+from apps.notifications import approval, quiet
 from apps.notifications import context as contexts
-from apps.notifications import quiet
 from apps.notifications.catalog import EVENTS
 from apps.notifications.models import (
     Audience,
@@ -275,10 +276,15 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 turned_off=turned_off,
                 paused=paused,
             )
+            audience = Audience.SHOP if shop else Audience.STAFF
+            text_locale: str | None = locale
+            if channel == Channel.WHATSAPP and not reason:
+                # Only an approved template can be sent (ADR-049 item 12); the mock approves all.
+                text_locale = approval.sendable_locale(ctx.code, locale, audience)
+                reason = "" if text_locale else SKIP.NOT_APPROVED
             carries_link = shop and channel != Channel.IN_APP and not reason
             values["document_link"] = link_for_shop() if carries_link else ""
-            audience = Audience.SHOP if shop else Audience.STAFF
-            text = render(ctx.code, channel, values, locale, audience)
+            text = render(ctx.code, channel, values, text_locale or locale, audience)
             if text is None:
                 continue
             in_app = channel == Channel.IN_APP

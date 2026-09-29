@@ -264,6 +264,7 @@ SPECTACULAR_SETTINGS = {
         "WhatsAppCategoryEnum": "apps.notifications.models.WhatsAppCategory",
         "NotificationTextSourceEnum": ["tenant", "platform", "catalogue"],
         "NotificationAudienceEnum": "apps.notifications.models.Audience",
+        "TemplateApprovalStatusEnum": "apps.notifications.models.ApprovalStatus",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",
@@ -322,6 +323,11 @@ SES_REGION = env("SES_REGION", default="ap-south-1")
 SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
 # WhatsApp: only "mock" until a provider is chosen (TODO(verify), PROGRESS pre-production 8).
 WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
+# A real provider sends only templates it has approved (ADR-049 item 12); the mock treats every
+# template as approved. Tests switch it on to check the rule.
+WHATSAPP_REQUIRE_APPROVED_TEMPLATES = env.bool(
+    "WHATSAPP_REQUIRE_APPROVED_TEMPLATES", default=WHATSAPP_PROVIDER != "mock"
+)
 WHATSAPP_PLATFORM_NUMBER = env("WHATSAPP_PLATFORM_NUMBER", default="")
 WHATSAPP_PLATFORM_NAME = env("WHATSAPP_PLATFORM_NAME", default="Inventory Platform")
 # Dev only: copy mock WhatsApp and SMS messages to Mailpit (common/mock_mailbox.py).

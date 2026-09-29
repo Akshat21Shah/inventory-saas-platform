@@ -15,6 +15,8 @@ export interface RulesMatrix {
   /** Channels each recipient can use. */
   recipients: RulesMatrixRecipients;
   whatsapp_feature_enabled: boolean;
+  /** Whether the provider sends only approved templates (false with the mock). */
+  whatsapp_approval_required: boolean;
   prices_set: boolean;
   /**
      * @nullable

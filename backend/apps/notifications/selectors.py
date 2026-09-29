@@ -11,9 +11,16 @@ from django.db.models import Count, Q, QuerySet
 from django.utils import timezone
 
 from apps.accounts.models import Permission, User
-from apps.notifications.catalog import EVENTS, RECIPIENT_CHANNELS
+from apps.notifications import approval
+from apps.notifications.catalog import DEFAULT_TEXTS, EVENTS, RECIPIENT_CHANNELS
 from apps.notifications.consent import opted_in_count
-from apps.notifications.models import Channel, Notification, Recipient
+from apps.notifications.models import (
+    ApprovalStatus,
+    Channel,
+    Notification,
+    PlatformTemplate,
+    Recipient,
+)
 from apps.notifications.rules import effective_rules
 from common.platform_db import platform_db
 
@@ -149,6 +156,13 @@ def rules_matrix() -> dict[str, Any]:
         )
     prices = _prices()
     estimates = _estimates(timezone.now() - timedelta(days=ESTIMATE_DAYS))
+    required = approval.approvals_required()
+    statuses = {
+        (row["event_code"], row["audience"]): row["approval_status"]
+        for row in PlatformTemplate.objects.filter(
+            channel=Channel.WHATSAPP, locale="en", is_active=True
+        ).values("event_code", "audience", "approval_status")
+    }
     events = []
     total_cost: Decimal | None = Decimal("0")
     for code, event in EVENTS.items():
@@ -174,6 +188,19 @@ def rules_matrix() -> dict[str, Any]:
                     "messages_30_days": messages,
                     "price": price,
                     "cost_30_days": cost,
+                    "templates": [
+                        {
+                            "audience": audience,
+                            "status": (
+                                status := statuses.get(
+                                    (code, audience), ApprovalStatus.NOT_SUBMITTED
+                                )
+                            ),
+                            "ready": not required or status == ApprovalStatus.APPROVED,
+                        }
+                        for audience, texts in DEFAULT_TEXTS.get(code, {}).items()
+                        if Channel.WHATSAPP in texts
+                    ],
                 },
             }
         )
@@ -181,6 +208,7 @@ def rules_matrix() -> dict[str, Any]:
         "events": events,
         "recipients": {k: list(v) for k, v in RECIPIENT_CHANNELS.items()},
         "whatsapp_feature_enabled": is_feature_enabled("whatsapp", require_tenant_id()),
+        "whatsapp_approval_required": required,
         "prices_set": all(p is not None for p in prices.values()),
         "whatsapp_cost_30_days": total_cost,
         "shops": opted_in_count(),

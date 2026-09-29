@@ -3483,7 +3483,8 @@
       "NO_WHATSAPP_OPT_IN": "The shop hasn't agreed to WhatsApp",
       "TURNED_OFF": "Switched off by the person",
       "FEATURE_OFF": "WhatsApp isn't turned on",
-      "PAUSED": "Reminders paused for this shop"
+      "PAUSED": "Reminders paused for this shop",
+      "NOT_APPROVED": "WhatsApp template not approved yet"
     },
     "deliveryStatus": {
       "PENDING": "Waiting",

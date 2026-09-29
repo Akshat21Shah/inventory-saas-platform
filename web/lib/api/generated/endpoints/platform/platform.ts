@@ -77,6 +77,7 @@ import type {
   Subscription,
   TaxRate,
   TaxRateRequest,
+  TemplateApprovalInputRequest,
   TenantDetail,
   TextPreview,
   TextPreviewInputRequest
@@ -1896,6 +1897,103 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getPlatformNotificationTemplateUpdateMutationOptions(options), queryClient);
+    }
+    export type platformNotificationTemplateApprovalResponse200 = {
+  data: PlatformTemplate
+  status: 200
+}
+
+export type platformNotificationTemplateApprovalResponseSuccess = (platformNotificationTemplateApprovalResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformNotificationTemplateApprovalResponse = (platformNotificationTemplateApprovalResponseSuccess)
+
+export const getPlatformNotificationTemplateApprovalUrl = (templateId: string,) => {
+
+
+
+
+  return `/api/v1/platform/notification-templates/${templateId}/approval/`
+}
+
+/**
+ * Record the provider's answer for a WhatsApp template (ADR-049 item 12).
+ */
+export const platformNotificationTemplateApproval = async (templateId: string,
+    templateApprovalInputRequest: TemplateApprovalInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<platformNotificationTemplateApprovalResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<platformNotificationTemplateApprovalResponse>(getPlatformNotificationTemplateApprovalUrl(templateId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(templateApprovalInputRequest)
+  }
+);}
+
+
+
+
+
+export const getPlatformNotificationTemplateApprovalMutationKey = () => ['platformNotificationTemplateApproval'] as const;
+
+export const getPlatformNotificationTemplateApprovalMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTemplateApproval>>, TError,PlatformNotificationTemplateApprovalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTemplateApproval>>, TError,PlatformNotificationTemplateApprovalMutationVariables, TContext> => {
+
+const mutationKey = getPlatformNotificationTemplateApprovalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformNotificationTemplateApproval>>, PlatformNotificationTemplateApprovalMutationVariables> = (props) => {
+          const {templateId,data} = props ?? {};
+
+          return  platformNotificationTemplateApproval(templateId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformNotificationTemplateApprovalMutationResult = NonNullable<Awaited<ReturnType<typeof platformNotificationTemplateApproval>>>
+    export type PlatformNotificationTemplateApprovalMutationBody = TemplateApprovalInputRequest
+    export type PlatformNotificationTemplateApprovalMutationError = unknown
+    export type PlatformNotificationTemplateApprovalMutationVariables = {templateId: string;data: TemplateApprovalInputRequest}
+
+    export const usePlatformNotificationTemplateApproval = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformNotificationTemplateApproval>>, TError,PlatformNotificationTemplateApprovalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformNotificationTemplateApproval>>,
+        TError,
+        PlatformNotificationTemplateApprovalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformNotificationTemplateApprovalMutationOptions(options), queryClient);
     }
     export type platformNotificationTextPreviewResponse200 = {
   data: TextPreview

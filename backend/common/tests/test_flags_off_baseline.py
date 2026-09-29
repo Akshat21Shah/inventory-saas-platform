@@ -62,9 +62,13 @@ pytestmark = pytest.mark.django_db
 BASELINE = Path(__file__).parent / "baseline"
 PHASE_7_FLAGS = ("einvoice", "ewaybill", "payments")
 
-# Fields added after the snapshot, with the value each must have while the flags are off.
-# Keys: "db.<app.Model>.<field>" or "api.<name>.<dotted path>" (list positions left out).
-ALLOWED_NEW: dict[str, Any] = {}
+# Fields added after the snapshot, with the value each must have while the flags are off (or a
+# check of it). Keys: "db.<app.Model>.<field>" or "api.<name>.<dotted path>" (no list positions).
+ALLOWED_NEW: dict[str, Any] = {
+    # WhatsApp template approval (commit 3): the mock sends every template, as before.
+    "api.notification-rules.whatsapp_approval_required": False,
+    "api.notification-rules.events.whatsapp.templates": lambda v: all(t["ready"] for t in v),
+}
 
 # Random by design: stored as "<random>".
 VOLATILE = {
@@ -362,6 +366,9 @@ def _messages(norm: Normaliser) -> dict[str, Any]:
 # --- Comparison -------------------------------------------------------------------------------
 
 
+_MISSING = object()
+
+
 def _pattern(path: str) -> str:
     return re.sub(r"\[\d+\]", "", path)
 
@@ -375,9 +382,10 @@ def _compare(before: Any, now: Any, path: str, diffs: list[str]) -> None:
                 _compare(before[key], now[key], f"{path}.{key}", diffs)
         for key in now.keys() - before.keys():
             where = _pattern(f"{path}.{key}")
-            if where not in ALLOWED_NEW:
+            expected = ALLOWED_NEW.get(where, _MISSING)
+            if expected is _MISSING:
                 diffs.append(f"{where}: new, not in ALLOWED_NEW ({now[key]!r})")
-            elif now[key] != ALLOWED_NEW[where]:
+            elif not (expected(now[key]) if callable(expected) else now[key] == expected):
                 diffs.append(f"{where}: {now[key]!r} while the flags are off")
     elif isinstance(before, list) and isinstance(now, list):
         if len(before) != len(now):

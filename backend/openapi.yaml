@@ -3634,6 +3634,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlatformTemplate'
           description: ''
+  /api/v1/platform/notification-templates/{template_id}/approval/:
+    post:
+      operationId: platform_notification_template_approval
+      description: Record the provider's answer for a WhatsApp template (ADR-049 item
+        12).
+      parameters:
+      - in: path
+        name: template_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateApprovalInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformTemplate'
+          description: ''
   /api/v1/platform/notification-templates/preview/:
     post:
       operationId: platform_notification_text_preview
@@ -13964,6 +13993,7 @@ components:
       - TURNED_OFF
       - FEATURE_OFF
       - PAUSED
+      - NOT_APPROVED
       type: string
       description: |-
         * `NO_ADDRESS` - No email or mobile number
@@ -13971,6 +14001,7 @@ components:
         * `TURNED_OFF` - Switched off by the recipient
         * `FEATURE_OFF` - WhatsApp is not enabled
         * `PAUSED` - Reminders paused for this shop
+        * `NOT_APPROVED` - Template not approved
     NotificationStatusEnum:
       enum:
       - PENDING
@@ -16242,33 +16273,38 @@ components:
           readOnly: true
         event_code:
           type: string
-          maxLength: 40
+          readOnly: true
         audience:
           allOf:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
+          readOnly: true
           default: SHOP
         channel:
-          $ref: '#/components/schemas/NotificationChannelEnum'
+          allOf:
+          - $ref: '#/components/schemas/NotificationChannelEnum'
+          readOnly: true
         locale:
           type: string
+          readOnly: true
           default: en
-          maxLength: 5
         subject:
           type: string
-          maxLength: 200
+          readOnly: true
         body:
           type: string
+          readOnly: true
         whatsapp_template_name:
           type: string
-          maxLength: 100
+          readOnly: true
         whatsapp_language:
           type: string
-          maxLength: 10
+          readOnly: true
         whatsapp_category:
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/WhatsAppCategoryEnum'
-          - $ref: '#/components/schemas/BlankEnum'
-        variables: {}
+          readOnly: true
+        variables:
+          readOnly: true
         updated_at:
           type: string
           format: date-time
@@ -16279,13 +16315,35 @@ components:
           readOnly: true
           description: 'WhatsApp only: in the first batch submitted for approval (false:
             optional, not submitted by default). Null for other channels.'
+        approval_status:
+          allOf:
+          - $ref: '#/components/schemas/TemplateApprovalStatusEnum'
+          readOnly: true
+        approval_note:
+          type: string
+          readOnly: true
+        approval_changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
       required:
+      - approval_changed_at
+      - approval_note
+      - approval_status
+      - audience
       - body
       - channel
       - event_code
       - id
+      - locale
+      - subject
       - submitted_by_default
       - updated_at
+      - variables
+      - whatsapp_category
+      - whatsapp_language
+      - whatsapp_template_name
     PlatformTextInputRequest:
       type: object
       properties:
@@ -18818,6 +18876,10 @@ components:
           description: Channels each recipient can use.
         whatsapp_feature_enabled:
           type: boolean
+        whatsapp_approval_required:
+          type: boolean
+          description: Whether the provider sends only approved templates (false with
+            the mock).
         prices_set:
           type: boolean
         whatsapp_cost_30_days:
@@ -18838,6 +18900,7 @@ components:
       - prices_set
       - recipients
       - shops
+      - whatsapp_approval_required
       - whatsapp_cost_30_days
       - whatsapp_feature_enabled
     RulesUpdateRequest:
@@ -20642,6 +20705,29 @@ components:
       required:
       - label
       - rate
+    TemplateApprovalInputRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/TemplateApprovalStatusEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - status
+    TemplateApprovalStatusEnum:
+      enum:
+      - NOT_SUBMITTED
+      - SUBMITTED
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `NOT_SUBMITTED` - Not submitted
+        * `SUBMITTED` - Submitted
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
     TenantChoice:
       type: object
       properties:
@@ -21379,6 +21465,21 @@ components:
       - code
       - details
       - message
+    WhatsAppApproval:
+      type: object
+      properties:
+        audience:
+          $ref: '#/components/schemas/NotificationAudienceEnum'
+        status:
+          $ref: '#/components/schemas/TemplateApprovalStatusEnum'
+        ready:
+          type: boolean
+          description: 'Can be sent: approved, or the provider doesn''t need approval
+            (the mock).'
+      required:
+      - audience
+      - ready
+      - status
     WhatsAppCategoryEnum:
       enum:
       - UTILITY
@@ -21406,11 +21507,17 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           nullable: true
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/WhatsAppApproval'
+          description: The English WhatsApp template per audience and its approval.
       required:
       - cost_30_days
       - enabled
       - messages_30_days
       - price
+      - templates
     WsTicket:
       type: object
       properties:

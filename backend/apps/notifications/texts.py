@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from apps.audit import services as audit
+from apps.notifications import approval
 from apps.notifications.catalog import EVENTS, whatsapp_template_name
 from apps.notifications.models import (
     Audience,
@@ -216,15 +217,19 @@ def save_platform_text(data: TextInput, whatsapp: WhatsAppFields | None = None) 
         row.variables = list(dict.fromkeys(VARIABLE.findall(data.body)))
     else:
         row.variables = list(EVENTS[data.event_code].variables)
+    was = approval.reset_when_text_changes(row, before["body"] if before else None)
     row.save()
+    changes = {
+        "subject": [before["subject"] if before else None, row.subject],
+        "body": [before["body"] if before else None, row.body],
+    }
+    if was is not None:
+        changes["approval_status"] = [was, row.approval_status]
     audit.record(
         "notifications.platform_template_changed",
         target=row,
         target_repr=f"{data.event_code} {data.audience} {data.channel} {data.locale}",
-        changes={
-            "subject": [before["subject"] if before else None, row.subject],
-            "body": [before["body"] if before else None, row.body],
-        },
+        changes=changes,
         tenant_id=None,
     )
     return row
