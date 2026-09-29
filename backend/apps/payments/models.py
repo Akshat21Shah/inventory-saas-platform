@@ -72,6 +72,7 @@ class Payment(TenantScopedModel):
     reversal_reason = models.CharField(max_length=300, blank=True, default="")
     receipt_pdf_key = models.CharField(max_length=255, blank=True, default="")
     receipt_pdf_status = models.CharField(max_length=8, default="PENDING")
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uniq_payment_number"),
@@ -196,4 +197,3 @@ class GatewayConfig(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.provider} ({self.mode})"
-
