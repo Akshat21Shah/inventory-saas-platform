@@ -147,14 +147,14 @@ test.describe("notifications", () => {
     await editor.getByRole("checkbox", { name: "WhatsApp" }).click();
     await editor.getByRole("button", { name: "Save" }).click();
     await expect(editor).toBeHidden();
-    await expect(page.getByText("Changed")).toBeVisible();
+    await expect(page.getByText("Changed", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Change: Order accepted" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Back to defaults" }).click();
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: /confirm|yes|continue/i })
       .click();
-    await expect(page.getByText("Changed")).toHaveCount(0);
+    await expect(page.getByText("Changed", { exact: true })).toHaveCount(0);
   });
 
   test("an announcement reaches the shop's home", async ({ page, browser }) => {
