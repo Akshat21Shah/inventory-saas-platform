@@ -154,7 +154,7 @@ jobs:
           E2E_FULL_STACK: "1"
           E2E_BASE_URL: http://localhost:3000
         # One at a time: the specs share the super admin, whose 2FA codes are single-use.
-        run: npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts
+        run: npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts
       - name: Responsive check (every screen at 360, 768 and 1440 px)
         if: success() || failure()
         working-directory: web

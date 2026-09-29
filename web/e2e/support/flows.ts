@@ -99,3 +99,50 @@ export async function signInAsOwner(page: Page, d: NewDistributor) {
   await page.getByRole("button", { name: /^sign in$/i }).click();
   await page.waitForURL(`${origin(d.slug)}/manage`);
 }
+
+const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+/** Imports a workbook (add new only) and waits until every row is in. */
+export async function importFile(
+  page: Page,
+  d: NewDistributor,
+  kind: string,
+  file: Buffer,
+  rows: string,
+) {
+  await page.goto(`${origin(d.slug)}/manage/imports/new?kind=${kind}`);
+  await page.getByRole("radio", { name: /^add new only/i }).check();
+  await page.getByLabel(/choose an excel or csv file/i).setInputFiles({
+    name: `${kind.toLowerCase()}.xlsx`,
+    mimeType: XLSX,
+    buffer: file,
+  });
+  await page.getByRole("button", { name: /check the file/i }).click();
+  const label = `Import ${rows} ${rows === "1" ? "row" : "rows"}`;
+  await page.getByRole("button", { name: label }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: label }).click();
+  await expect(page.getByText(`${rows} ${rows === "1" ? "row" : "rows"} imported.`)).toBeVisible({
+    timeout: 120_000,
+  });
+}
+
+/** Receives stock of one product on a posted goods receipt. */
+export async function receive(
+  page: Page,
+  d: NewDistributor,
+  code: string,
+  name: string,
+  qty: string,
+) {
+  await page.goto(`${origin(d.slug)}/manage/stock/inwards/new`);
+  await page.getByLabel("Supplier", { exact: true }).fill("E2E Wholesale");
+  const scan = page.getByLabel("Scan or search a product");
+  await scan.fill(code);
+  await scan.press("Enter");
+  const field = page.getByLabel(`Quantity of ${name} in PCS`);
+  await field.fill(qty);
+  await field.press("Enter");
+  await page.getByRole("button", { name: "Save and post" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Post" }).click();
+  await expect(page.getByRole("heading", { name: /^GRN-\d{4}-\d{5}$/ })).toBeVisible();
+}

@@ -3,7 +3,9 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import {
   acceptOwnerInvitation,
   createDistributor,
+  importFile,
   newDistributor,
+  receive,
   signInAsOwner,
   type NewDistributor,
 } from "./support/flows";
@@ -23,40 +25,8 @@ import { FULL_STACK, OTP_CODE, origin, resetLimits, workbook } from "./support/s
 test.skip(!FULL_STACK, "needs the full stack (E2E_FULL_STACK=1)");
 test.describe.configure({ mode: "serial", timeout: 300_000 });
 
-const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const PHONE = "9811100001"; // the shop in the retailers workbook
 const SHOP = "E2E Shop 001";
-
-async function importFile(page: Page, d: NewDistributor, kind: string, file: Buffer, rows: string) {
-  await page.goto(`${origin(d.slug)}/manage/imports/new?kind=${kind}`);
-  await page.getByRole("radio", { name: /^add new only/i }).check();
-  await page.getByLabel(/choose an excel or csv file/i).setInputFiles({
-    name: `${kind.toLowerCase()}.xlsx`,
-    mimeType: XLSX,
-    buffer: file,
-  });
-  await page.getByRole("button", { name: /check the file/i }).click();
-  const label = `Import ${rows} ${rows === "1" ? "row" : "rows"}`;
-  await page.getByRole("button", { name: label }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: label }).click();
-  await expect(page.getByText(`${rows} ${rows === "1" ? "row" : "rows"} imported.`)).toBeVisible({
-    timeout: 120_000,
-  });
-}
-
-async function receive(page: Page, d: NewDistributor, code: string, name: string, qty: string) {
-  await page.goto(`${origin(d.slug)}/manage/stock/inwards/new`);
-  await page.getByLabel("Supplier", { exact: true }).fill("E2E Wholesale");
-  const scan = page.getByLabel("Scan or search a product");
-  await scan.fill(code);
-  await scan.press("Enter");
-  const field = page.getByLabel(`Quantity of ${name} in PCS`);
-  await field.fill(qty);
-  await field.press("Enter");
-  await page.getByRole("button", { name: "Save and post" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Post" }).click();
-  await expect(page.getByRole("heading", { name: /^GRN-\d{4}-\d{5}$/ })).toBeVisible();
-}
 
 async function shopPhone(browser: Browser, d: NewDistributor) {
   resetLimits({ phones: [PHONE] });
