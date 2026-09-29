@@ -161,9 +161,12 @@ test.describe("notifications", () => {
     await signInAsOwner(page, distributor);
     await page.goto(`${origin(distributor.slug)}/manage/settings/notifications/announcements`);
     await page.getByRole("button", { name: "New announcement" }).click();
-    await page.getByLabel("Title").fill("Diwali delivery timings");
-    await page.getByLabel("Message").fill("Orders after 2 PM go the next working day.");
-    await page.getByRole("button", { name: "Save" }).click();
+    const form = page.getByRole("dialog");
+    await form.getByLabel("Title", { exact: true }).fill("Diwali delivery timings");
+    await form
+      .getByLabel("Message", { exact: true })
+      .fill("Orders after 2 PM go the next working day.");
+    await form.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByText("Diwali delivery timings").first()).toBeVisible();
 
     const { context, page: shop } = await shopPhone(browser, distributor);
@@ -183,7 +186,7 @@ test.describe("notifications", () => {
     await page.getByRole("link", { name: SHOP }).first().click();
     await expect(page.getByText(/Agreed on .* \(in the app\)/)).toBeVisible();
     await page.getByRole("button", { name: "Pause reminders" }).click();
-    await page.getByRole("dialog").getByLabel(/Why/).fill("Disputed bill");
+    await page.getByRole("dialog").getByLabel(/^Why/).fill("Disputed bill");
     await page.getByRole("dialog").getByRole("button", { name: "Pause reminders" }).click();
     await expect(page.getByText("Paused: Disputed bill")).toBeVisible();
     await page.getByRole("button", { name: "Resume reminders" }).click();
