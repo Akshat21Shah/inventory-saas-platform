@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receipt RCT/<FY>/000001</title>
+<style>
+@page { size: A4; margin: 12mm 11mm 14mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Noto Sans", "DejaVu Sans", sans-serif; font-size: 7.5pt; color: #666; } }
+* { box-sizing: border-box; }
+body { font-family: "Noto Sans", "DejaVu Sans", sans-serif; font-size: 8.5pt; color: #111; margin: 0; }
+.page + .page { page-break-before: always; }
+h1 { font-size: 14pt; margin: 0 0 2pt; }
+h2 { font-size: 13pt; margin: 0; letter-spacing: 0.5pt; text-transform: uppercase; }
+p { margin: 1pt 0; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5pt solid #111; padding-bottom: 6pt; }
+.top .title { text-align: right; }
+.copy { font-size: 8pt; text-transform: uppercase; border: 0.75pt solid #111; padding: 1.5pt 5pt; display: inline-block; margin-top: 3pt; }
+.note-strong { font-weight: bold; margin-top: 3pt; }
+table { width: 100%; border-collapse: collapse; }
+.meta { margin: 6pt 0; }
+.meta td { padding: 1.5pt 4pt 1.5pt 0; vertical-align: top; }
+.meta td.k { color: #555; width: 18%; }
+.parties { display: flex; gap: 10pt; margin-bottom: 6pt; }
+.parties > div { flex: 1; border: 0.75pt solid #bbb; padding: 4pt 6pt; }
+.label { font-size: 7pt; text-transform: uppercase; color: #555; letter-spacing: 0.4pt; margin-bottom: 2pt; }
+.lines th, .lines td, .summary th, .summary td { border: 0.5pt solid #999; padding: 2.5pt 3pt; vertical-align: top; }
+.lines th, .summary th { background: #eee; font-weight: 600; font-size: 7.5pt; }
+.lines thead { display: table-header-group; }
+.lines tr { page-break-inside: avoid; }
+.n { text-align: right; white-space: nowrap; }
+.c { text-align: center; }
+.muted { color: #555; font-size: 7.5pt; }
+.totals { width: 45%; margin-left: auto; margin-top: 4pt; }
+.totals td { padding: 1.5pt 3pt; }
+.totals tr.grand td { font-weight: bold; font-size: 10pt; border-top: 1pt solid #111; }
+.words { margin: 4pt 0 6pt; }
+.summary { margin-top: 6pt; }
+.bottom { display: flex; gap: 10pt; margin-top: 10pt; page-break-inside: avoid; }
+.bottom > div { flex: 1; }
+.sign { text-align: right; }
+.sign .space { height: 36pt; }
+.sign img { max-height: 36pt; }
+.flag { border: 0.75pt solid #b45309; color: #7c2d12; padding: 3pt 5pt; margin-top: 6pt; }
+.irn { display: flex; gap: 8pt; border: 0.75pt solid #bbb; padding: 4pt 6pt; margin-top: 6pt; }
+.irn img { width: 80pt; height: 80pt; }
+</style>
+</head>
+<body>
+<section class="page">
+<header class="top">
+<div class="seller">
+<h1>Baseline Traders</h1>
+<p>Baseline Traders Private Limited</p>
+<p>12 Market Road, Pune - 411001</p>
+<p>Maharashtra (27) · 9876543210 · owner@baseline.example.com</p>
+<p><b>GSTIN</b> 27AAACT4242F1ZL · <b>PAN</b> AAACT4242F</p>
+</div>
+<div class="title">
+<h2>Payment receipt</h2>
+</div>
+</header>
+<table class="meta">
+<tr><td class="k">Receipt no.</td><td><b>RCT/<FY>/000001</b></td><td class="k">Payment date</td><td>D+0</td></tr>
+<tr>
+<td class="k">Received from</td><td><b>Kaveri Traders</b> <span class="muted">(R-00001)</span></td>
+<td class="k">Mode</td><td>Bank transfer</td>
+</tr>
+<tr><td class="k">Reference</td><td colspan="3">UTR1</td></tr>
+</table>
+<table class="totals" style="width:60%; margin-left:0">
+<tr class="grand"><td>Amount received</td><td class="n">₹50,000.00</td></tr>
+</table>
+<p class="words"><b>In words:</b> Rupees Fifty Thousand Only</p>
+<table class="summary" style="width:60%">
+<thead><tr><th>Paid against</th><th class="n">Amount (₹)</th></tr></thead>
+<tbody>
+<tr><td>INV/<FY>/000001</td><td class="n">50,000.00</td></tr>
+</tbody>
+</table>
+<div class="bottom">
+<div>
+</div>
+<div class="sign">
+<p>For <b>Baseline Traders Private Limited</b></p>
+<div class="space"></div>
+<p></p>
+<p class="muted">Authorised signatory</p>
+</div>
+</div>
+</section>
+</body>
+</html>
