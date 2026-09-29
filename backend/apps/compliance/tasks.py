@@ -26,12 +26,14 @@ def generate_irn(*, record_id: str, tenant_id: str) -> str:
 
 @shared_task(name="compliance.retry_due_for_tenant", base=TenantTask)
 def retry_due_for_tenant(*, tenant_id: str) -> int:
-    from apps.compliance import einvoice
+    from apps.compliance import cancellation, einvoice
 
-    ids = einvoice.due()
+    ids, cancels = einvoice.due(), cancellation.due()
     for pk in ids:
         generate_irn.apply_async(kwargs={"record_id": str(pk), "tenant_id": tenant_id})
-    return len(ids)
+    for pk in cancels:
+        cancel_irn.apply_async(kwargs={"record_id": str(pk), "tenant_id": tenant_id})
+    return len(ids) + len(cancels)
 
 
 @shared_task(name="compliance.retry_due")
@@ -50,3 +52,11 @@ def retry_due() -> int:
     for pk in tenants:
         retry_due_for_tenant.apply_async(kwargs={"tenant_id": str(pk)})
     return len(tenants)
+
+
+@shared_task(name="compliance.cancel_irn", base=TenantTask, atomic=False)
+def cancel_irn(*, record_id: str, tenant_id: str) -> str:
+    """Ask the portal to cancel an IRN, then apply it (a retry is queued with a delay)."""
+    from apps.compliance import cancellation
+
+    return cancellation.cancel(UUID(record_id), UUID(tenant_id))

@@ -24,7 +24,8 @@ class GspErrorCode:
     DUPLICATE = "DUPLICATE"  # an IRN already exists for this document number
     PORTAL_DOWN = "PORTAL_DOWN"  # the portal or provider is unavailable: try again later
     TIMEOUT = "TIMEOUT"  # no answer in time: the IRN may or may not exist; try again
-    CANCEL_NOT_ALLOWED = "CANCEL_NOT_ALLOWED"  # outside the window, or already cancelled
+    CANCEL_NOT_ALLOWED = "CANCEL_NOT_ALLOWED"  # outside the window
+    ALREADY_CANCELLED = "ALREADY_CANCELLED"  # e.g. our first request's answer was lost
     NOT_FOUND = "NOT_FOUND"
 
 

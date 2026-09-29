@@ -156,6 +156,13 @@ def _invoice(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         "due_date": day(invoice.due_date),
         "order_number": invoice.order.number,
     }
+    if code == "invoice.cancelled":
+        p = event.payload
+        values["note"] = (
+            f"Bill {p['reissued_number']} replaces it."
+            if p.get("reissued_number")
+            else "The goods were taken back."
+        )
     ctx = EventContext(
         code,
         values,

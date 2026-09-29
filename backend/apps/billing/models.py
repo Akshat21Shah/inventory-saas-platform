@@ -139,8 +139,10 @@ class Invoice(_TaxDocument):
     invoice_date = models.DateField()  # IST
     due_date = models.DateField()
     order = models.ForeignKey("orders.Order", on_delete=models.PROTECT, related_name="invoices")
-    fulfilment = models.OneToOneField(
-        "orders.Fulfilment", on_delete=models.PROTECT, related_name="invoice"
+    # One issued invoice per shipment; a cancelled one (IRN cancelled, Phase 7) may sit beside
+    # the corrected invoice re-issued for the same shipment.
+    fulfilment = models.ForeignKey(
+        "orders.Fulfilment", on_delete=models.PROTECT, related_name="invoices"
     )
     issued_trigger = models.CharField(max_length=14, choices=Trigger.choices)
     rate_differs_from_order = models.BooleanField(default=False)
@@ -156,6 +158,11 @@ class Invoice(_TaxDocument):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uniq_invoice_number"),
+            models.UniqueConstraint(
+                fields=["fulfilment"],
+                condition=Q(status="ISSUED"),
+                name="uniq_issued_invoice_per_shipment",
+            ),
             models.CheckConstraint(condition=Q(grand_total__gte=0), name="invoice_total_nonneg"),
             models.CheckConstraint(
                 condition=Q(round_off__gt=-1) & Q(round_off__lt=1), name="invoice_round_off"

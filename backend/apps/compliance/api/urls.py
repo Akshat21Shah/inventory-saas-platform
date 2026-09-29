@@ -13,6 +13,9 @@ urlpatterns = [
     path("einvoices/counts/", v.EInvoiceCountsView.as_view(), name="einvoice-counts"),
     path("einvoices/<uuid:record_id>/", v.EInvoiceDetailView.as_view(), name="einvoice"),
     path(
+        "einvoices/<uuid:record_id>/cancel/", v.EInvoiceCancelView.as_view(), name="einvoice-cancel"
+    ),
+    path(
         "invoices/<uuid:invoice_id>/einvoice/",
         v.InvoiceEInvoiceView.as_view(),
         name="invoice-einvoice",

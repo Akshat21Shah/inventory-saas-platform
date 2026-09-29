@@ -283,6 +283,7 @@ class OrderEvent(models.TextChoices):
     BACKORDER_ALLOCATED = "BACKORDER_ALLOCATED", "Backorder allocated"
     BACKORDER_CANCELLED = "BACKORDER_CANCELLED", "Backorder cancelled"
     COMPLETE = "COMPLETE", "Completed"
+    TAKE_BACK = "TAKE_BACK", "Goods taken back"  # its invoice's IRN was cancelled (Phase 7)
 
 
 class OrderStatusHistory(TenantScopedModel):

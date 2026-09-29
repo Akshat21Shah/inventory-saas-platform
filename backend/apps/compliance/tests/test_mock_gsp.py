@@ -109,7 +109,7 @@ def test_cancelling_works_once_within_the_window():
     assert client.cancel_irn(irn, "2", "Wrong rate", CREDS).cancelled_at
     with pytest.raises(GspError) as again:
         client.cancel_irn(irn, "2", "Wrong rate", CREDS)
-    assert again.value.code == GspErrorCode.CANCEL_NOT_ALLOWED
+    assert again.value.code == GspErrorCode.ALREADY_CANCELLED
     assert client.irn_for_document(document(), CREDS) is None
     assert fails(GspErrorCode.DUPLICATE).details["cancelled"] is True  # the number is used up
 

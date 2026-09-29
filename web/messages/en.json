@@ -2670,7 +2670,8 @@
     "SHORT_SUPPLY": "Some items come later",
     "BACKORDER_ALLOCATED": "Waiting items are being sent",
     "BACKORDER_CANCELLED": "Waiting items cancelled",
-    "COMPLETE": "Completed"
+    "COMPLETE": "Completed",
+    "TAKE_BACK": "Goods taken back"
   },
   "orders": {
     "nav": {
@@ -3368,7 +3369,8 @@
       "DEBIT_ADJUSTMENT": "Debit adjustment",
       "CREDIT_ADJUSTMENT": "Credit adjustment",
       "REFUND": "Refund",
-      "REFUND_REVERSAL": "Refund reversed"
+      "REFUND_REVERSAL": "Refund reversed",
+      "INVOICE_CANCELLED": "Invoice cancelled"
     },
     "numbering": {
       "title": "Document numbers",
@@ -3440,6 +3442,7 @@
       "backorder_cancelled_by_shop": "Waiting items cancelled by the shop",
       "stock_alert_opened": "Stock low, out, or wanted by waiting orders",
       "invoice_issued": "Tax invoice issued",
+      "invoice_cancelled": "Invoice cancelled (its IRN was cancelled)",
       "credit_note_issued": "Credit note issued",
       "einvoice_failed": "IRN failed for an invoice or credit note",
       "payment_received": "Payment received",
@@ -3472,6 +3475,7 @@
       "backorder_allocated": "Items you were waiting for are on their way",
       "backorder_cancelled": "Waiting items cancelled",
       "invoice_issued": "New bill",
+      "invoice_cancelled": "A bill is cancelled",
       "credit_note_issued": "Credit note",
       "payment_received": "Payment received",
       "payment_cleared": "Cheque cleared",

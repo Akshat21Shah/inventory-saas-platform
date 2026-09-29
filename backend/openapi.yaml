@@ -1487,6 +1487,7 @@ paths:
           type: string
           enum:
           - CANCELLED
+          - CANCELLING
           - FAILED
           - GENERATED
           - PENDING
@@ -1514,6 +1515,33 @@ paths:
         required: true
       tags:
       - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
+  /api/v1/einvoices/{record_id}/cancel/:
+    post:
+      operationId: einvoice_cancel
+      parameters:
+      - in: path
+        name: record_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EInvoiceCancelRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -11670,6 +11698,17 @@ components:
       - is_live
       - kind
       - object_id
+    DocumentNumber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+      required:
+      - id
+      - number
     DocumentRef:
       type: object
       properties:
@@ -11813,6 +11852,30 @@ components:
       - financial_year_start
       - position
       - unused_money
+    EInvoiceCancelRequest:
+      type: object
+      properties:
+        reason_code:
+          $ref: '#/components/schemas/IrnCancelReasonEnum'
+        remarks:
+          type: string
+          default: ''
+          maxLength: 200
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/IrnCancelOutcomeEnum'
+          default: REISSUE
+          description: |-
+            REISSUE (default): a corrected invoice with a new number for the same shipment. TAKE_BACK: the goods come back to stock.
+
+            * `REISSUE` - Re-issued with a new number
+            * `TAKE_BACK` - Goods taken back
+        to_backorder:
+          type: boolean
+          default: false
+          description: 'TAKE_BACK: the quantities wait on backorder (else cancelled).'
+      required:
+      - reason_code
     EInvoiceCounts:
       type: object
       properties:
@@ -11841,6 +11904,7 @@ components:
       - SUBMITTED
       - GENERATED
       - FAILED
+      - CANCELLING
       - CANCELLED
       type: string
       description: |-
@@ -11848,6 +11912,7 @@ components:
         * `SUBMITTED` - Sent, waiting for the portal
         * `GENERATED` - IRN generated
         * `FAILED` - IRN failed
+        * `CANCELLING` - Cancelling
         * `CANCELLED` - IRN cancelled
     EInvoiceRow:
       type: object
@@ -11895,6 +11960,32 @@ components:
         can_request:
           type: boolean
           description: '"Get IRN" or "Try again" is offered.'
+        can_cancel:
+          type: boolean
+          description: An invoice's IRN within the window.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        cancel_reason_code:
+          type: string
+        cancel_remarks:
+          type: string
+        cancel_outcome:
+          oneOf:
+          - $ref: '#/components/schemas/IrnCancelOutcomeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        cancel_error:
+          type: string
+          description: Why the last cancellation was refused.
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        reissued_invoice:
+          allOf:
+          - $ref: '#/components/schemas/DocumentNumber'
+          nullable: true
         document_type:
           $ref: '#/components/schemas/EInvoiceDocumentTypeEnum'
         document_id:
@@ -11922,7 +12013,14 @@ components:
       - ack_date
       - ack_no
       - attempts
+      - can_cancel
       - can_request
+      - cancel_error
+      - cancel_outcome
+      - cancel_reason_code
+      - cancel_remarks
+      - cancel_until
+      - cancelled_at
       - document_date
       - document_id
       - document_number
@@ -11936,6 +12034,7 @@ components:
       - irn
       - next_retry_at
       - past_report_by
+      - reissued_invoice
       - report_by
       - requested_at
       - retailer_id
@@ -12002,11 +12101,44 @@ components:
         can_request:
           type: boolean
           description: '"Get IRN" or "Try again" is offered.'
+        can_cancel:
+          type: boolean
+          description: An invoice's IRN within the window.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        cancel_reason_code:
+          type: string
+        cancel_remarks:
+          type: string
+        cancel_outcome:
+          oneOf:
+          - $ref: '#/components/schemas/IrnCancelOutcomeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        cancel_error:
+          type: string
+          description: Why the last cancellation was refused.
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        reissued_invoice:
+          allOf:
+          - $ref: '#/components/schemas/DocumentNumber'
+          nullable: true
       required:
       - ack_date
       - ack_no
       - attempts
+      - can_cancel
       - can_request
+      - cancel_error
+      - cancel_outcome
+      - cancel_reason_code
+      - cancel_remarks
+      - cancel_until
+      - cancelled_at
       - error_code
       - error_message
       - generated_at
@@ -12014,6 +12146,7 @@ components:
       - irn
       - next_retry_at
       - past_report_by
+      - reissued_invoice
       - report_by
       - requested_at
       - retryable
@@ -12060,6 +12193,7 @@ components:
       - REFUND
       - REFUND_REVERSAL
       - CREDIT_ADJUSTMENT
+      - INVOICE_CANCELLED
       type: string
       description: |-
         * `OPENING_BALANCE` - Opening balance
@@ -12071,6 +12205,7 @@ components:
         * `REFUND` - Refund paid
         * `REFUND_REVERSAL` - Refund reversed
         * `CREDIT_ADJUSTMENT` - Credit adjustment
+        * `INVOICE_CANCELLED` - Invoice cancelled
     EventEnum:
       enum:
       - PLACE
@@ -12087,6 +12222,7 @@ components:
       - BACKORDER_ALLOCATED
       - BACKORDER_CANCELLED
       - COMPLETE
+      - TAKE_BACK
       type: string
       description: |-
         * `PLACE` - Placed
@@ -12103,6 +12239,7 @@ components:
         * `BACKORDER_ALLOCATED` - Backorder allocated
         * `BACKORDER_CANCELLED` - Backorder cancelled
         * `COMPLETE` - Completed
+        * `TAKE_BACK` - Goods taken back
     EventRules:
       type: object
       properties:
@@ -13655,6 +13792,26 @@ components:
         * `ON_ACCEPTANCE` - At acceptance
         * `ON_ALLOCATION` - At backorder allocation
         * `AFTER_DISPATCH` - After dispatch (Phase 4 data)
+    IrnCancelOutcomeEnum:
+      enum:
+      - REISSUE
+      - TAKE_BACK
+      type: string
+      description: |-
+        * `REISSUE` - Re-issued with a new number
+        * `TAKE_BACK` - Goods taken back
+    IrnCancelReasonEnum:
+      enum:
+      - DUPLICATE
+      - DATA_ENTRY_MISTAKE
+      - ORDER_CANCELLED
+      - OTHER
+      type: string
+      description: |-
+        * `DUPLICATE` - Duplicate
+        * `DATA_ENTRY_MISTAKE` - Data entry mistake
+        * `ORDER_CANCELLED` - Order cancelled
+        * `OTHER` - Other
     ItemInputRequest:
       type: object
       properties:

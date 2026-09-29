@@ -95,6 +95,9 @@ EVENTS: dict[str, Event] = {
               variables=("distributor", "shop", "credit_note_number", "total", "invoice_number",
                          "reason", "document_link", "link"),
               document=DocumentLink.Kind.CREDIT_NOTE),
+        Event("invoice.cancelled", "Invoice cancelled (its IRN was cancelled)", "billing",
+              variables=("distributor", "shop", "invoice_number", "note", "link"),
+              staff_facing=False, feature="einvoice"),
         Event("einvoice.failed", "IRN failed for an invoice or credit note", "billing",
               variables=("distributor", "shop", "document_number", "error", "link"),
               shop_facing=False, feature="einvoice"),
@@ -187,6 +190,7 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("stock.alert_opened", ST, (IN,), "stock.inward"),
     Rule("invoice.issued", S, (IN, WA, EM), compulsory=True),
     Rule("credit_note.issued", S, (IN, WA, EM), compulsory=True),
+    Rule("invoice.cancelled", S, (IN,)),
     Rule("einvoice.failed", ST, (IN, EM), "compliance.manage"),
     Rule("payment.received", S, (IN, WA, EM)),
     Rule("payment.cleared", S, (IN,)),
@@ -312,6 +316,11 @@ SHOP_TEXTS: dict[str, dict[str, Text]] = {
         IN: Text("Bill {{ invoice_number }}: {{ total }}", "Your bill {{ invoice_number }} for order {{ order_number }} is {{ total }}, to pay by {{ due_date }}."),
         EM: Text("Tax invoice {{ invoice_number }} from {{ distributor }}", "Your tax invoice {{ invoice_number }} for order {{ order_number }} is {{ total }}, to pay by {{ due_date }}.\n\nDownload it: {{ document_link }}"),
         WA: Text("", f"{D}: your order {{{{ order_number }}}} is on its way. Bill {{{{ invoice_number }}}}: {{{{ total }}}}, pay by {{{{ due_date }}}}. {{{{ document_link }}}}", ("distributor", "order_number", "invoice_number", "total", "due_date", "document_link")),
+    },
+    "invoice.cancelled": {
+        IN: Text("Bill {{ invoice_number }} cancelled", "Your bill {{ invoice_number }} was cancelled. {{ note }}"),
+        EM: Text("Bill {{ invoice_number }} cancelled", "Your bill {{ invoice_number }} from {{ distributor }} was cancelled. {{ note }}\n\n{{ link }}"),
+        WA: Text("", f"{D}: your bill {{{{ invoice_number }}}} was cancelled. {{{{ note }}}}", ("distributor", "invoice_number", "note")),
     },
     "credit_note.issued": {
         IN: Text("Credit note {{ credit_note_number }}: {{ total }}", "You were credited {{ total }} against bill {{ invoice_number }} ({{ reason }})."),
@@ -568,8 +577,11 @@ def in_first_submission(event_code: str, audience: str) -> bool:
     """Whether a WhatsApp template goes in the first batch submitted to the provider for
     approval: every shop template, and the salesman's handover reminder (the only staff WhatsApp
     in the default rules). Staff otherwise rely on in-app and email; their other WhatsApp
-    templates are optional and not submitted by default (Phase 6 final review)."""
-    return audience == Audience.SHOP or event_code == "handover.reminder"
+    templates are optional and not submitted by default (Phase 6 final review). Templates of an
+    optional module's events (e.g. "bill cancelled", Phase 7) are optional too."""
+    if event_code == "handover.reminder":
+        return True
+    return audience == Audience.SHOP and not EVENTS[event_code].feature
 
 
 def whatsapp_template_name(event_code: str, audience: str = Audience.SHOP) -> str:

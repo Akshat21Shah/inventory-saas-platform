@@ -4,33 +4,25 @@ retried, a lost answer recovered, refusals and missing credentials failing at on
 told; staff asking with the button; the bill message held for the IRN and released; the PDF
 printed again with the IRN and QR code; the reporting-limit date; and the API."""
 
-import json
 from datetime import timedelta
 from decimal import Decimal as D
-from typing import Any
 
 import pytest
 from django.utils import timezone
 
-from apps.accounts.tests.factories import make_staff_in
 from apps.billing import credit_notes, documents
 from apps.billing.credit_notes import ReturnLine
 from apps.billing.models import Invoice
-from apps.billing.tests.helpers import ship_invoice
 from apps.compliance import einvoice, tasks
 from apps.compliance.adapters.mock import MockGspClient
 from apps.compliance.models import EInvoiceRecord, GstCredential
 from apps.compliance.tests.conftest import switch_on
-from apps.inventory.tests.helpers import make_product
-from apps.notifications import quiet
-from apps.notifications.adapters.whatsapp import MockWhatsAppClient
+from apps.compliance.tests.helpers import bills_sent, credentials, record_of, sell, sweep
 from apps.notifications.models import Notification
-from apps.orders.tests.helpers import add_stock, client_for, make_shop, settings
+from apps.orders.tests.helpers import settings
 from apps.platform import selectors as platform_selectors
-from apps.platform.tests.factories import make_gstin
 from apps.platform.validators import gstin_check_char
 from apps.retailers.models import Retailer
-from apps.retailers.services import AddressInput, create_retailer
 from common.storage import get_storage
 from common.tenancy import tenant_context
 from common.testing.isolation import covers
@@ -38,84 +30,6 @@ from common.testing.isolation import covers
 pytestmark = pytest.mark.django_db
 S = EInvoiceRecord.Status
 API = "/api/v1"
-
-
-@pytest.fixture(autouse=True)
-def _daytime(monkeypatch):
-    monkeypatch.setattr(quiet, "current_hold", lambda now: None)
-    MockWhatsAppClient.outbox.clear()
-
-
-def credentials(tenant: Any, status: str = GstCredential.Status.VERIFIED) -> None:
-    with tenant_context(tenant.pk):
-        GstCredential.objects.update_or_create(
-            provider="mock",
-            defaults={
-                "gstin": tenant.gstin,
-                "credentials": json.dumps({"username": "u", "password": "p"}),
-                "status": status,
-            },
-        )
-
-
-@pytest.fixture
-def world(tenant_a, tenant_b, django_capture_on_commit_callbacks):
-    switch_on(tenant_a, "einvoice", "whatsapp")
-    credentials(tenant_a)
-    owner = make_staff_in(tenant_a, "OWNER")
-    product = make_product(tenant_a, "LAP-1", hsn_code="8471", base_price=D("30000"))
-    add_stock(tenant_a, product, "100")
-    with tenant_context(tenant_a.pk):
-        b2b = create_retailer(
-            shop_name="Kaveri Traders",
-            phone="9876500081",
-            email="kaveri@example.com",
-            gstin=make_gstin(8101, "29"),
-            billing=AddressInput("4 MG Road", "Bengaluru", "560001", "29"),
-            send_welcome=False,
-        )
-        Retailer.objects.filter(pk=b2b.pk).update(whatsapp_opt_in=True)
-    b2c = make_shop(tenant_a, "9876500082", shop_name="Ganesh Kirana")
-    return {
-        "t": tenant_a,
-        "tb": tenant_b,
-        "owner": owner,
-        "product": product,
-        "b2b": b2b,
-        "b2c": b2c,
-        "staff": client_for(tenant_a, owner),
-        "sales": client_for(tenant_a, make_staff_in(tenant_a, "SALES")),
-        "other": client_for(tenant_b, make_staff_in(tenant_b, "OWNER")),
-        "run": lambda: django_capture_on_commit_callbacks(execute=True),
-    }
-
-
-def sell(world: dict[str, Any], shop: str = "b2b", qty: str = "1") -> Invoice:
-    with world["run"]():
-        invoice = ship_invoice(world["t"], world[shop], world["owner"], (world["product"], qty))
-    with tenant_context(world["t"].pk):
-        invoice.refresh_from_db()
-    return invoice
-
-
-def bills_sent() -> int:
-    return sum(m.message.template == "b2b_invoice_issued" for m in MockWhatsAppClient.outbox)
-
-
-def record_of(world: dict[str, Any], invoice: Invoice) -> EInvoiceRecord:
-    with tenant_context(world["t"].pk):
-        found: EInvoiceRecord = EInvoiceRecord.objects.get(invoice=invoice)
-        return found
-
-
-def sweep(world: dict[str, Any], *, minutes: int = 0) -> None:
-    """The every-minute job, ``minutes`` from now (retries that are due)."""
-    with tenant_context(world["t"].pk):
-        EInvoiceRecord.objects.filter(next_retry_at__isnull=False).update(
-            next_retry_at=timezone.now() - timedelta(minutes=minutes or 1)
-        )
-    with world["run"]():
-        tasks.retry_due_for_tenant.apply(kwargs={"tenant_id": str(world["t"].pk)})
 
 
 def test_a_b2b_invoice_gets_its_irn_and_is_printed_again(world):

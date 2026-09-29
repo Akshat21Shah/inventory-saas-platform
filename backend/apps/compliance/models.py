@@ -54,6 +54,16 @@ class DocumentType(models.TextChoices):
     CREDIT_NOTE = "CREDIT_NOTE", "Credit note"
 
 
+class CancelReason(models.TextChoices):
+    """Our reasons for cancelling an IRN; the real adapter maps them to the portal's codes.
+    TODO(verify): the portal's reason codes (PROGRESS pre-production item 13)."""
+
+    DUPLICATE = "DUPLICATE", "Duplicate"
+    DATA_ENTRY_MISTAKE = "DATA_ENTRY_MISTAKE", "Data entry mistake"
+    ORDER_CANCELLED = "ORDER_CANCELLED", "Order cancelled"
+    OTHER = "OTHER", "Other"
+
+
 class EInvoiceRecord(TenantScopedModel):
     """One document's journey through the Invoice Registration Portal: submitted in the
     background, retried when the portal is down, and GENERATED (IRN, acknowledgement, signed QR)
@@ -64,6 +74,7 @@ class EInvoiceRecord(TenantScopedModel):
         SUBMITTED = "SUBMITTED", "Sent, waiting for the portal"
         GENERATED = "GENERATED", "IRN generated"
         FAILED = "FAILED", "IRN failed"
+        CANCELLING = "CANCELLING", "Cancelling"
         CANCELLED = "CANCELLED", "IRN cancelled"
 
     class CancelOutcome(models.TextChoices):
@@ -79,7 +90,7 @@ class EInvoiceRecord(TenantScopedModel):
     )
     document_number = models.CharField(max_length=16)
     document_number_key = models.CharField(max_length=16)  # upper case: duplicates by case
-    status = models.CharField(max_length=9, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     irn = models.CharField(max_length=64, blank=True, default="")
     ack_no = models.CharField(max_length=20, blank=True, default="")
     ack_date = models.DateTimeField(null=True, blank=True)
@@ -101,6 +112,12 @@ class EInvoiceRecord(TenantScopedModel):
     cancel_outcome = models.CharField(
         max_length=9, choices=CancelOutcome.choices, blank=True, default=""
     )
+    cancel_to_backorder = models.BooleanField(default=False)  # TAKE_BACK: wait again, or cancel
+    cancel_requested_at = models.DateTimeField(null=True, blank=True)
+    cancel_requested_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    cancel_error = models.CharField(max_length=500, blank=True, default="")  # the last refusal
     reissued_invoice = models.ForeignKey(
         "billing.Invoice", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )

@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
-from apps.compliance import credentials, einvoice, selectors
+from apps.compliance import cancellation, credentials, einvoice, selectors
 from apps.compliance.api import serializers as s
 from apps.compliance.models import DocumentType, EInvoiceRecord
 from common.errors import InvalidFields, NotFound
@@ -127,6 +127,32 @@ class EInvoiceCountsView(APIView):
     @extend_schema(operation_id="einvoices_counts", tags=TAGS, responses=s.EInvoiceCountsSerializer)
     def get(self, request: Request) -> Response:
         return Response(s.EInvoiceCountsSerializer(selectors.counts()).data)
+
+
+class EInvoiceCancelView(APIView):
+    permission_classes = [HasPermission]
+    required_permission = MANAGE
+
+    @extend_schema(
+        operation_id="einvoice_cancel",
+        tags=TAGS,
+        request=s.EInvoiceCancelSerializer,
+        responses=s.EInvoiceRowSerializer,
+    )
+    def post(self, request: Request, record_id: UUID) -> Response:
+        data = s.EInvoiceCancelSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        cancellation.request(
+            record_id,
+            reason_code=v["reason_code"],
+            remarks=v["remarks"],
+            outcome=v["outcome"],
+            to_backorder=v["to_backorder"],
+            by=cast(User, request.user),
+        )
+        found = selectors.einvoice_list(selectors.Filters()).get(pk=record_id)
+        return Response(s.EInvoiceRowSerializer(selectors.row(found)).data)
 
 
 class _RequestIrn(APIView):

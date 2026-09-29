@@ -21,7 +21,8 @@ def invoice_tenant(tenant_id: Any) -> int:
     """The shipments of one tenant (in a tenant context); returns how many were invoiced."""
     done = 0
     pending = (
-        Fulfilment.objects.filter(status__in=SHIPPED, invoice__isnull=True)
+        Fulfilment.objects.filter(status__in=SHIPPED)
+        .exclude(invoices__status="ISSUED")
         .order_by("dispatched_at", "created_at")
         .values_list("pk", "order_id")
     )

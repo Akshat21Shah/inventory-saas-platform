@@ -26,7 +26,7 @@ class Filters:
 
 def einvoice_list(filters: Filters) -> QuerySet[EInvoiceRecord]:
     rows = EInvoiceRecord.objects.select_related(
-        "invoice__retailer", "credit_note__retailer", "credit_note__invoice"
+        "invoice__retailer", "credit_note__retailer", "credit_note__invoice", "reissued_invoice"
     )
     if filters.status:
         rows = rows.filter(status=filters.status)
@@ -58,7 +58,10 @@ def report_by(record: EInvoiceRecord) -> date | None:
 
 
 def summary(record: EInvoiceRecord) -> dict[str, Any]:
+    from apps.compliance.cancellation import can_cancel, window_ends
+
     last_day = report_by(record)
+    reissued = record.reissued_invoice
     return {
         "id": record.pk,
         "status": record.status,
@@ -77,6 +80,16 @@ def summary(record: EInvoiceRecord) -> dict[str, Any]:
         # "Get IRN" while waiting for staff, "Try again" after a failure
         "can_request": record.status == S.FAILED
         or (record.status == S.PENDING and record.requested_at is None),
+        "can_cancel": can_cancel(record),
+        "cancel_until": window_ends(record) if record.document_type == "INVOICE" else None,
+        "cancel_reason_code": record.cancel_reason_code,
+        "cancel_remarks": record.cancel_remarks,
+        "cancel_outcome": record.cancel_outcome,
+        "cancel_error": record.cancel_error,
+        "cancelled_at": record.cancelled_at,
+        "reissued_invoice": (
+            {"id": reissued.pk, "number": reissued.number} if reissued is not None else None
+        ),
     }
 
 

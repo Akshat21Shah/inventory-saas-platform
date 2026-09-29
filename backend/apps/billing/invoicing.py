@@ -20,7 +20,7 @@ from django.db.models import F
 
 from apps.accounts.models import User
 from apps.billing import numbering
-from apps.billing.models import DocumentType, Invoice, InvoiceLine
+from apps.billing.models import DocumentStatus, DocumentType, Invoice, InvoiceLine
 from apps.billing.tax import (
     ComponentRounding,
     RoundOffMethod,
@@ -130,7 +130,9 @@ def issue_invoice_for_fulfilment(
 ) -> Invoice | None:
     """Issue the shipment's tax invoice (or return the one it has). ``None`` when nothing in it
     is to be invoiced (everything declined or packed as zero)."""
-    existing: Invoice | None = Invoice.objects.filter(fulfilment=shipment).first()
+    existing: Invoice | None = Invoice.objects.filter(
+        fulfilment=shipment, status=DocumentStatus.ISSUED
+    ).first()
     if existing is not None:
         return existing
     order: Order = Order.objects.select_related("retailer", "place_of_supply").get(

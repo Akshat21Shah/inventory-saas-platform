@@ -201,7 +201,7 @@ class MockGspClient:
         if stored is None:
             raise GspError(GspErrorCode.NOT_FOUND, "No such IRN.")
         if stored["cancelled"]:
-            raise GspError(GspErrorCode.CANCEL_NOT_ALLOWED, "This IRN is already cancelled.")
+            raise GspError(GspErrorCode.ALREADY_CANCELLED, "This IRN is already cancelled.")
         hours = int(get_platform_setting("platform.irn_cancel_window_hours"))
         if timezone.now() > datetime.fromisoformat(stored["ack_date"]) + timedelta(hours=hours):
             raise GspError(

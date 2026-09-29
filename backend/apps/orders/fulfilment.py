@@ -295,6 +295,57 @@ def deliver(fulfilment_id: UUID, *, by: User) -> Fulfilment:
     return shipment
 
 
+# --- Take back after dispatch (IRN cancelled) -----------------------------------------------------
+
+
+def take_back(
+    fulfilment_id: UUID, *, to_backorder: bool, reason: str, by: User | None
+) -> Fulfilment:
+    """DISPATCHED / DELIVERED → CANCELLED when its invoice's IRN is cancelled and the goods come
+    back (ADR-049 item 7): the stock returns, and the quantities wait on backorder again or are
+    cancelled. No credit note: the invoice itself is cancelled. The caller holds the transaction,
+    the shop's account and the order (L1, L2) and has already un-invoiced the quantities."""
+    order, shipment = _lock_shipment(fulfilment_id)
+    _require(shipment, F.DISPATCHED, F.DELIVERED)
+    delivered = shipment.status == F.DELIVERED
+    lines = [fl for fl in _shipment_lines(shipment) if fl.qty_packed]
+    levels = stock.lock_levels([fl.product_id for fl in lines], shipment.warehouse)
+    ref = stock.Ref(ReferenceType.FULFILMENT, shipment.pk, shipment.number)
+    for fl in lines:
+        qty = Decimal(fl.qty_packed or ZERO)
+        level = levels[fl.product_id]
+        stock.return_goods(level, qty, ref, by=by, reason=f"Taken back: {reason}"[:200])
+        line = OrderLine.objects.select_for_update().get(pk=fl.order_line_id)
+        line.qty_dispatched -= qty
+        if delivered:
+            line.qty_delivered -= qty
+        line.qty_allocated -= qty
+        if to_backorder:
+            line.qty_backordered += qty
+            stock.change_backordered(level, qty)
+        else:
+            line.qty_cancelled += qty
+        line.save()
+    shipment.status, shipment.cancelled_reason = F.CANCELLED, reason.strip()[:300]
+    shipment.save(update_fields=["status", "cancelled_reason", "updated_at"])
+    if order.status == OrderStatus.COMPLETED:  # open again: its shipments decide from here
+        order.status, order.closed_at = OrderStatus.ACCEPTED, None
+    record(
+        order,
+        OrderEvent.TAKE_BACK,
+        to=next_status(order),
+        by=by,
+        note=reason,
+        payload={
+            "shipment": shipment.number,
+            "to": "backorder" if to_backorder else "cancelled",
+        },
+    )
+    derive_status(order, by=by)
+    backorders.after_stock_returned([fl.product_id for fl in lines])
+    return shipment
+
+
 # --- Cancel before dispatch --------------------------------------------------------------------
 
 

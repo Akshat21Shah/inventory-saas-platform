@@ -271,6 +271,10 @@ SPECTACULAR_SETTINGS = {
         "GstCredentialStatusEnum": "apps.compliance.models.GstCredential.Status",
         "EInvoiceRecordStatusEnum": "apps.compliance.models.EInvoiceRecord.Status",
         "EInvoiceDocumentTypeEnum": "apps.compliance.models.DocumentType",
+        "IrnCancelReasonEnum": "apps.compliance.models.CancelReason",
+        "ReasonCodeEnum": "apps.inventory.models.AdjustmentReason",  # keeps its Phase 3 name
+        "OutcomeEnum": ["OK", "NEEDS_APPROVAL", "BLOCKED"],  # the credit check; keeps its name
+        "IrnCancelOutcomeEnum": "apps.compliance.models.EInvoiceRecord.CancelOutcome",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

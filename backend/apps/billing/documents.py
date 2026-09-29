@@ -56,12 +56,20 @@ def _render(template: str, context: dict[str, Any]) -> bytes:
 
 
 def _qr(doc: Invoice | CreditNote) -> dict[str, str]:
-    """The e-invoice QR code, once the document has its IRN (Phase 7)."""
+    """The e-invoice QR code, once the document has its IRN, and for an invoice cancelled with
+    its IRN, the invoice that replaces it (Phase 7)."""
     if not doc.irn:
         return {}
+    from apps.compliance.models import EInvoiceRecord
     from apps.compliance.qr import qr_data_uri
 
-    return {"qr": qr_data_uri(doc.signed_qr)}
+    extra = {"qr": qr_data_uri(doc.signed_qr)}
+    if isinstance(doc, Invoice) and doc.status == "CANCELLED":
+        record = EInvoiceRecord.objects.filter(invoice=doc).select_related("reissued_invoice")
+        found = record.first()
+        if found is not None and found.reissued_invoice is not None:
+            extra["reissued"] = found.reissued_invoice.number
+    return extra
 
 
 # --- Invoices ---------------------------------------------------------------------------------

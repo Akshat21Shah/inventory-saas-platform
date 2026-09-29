@@ -11,6 +11,7 @@ export type EinvoicesListStatus = typeof EinvoicesListStatus[keyof typeof Einvoi
 
 export const EinvoicesListStatus = {
   CANCELLED: 'CANCELLED',
+  CANCELLING: 'CANCELLING',
   FAILED: 'FAILED',
   GENERATED: 'GENERATED',
   PENDING: 'PENDING',

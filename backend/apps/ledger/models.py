@@ -56,6 +56,7 @@ class EntryType(models.TextChoices):
     REFUND = "REFUND", "Refund paid"
     REFUND_REVERSAL = "REFUND_REVERSAL", "Refund reversed"
     CREDIT_ADJUSTMENT = "CREDIT_ADJUSTMENT", "Credit adjustment"
+    INVOICE_CANCELLED = "INVOICE_CANCELLED", "Invoice cancelled"  # IRN cancelled (Phase 7)
 
 
 class LedgerEntry(TenantScopedModel):

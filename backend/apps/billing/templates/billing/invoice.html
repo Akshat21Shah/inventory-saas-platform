@@ -15,6 +15,9 @@
       <p class="copy">{{ copy }}</p>
     </div>
   </header>
+  {% if doc.status == "CANCELLED" %}
+    <p class="flag">Cancelled: this invoice's IRN was cancelled.{% if reissued %} It is replaced by invoice {{ reissued }}.{% endif %}</p>
+  {% endif %}
 
   <table class="meta">
     <tr>

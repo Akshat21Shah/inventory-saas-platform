@@ -55,6 +55,7 @@ HANDLED_EVENTS: tuple[str, ...] = (
     "backorder.repriced_cancelled",
     "stock.alert_opened",
     "invoice.issued",
+    "invoice.cancelled",
     "credit_note.issued",
     "einvoice.failed",
     "payment.received",

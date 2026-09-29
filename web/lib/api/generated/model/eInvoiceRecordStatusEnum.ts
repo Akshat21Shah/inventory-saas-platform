@@ -11,6 +11,7 @@
  * * `SUBMITTED` - Sent, waiting for the portal
  * * `GENERATED` - IRN generated
  * * `FAILED` - IRN failed
+ * * `CANCELLING` - Cancelling
  * * `CANCELLED` - IRN cancelled
  */
 export type EInvoiceRecordStatusEnum = typeof EInvoiceRecordStatusEnum[keyof typeof EInvoiceRecordStatusEnum];
@@ -21,5 +22,6 @@ export const EInvoiceRecordStatusEnum = {
   SUBMITTED: 'SUBMITTED',
   GENERATED: 'GENERATED',
   FAILED: 'FAILED',
+  CANCELLING: 'CANCELLING',
   CANCELLED: 'CANCELLED',
 } as const;
