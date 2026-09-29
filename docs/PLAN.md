@@ -661,10 +661,10 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `invoices/{id}/regenerate-pdf` | POST | `invoices.manage` | re-render the PDF |
 | `credit-notes` | GET, POST 🔑 | view: `invoices.view`; create: `invoices.manage` | create against an invoice (lines/qty or value; restock flag) |
 | `credit-notes/{id}`, `/{id}/pdf` | GET | `invoices.view` | — |
-| `einvoices`, `/{id}` | GET | `compliance.manage` | status list (PENDING/FAILED first; nearing the reporting limit flagged) — Phase 7 |
+| `einvoices`, `/{id}`, `/counts` | GET | `compliance.manage` | status list (filter by status, type; search by number, shop or IRN; the reporting-limit date), counts for the dashboard — Phase 7 |
 | `invoices/{id}/einvoice`, `credit-notes/{id}/einvoice` | POST | `compliance.manage` | generate / retry the IRN |
 | `einvoices/{id}/cancel` | POST | `compliance.manage` | within the permitted window (rule to verify): reason code, remarks, outcome REISSUE (default) / TAKE_BACK (+ backorder or cancel the quantities); audited |
-| `ewaybills`, `/{id}` | GET | `compliance.manage` | list, detail with updates |
+| `ewaybills`, `/{id}`, `/counts` | GET | `compliance.manage` | list, detail with updates, counts |
 | `invoices/{id}/ewaybill` | POST | `compliance.manage` | generate / retry with transport details and distance |
 | `ewaybills/{id}/part-b`, `/cancel` | POST | `compliance.manage` | update the vehicle / cancel (window to verify); audited |
 | `receivables` | GET | `ledger.view` | per-retailer outstanding, overdue, last payment |
@@ -688,7 +688,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `payment-intents` | GET | `payments.view` | online payment attempts (Phase 7) |
 | `payments/{id}/review` | POST | `payments.record` | mark a flagged online payment reviewed (Phase 7) |
 | `/api/v1/webhooks/payments/{provider}/{token}/` | POST | 🌐 signature-verified | gateway webhooks (Phase 7); the token is the distributor's `webhook_token` |
-| `/api/v1/dev/mock-gateway/{intent}/` | GET, POST | 🌐 dev only (mock gateway) | the mock checkout page: pay or fail, which sends a signed mock webhook |
+| `/api/v1/dev/mock-gateway/{order}/` | GET, POST | 🌐 dev only (mock gateway, tenant host) | the test gateway's checkout page: pay or fail, which sends the signed webhook |
 
 ### 3.11 Notifications, dashboard, reports
 | Endpoint | Method | Permission | Purpose |
