@@ -90,7 +90,7 @@ EVENTS: dict[str, Event] = {
                          "link")),
         Event("payment.bounced", "Cheque bounced", "payments",
               variables=("distributor", "shop", "receipt_number", "amount", "cheque_number",
-                         "reason", "document_link", "link"),
+                         "cheque_date", "reason", "balance", "document_link", "link"),
               document=DocumentLink.Kind.RECEIPT),
         Event("payment.reversed", "Payment reversed (entered in error)", "payments",
               variables=("distributor", "shop", "receipt_number", "amount", "reason", "link")),
@@ -333,9 +333,9 @@ DEFAULT_TEXTS: dict[str, dict[str, Text]] = {
         WA: Text("", f"{D}: your cheque {{{{ cheque_number }}}} for {{{{ amount }}}} cleared.", ("distributor", "cheque_number", "amount")),
     },
     "payment.bounced": {
-        IN: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} for {{ amount }} bounced ({{ reason }}). The bills it paid are due again."),
-        EM: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} for {{ amount }} bounced ({{ reason }}). The bills it paid are due again.\n\n{{ document_link }}"),
-        WA: Text("", f"{D}: your cheque {{{{ cheque_number }}}} for {{{{ amount }}}} bounced ({{{{ reason }}}}). The bills it paid are due again.", ("distributor", "cheque_number", "amount", "reason")),
+        IN: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}). The bills it paid are due again. Your balance: {{ balance }}."),
+        EM: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}). The bills it paid are due again. Your balance: {{ balance }}.\n\n{{ document_link }}"),
+        WA: Text("", f"{D}: your cheque {{{{ cheque_number }}}} dated {{{{ cheque_date }}}} for {{{{ amount }}}} bounced ({{{{ reason }}}}). The bills it paid are due again. Your balance: {{{{ balance }}}}.", ("distributor", "cheque_number", "cheque_date", "amount", "reason", "balance")),
     },
     "payment.reversed": {
         IN: Text("Payment corrected", "Payment {{ receipt_number }} of {{ amount }} was reversed: {{ reason }}."),

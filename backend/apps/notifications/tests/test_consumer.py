@@ -210,6 +210,11 @@ def test_context_picks_the_notification(world):
         n for n in bounced if n.recipient_id == world["login"].pk and n.channel == "IN_APP"
     )
     assert "000777" in shop_in_app.title and "Insufficient funds" in shop_in_app.body
+    whatsapp = next(n for n in bounced if n.channel == "WHATSAPP")  # decision 4 of the checkpoint
+    dated = today_ist().strftime("%d-%m-%Y")
+    for text in ("000777", f"dated {dated}", "₹80.00", "Your balance: nothing to pay."):
+        assert text in whatsapp.body, text
+    assert whatsapp.data["whatsapp"]["parameters"][-1] == "nothing to pay"
 
 
 def test_notification_codes_split_by_context():

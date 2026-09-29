@@ -1587,6 +1587,8 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Shop confirms delivery | The shop marks a shipment received in the app (ADR-044 item 5). |
 | Proof of delivery code | A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
 | Shop return requests | The shop asks for a return from the app; staff approve it, which issues the return credit note (ADR-046 item 5). |
+| Distributor's own WhatsApp templates | When a distributor connects its own WhatsApp number (`WhatsAppSender`), it manages its own approved templates instead of the platform's (ADR-048, checkpoint decision 2). |
+| Cheque bounce charge | Optional tenant setting (on/off, amount): a bounced cheque debits the charge to the shop's ledger with its own document (ADR-048, checkpoint decision 4). |
 
 ---
 

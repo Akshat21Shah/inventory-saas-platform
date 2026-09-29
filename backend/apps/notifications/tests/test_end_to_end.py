@@ -121,6 +121,9 @@ def test_a_shops_life_reaches_it_through_the_mocks(tenant_a, django_capture_on_c
         assert message.message.text.startswith(f"{t.name}:"), message.message.text
         assert message.message.parameters[0] == t.name
         assert "{{" not in message.message.text
+    [bounce] = [m for m in MockWhatsAppClient.outbox if m.message.template == "b2b_payment_bounced"]
+    assert "cheque 004512 dated " in bounce.message.text and "₹200.00" in bounce.message.text
+    assert bounce.message.text.endswith(" to pay.")  # the bills are owed again
     # Email: the bill, the credit note and receipts, to the shop's address.
     to_shop = sorted(m.subject.split(" ")[0] for m in mail.outbox if m.to == ["ganesh@example.com"])
     assert to_shop == ["Credit", "Receipt", "Receipt", "Tax"]

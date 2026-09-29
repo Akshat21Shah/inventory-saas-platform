@@ -636,4 +636,12 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   14. **Templates.** Platform defaults in English per event and channel, with tenant overrides and a preview. Rendering is sandboxed (only the event's known variables, no template tags beyond plain substitution). WhatsApp templates store the approved template name, language, category and ordered variables. A shop's preferred language is used when a template exists in it, else English.
   15. **Shop welcome and staff emails.** The shop welcome SMS moves into the service (logged, retryable, not switchable). Staff invitation and password-reset emails stay outside the rules (always sent) but use the same email adapter.
   16. **Announcements.** The distributor posts notices shown on the shop home (dates, active flag), optionally also sent by WhatsApp (marketing category).
+- **Backend checkpoint (2026-09-29, product owner):**
+  1. Pausing a shop's payment reminders stops every channel, in-app included. The shop's outstanding and overdue amounts still show on its home and bills pages (pausing touches only the messages).
+  2. Only the super admin edits WhatsApp and SMS texts (approved templates); distributors edit in-app and email texts. Backlog: a distributor with its own WhatsApp number manages its own templates.
+  3. Payment reminders cover bills due soon as well as overdue ones ("2 bills to pay, … (… overdue since …)").
+  4. The bounced-cheque WhatsApp carries no link; it names the cheque number and date, the amount and the shop's new balance. The receipt link sent earlier opens the receipt printed again as "Cheque bounced". Backlog: an optional cheque bounce charge.
+  5. Expired or revoked document links answer 410 with a short page ("ask {distributor} for a new link").
+  6. Notification settings are edited with `settings.manage`, like every setting.
+  7. A shop's WhatsApp, SMS and email go once to the shop's own number and address; each login gets in-app.
 - **Consequences:** Nothing is sent twice; every message is traceable; WhatsApp spend is visible before it is enabled and never reaches a shop without consent; night-time messages are limited to what the shop just did.

@@ -47,6 +47,22 @@ def listing(items: list[str]) -> str:
     return f"{shown} and {more} more" if more > 0 else shown
 
 
+def balance_text(retailer_id: UUID) -> str:
+    """The shop's position in words: "₹5,000.00 to pay", "₹200.00 in credit", "nothing to pay"."""
+    from apps.ledger.models import RetailerAccount
+
+    balance = (
+        RetailerAccount.objects.filter(retailer_id=retailer_id)
+        .values_list("balance", flat=True)
+        .first()
+    ) or Decimal("0")
+    if balance > 0:
+        return f"{rupees(balance)} to pay"
+    if balance < 0:
+        return f"{rupees(-balance)} in credit"
+    return "nothing to pay"
+
+
 def _with_shop(ctx: EventContext, retailer: Retailer) -> EventContext:
     ctx.retailer = retailer
     ctx.salesperson_id = retailer.salesperson_id
@@ -180,6 +196,8 @@ def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         "mode": payment.get_mode_display(),
         "cheque_number": payment.cheque_number,
         "reason": event.payload.get("reason") or payment.reversal_reason,
+        "cheque_date": day(payment.cheque_date or payment.payment_date),
+        "balance": balance_text(payment.retailer_id),
     }
     ctx = EventContext(
         code,
