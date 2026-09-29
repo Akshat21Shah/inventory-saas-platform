@@ -34,4 +34,29 @@ describe("i18n catalogue", () => {
     });
     expect(missing).toEqual([]);
   });
+
+  it("names every notification event, and in shop words every event a shop can get", () => {
+    const source = readFileSync(
+      resolve(__dirname, "../../backend/apps/notifications/catalog.py"),
+      "utf8",
+    );
+    // One chunk per `Event("code", …)` up to the next one (its arguments span lines).
+    const events = source
+      .split('Event("')
+      .slice(1)
+      .map((chunk) => ({
+        code: chunk.split('"')[0]!,
+        staffOnly: chunk.includes("shop_facing=False"),
+      }))
+      .filter((e) => /^[a-z_]+\.[a-z_]+$/.test(e.code));
+    expect(events.length).toBeGreaterThan(30);
+    const n = messages.notifications as unknown as {
+      events: Record<string, string>;
+      shopEvents: Record<string, string>;
+    };
+    const key = (code: string) => code.replace(".", "_");
+    expect(events.map((e) => e.code).filter((code) => !n.events[key(code)])).toEqual([]);
+    const shopFacing = events.filter((e) => !e.staffOnly).map((e) => e.code);
+    expect(shopFacing.filter((code) => !n.shopEvents[key(code)])).toEqual([]);
+  });
 });

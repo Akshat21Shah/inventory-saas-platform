@@ -115,6 +115,12 @@ function pages(ids: Ids) {
     "/manage/settings/roles",
     "/manage/audit",
     "/manage/account",
+    "/manage/notifications",
+    "/manage/settings/notifications",
+    "/manage/settings/notifications/texts",
+    "/manage/settings/notifications/deliveries",
+    "/manage/settings/notifications/announcements",
+    "/manage/settings/policies/notifications",
   ];
   const platform = [
     "/platform",
@@ -126,6 +132,8 @@ function pages(ids: Ids) {
     "/platform/tax-rates",
     "/platform/settings",
     "/platform/impersonations",
+    "/platform/notifications",
+    "/platform/notifications/failures",
     "/platform/audit",
     "/platform/account",
   ];
@@ -139,10 +147,12 @@ function pages(ids: Ids) {
     ...(ids.shop_order ? [`/shop/orders/${ids.shop_order}`] : []),
     "/shop/account",
     "/shop/account/security",
+    "/shop/account/messages",
     "/shop/invoices",
     ...(ids.shop_invoice ? [`/shop/invoices/${ids.shop_invoice}`] : []),
     "/shop/statement",
     "/shop/payments",
+    "/shop/notifications",
   ];
   return { staff, platform, shop };
 }

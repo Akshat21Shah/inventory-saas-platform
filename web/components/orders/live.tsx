@@ -6,12 +6,13 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { refreshNotifications } from "@/components/notifications/scope";
 import { useLiveUpdates } from "@/lib/live";
 
 import { refreshOrders } from "./board";
 import { playChime } from "./sound";
 
-/** Order and backorder events for staff who may view orders: every screen refreshes; a new
+/** The bell for every staff member, and order and backorder events for staff who may view orders: every screen refreshes; a new
  * order (or one waiting for credit approval, or stock arriving for backorders) pops up with a
  * chime when sound is on. */
 export function DistributorLiveUpdates() {
@@ -20,8 +21,11 @@ export function DistributorLiveUpdates() {
   const router = useRouter();
   const { me, can } = useAuth();
   useLiveUpdates({
-    enabled: Boolean(me?.tenant) && can("orders.view"),
+    // Every staff member's socket carries their bell; order events only reach order viewers.
+    enabled: Boolean(me?.tenant),
+    onNotification: () => refreshNotifications(client),
     onEvent: (event) => {
+      if (!can("orders.view")) return;
       refreshOrders(client);
       const open = event.order
         ? { label: t("open"), onClick: () => router.push(`/manage/orders/${event.order}`) }
@@ -43,7 +47,10 @@ export function DistributorLiveUpdates() {
         toast(t("cancelled", { number: event.number ?? "" }), { action: open });
       }
     },
-    onReconnect: () => refreshOrders(client),
+    onReconnect: () => {
+      refreshOrders(client);
+      refreshNotifications(client);
+    },
   });
   return null;
 }

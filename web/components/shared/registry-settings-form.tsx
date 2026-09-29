@@ -30,6 +30,7 @@ export const GROUP_ORDER = [
   "retailers",
   "stock",
   "credit_payments",
+  "notifications",
   "security",
 ];
 

@@ -160,7 +160,7 @@ def test_registry_settings_per_tenant_with_per_key_permission(
     tenant_a, tenant_b, owner, sales, run
 ):
     rows = sales.get("/api/v1/settings/registry/").json()
-    assert len(rows) == 36
+    assert len(rows) == 42
     assert not any(r["can_edit"] for r in rows)
     assert all(r["can_edit"] for r in owner.get("/api/v1/settings/registry/").json())
     denied = sales.patch(

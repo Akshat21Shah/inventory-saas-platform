@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  Bell,
   ChevronRight,
   FileText,
   LogOut,
@@ -116,6 +117,7 @@ export function ShopAccountPage() {
     { href: "/shop/invoices", label: t("bills"), icon: FileText },
     { href: "/shop/statement", label: t("statement"), icon: ScrollText },
     { href: "/shop/payments", label: t("payments"), icon: ReceiptText },
+    { href: "/shop/account/messages", label: t("messages"), icon: Bell },
     { href: "/shop/account/security", label: t("profile"), icon: UserRound },
   ];
   return (

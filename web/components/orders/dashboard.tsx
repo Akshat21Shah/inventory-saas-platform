@@ -1,5 +1,6 @@
 "use client";
 
+import { RateChangesCard } from "@/components/notifications/manage/cards";
 import { ClipboardList, PackageCheck, PackageSearch, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -57,6 +58,9 @@ export function DistributorDashboard() {
           <ReceivablesCards linked />
         </section>
       ) : null}
+      <div className="mt-8 max-w-2xl">
+        <RateChangesCard />
+      </div>
     </>
   );
 }

@@ -452,6 +452,7 @@ def _hand_over(payment: Payment, *, by: User | None, automatic: str = "") -> Non
             "automatic": automatic,
         },
     )
+    _emit("payment.handed_over", payment)  # the salesman hears it reached the office
 
 
 # --- Allocation by hand (ADR-046 item 10) -----------------------------------------------------

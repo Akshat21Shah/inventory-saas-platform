@@ -4,7 +4,6 @@ import logging
 from uuid import UUID
 
 from celery import shared_task
-from django.core.mail import send_mail
 from django.db import transaction
 
 from apps.accounts.models import Invitation, User
@@ -13,6 +12,18 @@ from common.task_base import TenantTask
 from common.tenancy import tenant_context
 
 logger = logging.getLogger(__name__)
+
+
+def send_mail(
+    *, subject: str, message: str, recipient_list: list[str], from_name: str = ""
+) -> None:
+    """Always-sent account emails (outside the notification rules, ADR-048 item 15) through the
+    same email adapter: Mailpit in dev, in-memory in tests, SES in production."""
+    from apps.notifications.adapters.email import Email, get_email_sender
+
+    sender = get_email_sender()
+    for address in recipient_list:
+        sender.send(Email(address, subject, message, from_name))
 
 
 @shared_task(
@@ -40,7 +51,6 @@ def send_account_locked_email(user_id: str) -> None:
             "If this was you, wait a few minutes and try again, or reset your password.\n"
             "If it wasn't you, reset your password now: someone may be trying to get in.\n"
         ),
-        from_email=None,
         recipient_list=[user.email],
     )
 
@@ -76,7 +86,6 @@ def send_password_reset_email(user_id: str) -> None:
             f"{password_reset_link(user)}\n\n"
             "The link works once. If you didn't ask for this, you can ignore this email.\n"
         ),
-        from_email=None,
         recipient_list=[user.email],
     )
 
@@ -128,8 +137,8 @@ def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str)
             f"To accept, open this link:\n\n{link}\n\n"
             "The link works for 7 days. If you weren't expecting this, you can ignore it.\n"
         ),
-        from_email=None,
         recipient_list=[email],
+        from_name=tenant.name,
     )
 
 

@@ -1,6 +1,6 @@
 # PLAN.md — Master Engineering Plan (v1)
 
-Status: **v1.4 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25), Phase 2 complete (2026-09-26); Phase 3 complete (2026-09-26); Phase 4 complete (2026-09-28, §10.2e, §10.2f); Phase 5 in progress (§10.2g).**
+Status: **v1.4 — product-owner decisions of 2026-09-24, follow-ups and Phase 1 answers of 2026-09-25 applied (see §10). Phase 0 and Phase 1 complete (2026-09-25), Phase 2 complete (2026-09-26); Phase 3 complete (2026-09-26); Phase 4 complete (2026-09-28, §10.2e, §10.2f); Phase 5 complete (2026-09-28, §10.2g); Phase 6 in progress (§10.2h).**
 Source of truth for *what*: `docs/PROJECT_SPEC.md`. Rules for *how*: `CLAUDE.md`.
 Where this plan and the spec disagree, the spec wins until the spec is updated.
 
@@ -280,16 +280,21 @@ Legend:
 | **PaymentIntent** (tenant, Phase 7) | `retailer` FK, `purpose` (INVOICE, OUTSTANDING, CUSTOM), `invoice` FK null, `amount` Money, `provider`, `provider_order_id` unique, `status` (CREATED, ATTEMPTED, PAID, FAILED, EXPIRED), `payment` FK null, `expires_at` | `(t, status, created_at)` |
 | **WebhookEvent** | `tenant` FK null, `provider`, `event_id`, `event_type`, `signature_valid` bool, `payload` jsonb, `headers` jsonb, `processing_status` (RECEIVED, PROCESSED, IGNORED, FAILED), `processed_at`, `error` | unique `(provider, event_id)` |
 
-### 2.13 `notifications` (Phase 6; in-app basics earlier)
+### 2.13 `notifications` (Phase 6, ADR-048)
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **NotificationTemplate** | `tenant` FK null (null = platform default), `event_code`, `channel` (IN_APP, EMAIL, WHATSAPP, SMS, PUSH), `locale`, `subject`, `body` (Django template syntax, sandboxed), `whatsapp_template_name`, `whatsapp_language`, `variables` jsonb (ordered), `is_active` | unique `(tenant, event_code, channel, locale)` nulls not distinct |
-| **NotificationRule** | `tenant` FK null, `event_code`, `recipient_type` (RETAILER, TENANT_OWNERS, ROLE, SALESPERSON, SUPER_ADMINS), `role` FK null, `channels` varchar[], `is_enabled` | unique `(tenant, event_code, recipient_type, role)` |
-| **Notification** (tenant) | `event_id` uuid (OutboxEvent), `event_code`, `recipient` FK→User, `channel`, `address` (email/phone), `title`, `body`, `data` jsonb (deep link), `status` (PENDING, SENT, DELIVERED, FAILED, SKIPPED), `read_at` null, `attempts`, `last_error`, `sent_at`, `provider_message_id` | **unique `(event_id, recipient, channel)`** (idempotent); `(t, recipient, channel, read_at)`, `(t, status, created_at)` |
+| **PlatformTemplate** / **NotificationTemplate** (tenant) | platform defaults (super admin) and a tenant's overrides, in two tables so tenant rows keep row-level security; `event_code`, `audience` (SHOP: the shop's words; STAFF: the office's), `channel` (IN_APP, EMAIL, WHATSAPP, SMS), `locale`, `subject`, `body` (sandboxed substitution of the event's variables), `whatsapp_template_name`, `whatsapp_language`, `whatsapp_category` (UTILITY, MARKETING, AUTHENTICATION), `variables` jsonb (ordered), `is_active` | unique `(event_code, audience, channel, locale)` (platform), `(tenant, event_code, audience, channel, locale)` (tenant) |
+| **NotificationRule** (tenant) | the defaults live in code (`apps.notifications.catalog.DEFAULT_RULES`); a tenant row overrides the default with the same key; `event_code` (a notification event: outbox events split where the default depends on context, e.g. `order.placed_for_shop`, `order.cancelled_by_shop`, `order.dispatched_after_invoice`, `payment.bounced`, `backorder.cancelled_by_shop`), `recipient` (SHOP, SALESPERSON, COLLECTOR, STAFF_PERMISSION, OWNERS), `permission` (code, for STAFF_PERMISSION), `channels` varchar[], `is_enabled`, `is_compulsory` (shop rules) | unique `(tenant, event_code, recipient, permission)` |
+| **Notification** (tenant) | `event_id` (OutboxEvent), `event_code`, `recipient` FK→User, `retailer` FK null (shop recipient), `channel`, `address` (email/phone), `title`, `body`, `data` jsonb (deep link, document link), `urgent` bool, `status` (PENDING, SENT, FAILED, SKIPPED), `skip_reason` (NO_ADDRESS, NO_WHATSAPP_OPT_IN, TURNED_OFF, FEATURE_OFF, PAUSED), `send_after` (quiet hours), `read_at`, `attempts`, `last_error`, `sent_at`, `provider`, `provider_message_id` | **unique `(event_id, recipient, channel)`** (idempotent); `(t, recipient, channel, read_at)`, `(t, status, created_at)` |
 | **DeliveryAttempt** (tenant) | `notification` FK, `attempt_no`, `provider`, `status`, `response` jsonb, `error`, `duration_ms` | `(t, notification)` |
 | **NotificationPreference** (tenant) | `user` FK, `event_code`, `channel`, `enabled` | unique `(user, event_code, channel)` |
-| **DeviceToken** (tenant) | `user` FK, `platform` (ANDROID, WEB), `token` unique, `last_seen_at`, `is_active` | — |
-| **Announcement** (tenant) | `title`, `body`, `image` null, `starts_at`, `ends_at` null, `is_active` | `(t, is_active, starts_at)` |
+| **DocumentLink** (tenant) | `token_hash` unique, `kind` (INVOICE, CREDIT_NOTE, RECEIPT, REFUND_VOUCHER, ORDER_CONFIRMATION), `object_id`, `notification` FK null, `expires_at`, `revoked_at`, `revoked_by`, `open_count`, `last_opened_at` | `(t, kind, object_id)` |
+| **ReminderPause** (tenant) | `retailer` FK, `reason`, `until` date null, `ended_at` null, `created_by` | one open pause per shop |
+| **WhatsAppSender** | `tenant` FK null (null = the platform number), `provider`, `phone_number`, `display_name`, `credentials` (encrypted), `is_active` | one active row per tenant (nulls not distinct) |
+| **Announcement** (tenant) | `title`, `body`, `starts_at`, `ends_at` null, `is_active`, `send_whatsapp` bool, `published_at` null | `(t, is_active, starts_at)` |
+| **DeviceToken** (tenant) | `user` FK, `platform` (ANDROID, WEB), `token` unique, `last_seen_at`, `is_active` | — (Phase 11) |
+
+`retailers.Retailer` gains `whatsapp_opt_in` bool, `whatsapp_opt_in_at`, `whatsapp_opt_in_source` (SHOP_APP, STAFF, IMPORT), `whatsapp_opt_out_at`, `whatsapp_prompted_at` (the one-time prompt).
 
 ### 2.14 `reports`, `dataio`, `audit`, `ai`
 | Model | Fields | Constraints / indexes |
@@ -493,7 +498,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `settings/values` | PATCH | `platform.settings.manage` | `{key: value}`; validated against the registry; audited |
 | `notification-templates`, `/{id}` | CRUD | `platform.settings.manage` | platform default templates (Phase 6) |
 | `dashboard` | GET | `platform.dashboard.view` | KPIs (tenants, orders & GMV/day, top tenants, failures) |
-| `notification-failures` | GET | `platform.dashboard.view` | cross-tenant failed deliveries (Phase 6) |
+| `notification-failures` | GET | `platform.dashboard.view` | cross-tenant failed deliveries (Phase 6, audited platform path) |
 | `audit-logs` | GET | `platform.audit.view` | all-tenant audit search |
 
 ### 3.4 Tenant settings & staff
@@ -685,11 +690,23 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `notifications/unread-count` | GET | own | badge |
 | `notifications/{id}/read`, `notifications/read-all` | POST | own | — |
 | `device-tokens` | POST, DELETE | own | push registration (Phase 11) |
-| `notification-rules` | GET, PUT | `notifications.manage` | event → recipients → channels matrix |
-| `notification-templates`, `/{id}` | GET, PUT | `notifications.manage` | tenant overrides (preview endpoint included) |
-| `notification-deliveries` | GET | `notifications.manage` | delivery log with attempts |
+| `notification-preferences` | GET, PUT | staff (own) | per event and channel within the rules; in-app locked |
+| `notification-rules`, `/{event}` | GET; PUT, DELETE | `notifications.manage` | event → recipients → channels matrix, compulsory flags, WhatsApp cost estimate and opted-in shop count; replace one event's rules, or reset them to the defaults (audited) |
+| `notification-templates/{event}`, `/{event}/{channel}`, `/preview` | GET; PUT, DELETE; POST | `notifications.manage` | the texts in force per channel (`?locale=`); the tenant's own in-app or email text, or back to the platform's; preview with sample values (WhatsApp and SMS texts: super admin only) |
+| `notification-deliveries`, `/counts`, `/{id}` | GET | `notifications.manage` | delivery log (filters: status, channel, event, shop, dates, search), totals per status for 7 days, one message with its attempts |
 | `notification-deliveries/{id}/retry` | POST | `notifications.manage` | manual retry |
 | `announcements`, `/{id}` | CRUD | `notifications.manage` | retailer home announcements |
+| `document-links`, `document-links/revoke` | GET, POST | the document's manage permission | a document's links (opens, expiry); revoke every link to one document (audited) |
+| `retailers/{id}/reminder-pause` | GET, POST, DELETE | `credit.manage` (GET also `ledger.view`) | pause / resume payment reminders (reason, optional end date; audited) |
+| `retailers/{id}/whatsapp-consent` | GET, PUT | `retailers.view` / `retailers.manage` | record opt-in (confirmation required) or opt-out (audited) |
+| `tax/upcoming-rate-changes` | GET | `products.view` | GST rate changes in the next 30 days (dashboard card) |
+| `platform/notification-templates`, `/{event}/{channel}`, `/preview` | GET, PUT, POST | `platform.settings.manage` | the platform's default texts incl. approved WhatsApp templates |
+| `platform/notification-failures`, `/{id}/retry` | GET, POST | `platform.tenants.manage` | failed messages across tenants (audited platform alias), retry |
+| `/api/v1/public/documents/{token}` | GET | 🌐 token, on the tenant's address | 302 to a fresh 5-minute link to the current PDF; otherwise a short page: being prepared (200), expired or revoked (410), unknown (404) |
+| shop: `notifications`, `notifications/unread-count`, `/{id}/read`, `/read-all` | GET, POST | shop | the shop's notification centre |
+| shop: `notification-preferences` | GET, PUT | shop | per event and channel within the rules; compulsory ones locked |
+| shop: `whatsapp-consent`, `/prompted` | GET, PUT, POST | shop | opt in / out; `prompted` records that the one-time question was shown |
+| shop: `announcements` | GET | shop | current announcements (also on `home`) |
 | `dashboard` | GET | `dashboard.view` | "what needs action today" cards, filtered by the user's permissions |
 | `reports` | GET | any staff | available report catalogue for this user |
 | `reports/{code}` | GET | per report (`reports.sales` / `reports.sales_own` / `reports.stock` / `reports.financial`) | paginated JSON (sync, bounded ranges) |
@@ -1481,18 +1498,20 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 5.12 | FE retailer: invoices, statement, outstanding | M |
 | 5.13 | Lock the tenant's GST identity after its first invoice (product-owner note, 2026-09-25): once a tenant has issued an invoice, GSTIN, legal name and state are read-only for the distributor and in the normal super admin edit. Changing them needs a separate super admin action with a reason, recorded in the audit log, and never alters invoices already issued (they keep their snapshot) | M |
 
-### Phase 6 — Notifications
+### Phase 6 — Notifications (ADR-048, §10.2h)
 | # | Task | Size |
 |---|---|---|
-| 6.1 | Models + default rules/templates (en) seed | M |
-| 6.2 | Outbox consumer → rule resolution → idempotent Notification rows | M |
-| 6.3 | Channel adapters: in-app, email (mailpit → SES), WhatsApp (mock + interface), SMS (OTP) | M |
-| 6.4 | Delivery tasks with retries/backoff + DeliveryAttempt log + failure surfacing | M |
-| 6.5 | Sandboxed template rendering, tenant overrides, preview | M |
-| 6.6 | Scheduled payment reminders (beat) + retailer preferences | S |
-| 6.7 | FE: notification centre + real-time badge (all areas) | M |
-| 6.8 | FE: rules matrix, template editor, delivery log, announcements | L |
-| 6.9 | End-to-end tests for every key event with mock adapters | M |
+| 6.1 | Models, event catalogue (urgency, category, variables, documents), default rules and English templates | M |
+| 6.2 | Outbox consumer → rule resolution → idempotent Notification rows (recipients, preferences, compulsory, consent) | M |
+| 6.3 | Channel adapters: in-app (+ live badge), email (mock → SES), WhatsApp (mock + interface, sender per tenant with platform fallback), SMS (OTP, welcome) | M |
+| 6.4 | Delivery tasks with retries/backoff + DeliveryAttempt log + failure surfacing (tenant and platform) | M |
+| 6.5 | Sandboxed template rendering, tenant overrides, preview; secure document links (tokens, expiry, revoke) | M |
+| 6.6 | Quiet hours; scheduled payment reminders (cadence, pauses), handover reminders, GST rate-change warning | M |
+| 6.7 | WhatsApp consent, retailer preferences, announcements | M |
+| 6.8 | APIs, isolation tests, every key event end to end with the mocks — backend checkpoint | M |
+| 6.9 | FE: notification centre + live badge (staff and shop), shop preferences, consent prompt | M |
+| 6.10 | FE: rules matrix with cost estimate, template editor, delivery log, announcements, reminder pauses; platform templates and failures | L |
+| 6.11 | E2E, responsive check — final review | M |
 
 ### Phase 7 — Compliance & online payments (flags default OFF)
 | # | Task | Size |
@@ -1568,6 +1587,8 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Shop confirms delivery | The shop marks a shipment received in the app (ADR-044 item 5). |
 | Proof of delivery code | A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
 | Shop return requests | The shop asks for a return from the app; staff approve it, which issues the return credit note (ADR-046 item 5). |
+| Distributor's own WhatsApp templates | When a distributor connects its own WhatsApp number (`WhatsAppSender`), it manages its own approved templates instead of the platform's (ADR-048, checkpoint decision 2). |
+| Cheque bounce charge | Optional tenant setting (on/off, amount): a bounced cheque debits the charge to the shop's ledger with its own document (ADR-048, checkpoint decision 4). |
 
 ---
 
@@ -1633,6 +1654,12 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Credit & Payments | `payments.hold_advances` | bool | `true` | — | — | Keep extra money paid by a retailer as credit and use it for their next invoices. |
 | Credit & Payments | `payments.sales_can_collect` | bool | `true` | — | — | Let sales staff record payments they collect from their shops (tracked until handed over). |
 | Credit & Payments | `receivables.ageing_basis` | enum | `INVOICE_DATE` | `INVOICE_DATE`, `DUE_DATE` | — | Age receivables by days since the invoice date, or by days past the due date. |
+| Notifications | `notifications.quiet_hours_start` | string (HH:MM) | `21:00` | — | — | Reminders and other non-urgent WhatsApp, SMS and email messages wait from this time… |
+| Notifications | `notifications.quiet_hours_end` | string (HH:MM) | `08:00` | — | — | …until this time. Messages about an order or payment the shop just made are sent at once. |
+| Notifications | `notifications.document_link_days` | int | `30` | 1–365 | — | How long links to invoices, credit notes, receipts and vouchers in messages keep working. |
+| Notifications | `notifications.payment_reminder_days` | string | `-2,3,7,15,30` | — | — | Days relative to the due date when shops are reminded of overdue bills (minus = before). |
+| Notifications | `notifications.payment_reminder_repeat_days` | int | `15` | 0–90 (0 = no more) | — | After the last reminder above, remind again every this many days. |
+| Notifications | `notifications.handover_reminder_days` | int | `2` | 1–30 | — | Remind a salesman and Accounts when a collection has not been handed over after this many days. |
 | Credit & Payments | `payments.cheque_credit_timing` | enum | `ON_RECEIPT` | `ON_RECEIPT`, `ON_CLEARANCE` | PAYMENT | Credit a cheque to the retailer's account when received (reversed automatically if it bounces) or only when it clears. |
 | Security | `security.require_staff_2fa` | bool | `false` | — | — | Require every staff member to set up two-step verification (an authenticator app) before they can sign in. Only owners can change this (ADR-030). |
 | Pricing | `pricing.discounts_on_special_prices` | bool | `true` | — | — (ORDER from Phase 4) | Apply discount rules on top of retailer special prices. Turn off to treat a special price as the final price (ADR-036). |
@@ -1643,6 +1670,8 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 Later phases add keys through the same registry (e.g. notification channels in Phase 6; e-invoice/e-way bill and gateway options in Phase 7). Feature flags stay a separate mechanism (`FeatureFlag`/`TenantFeature`), because they gate whole modules.
 
 ### 9.2 Platform scope
+(Phase 6 adds `platform.whatsapp_price_utility`, `platform.whatsapp_price_marketing`, `platform.whatsapp_price_authentication`: money, empty until set; used only for the rules screen's cost estimate, ADR-048.)
+
 
 | Group | Key | Type | Default | Allowed | Description |
 |---|---|---|---|---|---|
@@ -1807,6 +1836,55 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 8 | Ageing | ⚙ `receivables.ageing_basis`: invoice date (default) or days past due; due = invoice date + payment terms |
 | 9 | Overdue blocking | Same rules as over the limit |
 | 10 | Advances | Applied automatically, oldest money first; `payments.record` can reverse and reallocate (audited) |
+
+### 10.2h Phase 6 plan decisions (2026-09-29, ADR-048)
+| # | Question | Answer |
+|---|---|---|
+| 1 | WhatsApp identity | One platform number; per-tenant sender designed in (falls back to the platform); the distributor is named in every template body; provider to confirm one number may send for several businesses |
+| 2 | WhatsApp provider | Undecided: interface + mock only, `TODO(verify)` |
+| 3 | Dispatch vs invoice | Invoicing at dispatch: the invoice's WhatsApp covers dispatch; `order.dispatched` in-app. At acceptance: dispatch carries transport details on WhatsApp |
+| 4 | Document links | 30 days (⚙), no sign-in, one document; always the current PDF (Reversed/Bounced); revocable by staff (audited) |
+| 5 | Payment reminders | ⚙ cadence `-2,3,7,15,30` then every 15 days; shops can't switch off; `credit.manage` pauses per shop (reason, optional end date, audited) |
+| 6 | Handover reminders | ⚙ 2 days; salesman in-app + WhatsApp, `payments.record` in-app, daily 09:00 |
+| 7 | Quiet hours | ⚙ 21:00–08:00; non-urgent = reminders, stock alerts, GST warnings, announcements; in-app never held |
+| 8 | Compulsory | Per rule flag; default invoice, credit note, bounced cheque, payment reminder; in-app never off |
+| 9 | GST rate warning | Daily job in Phase 6 |
+| 10 | Welcome and staff emails | Welcome SMS through the service; staff emails outside the rules via the email adapter |
+| 11 | WhatsApp price | Platform price per category (utility, marketing, authentication), empty until set; counts only until then |
+| 12 | Shop email | Invoices, credit notes and receipts by email to shops with an address |
+| 13 | WhatsApp consent | Opt-in with time and source (shop app prompt/switch, staff with confirmation, import); no WhatsApp without it; opt-out any time; opted-in count on the rules screen; "STOP" replies wait for the provider |
+
+**Default rules** (IN = in-app, WA = WhatsApp (only to opted-in shops), EM = email (only with an address); 🌙 = non-urgent; ★ = compulsory by default):
+
+| Event | Default recipients and channels |
+|---|---|
+| `order.placed` | `orders.manage` staff IN; salesperson IN; shop IN (+ WA when placed by staff) |
+| `order.on_hold` | `credit.manage` staff IN + EM; shop IN |
+| `order.hold_approved`, `order.delivered`, `order.completed` | shop IN |
+| `order.accepted` | shop IN + WA (with the Order Confirmation link) |
+| `order_confirmation.created` | — (covered by `order.accepted`) |
+| `order.rejected`, `order.modified`, `order.short_supplied` | shop IN + WA |
+| `order.cancelled` | by staff: shop IN + WA; by the shop: `orders.manage` staff IN |
+| `order.dispatched` | shop IN (+ WA with transport details when invoicing at acceptance) |
+| `backorder.proposed` | `orders.allocate_backorder` staff IN |
+| `backorder.allocated` | shop IN + WA (price increase: with the cancel link) |
+| `backorder.skipped_credit`, `backorder.skipped_blocked` | `credit.manage` staff IN |
+| `backorder.cancelled`, `backorder.repriced_cancelled` | by the shop: `orders.manage` staff IN; by staff: shop IN |
+| `stock.alert_opened` 🌙 | `stock.inward` staff IN |
+| `stock.alert_resolved` | — |
+| `invoice.issued` ★ | shop IN + WA + EM (PDF link) |
+| `credit_note.issued` ★ | shop IN + WA + EM (PDF link) |
+| `payment.received` | shop IN + WA + EM (receipt link) |
+| `payment.cleared`, `refund.reversed` | shop IN |
+| `payment.reversed` (bounced) ★ | shop IN + WA; `payments.record` staff IN; salesperson IN |
+| `payment.reversed` (entered in error) | shop IN |
+| `refund.recorded` | shop IN + WA (voucher link) |
+| `payment.handed_over` | collecting salesman IN |
+| `payment.reminder` 🌙 ★ | shop IN + WA; salesperson IN |
+| `handover.reminder` 🌙 | collecting salesman IN + WA; `payments.record` staff IN |
+| `tax.rate_change_upcoming` 🌙 | `products.manage` staff IN + EM |
+| `retailer.welcome` | shop SMS |
+| `announcement.published` 🌙 | shop IN (WA only when chosen) |
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

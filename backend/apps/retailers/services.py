@@ -415,30 +415,23 @@ def resend_welcome(retailer_id: UUID, *, by: User) -> None:
 
 
 def send_welcome(retailer_id: str) -> None:
-    """Runs in a task (tenant set, no transaction held while the message is sent)."""
-    from apps.accounts.adapters.sms import get_sms_sender
-    from apps.platform.selectors import public_branding
-    from common.hosts import web_url
+    """Runs in a task (tenant set): the welcome SMS as a notification (ADR-048 item 15: logged,
+    retried by the delivery, never switched off). Each call is a new message (a resend)."""
+    from uuid import uuid4
+
+    from apps.notifications.context import EventContext
+    from apps.notifications.jobs import notify
     from common.tenancy import tenant_transaction
 
-    tenant_id = require_tenant_id()
-    with tenant_transaction(tenant_id):
+    with tenant_transaction(require_tenant_id()):
         retailer = Retailer.objects.filter(pk=retailer_id, deleted_at__isnull=True).first()
         if retailer is None:
             return
-        from apps.platform.models import Tenant
-
-        tenant = Tenant.objects.get(pk=tenant_id)
-        brand = public_branding(tenant.slug) or {}
-        name = str(brand.get("display_name") or tenant.name)
-        mobile, shop = retailer.mobile, retailer.shop_name
-    link = web_url("/shop/login", tenant_slug=tenant.slug)
-    text = (
-        f"{name} has added {shop} to its ordering app. Sign in with this mobile number to see "
-        f"prices and order: {link}"
-    )
-    get_sms_sender().send_text(mobile, text, sender_name=name, template="retailer_welcome")
-    with tenant_transaction(tenant_id):
+        ctx = EventContext(
+            "retailer.welcome", {"shop": retailer.shop_name}, retailer=retailer,
+            shop_path="/shop/login",
+        )  # fmt: skip
+        notify(uuid4(), ctx)
         Retailer.objects.filter(pk=retailer_id).update(welcome_sent_at=timezone.now())
 
 

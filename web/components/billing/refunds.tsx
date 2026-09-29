@@ -1,5 +1,6 @@
 "use client";
 
+import { DocumentLinksCard } from "@/components/notifications/manage/cards";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
@@ -358,6 +359,9 @@ export function RefundDetailPage({ refundId }: { refundId: string }) {
             {t("recordedBy", { name: refund.recorded_by_name || "—" })}
           </p>
         </section>
+        <div className="max-w-2xl">
+          <DocumentLinksCard kind="REFUND_VOUCHER" objectId={refund.id} />
+        </div>
       </div>
     </>
   );

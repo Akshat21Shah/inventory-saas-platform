@@ -19,6 +19,7 @@ import { AccountMenu } from "@/components/auth/account-menu";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
 import { RequireArea } from "@/components/auth/require-area";
+import { NotificationBell } from "@/components/notifications/bell";
 import { SidebarShell, type NavItem } from "@/components/shared/app-shell";
 import { DistributorLiveUpdates } from "@/components/orders/live";
 import { useStockSummary } from "@/lib/api/generated/endpoints/inventory/inventory";
@@ -64,6 +65,7 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
       badges={useNavBadges()}
       banner={<ImpersonationBanner />}
       account={<AccountMenu accountHref="/manage/account" />}
+      headerActions={<NotificationBell scope="staff" />}
     >
       {children}
     </SidebarShell>

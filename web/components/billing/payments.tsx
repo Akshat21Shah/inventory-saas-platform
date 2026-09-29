@@ -1,5 +1,6 @@
 "use client";
 
+import { DocumentLinksCard } from "@/components/notifications/manage/cards";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, HandCoins, Plus } from "lucide-react";
 import Link from "next/link";
@@ -905,6 +906,7 @@ export function PaymentDetailPage({ paymentId }: { paymentId: string }) {
                 {t("creditLeft")} <MoneyText value={payment.unapplied_amount} />
               </p>
             ) : null}
+            <DocumentLinksCard kind="RECEIPT" objectId={payment.id} />
           </section>
           <aside className="rounded-xl border p-4">
             <dl className="space-y-2 text-sm">

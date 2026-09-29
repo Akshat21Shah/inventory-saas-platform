@@ -17,8 +17,9 @@ const allowedDevOrigins =
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   allowedDevOrigins,
-  // Keep the dev-only indicator clear of the retailer bottom navigation.
-  devIndicators: { position: "top-right" },
+  // No dev-only "N" indicator: every corner holds a control (the shop's bottom navigation, the
+  // notification bell and account menu at the top). Build and runtime errors still show.
+  devIndicators: false,
   reactStrictMode: true,
   // Django API paths end with "/" — never strip it on /api/* rewrites. Page URLs are normalised to
   // no trailing slash in proxy.ts instead.

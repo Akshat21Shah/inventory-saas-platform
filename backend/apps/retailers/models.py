@@ -12,6 +12,11 @@ from common.models import SoftDeleteMixin, TenantScopedModel
 
 
 class Retailer(SoftDeleteMixin, TenantScopedModel):
+    class WhatsAppOptInSource(models.TextChoices):
+        SHOP_APP = "SHOP_APP", "The shop, in the app"
+        STAFF = "STAFF", "Staff"
+        IMPORT = "IMPORT", "Import"
+
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"
         BLOCKED = "BLOCKED", "On hold"
@@ -38,6 +43,17 @@ class Retailer(SoftDeleteMixin, TenantScopedModel):
     notes = models.TextField(blank=True, default="")
     tags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     preferred_language = models.CharField(max_length=5, default="en")
+    # WhatsApp consent (ADR-048 item 5): no WhatsApp message without opt-in.
+    whatsapp_opt_in = models.BooleanField(default=False)
+    whatsapp_opt_in_at = models.DateTimeField(null=True, blank=True)
+    whatsapp_opt_in_source = models.CharField(
+        max_length=8,
+        blank=True,
+        default="",
+        choices=WhatsAppOptInSource.choices,
+    )
+    whatsapp_opt_out_at = models.DateTimeField(null=True, blank=True)
+    whatsapp_prompted_at = models.DateTimeField(null=True, blank=True)  # the one-time prompt
     welcome_sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

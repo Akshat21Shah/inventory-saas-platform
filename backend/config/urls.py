@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import URLPattern, URLResolver, include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.notifications.api.public import PublicDocumentView
 from apps.platform.api.views import PublicStatesView
 from common import health
 from common.api import MetaView
@@ -13,6 +14,7 @@ api_v1: list[URLPattern | URLResolver] = [
     path("auth/", include("apps.accounts.api.urls")),
     path("", include("apps.accounts.api.staff_urls")),
     path("platform/", include("apps.platform.api.urls")),
+    path("platform/", include("apps.notifications.api.platform_urls")),
     path("", include("apps.platform.api.tenant_urls")),
     path("", include("apps.dataio.api.urls")),
     path("", include("apps.catalog.api.urls")),
@@ -23,8 +25,11 @@ api_v1: list[URLPattern | URLResolver] = [
     path("", include("apps.billing.api.urls")),
     path("", include("apps.ledger.api.urls")),
     path("", include("apps.payments.api.urls")),
+    path("", include("apps.notifications.api.urls")),
     path("shop/", include("apps.shop.api.urls")),
+    path("shop/", include("apps.notifications.api.shop_urls")),
     path("public/states/", PublicStatesView.as_view(), name="public-states"),
+    path("public/documents/<str:token>/", PublicDocumentView.as_view(), name="public-document"),
 ]
 
 urlpatterns = [

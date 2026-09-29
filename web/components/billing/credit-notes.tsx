@@ -1,5 +1,6 @@
 "use client";
 
+import { DocumentLinksCard } from "@/components/notifications/manage/cards";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -339,6 +340,7 @@ export function CreditNoteDetailPage({ noteId }: { noteId: string }) {
               </h2>
               <UsedForList rows={note.used_for} />
             </section>
+            <DocumentLinksCard kind="CREDIT_NOTE" objectId={note.id} />
           </div>
           <aside className="space-y-4 rounded-xl border p-4">
             <h2 className="font-semibold">{t("totals")}</h2>

@@ -29,6 +29,7 @@ class Group(StrEnum):
     PRICING = "pricing"
     RETAILERS = "retailers"
     SECURITY = "security"
+    NOTIFICATIONS = "notifications"
 
 
 class SettingType(StrEnum):
@@ -162,6 +163,10 @@ def from_json(defn: SettingDef, stored: Any) -> Any:
     if defn.type is SettingType.MONEY:
         return Decimal(str(stored))
     return stored
+
+
+_CLOCK = r"([01]\d|2[0-3]):[0-5]\d"  # 24-hour, IST
+_PRICE = r"\d{1,4}(\.\d{1,4})?"  # rupees, up to 4 decimals (WhatsApp prices are paise)
 
 
 def _tenant(
@@ -347,6 +352,37 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               min_value=1, max_value=20),
     _platform("platform.otp_max_verify_attempts", Group.SECURITY, SettingType.INT, 5,
               "Wrong codes allowed before an OTP stops working.", min_value=3, max_value=10),
+    # --- Notifications (ADR-048) ---------------------------------------------------------------
+    _tenant("notifications.quiet_hours_start", Group.NOTIFICATIONS, SettingType.STRING, "21:00",
+            "From this time, reminders and other non-urgent WhatsApp, SMS and email messages wait "
+            "until quiet hours end. In-app messages are never held.",
+            pattern=_CLOCK),
+    _tenant("notifications.quiet_hours_end", Group.NOTIFICATIONS, SettingType.STRING, "08:00",
+            "When quiet hours end and held messages go out.",
+            pattern=_CLOCK),
+    _tenant("notifications.document_link_days", Group.NOTIFICATIONS, SettingType.INT, 30,
+            "How many days a bill or receipt link sent by WhatsApp or email keeps working.",
+            min_value=1, max_value=365),
+    _tenant("notifications.payment_reminder_days", Group.NOTIFICATIONS, SettingType.STRING,
+            "-2,3,7,15,30",
+            "Days to remind shops of their bills: a minus number is days before the due date, the "
+            "others days after it.",
+            pattern=r"-?\d{1,3}(,-?\d{1,3}){0,9}"),
+    _tenant("notifications.payment_reminder_repeat_days", Group.NOTIFICATIONS, SettingType.INT,
+            15, "After the last reminder day, remind again every this many days (0: stop).",
+            min_value=0, max_value=90),
+    _tenant("notifications.handover_reminder_days", Group.NOTIFICATIONS, SettingType.INT, 2,
+            "Remind salesmen of collections not handed over after this many days.",
+            min_value=1, max_value=30),
+    _platform("platform.whatsapp_price_utility", Group.NOTIFICATIONS, SettingType.STRING, None,
+              "Price in rupees of one WhatsApp utility message (orders, bills, payments, "
+              "reminders), for distributors' cost estimates.", pattern=_PRICE, nullable=True),
+    _platform("platform.whatsapp_price_marketing", Group.NOTIFICATIONS, SettingType.STRING, None,
+              "Price in rupees of one WhatsApp marketing message (announcements).",
+              pattern=_PRICE, nullable=True),
+    _platform("platform.whatsapp_price_authentication", Group.NOTIFICATIONS, SettingType.STRING,
+              None, "Price in rupees of one WhatsApp authentication message (sign-in codes).",
+              pattern=_PRICE, nullable=True),
 )
 # fmt: on
 
