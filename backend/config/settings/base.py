@@ -159,6 +159,7 @@ CELERY_BEAT_SCHEDULE = {
     "login-records-purge": {"task": "accounts.purge_expired_login_records", "schedule": 3600.0},
     "impersonation-expiry": {"task": "accounts.expire_impersonation_sessions", "schedule": 60.0},
     "notifications-send-due": {"task": "notifications.send_due", "schedule": 60.0},
+    "compliance-retry-due": {"task": "compliance.retry_due", "schedule": 60.0},  # ADR-049
     # Daily notification jobs (ADR-048), IST times written in UTC (CELERY_TIMEZONE).
     "notifications-rate-change-warnings": {
         "task": "notifications.rate_change_warnings",
@@ -268,6 +269,8 @@ SPECTACULAR_SETTINGS = {
         "TemplateApprovalStatusEnum": "apps.notifications.models.ApprovalStatus",
         "GstEnvironmentEnum": "apps.compliance.models.GstCredential.Environment",
         "GstCredentialStatusEnum": "apps.compliance.models.GstCredential.Status",
+        "EInvoiceRecordStatusEnum": "apps.compliance.models.EInvoiceRecord.Status",
+        "EInvoiceDocumentTypeEnum": "apps.compliance.models.DocumentType",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

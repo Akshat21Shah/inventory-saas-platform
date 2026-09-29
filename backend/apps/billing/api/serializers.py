@@ -3,6 +3,7 @@ the saved documents (the thin-client rule)."""
 
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.billing.models import (
@@ -14,6 +15,7 @@ from apps.billing.models import (
     PaymentStatus,
     PdfStatus,
 )
+from apps.compliance.api.serializers import EInvoiceSummarySerializer
 from apps.pricing.api.serializers import ShopRefSerializer, money, qty
 from common.dates import today_ist
 
@@ -191,6 +193,11 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
     irn = serializers.CharField()
     ack_no = serializers.CharField()
     ack_date = serializers.DateTimeField(allow_null=True)
+    einvoice = serializers.SerializerMethodField()
+
+    @extend_schema_field(EInvoiceSummarySerializer(allow_null=True))
+    def get_einvoice(self, obj: Invoice) -> dict[str, Any] | None:
+        return _einvoice(obj)
 
     class Meta(InvoiceRowSerializer.Meta):
         fields = [
@@ -213,7 +220,24 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
             "irn",
             "ack_no",
             "ack_date",
+            "einvoice",
         ]
+
+
+class ShopInvoiceDetailSerializer(InvoiceDetailSerializer):
+    """The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
+    on the bill and its PDF)."""
+
+    class Meta(InvoiceDetailSerializer.Meta):
+        fields = [f for f in InvoiceDetailSerializer.Meta.fields if f != "einvoice"]
+
+
+def _einvoice(doc: Invoice | CreditNote) -> dict[str, Any] | None:
+    """The document's IRN record, when it has one (Phase 7; null while e-invoicing is off)."""
+    from apps.compliance.selectors import summary_for
+
+    found = summary_for(doc)
+    return dict(EInvoiceSummarySerializer(found).data) if found is not None else None
 
 
 class CreditNoteLineSerializer(serializers.Serializer[Any]):
@@ -246,6 +270,14 @@ class CreditNoteDetailSerializer(CreditNoteRowSerializer):
     amount_in_words = serializers.CharField()
     lines = CreditNoteLineSerializer(many=True)
     used_for = UsedForSerializer(many=True, source="used_for_rows")
+    irn = serializers.CharField()
+    ack_no = serializers.CharField()
+    ack_date = serializers.DateTimeField(allow_null=True)
+    einvoice = serializers.SerializerMethodField()
+
+    @extend_schema_field(EInvoiceSummarySerializer(allow_null=True))
+    def get_einvoice(self, obj: CreditNote) -> dict[str, Any] | None:
+        return _einvoice(obj)
 
     class Meta(CreditNoteRowSerializer.Meta):
         fields = [
@@ -259,6 +291,10 @@ class CreditNoteDetailSerializer(CreditNoteRowSerializer):
             "amount_in_words",
             "lines",
             "used_for",
+            "irn",
+            "ack_no",
+            "ack_date",
+            "einvoice",
         ]
 
 

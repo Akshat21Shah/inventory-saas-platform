@@ -30,7 +30,6 @@ import type {
   ConsentState,
   DeliveryAddress,
   DocumentLink,
-  InvoiceDetail,
   MarkedRead,
   PaginatedInboxItemList,
   PaginatedInvoiceRowList,
@@ -55,6 +54,7 @@ import type {
   ShopCategory,
   ShopConsentInputRequest,
   ShopHome,
+  ShopInvoiceDetail,
   ShopInvoicesListParams,
   ShopLedgerParams,
   ShopNotificationsParams,
@@ -1616,7 +1616,7 @@ export function useShopInvoicesList<TData = Awaited<ReturnType<typeof shopInvoic
 
 
 export type shopInvoicesRetrieveResponse200 = {
-  data: InvoiceDetail
+  data: ShopInvoiceDetail
   status: 200
 }
 

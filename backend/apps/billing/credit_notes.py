@@ -210,6 +210,9 @@ def _issue(
     if applied > 0:
         allocation.apply(account, note, invoice, applied, automatic=True, by=by)
     allocation.settle(account, by=by)  # anything beyond the invoice: the shop's next dues
+    from apps.compliance.einvoice import on_issued
+
+    on_issued(note)  # the IRN, when e-invoicing is on and the shop has a GSTIN (ADR-049)
     outbox.emit(
         "credit_note.issued",
         aggregate_type="CreditNote",

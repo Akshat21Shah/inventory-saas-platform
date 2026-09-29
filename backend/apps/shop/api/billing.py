@@ -14,8 +14,8 @@ from apps.billing import documents
 from apps.billing import selectors as billing
 from apps.billing.api.serializers import (
     DocumentLinkSerializer,
-    InvoiceDetailSerializer,
     InvoiceRowSerializer,
+    ShopInvoiceDetailSerializer,
 )
 from apps.billing.models import CreditNote, Invoice, OrderConfirmation
 from apps.ledger import selectors as ledger
@@ -73,13 +73,13 @@ class ShopInvoicesView(ShopView):
 
 class ShopInvoiceDetailView(ShopView):
     @extend_schema(
-        operation_id="shop_invoices_retrieve", tags=TAGS, responses=InvoiceDetailSerializer
+        operation_id="shop_invoices_retrieve", tags=TAGS, responses=ShopInvoiceDetailSerializer
     )
     def get(self, request: Request, invoice_id: UUID) -> Response:
         invoice = billing.invoice_detail(invoice_id, retailer_id=_retailer(request).pk)
         if invoice is None:
             raise NotFound()
-        return Response(InvoiceDetailSerializer(invoice).data)
+        return Response(ShopInvoiceDetailSerializer(invoice).data)
 
 
 class ShopInvoicePdfView(ShopView):

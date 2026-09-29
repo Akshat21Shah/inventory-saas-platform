@@ -8,7 +8,7 @@ from typing import Any
 from apps.accounts.models import User
 from apps.notifications.catalog import EVENTS
 from apps.notifications.models import Channel, NotificationPreference, Recipient
-from apps.notifications.rules import EffectiveRule, effective_rules
+from apps.notifications.rules import EffectiveRule, available, effective_rules
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
 
@@ -28,7 +28,7 @@ def _staff_gets(user: User, rule: EffectiveRule) -> bool:
 def _events_for(user: User, shop: bool) -> dict[str, dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for rule in effective_rules():
-        if not rule.enabled or not rule.channels:
+        if not rule.enabled or not rule.channels or not available(rule.event):
             continue
         mine = rule.recipient == Recipient.SHOP if shop else _staff_gets(user, rule)
         if not mine:

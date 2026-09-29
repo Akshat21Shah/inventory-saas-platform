@@ -21,7 +21,7 @@ from apps.notifications.models import (
     PlatformTemplate,
     Recipient,
 )
-from apps.notifications.rules import effective_rules
+from apps.notifications.rules import available, effective_rules
 from common.platform_db import platform_db
 
 ESTIMATE_DAYS = 30
@@ -166,6 +166,8 @@ def rules_matrix() -> dict[str, Any]:
     events = []
     total_cost: Decimal | None = Decimal("0")
     for code, event in EVENTS.items():
+        if event.feature and not available(code):
+            continue
         rules = by_event.get(code, [])
         uses_whatsapp = any(r["enabled"] and Channel.WHATSAPP in r["channels"] for r in rules)
         messages = estimates.get(code, 0) if event.shop_facing or uses_whatsapp else 0

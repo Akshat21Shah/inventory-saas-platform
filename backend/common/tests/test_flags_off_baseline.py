@@ -68,6 +68,12 @@ ALLOWED_NEW: dict[str, Any] = {
     # WhatsApp template approval (commit 3): the mock sends every template, as before.
     "api.notification-rules.whatsapp_approval_required": False,
     "api.notification-rules.events.whatsapp.templates": lambda v: all(t["ready"] for t in v),
+    # E-invoices (commit 5): no IRN while e-invoicing is off.
+    "api.invoice.einvoice": None,
+    "api.credit-note.einvoice": None,
+    "api.credit-note.irn": "",
+    "api.credit-note.ack_no": "",
+    "api.credit-note.ack_date": None,
 }
 
 # Random by design: stored as "<random>".

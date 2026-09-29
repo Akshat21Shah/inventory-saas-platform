@@ -268,7 +268,27 @@ def _stock_alert(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventCo
     return EventContext(code, values, staff_path="/manage/stock/alerts")
 
 
+def _einvoice(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
+    p = event.payload
+    retailer = Retailer.objects.filter(pk=p["retailer_id"]).first()
+    if retailer is None:
+        return None
+    path = (
+        f"/manage/invoices/{p['document_id']}"
+        if p["document_type"] == "INVOICE"
+        else f"/manage/invoices/credit-notes/{p['document_id']}"
+    )
+    values = {
+        **base,
+        "shop": retailer.shop_name,
+        "document_number": p["document_number"],
+        "error": p["error"],
+    }
+    return EventContext(code, values, retailer=retailer, staff_path=path)
+
+
 BUILDERS = {
+    "einvoice": _einvoice,
     "order": _order,
     "backorder": _order,
     "invoice": _invoice,

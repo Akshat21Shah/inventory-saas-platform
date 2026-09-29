@@ -25,8 +25,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  EInvoiceCounts,
+  EInvoiceRow,
+  EinvoicesListParams,
   GstCredentials,
-  GstCredentialsInputRequest
+  GstCredentialsInputRequest,
+  PaginatedEInvoiceRowList
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -51,7 +55,490 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export type gstCredentialsResponse200 = {
+export type creditNoteEinvoiceRequestResponse200 = {
+  data: EInvoiceRow
+  status: 200
+}
+
+export type creditNoteEinvoiceRequestResponseSuccess = (creditNoteEinvoiceRequestResponse200) & {
+  headers: Headers;
+};
+;
+
+export type creditNoteEinvoiceRequestResponse = (creditNoteEinvoiceRequestResponseSuccess)
+
+export const getCreditNoteEinvoiceRequestUrl = (noteId: string,) => {
+
+
+
+
+  return `/api/v1/credit-notes/${noteId}/einvoice/`
+}
+
+export const creditNoteEinvoiceRequest = async (noteId: string, options?: Parameters<typeof apiFetch>[1]): Promise<creditNoteEinvoiceRequestResponse> => {
+
+  return apiFetch<creditNoteEinvoiceRequestResponse>(getCreditNoteEinvoiceRequestUrl(noteId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreditNoteEinvoiceRequestMutationKey = () => ['creditNoteEinvoiceRequest'] as const;
+
+export const getCreditNoteEinvoiceRequestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof creditNoteEinvoiceRequest>>, TError,CreditNoteEinvoiceRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof creditNoteEinvoiceRequest>>, TError,CreditNoteEinvoiceRequestMutationVariables, TContext> => {
+
+const mutationKey = getCreditNoteEinvoiceRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof creditNoteEinvoiceRequest>>, CreditNoteEinvoiceRequestMutationVariables> = (props) => {
+          const {noteId} = props ?? {};
+
+          return  creditNoteEinvoiceRequest(noteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreditNoteEinvoiceRequestMutationResult = NonNullable<Awaited<ReturnType<typeof creditNoteEinvoiceRequest>>>
+
+    export type CreditNoteEinvoiceRequestMutationError = unknown
+    export type CreditNoteEinvoiceRequestMutationVariables = {noteId: string}
+
+    export const useCreditNoteEinvoiceRequest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof creditNoteEinvoiceRequest>>, TError,CreditNoteEinvoiceRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof creditNoteEinvoiceRequest>>,
+        TError,
+        CreditNoteEinvoiceRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreditNoteEinvoiceRequestMutationOptions(options), queryClient);
+    }
+    export type einvoicesListResponse200 = {
+  data: PaginatedEInvoiceRowList
+  status: 200
+}
+
+export type einvoicesListResponseSuccess = (einvoicesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type einvoicesListResponse = (einvoicesListResponseSuccess)
+
+export const getEinvoicesListUrl = (params?: EinvoicesListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/einvoices/?${stringifiedParams}` : `/api/v1/einvoices/`
+}
+
+export const einvoicesList = async (params?: EinvoicesListParams, options?: Parameters<typeof apiFetch>[1]): Promise<einvoicesListResponse> => {
+
+  return apiFetch<einvoicesListResponse>(getEinvoicesListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getEinvoicesListQueryKey = (params?: EinvoicesListParams,) => {
+    return [
+    `/api/v1/einvoices/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getEinvoicesListQueryOptions = <TData = Awaited<ReturnType<typeof einvoicesList>>, TError = unknown>(params?: EinvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getEinvoicesListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof einvoicesList>>> = ({ signal }) => einvoicesList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof einvoicesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type EinvoicesListQueryResult = NonNullable<Awaited<ReturnType<typeof einvoicesList>>>
+export type EinvoicesListQueryError = unknown
+
+
+export function useEinvoicesList<TData = Awaited<ReturnType<typeof einvoicesList>>, TError = unknown>(
+ params: undefined |  EinvoicesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoicesList>>,
+          TError,
+          Awaited<ReturnType<typeof einvoicesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoicesList<TData = Awaited<ReturnType<typeof einvoicesList>>, TError = unknown>(
+ params?: EinvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoicesList>>,
+          TError,
+          Awaited<ReturnType<typeof einvoicesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoicesList<TData = Awaited<ReturnType<typeof einvoicesList>>, TError = unknown>(
+ params?: EinvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useEinvoicesList<TData = Awaited<ReturnType<typeof einvoicesList>>, TError = unknown>(
+ params?: EinvoicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getEinvoicesListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type einvoicesRetrieveResponse200 = {
+  data: EInvoiceRow
+  status: 200
+}
+
+export type einvoicesRetrieveResponseSuccess = (einvoicesRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type einvoicesRetrieveResponse = (einvoicesRetrieveResponseSuccess)
+
+export const getEinvoicesRetrieveUrl = (recordId: string,) => {
+
+
+
+
+  return `/api/v1/einvoices/${recordId}/`
+}
+
+export const einvoicesRetrieve = async (recordId: string, options?: Parameters<typeof apiFetch>[1]): Promise<einvoicesRetrieveResponse> => {
+
+  return apiFetch<einvoicesRetrieveResponse>(getEinvoicesRetrieveUrl(recordId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getEinvoicesRetrieveQueryKey = (recordId: string,) => {
+    return [
+    `/api/v1/einvoices/${recordId}/`
+    ] as const;
+    }
+
+
+export const getEinvoicesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof einvoicesRetrieve>>, TError = unknown>(recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getEinvoicesRetrieveQueryKey(recordId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof einvoicesRetrieve>>> = ({ signal }) => einvoicesRetrieve(recordId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: recordId !== null && recordId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof einvoicesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type EinvoicesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof einvoicesRetrieve>>>
+export type EinvoicesRetrieveQueryError = unknown
+
+
+export function useEinvoicesRetrieve<TData = Awaited<ReturnType<typeof einvoicesRetrieve>>, TError = unknown>(
+ recordId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoicesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof einvoicesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoicesRetrieve<TData = Awaited<ReturnType<typeof einvoicesRetrieve>>, TError = unknown>(
+ recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoicesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof einvoicesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoicesRetrieve<TData = Awaited<ReturnType<typeof einvoicesRetrieve>>, TError = unknown>(
+ recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useEinvoicesRetrieve<TData = Awaited<ReturnType<typeof einvoicesRetrieve>>, TError = unknown>(
+ recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getEinvoicesRetrieveQueryOptions(recordId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type einvoicesCountsResponse200 = {
+  data: EInvoiceCounts
+  status: 200
+}
+
+export type einvoicesCountsResponseSuccess = (einvoicesCountsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type einvoicesCountsResponse = (einvoicesCountsResponseSuccess)
+
+export const getEinvoicesCountsUrl = () => {
+
+
+
+
+  return `/api/v1/einvoices/counts/`
+}
+
+export const einvoicesCounts = async ( options?: Parameters<typeof apiFetch>[1]): Promise<einvoicesCountsResponse> => {
+
+  return apiFetch<einvoicesCountsResponse>(getEinvoicesCountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getEinvoicesCountsQueryKey = () => {
+    return [
+    `/api/v1/einvoices/counts/`
+    ] as const;
+    }
+
+
+export const getEinvoicesCountsQueryOptions = <TData = Awaited<ReturnType<typeof einvoicesCounts>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesCounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getEinvoicesCountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof einvoicesCounts>>> = ({ signal }) => einvoicesCounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof einvoicesCounts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type EinvoicesCountsQueryResult = NonNullable<Awaited<ReturnType<typeof einvoicesCounts>>>
+export type EinvoicesCountsQueryError = unknown
+
+
+export function useEinvoicesCounts<TData = Awaited<ReturnType<typeof einvoicesCounts>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesCounts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoicesCounts>>,
+          TError,
+          Awaited<ReturnType<typeof einvoicesCounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoicesCounts<TData = Awaited<ReturnType<typeof einvoicesCounts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesCounts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoicesCounts>>,
+          TError,
+          Awaited<ReturnType<typeof einvoicesCounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoicesCounts<TData = Awaited<ReturnType<typeof einvoicesCounts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesCounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useEinvoicesCounts<TData = Awaited<ReturnType<typeof einvoicesCounts>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoicesCounts>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getEinvoicesCountsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type invoiceEinvoiceRequestResponse200 = {
+  data: EInvoiceRow
+  status: 200
+}
+
+export type invoiceEinvoiceRequestResponseSuccess = (invoiceEinvoiceRequestResponse200) & {
+  headers: Headers;
+};
+;
+
+export type invoiceEinvoiceRequestResponse = (invoiceEinvoiceRequestResponseSuccess)
+
+export const getInvoiceEinvoiceRequestUrl = (invoiceId: string,) => {
+
+
+
+
+  return `/api/v1/invoices/${invoiceId}/einvoice/`
+}
+
+export const invoiceEinvoiceRequest = async (invoiceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<invoiceEinvoiceRequestResponse> => {
+
+  return apiFetch<invoiceEinvoiceRequestResponse>(getInvoiceEinvoiceRequestUrl(invoiceId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getInvoiceEinvoiceRequestMutationKey = () => ['invoiceEinvoiceRequest'] as const;
+
+export const getInvoiceEinvoiceRequestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invoiceEinvoiceRequest>>, TError,InvoiceEinvoiceRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof invoiceEinvoiceRequest>>, TError,InvoiceEinvoiceRequestMutationVariables, TContext> => {
+
+const mutationKey = getInvoiceEinvoiceRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof invoiceEinvoiceRequest>>, InvoiceEinvoiceRequestMutationVariables> = (props) => {
+          const {invoiceId} = props ?? {};
+
+          return  invoiceEinvoiceRequest(invoiceId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InvoiceEinvoiceRequestMutationResult = NonNullable<Awaited<ReturnType<typeof invoiceEinvoiceRequest>>>
+
+    export type InvoiceEinvoiceRequestMutationError = unknown
+    export type InvoiceEinvoiceRequestMutationVariables = {invoiceId: string}
+
+    export const useInvoiceEinvoiceRequest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invoiceEinvoiceRequest>>, TError,InvoiceEinvoiceRequestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof invoiceEinvoiceRequest>>,
+        TError,
+        InvoiceEinvoiceRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getInvoiceEinvoiceRequestMutationOptions(options), queryClient);
+    }
+    export type gstCredentialsResponse200 = {
   data: GstCredentials
   status: 200
 }

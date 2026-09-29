@@ -261,6 +261,9 @@ def issue_invoice_for_fulfilment(
     )
     allocation.settle(account, by=by)  # advances and unused credit, oldest money first
     invoice.refresh_from_db()
+    from apps.compliance.einvoice import on_issued
+
+    on_issued(invoice)  # the IRN, when e-invoicing is on and the shop has a GSTIN (ADR-049)
     outbox.emit(
         "invoice.issued",
         aggregate_type="Invoice",

@@ -115,6 +115,7 @@ const detail: InvoiceDetail = {
   irn: "",
   ack_no: "",
   ack_date: null,
+  einvoice: null,
 };
 
 describe("Invoices", () => {

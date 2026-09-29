@@ -91,6 +91,9 @@ class EInvoiceRecord(TenantScopedModel):
     error_message = models.CharField(max_length=500, blank=True, default="")
     retryable = models.BooleanField(default=False)
     attempts = models.PositiveSmallIntegerField(default=0)
+    # Set when the IRN is asked for (automatically at issue, or by staff); empty while a
+    # document waits for the "Get IRN" button.
+    requested_at = models.DateTimeField(null=True, blank=True)
     next_retry_at = models.DateTimeField(null=True, blank=True)
     generated_at = models.DateTimeField(null=True, blank=True)
     cancel_reason_code = models.CharField(max_length=20, blank=True, default="")

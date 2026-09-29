@@ -56,6 +56,7 @@ HANDLED_EVENTS: tuple[str, ...] = (
     "stock.alert_opened",
     "invoice.issued",
     "credit_note.issued",
+    "einvoice.failed",
     "payment.received",
     "payment.cleared",
     "payment.reversed",
@@ -222,6 +223,15 @@ def _skip_reason(
     return ""
 
 
+def _irn_hold(ctx: contexts.EventContext, now: Any) -> Any:
+    """Until when a bill's shop messages wait for its IRN (None: they don't)."""
+    if ctx.code not in ("invoice.issued", "credit_note.issued") or ctx.document is None:
+        return None
+    from apps.compliance.einvoice import hold_until
+
+    return hold_until(ctx.document[0], ctx.document[1], now)
+
+
 def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
     """Create the event's notification rows. Scheduled jobs (reminders, announcements) call this
     with their own stable ``event_id``."""
@@ -242,6 +252,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
     paused = bool(ctx.extra.get("paused"))
     now = timezone.now()
     hold = None if event.urgent else quiet.current_hold(now)  # quiet hours (item 9)
+    irn_hold = _irn_hold(ctx, now)
     rows: list[Notification] = []
     document_link = ""
 
@@ -288,6 +299,10 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
             if text is None:
                 continue
             in_app = channel == Channel.IN_APP
+            send_after = hold if not in_app and not reason else None
+            held_for_irn = bool(irn_hold and shop and not in_app and not reason)
+            if held_for_irn:  # the bill waits for its IRN, at most 10 minutes (ADR-049 item 6)
+                send_after = max(send_after or now, irn_hold or now)
             rows.append(
                 Notification(
                     tenant_id=tenant.pk,  # bulk_create skips save(), which fills it in
@@ -309,6 +324,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                             else None
                         ),
                         "compulsory": target.compulsory,
+                        **({"held_for_irn": True} if held_for_irn else {}),
                     },
                     urgent=event.urgent,
                     status=(
@@ -320,7 +336,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                     ),
                     skip_reason=reason,
                     sent_at=now if in_app else None,
-                    send_after=hold if not in_app and not reason else None,
+                    send_after=send_after,
                     provider="in_app" if in_app else "",
                 )
             )

@@ -31,6 +31,7 @@ class Event:
     document: str = ""  # DocumentLink.Kind the message links, if any
     shop_facing: bool = True  # the shop can be a recipient
     staff_facing: bool = True  # staff can be recipients (not: the welcome, announcements)
+    feature: str = ""  # an optional module's flag: the event is hidden while it is off
 
     @property
     def audiences(self) -> tuple[str, ...]:
@@ -94,6 +95,9 @@ EVENTS: dict[str, Event] = {
               variables=("distributor", "shop", "credit_note_number", "total", "invoice_number",
                          "reason", "document_link", "link"),
               document=DocumentLink.Kind.CREDIT_NOTE),
+        Event("einvoice.failed", "IRN failed for an invoice or credit note", "billing",
+              variables=("distributor", "shop", "document_number", "error", "link"),
+              shop_facing=False, feature="einvoice"),
         Event("payment.received", "Payment received", "payments",
               variables=("distributor", "shop", "receipt_number", "amount", "mode",
                          "document_link", "link"),
@@ -183,6 +187,7 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("stock.alert_opened", ST, (IN,), "stock.inward"),
     Rule("invoice.issued", S, (IN, WA, EM), compulsory=True),
     Rule("credit_note.issued", S, (IN, WA, EM), compulsory=True),
+    Rule("einvoice.failed", ST, (IN, EM), "compliance.manage"),
     Rule("payment.received", S, (IN, WA, EM)),
     Rule("payment.cleared", S, (IN,)),
     Rule("payment.bounced", S, (IN, WA), compulsory=True),
@@ -414,6 +419,11 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
         IN: Text("{{ product }}: {{ alert }}", "{{ product }} is {{ alert }} ({{ quantity }} left)."),
         EM: Text("{{ product }}: {{ alert }}", "{{ product }} is {{ alert }} ({{ quantity }} left).\n\n{{ link }}"),
         WA: Text("", f"{D}: {{{{ product }}}} is {{{{ alert }}}} ({{{{ quantity }}}} left).", ("distributor", "product", "alert", "quantity")),
+    },
+    "einvoice.failed": {
+        IN: Text("IRN failed: {{ document_number }}", "The e-invoice portal did not give an IRN for {{ document_number }} ({{ shop }}): {{ error }}"),
+        EM: Text("IRN failed: {{ document_number }}", "The e-invoice portal did not give an IRN for {{ document_number }} ({{ shop }}): {{ error }}\n\nFix it and try again: {{ link }}"),
+        WA: Text("", f"{D}: IRN failed for {{{{ document_number }}}} ({{{{ shop }}}}): {{{{ error }}}}", ("distributor", "document_number", "shop", "error")),
     },
     "payment.handed_over": {
         IN: Text("Collection handed over", "{{ receipt_number }} ({{ amount }} from {{ shop }}) was marked handed over."),

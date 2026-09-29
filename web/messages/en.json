@@ -3441,6 +3441,7 @@
       "stock_alert_opened": "Stock low, out, or wanted by waiting orders",
       "invoice_issued": "Tax invoice issued",
       "credit_note_issued": "Credit note issued",
+      "einvoice_failed": "IRN failed for an invoice or credit note",
       "payment_received": "Payment received",
       "payment_cleared": "Cheque cleared",
       "payment_bounced": "Cheque bounced",

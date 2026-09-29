@@ -55,6 +55,15 @@ def _render(template: str, context: dict[str, Any]) -> bytes:
     return get_renderer().render(render_to_string(template, context))
 
 
+def _qr(doc: Invoice | CreditNote) -> dict[str, str]:
+    """The e-invoice QR code, once the document has its IRN (Phase 7)."""
+    if not doc.irn:
+        return {}
+    from apps.compliance.qr import qr_data_uri
+
+    return {"qr": qr_data_uri(doc.signed_qr)}
+
+
 # --- Invoices ---------------------------------------------------------------------------------
 
 
@@ -83,6 +92,7 @@ def invoice_context(
         "has_cess": any(line.cess_amount for line in lines),
         "has_discount": any(line.discount_amount for line in lines),
         "payment_details": True,  # bank details and terms: on invoices only
+        **_qr(invoice),
     }
 
 
@@ -123,6 +133,7 @@ def credit_note_context(
         "intra": note.supply_type == "INTRA",
         "place": place or f"{note.place_of_supply.name} ({note.place_of_supply_id})",
         "has_cess": any(line.cess_amount for line in lines),
+        **_qr(note),
     }
 
 

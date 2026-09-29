@@ -1182,6 +1182,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreditNoteDetail'
           description: ''
+  /api/v1/credit-notes/{note_id}/einvoice/:
+    post:
+      operationId: credit_note_einvoice_request
+      parameters:
+      - in: path
+        name: note_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
   /api/v1/credit-notes/{note_id}/pdf/:
     get:
       operationId: credit_notes_pdf
@@ -1425,6 +1446,96 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Revoked'
+          description: ''
+  /api/v1/einvoices/:
+    get:
+      operationId: einvoices_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: document_type
+        schema:
+          type: string
+          enum:
+          - CREDIT_NOTE
+          - INVOICE
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Document number, shop name or IRN
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - FAILED
+          - GENERATED
+          - PENDING
+          - SUBMITTED
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEInvoiceRowList'
+          description: ''
+  /api/v1/einvoices/{record_id}/:
+    get:
+      operationId: einvoices_retrieve
+      parameters:
+      - in: path
+        name: record_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
+  /api/v1/einvoices/counts/:
+    get:
+      operationId: einvoices_counts
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceCounts'
           description: ''
   /api/v1/fulfilments/:
     get:
@@ -1823,6 +1934,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvoiceDetail'
+          description: ''
+  /api/v1/invoices/{invoice_id}/einvoice/:
+    post:
+      operationId: invoice_einvoice_request
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
           description: ''
   /api/v1/invoices/{invoice_id}/pdf/:
     get:
@@ -7514,7 +7646,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InvoiceDetail'
+                $ref: '#/components/schemas/ShopInvoiceDetail'
           description: ''
   /api/v1/shop/invoices/{invoice_id}/pdf/:
     get:
@@ -10839,13 +10971,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UsedFor'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+        einvoice:
+          allOf:
+          - $ref: '#/components/schemas/EInvoiceSummary'
+          nullable: true
+          readOnly: true
       required:
+      - ack_date
+      - ack_no
       - amount_in_words
       - applied_to_invoice
       - buyer
+      - einvoice
       - grand_total
       - id
       - invoice
+      - irn
       - kind
       - lines
       - note_date
@@ -11664,6 +11813,135 @@ components:
       - financial_year_start
       - position
       - unused_money
+    EInvoiceCounts:
+      type: object
+      properties:
+        pending:
+          type: integer
+        failed:
+          type: integer
+        near_report_by:
+          type: integer
+          description: Still without an IRN, 3 days or less from the reporting limit.
+      required:
+      - failed
+      - near_report_by
+      - pending
+    EInvoiceDocumentTypeEnum:
+      enum:
+      - INVOICE
+      - CREDIT_NOTE
+      type: string
+      description: |-
+        * `INVOICE` - Invoice
+        * `CREDIT_NOTE` - Credit note
+    EInvoiceRecordStatusEnum:
+      enum:
+      - PENDING
+      - SUBMITTED
+      - GENERATED
+      - FAILED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Waiting to be sent
+        * `SUBMITTED` - Sent, waiting for the portal
+        * `GENERATED` - IRN generated
+        * `FAILED` - IRN failed
+        * `CANCELLED` - IRN cancelled
+    EInvoiceRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EInvoiceRecordStatusEnum'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        report_by:
+          type: string
+          format: date
+          nullable: true
+          description: The last day for the IRN, when the reporting limit applies.
+        past_report_by:
+          type: boolean
+        can_request:
+          type: boolean
+          description: '"Get IRN" or "Try again" is offered.'
+        document_type:
+          $ref: '#/components/schemas/EInvoiceDocumentTypeEnum'
+        document_id:
+          type: string
+          format: uuid
+        document_number:
+          type: string
+        document_date:
+          type: string
+          format: date
+        shop_name:
+          type: string
+        retailer_id:
+          type: string
+          format: uuid
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        invoice_id:
+          type: string
+          format: uuid
+          description: The invoice, or the one the credit note corrects.
+      required:
+      - ack_date
+      - ack_no
+      - attempts
+      - can_request
+      - document_date
+      - document_id
+      - document_number
+      - document_type
+      - error_code
+      - error_message
+      - generated_at
+      - grand_total
+      - id
+      - invoice_id
+      - irn
+      - next_retry_at
+      - past_report_by
+      - report_by
+      - requested_at
+      - retailer_id
+      - retryable
+      - shop_name
+      - status
     EInvoiceStatusEnum:
       enum:
       - NOT_APPLICABLE
@@ -11678,6 +11956,68 @@ components:
         * `GENERATED` - Generated
         * `FAILED` - Failed
         * `CANCELLED` - Cancelled
+    EInvoiceSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EInvoiceRecordStatusEnum'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        report_by:
+          type: string
+          format: date
+          nullable: true
+          description: The last day for the IRN, when the reporting limit applies.
+        past_report_by:
+          type: boolean
+        can_request:
+          type: boolean
+          description: '"Get IRN" or "Try again" is offered.'
+      required:
+      - ack_date
+      - ack_no
+      - attempts
+      - can_request
+      - error_code
+      - error_message
+      - generated_at
+      - id
+      - irn
+      - next_retry_at
+      - past_report_by
+      - report_by
+      - requested_at
+      - retryable
+      - status
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -13086,6 +13426,11 @@ components:
           type: string
           format: date-time
           nullable: true
+        einvoice:
+          allOf:
+          - $ref: '#/components/schemas/EInvoiceSummary'
+          nullable: true
+          readOnly: true
       required:
       - ack_date
       - ack_no
@@ -13098,6 +13443,7 @@ components:
       - credit_notes
       - days_overdue
       - due_date
+      - einvoice
       - einvoice_status
       - fulfilment_id
       - grand_total
@@ -14750,6 +15096,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DiscountRule'
+    PaginatedEInvoiceRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EInvoiceRow'
     PaginatedFulfilmentRowList:
       type: object
       required:
@@ -19527,6 +19892,126 @@ components:
       - alt_text
       - id
       - urls
+    ShopInvoiceDetail:
+      type: object
+      description: |-
+        The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
+        on the bill and its PDF).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        order:
+          $ref: '#/components/schemas/OrderRef'
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        payment_status:
+          $ref: '#/components/schemas/InvoicePaymentStatusEnum'
+        days_overdue:
+          type: integer
+          description: Days past the due date while something is owed; 0 otherwise.
+          readOnly: true
+        issued_trigger:
+          $ref: '#/components/schemas/InvoiceTriggerEnum'
+        rate_differs_from_order:
+          type: boolean
+        pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        einvoice_status:
+          $ref: '#/components/schemas/EInvoiceStatusEnum'
+        seller: {}
+        buyer: {}
+        place_of_supply:
+          $ref: '#/components/schemas/Place'
+        supply_type:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        prices_include_tax:
+          type: boolean
+        reverse_charge:
+          type: boolean
+        totals:
+          $ref: '#/components/schemas/Totals'
+        amount_in_words:
+          type: string
+        amount_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        amount_credited:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        settings_snapshot: {}
+        fulfilment_id:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLine'
+        credit_notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditNoteRow'
+        applied:
+          type: array
+          items:
+            $ref: '#/components/schemas/Applied'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - ack_date
+      - ack_no
+      - amount_credited
+      - amount_in_words
+      - amount_paid
+      - applied
+      - balance_due
+      - buyer
+      - credit_notes
+      - days_overdue
+      - due_date
+      - einvoice_status
+      - fulfilment_id
+      - grand_total
+      - id
+      - invoice_date
+      - irn
+      - issued_trigger
+      - lines
+      - number
+      - order
+      - payment_status
+      - pdf_status
+      - place_of_supply
+      - retailer
+      - seller
+      - supply_type
+      - totals
     ShopLastOrder:
       type: object
       properties:

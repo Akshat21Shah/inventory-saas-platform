@@ -69,6 +69,23 @@ def after_fan_out(event_id: UUID) -> None:
         transaction.on_commit(lambda: push_in_app(tenant_id, users))
 
 
+def release_held_for_irn(document_kind: str, object_id: UUID) -> int:
+    """The document's IRN arrived or failed: its bill messages held for it go now (ADR-049
+    item 6). In the caller's transaction; sent after it commits."""
+    now = timezone.now()
+    rows = Notification.objects.filter(
+        status=S.PENDING,
+        send_after__gt=now,
+        data__held_for_irn=True,
+        data__document__kind=document_kind,
+        data__document__id=str(object_id),
+    )
+    ids = list(rows.values_list("pk", flat=True))
+    rows.update(send_after=now, updated_at=now)
+    enqueue(ids)
+    return len(ids)
+
+
 def push_in_app(tenant_id: UUID, user_ids: list[UUID]) -> None:
     """Tell the people's open sessions to refetch their unread count (never fails the caller)."""
     from asgiref.sync import async_to_sync

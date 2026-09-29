@@ -22,6 +22,17 @@ class EffectiveRule:
         return (self.event, self.recipient, self.permission)
 
 
+def available(event_code: str) -> bool:
+    """Events of an optional module that is off don't exist for the tenant (ADR-049 item 1)."""
+    from apps.platform.selectors import is_feature_enabled
+    from common.tenancy import require_tenant_id
+
+    event = EVENTS.get(event_code)
+    if event is None:
+        return False
+    return not event.feature or is_feature_enabled(event.feature, require_tenant_id())
+
+
 def effective_rules(event_code: str | None = None) -> list[EffectiveRule]:
     """For the active tenant; all events, or one."""
     merged: dict[tuple[str, str, str], EffectiveRule] = {
@@ -139,7 +150,7 @@ def save_rules(event_code: str, rules: list[RuleInput]) -> list[EffectiveRule]:
     from apps.audit import services as audit
     from common.errors import NotFound
 
-    if event_code not in EVENTS:
+    if not available(event_code):
         raise NotFound()
     current = effective_rules(event_code)
     in_force = {(r.recipient, r.permission): set(r.channels) for r in current if r.enabled}

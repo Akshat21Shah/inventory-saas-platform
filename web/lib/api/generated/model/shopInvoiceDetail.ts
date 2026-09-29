@@ -8,7 +8,6 @@
 import type { Applied } from './applied';
 import type { CreditNoteRow } from './creditNoteRow';
 import type { EInvoiceStatusEnum } from './eInvoiceStatusEnum';
-import type { EInvoiceSummary } from './eInvoiceSummary';
 import type { InvoiceLine } from './invoiceLine';
 import type { InvoicePaymentStatusEnum } from './invoicePaymentStatusEnum';
 import type { InvoiceTriggerEnum } from './invoiceTriggerEnum';
@@ -19,7 +18,11 @@ import type { ShopRef } from './shopRef';
 import type { SupplyTypeEnum } from './supplyTypeEnum';
 import type { Totals } from './totals';
 
-export interface InvoiceDetail {
+/**
+ * The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
+ * on the bill and its PDF).
+ */
+export interface ShopInvoiceDetail {
   readonly id: string;
   /** @maxLength 16 */
   number: string;
@@ -59,5 +62,4 @@ export interface InvoiceDetail {
   ack_no: string;
   /** @nullable */
   ack_date: string | null;
-  readonly einvoice: EInvoiceSummary | null;
 }

@@ -8,4 +8,4 @@ class ComplianceConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self) -> None:
-        from apps.compliance import checks  # noqa: F401  (deploy checks)
+        from apps.compliance import checks, tasks  # noqa: F401  (deploy checks; tasks by name)
