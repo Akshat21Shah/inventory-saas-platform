@@ -135,7 +135,7 @@ test.describe("notifications", () => {
     await page.getByRole("searchbox", { name: "Search" }).fill(`${order} accepted`);
     const table = page.getByRole("table");
     await expect(table.getByText("Switched off by the person")).toBeVisible({ timeout: 30_000 });
-    await expect(table.getByText("In the app")).toBeVisible();
+    await expect(table.getByText("In the app").first()).toBeVisible(); // sent in-app
   });
 
   test("the office changes who gets a message and puts it back", async ({ page }) => {
