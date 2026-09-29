@@ -554,6 +554,14 @@ DEFAULT_TEXTS: dict[str, dict[str, dict[str, Text]]] = {
 }
 
 
+def in_first_submission(event_code: str, audience: str) -> bool:
+    """Whether a WhatsApp template goes in the first batch submitted to the provider for
+    approval: every shop template, and the salesman's handover reminder (the only staff WhatsApp
+    in the default rules). Staff otherwise rely on in-app and email; their other WhatsApp
+    templates are optional and not submitted by default (Phase 6 final review)."""
+    return audience == Audience.SHOP or event_code == "handover.reminder"
+
+
 def whatsapp_template_name(event_code: str, audience: str = Audience.SHOP) -> str:
     """The name the provider approves for this event's template (platform number); the office's
     version ends in "_staff"."""

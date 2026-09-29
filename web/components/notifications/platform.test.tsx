@@ -31,6 +31,7 @@ const template = (channel: string, body: string, extra = {}) => ({
   whatsapp_category: "",
   variables: [],
   updated_at: "2026-09-29T09:00:00Z",
+  submitted_by_default: channel === "WHATSAPP" ? true : null,
   ...extra,
 });
 
@@ -54,6 +55,9 @@ describe("Default message texts", () => {
     expect(
       await screen.findByText("Parameters, in order: distributor, order_number"),
     ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "To the shop · WhatsApp · en" })).toBeVisible();
+    expect(screen.getByText("First submission batch")).toBeVisible();
+    expect(screen.queryByText("Optional, not submitted by default")).toBeNull();
     const user = userEvent.setup();
     const name = screen.getByLabelText("Approved template name");
     await user.clear(name);

@@ -11,6 +11,7 @@ from apps.notifications.catalog import (
     DEFAULT_TEXTS,
     EVENTS,
     RECIPIENT_CHANNELS,
+    in_first_submission,
     whatsapp_template_name,
 )
 from apps.notifications.models import Audience, PlatformTemplate
@@ -141,3 +142,24 @@ def test_platform_templates_are_seeded_once():
     assert sync_platform_templates(PlatformTemplate) == 0  # nothing new; edits kept
     whatsapp.refresh_from_db()
     assert whatsapp.body == "edited by the super admin"
+
+
+def test_staff_rely_on_in_app_and_email_and_whatsapp_goes_in_one_first_batch():
+    staff_whatsapp = [
+        (rule.event, rule.recipient)
+        for rule in DEFAULT_RULES
+        if rule.recipient != "SHOP" and "WHATSAPP" in rule.channels
+    ]
+    assert staff_whatsapp == [("handover.reminder", "COLLECTOR")]
+    first = [
+        whatsapp_template_name(code, audience)
+        for code, audiences in DEFAULT_TEXTS.items()
+        for audience, texts in audiences.items()
+        if "WHATSAPP" in texts and in_first_submission(code, audience)
+    ]
+    shop = [name for name in first if not name.endswith("_staff")]
+    assert len(shop) == 26 and len(first) == 27
+    assert "b2b_handover_reminder_staff" in first
+    for rule in DEFAULT_RULES:  # every WhatsApp the defaults send is in the first batch
+        if "WHATSAPP" in rule.channels:
+            assert in_first_submission(rule.event, _audience(rule.recipient)), rule

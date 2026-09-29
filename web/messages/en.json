@@ -3701,7 +3701,9 @@
       "audiences": {
         "SHOP": "To the shop",
         "STAFF": "To staff"
-      }
+      },
+      "firstBatch": "First submission batch",
+      "optional": "Optional, not submitted by default"
     },
     "failures": {
       "title": "Failed messages",

@@ -83,9 +83,20 @@ function PlatformTextEditor({ row }: { row: PlatformTemplate }) {
 
   return (
     <section className="space-y-3 rounded-xl border p-4" aria-labelledby={`${id}-h`}>
-      <h2 id={`${id}-h`} className="font-semibold">
-        {t(`audiences.${row.audience}`)} · {n(`channels.${row.channel}`)} · {row.locale}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id={`${id}-h`} className="font-semibold">
+          {t(`audiences.${row.audience}`)} · {n(`channels.${row.channel}`)} · {row.locale}
+        </h2>
+        {row.submitted_by_default === true ? (
+          <span className="bg-success/12 text-success-strong rounded-full px-2 py-0.5 text-xs">
+            {t("firstBatch")}
+          </span>
+        ) : row.submitted_by_default === false ? (
+          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
+            {t("optional")}
+          </span>
+        ) : null}
+      </div>
       {row.channel === "IN_APP" || row.channel === "EMAIL" ? (
         <div className="space-y-1">
           <Label htmlFor={`${id}-subject`}>{t("subject")}</Label>

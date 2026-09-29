@@ -27,4 +27,9 @@ export interface PlatformTemplate {
   whatsapp_category?: typeof PlatformTemplateWhatsappCategory[keyof typeof PlatformTemplateWhatsappCategory];
   variables?: unknown;
   readonly updated_at: string;
+  /**
+     * WhatsApp only: in the first batch submitted for approval (false: optional, not submitted by default). Null for other channels.
+     * @nullable
+     */
+  readonly submitted_by_default: boolean | null;
 }

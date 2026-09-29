@@ -351,6 +351,12 @@ def test_super_admin_texts_and_failures(world, api_client_for, monkeypatch):
     admin = api_client_for(make_super_admin())
     listed = admin.get(f"{API}/platform/notification-templates/?event=order.accepted").json()
     assert {t["channel"] for t in listed} >= {"IN_APP", "WHATSAPP"}
+    submission = {(t["audience"], t["channel"]): t["submitted_by_default"] for t in listed}
+    assert submission[("SHOP", "WHATSAPP")] is True
+    assert submission[("STAFF", "WHATSAPP")] is False  # optional, not submitted by default
+    assert submission[("SHOP", "IN_APP")] is None
+    handover = admin.get(f"{API}/platform/notification-templates/?event=handover.reminder").json()
+    assert next(t for t in handover if t["channel"] == "WHATSAPP")["submitted_by_default"] is True
     body = {
         "subject": "",
         "body": "{{ distributor }}: order {{ order_number }} accepted. {{ document_link }}",

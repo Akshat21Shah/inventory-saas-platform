@@ -16273,11 +16273,18 @@ components:
           type: string
           format: date-time
           readOnly: true
+        submitted_by_default:
+          type: boolean
+          nullable: true
+          readOnly: true
+          description: 'WhatsApp only: in the first batch submitted for approval (false:
+            optional, not submitted by default). Null for other channels.'
       required:
       - body
       - channel
       - event_code
       - id
+      - submitted_by_default
       - updated_at
     PlatformTextInputRequest:
       type: object

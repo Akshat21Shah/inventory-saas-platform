@@ -15,6 +15,7 @@ from apps.audit import services as audit
 from apps.notifications import delivery, selectors, texts
 from apps.notifications.api import serializers as s
 from apps.notifications.api.views import Guarded, Newest, _uuid
+from apps.notifications.catalog import in_first_submission
 from apps.notifications.models import Notification, PlatformTemplate
 from apps.platform.api.views import CommitThenReadView
 from common.errors import InvalidFields, NotFound
@@ -26,6 +27,11 @@ SETTINGS, SUPPORT = "platform.settings.manage", "platform.tenants.manage"
 
 
 class PlatformTemplateSerializer(serializers.ModelSerializer[PlatformTemplate]):
+    submitted_by_default = serializers.SerializerMethodField(
+        help_text="WhatsApp only: in the first batch submitted for approval (false: optional, "
+        "not submitted by default). Null for other channels."
+    )
+
     class Meta:
         model = PlatformTemplate
         fields = [
@@ -41,7 +47,13 @@ class PlatformTemplateSerializer(serializers.ModelSerializer[PlatformTemplate]):
             "whatsapp_category",
             "variables",
             "updated_at",
+            "submitted_by_default",
         ]
+
+    def get_submitted_by_default(self, obj: PlatformTemplate) -> bool | None:
+        if obj.channel != "WHATSAPP":
+            return None
+        return in_first_submission(obj.event_code, obj.audience)
 
 
 class PlatformTemplatesView(Guarded, generics.ListAPIView[PlatformTemplate]):
