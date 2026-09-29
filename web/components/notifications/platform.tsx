@@ -1,0 +1,321 @@
+"use client";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
+import { FormSelect } from "@/components/shared/form-select";
+import { DateText } from "@/components/shared/money-text";
+import { PageHeader } from "@/components/shared/page-header";
+import { CardSkeleton } from "@/components/shared/skeletons";
+import { SubNav } from "@/components/shared/sub-nav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  getPlatformNotificationTemplatesQueryKey,
+  platformNotificationFailureRetry,
+  platformNotificationTemplateUpdate,
+  platformNotificationTextPreview,
+  usePlatformNotificationFailures,
+  usePlatformNotificationTemplates,
+} from "@/lib/api/generated/endpoints/platform/platform";
+import type {
+  PlatformFailure,
+  PlatformTemplate,
+  PlatformTextInputRequest,
+  TextPreview,
+} from "@/lib/api/generated/model";
+import { useCursor } from "@/lib/api/pagination";
+import { useErrorText } from "@/lib/api/use-error-text";
+
+import { eventKey } from "./manage/nav";
+
+function PlatformNav() {
+  const t = useTranslations("platformMessages.nav");
+  return (
+    <SubNav
+      label={t("label")}
+      items={[
+        { href: "/platform/notifications", label: t("texts") },
+        { href: "/platform/notifications/failures", label: t("failures") },
+      ]}
+    />
+  );
+}
+
+function PlatformTextEditor({ row }: { row: PlatformTemplate }) {
+  const t = useTranslations("platformMessages.texts");
+  const n = useTranslations("notifications");
+  const client = useQueryClient();
+  const { message, fields } = useErrorText();
+  const [subject, setSubject] = useState(row.subject);
+  const [body, setBody] = useState(row.body);
+  const [name, setName] = useState(row.whatsapp_template_name ?? "");
+  const [category, setCategory] = useState<string>(row.whatsapp_category ?? "");
+  const [preview, setPreview] = useState<TextPreview | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const whatsapp = row.channel === "WHATSAPP";
+  const id = `${row.event_code}-${row.channel}-${row.locale}`;
+  const input = { locale: row.locale as "en", subject, body };
+
+  const run = async (action: () => Promise<unknown>, done?: string) => {
+    setBusy(true);
+    setErrors({});
+    try {
+      await action();
+      if (done) toast.success(done);
+    } catch (thrown) {
+      const byField = fields(thrown);
+      setErrors(byField);
+      if (!Object.keys(byField).length) toast.error(message(thrown));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="space-y-3 rounded-xl border p-4" aria-labelledby={`${id}-h`}>
+      <h2 id={`${id}-h`} className="font-semibold">
+        {n(`channels.${row.channel}`)} · {row.locale}
+      </h2>
+      {row.channel === "IN_APP" || row.channel === "EMAIL" ? (
+        <div className="space-y-1">
+          <Label htmlFor={`${id}-subject`}>{t("subject")}</Label>
+          <Input
+            id={`${id}-subject`}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="min-h-10"
+          />
+          {errors.subject ? <p className="text-destructive text-sm">{errors.subject}</p> : null}
+        </div>
+      ) : null}
+      <div className="space-y-1">
+        <Label htmlFor={`${id}-body`}>{t("body")}</Label>
+        <Textarea
+          id={`${id}-body`}
+          rows={3}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+        {errors.body ? <p className="text-destructive text-sm">{errors.body}</p> : null}
+      </div>
+      {whatsapp ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label htmlFor={`${id}-name`}>{t("templateName")}</Label>
+            <Input
+              id={`${id}-name`}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="min-h-10 font-mono"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`${id}-category`}>{t("category")}</Label>
+            <FormSelect
+              id={`${id}-category`}
+              value={category}
+              onValueChange={setCategory}
+              options={["UTILITY", "MARKETING", "AUTHENTICATION"].map((value) => ({
+                value,
+                label: t(`categories.${value}`),
+              }))}
+            />
+          </div>
+          <p className="text-muted-foreground text-xs sm:col-span-2">
+            {t("parameters", { names: (row.variables as string[]).join(", ") })}
+          </p>
+        </div>
+      ) : null}
+      {preview ? (
+        <div className="bg-brand-50 space-y-1 rounded-lg p-3 text-sm" aria-live="polite">
+          {preview.subject ? <p className="font-medium">{preview.subject}</p> : null}
+          <p className="break-words whitespace-pre-line">{preview.body}</p>
+        </div>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          className="min-h-11"
+          disabled={busy}
+          onClick={() =>
+            void run(async () => {
+              const shown = await platformNotificationTextPreview({
+                event: row.event_code,
+                channel: row.channel,
+                ...input,
+              });
+              setPreview(shown.data);
+            })
+          }
+        >
+          {t("preview")}
+        </Button>
+        <Button
+          className="min-h-11"
+          disabled={busy}
+          onClick={() =>
+            void run(async () => {
+              await platformNotificationTemplateUpdate(row.event_code, row.channel, {
+                ...input,
+                ...(whatsapp
+                  ? {
+                      whatsapp_template_name: name,
+                      whatsapp_category: category as PlatformTextInputRequest["whatsapp_category"],
+                    }
+                  : {}),
+              });
+              await client.invalidateQueries({
+                queryKey: getPlatformNotificationTemplatesQueryKey(),
+              });
+            }, t("saved"))
+          }
+        >
+          {t("save")}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/** Super admin → Messages: the platform's default texts, incl. the approved WhatsApp templates. */
+export function PlatformTextsPage() {
+  const t = useTranslations("platformMessages.texts");
+  const n = useTranslations("notifications");
+  const [event, setEvent] = useState("order.accepted");
+  const query = usePlatformNotificationTemplates();
+  const all = query.data?.data ?? [];
+  const events = [...new Set(all.map((row) => row.event_code))];
+  const rows = all.filter((row) => row.event_code === event);
+  return (
+    <>
+      <PageHeader title={t("title")} description={t("description")} />
+      <PlatformNav />
+      <div className="mb-6 max-w-md space-y-1">
+        <Label htmlFor="platform-event">{t("event")}</Label>
+        <FormSelect
+          id="platform-event"
+          value={event}
+          onValueChange={setEvent}
+          options={(events.length ? events : [event]).map((code) => ({
+            value: code,
+            label: n(`events.${eventKey(code)}`),
+          }))}
+        />
+      </div>
+      {query.isLoading ? (
+        <CardSkeleton />
+      ) : query.error ? (
+        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      ) : !rows.length ? (
+        <EmptyState title={t("empty")} />
+      ) : (
+        <div className="space-y-4">
+          {rows.map((row) => (
+            <PlatformTextEditor key={`${row.id}-${row.updated_at}`} row={row} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Super admin → Messages → Failures: failed messages of every business, with retry. */
+export function PlatformFailuresPage() {
+  const t = useTranslations("platformMessages.failures");
+  const n = useTranslations("notifications");
+  const client = useQueryClient();
+  const { message } = useErrorText();
+  const cursor = useCursor();
+  const query = usePlatformNotificationFailures({ cursor: cursor.cursor });
+  const page = query.data?.data;
+  const columns: DataTableColumn<PlatformFailure>[] = [
+    {
+      id: "title",
+      header: t("message"),
+      cell: ({ row }) => (
+        <span className="block max-w-64 whitespace-normal">
+          <span className="block font-medium break-words">{row.original.title}</span>
+          <span className="text-muted-foreground block text-xs">
+            {n(`events.${eventKey(row.original.event_code)}`)} ·{" "}
+            {n(`channels.${row.original.channel}`)}
+          </span>
+        </span>
+      ),
+    },
+    { id: "tenant", header: t("business"), cell: ({ row }) => row.original.tenant_name },
+    {
+      id: "error",
+      header: t("error"),
+      cell: ({ row }) => (
+        <span className="text-destructive block max-w-56 text-xs break-words whitespace-normal">
+          {row.original.last_error}
+        </span>
+      ),
+    },
+    {
+      id: "when",
+      header: t("when"),
+      cell: ({ row }) => <DateText value={row.original.created_at} withTime />,
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          className="min-h-10 max-md:min-h-11"
+          aria-label={`${t("retry")}: ${row.original.title}`}
+          onClick={async () => {
+            try {
+              await platformNotificationFailureRetry(row.original.id);
+              toast.success(t("retried"));
+              void client.invalidateQueries({
+                predicate: (q) =>
+                  String(q.queryKey[0] ?? "").startsWith("/api/v1/platform/notification-failures"),
+              });
+            } catch (thrown) {
+              toast.error(message(thrown));
+            }
+          }}
+        >
+          <RotateCcw aria-hidden />
+          {t("retry")}
+        </Button>
+      ),
+    },
+  ];
+  return (
+    <>
+      <PageHeader title={t("title")} description={t("description")} />
+      <PlatformNav />
+      <DataTable
+        columns={columns}
+        data={page?.results ?? []}
+        getRowId={(row) => row.id}
+        isLoading={query.isLoading}
+        error={query.error}
+        onRetry={() => void query.refetch()}
+        pagination={cursor.pagination(page)}
+        caption={t("title")}
+        empty={{ title: t("empty"), description: t("emptyBody") }}
+        cardLayout={{
+          title: "title",
+          tenant: "primary",
+          error: "primary",
+          when: "secondary",
+          actions: "actions",
+        }}
+      />
+    </>
+  );
+}

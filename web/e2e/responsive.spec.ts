@@ -132,6 +132,8 @@ function pages(ids: Ids) {
     "/platform/tax-rates",
     "/platform/settings",
     "/platform/impersonations",
+    "/platform/notifications",
+    "/platform/notifications/failures",
     "/platform/audit",
     "/platform/account",
   ];

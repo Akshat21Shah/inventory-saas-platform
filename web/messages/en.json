@@ -154,7 +154,8 @@
     "mainNavigation": "Main navigation",
     "impersonations": "Support sessions",
     "needsAttention": "need attention",
-    "itemCount": "{count, plural, one {# item} other {# items}} in the cart"
+    "itemCount": "{count, plural, one {# item} other {# items}} in the cart",
+    "platformMessages": "Messages"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -3664,5 +3665,43 @@
     "SENT": "Sent",
     "FAILED": "Failed",
     "SKIPPED": "Not sent"
+  },
+  "platformMessages": {
+    "nav": {
+      "label": "Messages sections",
+      "texts": "Default texts",
+      "failures": "Failures"
+    },
+    "texts": {
+      "title": "Default message texts",
+      "description": "The platform's texts for every business. WhatsApp and SMS texts must match the templates approved by the provider; businesses can change only their in-app and email texts.",
+      "event": "Which message",
+      "subject": "Title",
+      "body": "Message",
+      "templateName": "Approved template name",
+      "category": "WhatsApp category",
+      "categories": {
+        "UTILITY": "Utility",
+        "MARKETING": "Marketing",
+        "AUTHENTICATION": "Authentication"
+      },
+      "parameters": "Parameters, in order: {names}",
+      "preview": "Preview",
+      "save": "Save",
+      "saved": "Text saved",
+      "empty": "No texts for this message"
+    },
+    "failures": {
+      "title": "Failed messages",
+      "description": "Messages that failed after every try, across all businesses. Recipients' names stay with their business.",
+      "message": "Message",
+      "business": "Business",
+      "error": "Last error",
+      "when": "When",
+      "retry": "Try again",
+      "retried": "Trying again",
+      "empty": "No failed messages",
+      "emptyBody": "Failed messages from any business show up here."
+    }
   }
 }

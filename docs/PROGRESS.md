@@ -328,7 +328,7 @@
      - Dashboard: "GST rates changing soon" (next 30 days) for `products.view`.
      - The rules API also returns the permission choices (managers can't list permissions otherwise); DELETE endpoints now document their 200 bodies.
      - Tests: 8 component tests (rules summary and saving an edit; texts insert, preview and save; delivery log retry; creating an announcement; consent needing confirmation; pausing reminders; withdrawing links and hiding them without the permission; the GST card). The four pages are in the responsive check; checked at 360 and 1440 px.
-  12. Frontend: platform texts and failures
+  12. Super admin screens — **done** (`web/components/notifications/platform.tsx`): Messages in the platform menu. **Default texts**: per message, every channel's platform text; WhatsApp texts with the approved template name, category and their parameters in order; preview and save (`platform.settings.manage`). **Failures**: failed messages of every business (business, message, channel, last error; recipients' names left out) with "Try again" (`platform.tenants.manage`). WhatsApp prices per category sit in Platform settings → Notifications. Tests: 2 component tests; both pages are in the responsive check; checked at 360 and 1440 px.
   13. E2E and responsive check — **final review**
 - Phase 5 — Billing, GST, ledger, credit control: **merged to `main` (PR #6, 2026-09-28)**.
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.
