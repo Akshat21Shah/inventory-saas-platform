@@ -3,6 +3,7 @@ from django.urls import URLPattern, URLResolver, include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.notifications.api.public import PublicDocumentView
+from apps.payments.api.online import GatewayWebhookView, MockGatewayPageView
 from apps.platform.api.views import PublicStatesView
 from common import health
 from common.api import MetaView
@@ -30,6 +31,14 @@ api_v1: list[URLPattern | URLResolver] = [
     path("", include("apps.compliance.api.urls")),
     path("shop/", include("apps.shop.api.urls")),
     path("shop/", include("apps.notifications.api.shop_urls")),
+    path("shop/", include("apps.payments.api.shop_urls")),
+    path(
+        "webhooks/payments/<str:provider>/<str:token>/",
+        GatewayWebhookView.as_view(),
+        name="payment-webhook",
+    ),
+    # DEV ONLY: the mock gateway's checkout page (refused unless mock integrations are allowed).
+    path("dev/mock-gateway/<str:order_id>/", MockGatewayPageView.as_view(), name="mock-gateway"),
     path("public/states/", PublicStatesView.as_view(), name="public-states"),
     path("public/documents/<str:token>/", PublicDocumentView.as_view(), name="public-document"),
 ]

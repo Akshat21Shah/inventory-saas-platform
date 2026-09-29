@@ -82,6 +82,19 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.order.fulfilments.distance_km": None,
     "api.shop-order.fulfilments.distance_km": None,
     "api.retailer.addresses.distance_km": None,
+    # Online payments (commit 9): nothing paid online, nothing to review, no gateway.
+    "db.payments.Payment.gateway_provider": "",
+    "db.payments.Payment.gateway_payment_id": "",
+    "db.payments.Payment.intent_id": None,
+    "db.payments.Payment.needs_review": False,
+    "db.payments.Payment.review_reason": "",
+    "db.payments.Payment.reviewed_at": None,
+    "db.payments.Payment.reviewed_by_id": None,
+    "api.payment.gateway_payment_id": "",
+    "api.payment.needs_review": False,
+    "api.payment.review_reason": "",
+    "api.payment.reviewed_at": None,
+    "api.shop-account.online_payments": False,
 }
 
 # Random by design: stored as "<random>".

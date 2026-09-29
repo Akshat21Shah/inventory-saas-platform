@@ -3063,6 +3063,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReallocationResult'
           description: ''
+  /api/v1/payment-intents/:
+    get:
+      operationId: payment_intents_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ATTEMPTED
+          - CREATED
+          - EXPIRED
+          - PAID
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentIntentRowList'
+          description: ''
   /api/v1/payments/:
     get:
       operationId: payments_list
@@ -3342,6 +3395,32 @@ paths:
             schema:
               $ref: '#/components/schemas/PaymentReasonRequest'
         required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/{payment_id}/review/:
+    post:
+      operationId: payment_review
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
       security:
       - jwtAuth: []
       responses:
@@ -8279,7 +8358,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentDetail'
+                $ref: '#/components/schemas/ShopPaymentDetail'
           description: ''
   /api/v1/shop/payments/{payment_id}/receipt/:
     get:
@@ -8307,6 +8386,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/shop/payments/checkout/:
+    post:
+      operationId: shop_checkout_start
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+          description: ''
+  /api/v1/shop/payments/checkout/{intent_id}/:
+    get:
+      operationId: shop_checkout
+      parameters:
+      - in: path
+        name: intent_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+          description: ''
+    post:
+      operationId: shop_checkout_outcome
+      description: 'What the page saw (informational: the payment counts only when
+        the gateway confirms it).'
+      parameters:
+      - in: path
+        name: intent_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutOutcomeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
           description: ''
   /api/v1/shop/products/:
     get:
@@ -9379,6 +9533,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Warehouse'
           description: ''
+  /api/v1/webhooks/payments/{provider}/{token}/:
+    post:
+      operationId: payment_webhook
+      description: 'Public: authenticated by the gateway''s signature, with the distributor''s
+        webhook secret.'
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          description: Handled (or already handled)
+        '400':
+          description: The signature doesn't match
+        '404':
+          description: Unknown webhook address
 components:
   schemas:
     AdditionRequest:
@@ -10847,6 +11028,65 @@ components:
       required:
       - changed
       - warnings
+    Checkout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        purpose:
+          $ref: '#/components/schemas/CheckoutPurposeEnum'
+        invoice_id:
+          type: string
+          format: uuid
+          nullable: true
+        invoice_number:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/CheckoutStatusEnum'
+        provider:
+          type: string
+        checkout:
+          nullable: true
+          description: 'What the page opens: the gateway''s checkout options (no secrets);
+            for the test gateway, a checkout_url.'
+        expires_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        payment_id:
+          type: string
+          format: uuid
+          nullable: true
+        receipt_number:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - amount
+      - checkout
+      - created_at
+      - expires_at
+      - id
+      - invoice_id
+      - invoice_number
+      - last_error
+      - paid_at
+      - payment_id
+      - provider
+      - purpose
+      - receipt_number
+      - status
     CheckoutAttempt:
       type: object
       properties:
@@ -10877,6 +11117,61 @@ components:
       description: |-
         * `placed` - placed
         * `not_found` - not_found
+    CheckoutInputRequest:
+      type: object
+      properties:
+        purpose:
+          $ref: '#/components/schemas/CheckoutPurposeEnum'
+        invoice_id:
+          type: string
+          format: uuid
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - purpose
+    CheckoutOutcomeOutcomeEnum:
+      enum:
+      - success
+      - failed
+      - dismissed
+      type: string
+      description: |-
+        * `success` - success
+        * `failed` - failed
+        * `dismissed` - dismissed
+    CheckoutOutcomeRequest:
+      type: object
+      properties:
+        outcome:
+          $ref: '#/components/schemas/CheckoutOutcomeOutcomeEnum'
+      required:
+      - outcome
+    CheckoutPurposeEnum:
+      enum:
+      - INVOICE
+      - OUTSTANDING
+      - CUSTOM
+      type: string
+      description: |-
+        * `INVOICE` - A bill
+        * `OUTSTANDING` - Everything owed
+        * `CUSTOM` - An amount of the shop's choice
+    CheckoutStatusEnum:
+      enum:
+      - CREATED
+      - ATTEMPTED
+      - PAID
+      - EXPIRED
+      type: string
+      description: |-
+        * `CREATED` - Ready to pay
+        * `ATTEMPTED` - Tried
+        * `PAID` - Paid
+        * `EXPIRED` - Expired
     ChooseTenantInputRequest:
       type: object
       properties:
@@ -16191,6 +16486,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrderRow'
+    PaginatedPaymentIntentRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentIntentRow'
     PaginatedPaymentRowList:
       type: object
       required:
@@ -17296,6 +17610,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UsedFor'
+        gateway_payment_id:
+          type: string
+          maxLength: 60
+        needs_review:
+          type: boolean
+        review_reason:
+          type: string
+          maxLength: 300
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
       required:
       - amount
       - collected_by_name
@@ -17314,6 +17640,75 @@ components:
       - status
       - unapplied_amount
       - used_for
+    PaymentIntentRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        purpose:
+          $ref: '#/components/schemas/CheckoutPurposeEnum'
+        invoice_id:
+          type: string
+          format: uuid
+          nullable: true
+        invoice_number:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/CheckoutStatusEnum'
+        provider:
+          type: string
+        checkout:
+          nullable: true
+          description: 'What the page opens: the gateway''s checkout options (no secrets);
+            for the test gateway, a checkout_url.'
+        expires_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        payment_id:
+          type: string
+          format: uuid
+          nullable: true
+        receipt_number:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        shop_name:
+          type: string
+        retailer_id:
+          type: string
+          format: uuid
+        client_outcome:
+          type: string
+      required:
+      - amount
+      - checkout
+      - client_outcome
+      - created_at
+      - expires_at
+      - id
+      - invoice_id
+      - invoice_number
+      - last_error
+      - paid_at
+      - payment_id
+      - provider
+      - purpose
+      - receipt_number
+      - retailer_id
+      - shop_name
+      - status
     PaymentModeEnum:
       enum:
       - CASH
@@ -20159,6 +20554,13 @@ components:
         * `WRONG_ITEM` - Wrong item
         * `EXCESS_SUPPLY` - Excess supply
         * `OTHER` - Other
+    ReviewRequest:
+      type: object
+      properties:
+        note:
+          type: string
+          default: ''
+          maxLength: 300
     Revoked:
       type: object
       properties:
@@ -20569,11 +20971,16 @@ components:
           type: boolean
           description: New orders wait for approval or are refused until overdue bills
             are paid.
+        online_payments:
+          type: boolean
+          description: The shop can pay online (the distributor's gateway is on and
+            working).
       required:
       - ageing
       - ageing_basis
       - available_credit
       - credit_limit
+      - online_payments
       - orders_blocked_for_overdue
       - overdue_bills
       - position
@@ -21139,6 +21546,120 @@ components:
       required:
       - balance
       - overdue
+    ShopPaymentDetail:
+      type: object
+      description: 'The shop''s view: without the office''s review of online payments.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        payment_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        credit_timing:
+          $ref: '#/components/schemas/CreditTimingEnum'
+        credited:
+          type: boolean
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credited but not yet matched to dues.
+        reference_no:
+          type: string
+          maxLength: 60
+        cheque_number:
+          type: string
+          maxLength: 20
+        handover_status:
+          $ref: '#/components/schemas/HandoverStatusEnum'
+        collected_by_name:
+          type: string
+          readOnly: true
+        receipt_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        dated_in_previous_financial_year:
+          type: boolean
+          description: |-
+            The receipt is numbered in the year it was recorded; the payment is accounted on its
+            own date, which here falls in an earlier financial year (2026-09-28).
+          readOnly: true
+        held_as_credit_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        cheque_date:
+          type: string
+          format: date
+          nullable: true
+        bank_name:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+        recorded_by_name:
+          type: string
+          readOnly: true
+        handed_over_at:
+          type: string
+          format: date-time
+          nullable: true
+        handed_over_by_name:
+          type: string
+          readOnly: true
+        cleared_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversal_reason:
+          type: string
+          maxLength: 300
+        used_for:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsedFor'
+        gateway_payment_id:
+          type: string
+          maxLength: 60
+      required:
+      - amount
+      - collected_by_name
+      - credit_timing
+      - dated_in_previous_financial_year
+      - handed_over_by_name
+      - handover_status
+      - held_as_credit_while_advances_off
+      - id
+      - mode
+      - number
+      - payment_date
+      - receipt_pdf_status
+      - recorded_by_name
+      - retailer
+      - status
+      - unapplied_amount
+      - used_for
     ShopPrice:
       type: object
       properties:

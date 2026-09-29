@@ -13,7 +13,10 @@ import type { PdfStatusEnum } from './pdfStatusEnum';
 import type { ShopRef } from './shopRef';
 import type { UsedFor } from './usedFor';
 
-export interface PaymentDetail {
+/**
+ * The shop's view: without the office's review of online payments.
+ */
+export interface ShopPaymentDetail {
   readonly id: string;
   /** @maxLength 16 */
   number: string;
@@ -66,9 +69,4 @@ export interface PaymentDetail {
   used_for: UsedFor[];
   /** @maxLength 60 */
   gateway_payment_id?: string;
-  needs_review?: boolean;
-  /** @maxLength 300 */
-  review_reason?: string;
-  /** @nullable */
-  reviewed_at?: string | null;
 }

@@ -26,7 +26,10 @@ import type {
 
 import type {
   CancelOrderRequest,
+  Checkout,
   CheckoutAttempt,
+  CheckoutInputRequest,
+  CheckoutOutcomeRequest,
   ConsentState,
   DeliveryAddress,
   DocumentLink,
@@ -36,7 +39,6 @@ import type {
   PaginatedPaymentRowList,
   PaginatedShopOrderRowList,
   PaginatedShopProductList,
-  PaymentDetail,
   PlaceOrderRequest,
   PreferenceInputRequest,
   PreferenceRow,
@@ -60,6 +62,7 @@ import type {
   ShopNotificationsParams,
   ShopOrder,
   ShopOrdersListParams,
+  ShopPaymentDetail,
   ShopPaymentsListParams,
   ShopProductDetail,
   ShopProductsParams,
@@ -3310,7 +3313,7 @@ export function useShopPaymentsList<TData = Awaited<ReturnType<typeof shopPaymen
 
 
 export type shopPaymentsRetrieveResponse200 = {
-  data: PaymentDetail
+  data: ShopPaymentDetail
   status: 200
 }
 
@@ -3526,7 +3529,303 @@ export function useShopPaymentsReceipt<TData = Awaited<ReturnType<typeof shopPay
 
 
 
-export type shopProductsResponse200 = {
+export type shopCheckoutStartResponse200 = {
+  data: Checkout
+  status: 200
+}
+
+export type shopCheckoutStartResponseSuccess = (shopCheckoutStartResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopCheckoutStartResponse = (shopCheckoutStartResponseSuccess)
+
+export const getShopCheckoutStartUrl = () => {
+
+
+
+
+  return `/api/v1/shop/payments/checkout/`
+}
+
+export const shopCheckoutStart = async (checkoutInputRequest: CheckoutInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopCheckoutStartResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopCheckoutStartResponse>(getShopCheckoutStartUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(checkoutInputRequest)
+  }
+);}
+
+
+
+
+
+export const getShopCheckoutStartMutationKey = () => ['shopCheckoutStart'] as const;
+
+export const getShopCheckoutStartMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutStart>>, TError,ShopCheckoutStartMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutStart>>, TError,ShopCheckoutStartMutationVariables, TContext> => {
+
+const mutationKey = getShopCheckoutStartMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopCheckoutStart>>, ShopCheckoutStartMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  shopCheckoutStart(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopCheckoutStartMutationResult = NonNullable<Awaited<ReturnType<typeof shopCheckoutStart>>>
+    export type ShopCheckoutStartMutationBody = CheckoutInputRequest
+    export type ShopCheckoutStartMutationError = unknown
+    export type ShopCheckoutStartMutationVariables = {data: CheckoutInputRequest}
+
+    export const useShopCheckoutStart = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutStart>>, TError,ShopCheckoutStartMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopCheckoutStart>>,
+        TError,
+        ShopCheckoutStartMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopCheckoutStartMutationOptions(options), queryClient);
+    }
+    export type shopCheckoutResponse200 = {
+  data: Checkout
+  status: 200
+}
+
+export type shopCheckoutResponseSuccess = (shopCheckoutResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopCheckoutResponse = (shopCheckoutResponseSuccess)
+
+export const getShopCheckoutUrl = (intentId: string,) => {
+
+
+
+
+  return `/api/v1/shop/payments/checkout/${intentId}/`
+}
+
+export const shopCheckout = async (intentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopCheckoutResponse> => {
+
+  return apiFetch<shopCheckoutResponse>(getShopCheckoutUrl(intentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopCheckoutQueryKey = (intentId: string,) => {
+    return [
+    `/api/v1/shop/payments/checkout/${intentId}/`
+    ] as const;
+    }
+
+
+export const getShopCheckoutQueryOptions = <TData = Awaited<ReturnType<typeof shopCheckout>>, TError = unknown>(intentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckout>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopCheckoutQueryKey(intentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopCheckout>>> = ({ signal }) => shopCheckout(intentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: intentId !== null && intentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopCheckout>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopCheckoutQueryResult = NonNullable<Awaited<ReturnType<typeof shopCheckout>>>
+export type ShopCheckoutQueryError = unknown
+
+
+export function useShopCheckout<TData = Awaited<ReturnType<typeof shopCheckout>>, TError = unknown>(
+ intentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckout>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopCheckout>>,
+          TError,
+          Awaited<ReturnType<typeof shopCheckout>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopCheckout<TData = Awaited<ReturnType<typeof shopCheckout>>, TError = unknown>(
+ intentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckout>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopCheckout>>,
+          TError,
+          Awaited<ReturnType<typeof shopCheckout>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopCheckout<TData = Awaited<ReturnType<typeof shopCheckout>>, TError = unknown>(
+ intentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckout>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopCheckout<TData = Awaited<ReturnType<typeof shopCheckout>>, TError = unknown>(
+ intentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopCheckout>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopCheckoutQueryOptions(intentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopCheckoutOutcomeResponse200 = {
+  data: Checkout
+  status: 200
+}
+
+export type shopCheckoutOutcomeResponseSuccess = (shopCheckoutOutcomeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopCheckoutOutcomeResponse = (shopCheckoutOutcomeResponseSuccess)
+
+export const getShopCheckoutOutcomeUrl = (intentId: string,) => {
+
+
+
+
+  return `/api/v1/shop/payments/checkout/${intentId}/`
+}
+
+/**
+ * What the page saw (informational: the payment counts only when the gateway confirms it).
+ */
+export const shopCheckoutOutcome = async (intentId: string,
+    checkoutOutcomeRequest: CheckoutOutcomeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopCheckoutOutcomeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopCheckoutOutcomeResponse>(getShopCheckoutOutcomeUrl(intentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(checkoutOutcomeRequest)
+  }
+);}
+
+
+
+
+
+export const getShopCheckoutOutcomeMutationKey = () => ['shopCheckoutOutcome'] as const;
+
+export const getShopCheckoutOutcomeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutOutcome>>, TError,ShopCheckoutOutcomeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutOutcome>>, TError,ShopCheckoutOutcomeMutationVariables, TContext> => {
+
+const mutationKey = getShopCheckoutOutcomeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopCheckoutOutcome>>, ShopCheckoutOutcomeMutationVariables> = (props) => {
+          const {intentId,data} = props ?? {};
+
+          return  shopCheckoutOutcome(intentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopCheckoutOutcomeMutationResult = NonNullable<Awaited<ReturnType<typeof shopCheckoutOutcome>>>
+    export type ShopCheckoutOutcomeMutationBody = CheckoutOutcomeRequest
+    export type ShopCheckoutOutcomeMutationError = unknown
+    export type ShopCheckoutOutcomeMutationVariables = {intentId: string;data: CheckoutOutcomeRequest}
+
+    export const useShopCheckoutOutcome = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutOutcome>>, TError,ShopCheckoutOutcomeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopCheckoutOutcome>>,
+        TError,
+        ShopCheckoutOutcomeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopCheckoutOutcomeMutationOptions(options), queryClient);
+    }
+    export type shopProductsResponse200 = {
   data: PaginatedShopProductList
   status: 200
 }

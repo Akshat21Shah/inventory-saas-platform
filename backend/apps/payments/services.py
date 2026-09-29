@@ -246,6 +246,59 @@ def _record(data: PaymentInput, *, by: User | None, collected: bool) -> Payment:
     return payment
 
 
+@dataclass(frozen=True)
+class OnlinePaymentInput:
+    """A payment the gateway confirmed (ADR-049 item 9)."""
+
+    retailer_id: UUID
+    amount: Decimal
+    payment_date: date  # the capture date (IST)
+    provider: str
+    gateway_payment_id: str
+    intent_id: UUID
+    pay_first: tuple[DueAmount, ...] = ()
+    notes: str = ""
+    review_reason: str = ""  # set when the amount differed from the checkout's
+
+
+def record_online_payment(data: OnlinePaymentInput, *, by: User | None) -> Payment:
+    """In the caller's transaction: recorded like any payment (a receipt, credited on the capture
+    date, the chosen bill first, then the oldest dues), but never refused: the money was received.
+    With advances off, anything above what is owed is kept as credit and shown as such (like a
+    cheque that clears for more). Recorded by the shop's login that paid."""
+    retailer = Retailer.objects.filter(pk=data.retailer_id).first()
+    if retailer is None:
+        raise NotFound()
+    ledger.lock_account(retailer.pk)  # L1
+    pay_first = [
+        (_target(retailer.pk, d.target_type, d.target_id), d.amount) for d in data.pay_first
+    ]  # L5
+    _series, number = numbering.next_number(DocumentType.RECEIPT, today_ist())  # L6
+    payment: Payment = Payment.objects.create(
+        number=number,
+        retailer=retailer,
+        amount=data.amount,
+        mode=Payment.Mode.ONLINE,
+        status=Payment.Status.RECEIVED,
+        credit_timing=Payment.CreditTiming.ON_RECEIPT,
+        payment_date=data.payment_date,
+        reference_no=data.gateway_payment_id[:60],
+        notes=data.notes[:500],
+        recorded_by=by,
+        handover_status=Payment.Handover.NOT_TRACKED,
+        gateway_provider=data.provider,
+        gateway_payment_id=data.gateway_payment_id,
+        intent_id=data.intent_id,
+        needs_review=bool(data.review_reason),
+        review_reason=data.review_reason[:300],
+        created_by=by,
+    )
+    _credit(payment, on=data.payment_date, pay_first=pay_first, by=by)
+    payment.refresh_from_db()
+    _emit("payment.received", payment)
+    return payment
+
+
 @retry_on_deadlock()
 def record_payment(data: PaymentInput, *, by: User | None) -> Payment:
     """Payments recorded in the office (``payments.record``)."""

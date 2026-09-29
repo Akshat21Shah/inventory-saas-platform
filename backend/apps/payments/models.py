@@ -72,6 +72,23 @@ class Payment(TenantScopedModel):
     reversal_reason = models.CharField(max_length=300, blank=True, default="")
     receipt_pdf_key = models.CharField(max_length=255, blank=True, default="")
     receipt_pdf_status = models.CharField(max_length=8, default="PENDING")
+    # Paid online (Phase 7): the gateway's payment, its checkout, and a flag for staff when the
+    # amount differed from the checkout's (ADR-049 item 9, plan answer 10).
+    gateway_provider = models.CharField(max_length=10, blank=True, default="")
+    gateway_payment_id = models.CharField(max_length=60, blank=True, default="")
+    intent = models.ForeignKey(
+        "payments.PaymentIntent",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="payments",
+    )
+    needs_review = models.BooleanField(default=False)
+    review_reason = models.CharField(max_length=300, blank=True, default="")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
 
     class Meta:
         constraints = [
@@ -83,6 +100,11 @@ class Payment(TenantScopedModel):
             ),
             models.CheckConstraint(
                 condition=~Q(mode="CHEQUE") | ~Q(cheque_number=""), name="payment_cheque_number"
+            ),
+            models.UniqueConstraint(  # a gateway payment is recorded once, whoever reports it
+                fields=["tenant", "gateway_provider", "gateway_payment_id"],
+                condition=~Q(gateway_payment_id=""),
+                name="uniq_gateway_payment",
             ),
         ]
         indexes = [
@@ -197,3 +219,89 @@ class GatewayConfig(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.provider} ({self.mode})"
+
+
+class PaymentIntent(TenantScopedModel):
+    """A shop's online checkout (ADR-049 items 9 and 10): what it pays (a bill's balance,
+    everything it owes, or an amount it chose), the gateway order for it, and how it ended. At
+    most one active checkout per shop and target at a time: a second tap reuses it."""
+
+    class Purpose(models.TextChoices):
+        INVOICE = "INVOICE", "A bill"
+        OUTSTANDING = "OUTSTANDING", "Everything owed"
+        CUSTOM = "CUSTOM", "An amount of the shop's choice"
+
+    class Status(models.TextChoices):
+        CREATED = "CREATED", "Ready to pay"
+        ATTEMPTED = "ATTEMPTED", "Tried"  # the shop opened or tried the checkout
+        PAID = "PAID", "Paid"
+        EXPIRED = "EXPIRED", "Expired"
+
+    ACTIVE = ("CREATED", "ATTEMPTED")
+
+    retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
+    purpose = models.CharField(max_length=11, choices=Purpose.choices)
+    invoice = models.ForeignKey(
+        "billing.Invoice", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    amount = MoneyField()
+    provider = models.CharField(max_length=10)
+    provider_order_id = models.CharField(max_length=60, blank=True, default="")
+    status = models.CharField(max_length=9, choices=Status.choices, default=Status.CREATED)
+    checkout = models.JSONField(default=dict)  # what the shop's page opens (no secrets)
+    payment = models.ForeignKey(
+        Payment, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    expires_at = models.DateTimeField()
+    client_outcome = models.CharField(max_length=10, blank=True, default="")  # informational
+    last_error = models.CharField(max_length=300, blank=True, default="")
+    paid_at = models.DateTimeField(null=True, blank=True)
+    reconciled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "retailer", "purpose", "invoice"],
+                condition=Q(status__in=["CREATED", "ATTEMPTED"]),
+                nulls_distinct=False,
+                name="uniq_active_checkout",
+            ),
+            models.UniqueConstraint(
+                fields=["provider", "provider_order_id"],
+                condition=~Q(provider_order_id=""),
+                name="uniq_gateway_order",
+            ),
+            models.CheckConstraint(condition=Q(amount__gt=0), name="intent_amount_pos"),
+            models.CheckConstraint(
+                condition=Q(purpose="INVOICE", invoice__isnull=False)
+                | (~Q(purpose="INVOICE") & Q(invoice__isnull=True)),
+                name="intent_invoice_for_bills",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "status", "created_at"], name="intent_status_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.purpose} {self.amount} {self.status}"
+
+
+class WebhookEvent(TenantScopedModel):
+    """Every gateway event whose signature checked out, once (by the gateway's event id)."""
+
+    provider = models.CharField(max_length=10)
+    event_id = models.CharField(max_length=80)
+    kind = models.CharField(max_length=20)
+    payload = models.JSONField(default=dict)
+    result = models.CharField(max_length=40, blank=True, default="")
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "provider", "event_id"], name="uniq_webhook_event"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.provider} {self.event_id}"

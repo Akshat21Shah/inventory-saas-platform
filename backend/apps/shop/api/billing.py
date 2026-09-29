@@ -22,8 +22,9 @@ from apps.ledger import selectors as ledger
 from apps.ledger.api.serializers import BucketsSerializer, PositionSerializer, StatementSerializer
 from apps.ledger.api.views import statement_for
 from apps.orders import credit
+from apps.payments import gateway_config
 from apps.payments import selectors as payments
-from apps.payments.api.serializers import PaymentDetailSerializer, PaymentRowSerializer
+from apps.payments.api.serializers import PaymentRowSerializer, ShopPaymentDetailSerializer
 from apps.payments.models import Payment
 from apps.pricing.api.serializers import money
 from apps.shop.api.views import ShopView, _retailer
@@ -123,6 +124,9 @@ class ShopAccountSerializer(serializers.Serializer[Any]):
     orders_blocked_for_overdue = serializers.BooleanField(
         help_text="New orders wait for approval or are refused until overdue bills are paid."
     )
+    online_payments = serializers.BooleanField(
+        help_text="The shop can pay online (the distributor's gateway is on and working)."
+    )
 
 
 class ShopAccountView(ShopView):
@@ -142,6 +146,7 @@ class ShopAccountView(ShopView):
                 retailer=shop, balance_due__gt=0, due_date__lt=today_ist()
             ).count(),
             "orders_blocked_for_overdue": status.reason == credit.BreachReason.OVERDUE,
+            "online_payments": gateway_config.available(shop.tenant_id),
         }
         return Response(ShopAccountSerializer(body).data)
 
@@ -166,13 +171,13 @@ class ShopPaymentsView(ShopView):
 
 class ShopPaymentDetailView(ShopView):
     @extend_schema(
-        operation_id="shop_payments_retrieve", tags=TAGS, responses=PaymentDetailSerializer
+        operation_id="shop_payments_retrieve", tags=TAGS, responses=ShopPaymentDetailSerializer
     )
     def get(self, request: Request, payment_id: UUID) -> Response:
         payment = payments.payment_detail(payment_id, retailer_id=_retailer(request).pk)
         if payment is None:
             raise NotFound()
-        return Response(PaymentDetailSerializer(payment).data)
+        return Response(ShopPaymentDetailSerializer(payment).data)
 
 
 class ShopReceiptView(ShopView):
