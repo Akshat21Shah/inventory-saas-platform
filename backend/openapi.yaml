@@ -3105,6 +3105,7 @@ paths:
           - BANK_TRANSFER
           - CASH
           - CHEQUE
+          - ONLINE
           - UPI
       - name: ordering
         required: false
@@ -7440,6 +7441,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/GstCredentials'
           description: ''
+  /api/v1/settings/payment-gateway/:
+    get:
+      operationId: payment_gateway
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewaySettings'
+          description: ''
+    put:
+      operationId: payment_gateway_save
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GatewaySettingsInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewaySettings'
+          description: ''
+  /api/v1/settings/payment-gateway/verify/:
+    post:
+      operationId: payment_gateway_verify
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewaySettings'
+          description: ''
   /api/v1/settings/registry/:
     get:
       operationId: settings_registry
@@ -10860,7 +10908,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         mode:
-          $ref: '#/components/schemas/PaymentModeEnum'
+          $ref: '#/components/schemas/ManualPaymentModeEnum'
         payment_date:
           type: string
           format: date
@@ -10910,6 +10958,18 @@ components:
           minItems: 1
       required:
       - allocations
+    ConnectionStatusEnum:
+      enum:
+      - UNVERIFIED
+      - CHECKING
+      - VERIFIED
+      - FAILED
+      type: string
+      description: |-
+        * `UNVERIFIED` - Not checked
+        * `CHECKING` - Checking
+        * `VERIFIED` - Working
+        * `FAILED` - Not working
     ConsentState:
       type: object
       properties:
@@ -13151,6 +13211,85 @@ components:
         * `DISPATCHED` - Dispatched
         * `DELIVERED` - Delivered
         * `CANCELLED` - Cancelled
+    GatewayModeEnum:
+      enum:
+      - TEST
+      - LIVE
+      type: string
+      description: |-
+        * `TEST` - Test
+        * `LIVE` - Live
+    GatewayProviderEnum:
+      enum:
+      - RAZORPAY
+      - MOCK
+      type: string
+      description: |-
+        * `RAZORPAY` - Razorpay
+        * `MOCK` - Test gateway (development)
+    GatewaySettings:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GatewayProviderEnum'
+        provider:
+          $ref: '#/components/schemas/GatewayProviderEnum'
+        mode:
+          $ref: '#/components/schemas/GatewayModeEnum'
+        live_allowed:
+          type: boolean
+          description: Live keys may be used here.
+        saved:
+          type: object
+          additionalProperties:
+            type: string
+          description: 'key_id, key_secret, webhook_secret: their last characters,
+            never the value.'
+        status:
+          $ref: '#/components/schemas/ConnectionStatusEnum'
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+        webhook_url:
+          type: string
+          description: Enter this in the gateway's webhook settings.
+      required:
+      - last_error
+      - live_allowed
+      - mode
+      - provider
+      - providers
+      - saved
+      - status
+      - verified_at
+      - webhook_url
+    GatewaySettingsInputRequest:
+      type: object
+      properties:
+        provider:
+          $ref: '#/components/schemas/GatewayProviderEnum'
+        mode:
+          $ref: '#/components/schemas/GatewayModeEnum'
+        key_id:
+          type: string
+          default: ''
+          maxLength: 200
+        key_secret:
+          type: string
+          default: ''
+          maxLength: 200
+        webhook_secret:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - mode
+      - provider
     GridItemRequest:
       type: object
       properties:
@@ -13260,18 +13399,6 @@ components:
       - price
       - product
       - simple
-    GstCredentialStatusEnum:
-      enum:
-      - UNVERIFIED
-      - CHECKING
-      - VERIFIED
-      - FAILED
-      type: string
-      description: |-
-        * `UNVERIFIED` - Not checked
-        * `CHECKING` - Checking
-        * `VERIFIED` - Working
-        * `FAILED` - Not working
     GstCredentials:
       type: object
       properties:
@@ -13297,7 +13424,7 @@ components:
           description: Each field's last characters (empty when not saved); never
             the value.
         status:
-          $ref: '#/components/schemas/GstCredentialStatusEnum'
+          $ref: '#/components/schemas/ConnectionStatusEnum'
         verified_at:
           type: string
           format: date-time
@@ -14753,6 +14880,18 @@ components:
       required:
       - low_stock
       - without_reorder_level
+    ManualPaymentModeEnum:
+      enum:
+      - CASH
+      - CHEQUE
+      - BANK_TRANSFER
+      - UPI
+      type: string
+      description: |-
+        * `CASH` - Cash
+        * `CHEQUE` - Cheque
+        * `BANK_TRANSFER` - Bank transfer
+        * `UPI` - UPI
     MarkedRead:
       type: object
       properties:
@@ -17181,12 +17320,14 @@ components:
       - CHEQUE
       - BANK_TRANSFER
       - UPI
+      - ONLINE
       type: string
       description: |-
         * `CASH` - Cash
         * `CHEQUE` - Cheque
         * `BANK_TRANSFER` - Bank transfer
         * `UPI` - UPI
+        * `ONLINE` - Paid online
     PaymentReasonRequest:
       type: object
       properties:
@@ -19263,7 +19404,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         mode:
-          $ref: '#/components/schemas/PaymentModeEnum'
+          $ref: '#/components/schemas/ManualPaymentModeEnum'
         payment_date:
           type: string
           format: date

@@ -34,7 +34,7 @@ from apps.ledger import allocation
 from apps.ledger import services as ledger
 from apps.ledger.allocation import CREDIT_KINDS, DEBIT_KINDS, Source, Target
 from apps.ledger.models import Allocation, EntryType, LedgerAdjustment, LedgerEntry
-from apps.payments.models import Payment, Refund
+from apps.payments.models import MANUAL_MODES, Payment, Refund
 from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import retailer_for
@@ -87,7 +87,7 @@ def _validate(data: PaymentInput) -> None:
     errors: dict[str, list[str]] = {}
     if data.amount <= 0 or data.amount != data.amount.quantize(PAISA):
         errors["amount"] = ["Enter an amount above zero, in rupees and paise."]
-    if data.mode not in Payment.Mode.values:
+    if data.mode not in dict(MANUAL_MODES):  # online payments come only from the gateway
         errors["mode"] = ["Choose cash, cheque, bank transfer or UPI."]
     if data.mode == Payment.Mode.CHEQUE and not data.cheque_number.strip():
         errors["cheque_number"] = ["Enter the cheque number."]

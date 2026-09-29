@@ -28,6 +28,8 @@ import type {
   ClearRequest,
   CollectRequest,
   DocumentLink,
+  GatewaySettings,
+  GatewaySettingsInputRequest,
   HandoverRequest,
   HandoverResult,
   PaginatedPaymentRowList,
@@ -1939,3 +1941,281 @@ export function useReportsCollectionsPendingHandover<TData = Awaited<ReturnType<
 
 
 
+export type paymentGatewayResponse200 = {
+  data: GatewaySettings
+  status: 200
+}
+
+export type paymentGatewayResponseSuccess = (paymentGatewayResponse200) & {
+  headers: Headers;
+};
+;
+
+export type paymentGatewayResponse = (paymentGatewayResponseSuccess)
+
+export const getPaymentGatewayUrl = () => {
+
+
+
+
+  return `/api/v1/settings/payment-gateway/`
+}
+
+export const paymentGateway = async ( options?: Parameters<typeof apiFetch>[1]): Promise<paymentGatewayResponse> => {
+
+  return apiFetch<paymentGatewayResponse>(getPaymentGatewayUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPaymentGatewayQueryKey = () => {
+    return [
+    `/api/v1/settings/payment-gateway/`
+    ] as const;
+    }
+
+
+export const getPaymentGatewayQueryOptions = <TData = Awaited<ReturnType<typeof paymentGateway>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentGateway>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPaymentGatewayQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof paymentGateway>>> = ({ signal }) => paymentGateway({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof paymentGateway>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PaymentGatewayQueryResult = NonNullable<Awaited<ReturnType<typeof paymentGateway>>>
+export type PaymentGatewayQueryError = unknown
+
+
+export function usePaymentGateway<TData = Awaited<ReturnType<typeof paymentGateway>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentGateway>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof paymentGateway>>,
+          TError,
+          Awaited<ReturnType<typeof paymentGateway>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePaymentGateway<TData = Awaited<ReturnType<typeof paymentGateway>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentGateway>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof paymentGateway>>,
+          TError,
+          Awaited<ReturnType<typeof paymentGateway>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePaymentGateway<TData = Awaited<ReturnType<typeof paymentGateway>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentGateway>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePaymentGateway<TData = Awaited<ReturnType<typeof paymentGateway>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof paymentGateway>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPaymentGatewayQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type paymentGatewaySaveResponse200 = {
+  data: GatewaySettings
+  status: 200
+}
+
+export type paymentGatewaySaveResponseSuccess = (paymentGatewaySaveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type paymentGatewaySaveResponse = (paymentGatewaySaveResponseSuccess)
+
+export const getPaymentGatewaySaveUrl = () => {
+
+
+
+
+  return `/api/v1/settings/payment-gateway/`
+}
+
+export const paymentGatewaySave = async (gatewaySettingsInputRequest: GatewaySettingsInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<paymentGatewaySaveResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<paymentGatewaySaveResponse>(getPaymentGatewaySaveUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(gatewaySettingsInputRequest)
+  }
+);}
+
+
+
+
+
+export const getPaymentGatewaySaveMutationKey = () => ['paymentGatewaySave'] as const;
+
+export const getPaymentGatewaySaveMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paymentGatewaySave>>, TError,PaymentGatewaySaveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof paymentGatewaySave>>, TError,PaymentGatewaySaveMutationVariables, TContext> => {
+
+const mutationKey = getPaymentGatewaySaveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof paymentGatewaySave>>, PaymentGatewaySaveMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  paymentGatewaySave(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PaymentGatewaySaveMutationResult = NonNullable<Awaited<ReturnType<typeof paymentGatewaySave>>>
+    export type PaymentGatewaySaveMutationBody = GatewaySettingsInputRequest
+    export type PaymentGatewaySaveMutationError = unknown
+    export type PaymentGatewaySaveMutationVariables = {data: GatewaySettingsInputRequest}
+
+    export const usePaymentGatewaySave = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paymentGatewaySave>>, TError,PaymentGatewaySaveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof paymentGatewaySave>>,
+        TError,
+        PaymentGatewaySaveMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPaymentGatewaySaveMutationOptions(options), queryClient);
+    }
+    export type paymentGatewayVerifyResponse200 = {
+  data: GatewaySettings
+  status: 200
+}
+
+export type paymentGatewayVerifyResponseSuccess = (paymentGatewayVerifyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type paymentGatewayVerifyResponse = (paymentGatewayVerifyResponseSuccess)
+
+export const getPaymentGatewayVerifyUrl = () => {
+
+
+
+
+  return `/api/v1/settings/payment-gateway/verify/`
+}
+
+export const paymentGatewayVerify = async ( options?: Parameters<typeof apiFetch>[1]): Promise<paymentGatewayVerifyResponse> => {
+
+  return apiFetch<paymentGatewayVerifyResponse>(getPaymentGatewayVerifyUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPaymentGatewayVerifyMutationKey = () => ['paymentGatewayVerify'] as const;
+
+export const getPaymentGatewayVerifyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paymentGatewayVerify>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof paymentGatewayVerify>>, TError,void, TContext> => {
+
+const mutationKey = getPaymentGatewayVerifyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof paymentGatewayVerify>>, void> = () => {
+
+
+          return  paymentGatewayVerify(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PaymentGatewayVerifyMutationResult = NonNullable<Awaited<ReturnType<typeof paymentGatewayVerify>>>
+
+    export type PaymentGatewayVerifyMutationError = unknown
+
+
+    export const usePaymentGatewayVerify = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paymentGatewayVerify>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof paymentGatewayVerify>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPaymentGatewayVerifyMutationOptions(options), queryClient);
+    }

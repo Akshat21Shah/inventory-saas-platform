@@ -5,8 +5,8 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { ConnectionStatusEnum } from './connectionStatusEnum';
 import type { GstCredentialsSaved } from './gstCredentialsSaved';
-import type { GstCredentialStatusEnum } from './gstCredentialStatusEnum';
 import type { GstEnvironmentEnum } from './gstEnvironmentEnum';
 
 export interface GstCredentials {
@@ -18,7 +18,7 @@ export interface GstCredentials {
   gstin: string;
   /** Each field's last characters (empty when not saved); never the value. */
   saved: GstCredentialsSaved;
-  status: GstCredentialStatusEnum;
+  status: ConnectionStatusEnum;
   /** @nullable */
   verified_at: string | null;
   last_error: string;

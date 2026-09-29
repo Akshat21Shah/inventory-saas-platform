@@ -11,15 +11,13 @@
  * * `CHEQUE` - Cheque
  * * `BANK_TRANSFER` - Bank transfer
  * * `UPI` - UPI
- * * `ONLINE` - Paid online
  */
-export type PaymentModeEnum = typeof PaymentModeEnum[keyof typeof PaymentModeEnum];
+export type ManualPaymentModeEnum = typeof ManualPaymentModeEnum[keyof typeof ManualPaymentModeEnum];
 
 
-export const PaymentModeEnum = {
+export const ManualPaymentModeEnum = {
   CASH: 'CASH',
   CHEQUE: 'CHEQUE',
   BANK_TRANSFER: 'BANK_TRANSFER',
   UPI: 'UPI',
-  ONLINE: 'ONLINE',
 } as const;

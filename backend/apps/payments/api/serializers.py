@@ -9,7 +9,7 @@ from rest_framework import serializers
 from apps.billing.api.serializers import AppliedSerializer, UsedForSerializer
 from apps.billing.models import PdfStatus
 from apps.billing.tax import fy_start
-from apps.payments.models import Payment, Refund
+from apps.payments.models import MANUAL_MODES, Payment, Refund
 from apps.platform.selectors import get_setting
 from apps.pricing.api.serializers import ShopRefSerializer, money
 from common.dates import to_ist
@@ -102,7 +102,7 @@ class DueAmountSerializer(serializers.Serializer[Any]):
 class CollectSerializer(serializers.Serializer[Any]):
     retailer = serializers.UUIDField()
     amount = money(min_value=0)
-    mode = serializers.ChoiceField(choices=Payment.Mode.choices)
+    mode = serializers.ChoiceField(choices=MANUAL_MODES)
     payment_date = serializers.DateField()
     reference_no = serializers.CharField(
         max_length=60, required=False, allow_blank=True, default=""

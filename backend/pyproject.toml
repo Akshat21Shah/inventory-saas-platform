@@ -26,6 +26,7 @@ dependencies = [
     "openpyxl>=3.1",
     "weasyprint>=70.0",
     "segno>=1.6",
+    "razorpay>=2.0",
 ]
 
 [dependency-groups]
@@ -71,7 +72,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "\\.venv/"]
 
 [[tool.mypy.overrides]]
-module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*", "boto3.*", "botocore.*", "weasyprint.*"]
+module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*", "boto3.*", "botocore.*", "weasyprint.*", "razorpay.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

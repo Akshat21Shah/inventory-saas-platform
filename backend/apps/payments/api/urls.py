@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.payments.api import gateway as g
 from apps.payments.api import views as v
 
 urlpatterns = [
@@ -35,5 +36,11 @@ urlpatterns = [
         "payment-allocations/<uuid:allocation_id>/reverse/",
         v.AllocationReverseView.as_view(),
         name="payment-allocation-reverse",
+    ),
+    path("settings/payment-gateway/", g.GatewaySettingsView.as_view(), name="payment-gateway"),
+    path(
+        "settings/payment-gateway/verify/",
+        g.GatewayVerifyView.as_view(),
+        name="payment-gateway-verify",
     ),
 ]

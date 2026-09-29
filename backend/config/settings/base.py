@@ -268,7 +268,7 @@ SPECTACULAR_SETTINGS = {
         "NotificationAudienceEnum": "apps.notifications.models.Audience",
         "TemplateApprovalStatusEnum": "apps.notifications.models.ApprovalStatus",
         "GstEnvironmentEnum": "apps.compliance.models.GstCredential.Environment",
-        "GstCredentialStatusEnum": "apps.compliance.models.GstCredential.Status",
+        "ConnectionStatusEnum": "apps.compliance.models.GstCredential.Status",  # also the gateway
         "EInvoiceRecordStatusEnum": "apps.compliance.models.EInvoiceRecord.Status",
         "EInvoiceDocumentTypeEnum": "apps.compliance.models.DocumentType",
         "IrnCancelReasonEnum": "apps.compliance.models.CancelReason",
@@ -279,6 +279,9 @@ SPECTACULAR_SETTINGS = {
         "EWayBillUpdateStatusEnum": "apps.compliance.models.EWayBillUpdate.Status",
         "EWayBillUpdateKindEnum": "apps.compliance.models.EWayBillUpdate.Kind",
         "TransportModeEnum": "apps.compliance.models.EWayBill.Mode",
+        "ManualPaymentModeEnum": "apps.payments.models.MANUAL_MODES",
+        "GatewayProviderEnum": "apps.payments.models.GatewayConfig.Provider",
+        "GatewayModeEnum": "apps.payments.models.GatewayConfig.Mode",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",
@@ -337,6 +340,8 @@ SES_REGION = env("SES_REGION", default="ap-south-1")
 SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
 # WhatsApp: only "mock" until a provider is chosen (TODO(verify), PROGRESS pre-production 8).
 WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
+# Online payments (ADR-049 item 9): live gateway keys only where this is on (production).
+PAYMENTS_ALLOW_LIVE = env.bool("PAYMENTS_ALLOW_LIVE", default=False)
 # The platform's GST provider for e-invoices and e-way bills (ADR-049 item 4); each distributor
 # signs in with its own credentials. Only the mock exists until one is chosen (compliance.E001).
 GSP_PROVIDER = env("GSP_PROVIDER", default="mock")

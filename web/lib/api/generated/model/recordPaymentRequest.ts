@@ -6,13 +6,13 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { DueAmountRequest } from './dueAmountRequest';
-import type { PaymentModeEnum } from './paymentModeEnum';
+import type { ManualPaymentModeEnum } from './manualPaymentModeEnum';
 
 export interface RecordPaymentRequest {
   retailer: string;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   amount: string;
-  mode: PaymentModeEnum;
+  mode: ManualPaymentModeEnum;
   payment_date: string;
   /** @maxLength 60 */
   reference_no?: string;

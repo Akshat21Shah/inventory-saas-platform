@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
 
+from common.crypto import EncryptedTextField
 from common.fields import MoneyField
 from common.models import TenantScopedModel
 
@@ -18,6 +19,7 @@ class Payment(TenantScopedModel):
         CHEQUE = "CHEQUE", "Cheque"
         BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
         UPI = "UPI", "UPI"
+        ONLINE = "ONLINE", "Paid online"  # through the payment gateway only (Phase 7)
 
     class Status(models.TextChoices):
         RECEIVED = "RECEIVED", "Received"  # credited to the shop
@@ -70,7 +72,6 @@ class Payment(TenantScopedModel):
     reversal_reason = models.CharField(max_length=300, blank=True, default="")
     receipt_pdf_key = models.CharField(max_length=255, blank=True, default="")
     receipt_pdf_status = models.CharField(max_length=8, default="PENDING")
-
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uniq_payment_number"),
@@ -146,3 +147,53 @@ class Refund(TenantScopedModel):
 
     def __str__(self) -> str:
         return self.number
+
+
+# What staff and salesmen record by hand; ONLINE comes only from the gateway (Phase 7).
+MANUAL_MODES = [choice for choice in Payment.Mode.choices if choice[0] != Payment.Mode.ONLINE]
+
+
+class GatewayConfig(TenantScopedModel):
+    """A distributor's own payment gateway account (ADR-049 item 9): money settles to the
+    distributor, never to the platform. Keys and the webhook secret are encrypted and never
+    returned. The super admin switches the module on; the owner enters and checks the keys."""
+
+    class Provider(models.TextChoices):
+        RAZORPAY = "RAZORPAY", "Razorpay"
+        MOCK = "MOCK", "Test gateway (development)"
+
+    class Mode(models.TextChoices):
+        TEST = "TEST", "Test"
+        LIVE = "LIVE", "Live"
+
+    class Status(models.TextChoices):
+        UNVERIFIED = "UNVERIFIED", "Not checked"
+        CHECKING = "CHECKING", "Checking"
+        VERIFIED = "VERIFIED", "Working"
+        FAILED = "FAILED", "Not working"
+
+    provider = models.CharField(max_length=10, choices=Provider.choices)
+    mode = models.CharField(max_length=4, choices=Mode.choices, default=Mode.TEST)
+    key_id = EncryptedTextField(default="")
+    key_secret = EncryptedTextField(default="")
+    webhook_secret = EncryptedTextField(default="")
+    is_active = models.BooleanField(default=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.UNVERIFIED)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True, default="")
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant"], name="uniq_gateway_config"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.provider} ({self.mode})"
+

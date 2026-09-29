@@ -12,10 +12,10 @@
  * * `VERIFIED` - Working
  * * `FAILED` - Not working
  */
-export type GstCredentialStatusEnum = typeof GstCredentialStatusEnum[keyof typeof GstCredentialStatusEnum];
+export type ConnectionStatusEnum = typeof ConnectionStatusEnum[keyof typeof ConnectionStatusEnum];
 
 
-export const GstCredentialStatusEnum = {
+export const ConnectionStatusEnum = {
   UNVERIFIED: 'UNVERIFIED',
   CHECKING: 'CHECKING',
   VERIFIED: 'VERIFIED',

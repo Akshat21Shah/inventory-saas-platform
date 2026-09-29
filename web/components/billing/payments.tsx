@@ -47,7 +47,7 @@ import { useRetailersDues } from "@/lib/api/generated/endpoints/receivables/rece
 import { useRetailersRetrieve } from "@/lib/api/generated/endpoints/retailers/retailers";
 import {
   HandoverStatusEnum,
-  PaymentModeEnum,
+  ManualPaymentModeEnum,
   PaymentStatusEnum,
   type Due,
   type DueAmountRequest,
@@ -285,7 +285,10 @@ export function PaymentsPage() {
                   }}
                   options={[
                     { value: ALL, label: t("allModes") },
-                    ...Object.values(PaymentModeEnum).map((v) => ({ value: v, label: modes(v) })),
+                    ...Object.values(ManualPaymentModeEnum).map((v) => ({
+                      value: v,
+                      label: modes(v),
+                    })),
                   ]}
                 />
                 <FilterSelect
@@ -469,7 +472,7 @@ function PaymentForm({ shop, onChangeShop }: { shop: ShopChoice; onChangeShop: (
     const body = {
       retailer: shop.id,
       amount: amount.trim(),
-      mode: mode as PaymentModeEnum,
+      mode: mode as ManualPaymentModeEnum,
       payment_date: date,
       reference_no: reference,
       cheque_number: mode === "CHEQUE" ? cheque : "",
@@ -526,7 +529,10 @@ function PaymentForm({ shop, onChangeShop }: { shop: ShopChoice; onChangeShop: (
           <FormSelect
             value={mode}
             onValueChange={setMode}
-            options={Object.values(PaymentModeEnum).map((v) => ({ value: v, label: modes(v) }))}
+            options={Object.values(ManualPaymentModeEnum).map((v) => ({
+              value: v,
+              label: modes(v),
+            }))}
           />
         </FormField>
         <FormField label={t("date")} required hint={t("dateHint")} error={errors.payment_date}>
