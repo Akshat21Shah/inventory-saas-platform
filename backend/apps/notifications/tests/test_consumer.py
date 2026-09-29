@@ -305,3 +305,20 @@ def test_another_tenants_people_get_nothing(world, tenant_b):
     with tenant_context(tenant_b.pk):
         assert not Notification.objects.exists()
     assert other_owner.pk not in {n.recipient_id for n in rows(world, "order.placed")}
+
+
+def test_messages_name_products_not_codes(world):
+    from apps.orders import fulfilment
+    from apps.orders.models import Fulfilment, FulfilmentLine
+
+    with world["run"]():
+        order = place(world["t"], world["shop"], (world["product"], "3"))
+    with world["run"](), tenant_context(world["t"].pk):
+        transitions.accept_order(order.pk, by=world["owner"])
+        shipment = Fulfilment.objects.get(order=order)
+        line = FulfilmentLine.objects.get(fulfilment=shipment)
+        fulfilment.pack(shipment.pk, {line.pk: D("1")}, by=world["owner"])
+    [short] = rows(world, "order.short_supplied")[:1]
+    assert "Product P-1 2 short" in short.body and "P-1 2 short" not in short.body.replace(
+        "Product P-1", ""
+    )

@@ -63,10 +63,23 @@ class MockWhatsAppClient:
     outbox: ClassVar[list[SentWhatsApp]] = []
 
     def send_template(self, message: WhatsAppMessage, sender: SenderIdentity) -> SendResult:
+        from common.mock_mailbox import copy_to_mailpit
+
         self.outbox.append(SentWhatsApp(message, sender))
         logger.info(
             "mock WhatsApp sent",
             extra={"phone_tail": message.to[-4:], "template": message.template},
+        )
+        copy_to_mailpit(
+            "WhatsApp",
+            message.to,
+            message.text,
+            {
+                "Template": message.template,
+                "Category": message.category,
+                "Parameters": " | ".join(message.parameters),
+                "From": f"{sender.display_name} {sender.phone_number}".strip(),
+            },
         )
         return SendResult("whatsapp-mock", f"mock-{uuid4().hex[:12]}")
 

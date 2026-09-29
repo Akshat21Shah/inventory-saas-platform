@@ -39,8 +39,11 @@ class MockSmsSender:
     outbox: ClassVar[list[SentSms]] = []
 
     def send_otp(self, phone: str, code: str, *, sender_name: str) -> None:
+        from common.mock_mailbox import copy_to_mailpit
+
         self.outbox.append(SentSms(phone=phone, code=code, sender_name=sender_name))
         logger.info("mock SMS sent", extra={"phone_tail": phone[-4:], "sender": sender_name})
+        copy_to_mailpit("SMS", phone, f"{sender_name}: your sign-in code is {code}", {})
 
     def send_text(self, phone: str, text: str, *, sender_name: str, template: str) -> None:
         self.outbox.append(
@@ -50,6 +53,9 @@ class MockSmsSender:
             "mock SMS text sent",
             extra={"phone_tail": phone[-4:], "sender": sender_name, "template": template},
         )
+        from common.mock_mailbox import copy_to_mailpit
+
+        copy_to_mailpit("SMS", phone, text, {"Template": template, "Sender": sender_name})
 
 
 def get_sms_sender() -> SmsSender:

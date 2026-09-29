@@ -282,3 +282,29 @@ def test_a_fan_out_rings_the_bells_after_commit(world, monkeypatch):
     invoice(world)
     shop_bells = [users for _, users in rung if world["login"].pk in users]
     assert shop_bells and all(t == world["t"].pk for t, _ in rung)
+
+
+def test_dev_copies_mock_messages_to_mailpit(settings, world):
+    from apps.notifications.adapters.whatsapp import SenderIdentity, WhatsAppMessage
+
+    message = WhatsAppMessage(
+        "+919876500051", "b2b_x", "en", ("Alpha", "7"), "UTILITY", "Alpha: hi"
+    )
+    sender = SenderIdentity("mock", "+919800000000", "Platform")
+    settings.MOCK_MESSAGES_TO_MAILPIT = False
+    MockWhatsAppClient().send_template(message, sender)
+    assert not [m for m in mail.outbox if m.to == ["919876500051@whatsapp.mock"]]
+    settings.MOCK_MESSAGES_TO_MAILPIT = True
+    MockWhatsAppClient().send_template(message, sender)
+    MockSmsSender().send_otp("+919876500051", "123456", sender_name="Alpha")
+    [copy] = [m for m in mail.outbox if m.to == ["919876500051@whatsapp.mock"]]
+    assert copy.subject == "[WhatsApp mock] to +919876500051: Alpha: hi"
+    assert "Template: b2b_x" in copy.body and "Parameters: Alpha | 7" in copy.body
+    [sms] = [m for m in mail.outbox if m.to == ["919876500051@sms.mock"]]
+    assert "your sign-in code is 123456" in sms.body
+    settings.ALLOW_MOCK_INTEGRATIONS = False  # a deployed setting never copies
+    before = len(mail.outbox)
+    from common.mock_mailbox import copy_to_mailpit
+
+    copy_to_mailpit("WhatsApp", "+919876500051", "x", {})
+    assert len(mail.outbox) == before

@@ -86,13 +86,26 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         "hold_reason": order.get_hold_reason_display() if order.hold_reason else "",
         "reason": p.get("reason") or order.rejection_reason or order.cancellation_reason,
     }
+    # Payloads carry product codes; people read names (the order's line snapshot names first).
+    codes = {c["product"] for c in p.get("changes", [])} | {
+        line["product"] for line in p.get("lines", [])
+    }
+    if p.get("product") and "product_id" not in p:
+        codes.add(p["product"])
+    names = dict(
+        order.lines.filter(product_code__in=codes).values_list("product_code", "product_name")
+    )
+
+    def name(code: str) -> str:
+        return str(names.get(code, code))
+
     if "changes" in p:
         values["changes"] = listing(
-            [f"{c['product']} {qty(c['from'])}→{qty(c['to'])}" for c in p["changes"]]
+            [f"{name(c['product'])} {qty(c['from'])}→{qty(c['to'])}" for c in p["changes"]]
         )
     if "lines" in p:
         values["items"] = listing(
-            [f"{line['product']} {qty(line['short'])} short" for line in p["lines"]]
+            [f"{name(line['product'])} {qty(line['short'])} short" for line in p["lines"]]
         )
     if "shipment" in p:
         values["shipment"] = p["shipment"]
@@ -103,7 +116,7 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
             values["lr_number"] = shipment.lr_number
     if "product_id" in p or "product" in p:
         product = Product.objects.filter(pk=p["product_id"]).first() if "product_id" in p else None
-        values["product"] = product.name if product else p.get("product", "")
+        values["product"] = product.name if product else name(p.get("product", ""))
         values["quantity"] = qty(p["quantity"]) if p.get("quantity") else ""
     if p.get("price_increased"):
         values["price_increased"] = " The price has gone up since you ordered."

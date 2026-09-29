@@ -323,6 +323,8 @@ SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
 WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
 WHATSAPP_PLATFORM_NUMBER = env("WHATSAPP_PLATFORM_NUMBER", default="")
 WHATSAPP_PLATFORM_NAME = env("WHATSAPP_PLATFORM_NAME", default="Inventory Platform")
+# Dev only: copy mock WhatsApp and SMS messages to Mailpit (common/mock_mailbox.py).
+MOCK_MESSAGES_TO_MAILPIT = env.bool("MOCK_MESSAGES_TO_MAILPIT", default=False)
 # Object storage (ADR-027): "s3" (AWS in prod, SeaweedFS in dev) or "memory" (tests).
 STORAGE_BACKEND = env("STORAGE_BACKEND", default="s3")
 S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", default="")  # empty = AWS
