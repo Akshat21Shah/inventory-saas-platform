@@ -27,6 +27,14 @@ class Recipient(models.TextChoices):
     OWNERS = "OWNERS", "Owners"
 
 
+class Audience(models.TextChoices):
+    """Whose words a text is in: the shop's ("Your order …") or the office's ("Ganesh Kirana's
+    order …"). A shop login gets SHOP texts; everyone else STAFF texts."""
+
+    SHOP = "SHOP", "The shop"
+    STAFF = "STAFF", "Staff"
+
+
 class WhatsAppCategory(models.TextChoices):
     UTILITY = "UTILITY", "Utility"
     MARKETING = "MARKETING", "Marketing"
@@ -35,6 +43,7 @@ class WhatsAppCategory(models.TextChoices):
 
 class _TemplateFields(models.Model):
     event_code = models.CharField(max_length=40)
+    audience = models.CharField(max_length=5, choices=Audience.choices, default=Audience.SHOP)
     channel = models.CharField(max_length=8, choices=Channel.choices)
     locale = models.CharField(max_length=5, default="en")
     subject = models.CharField(
@@ -59,12 +68,13 @@ class PlatformTemplate(BaseModel, _TemplateFields):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["event_code", "channel", "locale"], name="uniq_platform_template"
+                fields=["event_code", "audience", "channel", "locale"],
+                name="uniq_platform_template_audience",
             )
         ]
 
     def __str__(self) -> str:
-        return f"{self.event_code} {self.channel} {self.locale}"
+        return f"{self.event_code} {self.audience} {self.channel} {self.locale}"
 
 
 class NotificationTemplate(TenantScopedModel, _TemplateFields):
@@ -73,12 +83,13 @@ class NotificationTemplate(TenantScopedModel, _TemplateFields):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["tenant", "event_code", "channel", "locale"], name="uniq_tenant_template"
+                fields=["tenant", "event_code", "audience", "channel", "locale"],
+                name="uniq_tenant_template_audience",
             )
         ]
 
     def __str__(self) -> str:
-        return f"{self.event_code} {self.channel} {self.locale}"
+        return f"{self.event_code} {self.audience} {self.channel} {self.locale}"
 
 
 class NotificationRule(TenantScopedModel):

@@ -31,6 +31,7 @@ class PlatformTemplateSerializer(serializers.ModelSerializer[PlatformTemplate]):
         fields = [
             "id",
             "event_code",
+            "audience",
             "channel",
             "locale",
             "subject",
@@ -49,7 +50,9 @@ class PlatformTemplatesView(Guarded, generics.ListAPIView[PlatformTemplate]):
     pagination_class = None
 
     def get_queryset(self) -> QuerySet[PlatformTemplate]:
-        rows = PlatformTemplate.objects.all().order_by("event_code", "channel", "locale")
+        rows = PlatformTemplate.objects.all().order_by(
+            "event_code", "audience", "channel", "locale"
+        )
         event = self.request.query_params.get("event")
         return rows.filter(event_code=event) if event else rows
 
@@ -76,7 +79,7 @@ class PlatformTemplateView(Guarded):
         data.is_valid(raise_exception=True)
         v = data.validated_data
         row = texts.save_platform_text(
-            texts.TextInput(event, channel, v["locale"], v["subject"], v["body"]),
+            texts.TextInput(event, channel, v["locale"], v["subject"], v["body"], v["audience"]),
             texts.WhatsAppFields(
                 v["whatsapp_template_name"], v["whatsapp_language"], v["whatsapp_category"]
             ),
@@ -97,7 +100,9 @@ class PlatformTextPreviewView(Guarded):
         data = s.TextPreviewInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
-        text = texts.TextInput(v["event"], v["channel"], v["locale"], v["subject"], v["body"])
+        text = texts.TextInput(
+            v["event"], v["channel"], v["locale"], v["subject"], v["body"], v["audience"]
+        )
         return Response(s.TextPreviewSerializer(texts.preview(text, "Sharma Distributors")).data)
 
 

@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { NotificationAudienceEnum } from './notificationAudienceEnum';
 import type { NotificationChannelEnum } from './notificationChannelEnum';
 import type { PlatformTemplateWhatsappCategory } from './platformTemplateWhatsappCategory';
 
@@ -12,6 +13,7 @@ export interface PlatformTemplate {
   readonly id: string;
   /** @maxLength 40 */
   event_code: string;
+  audience?: NotificationAudienceEnum;
   channel: NotificationChannelEnum;
   /** @maxLength 5 */
   locale?: string;

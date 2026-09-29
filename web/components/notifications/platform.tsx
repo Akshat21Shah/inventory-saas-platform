@@ -63,8 +63,8 @@ function PlatformTextEditor({ row }: { row: PlatformTemplate }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const whatsapp = row.channel === "WHATSAPP";
-  const id = `${row.event_code}-${row.channel}-${row.locale}`;
-  const input = { locale: row.locale as "en", subject, body };
+  const id = `${row.event_code}-${row.audience}-${row.channel}-${row.locale}`;
+  const input = { audience: row.audience, locale: row.locale as "en", subject, body };
 
   const run = async (action: () => Promise<unknown>, done?: string) => {
     setBusy(true);
@@ -84,7 +84,7 @@ function PlatformTextEditor({ row }: { row: PlatformTemplate }) {
   return (
     <section className="space-y-3 rounded-xl border p-4" aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`} className="font-semibold">
-        {n(`channels.${row.channel}`)} · {row.locale}
+        {t(`audiences.${row.audience}`)} · {n(`channels.${row.channel}`)} · {row.locale}
       </h2>
       {row.channel === "IN_APP" || row.channel === "EMAIL" ? (
         <div className="space-y-1">

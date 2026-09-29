@@ -263,6 +263,7 @@ SPECTACULAR_SETTINGS = {
         "DocumentLinkKindEnum": "apps.notifications.models.DocumentLink.Kind",
         "WhatsAppCategoryEnum": "apps.notifications.models.WhatsAppCategory",
         "NotificationTextSourceEnum": ["tenant", "platform", "catalogue"],
+        "NotificationAudienceEnum": "apps.notifications.models.Audience",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

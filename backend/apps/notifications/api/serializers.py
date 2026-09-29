@@ -7,6 +7,7 @@ from rest_framework import serializers
 from apps.accounts.models import LANGUAGE_CHOICES
 from apps.notifications.models import (
     Announcement,
+    Audience,
     Channel,
     DeliveryAttempt,
     DocumentLink,
@@ -108,6 +109,9 @@ class RulesMatrixSerializer(serializers.Serializer[Any]):
 
 
 class TextSerializer(serializers.Serializer[Any]):
+    audience = serializers.ChoiceField(
+        choices=Audience.choices, help_text="Whose words: the shop's or the office's."
+    )
     channel = serializers.ChoiceField(choices=Channel.choices)
     subject = serializers.CharField(allow_blank=True)
     body = serializers.CharField()
@@ -119,6 +123,7 @@ class TextSerializer(serializers.Serializer[Any]):
 
 
 class TextInputSerializer(serializers.Serializer[Any]):
+    audience = serializers.ChoiceField(choices=Audience.choices, default=Audience.SHOP)
     locale = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="en")
     subject = serializers.CharField(max_length=200, allow_blank=True, default="")
     body = serializers.CharField(max_length=2000)

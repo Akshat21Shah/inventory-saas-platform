@@ -13,9 +13,13 @@ from apps.notifications.catalog import (
     RECIPIENT_CHANNELS,
     whatsapp_template_name,
 )
-from apps.notifications.models import PlatformTemplate
+from apps.notifications.models import Audience, PlatformTemplate
 
 VAR = re.compile(r"{{\s*(\w+)\s*}}")
+
+
+def _audience(recipient: str) -> str:
+    return Audience.SHOP if recipient == "SHOP" else Audience.STAFF
 
 
 def test_every_rule_names_a_real_event_recipient_channel_and_permission():
@@ -28,33 +32,63 @@ def test_every_rule_names_a_real_event_recipient_channel_and_permission():
             assert rule.permission in ALL_PERMISSIONS, rule
         else:
             assert rule.permission == "", rule
-        if rule.recipient == "SHOP":
-            assert EVENTS[rule.event].shop_facing, rule
+        assert _audience(rule.recipient) in EVENTS[rule.event].audiences, rule
+        for channel in rule.channels:  # a text in the recipient's words
+            assert channel in DEFAULT_TEXTS[rule.event][_audience(rule.recipient)], rule
 
 
-def test_every_channel_in_use_has_a_text_with_only_the_events_variables():
-    for rule in DEFAULT_RULES:
-        for channel in rule.channels:
-            assert channel in DEFAULT_TEXTS[rule.event], (rule.event, channel)
-    for code, texts in DEFAULT_TEXTS.items():
+def test_every_event_has_texts_in_the_words_of_everyone_it_can_reach():
+    for code, event in EVENTS.items():
+        assert set(DEFAULT_TEXTS[code]) == set(event.audiences), code
+        for audience in event.audiences:
+            assert {"IN_APP", "EMAIL", "WHATSAPP"} <= set(DEFAULT_TEXTS[code][audience]), (
+                code,
+                audience,
+            )
+    assert set(DEFAULT_TEXTS["retailer.welcome"]) == {Audience.SHOP}
+    assert "SMS" in DEFAULT_TEXTS["retailer.welcome"][Audience.SHOP]
+    both = [code for code, event in EVENTS.items() if len(event.audiences) == 2]
+    assert {"order.placed", "order.cancelled", "order.modified", "backorder.cancelled"} <= set(both)
+
+
+def test_the_shop_reads_its_own_words_and_staff_the_offices():
+    shop, staff = Audience.SHOP, Audience.STAFF
+    assert DEFAULT_TEXTS["order.placed"][shop]["IN_APP"].body.startswith("Your order")
+    assert DEFAULT_TEXTS["order.placed"][staff]["IN_APP"].body.startswith("{{ shop }} placed")
+    assert DEFAULT_TEXTS["order.cancelled"][shop]["IN_APP"].body.startswith("Your order")
+    assert DEFAULT_TEXTS["order.cancelled"][staff]["IN_APP"].body.startswith("{{ shop }}'s")
+    for code, audiences in DEFAULT_TEXTS.items():
+        for channel, text in audiences.get(staff, {}).items():
+            assert "your order" not in text.body.lower(), (code, channel)  # never the shop's words
+        for channel, text in audiences.get(shop, {}).items():
+            assert "{{ shop }} placed" not in text.body, (code, channel)
+
+
+def test_every_text_uses_only_the_events_variables():
+    for code, audiences in DEFAULT_TEXTS.items():
         allowed = set(EVENTS[code].variables)
-        assert "IN_APP" in texts, code
-        for channel, text in texts.items():
-            used = set(VAR.findall(text.subject)) | set(VAR.findall(text.body))
-            assert used <= allowed, (code, channel, used - allowed)
+        for audience, texts in audiences.items():
+            assert "IN_APP" in texts, (code, audience)
+            for channel, text in texts.items():
+                used = set(VAR.findall(text.subject)) | set(VAR.findall(text.body))
+                assert used <= allowed, (code, audience, channel, used - allowed)
+                if audience == Audience.STAFF:  # document links only go to shops
+                    assert "document_link" not in used, (code, channel)
 
 
 def test_whatsapp_and_sms_name_the_distributor_first_and_list_parameters_in_order():
-    for code, texts in DEFAULT_TEXTS.items():
-        for channel in ("WHATSAPP", "SMS"):
-            if channel not in texts:
-                continue
-            body = texts[channel].body
-            assert body.startswith("{{ distributor }}:"), (code, channel)
-            if channel == "WHATSAPP":
-                seen = list(dict.fromkeys(VAR.findall(body)))
-                assert list(texts[channel].variables) == seen, code
+    for code, audiences in DEFAULT_TEXTS.items():
+        for audience, texts in audiences.items():
+            for channel in ("WHATSAPP", "SMS"):
+                if channel not in texts:
+                    continue
+                body = texts[channel].body
+                assert body.startswith("{{ distributor }}:"), (code, audience, channel)
+                if channel == "WHATSAPP":
+                    seen = list(dict.fromkeys(VAR.findall(body)))
+                    assert list(texts[channel].variables) == seen, (code, audience)
         assert whatsapp_template_name(code).startswith("b2b_")
+    assert whatsapp_template_name("order.placed", Audience.STAFF) == "b2b_order_placed_staff"
 
 
 def test_the_approved_compulsory_and_non_urgent_events():
@@ -88,13 +122,21 @@ def test_the_approved_compulsory_and_non_urgent_events():
 def test_platform_templates_are_seeded_once():
     from apps.notifications.defaults import sync_platform_templates
 
-    expected = sum(len(texts) for texts in DEFAULT_TEXTS.values())
+    expected = sum(
+        len(texts) for audiences in DEFAULT_TEXTS.values() for texts in audiences.values()
+    )
     assert PlatformTemplate.objects.count() == expected
-    whatsapp = PlatformTemplate.objects.get(event_code="invoice.issued", channel="WHATSAPP")
+    whatsapp = PlatformTemplate.objects.get(
+        event_code="invoice.issued", audience="SHOP", channel="WHATSAPP"
+    )
     assert (whatsapp.whatsapp_template_name, whatsapp.whatsapp_category) == (
         "b2b_invoice_issued",
         "UTILITY",
     )
+    office = PlatformTemplate.objects.get(
+        event_code="invoice.issued", audience="STAFF", channel="WHATSAPP"
+    )
+    assert office.whatsapp_template_name == "b2b_invoice_issued_staff"
     PlatformTemplate.objects.filter(pk=whatsapp.pk).update(body="edited by the super admin")
     assert sync_platform_templates(PlatformTemplate) == 0  # nothing new; edits kept
     whatsapp.refresh_from_db()

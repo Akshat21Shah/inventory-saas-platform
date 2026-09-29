@@ -133,27 +133,33 @@ describe("Who gets what", () => {
 });
 
 describe("Message texts", () => {
-  it("edits the in-app text with a preview; WhatsApp is the platform's", async () => {
+  it("edits the shop's and the office's words separately, with a preview", async () => {
+    const shopText = {
+      audience: "SHOP",
+      channel: "IN_APP",
+      subject: "Order {{ order_number }} accepted",
+      body: "Your order was accepted.",
+      source: "platform",
+      editable: true,
+      variables: ["distributor", "shop", "order_number"],
+    };
     const calls = mockApi({
       "/api/v1/notification-rules/": () => [200, matrix],
       "/api/v1/notification-templates/order.accepted/": () => [
         200,
         [
+          shopText,
           {
-            channel: "IN_APP",
-            subject: "Order {{ order_number }} accepted",
-            body: "Your order was accepted.",
-            source: "platform",
-            editable: true,
-            variables: ["distributor", "order_number"],
-          },
-          {
+            ...shopText,
             channel: "WHATSAPP",
             subject: "",
             body: "{{ distributor }}: your order was accepted.",
-            source: "platform",
             editable: false,
-            variables: ["distributor", "order_number"],
+          },
+          {
+            ...shopText,
+            audience: "STAFF",
+            body: "{{ shop }}'s order was accepted.",
           },
         ],
       ],
@@ -164,20 +170,36 @@ describe("Message texts", () => {
       "PUT /api/v1/notification-templates/order.accepted/IN_APP/": () => [200, []],
     });
     renderWithIntl(<NotificationTextsPage />);
-    expect(await screen.findByText("Approved template: set by the platform")).toBeVisible();
+    const shop = await screen.findByRole("region", { name: "To the shop" });
+    const office = screen.getByRole("region", { name: "To your staff" });
+    expect(within(shop).getByText("Approved template: set by the platform")).toBeVisible();
+    expect(within(office).getByLabelText("Message")).toHaveValue(
+      "{{ shop }}'s order was accepted.",
+    );
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Insert order_number" }));
-    expect(screen.getByLabelText("Message")).toHaveValue(
+    await user.click(within(shop).getByRole("button", { name: "Insert order_number" }));
+    expect(within(shop).getByLabelText("Message")).toHaveValue(
       "Your order was accepted.{{ order_number }}",
     );
-    await user.click(screen.getByRole("button", { name: "Preview" }));
-    expect(await screen.findByText("Order ORD-2026-000123 accepted")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Save text" }));
+    await user.click(within(shop).getByRole("button", { name: "Preview" }));
+    expect(await within(shop).findByText("Order ORD-2026-000123 accepted")).toBeVisible();
+    expect(calls.find((c) => c.path.endsWith("/preview/"))?.body).toMatchObject({
+      audience: "SHOP",
+    });
+    await user.click(within(shop).getByRole("button", { name: "Save text" }));
     await waitFor(() =>
       expect(calls.find((c) => c.method === "PUT")?.body).toEqual({
+        audience: "SHOP",
         locale: "en",
         subject: "Order {{ order_number }} accepted",
         body: "Your order was accepted.{{ order_number }}",
+      }),
+    );
+    await user.click(within(office).getByRole("button", { name: "Save text" }));
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === "PUT").at(-1)?.body).toMatchObject({
+        audience: "STAFF",
+        body: "{{ shop }}'s order was accepted.",
       }),
     );
   });

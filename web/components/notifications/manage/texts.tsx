@@ -29,6 +29,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { eventKey, NotificationsNav } from "./nav";
 
 const LOCALES: NotificationTextsLocale[] = ["en", "hi", "mr"];
+const AUDIENCES = ["SHOP", "STAFF"] as const;
 
 function TextEditor({
   event,
@@ -48,7 +49,8 @@ function TextEditor({
   const [preview, setPreview] = useState<TextPreview | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const id = `${event}-${text.channel}`;
+  const id = `${event}-${text.audience}-${text.channel}`;
+  const audience = text.audience;
   const refresh = () =>
     client.invalidateQueries({ queryKey: getNotificationTextsQueryKey(event, { locale }) });
 
@@ -143,6 +145,7 @@ function TextEditor({
                   const shown = await notificationTextPreview({
                     event,
                     channel: text.channel,
+                    audience,
                     locale,
                     subject,
                     body,
@@ -158,7 +161,12 @@ function TextEditor({
               disabled={busy}
               onClick={() =>
                 void run(async () => {
-                  await notificationTextUpdate(event, text.channel, { locale, subject, body });
+                  await notificationTextUpdate(event, text.channel, {
+                    audience,
+                    locale,
+                    subject,
+                    body,
+                  });
                   await refresh();
                 }, t("saved"))
               }
@@ -172,7 +180,7 @@ function TextEditor({
                 disabled={busy}
                 onClick={() =>
                   void run(async () => {
-                    await notificationTextReset(event, text.channel, { locale });
+                    await notificationTextReset(event, text.channel, { locale, audience });
                     await refresh();
                   }, t("resetDone"))
                 }
@@ -230,15 +238,29 @@ export function NotificationTextsPage() {
       ) : !texts.length ? (
         <EmptyState title={t("empty")} />
       ) : (
-        <div className="space-y-4">
-          {texts.map((text) => (
-            <TextEditor
-              key={`${event}-${locale}-${text.channel}-${text.source}-${text.body}`}
-              event={event}
-              locale={locale}
-              text={text}
-            />
-          ))}
+        <div className="space-y-8">
+          {AUDIENCES.filter((audience) => texts.some((text) => text.audience === audience)).map(
+            (audience) => (
+              <section key={audience} className="space-y-4" aria-labelledby={`to-${audience}`}>
+                <div className="space-y-1">
+                  <h2 id={`to-${audience}`} className="text-lg font-semibold">
+                    {t(`audiences.${audience}`)}
+                  </h2>
+                  <p className="text-muted-foreground text-sm">{t(`audienceHints.${audience}`)}</p>
+                </div>
+                {texts
+                  .filter((text) => text.audience === audience)
+                  .map((text) => (
+                    <TextEditor
+                      key={`${event}-${locale}-${audience}-${text.channel}-${text.source}-${text.body}`}
+                      event={event}
+                      locale={locale}
+                      text={text}
+                    />
+                  ))}
+              </section>
+            ),
+          )}
         </div>
       )}
     </>

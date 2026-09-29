@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from apps.notifications.catalog import DEFAULT_TEXTS
-from apps.notifications.models import NotificationTemplate, PlatformTemplate
+from apps.notifications.models import Audience, NotificationTemplate, PlatformTemplate
 
 VARIABLE = re.compile(r"{{\s*(\w+)\s*}}")
 
@@ -27,12 +27,19 @@ class Resolved:
     source: str = "platform"  # tenant, platform, catalogue
 
 
-def template_for(event_code: str, channel: str, locale: str = "en") -> Resolved | None:
-    """The tenant's own text, else the platform's, in the locale and then in English."""
+def template_for(
+    event_code: str, channel: str, locale: str = "en", audience: str = Audience.SHOP
+) -> Resolved | None:
+    """The tenant's own text, else the platform's, in the locale and then in English, for the
+    audience (the shop's words or the office's). Never the other audience's words."""
     for loc in dict.fromkeys((locale, "en")):
         for model, source in ((NotificationTemplate, "tenant"), (PlatformTemplate, "platform")):
             row = model.objects.filter(
-                event_code=event_code, channel=channel, locale=loc, is_active=True
+                event_code=event_code,
+                audience=audience,
+                channel=channel,
+                locale=loc,
+                is_active=True,
             ).first()
             if row is not None:
                 return Resolved(
@@ -44,22 +51,26 @@ def template_for(event_code: str, channel: str, locale: str = "en") -> Resolved 
                     tuple(row.variables or ()),
                     source,
                 )
-    text = DEFAULT_TEXTS.get(event_code, {}).get(channel)
+    text = DEFAULT_TEXTS.get(event_code, {}).get(audience, {}).get(channel)
     if text is None:
         return None
     return Resolved(text.subject, text.body, variables=text.variables, source="catalogue")
 
 
 def render(
-    event_code: str, channel: str, values: dict[str, Any], locale: str = "en"
+    event_code: str,
+    channel: str,
+    values: dict[str, Any],
+    locale: str = "en",
+    audience: str = Audience.SHOP,
 ) -> dict[str, Any] | None:
     """Title, body and (for WhatsApp) the approved template's name and parameters."""
-    resolved = template_for(event_code, channel, locale)
+    resolved = template_for(event_code, channel, locale, audience)
     if resolved is None:
         return None
     title = substitute(resolved.subject, values)
     if not title:  # WhatsApp and SMS have no subject: use the in-app title for lists
-        in_app = template_for(event_code, "IN_APP", locale)
+        in_app = template_for(event_code, "IN_APP", locale, audience)
         title = substitute(in_app.subject, values) if in_app else event_code
     return {
         "title": title[:200],

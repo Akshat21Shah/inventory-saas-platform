@@ -111,7 +111,9 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         values["shipment"] = p["shipment"]
         shipment = Fulfilment.objects.filter(order=order, number=p["shipment"]).first()
         if shipment is not None:
-            values["vehicle"] = shipment.vehicle_number
+            # A phrase for "left the warehouse{{ vehicle }}": " by vehicle MH12AB1234" or nothing.
+            number = shipment.vehicle_number
+            values["vehicle"] = f" by vehicle {number}" if number else ""
             values["transporter"] = shipment.transporter_name
             values["lr_number"] = shipment.lr_number
     if "product_id" in p or "product" in p:
@@ -119,7 +121,7 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         values["product"] = product.name if product else name(p.get("product", ""))
         values["quantity"] = qty(p["quantity"]) if p.get("quantity") else ""
     if p.get("price_increased"):
-        values["price_increased"] = " The price has gone up since you ordered."
+        values["price_increased"] = " The price has gone up since the order was placed."
     ctx = EventContext(
         code,
         values,

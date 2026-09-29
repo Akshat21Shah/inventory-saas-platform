@@ -148,6 +148,9 @@ def test_rules_matrix_changes_and_reset(world):
     saved = staff.put(f"{API}/notification-rules/invoice.issued/", body, format="json")
     assert saved.status_code == 200, saved.json()
     assert {r["recipient"] for r in saved.json() if r["enabled"]} == {"SHOP", "OWNERS"}
+    shops_only = {"rules": [{"recipient": "OWNERS", "channels": ["IN_APP"]}]}
+    refused = staff.put(f"{API}/notification-rules/retailer.welcome/", shops_only, format="json")
+    assert "This message is for shops only." in str(refused.json())
     bad = {"rules": [{"recipient": "OWNERS", "channels": ["SMS"]}]}
     assert (
         staff.put(f"{API}/notification-rules/invoice.issued/", bad, format="json").status_code
@@ -185,6 +188,20 @@ def test_texts_and_preview(world):
     assert preview == {"subject": "Order ORD-2026-000123", "body": "Ganesh Kirana ordered"}
     reset = staff.delete(f"{API}/notification-templates/order.placed/IN_APP/?locale=en")
     assert next(t for t in reset.json() if t["channel"] == "IN_APP")["source"] == "platform"
+    # Both audiences: the shop's words and the office's, each editable on its own.
+    audiences = {(t["audience"], t["channel"]) for t in texts}
+    assert {("SHOP", "IN_APP"), ("STAFF", "IN_APP"), ("STAFF", "EMAIL")} <= audiences
+    office = {**body, "audience": "STAFF", "body": "{{ shop }} ordered {{ total }}"}
+    saved = staff.put(f"{API}/notification-templates/order.placed/IN_APP/", office, format="json")
+    by_audience = {t["audience"]: t for t in saved.json() if t["channel"] == "IN_APP"}
+    assert (by_audience["STAFF"]["source"], by_audience["SHOP"]["source"]) == ("tenant", "platform")
+    reset = staff.delete(
+        f"{API}/notification-templates/order.placed/IN_APP/?locale=en&audience=STAFF"
+    )
+    by_audience = {t["audience"]: t for t in reset.json() if t["channel"] == "IN_APP"}
+    assert by_audience["STAFF"]["source"] == "platform"
+    bad = staff.delete(f"{API}/notification-templates/order.placed/IN_APP/?audience=BOTH")
+    assert bad.status_code == 400
     assert staff.get(f"{API}/notification-templates/order.teleported/").status_code == 404
 
 
@@ -343,6 +360,19 @@ def test_super_admin_texts_and_failures(world, api_client_for, monkeypatch):
         f"{API}/platform/notification-templates/order.accepted/WHATSAPP/", body, format="json"
     ).json()
     assert saved["variables"] == ["distributor", "order_number", "document_link"]
+    assert saved["audience"] == "SHOP"
+    office = admin.put(
+        f"{API}/platform/notification-templates/order.accepted/WHATSAPP/",
+        {
+            "audience": "STAFF",
+            "body": "{{ distributor }}: {{ shop }}'s order {{ order_number }} ok",
+        },
+        format="json",
+    ).json()
+    assert (office["audience"], office["whatsapp_template_name"]) == (
+        "STAFF",
+        "b2b_order_accepted_staff",
+    )
     preview = admin.post(
         f"{API}/platform/notification-templates/preview/",
         {"event": "order.accepted", "channel": "WHATSAPP", **body},

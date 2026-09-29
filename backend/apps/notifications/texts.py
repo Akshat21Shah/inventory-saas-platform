@@ -15,6 +15,7 @@ from typing import Any
 from apps.audit import services as audit
 from apps.notifications.catalog import EVENTS, whatsapp_template_name
 from apps.notifications.models import (
+    Audience,
     Channel,
     NotificationTemplate,
     PlatformTemplate,
@@ -42,12 +43,12 @@ SAMPLE: dict[str, str] = {
     "changes": "Tata Salt 1 kg 10→8",
     "items": "Tata Salt 1 kg 2 short",
     "shipment": "ORD-2026-000123/1",
-    "vehicle": "MH12AB1234",
+    "vehicle": " by vehicle MH12AB1234",
     "transporter": "Shree Transport",
     "lr_number": "LR-5521",
     "product": "Tata Salt 1 kg",
     "quantity": "5",
-    "price_increased": " The price has gone up since you ordered.",
+    "price_increased": " The price has gone up since the order was placed.",
     "alert": "low stock",
     "invoice_number": "INV/26-27/000045",
     "due_date": "15-10-2026",
@@ -70,6 +71,12 @@ SAMPLE: dict[str, str] = {
 }
 
 
+def variables_for(event_code: str, audience: str) -> tuple[str, ...]:
+    """What a text may use. Secure document links go only to shops (ADR-048 item 8)."""
+    names = EVENTS[event_code].variables
+    return names if audience == Audience.SHOP else tuple(v for v in names if v != "document_link")
+
+
 @dataclass(frozen=True)
 class TextInput:
     event_code: str
@@ -77,6 +84,7 @@ class TextInput:
     locale: str
     subject: str
     body: str
+    audience: str = Audience.SHOP  # the shop's words or the office's
 
 
 def _check(data: TextInput, *, platform: bool) -> None:
@@ -84,6 +92,12 @@ def _check(data: TextInput, *, platform: bool) -> None:
     event = EVENTS.get(data.event_code)
     if event is None:
         raise NotFound()
+    if data.audience not in event.audiences:
+        errors["audience"] = [
+            "This message only goes to staff."
+            if data.audience == Audience.SHOP
+            else "This message only goes to shops."
+        ]
     allowed_channels = tuple(Channel) if platform else TENANT_CHANNELS
     if data.channel not in allowed_channels:
         errors["channel"] = ["WhatsApp and SMS texts are set by the platform (approved templates)."]
@@ -102,9 +116,10 @@ def _check(data: TextInput, *, platform: bool) -> None:
     elif len(data.body) > limit:
         errors["body"] = [f"Use at most {limit} characters."]
     used = set(VARIABLE.findall(data.subject)) | set(VARIABLE.findall(data.body))
-    unknown = sorted(used - set(event.variables))
+    allowed = variables_for(data.event_code, data.audience)
+    unknown = sorted(used - set(allowed))
     if unknown:
-        known = ", ".join(f"{{{{ {v} }}}}" for v in event.variables)
+        known = ", ".join(f"{{{{ {v} }}}}" for v in allowed)
         errors.setdefault("body", []).append(f"Unknown: {', '.join(unknown)}. You can use {known}.")
     if "{%" in data.subject + data.body:
         errors.setdefault("body", []).append("Only {{ variable }} placeholders are allowed.")
@@ -115,21 +130,23 @@ def _check(data: TextInput, *, platform: bool) -> None:
 def save_tenant_text(data: TextInput) -> NotificationTemplate:
     """The distributor's own in-app or email text for an event (``notifications.manage``)."""
     _check(data, platform=False)
-    row = NotificationTemplate.objects.filter(
-        event_code=data.event_code, channel=data.channel, locale=data.locale
-    ).first()
+    key = {
+        "event_code": data.event_code,
+        "audience": data.audience,
+        "channel": data.channel,
+        "locale": data.locale,
+    }
+    row = NotificationTemplate.objects.filter(**key).first()
     before = {"subject": row.subject, "body": row.body} if row else None
     if row is None:
-        row = NotificationTemplate(
-            event_code=data.event_code, channel=data.channel, locale=data.locale
-        )
+        row = NotificationTemplate(**key)
     row.subject, row.body, row.is_active = data.subject, data.body, True
     row.variables = list(EVENTS[data.event_code].variables)
     row.save()
     audit.record(
         "notifications.template_changed",
         target=row,
-        target_repr=f"{data.event_code} {data.channel} {data.locale}",
+        target_repr=f"{data.event_code} {data.audience} {data.channel} {data.locale}",
         changes={
             "subject": [before["subject"] if before else None, row.subject],
             "body": [before["body"] if before else None, row.body],
@@ -138,17 +155,19 @@ def save_tenant_text(data: TextInput) -> NotificationTemplate:
     return row
 
 
-def reset_tenant_text(event_code: str, channel: str, locale: str) -> bool:
+def reset_tenant_text(
+    event_code: str, channel: str, locale: str, audience: str = Audience.SHOP
+) -> bool:
     """Back to the platform's text. False when there was no own text."""
     row = NotificationTemplate.objects.filter(
-        event_code=event_code, channel=channel, locale=locale
+        event_code=event_code, audience=audience, channel=channel, locale=locale
     ).first()
     if row is None:
         return False
     audit.record(
         "notifications.template_reset",
         target=row,
-        target_repr=f"{event_code} {channel} {locale}",
+        target_repr=f"{event_code} {audience} {channel} {locale}",
         changes={"subject": [row.subject, None], "body": [row.body, None]},
     )
     row.delete()
@@ -173,18 +192,22 @@ def save_platform_text(data: TextInput, whatsapp: WhatsAppFields | None = None) 
         and wa.category not in WhatsAppCategory.values
     ):
         raise InvalidFields({"category": ["Choose utility, marketing or authentication."]})
-    row = PlatformTemplate.objects.filter(
-        event_code=data.event_code, channel=data.channel, locale=data.locale
-    ).first()
+    key = {
+        "event_code": data.event_code,
+        "audience": data.audience,
+        "channel": data.channel,
+        "locale": data.locale,
+    }
+    row = PlatformTemplate.objects.filter(**key).first()
     before = {"subject": row.subject, "body": row.body} if row else None
     if row is None:
-        row = PlatformTemplate(event_code=data.event_code, channel=data.channel, locale=data.locale)
+        row = PlatformTemplate(**key)
     row.subject, row.body, row.is_active = data.subject, data.body, True
     if data.channel == Channel.WHATSAPP:
         row.whatsapp_template_name = (
             wa.template_name
             or row.whatsapp_template_name
-            or (whatsapp_template_name(data.event_code))
+            or (whatsapp_template_name(data.event_code, data.audience))
         )
         row.whatsapp_language = wa.language or row.whatsapp_language or data.locale
         row.whatsapp_category = (
@@ -197,7 +220,7 @@ def save_platform_text(data: TextInput, whatsapp: WhatsAppFields | None = None) 
     audit.record(
         "notifications.platform_template_changed",
         target=row,
-        target_repr=f"{data.event_code} {data.channel} {data.locale}",
+        target_repr=f"{data.event_code} {data.audience} {data.channel} {data.locale}",
         changes={
             "subject": [before["subject"] if before else None, row.subject],
             "body": [before["body"] if before else None, row.body],
@@ -215,23 +238,25 @@ def preview(data: TextInput, distributor: str) -> dict[str, Any]:
 
 
 def texts_for(event_code: str, locale: str = "en") -> list[dict[str, Any]]:
-    """Each channel's text in force for an event (the tenant's, else the platform's), for the
-    templates screen."""
+    """Each audience's and channel's text in force for an event (the tenant's, else the
+    platform's), for the templates screen: the shop's words first, then the office's."""
     if event_code not in EVENTS:
         raise NotFound()
     found = []
-    for channel in Channel.values:
-        resolved = template_for(event_code, channel, locale)
-        if resolved is None:
-            continue
-        found.append(
-            {
-                "channel": channel,
-                "subject": resolved.subject,
-                "body": resolved.body,
-                "source": resolved.source,
-                "editable": channel in TENANT_CHANNELS,
-                "variables": list(EVENTS[event_code].variables),
-            }
-        )
+    for audience in EVENTS[event_code].audiences:
+        for channel in Channel.values:
+            resolved = template_for(event_code, channel, locale, audience)
+            if resolved is None:
+                continue
+            found.append(
+                {
+                    "audience": audience,
+                    "channel": channel,
+                    "subject": resolved.subject,
+                    "body": resolved.body,
+                    "source": resolved.source,
+                    "editable": channel in TENANT_CHANNELS,
+                    "variables": list(variables_for(event_code, audience)),
+                }
+            )
     return found

@@ -38,10 +38,13 @@ def test_a_distributors_text_is_used_until_it_is_reset(
     product = make_product(tenant_a, "P-1", base_price=D("10"))
     add_stock(tenant_a, product, "10")
     with tenant_context(tenant_a.pk):
-        texts.save_tenant_text(own())
+        texts.save_tenant_text(own(audience="STAFF"))  # the office's words
         assert AuditLog.objects.filter(action="notifications.template_changed").exists()
-        [shown] = [t for t in texts.texts_for("order.placed") if t["channel"] == "IN_APP"]
-        assert (shown["source"], shown["editable"]) == ("tenant", True)
+        shown = {
+            t["audience"]: t for t in texts.texts_for("order.placed") if t["channel"] == "IN_APP"
+        }
+        assert (shown["STAFF"]["source"], shown["STAFF"]["editable"]) == ("tenant", True)
+        assert shown["SHOP"]["source"] == "platform"
     with django_capture_on_commit_callbacks(execute=True):
         order = place(tenant_a, shop, (product, "1"))
     with tenant_context(tenant_a.pk):
@@ -50,11 +53,15 @@ def test_a_distributors_text_is_used_until_it_is_reset(
             f"Order {order.number}",
             f"{shop.shop_name} ordered ₹{order.grand_total}",
         )
-        assert texts.reset_tenant_text("order.placed", "IN_APP", "en")
-        assert not texts.reset_tenant_text("order.placed", "IN_APP", "en")
+        theirs = Notification.objects.get(event_code="order.placed", recipient__phone=shop.mobile)
+        assert theirs.title == f"Order {order.number} placed"  # the shop's platform text
+        assert not texts.reset_tenant_text("order.placed", "IN_APP", "en", "SHOP")
+        assert texts.reset_tenant_text("order.placed", "IN_APP", "en", "STAFF")
         assert AuditLog.objects.filter(action="notifications.template_reset").exists()
-        [shown] = [t for t in texts.texts_for("order.placed") if t["channel"] == "IN_APP"]
-        assert shown["source"] == "platform"
+        shown = {
+            t["audience"]: t for t in texts.texts_for("order.placed") if t["channel"] == "IN_APP"
+        }
+        assert shown["STAFF"]["source"] == "platform"
 
 
 def test_only_known_variables_and_plain_placeholders(tenant_a):
@@ -74,6 +81,25 @@ def test_only_known_variables_and_plain_placeholders(tenant_a):
             texts.save_tenant_text(own(locale="fr"))
         with pytest.raises(NotFound):
             texts.save_tenant_text(own(event_code="order.teleported"))
+        with pytest.raises(InvalidFields) as audience:  # announcements only go to shops
+            texts.save_tenant_text(
+                own("{{ message }}", event_code="announcement.published", audience="STAFF")
+            )
+        assert "audience" in audience.value.details["fields"]
+        with pytest.raises(InvalidFields):  # document links only go to shops
+            texts.save_tenant_text(
+                own("{{ document_link }}", event_code="invoice.issued", audience="STAFF")
+            )
+        staff_variables = next(
+            t["variables"]
+            for t in texts.texts_for("invoice.issued")
+            if t["audience"] == "STAFF" and t["channel"] == "IN_APP"
+        )
+        assert "document_link" not in staff_variables
+        with pytest.raises(InvalidFields):  # stock alerts only go to staff
+            texts.save_tenant_text(
+                own("{{ product }}", event_code="stock.alert_opened", audience="SHOP")
+            )
 
 
 def test_the_preview_fills_sample_values(tenant_a):
@@ -102,9 +128,14 @@ def test_the_super_admin_sets_the_whatsapp_text_and_its_approved_template(tenant
     with pytest.raises(InvalidFields):
         texts.save_platform_text(data, WhatsAppFields(category="PROMO"))
     assert (
-        PlatformTemplate.objects.filter(event_code="order.accepted", channel="WHATSAPP").count()
+        PlatformTemplate.objects.filter(
+            event_code="order.accepted", audience="SHOP", channel="WHATSAPP"
+        ).count()
         == 1
     )
     with tenant_context(tenant_a.pk):
-        [wa] = [t for t in texts.texts_for("order.accepted") if t["channel"] == "WHATSAPP"]
-    assert (wa["source"], wa["editable"]) == ("platform", False)
+        found = [t for t in texts.texts_for("order.accepted") if t["channel"] == "WHATSAPP"]
+    assert {t["audience"] for t in found} == {"SHOP", "STAFF"}
+    shop_wa = next(t for t in found if t["audience"] == "SHOP")
+    assert (shop_wa["source"], shop_wa["editable"]) == ("platform", False)
+    assert shop_wa["body"].startswith("{{ distributor }}: order {{ order_number }} accepted")

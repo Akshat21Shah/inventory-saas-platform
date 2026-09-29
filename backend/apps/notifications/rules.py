@@ -87,12 +87,11 @@ def _as_dict(rule: EffectiveRule) -> dict[str, object]:
 def _check(event_code: str, rules: list[RuleInput]) -> None:
     from apps.accounts.permissions import TENANT_PERMISSIONS
     from apps.notifications.catalog import DEFAULT_TEXTS, RECIPIENT_CHANNELS
-    from apps.notifications.models import Recipient
+    from apps.notifications.models import Audience, Recipient
     from common.errors import InvalidFields
 
     event = EVENTS[event_code]
     tenant_codes = {p.code for p in TENANT_PERMISSIONS}
-    texts = DEFAULT_TEXTS.get(event_code, {})
     errors: list[str] = []
     seen: set[tuple[str, str]] = set()
     for rule in rules:
@@ -108,6 +107,10 @@ def _check(event_code: str, rules: list[RuleInput]) -> None:
             errors.append("Only 'Staff who can…' takes a permission.")
         if rule.recipient == Recipient.SHOP and not event.shop_facing:
             errors.append("This message is for staff only.")
+        if rule.recipient != Recipient.SHOP and not event.staff_facing:
+            errors.append("This message is for shops only.")
+        audience = Audience.SHOP if rule.recipient == Recipient.SHOP else Audience.STAFF
+        texts = DEFAULT_TEXTS.get(event_code, {}).get(audience, {})
         if rule.compulsory and rule.recipient != Recipient.SHOP:
             errors.append("Only the shop's messages can be compulsory.")
         for channel in rule.channels:

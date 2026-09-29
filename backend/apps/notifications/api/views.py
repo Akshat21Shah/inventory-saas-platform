@@ -26,7 +26,7 @@ from apps.notifications import (
     texts,
 )
 from apps.notifications.api import serializers as s
-from apps.notifications.models import Announcement, Channel, Notification
+from apps.notifications.models import Announcement, Audience, Channel, Notification
 from apps.retailers.selectors import retailer_for
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
@@ -199,6 +199,7 @@ def _rule(rule: rules.EffectiveRule) -> dict[str, Any]:
 # --- Texts --------------------------------------------------------------------------------------
 
 LOCALE = OpenApiParameter("locale", str, required=False, enum=list(texts.LOCALES))
+AUDIENCE = OpenApiParameter("audience", str, required=False, enum=list(Audience.values))
 
 
 def _locale(request: Request) -> str:
@@ -235,19 +236,22 @@ class EventTextView(Guarded):
         data.is_valid(raise_exception=True)
         v = data.validated_data
         texts.save_tenant_text(
-            texts.TextInput(event, channel, v["locale"], v["subject"], v["body"])
+            texts.TextInput(event, channel, v["locale"], v["subject"], v["body"], v["audience"])
         )
         return Response(s.TextSerializer(texts.texts_for(event, v["locale"]), many=True).data)
 
     @extend_schema(
         operation_id="notification_text_reset",
         tags=TAGS,
-        parameters=[LOCALE],
+        parameters=[LOCALE, AUDIENCE],
         responses={200: s.TextSerializer(many=True)},
     )
     def delete(self, request: Request, event: str, channel: str) -> Response:
         locale = _locale(request)
-        texts.reset_tenant_text(event, channel, locale)
+        audience = request.query_params.get("audience", Audience.SHOP)
+        if audience not in Audience.values:
+            raise InvalidFields({"audience": ["Choose SHOP or STAFF."]})
+        texts.reset_tenant_text(event, channel, locale, audience)
         return Response(s.TextSerializer(texts.texts_for(event, locale), many=True).data)
 
 
@@ -267,7 +271,9 @@ class TextPreviewView(Guarded):
         data.is_valid(raise_exception=True)
         v = data.validated_data
         shown = texts.preview(
-            texts.TextInput(v["event"], v["channel"], v["locale"], v["subject"], v["body"]),
+            texts.TextInput(
+                v["event"], v["channel"], v["locale"], v["subject"], v["body"], v["audience"]
+            ),
             distributor_name(current_tenant()),
         )
         return Response(s.TextPreviewSerializer(shown).data)

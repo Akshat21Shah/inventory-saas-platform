@@ -100,6 +100,11 @@ def test_a_shop_order_reaches_the_office_the_salesperson_and_the_shop(world):
     assert office.data["url"].endswith(f"/manage/orders/{order.pk}")
     shop_row = next(n for n in found if n.recipient_id == world["login"].pk)
     assert shop_row.data["path"] == f"/shop/orders/{order.pk}"
+    # Audiences (final review): the shop reads its own words, the office its own.
+    assert shop_row.title == f"Order {order.number} placed"
+    assert shop_row.body.startswith(f"Your order {order.number} for ₹")
+    sales_row = next(n for n in found if n.recipient_id == world["sales"].pk)
+    assert sales_row.body.startswith(f"{world['shop'].shop_name} placed order {order.number}")
     assert shop_row.retailer_id == world["shop"].pk
 
 
@@ -287,6 +292,7 @@ def test_tenant_templates_are_used_and_only_substitute_variables(world):
     with tenant_context(world["t"].pk):
         NotificationTemplate.objects.create(
             event_code="order.placed",
+            audience="STAFF",  # the office's words: the owner's message, not the shop's
             channel="IN_APP",
             subject="Order {{order_number}} {% if 1 %}x{% endif %}",
             body="{{ shop }} {{ secret_key }} {{ order.__class__ }} {{ total|safe }}",
@@ -296,6 +302,8 @@ def test_tenant_templates_are_used_and_only_substitute_variables(world):
     row = next(n for n in rows(world, "order.placed") if n.recipient_id == world["owner"].pk)
     assert row.title == f"Order {order.number} {{% if 1 %}}x{{% endif %}}"
     assert row.body == f"{world['shop'].shop_name}  {{{{ order.__class__ }}}} {{{{ total|safe }}}}"
+    shop = next(n for n in rows(world, "order.placed") if n.recipient_id == world["login"].pk)
+    assert shop.title == f"Order {order.number} placed"  # the shop's words are untouched
 
 
 def test_another_tenants_people_get_nothing(world, tenant_b):

@@ -2212,6 +2212,13 @@ paths:
     delete:
       operationId: notification_text_reset
       parameters:
+      - in: query
+        name: audience
+        schema:
+          type: string
+          enum:
+          - SHOP
+          - STAFF
       - in: path
         name: channel
         schema:
@@ -13916,6 +13923,14 @@ components:
         * `TRANSFER_OUT` - Transfer out
         * `RESERVE` - Reserved for an order
         * `RELEASE` - Reservation released
+    NotificationAudienceEnum:
+      enum:
+      - SHOP
+      - STAFF
+      type: string
+      description: |-
+        * `SHOP` - The shop
+        * `STAFF` - Staff
     NotificationChannelEnum:
       enum:
       - IN_APP
@@ -16228,6 +16243,10 @@ components:
         event_code:
           type: string
           maxLength: 40
+        audience:
+          allOf:
+          - $ref: '#/components/schemas/NotificationAudienceEnum'
+          default: SHOP
         channel:
           $ref: '#/components/schemas/NotificationChannelEnum'
         locale:
@@ -16263,6 +16282,10 @@ components:
     PlatformTextInputRequest:
       type: object
       properties:
+        audience:
+          allOf:
+          - $ref: '#/components/schemas/NotificationAudienceEnum'
+          default: SHOP
         locale:
           allOf:
           - $ref: '#/components/schemas/PreferredLanguageEnum'
@@ -20841,6 +20864,14 @@ components:
     Text:
       type: object
       properties:
+        audience:
+          allOf:
+          - $ref: '#/components/schemas/NotificationAudienceEnum'
+          description: |-
+            Whose words: the shop's or the office's.
+
+            * `SHOP` - The shop
+            * `STAFF` - Staff
         channel:
           $ref: '#/components/schemas/NotificationChannelEnum'
         subject:
@@ -20856,6 +20887,7 @@ components:
           items:
             type: string
       required:
+      - audience
       - body
       - channel
       - editable
@@ -20865,6 +20897,10 @@ components:
     TextInputRequest:
       type: object
       properties:
+        audience:
+          allOf:
+          - $ref: '#/components/schemas/NotificationAudienceEnum'
+          default: SHOP
         locale:
           allOf:
           - $ref: '#/components/schemas/PreferredLanguageEnum'
@@ -20892,6 +20928,10 @@ components:
     TextPreviewInputRequest:
       type: object
       properties:
+        audience:
+          allOf:
+          - $ref: '#/components/schemas/NotificationAudienceEnum'
+          default: SHOP
         locale:
           allOf:
           - $ref: '#/components/schemas/PreferredLanguageEnum'

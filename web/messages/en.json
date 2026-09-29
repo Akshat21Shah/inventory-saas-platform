@@ -3526,7 +3526,7 @@
     },
     "texts": {
       "title": "Message texts",
-      "description": "The words each message uses. You can change the in-app and email texts; WhatsApp and SMS texts are approved templates set by the platform.",
+      "description": "The words each message uses, for the shop and for your staff. You can change the in-app and email texts; WhatsApp and SMS texts are approved templates set by the platform.",
       "event": "Which message",
       "language": "Language",
       "languages": {
@@ -3550,7 +3550,15 @@
       "saved": "Text saved",
       "reset": "Use the default",
       "resetDone": "Back to the default text",
-      "empty": "No texts for this message"
+      "empty": "No texts for this message",
+      "audiences": {
+        "SHOP": "To the shop",
+        "STAFF": "To your staff"
+      },
+      "audienceHints": {
+        "SHOP": "What the shop reads, in its own words: “Your order …”.",
+        "STAFF": "What your staff read, in the office's words: “Ganesh Kirana's order …”."
+      }
     },
     "deliveries": {
       "title": "Delivery log",
@@ -3689,7 +3697,11 @@
       "preview": "Preview",
       "save": "Save",
       "saved": "Text saved",
-      "empty": "No texts for this message"
+      "empty": "No texts for this message",
+      "audiences": {
+        "SHOP": "To the shop",
+        "STAFF": "To staff"
+      }
     },
     "failures": {
       "title": "Failed messages",

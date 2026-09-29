@@ -5,10 +5,18 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { NotificationAudienceEnum } from './notificationAudienceEnum';
 import type { NotificationChannelEnum } from './notificationChannelEnum';
 import type { NotificationTextSourceEnum } from './notificationTextSourceEnum';
 
 export interface Text {
+  /**
+     * Whose words: the shop's or the office's.
+     *
+     * * `SHOP` - The shop
+     * * `STAFF` - Staff
+     */
+  audience: NotificationAudienceEnum;
   channel: NotificationChannelEnum;
   subject: string;
   body: string;

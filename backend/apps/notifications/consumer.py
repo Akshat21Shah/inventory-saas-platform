@@ -18,7 +18,13 @@ from apps.accounts.permissions import OWNER_ROLE
 from apps.notifications import context as contexts
 from apps.notifications import quiet
 from apps.notifications.catalog import EVENTS
-from apps.notifications.models import Channel, Notification, NotificationPreference, Recipient
+from apps.notifications.models import (
+    Audience,
+    Channel,
+    Notification,
+    NotificationPreference,
+    Recipient,
+)
 from apps.notifications.render import render
 from apps.notifications.rules import EffectiveRule, effective_rules
 from apps.platform.models import Tenant
@@ -271,7 +277,8 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
             )
             carries_link = shop and channel != Channel.IN_APP and not reason
             values["document_link"] = link_for_shop() if carries_link else ""
-            text = render(ctx.code, channel, values, locale)
+            audience = Audience.SHOP if shop else Audience.STAFF
+            text = render(ctx.code, channel, values, locale, audience)
             if text is None:
                 continue
             in_app = channel == Channel.IN_APP

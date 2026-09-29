@@ -21,6 +21,7 @@ afterEach(() => vi.unstubAllGlobals());
 const template = (channel: string, body: string, extra = {}) => ({
   id: `t-${channel}`,
   event_code: "order.accepted",
+  audience: "SHOP",
   channel,
   locale: "en",
   subject: channel === "IN_APP" ? "Order {{ order_number }} accepted" : "",
@@ -60,6 +61,7 @@ describe("Default message texts", () => {
     await user.click(screen.getAllByRole("button", { name: "Save" })[1]!);
     await waitFor(() =>
       expect(calls.find((c) => c.method === "PUT")?.body).toMatchObject({
+        audience: "SHOP",
         body: "{{ distributor }}: order {{ order_number }} accepted.",
         whatsapp_template_name: "b2b_order_accepted_v2",
         whatsapp_category: "UTILITY",

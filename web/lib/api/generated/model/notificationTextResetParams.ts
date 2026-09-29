@@ -5,8 +5,10 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { NotificationTextResetAudience } from './notificationTextResetAudience';
 import type { NotificationTextResetLocale } from './notificationTextResetLocale';
 
 export type NotificationTextResetParams = {
+audience?: NotificationTextResetAudience;
 locale?: NotificationTextResetLocale;
 };
