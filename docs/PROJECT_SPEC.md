@@ -1,8 +1,9 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.6. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.7. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.7 (2026-09-29)** — Phase 7 plan (ADR-049): turnover band setting; IRNs for B2B invoices and their credit notes only; IRN cancellation re-issues a corrected invoice (default) or takes the goods back; e-way bill thresholds between states and within the state, distance per shop address; one active online checkout per bill; WhatsApp template approval status.
 - **1.6 (2026-09-29)** — Phase 6 plan (ADR-048): WhatsApp opt-in consent, compulsory events, secure document links, quiet hours, payment-reminder cadence and pauses, handover reminders, GST rate-change warning job, per-tenant WhatsApp sender, WhatsApp cost estimate.
 - **1.5 (2026-09-28)** — Phase 5 plan (ADR-046): invoice/credit-note/receipt number format, Order Confirmation PDF, return dispositions per line and return reasons, salesman collections with handover tracking, ageing basis setting, automatic use of advances with reallocation.
 - **1.1 (2026-09-24)** — Product-owner decisions applied:
@@ -296,6 +297,7 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - E-way bill: generate for eligible invoices (value threshold and transport details: vehicle no, transporter, distance), store EWB number and validity; allow Part-B update.
 - Each tenant uses its own GST credentials (encrypted at rest).
 - **Verify against current official rules before implementing**: e-invoice applicability thresholds, e-way bill value threshold and state variations, IRN reporting time limits, cancellation windows.
+- Phase 7 decisions (ADR-049): the distributor declares an annual turnover band (below ₹5 crore / ₹5–10 crore / ₹10 crore and above), which drives suggestions and the reporting-limit warning only. IRNs for B2B invoices and their credit notes, automatic by default; a permanent failure leaves the invoice valid, marked "IRN failed". The shop's bill message waits for the IRN, at most 10 minutes. Cancelling an IRN (within the window) re-issues a corrected invoice with a new number for the same shipment (default) or takes the goods back. E-way bill thresholds between states and within the state (settings); the distance comes from the shop's address and can be changed at dispatch; dispatch never waits.
 
 ### 5.12 Ledger & payments
 - Ledger per retailer (append-only): debit on invoice; credit on payment, credit note, or opening balance adjustment. Maintained running balance on a `RetailerAccount` row updated in the same transaction.
@@ -303,7 +305,7 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - **Cash / offline payments**: recorded by staff (amount, mode: cash/cheque/bank transfer/UPI-offline, reference, date, collected by), allocated to invoices (FIFO default or manual).
 - Advances/overpayments are held as credit and applied to future invoices (setting, default on). When off, overpayments are refused; a credit note exceeding the invoice balance still leaves a credit balance for the next invoice.
 - Cheques are credited on receipt (default, with an automatic reversing entry if the cheque bounces) or only on clearance (setting).
-- **Online payments** (feature-flagged, OFF by default): tenant connects its own gateway account (Razorpay first; adapter interface allows Cashfree etc.). Money settles to the distributor. Retailer can pay an invoice, the outstanding amount, or a custom amount via UPI, cards, net banking. Payment confirmed only via verified webhook; reconciliation job for missed webhooks. Sandbox keys in non-production.
+- **Online payments** (feature-flagged, OFF by default): tenant connects its own gateway account (Razorpay first; adapter interface allows Cashfree etc.). Money settles to the distributor. Retailer can pay an invoice, the outstanding amount, or a custom amount via UPI, cards, net banking. Payment confirmed only via verified webhook; reconciliation job for missed webhooks. Sandbox keys in non-production. One active checkout per shop per bill (or per "pay everything" / custom amount): a second tap reuses it. An amount that differs from the checkout is recorded as paid and flagged for staff (ADR-049).
 - Receipts generated for every payment.
 - **Salesman collections** (ADR-046): sales staff with `payments.collect` record cash, cheque and UPI collections from their own shops (setting, default on). The shop is credited and gets a receipt at once; the payment stays "With salesman" until Accounts/Manager/Owner confirm "Handed over". A pending-handover report per salesman.
 - Receivables ageing by invoice date (default) or days past due (setting). Advances are applied automatically to new invoices, oldest money first; staff can reverse and reallocate an allocation.

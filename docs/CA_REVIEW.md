@@ -6,7 +6,7 @@ software uses the defaults described below.
 
 **How to read this document.** Each section explains one rule in plain words, with worked examples
 in rupees that come from the software itself. Settings a distributor can change are marked
-*(setting)*, with the default named. Section 14 lists the questions we would like you to answer
+*(setting)*, with the default named. Section 15 lists the questions we would like you to answer
 with a yes or no (and a note where needed). Sample documents are in `docs/ca/`:
 `sample-invoice.pdf` (Example 5 in section 5, as the shop receives it),
 `sample-invoice-copies.pdf` (the same invoice in the three labelled copies staff print) and
@@ -326,15 +326,58 @@ Credit notes show the same details plus the invoice they correct (number and dat
 
 ## 13. What is not yet included
 
-- **E-invoicing (IRN) and e-way bills** arrive in a later release. The invoice already has room for
-  the IRN, acknowledgement and QR code, so it will not change shape.
+- **E-invoicing (IRN) and e-way bills** are described in section 14; they are switched on per
+  distributor and stay off until then.
 - Only regular GST registration is supported (not the composition scheme).
 - Cess is supported in the calculation (worked out like GST, on the taxable value) but no demo
   product uses it yet.
 
 ---
 
-## 14. Questions for you
+## 14. E-invoicing, e-way bills and online payments
+
+These modules are off unless we switch them on for a distributor; with them off, nothing in
+sections 2 to 12 changes. The software talks to the GST system through a GST Suvidha Provider
+(GSP), which is not chosen yet, so the rules below are our current understanding and are also on
+our technical checklist.
+
+**E-invoicing (IRN).**
+- The distributor tells us its annual turnover band: below ₹5 crore, ₹5–10 crore, or ₹10 crore and
+  above *(setting)*. From ₹5 crore we suggest switching e-invoicing on; from ₹10 crore we also warn
+  when an invoice is close to the reporting limit (taken as 30 days from the invoice date).
+- IRNs are obtained for tax invoices to shops with a GSTIN, and for their credit notes. Shops
+  without a GSTIN (B2C) get no IRN.
+- The IRN is requested automatically when the invoice is issued *(setting: or by staff, one at a
+  time)*. The invoice PDF then shows the IRN, acknowledgement number and date, and the signed QR
+  code. The message sending the bill to the shop waits for the IRN, at most 10 minutes.
+- If the GST system refuses the invoice (for example, an invalid GSTIN), the invoice stays in our
+  books, marked "IRN failed", so staff can correct the shop's details and try again.
+- **Cancelling an IRN** is possible only within the permitted window (taken as 24 hours), with a
+  reason. Staff then choose: (a) *default:* issue a corrected invoice with a new number for the
+  same shipment, or (b) take the goods back. Either way the cancelled invoice is reversed in the
+  shop's account with a reversing entry, and its number is never reused. After the window, the only
+  correction is a credit note (section 9).
+
+**E-way bills.**
+- An e-way bill is generated at dispatch when the consignment value (invoice value including tax)
+  is above the threshold: one for goods going to another state and one within the state, both
+  ₹50,000 by default *(settings)*.
+- The distance comes from the shop's address and can be changed at dispatch. The vehicle can be
+  updated later (Part-B). Dispatch never waits for the e-way bill; failures are shown to staff.
+
+**Online payments.**
+- Shops can pay online (UPI, cards, net banking) through the distributor's own payment gateway
+  account; money settles to the distributor. A payment counts only when the gateway confirms it to
+  us directly, never on the shop's screen alone.
+- It is recorded like any other payment, with a receipt, on the date the gateway captured it
+  (not the date the gateway settles it to the bank), and allocated to the oldest bills first, or to
+  the bill the shop chose. Gateway fees are the distributor's cost and are not shown to the shop.
+- If more is paid than is owed, the excess is kept as the shop's credit (an advance), as for
+  cheques.
+
+---
+
+## 15. Questions for you
 
 Please answer yes or no, with a note where the answer is no.
 
@@ -362,3 +405,10 @@ Please answer yes or no, with a note where the answer is no.
 | 20 | Is a minimum of 4 HSN digits on invoices acceptable as the default (distributors can require 6 or 8)? | | |
 | 21 | Receipt numbered in the year it is recorded, but dated and accounted on the actual payment date — acceptable? | | |
 | 22 | Is a refund voucher in its own series (`RFD/26-27/000001`), paying back a shop's credit balance by cash, bank transfer or UPI, acceptable? | | |
+| 23 | Is it correct that e-invoicing applies from an aggregate turnover above ₹5 crore (in any year since 2017-18), and that the distributor declaring its turnover band is a reasonable basis for our suggestion? | | |
+| 24 | Are IRNs needed only for B2B tax invoices and their credit notes (not for B2C invoices)? | | |
+| 25 | Is the reporting limit of 30 days from the invoice date, for businesses with turnover of ₹10 crore and above, still correct? | | |
+| 26 | Within the cancellation window (taken as 24 hours), is cancelling the IRN and issuing a corrected invoice with a new number for the same goods acceptable, with the cancelled number never reused? | | |
+| 27 | When an IRN cannot be obtained (the GST system refuses or is down), is it acceptable to keep the invoice in our books, marked "IRN failed", and retry after correction? What should the distributor do about goods already dispatched? | | |
+| 28 | Is the e-way bill consignment value correctly taken as the invoice value including tax, and is ₹50,000 the right default for both inter-state and intra-state movement (knowing some states set their own limit)? | | |
+| 29 | Is recording an online payment on the date the gateway captured it (not the settlement date), with the gateway's fee outside the shop's account, acceptable? | | |
