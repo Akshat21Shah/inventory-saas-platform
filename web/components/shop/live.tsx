@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { refreshNotifications } from "@/components/notifications/scope";
 import { useLiveUpdates } from "@/lib/live";
 
 /** Events the shop is told about in a short note (the order screens refresh for all of them). */
@@ -38,13 +39,17 @@ export function ShopLiveUpdates() {
   const { me } = useAuth();
   useLiveUpdates({
     enabled: Boolean(me?.retailer),
+    onNotification: () => refreshNotifications(client),
     onEvent: (event) => {
       refreshShopOrders(client);
       if (TOLD.has(event.event) && event.number) {
         toast(t(event.event.replace(".", "_"), { number: event.number }));
       }
     },
-    onReconnect: () => refreshShopOrders(client),
+    onReconnect: () => {
+      refreshShopOrders(client);
+      refreshNotifications(client);
+    },
   });
   return null;
 }

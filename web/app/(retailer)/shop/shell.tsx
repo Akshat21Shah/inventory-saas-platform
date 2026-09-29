@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
 import { RequireArea } from "@/components/auth/require-area";
+import { NotificationBell } from "@/components/notifications/bell";
 import { BottomNavShell, type NavItem } from "@/components/shared/app-shell";
 import { CartProvider, useCart } from "@/components/shop/cart-state";
 import { ShopLiveUpdates } from "@/components/shop/live";
@@ -34,6 +35,7 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
       items={ITEMS}
       banner={<ImpersonationBanner />}
       badges={{ cart: count }}
+      headerActions={<NotificationBell scope="shop" tone="onPrimary" />}
     >
       {children}
     </BottomNavShell>

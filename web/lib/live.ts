@@ -30,15 +30,18 @@ function socketUrl(ticket: string): string {
 export function useLiveUpdates({
   enabled,
   onEvent,
+  onNotification,
   onReconnect,
 }: {
   enabled: boolean;
   onEvent: (event: LiveEvent) => void;
+  /** A new message for this person (their bell): refetch the unread count. */
+  onNotification?: () => void;
   onReconnect?: () => void;
 }) {
-  const handlers = useRef({ onEvent, onReconnect });
+  const handlers = useRef({ onEvent, onNotification, onReconnect });
   useEffect(() => {
-    handlers.current = { onEvent, onReconnect };
+    handlers.current = { onEvent, onNotification, onReconnect };
   });
 
   useEffect(() => {
@@ -66,6 +69,8 @@ export function useLiveUpdates({
             attempts = 0;
           } else if (data.type === "order") {
             handlers.current.onEvent(data as LiveEvent);
+          } else if (data.type === "notification") {
+            handlers.current.onNotification?.();
           }
         } catch {
           // not ours: ignore

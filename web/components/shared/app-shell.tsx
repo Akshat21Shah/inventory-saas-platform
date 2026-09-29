@@ -89,12 +89,15 @@ export function SidebarShell({
   banner,
   account,
   badges,
+  headerActions,
 }: {
   title: string;
   items: NavItem[];
   children: ReactNode;
   /** Counts shown next to nav items, by label key (e.g. open stock alerts). */
   badges?: Partial<Record<string, number>>;
+  /** Next to the title (e.g. the notification bell): sidebar top on laptops, header on phones. */
+  headerActions?: ReactNode;
   /** Full-width notice above everything (e.g. a support session). */
   banner?: ReactNode;
   /** Account menu: bottom of the sidebar, top-right on phones. */
@@ -108,7 +111,10 @@ export function SidebarShell({
       <div className="flex min-h-0 flex-1">
         <SkipLink />
         <aside className="bg-sidebar hidden w-60 shrink-0 flex-col border-r md:flex">
-          <div className="flex h-14 items-center px-4 font-semibold">{title}</div>
+          <div className="flex h-14 items-center gap-2 px-4">
+            <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
+            {headerActions}
+          </div>
           <nav aria-label={t("nav.mainNavigation")} className="flex-1 px-3 py-2">
             <NavLinks items={items} rootHref={rootHref} badges={badges} />
           </nav>
@@ -135,6 +141,7 @@ export function SidebarShell({
               </SheetContent>
             </Sheet>
             <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
+            {headerActions}
             {account ? <div className="max-w-[50%] min-w-0">{account}</div> : null}
           </header>
           <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8">
@@ -166,6 +173,7 @@ export function BottomNavShell({
   children,
   banner,
   badges,
+  headerActions,
 }: {
   title: string;
   items: NavItem[];
@@ -173,6 +181,8 @@ export function BottomNavShell({
   banner?: ReactNode;
   /** Counts on nav icons, by label key (e.g. the cart's item count). */
   badges?: Partial<Record<string, number>>;
+  /** At the right end of the header (e.g. the notification bell). */
+  headerActions?: ReactNode;
 }) {
   const pathname = usePathname();
   const t = useTranslations();
@@ -183,7 +193,7 @@ export function BottomNavShell({
       {banner}
       <header className="bg-primary text-primary-foreground sticky top-0 z-30 h-14">
         <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-between gap-4 px-4">
-          <span className="font-semibold">{title}</span>
+          <span className="min-w-0 truncate font-semibold">{title}</span>
           {/* Wide screens: the same links in the header instead of the phone's bottom bar. */}
           <nav aria-label={t("nav.mainNavigation")} className="hidden lg:block">
             <ul className="flex gap-1">
@@ -215,6 +225,7 @@ export function BottomNavShell({
               })}
             </ul>
           </nav>
+          {headerActions ? <div className="flex shrink-0 items-center">{headerActions}</div> : null}
         </div>
       </header>
       {/* Phones keep one comfortable column; tablets and laptops use the room they have. */}

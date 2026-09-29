@@ -3342,5 +3342,20 @@
   "refundStatus": {
     "ISSUED": "Paid back",
     "REVERSED": "Reversed"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell": "Notifications",
+    "bellUnread": "Notifications: {count, plural, one {# unread} other {# unread}}",
+    "unreadCount": "{count, plural, one {# unread message} other {# unread messages}}",
+    "allRead": "You're all caught up.",
+    "markAllRead": "Mark all as read",
+    "all": "All",
+    "unread": "Unread",
+    "empty": "No messages yet",
+    "emptyUnread": "No unread messages",
+    "emptyBody": "Orders, bills and payments show up here as they happen.",
+    "newer": "Newer",
+    "older": "Older"
   }
 }

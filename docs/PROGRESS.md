@@ -311,7 +311,11 @@
      - Tests: 11 API tests covering roles and another tenant on every new route (34 routes), plus the end-to-end journey; seed test extended. Schema has stable enum names; API client regenerated.
      - Fix pushed separately: a test helper's type (commit 7's CI backend job failed on mypy; my local check had piped mypy through `tail`, hiding its exit status; now run unpiped).
   8b. Checkpoint decisions (ADR-048 "Backend checkpoint") — **done**: all seven approved. The bounced-cheque message now names the cheque's date and the shop's new balance ("Your balance: ₹5,000.00 to pay" / "… in credit" / "nothing to pay"), in-app, email and WhatsApp (migration refreshes the platform texts). Backlog: a distributor's own WhatsApp templates; an optional cheque bounce charge. Tests: the bounce test checks cheque, date, amount and balance; the end-to-end test checks the WhatsApp text.
-  9–12. Frontend: notification centre and badge; shop preferences and consent prompt; rules matrix, templates, delivery log, announcements, reminder pauses; platform templates and failures
+  9. Notification centre and bell — **done** (`web/components/notifications`):
+     - A bell with the unread count in the staff sidebar (laptops), the staff phone header, and the shop's header; it refreshes every minute and at once when the socket says a message arrived (every staff member's socket now carries their bell; order events still reach only order viewers).
+     - `/manage/notifications` and `/shop/notifications`: newest first, unread highlighted, All / Unread, "Mark all as read", older/newer pages; opening a message marks it read and goes to its order, bill or payment. Loading, empty and error states.
+     - Tests: 4 component tests (open marks read and navigates, mark all, unread filter and empty state, error, the bell's count and link). Both pages added to the responsive check.
+  10–12. Frontend: shop preferences, consent prompt and announcements; rules matrix, texts, delivery log, announcements, reminder pauses, consent and links on staff screens, GST card; platform texts and failures
   13. E2E and responsive check — **final review**
 - Phase 5 — Billing, GST, ledger, credit control: **merged to `main` (PR #6, 2026-09-28)**.
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.

@@ -115,6 +115,7 @@ function pages(ids: Ids) {
     "/manage/settings/roles",
     "/manage/audit",
     "/manage/account",
+    "/manage/notifications",
   ];
   const platform = [
     "/platform",
@@ -143,6 +144,7 @@ function pages(ids: Ids) {
     ...(ids.shop_invoice ? [`/shop/invoices/${ids.shop_invoice}`] : []),
     "/shop/statement",
     "/shop/payments",
+    "/shop/notifications",
   ];
   return { staff, platform, shop };
 }
