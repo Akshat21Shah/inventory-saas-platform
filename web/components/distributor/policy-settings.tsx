@@ -1,5 +1,6 @@
 "use client";
 
+import { NotificationsNav } from "@/components/notifications/manage/nav";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ export function PolicySettings({ group }: { group: string }) {
     <>
       <PageHeader title={t(`nav.policies.${group}`)} description={t(`policyBodies.${group}`)} />
       {group === "invoicing" ? <DocumentNumbering /> : null}
+      {group === "notifications" ? <NotificationsNav /> : null}
       {query.isLoading ? (
         <PageSkeleton />
       ) : query.error || !query.data ? (

@@ -10,7 +10,7 @@ from uuid import UUID
 from django.db.models import Count, Q, QuerySet
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import Permission, User
 from apps.notifications.catalog import EVENTS, RECIPIENT_CHANNELS
 from apps.notifications.consent import opted_in_count
 from apps.notifications.models import Channel, Notification, Recipient
@@ -184,6 +184,11 @@ def rules_matrix() -> dict[str, Any]:
         "prices_set": all(p is not None for p in prices.values()),
         "whatsapp_cost_30_days": total_cost,
         "shops": opted_in_count(),
+        "permissions": list(
+            Permission.objects.exclude(code__startswith="platform.")
+            .order_by("code")
+            .values("code", "description")
+        ),
     }
 
 

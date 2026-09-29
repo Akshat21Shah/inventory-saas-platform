@@ -1,5 +1,6 @@
 "use client";
 
+import { ReminderPauseCard, RetailerConsentCard } from "@/components/notifications/manage/cards";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -933,6 +934,8 @@ export function RetailerDetailPage({ retailerId }: { retailerId: string }) {
             </Card>
           ) : null}
           <CreditCard retailer={retailer} onChanged={refresh} />
+          <ReminderPauseCard retailerId={retailer.id} />
+          <RetailerConsentCard retailerId={retailer.id} />
           <AddressesCard retailer={retailer} onChanged={refresh} />
           {can("pricing.view") ? (
             <Card>

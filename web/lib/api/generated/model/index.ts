@@ -355,6 +355,7 @@ export * from './paymentStatusEnum';
 export * from './pdfStatusEnum';
 export * from './pendingHandover';
 export * from './permission';
+export * from './permissionChoice';
 export * from './permissionsListParams';
 export * from './personRef';
 export * from './place';

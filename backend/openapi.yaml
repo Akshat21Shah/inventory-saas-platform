@@ -2138,8 +2138,14 @@ paths:
       security:
       - jwtAuth: []
       responses:
-        '204':
-          description: No response body
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rule'
+          description: ''
   /api/v1/notification-templates/{event}/:
     get:
       operationId: notification_texts
@@ -2229,8 +2235,14 @@ paths:
       security:
       - jwtAuth: []
       responses:
-        '204':
-          description: No response body
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Text'
+          description: ''
   /api/v1/notification-templates/preview/:
     post:
       operationId: notification_text_preview
@@ -6556,8 +6568,12 @@ paths:
       security:
       - jwtAuth: []
       responses:
-        '204':
-          description: No response body
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReminderPauseState'
+          description: ''
   /api/v1/retailers/{retailer_id}/resend-welcome/:
     post:
       operationId: retailers_resend_welcome
@@ -15986,6 +16002,16 @@ components:
       - code
       - description
       - module
+    PermissionChoice:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+      required:
+      - code
+      - description
     PersonRef:
       type: object
       properties:
@@ -18771,8 +18797,14 @@ components:
           nullable: true
         shops:
           $ref: '#/components/schemas/ShopConsentCount'
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionChoice'
+          description: For 'Staff who can…' rules (any staff member's permissions).
       required:
       - events
+      - permissions
       - prices_set
       - recipients
       - shops

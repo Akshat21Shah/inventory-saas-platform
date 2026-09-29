@@ -1094,12 +1094,13 @@
         "security": "Security",
         "pricing": "Pricing",
         "retailers": "Shops",
-        "notifications": "Notifications"
+        "notifications": "Quiet hours & reminders"
       },
       "features": "Modules",
       "staff": "Staff",
       "roles": "Roles",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "notifications": "Messages"
     },
     "policyBodies": {
       "tax": "How GST is applied to your products and invoices.",
@@ -3459,5 +3460,209 @@
       "WHATSAPP": "WhatsApp",
       "SMS": "SMS"
     }
+  },
+  "notifyAdmin": {
+    "nav": {
+      "label": "Messages sections",
+      "rules": "Who gets what",
+      "texts": "Message texts",
+      "deliveries": "Delivery log",
+      "announcements": "Announcements",
+      "settings": "Quiet hours & reminders"
+    },
+    "recipients": {
+      "SHOP": "The shop",
+      "SALESPERSON": "The shop's salesperson",
+      "COLLECTOR": "The salesman who collected",
+      "STAFF_PERMISSION": "Staff who can…",
+      "OWNERS": "Owners"
+    },
+    "skip": {
+      "NO_ADDRESS": "No email or mobile number",
+      "NO_WHATSAPP_OPT_IN": "The shop hasn't agreed to WhatsApp",
+      "TURNED_OFF": "Switched off by the person",
+      "FEATURE_OFF": "WhatsApp isn't turned on",
+      "PAUSED": "Reminders paused for this shop"
+    },
+    "deliveryStatus": {
+      "PENDING": "Waiting",
+      "SENDING": "Sending",
+      "SENT": "Sent",
+      "FAILED": "Failed",
+      "SKIPPED": "Not sent"
+    },
+    "rules": {
+      "title": "Who gets what",
+      "description": "Which messages go to whom, and how. Defaults are set for you; change any of them.",
+      "whatsappOff": "WhatsApp is turned off, so only in-app messages and emails are sent. Turn it on under Modules.",
+      "optedIn": "{opted} of {shops} shops agreed to WhatsApp",
+      "cost": "WhatsApp, last 30 days: about {amount}",
+      "costCountsOnly": "WhatsApp, last 30 days: {count, plural, one {# message} other {# messages}} (prices not set yet)",
+      "estimate": "{count, plural, one {# WhatsApp message} other {# WhatsApp messages}} in 30 days",
+      "estimateCost": "{count, plural, one {# WhatsApp message} other {# WhatsApp messages}} in 30 days, about {amount}",
+      "nobody": "Nobody",
+      "changed": "Changed",
+      "compulsory": "Required",
+      "off": "Off",
+      "notUrgent": "Waits for quiet hours",
+      "edit": "Change",
+      "editTitle": "{event}",
+      "editBody": "Choose who gets this message and how. Required messages can't be switched off by the shop.",
+      "recipient": "Recipient",
+      "permission": "Staff with permission",
+      "choosePermission": "Choose a permission",
+      "channels": "Channels",
+      "enabled": "On",
+      "compulsoryLabel": "Required for the shop",
+      "remove": "Remove",
+      "add": "Add a recipient",
+      "save": "Save",
+      "reset": "Back to defaults",
+      "saved": "Saved",
+      "resetDone": "Back to the defaults",
+      "resetConfirm": "Use the default recipients and channels for this message?",
+      "empty": "No messages set up"
+    },
+    "texts": {
+      "title": "Message texts",
+      "description": "The words each message uses. You can change the in-app and email texts; WhatsApp and SMS texts are approved templates set by the platform.",
+      "event": "Which message",
+      "language": "Language",
+      "languages": {
+        "en": "English",
+        "hi": "हिन्दी",
+        "mr": "मराठी"
+      },
+      "source": {
+        "tenant": "Your text",
+        "platform": "Default",
+        "catalogue": "Default"
+      },
+      "fixed": "Approved template: set by the platform",
+      "subject": "Title",
+      "body": "Message",
+      "variables": "You can use:",
+      "insert": "Insert {name}",
+      "preview": "Preview",
+      "previewTitle": "Preview with sample values",
+      "save": "Save text",
+      "saved": "Text saved",
+      "reset": "Use the default",
+      "resetDone": "Back to the default text",
+      "empty": "No texts for this message"
+    },
+    "deliveries": {
+      "title": "Delivery log",
+      "description": "Every message sent or not sent, and why. Failed ones can be tried again.",
+      "last7": "Last 7 days",
+      "search": "Search",
+      "searchPlaceholder": "Shop, person, number or title",
+      "status": "Status",
+      "channel": "Channel",
+      "event": "Message",
+      "allStatuses": "All statuses",
+      "allChannels": "All channels",
+      "allEvents": "All messages",
+      "to": "To",
+      "when": "When",
+      "why": "Why not sent",
+      "error": "Last error",
+      "tries": "Tries",
+      "details": "Details",
+      "retry": "Try again",
+      "retried": "Trying again",
+      "attempts": "Tries",
+      "attempt": "Try {number}",
+      "noAttempts": "Not tried yet",
+      "sendAfter": "Waiting until {time} (quiet hours or a retry)",
+      "empty": "No messages yet",
+      "emptyBody": "Messages appear here as orders, bills and payments happen."
+    },
+    "announcements": {
+      "title": "Announcements",
+      "description": "Notices shown on every shop's home, and sent to them once when they start.",
+      "new": "New announcement",
+      "edit": "Edit announcement",
+      "titleField": "Title",
+      "body": "Message",
+      "starts": "Show from",
+      "ends": "Show until",
+      "endsHint": "Leave empty to show until you turn it off.",
+      "active": "Showing",
+      "whatsapp": "Also send by WhatsApp",
+      "whatsappHint": "Only to shops that agreed to WhatsApp; charged as a marketing message.",
+      "sent": "Sent",
+      "notSent": "Not sent yet",
+      "running": "Showing",
+      "stopped": "Off",
+      "scheduled": "Starts later",
+      "ended": "Ended",
+      "saved": "Announcement saved",
+      "save": "Save",
+      "cancel": "Cancel",
+      "empty": "No announcements",
+      "emptyBody": "Tell every shop about holidays, delivery times or new products."
+    },
+    "consent": {
+      "title": "WhatsApp messages",
+      "on": "Agreed on {date} ({source})",
+      "off": "Not agreed",
+      "offSince": "Stopped on {date}",
+      "sources": {
+        "SHOP_APP": "in the app",
+        "STAFF": "recorded by staff",
+        "IMPORT": "from an import"
+      },
+      "unavailable": "WhatsApp is turned off for your business.",
+      "turnOn": "Record agreement",
+      "turnOff": "Stop WhatsApp",
+      "confirm": "The shop agreed to get WhatsApp messages from us",
+      "confirmTitle": "Record the shop's agreement",
+      "confirmBody": "Only record this if the shop has agreed. The shop can stop WhatsApp any time from its app.",
+      "stopTitle": "Stop WhatsApp messages to this shop?",
+      "stopBody": "Messages waiting to be sent by WhatsApp are cancelled. The shop still gets in-app messages and emails.",
+      "saved": "Saved"
+    },
+    "pause": {
+      "title": "Payment reminders",
+      "active": "Reminders are going out.",
+      "paused": "Paused: {reason}",
+      "until": "Until {date}",
+      "untilResumed": "Until you resume them",
+      "pause": "Pause reminders",
+      "resume": "Resume reminders",
+      "reason": "Why",
+      "reasonPlaceholder": "For example: disputed bill",
+      "untilField": "Until (optional)",
+      "pauseTitle": "Pause payment reminders",
+      "pauseBody": "No reminders go to this shop while paused, on any channel. Its bills and dues still show in its app.",
+      "paused_toast": "Reminders paused",
+      "resumed": "Reminders resumed"
+    },
+    "links": {
+      "title": "Shared links",
+      "description": "Links to this document sent by WhatsApp or email. They open without signing in.",
+      "none": "No links sent yet.",
+      "opened": "{count, plural, =0 {Not opened} one {Opened once} other {Opened # times}}",
+      "expires": "Works until {date}",
+      "expired": "Expired",
+      "revoked": "Withdrawn",
+      "revoke": "Withdraw links",
+      "revokeTitle": "Withdraw every link to this document?",
+      "revokeBody": "Anyone opening them sees that the link no longer works. The shop still sees the document in its app.",
+      "revokedToast": "{count, plural, =0 {No live links} one {# link withdrawn} other {# links withdrawn}}"
+    },
+    "rates": {
+      "title": "GST rates changing soon",
+      "row": "{product}: {from} → {to} from {date}",
+      "more": "and {count} more"
+    }
+  },
+  "deliveryStatus": {
+    "PENDING": "Waiting",
+    "SENDING": "Sending",
+    "SENT": "Sent",
+    "FAILED": "Failed",
+    "SKIPPED": "Not sent"
   }
 }

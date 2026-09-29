@@ -136,6 +136,8 @@ def test_rules_matrix_changes_and_reset(world):
     assert invoice["whatsapp"]["enabled"] and invoice["whatsapp"]["messages_30_days"] == 1
     assert invoice["whatsapp"]["price"] is None and invoice["whatsapp"]["cost_30_days"] is None
     assert matrix["prices_set"] is False and matrix["shops"] == {"opted_in": 1, "shops": 1}
+    codes = {p["code"] for p in matrix["permissions"]}
+    assert "orders.manage" in codes and not any(c.startswith("platform.") for c in codes)
     assert world["sales"].get(f"{API}/notification-rules/").status_code == 403
     body = {
         "rules": [

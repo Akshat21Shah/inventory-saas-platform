@@ -25,16 +25,28 @@ interface Section {
   labelKey: string;
   /** Hidden unless the user has this permission (the server enforces it regardless). */
   permission?: string;
+  /** Also current on its sub-pages. */
+  prefix?: boolean;
+  /** Another page that belongs to this section. */
+  also?: string;
 }
 
 const SECTIONS: Section[] = [
   { href: "/manage/settings/business", labelKey: "business" },
   { href: "/manage/settings/branding", labelKey: "branding" },
-  ...POLICY_GROUPS.map((group) => ({
+  // The notifications group opens from Settings → Messages (its "Quiet hours & reminders" tab).
+  ...POLICY_GROUPS.filter((group) => group !== "notifications").map((group) => ({
     href: `/manage/settings/policies/${group}`,
     labelKey: `policies.${group}`,
   })),
   { href: "/manage/settings/features", labelKey: "features" },
+  {
+    href: "/manage/settings/notifications",
+    labelKey: "notifications",
+    permission: "notifications.manage",
+    prefix: true,
+    also: "/manage/settings/policies/notifications",
+  },
   { href: "/manage/settings/staff", labelKey: "staff", permission: "staff.manage" },
   { href: "/manage/settings/roles", labelKey: "roles", permission: "staff.manage" },
   { href: "/manage/audit", labelKey: "audit", permission: "audit.view" },
@@ -51,7 +63,10 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
       <nav aria-label={t("label")} className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
         <ul className="flex gap-2 lg:flex-col lg:gap-0.5">
           {sections.map((section) => {
-            const active = pathname === section.href;
+            const active =
+              pathname === section.href ||
+              pathname === section.also ||
+              Boolean(section.prefix && pathname.startsWith(`${section.href}/`));
             return (
               <li key={section.href} className="shrink-0">
                 <Link

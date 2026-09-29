@@ -321,7 +321,14 @@
      - The distributor's current announcements sit at the top of the shop home.
      - Every event has an English label (staff wording) and every shop-facing event a shop wording; an i18n test reads the backend catalogue to keep them complete.
      - Tests: 7 component tests (locked and switchable channels, turning WhatsApp on, WhatsApp unavailable, the question's yes / not now / not shown, announcements). The page is in the responsive check.
-  11–12. Frontend: rules matrix, texts, delivery log, announcements, reminder pauses, consent and links on staff screens, GST card; platform texts and failures
+  11. Staff screens — **done** (`web/components/notifications/manage`):
+     - Settings → Messages (`notifications.manage`), with tabs: **Who gets what** (every message by group with its recipients, channels, "Required", "Waits for quiet hours" and "Changed"; the shops that agreed to WhatsApp; WhatsApp messages and cost for 30 days, or counts while prices aren't set; an editor per message: recipient, permission for "Staff who can…", channels the recipient can use, on/off, required for the shop, add/remove, back to defaults), **Message texts** (per message and language: in-app and email editable with variable chips, preview and back to default; WhatsApp and SMS shown as the platform's approved templates), **Delivery log** (filters by status, channel and message plus search; 7-day totals; why not sent; last error; details with every try, and "Try again" for failed ones), **Announcements** (list; create and edit with dates, showing on/off, WhatsApp before sending), **Quiet hours & reminders** (the registry settings; the duplicate entry left the settings menu).
+     - Retailer page: payment reminder pause (reason, optional end date; resume) and WhatsApp consent (who recorded it and when; staff must tick "the shop agreed"; stop WhatsApp).
+     - Invoice, credit note, payment and refund pages: "Shared links" (sent links, opens, expiry, withdraw all) for staff who manage the document.
+     - Dashboard: "GST rates changing soon" (next 30 days) for `products.view`.
+     - The rules API also returns the permission choices (managers can't list permissions otherwise); DELETE endpoints now document their 200 bodies.
+     - Tests: 8 component tests (rules summary and saving an edit; texts insert, preview and save; delivery log retry; creating an announcement; consent needing confirmation; pausing reminders; withdrawing links and hiding them without the permission; the GST card). The four pages are in the responsive check; checked at 360 and 1440 px.
+  12. Frontend: platform texts and failures
   13. E2E and responsive check — **final review**
 - Phase 5 — Billing, GST, ledger, credit control: **merged to `main` (PR #6, 2026-09-28)**.
 - Phase 4 — Ordering & backorders: **merged to `main` (PR #5, 2026-09-28)**.

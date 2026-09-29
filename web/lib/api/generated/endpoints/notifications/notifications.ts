@@ -1496,12 +1496,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getNotificationRulesUpdateMutationOptions(options), queryClient);
     }
-    export type notificationRulesResetResponse204 = {
-  data: void
-  status: 204
+    export type notificationRulesResetResponse200 = {
+  data: Rule[]
+  status: 200
 }
 
-export type notificationRulesResetResponseSuccess = (notificationRulesResetResponse204) & {
+export type notificationRulesResetResponseSuccess = (notificationRulesResetResponse200) & {
   headers: Headers;
 };
 ;
@@ -1792,12 +1792,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getNotificationTextUpdateMutationOptions(options), queryClient);
     }
-    export type notificationTextResetResponse204 = {
-  data: void
-  status: 204
+    export type notificationTextResetResponse200 = {
+  data: Text[]
+  status: 200
 }
 
-export type notificationTextResetResponseSuccess = (notificationTextResetResponse204) & {
+export type notificationTextResetResponseSuccess = (notificationTextResetResponse200) & {
   headers: Headers;
 };
 ;
@@ -2552,12 +2552,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRetailerReminderPauseSetMutationOptions(options), queryClient);
     }
-    export type retailerReminderPauseEndResponse204 = {
-  data: void
-  status: 204
+    export type retailerReminderPauseEndResponse200 = {
+  data: ReminderPauseState
+  status: 200
 }
 
-export type retailerReminderPauseEndResponseSuccess = (retailerReminderPauseEndResponse204) & {
+export type retailerReminderPauseEndResponseSuccess = (retailerReminderPauseEndResponse200) & {
   headers: Headers;
 };
 ;

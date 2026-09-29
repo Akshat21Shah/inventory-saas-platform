@@ -47,6 +47,11 @@ const TONES: Record<string, StatusTone> = {
   HANDED_OVER: "success",
   NOT_NEEDED: "neutral",
   ISSUED: "success",
+  PENDING: "warning",
+  SENDING: "progress",
+  SENT: "success",
+  FAILED: "danger",
+  SKIPPED: "neutral",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {
@@ -78,7 +83,8 @@ export function StatusBadge({
     | "allocationStatus"
     | "paymentStatus"
     | "handoverStatus"
-    | "refundStatus";
+    | "refundStatus"
+    | "deliveryStatus";
 }) {
   const t = useTranslations(labels);
   const tone = statusTone(status);

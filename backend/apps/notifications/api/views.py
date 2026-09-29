@@ -176,7 +176,9 @@ class EventRulesView(Guarded):
         return Response(s.RuleSerializer([_rule(r) for r in saved], many=True).data)
 
     @extend_schema(
-        operation_id="notification_rules_reset", tags=TAGS, responses=s.RuleSerializer(many=True)
+        operation_id="notification_rules_reset",
+        tags=TAGS,
+        responses={200: s.RuleSerializer(many=True)},
     )
     def delete(self, request: Request, event: str) -> Response:
         saved = rules.reset_rules(event)
@@ -241,7 +243,7 @@ class EventTextView(Guarded):
         operation_id="notification_text_reset",
         tags=TAGS,
         parameters=[LOCALE],
-        responses=s.TextSerializer(many=True),
+        responses={200: s.TextSerializer(many=True)},
     )
     def delete(self, request: Request, event: str, channel: str) -> Response:
         locale = _locale(request)
@@ -545,7 +547,7 @@ class ReminderPauseView(Guarded):
     @extend_schema(
         operation_id="retailer_reminder_pause_end",
         tags=TAGS,
-        responses=s.ReminderPauseStateSerializer,
+        responses={200: s.ReminderPauseStateSerializer},
     )
     def delete(self, request: Request, retailer_id: UUID) -> Response:
         shop = _shop(request, retailer_id)

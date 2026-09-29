@@ -82,6 +82,11 @@ class ShopConsentCountSerializer(serializers.Serializer[Any]):
     shops = serializers.IntegerField()
 
 
+class PermissionChoiceSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField()
+    description = serializers.CharField()
+
+
 class RulesMatrixSerializer(serializers.Serializer[Any]):
     events = EventRulesSerializer(many=True)
     recipients = serializers.DictField(
@@ -94,6 +99,9 @@ class RulesMatrixSerializer(serializers.Serializer[Any]):
         max_digits=14, decimal_places=2, allow_null=True
     )
     shops = ShopConsentCountSerializer()
+    permissions = PermissionChoiceSerializer(
+        many=True, help_text="For 'Staff who can…' rules (any staff member's permissions)."
+    )
 
 
 # --- Texts --------------------------------------------------------------------------------------

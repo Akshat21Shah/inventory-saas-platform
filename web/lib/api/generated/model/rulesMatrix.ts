@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { EventRules } from './eventRules';
+import type { PermissionChoice } from './permissionChoice';
 import type { RulesMatrixRecipients } from './rulesMatrixRecipients';
 import type { ShopConsentCount } from './shopConsentCount';
 
@@ -21,4 +22,6 @@ export interface RulesMatrix {
      */
   whatsapp_cost_30_days: string | null;
   shops: ShopConsentCount;
+  /** For 'Staff who can…' rules (any staff member's permissions). */
+  permissions: PermissionChoice[];
 }

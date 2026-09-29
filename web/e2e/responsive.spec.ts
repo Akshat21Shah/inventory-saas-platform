@@ -116,6 +116,11 @@ function pages(ids: Ids) {
     "/manage/audit",
     "/manage/account",
     "/manage/notifications",
+    "/manage/settings/notifications",
+    "/manage/settings/notifications/texts",
+    "/manage/settings/notifications/deliveries",
+    "/manage/settings/notifications/announcements",
+    "/manage/settings/policies/notifications",
   ];
   const platform = [
     "/platform",
