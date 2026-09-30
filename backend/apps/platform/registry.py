@@ -324,6 +324,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Turn off to stop them signing in."),
     _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
             "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
+    # --- Tenant: Reports (ADR-050) -------------------------------------------------------------
+    _tenant("reports.movement_days", Group.REPORTS, SettingType.INT, 90,
+            "The period for fast, slow and dead stock, in days.", min_value=7, max_value=365),
+    _tenant("reports.fast_share_percent", Group.REPORTS, SettingType.INT, 20,
+            "The share of products that sold, from the top, counted as fast-moving.",
+            min_value=5, max_value=50),
     # --- Tenant: Security (ADR-030) -------------------------------------------------------------
     _tenant("security.require_staff_2fa", Group.SECURITY, SettingType.BOOL, False,
             "Require every staff member to set up two-step verification (an authenticator app) "

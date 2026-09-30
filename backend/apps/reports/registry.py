@@ -158,3 +158,21 @@ def previous_period(start: date, end: date) -> tuple[date, date]:
     """The same number of days just before (for comparisons)."""
     days = (end - start).days + 1
     return start - timedelta(days=days), start - timedelta(days=1)
+
+
+class Mapped:
+    """A values() queryset whose rows are completed in Python (e.g. a category path or a label),
+    paged and exported like the queryset itself."""
+
+    def __init__(self, rows: Any, complete: Callable[[dict[str, Any]], dict[str, Any]]) -> None:
+        self.rows = rows
+        self.complete = complete
+
+    def count(self) -> int:
+        return int(self.rows.count())
+
+    def __getitem__(self, part: slice) -> list[dict[str, Any]]:
+        return [self.complete(r) for r in self.rows[part]]
+
+    def iterator(self, chunk_size: int = 2000) -> Iterable[dict[str, Any]]:
+        return (self.complete(r) for r in self.rows.iterator(chunk_size=chunk_size))

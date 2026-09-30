@@ -10,7 +10,6 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from django.db.models import QuerySet
 from rest_framework.exceptions import PermissionDenied
 
 from apps.accounts.models import User
@@ -30,6 +29,7 @@ from common.permissions import user_has_permission
 from common.tenancy import require_tenant_id
 
 COSTS = "costs.view"
+OWN_SHOPS = "reports.sales_own"
 MAX_PAGE_SIZE = 200
 DEFAULT_PAGE_SIZE = 50
 
@@ -53,9 +53,15 @@ def get(code: str, user: User) -> Report:
 
 
 def scope_for(user: User, report: Report) -> Scope:
-    """Own shops only: the report is about shops, the user lacks its "every shop" permission and
-    the distributor shows sales staff only their own shops (``orders.sales_visibility``)."""
-    own = bool(report.full) and not user.has_permission_code(report.full)
+    """Own shops only: the report is about shops, the user lacks its "every shop" permission but
+    has the "own shops" one (sales staff), and the distributor shows sales staff only their own
+    shops (``orders.sales_visibility``). Others who may open it (e.g. the warehouse on backorder
+    demand) see every shop."""
+    own = (
+        bool(report.full)
+        and not user.has_permission_code(report.full)
+        and user.has_permission_code(OWN_SHOPS)
+    )
     if own:
         own = get_setting("orders.sales_visibility", require_tenant_id()) == "ASSIGNED_RETAILERS"
     return Scope(user.pk, own_shops=own, costs=user.has_permission_code(COSTS))
@@ -170,7 +176,7 @@ LINKS = ("retailer_id", "product_id", "invoice_id", "order_id", "payment_id", "u
 
 
 def count(rows: Any) -> int:
-    return rows.count() if isinstance(rows, QuerySet) else len(rows)
+    return len(rows) if isinstance(rows, list) else int(rows.count())
 
 
 def page(report: Report, ctx: Context, number: int = 1, size: int = DEFAULT_PAGE_SIZE) -> Page:

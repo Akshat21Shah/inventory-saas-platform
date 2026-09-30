@@ -708,6 +708,16 @@
         "label": "Make e-way bills automatically",
         "description": "Make the e-way bill at dispatch when the invoice needs one. Off: staff make it with the \"Make e-way bill\" button."
       }
+    },
+    "reports": {
+      "movement_days": {
+        "label": "Fast, slow and dead stock period (days)",
+        "description": "How far back to look when sorting products into fast, slow and dead stock."
+      },
+      "fast_share_percent": {
+        "label": "Fast-moving share (%)",
+        "description": "The share of products that sold, counted from the top, that is called fast-moving."
+      }
     }
   },
   "settingsForm": {
