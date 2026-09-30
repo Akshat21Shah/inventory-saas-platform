@@ -32,6 +32,9 @@ const template = (channel: string, body: string, extra = {}) => ({
   variables: [],
   updated_at: "2026-09-29T09:00:00Z",
   submitted_by_default: channel === "WHATSAPP" ? true : null,
+  approval_status: "NOT_SUBMITTED",
+  approval_note: "",
+  approval_changed_at: null,
   ...extra,
 });
 
@@ -71,6 +74,47 @@ describe("Default message texts", () => {
         whatsapp_category: "UTILITY",
       }),
     );
+  });
+});
+
+describe("WhatsApp template approval", () => {
+  it("records the provider's answer, asking why when it was rejected", async () => {
+    const calls = mockApi({
+      "/api/v1/platform/notification-templates/": () => [
+        200,
+        [
+          template("WHATSAPP", "{{ distributor }}: order {{ order_number }} accepted.", {
+            approval_status: "APPROVED",
+            approval_changed_at: "2026-09-30T05:00:00Z",
+          }),
+          { ...template("WHATSAPP", "Rejected text"), id: "t-2", event_code: "order.rejected" },
+        ],
+      ],
+      "POST /api/v1/platform/notification-templates/t-WHATSAPP/approval/": () => [
+        400,
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "",
+            details: { fields: { note: ["Say why the provider rejected it."] } },
+          },
+        },
+      ],
+    });
+    renderWithIntl(<PlatformTextsPage />);
+    expect(await screen.findByText(/Changing this text sends it back/)).toBeVisible();
+    expect(screen.getByText("WhatsApp templates:")).toBeVisible();
+    expect(screen.getAllByText("Approved")[0]).toBeVisible();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("combobox", { name: "Status" }));
+    await user.click(await screen.findByRole("option", { name: "Rejected" }));
+    expect(screen.getByLabelText("Why the provider rejected it")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Record" }));
+    expect(await screen.findByText("Say why the provider rejected it.")).toBeVisible();
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({
+      status: "REJECTED",
+      note: "",
+    });
   });
 });
 

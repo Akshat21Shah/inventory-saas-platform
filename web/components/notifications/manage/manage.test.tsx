@@ -31,11 +31,12 @@ afterEach(() => {
   permissions = new Set();
 });
 
-const estimate = (enabled: boolean, messages = 0) => ({
+const estimate = (enabled: boolean, messages = 0, ready = true) => ({
   enabled,
   messages_30_days: messages,
   price: null,
   cost_30_days: null,
+  templates: [{ audience: "SHOP", status: ready ? "APPROVED" : "SUBMITTED", ready }],
 });
 
 const matrix = {
@@ -129,6 +130,49 @@ describe("Who gets what", () => {
         ],
       }),
     );
+  });
+});
+
+describe("WhatsApp waiting for the provider's approval", () => {
+  const waiting = (channels: string[]) => ({
+    ...matrix,
+    whatsapp_feature_enabled: true,
+    whatsapp_approval_required: true,
+    events: [
+      {
+        ...matrix.events[0]!,
+        rules: [{ ...matrix.events[0]!.rules[0]!, channels }],
+        whatsapp: estimate(true, 12, false),
+      },
+    ],
+  });
+
+  it("offers WhatsApp only once the text is approved", async () => {
+    mockApi({ "/api/v1/notification-rules/": () => [200, waiting(["IN_APP", "EMAIL"])] });
+    renderWithIntl(<NotificationRulesPage />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Change: Tax invoice issued" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("checkbox", { name: "WhatsApp" })).toBeDisabled();
+    expect(
+      within(dialog).getByText(
+        "WhatsApp can be chosen once the provider approves this message's text.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("warns where a rule already uses a text that isn't approved", async () => {
+    mockApi({
+      "/api/v1/notification-rules/": () => [200, waiting(["IN_APP", "WHATSAPP", "EMAIL"])],
+    });
+    renderWithIntl(<NotificationRulesPage />);
+    expect(await screen.findByText("WhatsApp waiting for approval: not sent yet")).toBeVisible();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Change: Tax invoice issued" }));
+    const dialog = await screen.findByRole("dialog");
+    const box = within(dialog).getByRole("checkbox", { name: "WhatsApp" });
+    expect(box).toBeEnabled(); // may be taken off
+    expect(within(dialog).getByText(/isn't approved by the provider yet/)).toBeVisible();
   });
 });
 

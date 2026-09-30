@@ -3719,7 +3719,10 @@
       "saved": "Saved",
       "resetDone": "Back to the defaults",
       "resetConfirm": "Use the default recipients and channels for this message?",
-      "empty": "No messages set up"
+      "empty": "No messages set up",
+      "whatsappNotApproved": "This message's WhatsApp text isn't approved by the provider yet, so WhatsApp isn't sent. In-app messages and emails still go.",
+      "whatsappAfterApproval": "WhatsApp can be chosen once the provider approves this message's text.",
+      "whatsappWaiting": "WhatsApp waiting for approval: not sent yet"
     },
     "texts": {
       "title": "Message texts",
@@ -3900,7 +3903,18 @@
         "STAFF": "To staff"
       },
       "firstBatch": "First submission batch",
-      "optional": "Optional, not submitted by default"
+      "optional": "Optional, not submitted by default",
+      "approval": {
+        "title": "Provider approval",
+        "summary": "WhatsApp templates:",
+        "waiting": "WhatsApp not approved",
+        "status": "Status",
+        "note": "Note (optional)",
+        "reasonRequired": "Why the provider rejected it",
+        "record": "Record",
+        "recorded": "Approval recorded",
+        "editResets": "Changing this text sends it back to \"Not submitted\": the provider approved the old words."
+      }
     },
     "failures": {
       "title": "Failed messages",
@@ -4145,5 +4159,11 @@
       "irnNearLimit": "IRNs near the reporting limit",
       "ewbWaiting": "E-way bills waiting"
     }
+  },
+  "approvalStatus": {
+    "NOT_SUBMITTED": "Not submitted",
+    "SUBMITTED": "Submitted",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected"
   }
 }

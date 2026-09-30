@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Lock, MoonStar, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Lock, MoonStar, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -48,6 +48,22 @@ const RECIPIENTS: NotificationRecipientEnum[] = [
   "STAFF_PERMISSION",
   "OWNERS",
 ];
+
+/** Whether this recipient's WhatsApp text can be sent (approved, or no approval needed). */
+function whatsappReady(event: EventRules, recipient: NotificationRecipientEnum): boolean {
+  const audience = recipient === "SHOP" ? "SHOP" : "STAFF";
+  return event.whatsapp.templates.find((a) => a.audience === audience)?.ready ?? true;
+}
+
+/** Rules already sending WhatsApp with a template the provider hasn't approved (none are sent). */
+function waitingForApproval(event: EventRules): boolean {
+  return event.rules.some(
+    (rule) =>
+      rule.enabled !== false &&
+      rule.channels.includes("WHATSAPP") &&
+      !whatsappReady(event, rule.recipient),
+  );
+}
 
 interface Draft {
   recipient: NotificationRecipientEnum;
@@ -146,6 +162,13 @@ function RuleEditor({
           {drafts.map((draft, index) => {
             const allowed = (matrix.recipients[draft.recipient] ?? []) as NotificationChannelEnum[];
             const rowLabel = t(`recipients.${draft.recipient}`);
+            const ready = whatsappReady(event, draft.recipient);
+            const inForce = event.rules.some(
+              (r) =>
+                r.recipient === draft.recipient &&
+                (r.permission ?? "") === draft.permission &&
+                r.channels.includes("WHATSAPP"),
+            );
             return (
               <li key={index} className="space-y-3 rounded-xl border p-3">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -191,6 +214,12 @@ function RuleEditor({
                     {allowed.map((channel) => (
                       <label key={channel} className="flex min-h-11 items-center gap-2 text-sm">
                         <Checkbox
+                          disabled={
+                            channel === "WHATSAPP" &&
+                            !ready &&
+                            !inForce &&
+                            !draft.channels.includes(channel)
+                          }
                           checked={draft.channels.includes(channel)}
                           onCheckedChange={(checked) =>
                             update(index, {
@@ -204,6 +233,24 @@ function RuleEditor({
                       </label>
                     ))}
                   </div>
+                  {!ready && allowed.includes("WHATSAPP") ? (
+                    <p
+                      className={
+                        draft.channels.includes("WHATSAPP")
+                          ? "bg-warning/15 flex gap-2 rounded-lg p-2 text-xs"
+                          : "text-muted-foreground text-xs"
+                      }
+                    >
+                      {draft.channels.includes("WHATSAPP") ? (
+                        <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                      ) : null}
+                      {t(
+                        draft.channels.includes("WHATSAPP")
+                          ? "rules.whatsappNotApproved"
+                          : "rules.whatsappAfterApproval",
+                      )}
+                    </p>
+                  ) : null}
                 </fieldset>
                 <div className="flex flex-wrap items-center gap-x-6">
                   <label className="flex min-h-11 items-center gap-2 text-sm">
@@ -374,6 +421,12 @@ export function NotificationRulesPage() {
                           <p className="text-muted-foreground text-sm">{t("rules.nobody")}</p>
                         )}
                         <Estimate event={event} />
+                        {waitingForApproval(event) ? (
+                          <p className="text-warning-strong flex items-center gap-1 text-xs">
+                            <AlertTriangle aria-hidden className="size-3.5 shrink-0" />
+                            {t("rules.whatsappWaiting")}
+                          </p>
+                        ) : null}
                       </div>
                       <Button
                         variant="outline"
