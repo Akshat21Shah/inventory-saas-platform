@@ -283,7 +283,11 @@
      - `fulfilment_rate` by week or month of order date: orders, still open, delivered in full, in-full % and quantity delivered %; orders the shop cancelled and waiting quantities the shop cancelled (from the order history) are left out; percentages count orders no longer open.
      - The engine limits rows to own shops only for people with the "own shops" permission (so the warehouse sees every shop); timestamps are filtered by Indian dates (`common.dates.ist_bounds`); the flags-off snapshot allows the new "reports" settings at their defaults.
      - Tests: 9 (summary with and without costs, valuation, low stock, movements, fast / slow / new and dead, backorder demand for the warehouse and own shops, fulfilment rate leaving out the shop's cancellations, another business).
-  5. Money reports: receivables ageing, collections, salesperson collections
+  5. Money reports — **done** (`backend/apps/reports/definitions/money.py`): open to the financial reports, and to sales staff for their own shops when the distributor chose that.
+     - `receivables_ageing` (PDF): per shop the buckets (by the distributor's ageing basis), owed, credit with us, balance, credit limit, oldest due and last payment; "overdue only"; filter by salesperson.
+     - `collections` (PDF): every payment in the period (receipt, shop, mode, amount, status, who collected it, handover, reference or cheque); totals and a per-mode note count received, cleared and waiting-to-clear payments, not bounced or reversed ones.
+     - `salesperson_collections`: per salesperson the collections they made (count, cash, cheque, UPI, total), handed over, still with them (whenever collected) and the oldest not handed over, plus everything received from the shops now assigned to them.
+     - Tests: 4 (ageing with own shops and permission, collections with the per-mode note and own shops, salesperson collections with own shops, another business).
   6. GST summary workbook (month or quarter)
   7. Distributor dashboard endpoint
   8. Super admin platform dashboard endpoint
