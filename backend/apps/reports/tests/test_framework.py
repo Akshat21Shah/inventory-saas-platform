@@ -31,6 +31,7 @@ from apps.reports.registry import (
     register,
 )
 from apps.retailers.models import Retailer
+from common.dates import today_ist
 from common.permissions import AnyOf
 from common.storage import get_storage
 from common.tenancy import tenant_context
@@ -105,7 +106,7 @@ def world(tenant_a, tenant_b, django_capture_on_commit_callbacks):
 def test_the_catalogue_offers_what_the_user_may_open(world, report):
     mine = {r["code"]: r for r in world["owner"].get(f"{API}/reports/").json()}
     assert [c["key"] for c in mine[CODE]["columns"]] == ["shop_name", "credit_limit"]
-    assert mine[CODE]["filters"][0]["default"] == timezone.localdate().replace(day=1).isoformat()
+    assert mine[CODE]["filters"][0]["default"] == today_ist().replace(day=1).isoformat()
     sales = {r["code"]: r for r in world["sales"].get(f"{API}/reports/").json()}
     assert [c["key"] for c in sales[CODE]["columns"]] == ["shop_name"]  # no costs.view
     assert CODE not in {r["code"] for r in world["warehouse"].get(f"{API}/reports/").json()}

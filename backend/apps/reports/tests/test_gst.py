@@ -19,7 +19,7 @@ from apps.catalog.models import Product, ProductTaxRate, Unit
 from apps.inventory import services as inventory
 from apps.orders.tests.helpers import add_stock, client_for, make_shop
 from apps.platform.tests.factories import make_gstin
-from apps.reports.definitions.gst import check_period, gst_date
+from apps.reports.definitions.gst import check_period, gst_date, last_month_end, last_month_start
 from apps.reports.models import ReportRun
 from apps.retailers.services import AddressInput, create_retailer
 from common.dates import today_ist
@@ -131,6 +131,12 @@ def test_only_a_month_or_a_quarter():
         {"date_from": date(2026, 9, 2), "date_to": date(2026, 9, 30)}
     )
     assert gst_date(date(2026, 9, 1)) == "01-Sep-2026"
+
+    # By default the last whole month (this one isn't over): valid on any day.
+    today = today_ist()
+    params = {"date_from": last_month_start(), "date_to": last_month_end()}
+    assert check_period(params) == {}
+    assert params["date_to"] < today.replace(day=1) <= today
 
 
 def test_the_summary_on_screen(world):

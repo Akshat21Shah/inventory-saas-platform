@@ -21,7 +21,6 @@ from common.tenancy import tenant_context
 from common.testing.isolation import covers
 
 pytestmark = pytest.mark.django_db
-TODAY = today_ist()
 
 
 @pytest.fixture
@@ -42,7 +41,7 @@ def world(tenant_a, django_capture_on_commit_callbacks):
                 by=owner,
             )
             payment = payments.record_payment(
-                PaymentInput(shop.pk, D("100.00"), "CASH", TODAY), by=owner
+                PaymentInput(shop.pk, D("100.00"), "CASH", today_ist()), by=owner
             )
     return {"t": tenant_a, "owner": owner, "shop": shop, "other": other, "a": a,
             "invoice": invoice, "theirs": theirs, "note": note, "payment": payment,
@@ -89,8 +88,8 @@ def test_my_statement_and_account(world):
             world["shop"].pk,
             "OPENING_DEBIT",
             D("50.00"),
-            on=TODAY - timedelta(days=10),
-            due_date=TODAY - timedelta(days=10),
+            on=today_ist() - timedelta(days=10),
+            due_date=today_ist() - timedelta(days=10),
             narration="Old books",
             by=None,
         )

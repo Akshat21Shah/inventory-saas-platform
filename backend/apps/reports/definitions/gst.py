@@ -30,15 +30,17 @@ from apps.catalog.models import Unit
 from apps.platform.selectors import get_platform_setting
 from apps.reports import gst_lists as G
 from apps.reports.registry import (
-    PERIOD,
     Column,
     Context,
+    Filter,
+    FilterKind,
     Group,
     Kind,
     Report,
     Sheet,
     register,
 )
+from common.dates import today_ist
 
 FINANCIAL = "reports.financial"
 ZERO = Decimal("0")
@@ -54,6 +56,21 @@ def gst_date(day: date) -> str:
 
 def _month_end(day: date) -> date:
     return (day.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+
+
+def last_month_start() -> date:
+    return (today_ist().replace(day=1) - timedelta(days=1)).replace(day=1)
+
+
+def last_month_end() -> date:
+    return today_ist().replace(day=1) - timedelta(days=1)
+
+
+# The last whole month by default: the one a CA files next (this month isn't over yet).
+GST_PERIOD = (
+    Filter("date_from", "From", FilterKind.DATE, required=True, default=last_month_start),
+    Filter("date_to", "To", FilterKind.DATE, required=True, default=last_month_end),
+)
 
 
 def check_period(params: dict[str, Any]) -> dict[str, list[str]]:
@@ -809,7 +826,7 @@ register(
             Column("tax", "IGST + CGST + SGST", Kind.MONEY, total=True),
             Column("cess", "Cess", Kind.MONEY, total=True),
         ),
-        filters=PERIOD,
+        filters=GST_PERIOD,
         rows=summary_rows,
         notes=summary_notes,
         sheets=sheets,
