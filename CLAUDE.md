@@ -157,6 +157,7 @@ make check-schema # fail if backend/openapi.yaml is stale
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts, stock, 11 orders, invoices, payments, a credit note and a refund each
 make lan         # open the dev stack to phones on your Wi-Fi: http://{slug}.<lan-ip-with-dashes>.nip.io:3000
 make localhost   # back to *.localhost (run before the E2E suites)
+make webhook-tunnel # dev only: public https address for payment webhooks only (Razorpay test mode)
 ```
 
 URLs in dev:
