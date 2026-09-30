@@ -300,11 +300,15 @@ function findProblems(phone: boolean): Problem[] {
   return problems;
 }
 
-/** Locally, `E2E_ONLY=/manage/reports` checks just the screens whose path contains it. */
-const ONLY = process.env.E2E_ONLY ?? "";
+/** Locally, `E2E_ONLY=reports,=/manage` checks just some screens: those whose path contains an
+ * entry, or equals one written with `=`. */
+const ONLY = (process.env.E2E_ONLY ?? "").split(",").filter(Boolean);
+const wanted = (path: string) =>
+  !ONLY.length ||
+  ONLY.some((entry) => (entry.startsWith("=") ? path === entry.slice(1) : path.includes(entry)));
 
 async function sweep(page: Page, base: string, all: string[], width: number, area: string) {
-  const paths = all.filter((path) => path.includes(ONLY));
+  const paths = all.filter(wanted);
   const found: string[] = [];
   const dir = join(SHOTS, String(width));
   mkdirSync(dir, { recursive: true });

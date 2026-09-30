@@ -226,6 +226,24 @@ describe("ReportViewer", () => {
     expect(screen.queryByRole("button", { name: "Export to PDF" })).not.toBeInTheDocument();
   });
 
+  it("draws net sales per period on the sales summary", async () => {
+    const summary: Report = { ...byProduct, code: "sales_summary", title: "Sales summary" };
+    mockApi({
+      "/api/v1/reports/": () => [200, [summary]],
+      "/api/v1/reports/sales_summary/": () => [
+        200,
+        page({
+          rows: [
+            { period: "01-09-2026", total: "250.00" },
+            { period: "02-09-2026", total: "30.00" },
+          ],
+        }),
+      ],
+    });
+    renderWithIntl(<ReportViewer code="sales_summary" />);
+    expect(await screen.findByText("Net sales per period on this page")).toBeInTheDocument();
+  });
+
   it("says when a report isn't available to this person", async () => {
     mockApi({ "/api/v1/reports/": () => [200, [lowStock]] });
     renderWithIntl(<ReportViewer code="sales_by_product" />);

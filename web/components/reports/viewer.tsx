@@ -34,6 +34,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { NUMERIC_KINDS, ReportLinkCell, ReportValue, type ReportRow } from "./cells";
 import { ReportFilterBar, useReportFilters } from "./filters";
 import { layoutFor } from "./layouts";
+import { PeriodChart } from "./period-chart";
 import { useReportWords, type ReportWords } from "./words";
 
 type Row = ReportRow & { __row: string };
@@ -250,6 +251,9 @@ function ReportScreen({ report }: { report: Report }) {
             <Info aria-hidden className="size-4 shrink-0" />
             {t("backgroundOnly")}
           </p>
+        ) : null}
+        {report.code === "sales_summary" && rows.length > 1 ? (
+          <PeriodChart rows={rows} label="period" value="total" caption={t("chartNetSales")} />
         ) : null}
         {body?.totals && body.rows.length ? (
           <Totals report={report} columns={columns} totals={body.totals} words={words} />

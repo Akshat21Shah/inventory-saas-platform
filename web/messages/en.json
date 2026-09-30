@@ -2763,15 +2763,6 @@
       "backorders": "Backorders",
       "settings": "Order settings"
     },
-    "dashboard": {
-      "title": "Today",
-      "description": "What needs your action now.",
-      "new": "New orders",
-      "onHold": "Waiting for credit approval",
-      "proposals": "Backorders to confirm",
-      "toPack": "Shipments to pack",
-      "money": "Money to collect"
-    },
     "live": {
       "placed": "New order {number} from {shop}",
       "onHold": "Order {number} from {shop} is over the credit limit and needs approval",
@@ -4180,7 +4171,6 @@
       "noVehicle": "No vehicle given",
       "fix": "Fix and try again",
       "seeAll": "See all {count}",
-      "irnFailed": "IRNs failed",
       "irnWaiting": "IRNs waiting",
       "irnNearLimit": "IRNs near the reporting limit",
       "ewbWaiting": "E-way bills waiting"
@@ -4233,7 +4223,8 @@
       "searchProduct": "Search products",
       "maxDays": "Up to {days} days at a time.",
       "caption": "{title}: rows",
-      "open": "Open"
+      "open": "Open",
+      "chartNetSales": "Net sales per period on this page"
     },
     "exports": {
       "title": "My exports",
@@ -4616,5 +4607,48 @@
     "READY": "Ready",
     "FAILED": "Failed",
     "EXPIRED": "Link expired"
+  },
+  "dashboard": {
+    "title": "Today",
+    "description": "What needs your action now, then how sales are going.",
+    "ownShops": "Figures for the shops assigned to you.",
+    "action": {
+      "title": "Needs action",
+      "newOrders": "New orders",
+      "onHold": "Waiting for credit approval",
+      "backorders": "Backorders to confirm",
+      "toPack": "Shipments to pack",
+      "failedIrns": "IRNs failed",
+      "failedEwaybills": "E-way bills failed",
+      "handover": "Collections with salesmen",
+      "overdue": "Shops overdue",
+      "overdueBody": "{count, plural, one {# shop} other {# shops}}",
+      "lowStock": "Low or out of stock",
+      "lowStockBody": "{out, plural, =0 {none out of stock} one {# out of stock} other {# out of stock}}",
+      "clear": "All clear"
+    },
+    "today": {
+      "title": "Today so far",
+      "ordersReceived": "Orders received",
+      "ordersReceivedBody": "{count, plural, one {# order} other {# orders}}, value incl. GST",
+      "billed": "Billed",
+      "billedBody": "Invoices minus credit notes"
+    },
+    "trends": {
+      "title": "Last 30 days",
+      "allReports": "All reports",
+      "billed": "Billed in the last 30 days",
+      "previous": "The 30 days before: {amount}",
+      "chartSummary": "Billed per day: {amount} in the last 30 days, against {previous} in the 30 days before.",
+      "thisPeriod": "Last 30 days",
+      "previousPeriod": "The 30 days before",
+      "date": "Date",
+      "topProducts": "Top products this month",
+      "topShops": "Top shops this month",
+      "nothingYet": "No sales this month yet.",
+      "shops": "Shops ordering this month",
+      "newShops": "{count, plural, one {# new shop} other {# new shops}}",
+      "repeatShops": "{count, plural, one {# repeat shop} other {# repeat shops}}"
+    }
   }
 }
