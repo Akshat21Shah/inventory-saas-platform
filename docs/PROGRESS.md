@@ -299,7 +299,12 @@
      - Trends (the sales reports): billed per day for 30 days with the same day of the 30 days before, both totals, the top 5 products and shops this month, and new vs repeat shops this month.
      - Sales staff limited to their own shops get their own shops' figures (the same rule as the reports, now one function).
      - Tests: 5 (the owner, the warehouse without money figures, sales staff's own shops, compliance failures once the modules are on, another business).
-  8. Super admin platform dashboard endpoint
+  8. Super admin platform dashboard endpoint — **done** (`GET platform/dashboard/`, extended; `backend/apps/reports/platform_dashboard.py`, read through the audited platform alias):
+     - Orders per day across all distributors for 30 days (count and value), and the top 5 distributors by order value in 30 days.
+     - Distributors with something failing: messages failed in the last 7 days, IRNs and e-way bills still failed, a GST provider login or payment gateway that stopped working.
+     - Usage against the plan: shops, staff and products of each distributor that isn't suspended, with the plan's limits and "near the limit" from 90% (shown even while plan enforcement is off), those near a limit first.
+     - Error rate over the last 24 hours: requests and server errors counted per hour in the cache by the request middleware (`common/metrics.py`; health checks left out; best effort, a cache problem never breaks a request). Sentry keeps each error's details.
+     - Tests: 5 (the figures across two distributors, the error rate, the last 24 hours only, a cache failure, super admin only).
   9. Volume seed (50,000 orders), `make perf`, indexes and summaries documented — **backend checkpoint**
   10. Frontend: reports hub, report page, My exports
   11. Frontend: every report page

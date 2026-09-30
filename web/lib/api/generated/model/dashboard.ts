@@ -5,10 +5,23 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { ErrorRate } from './errorRate';
+import type { OrdersDay } from './ordersDay';
+import type { PlanUsage } from './planUsage';
+import type { TenantFailures } from './tenantFailures';
+import type { TopTenant } from './topTenant';
 
 export interface Dashboard {
   total: number;
   active: number;
   onboarding: number;
   suspended: number;
+  /** The last 30 days, all distributors. */
+  orders_per_day: OrdersDay[];
+  /** By order value, last 30 days. */
+  top_tenants: TopTenant[];
+  failures: TenantFailures[];
+  /** Against each plan's limits. */
+  usage: PlanUsage[];
+  errors_24h: ErrorRate;
 }

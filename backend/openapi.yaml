@@ -12001,11 +12001,37 @@ components:
           type: integer
         suspended:
           type: integer
+        orders_per_day:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrdersDay'
+          description: The last 30 days, all distributors.
+        top_tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopTenant'
+          description: By order value, last 30 days.
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantFailures'
+        usage:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanUsage'
+          description: Against each plan's limits.
+        errors_24h:
+          $ref: '#/components/schemas/ErrorRate'
       required:
       - active
+      - errors_24h
+      - failures
       - onboarding
+      - orders_per_day
       - suspended
+      - top_tenants
       - total
+      - usage
     DashboardAction:
       type: object
       description: |-
@@ -13483,6 +13509,23 @@ components:
         * `REFUND_REVERSAL` - Refund reversed
         * `CREDIT_ADJUSTMENT` - Credit adjustment
         * `INVOICE_CANCELLED` - Invoice cancelled
+    ErrorRate:
+      type: object
+      properties:
+        requests:
+          type: integer
+        server_errors:
+          type: integer
+          description: Server errors (5xx).
+        rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - rate
+      - requests
+      - server_errors
     EventEnum:
       enum:
       - PLACE
@@ -16504,6 +16547,23 @@ components:
         * `COMPLETED` - Completed
         * `REJECTED` - Rejected
         * `CANCELLED` - Cancelled
+    OrdersDay:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        count:
+          type: integer
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+          description: Incl. GST.
+      required:
+      - count
+      - date
+      - value
     OutcomeEnum:
       enum:
       - OK
@@ -18549,6 +18609,46 @@ components:
       required:
       - code
       - name
+    PlanUsage:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        plan:
+          type: string
+        shops:
+          type: integer
+        staff:
+          type: integer
+        products:
+          type: integer
+        max_shops:
+          type: integer
+          nullable: true
+          description: 'Null: no limit.'
+        max_staff:
+          type: integer
+          nullable: true
+        max_products:
+          type: integer
+          nullable: true
+        near_limit:
+          type: boolean
+          description: At 90% or more of a limit.
+      required:
+      - max_products
+      - max_shops
+      - max_staff
+      - name
+      - near_limit
+      - plan
+      - products
+      - shops
+      - staff
+      - tenant_id
     PlatformFailure:
       type: object
       properties:
@@ -23791,6 +23891,33 @@ components:
       - suspended_at
       - suspended_reason
       - usage
+    TenantFailures:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        failed_messages:
+          type: integer
+          description: In the last 7 days.
+        failed_irns:
+          type: integer
+        failed_ewaybills:
+          type: integer
+        gst_login_failed:
+          type: boolean
+        gateway_failed:
+          type: boolean
+      required:
+      - failed_ewaybills
+      - failed_irns
+      - failed_messages
+      - gateway_failed
+      - gst_login_failed
+      - name
+      - tenant_id
     TenantFeature:
       type: object
       properties:
@@ -24030,6 +24157,25 @@ components:
       - name
       - retailer_id
       - total
+    TopTenant:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        orders:
+          type: integer
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - name
+      - orders
+      - tenant_id
+      - value
     Totals:
       type: object
       properties:
