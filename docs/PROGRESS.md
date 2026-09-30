@@ -293,7 +293,12 @@
      - A whole month or a whole GST quarter only; always made in the background (with "Report ready"); `reports.financial` only. On screen: one row per section (documents, taxable value, tax, cess) and notes.
      - B2B per invoice and rate; B2C large: inter-state to shops without a GSTIN above `platform.b2cl_threshold` (₹1,00,000); B2C others by place of supply and rate, net of their credit notes; credit notes in their own period (registered note by note; unregistered against a B2C large bill note by note); HSN in B2B and B2C tabs by HSN, UQC and rate, net of credit notes, description left blank; documents issued per series with bills whose IRN was cancelled counted as cancelled (and left out elsewhere); 0% lines left out of the sections and totalled in a note (the nil-rated sheet's dropdown values couldn't be read from the template: checklist item 33).
      - Tests: 3 (month or quarter only; every section on screen; the workbook's sheets, summary rows, headers and values against the template, including a bill whose IRN was cancelled, returns and a nil-rated line).
-  7. Distributor dashboard endpoint
+  7. Distributor dashboard endpoint — **done** (`GET dashboard/`, `dashboard.view`; `backend/apps/reports/dashboard.py`):
+     - What needs action today, each only with its permission (null otherwise): new orders, holds, backorders to confirm, to pack (`orders.view`, the board's own counts); failed IRNs and e-way bills (`compliance.manage`, while the module is on); collections not handed over (`payments.record`); overdue receivables, shops and amount (`ledger.view`); low and out-of-stock products (`stock.view`).
+     - Today: "Orders received" (orders placed today, count and value incl. GST; `orders.view`) and "Billed" (invoices minus credit notes today; the sales reports).
+     - Trends (the sales reports): billed per day for 30 days with the same day of the 30 days before, both totals, the top 5 products and shops this month, and new vs repeat shops this month.
+     - Sales staff limited to their own shops get their own shops' figures (the same rule as the reports, now one function).
+     - Tests: 5 (the owner, the warehouse without money figures, sales staff's own shops, compliance failures once the modules are on, another business).
   8. Super admin platform dashboard endpoint
   9. Volume seed (50,000 orders), `make perf`, indexes and summaries documented — **backend checkpoint**
   10. Frontend: reports hub, report page, My exports

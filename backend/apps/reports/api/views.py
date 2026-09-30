@@ -19,7 +19,7 @@ from apps.reports.api import serializers as s
 from apps.reports.models import ReportRun
 from apps.reports.registry import Context, Report
 from common.errors import InvalidFields, NotFound
-from common.permissions import IsTenantStaff
+from common.permissions import HasPermission, IsTenantStaff
 
 TAGS = ["reports"]
 
@@ -177,3 +177,18 @@ class ReportRunView(APIView):
         if run is None:
             raise NotFound()
         return Response(s.ReportRunSerializer(run).data)
+
+
+class DashboardView(APIView):
+    """What needs action today, today's figures and trends (ADR-050 item 11)."""
+
+    permission_classes = [HasPermission]
+    required_permission = "dashboard.view"
+
+    @extend_schema(
+        operation_id="dashboard", tags=["dashboard"], responses=s.DistributorDashboardSerializer
+    )
+    def get(self, request: Request) -> Response:
+        from apps.reports.dashboard import dashboard
+
+        return Response(s.DistributorDashboardSerializer(dashboard(_user(request))).data)

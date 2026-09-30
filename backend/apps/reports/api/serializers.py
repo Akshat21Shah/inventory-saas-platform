@@ -83,3 +83,82 @@ class ReportRunSerializer(serializers.ModelSerializer[ReportRun]):
         from apps.reports.services import download_url
 
         return download_url(run)
+
+
+# --- The distributor's dashboard (ADR-050 item 11) ----------------------------------------------
+
+
+def _money_field(**kw: Any) -> serializers.DecimalField:
+    return serializers.DecimalField(max_digits=16, decimal_places=2, **kw)
+
+
+class CountAmountSerializer(serializers.Serializer[Any]):
+    count = serializers.IntegerField()
+    amount = _money_field()
+
+
+class ShopsAmountSerializer(serializers.Serializer[Any]):
+    shops = serializers.IntegerField()
+    amount = _money_field()
+
+
+class LowStockCountsSerializer(serializers.Serializer[Any]):
+    low = serializers.IntegerField()
+    out = serializers.IntegerField()
+
+
+class DashboardActionSerializer(serializers.Serializer[Any]):
+    """What needs action today. A part is null for someone without its permission (or while
+    its module is off)."""
+
+    new_orders = serializers.IntegerField(allow_null=True)
+    on_hold = serializers.IntegerField(allow_null=True)
+    backorders_to_confirm = serializers.IntegerField(allow_null=True)
+    to_pack = serializers.IntegerField(allow_null=True)
+    failed_irns = serializers.IntegerField(allow_null=True)
+    failed_ewaybills = serializers.IntegerField(allow_null=True)
+    handover = CountAmountSerializer(allow_null=True, help_text="Collections not handed over.")
+    overdue = ShopsAmountSerializer(allow_null=True, help_text="Overdue receivables.")
+    low_stock = LowStockCountsSerializer(allow_null=True)
+
+
+class DashboardTodaySerializer(serializers.Serializer[Any]):
+    orders_received = CountAmountSerializer(
+        allow_null=True, help_text="Orders placed today (value incl. GST)."
+    )
+    billed = _money_field(allow_null=True, help_text="Invoices minus credit notes today.")
+
+
+class TrendDaySerializer(serializers.Serializer[Any]):
+    date = serializers.DateField()
+    billed = _money_field()
+    previous = _money_field(help_text="Billed on the same day of the 30 days before.")
+
+
+class TopProductSerializer(serializers.Serializer[Any]):
+    product_id = serializers.UUIDField()
+    name = serializers.CharField()
+    total = _money_field()
+
+
+class TopShopSerializer(serializers.Serializer[Any]):
+    retailer_id = serializers.UUIDField()
+    name = serializers.CharField()
+    total = _money_field()
+
+
+class DashboardTrendsSerializer(serializers.Serializer[Any]):
+    days = TrendDaySerializer(many=True)
+    billed_30_days = _money_field()
+    billed_previous_30_days = _money_field()
+    top_products = TopProductSerializer(many=True, help_text="This month, by net sales.")
+    top_shops = TopShopSerializer(many=True, help_text="This month, by net sales.")
+    new_shops = serializers.IntegerField(help_text="Ordered this month for the first time.")
+    repeat_shops = serializers.IntegerField()
+
+
+class DistributorDashboardSerializer(serializers.Serializer[Any]):
+    action = DashboardActionSerializer()
+    today = DashboardTodaySerializer()
+    trends = DashboardTrendsSerializer(allow_null=True, help_text="With the sales reports.")
+    own_shops = serializers.BooleanField(help_text="Figures only for the user's own shops.")

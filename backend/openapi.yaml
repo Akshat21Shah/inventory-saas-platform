@@ -1251,6 +1251,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/dashboard/:
+    get:
+      operationId: dashboard
+      description: What needs action today, today's figures and trends (ADR-050 item
+        11).
+      tags:
+      - dashboard
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistributorDashboard'
+          description: ''
   /api/v1/discount-rules/:
     get:
       operationId: discount_rules_list
@@ -11631,6 +11647,18 @@ components:
       description: |-
         * `SET` - Cost entered
         * `PENDING` - Cost pending
+    CountAmount:
+      type: object
+      properties:
+        count:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - count
     Credit:
       type: object
       properties:
@@ -11978,6 +12006,109 @@ components:
       - onboarding
       - suspended
       - total
+    DashboardAction:
+      type: object
+      description: |-
+        What needs action today. A part is null for someone without its permission (or while
+        its module is off).
+      properties:
+        new_orders:
+          type: integer
+          nullable: true
+        on_hold:
+          type: integer
+          nullable: true
+        backorders_to_confirm:
+          type: integer
+          nullable: true
+        to_pack:
+          type: integer
+          nullable: true
+        failed_irns:
+          type: integer
+          nullable: true
+        failed_ewaybills:
+          type: integer
+          nullable: true
+        handover:
+          allOf:
+          - $ref: '#/components/schemas/CountAmount'
+          nullable: true
+          description: Collections not handed over.
+        overdue:
+          allOf:
+          - $ref: '#/components/schemas/ShopsAmount'
+          nullable: true
+          description: Overdue receivables.
+        low_stock:
+          allOf:
+          - $ref: '#/components/schemas/LowStockCounts'
+          nullable: true
+      required:
+      - backorders_to_confirm
+      - failed_ewaybills
+      - failed_irns
+      - handover
+      - low_stock
+      - new_orders
+      - on_hold
+      - overdue
+      - to_pack
+    DashboardToday:
+      type: object
+      properties:
+        orders_received:
+          allOf:
+          - $ref: '#/components/schemas/CountAmount'
+          nullable: true
+          description: Orders placed today (value incl. GST).
+        billed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+          nullable: true
+          description: Invoices minus credit notes today.
+      required:
+      - billed
+      - orders_received
+    DashboardTrends:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendDay'
+        billed_30_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        billed_previous_30_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        top_products:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopProduct'
+          description: This month, by net sales.
+        top_shops:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopShop'
+          description: This month, by net sales.
+        new_shops:
+          type: integer
+          description: Ordered this month for the first time.
+        repeat_shops:
+          type: integer
+      required:
+      - billed_30_days
+      - billed_previous_30_days
+      - days
+      - new_shops
+      - repeat_shops
+      - top_products
+      - top_shops
     DeliveryAddress:
       type: object
       properties:
@@ -12399,6 +12530,26 @@ components:
         * `RETURN_TO_STOCK` - Return to stock
         * `DAMAGED` - Received damaged
         * `NOT_RETURNED` - Not physically returned
+    DistributorDashboard:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/DashboardAction'
+        today:
+          $ref: '#/components/schemas/DashboardToday'
+        trends:
+          allOf:
+          - $ref: '#/components/schemas/DashboardTrends'
+          nullable: true
+          description: With the sales reports.
+        own_shops:
+          type: boolean
+          description: Figures only for the user's own shops.
+      required:
+      - action
+      - own_shops
+      - today
+      - trends
     DocumentLink:
       type: object
       properties:
@@ -15395,6 +15546,16 @@ components:
       - status
       - thumbnail_url
       - unit
+    LowStockCounts:
+      type: object
+      properties:
+        low:
+          type: integer
+        out:
+          type: integer
+      required:
+      - low
+      - out
     LowStockRow:
       type: object
       properties:
@@ -22598,6 +22759,18 @@ components:
       required:
       - code
       - name
+    ShopsAmount:
+      type: object
+      properties:
+        shops:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - shops
     SkippedProduct:
       type: object
       properties:
@@ -23825,6 +23998,38 @@ components:
       required:
       - access
       - access_expires_at
+    TopProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - name
+      - product_id
+      - total
+    TopShop:
+      type: object
+      properties:
+        retailer_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - name
+      - retailer_id
+      - total
     Totals:
       type: object
       properties:
@@ -23913,6 +24118,25 @@ components:
         * `RAIL` - Rail
         * `AIR` - Air
         * `SHIP` - Ship
+    TrendDay:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        billed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        previous:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+          description: Billed on the same day of the 30 days before.
+      required:
+      - billed
+      - date
+      - previous
     Turnover:
       type: object
       properties:

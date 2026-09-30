@@ -2,6 +2,7 @@ export * from './auth/auth';
 export * from './billing/billing';
 export * from './catalog/catalog';
 export * from './compliance/compliance';
+export * from './dashboard/dashboard';
 export * from './imports/imports';
 export * from './inventory/inventory';
 export * from './meta/meta';

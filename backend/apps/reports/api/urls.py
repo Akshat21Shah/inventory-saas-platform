@@ -3,6 +3,7 @@ from django.urls import path
 from apps.reports.api import views as v
 
 urlpatterns = [
+    path("dashboard/", v.DashboardView.as_view(), name="dashboard"),
     path("reports/", v.ReportListView.as_view(), name="reports"),
     path("reports/<str:code>/", v.ReportView.as_view(), name="report"),
     path("reports/<str:code>/export/", v.ReportExportView.as_view(), name="report-export"),
