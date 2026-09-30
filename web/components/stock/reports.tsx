@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartColumn, Download, PackageSearch } from "lucide-react";
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -375,54 +375,6 @@ function Valuation() {
           </CardContent>
         </Card>
       </div>
-    </>
-  );
-}
-
-/** The reports that exist so far (Phase 8 adds sales and financial reports). */
-export function ReportsIndex() {
-  const t = useTranslations("stock.reports");
-  const { can } = useAuth();
-  const reports = [
-    {
-      href: "/manage/reports/low-stock",
-      icon: PackageSearch,
-      title: t("lowTitle"),
-      body: t("lowDescription"),
-      allowed: can("reports.stock"),
-    },
-    {
-      href: "/manage/reports/stock-valuation",
-      icon: ChartColumn,
-      title: t("valuationTitle"),
-      body: t("valuationDescription"),
-      allowed: canSeeValuation(can),
-    },
-  ].filter((r) => r.allowed);
-  return (
-    <>
-      <PageHeader title={t("indexTitle")} description={t("indexDescription")} />
-      {reports.length ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {reports.map(({ href, icon: Icon, title, body }) => (
-            <Link key={href} href={href} className="block rounded-xl">
-              <Card className="hover:bg-muted h-full transition-colors">
-                <CardContent className="flex gap-4 py-5">
-                  <span className="bg-brand-50 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
-                    <Icon aria-hidden className="size-5" />
-                  </span>
-                  <span>
-                    <span className="block font-semibold">{title}</span>
-                    <span className="text-muted-foreground text-sm">{body}</span>
-                  </span>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <EmptyState title={t("noReports")} description={t("noReportsBody")} />
-      )}
     </>
   );
 }

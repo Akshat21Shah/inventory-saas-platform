@@ -64,6 +64,9 @@ const TONES: Record<string, StatusTone> = {
   NEEDS_REVIEW: "warning",
   NOT_SUBMITTED: "neutral",
   APPROVED: "success",
+  QUEUED: "info",
+  RUNNING: "progress",
+  READY: "success",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {
@@ -101,7 +104,8 @@ export function StatusBadge({
     | "einvoiceStatus"
     | "ewaybillStatus"
     | "checkoutStatus"
-    | "approvalStatus";
+    | "approvalStatus"
+    | "reportRunStatus";
 }) {
   const t = useTranslations(labels);
   const tone = statusTone(status);

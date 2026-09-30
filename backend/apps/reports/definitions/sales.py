@@ -904,7 +904,7 @@ register(
         code="sales_by_invoice",
         title="Sales by invoice",
         group=Group.SALES,
-        description="The sales register: every invoice and credit note in the period, one a row.",
+        description="The sales register: every invoice and credit note in the period, one per row.",
         permission=SALES,
         full="reports.sales",
         columns=(
