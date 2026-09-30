@@ -33,7 +33,8 @@ from apps.platform.selectors import (
     tenant_by_slug,
     tenant_settings,
 )
-from common.errors import NotFound
+from common.error_codes import ErrorCode
+from common.errors import DomainError, NotFound
 from common.permissions import HasPermission, StaffReadsOrHasPermission
 from common.storage import get_storage
 from common.tenancy import require_tenant_id, tenant_context
@@ -137,11 +138,22 @@ class BankDetailsView(APIView):
 def _settings_rows(request: Request, *, fresh: bool = False) -> Any:
     """After a change in this request, read fresh: the cache is only invalidated on commit."""
     values = tenant_settings(fresh=fresh)
-    rows = setting_rows(values, registry.Scope.TENANT, _user(request).permission_codes())
+    permissions = _user(request).permission_codes()
+    rows = setting_rows(values, registry.Scope.TENANT, permissions, effective_features())
     return SettingSerializer(rows, many=True).data
 
 
 def _require_edit_permission(request: Request, keys: list[str]) -> None:
+    features = effective_features()
+    if any(
+        k in registry.REGISTRY and not registry.module_on(registry.REGISTRY[k], features)
+        for k in keys
+    ):
+        raise DomainError(
+            "This setting belongs to a module that isn't switched on for your business.",
+            code=ErrorCode.MODULE_NOT_ENABLED,
+            status_code=403,
+        )
     permissions = _user(request).permission_codes()
     denied = [
         k

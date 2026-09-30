@@ -7,29 +7,29 @@
  */
 import type { NotificationAudienceEnum } from './notificationAudienceEnum';
 import type { NotificationChannelEnum } from './notificationChannelEnum';
-import type { PlatformTemplateWhatsappCategory } from './platformTemplateWhatsappCategory';
+import type { TemplateApprovalStatusEnum } from './templateApprovalStatusEnum';
+import type { WhatsAppCategoryEnum } from './whatsAppCategoryEnum';
 
 export interface PlatformTemplate {
   readonly id: string;
-  /** @maxLength 40 */
-  event_code: string;
-  audience?: NotificationAudienceEnum;
-  channel: NotificationChannelEnum;
-  /** @maxLength 5 */
-  locale?: string;
-  /** @maxLength 200 */
-  subject?: string;
-  body: string;
-  /** @maxLength 100 */
-  whatsapp_template_name?: string;
-  /** @maxLength 10 */
-  whatsapp_language?: string;
-  whatsapp_category?: typeof PlatformTemplateWhatsappCategory[keyof typeof PlatformTemplateWhatsappCategory];
-  variables?: unknown;
+  readonly event_code: string;
+  readonly audience: NotificationAudienceEnum;
+  readonly channel: NotificationChannelEnum;
+  readonly locale: string;
+  readonly subject: string;
+  readonly body: string;
+  readonly whatsapp_template_name: string;
+  readonly whatsapp_language: string;
+  readonly whatsapp_category: WhatsAppCategoryEnum;
+  readonly variables: unknown;
   readonly updated_at: string;
   /**
      * WhatsApp only: in the first batch submitted for approval (false: optional, not submitted by default). Null for other channels.
      * @nullable
      */
   readonly submitted_by_default: boolean | null;
+  readonly approval_status: TemplateApprovalStatusEnum;
+  readonly approval_note: string;
+  /** @nullable */
+  readonly approval_changed_at: string | null;
 }

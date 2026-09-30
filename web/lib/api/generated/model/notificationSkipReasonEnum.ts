@@ -12,6 +12,7 @@
  * * `TURNED_OFF` - Switched off by the recipient
  * * `FEATURE_OFF` - WhatsApp is not enabled
  * * `PAUSED` - Reminders paused for this shop
+ * * `NOT_APPROVED` - Template not approved
  */
 export type NotificationSkipReasonEnum = typeof NotificationSkipReasonEnum[keyof typeof NotificationSkipReasonEnum];
 
@@ -22,4 +23,5 @@ export const NotificationSkipReasonEnum = {
   TURNED_OFF: 'TURNED_OFF',
   FEATURE_OFF: 'FEATURE_OFF',
   PAUSED: 'PAUSED',
+  NOT_APPROVED: 'NOT_APPROVED',
 } as const;

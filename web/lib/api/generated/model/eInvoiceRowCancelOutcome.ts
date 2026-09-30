@@ -6,6 +6,6 @@
  * OpenAPI spec version: 1.0.0
  */
 import { BlankEnum } from './blankEnum';
-import { WhatsAppCategoryEnum } from './whatsAppCategoryEnum';
+import { IrnCancelOutcomeEnum } from './irnCancelOutcomeEnum';
 
-export const PlatformTemplateWhatsappCategory = {...WhatsAppCategoryEnum,...BlankEnum,} as const
+export const EInvoiceRowCancelOutcome = {...IrnCancelOutcomeEnum,...BlankEnum,} as const

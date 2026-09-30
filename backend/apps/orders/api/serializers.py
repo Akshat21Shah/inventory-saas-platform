@@ -105,6 +105,17 @@ class FulfilmentLineSerializer(serializers.ModelSerializer[FulfilmentLine]):
 
 class FulfilmentSerializer(serializers.ModelSerializer[Fulfilment]):
     lines = FulfilmentLineSerializer(many=True, read_only=True)
+    distance_km = serializers.SerializerMethodField(
+        help_text="For its e-way bill: the distance given at dispatch, or before that the shop "
+        "address's (null when unknown)."
+    )
+
+    def get_distance_km(self, obj: Fulfilment) -> int | None:
+        if obj.distance_km is not None or obj.status != Fulfilment.Status.PACKED:
+            return obj.distance_km
+        from apps.compliance.ewaybill import address_distance
+
+        return address_distance(obj)
 
     class Meta:
         model = Fulfilment
@@ -120,6 +131,7 @@ class FulfilmentSerializer(serializers.ModelSerializer[Fulfilment]):
             "vehicle_number",
             "transporter_name",
             "lr_number",
+            "distance_km",
             "cancelled_reason",
             "lines",
         )
@@ -306,6 +318,14 @@ class DispatchSerializer(serializers.Serializer[Any]):
     vehicle_number = serializers.CharField(max_length=20, allow_blank=True, default="")
     transporter_name = serializers.CharField(max_length=120, allow_blank=True, default="")
     lr_number = serializers.CharField(max_length=40, allow_blank=True, default="")
+    distance_km = serializers.IntegerField(
+        min_value=1,
+        max_value=4000,
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Road distance for the e-way bill; default: the shop address's.",
+    )
 
 
 class CancelShipmentSerializer(serializers.Serializer[Any]):

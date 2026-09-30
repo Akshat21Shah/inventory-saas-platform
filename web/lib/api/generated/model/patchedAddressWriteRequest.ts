@@ -37,4 +37,11 @@ export interface PatchedAddressWriteRequest {
   state_code?: string;
   /** @nullable */
   is_default?: boolean | null;
+  /**
+     * Road distance from the distributor, for e-way bills; left out: unchanged.
+     * @minimum 1
+     * @maximum 4000
+     * @nullable
+     */
+  distance_km?: number | null;
 }

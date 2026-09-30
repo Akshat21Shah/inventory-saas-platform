@@ -11,6 +11,8 @@ export interface SubNavItem {
   label: string;
   /** Hidden unless the user has this permission (cosmetic; the server enforces it). */
   permission?: string;
+  /** Hidden while none of these tenant modules is on (e.g. "einvoice"). */
+  features?: string[];
   /** Also active on deeper paths (e.g. a list and its detail pages). */
   prefix?: boolean;
   /** Custom "is this the current section" test, when prefixes overlap. */
@@ -20,12 +22,13 @@ export interface SubNavItem {
 /** A row of section tabs under a page (scrolls sideways on phones). */
 export function SubNav({ items, label }: { items: SubNavItem[]; label: string }) {
   const pathname = usePathname();
-  const { can } = useAuth();
+  const { can, feature } = useAuth();
   return (
     <nav aria-label={label} className="-mx-4 mb-6 overflow-x-auto px-4">
       <ul className="flex gap-2">
         {items
           .filter((item) => !item.permission || can(item.permission))
+          .filter((item) => !item.features || item.features.some((code) => feature(code)))
           .map((item) => {
             const active = item.match
               ? item.match(pathname)

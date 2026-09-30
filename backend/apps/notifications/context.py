@@ -156,6 +156,25 @@ def _invoice(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         "due_date": day(invoice.due_date),
         "order_number": invoice.order.number,
     }
+    if code == "invoice.cancelled":
+        p = event.payload
+        reissued = p.get("reissued_invoice_id")
+        values["note"] = (
+            f"Bill {p['reissued_number']} replaces it."
+            if reissued
+            else "The goods were taken back."
+        )
+        if reissued:  # the message opens the new bill
+            return _with_shop(
+                EventContext(
+                    code,
+                    values,
+                    shop_path=f"/shop/invoices/{reissued}",
+                    staff_path=f"/manage/invoices/{reissued}",
+                    document=("INVOICE", UUID(reissued)),
+                ),
+                invoice.retailer,
+            )
     ctx = EventContext(
         code,
         values,
@@ -268,7 +287,50 @@ def _stock_alert(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventCo
     return EventContext(code, values, staff_path="/manage/stock/alerts")
 
 
+def _einvoice(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
+    p = event.payload
+    retailer = Retailer.objects.filter(pk=p["retailer_id"]).first()
+    if retailer is None:
+        return None
+    path = (
+        f"/manage/invoices/{p['document_id']}"
+        if p["document_type"] == "INVOICE"
+        else f"/manage/invoices/credit-notes/{p['document_id']}"
+    )
+    values = {
+        **base,
+        "shop": retailer.shop_name,
+        "document_number": p["document_number"],
+        "error": p["error"],
+    }
+    return EventContext(code, values, retailer=retailer, staff_path=path)
+
+
+def _ewaybill(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
+    p = event.payload
+    retailer = Retailer.objects.filter(pk=p["retailer_id"]).first()
+    if retailer is None:
+        return None
+    values = {
+        **base,
+        "shop": retailer.shop_name,
+        "shipment": p["shipment_number"],
+        "vehicle": p["vehicle_number"] or "not given",
+        "invoice_number": p["invoice_number"],
+        "error": p["error"],
+    }
+    return EventContext(
+        code,
+        values,
+        retailer=retailer,
+        staff_path=f"/manage/invoices/{p['invoice_id']}",
+        extra={"dispatcher_id": p.get("dispatcher_id") or None},
+    )
+
+
 BUILDERS = {
+    "einvoice": _einvoice,
+    "ewaybill": _ewaybill,
     "order": _order,
     "backorder": _order,
     "invoice": _invoice,

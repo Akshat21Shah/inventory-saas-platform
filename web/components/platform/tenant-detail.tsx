@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ErrorState } from "@/components/shared/error-state";
 import { FormField } from "@/components/shared/form-field";
+import { FormSelect } from "@/components/shared/form-select";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DateText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
@@ -53,8 +54,15 @@ import {
   usePlatformTenantSubscription,
   usePlatformTenantUsers,
   usePlatformTenantsRetrieve,
+  getPlatformTenantTurnoverQueryKey,
+  platformTenantTurnoverSet,
+  usePlatformTenantTurnover,
 } from "@/lib/api/generated/endpoints/platform/platform";
-import type { Membership, TenantDetail as Detail } from "@/lib/api/generated/model";
+import type {
+  Membership,
+  TenantDetail as Detail,
+  TurnoverBandEnum,
+} from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { handoffUrl } from "@/lib/auth/urls";
@@ -332,42 +340,108 @@ function Overview({ tenant, refresh }: { tenant: Detail; refresh: () => void }) 
   );
 }
 
+/** The distributor's turnover band and what it suggests (ADR-049 item 3; audited). */
+function TurnoverCard({ tenant }: { tenant: Detail }) {
+  const t = useTranslations("platform.turnover");
+  const bands = useTranslations("settings.compliance.turnover_band.options");
+  const errors = useErrorText();
+  const client = useQueryClient();
+  const query = usePlatformTenantTurnover(tenant.id);
+  const [busy, setBusy] = useState(false);
+  const data = query.data?.data;
+  return (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle className="text-base">{t("title")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {query.error ? (
+          <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+        ) : !data ? (
+          <p className="text-muted-foreground text-sm">{t("loading")}</p>
+        ) : (
+          <>
+            <FormField label={t("band")} hint={t("bandHint")}>
+              <FormSelect
+                value={data.turnover_band}
+                disabled={busy}
+                onValueChange={async (value) => {
+                  setBusy(true);
+                  try {
+                    await platformTenantTurnoverSet(tenant.id, {
+                      turnover_band: value as TurnoverBandEnum,
+                    });
+                    await client.invalidateQueries({
+                      queryKey: getPlatformTenantTurnoverQueryKey(tenant.id),
+                    });
+                    toast.success(t("saved"));
+                  } catch (err) {
+                    toast.error(errors.message(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+                options={(["BELOW_5_CR", "FROM_5_TO_10_CR", "FROM_10_CR"] as const).map(
+                  (value) => ({ value, label: bands(value) }),
+                )}
+              />
+            </FormField>
+            <ul className="text-sm">
+              {data.einvoice_suggested && !data.einvoice_enabled ? (
+                <li className="bg-warning/15 rounded-lg p-2">{t("suggestEinvoice")}</li>
+              ) : null}
+              {data.reporting_limit_applies ? (
+                <li className="text-muted-foreground p-2">
+                  {t("reportingLimit", { days: data.reporting_days })}
+                </li>
+              ) : null}
+            </ul>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function Modules({ tenant, refresh }: { tenant: Detail; refresh: () => void }) {
   const t = useTranslations("platform");
   const errors = useErrorText();
   const catalogue = usePlatformFeatureFlagsList();
   const [pending, setPending] = useState<string | null>(null);
   return (
-    <Card>
-      <CardContent className="divide-y py-2">
-        {(catalogue.data?.data ?? []).map((flag) => (
-          <div key={flag.code} className="flex items-center justify-between gap-4 py-3">
-            <div>
-              <p className="font-medium">{flag.name}</p>
-              <p className="text-muted-foreground text-sm">{flag.description}</p>
+    <>
+      <TurnoverCard tenant={tenant} />
+      <Card>
+        <CardContent className="divide-y py-2">
+          {(catalogue.data?.data ?? []).map((flag) => (
+            <div key={flag.code} className="flex items-center justify-between gap-4 py-3">
+              <div>
+                <p className="font-medium">{flag.name}</p>
+                <p className="text-muted-foreground text-sm">{flag.description}</p>
+              </div>
+              <Switch
+                aria-label={flag.name}
+                checked={Boolean(tenant.features[flag.code ?? ""])}
+                disabled={pending === flag.code}
+                onCheckedChange={async (enabled) => {
+                  setPending(flag.code ?? null);
+                  try {
+                    await platformTenantFeatureSet(tenant.id, flag.code ?? "", { enabled });
+                    refresh();
+                  } catch (err) {
+                    toast.error(errors.message(err));
+                  } finally {
+                    setPending(null);
+                  }
+                }}
+              />
             </div>
-            <Switch
-              aria-label={flag.name}
-              checked={Boolean(tenant.features[flag.code ?? ""])}
-              disabled={pending === flag.code}
-              onCheckedChange={async (enabled) => {
-                setPending(flag.code ?? null);
-                try {
-                  await platformTenantFeatureSet(tenant.id, flag.code ?? "", { enabled });
-                  refresh();
-                } catch (err) {
-                  toast.error(errors.message(err));
-                } finally {
-                  setPending(null);
-                }
-              }}
-            />
-          </div>
-        ))}
-        {catalogue.error ? <ErrorState error={catalogue.error} /> : null}
-        <p className="text-muted-foreground pt-3 text-xs">{t("detail.modulesNote")}</p>
-      </CardContent>
-    </Card>
+          ))}
+          {catalogue.error ? <ErrorState error={catalogue.error} /> : null}
+          <p className="text-muted-foreground pt-3 text-xs">{t("detail.modulesNote")}</p>
+        </CardContent>
+      </Card>
+    </>
   );
 }
 

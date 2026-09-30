@@ -7,6 +7,7 @@ The settings UI is generated from this registry (``settings/registry`` endpoints
 """
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
@@ -30,6 +31,7 @@ class Group(StrEnum):
     RETAILERS = "retailers"
     SECURITY = "security"
     NOTIFICATIONS = "notifications"
+    COMPLIANCE = "compliance"
 
 
 class SettingType(StrEnum):
@@ -78,6 +80,9 @@ class SettingDef:
     edit_permission: str = ""
     snapshot_on: frozenset[SnapshotOn] = field(default_factory=frozenset)
     depends_on: DependsOn | None = None
+    # Tenant settings of an optional module: shown and editable only while one of these feature
+    # flags is on, so a distributor without the module sees nothing new (ADR-049 item 1).
+    features: tuple[str, ...] = ()
     status: Status = Status.ACTIVE
 
     @property
@@ -374,6 +379,41 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("notifications.handover_reminder_days", Group.NOTIFICATIONS, SettingType.INT, 2,
             "Remind salesmen of collections not handed over after this many days.",
             min_value=1, max_value=30),
+    # E-invoicing and e-way bills (Phase 7, ADR-049): thresholds are placeholders to verify.
+    _tenant("compliance.turnover_band", Group.COMPLIANCE, SettingType.ENUM, "BELOW_5_CR",
+            "The business's annual turnover band. It decides only suggestions and warnings: "
+            "e-invoicing is suggested from ₹5 crore, the IRN reporting-limit warning shows from "
+            "₹10 crore.", allowed=("BELOW_5_CR", "FROM_5_TO_10_CR", "FROM_10_CR"),
+            features=("einvoice", "ewaybill")),
+    _tenant("einvoice.auto_generate", Group.COMPLIANCE, SettingType.BOOL, True,
+            "Get the IRN automatically when an invoice or credit note to a registered shop is "
+            "issued. Off: staff get it with a button.", features=("einvoice",)),
+    _tenant("ewaybill.threshold_inter_state", Group.COMPLIANCE, SettingType.MONEY,
+            Decimal("50000.00"), "An e-way bill is made for goods going to another state when "
+            "the invoice (with tax) is worth more than this (placeholder, to verify).",
+            min_value=Decimal("0"), features=("ewaybill",)),
+    _tenant("ewaybill.threshold_intra_state", Group.COMPLIANCE, SettingType.MONEY,
+            Decimal("50000.00"), "An e-way bill is made for goods within the state when the "
+            "invoice (with tax) is worth more than this; states set their own (placeholder).",
+            min_value=Decimal("0"), features=("ewaybill",)),
+    _tenant("ewaybill.auto_generate", Group.COMPLIANCE, SettingType.BOOL, True,
+            "Make the e-way bill automatically at dispatch when the invoice needs one. Off: "
+            "staff make it with a button.", features=("ewaybill",)),
+    _platform("platform.einvoice_threshold_crore", Group.COMPLIANCE, SettingType.INT, 5,
+              "E-invoicing is suggested for businesses with turnover from this many crore "
+              "(to verify).", min_value=1, max_value=500),
+    _platform("platform.irn_limit_threshold_crore", Group.COMPLIANCE, SettingType.INT, 10,
+              "The IRN reporting-limit warning shows for businesses with turnover from this many "
+              "crore (to verify).", min_value=1, max_value=500),
+    _platform("platform.irn_reporting_days", Group.COMPLIANCE, SettingType.INT, 30,
+              "Days from the document date within which an IRN must be obtained, for businesses "
+              "above the reporting-limit threshold (to verify).", min_value=1, max_value=365),
+    _platform("platform.irn_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
+              "Hours after the IRN within which it can be cancelled (to verify).",
+              min_value=1, max_value=720),
+    _platform("platform.ewaybill_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
+              "Hours after an e-way bill within which it can be cancelled (to verify).",
+              min_value=1, max_value=720),
     _platform("platform.whatsapp_price_utility", Group.NOTIFICATIONS, SettingType.STRING, None,
               "Price in rupees of one WhatsApp utility message (orders, bills, payments, "
               "reminders), for distributors' cost estimates.", pattern=_PRICE, nullable=True),
@@ -401,3 +441,8 @@ def get_definition(key: str, scope: Scope | None = None) -> SettingDef:
 
 def definitions(scope: Scope) -> list[SettingDef]:
     return [d for d in _DEFINITIONS if d.scope is scope]
+
+
+def module_on(defn: SettingDef, features: Mapping[str, bool]) -> bool:
+    """Is the setting's module switched on (always, for settings of no optional module)?"""
+    return not defn.features or any(features.get(code, False) for code in defn.features)

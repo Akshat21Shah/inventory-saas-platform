@@ -13,5 +13,6 @@ export const PaymentsListMode = {
   BANK_TRANSFER: 'BANK_TRANSFER',
   CASH: 'CASH',
   CHEQUE: 'CHEQUE',
+  ONLINE: 'ONLINE',
   UPI: 'UPI',
 } as const;

@@ -258,10 +258,11 @@ Legend:
 ### 2.10 `compliance` (Phase 7)
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **GstCredential** (tenant) | `provider` (MOCK, <GSP chosen later>), `environment` (SANDBOX, PRODUCTION), `gstin`, `username`, `password`, `client_id`, `client_secret` (all secrets encrypted), `is_active`, `last_verified_at` | unique `(t, provider)` |
-| **EInvoiceRecord** (tenant) | `document_type` (INVOICE, CREDIT_NOTE), `invoice` FK null, `credit_note` FK null, `status` (PENDING, SUBMITTED, GENERATED, FAILED, CANCEL_PENDING, CANCELLED), `irn`, `ack_no`, `ack_date`, `signed_invoice`, `signed_qr`, `request_payload` jsonb, `response` jsonb, `error_code`, `error_message`, `attempts`, `next_retry_at`, `cancel_reason`, `cancelled_at` | check exactly one document FK; unique per document; `(t, status)` |
-| **EWayBill** (tenant) | `invoice` FK, `status` (PENDING, GENERATED, FAILED, CANCELLED), `ewb_number`, `ewb_date`, `valid_until`, `transport_mode`, `vehicle_number`, `transporter_id`, `transporter_name`, `transport_doc_no`, `transport_doc_date`, `distance_km`, `request_payload`, `response`, `error_message`, `attempts` | `(t, status)`, `(t, invoice)` |
-| **EWayBillUpdate** (tenant, append-only) | `eway_bill` FK, `kind` (PART_B, CANCEL, EXTEND), `vehicle_number`, `reason`, `request_payload`, `response`, `status` | — |
+| **GstCredential** (tenant) | `provider` (MOCK, <GSP chosen later>), `environment` (SANDBOX, PRODUCTION), `gstin`, `credentials` (encrypted JSON: the chosen GSP's fields, unknown until then), `is_active`, `verified_at`, `last_error` | unique `(t, provider)`; masked on read |
+| **EInvoiceRecord** (tenant) | `document_type` (INVOICE, CREDIT_NOTE), `invoice` FK null, `credit_note` FK null, `document_number_key` (upper-cased, for duplicate checks), `status` (PENDING, SUBMITTED, GENERATED, FAILED, CANCEL_PENDING, CANCELLED), `irn`, `ack_no`, `ack_date`, `signed_invoice`, `signed_qr`, `request_document` jsonb (our neutral document), `response` jsonb, `error_code`, `error_message`, `retryable`, `attempts`, `next_retry_at`, `cancel_reason_code`, `cancel_remarks`, `cancel_outcome` (REISSUE, TAKE_BACK), `reissued_invoice` FK null, `cancelled_at`, `cancelled_by` | check exactly one document FK; unique per document; `(t, status)` |
+| **EWayBill** (tenant) | `invoice` FK, `status` (PENDING, GENERATED, FAILED, CANCELLED), `consignment_value`, `ewb_number`, `ewb_date`, `valid_until`, `transport_mode`, `vehicle_number`, `transporter_id`, `transporter_name`, `transport_doc_no`, `transport_doc_date`, `distance_km`, `request_document`, `response`, `error_code`, `error_message`, `retryable`, `attempts`, `next_retry_at` | `(t, status)`; one live per invoice |
+| **EWayBillUpdate** (tenant, append-only) | `eway_bill` FK, `kind` (PART_B, CANCEL), `vehicle_number`, `reason_code`, `remarks`, `request_document`, `response`, `status`, `created_by` | — |
+| RetailerAddress / Fulfilment (additions) | `distance_km` (a shop address's distance, pre-filled at dispatch; the shipment's used for its e-way bill) | Phase 7 |
 
 ### 2.11 `ledger`
 | Model | Fields | Constraints / indexes |
@@ -276,14 +277,15 @@ Legend:
 |---|---|---|
 | **Payment** (tenant) | `number` (receipt no.), `retailer` FK, `amount` Money, `source` (OFFLINE, GATEWAY), `mode` (CASH, CHEQUE, BANK_TRANSFER, UPI_OFFLINE, ONLINE), `status` (PENDING_CLEARANCE, RECEIVED, CLEARED, CAPTURED, REVERSED, BOUNCED), `credit_timing` (ON_RECEIPT, ON_CLEARANCE; snapshot for cheques), `cleared_at` null, `payment_date` date, `reference_no`, `cheque_number`, `cheque_date`, `bank_name`, `collected_by` FK null, `handover_status` (NOT_TRACKED, WITH_SALESMAN, HANDED_OVER, NOT_NEEDED; ADR-046/047), `handed_over_at`, `handed_over_by`, `notes`, `allocated_amount`, `unapplied_amount`, `reversed_at`, `reversal_reason`, `gateway_payment_id` null, `receipt_pdf_key` | unique `(t, number)`; check `amount>0`, `unapplied_amount>=0`; unique `(t, gateway_payment_id)` where not null; `(t, retailer, payment_date)` |
 | ~~PaymentAllocation~~ | replaced by `ledger.Allocation` (§2.11) | |
-| **GatewayConfig** (tenant, Phase 7) | `provider` (RAZORPAY), `mode` (TEST, LIVE), `key_id`, `key_secret`, `webhook_secret` (encrypted), `is_active`, `verified_at` | unique `(t, provider)` |
-| **PaymentIntent** (tenant, Phase 7) | `retailer` FK, `purpose` (INVOICE, OUTSTANDING, CUSTOM), `invoice` FK null, `amount` Money, `provider`, `provider_order_id` unique, `status` (CREATED, ATTEMPTED, PAID, FAILED, EXPIRED), `payment` FK null, `expires_at` | `(t, status, created_at)` |
+| Payment (Phase 7 additions) | `mode` ONLINE; `gateway_provider`, `gateway_payment_id`, `intent` FK null; `needs_review` + `review_reason` (amount differed from the checkout; ADR-049 item 9) | unique `(t, gateway_provider, gateway_payment_id)` where set |
+| **GatewayConfig** (tenant, Phase 7) | `provider` (MOCK, RAZORPAY), `mode` (TEST, LIVE), `key_id`, `key_secret`, `webhook_secret` (encrypted), `is_active`, `verified_at`, `last_error` | unique `(t, provider)`; masked on read |
+| **PaymentIntent** (tenant, Phase 7) | `retailer` FK, `purpose` (INVOICE, OUTSTANDING, CUSTOM), `invoice` FK null, `amount` Money, `provider`, `provider_order_id`, `status` (CREATED, ATTEMPTED, PAID, FAILED, EXPIRED), `payment` FK null, `expires_at`, `created_by` | unique `(provider, provider_order_id)`; **one active per (shop, purpose, bill)**: partial unique index where status in (CREATED, ATTEMPTED) (ADR-049 item 10); `(t, status, created_at)` |
 | **WebhookEvent** | `tenant` FK null, `provider`, `event_id`, `event_type`, `signature_valid` bool, `payload` jsonb, `headers` jsonb, `processing_status` (RECEIVED, PROCESSED, IGNORED, FAILED), `processed_at`, `error` | unique `(provider, event_id)` |
 
 ### 2.13 `notifications` (Phase 6, ADR-048)
 | Model | Fields | Constraints / indexes |
 |---|---|---|
-| **PlatformTemplate** / **NotificationTemplate** (tenant) | platform defaults (super admin) and a tenant's overrides, in two tables so tenant rows keep row-level security; `event_code`, `audience` (SHOP: the shop's words; STAFF: the office's), `channel` (IN_APP, EMAIL, WHATSAPP, SMS), `locale`, `subject`, `body` (sandboxed substitution of the event's variables), `whatsapp_template_name`, `whatsapp_language`, `whatsapp_category` (UTILITY, MARKETING, AUTHENTICATION), `variables` jsonb (ordered), `is_active` | unique `(event_code, audience, channel, locale)` (platform), `(tenant, event_code, audience, channel, locale)` (tenant) |
+| **PlatformTemplate** / **NotificationTemplate** (tenant) | platform defaults (super admin) and a tenant's overrides, in two tables so tenant rows keep row-level security; `event_code`, `audience` (SHOP: the shop's words; STAFF: the office's), `channel` (IN_APP, EMAIL, WHATSAPP, SMS), `locale`, `subject`, `body` (sandboxed substitution of the event's variables), `whatsapp_template_name`, `whatsapp_language`, `whatsapp_category` (UTILITY, MARKETING, AUTHENTICATION), `variables` jsonb (ordered), `is_active` | unique `(event_code, audience, channel, locale)` (platform), `(tenant, event_code, audience, channel, locale)` (tenant); platform WhatsApp templates also carry `approval_status` (NOT_SUBMITTED, SUBMITTED, APPROVED, REJECTED) and `approval_note`, set by the super admin (ADR-049 item 12) |
 | **NotificationRule** (tenant) | the defaults live in code (`apps.notifications.catalog.DEFAULT_RULES`); a tenant row overrides the default with the same key; `event_code` (a notification event: outbox events split where the default depends on context, e.g. `order.placed_for_shop`, `order.cancelled_by_shop`, `order.dispatched_after_invoice`, `payment.bounced`, `backorder.cancelled_by_shop`), `recipient` (SHOP, SALESPERSON, COLLECTOR, STAFF_PERMISSION, OWNERS), `permission` (code, for STAFF_PERMISSION), `channels` varchar[], `is_enabled`, `is_compulsory` (shop rules) | unique `(tenant, event_code, recipient, permission)` |
 | **Notification** (tenant) | `event_id` (OutboxEvent), `event_code`, `recipient` FK→User, `retailer` FK null (shop recipient), `channel`, `address` (email/phone), `title`, `body`, `data` jsonb (deep link, document link), `urgent` bool, `status` (PENDING, SENT, FAILED, SKIPPED), `skip_reason` (NO_ADDRESS, NO_WHATSAPP_OPT_IN, TURNED_OFF, FEATURE_OFF, PAUSED), `send_after` (quiet hours), `read_at`, `attempts`, `last_error`, `sent_at`, `provider`, `provider_message_id` | **unique `(event_id, recipient, channel)`** (idempotent); `(t, recipient, channel, read_at)`, `(t, status, created_at)` |
 | **DeliveryAttempt** (tenant) | `notification` FK, `attempt_no`, `provider`, `status`, `response` jsonb, `error`, `duration_ms` | `(t, notification)` |
@@ -517,6 +519,9 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `settings/gst-credentials` | GET, PUT | `settings.manage` | encrypted GSP creds, masked on read (Phase 7) |
 | `settings/payment-gateway` | GET, PUT | `settings.manage` | gateway keys, masked on read; shows the webhook URL (Phase 7) |
 | `settings/payment-gateway/verify` | POST | `settings.manage` | test the credentials (Phase 7) |
+| `settings/gst-credentials/verify` | POST | `settings.manage` | test the GSP credentials (Phase 7) |
+| `platform/tenants/{id}/turnover-band` | PUT | `platform.tenants.manage` | set a distributor's turnover band (audited; Phase 7) |
+| `platform/notification-templates/{id}/approval` | POST | `platform.settings.manage` | WhatsApp template approval status and note (Phase 7) |
 | `staff` | GET | `staff.manage` | staff list |
 | `staff/{id}` | GET, PATCH | `staff.manage` | change role, deactivate (audited) |
 | `staff/invitations` | GET, POST | `staff.manage` | invite by email with a role |
@@ -656,12 +661,12 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `invoices/{id}/regenerate-pdf` | POST | `invoices.manage` | re-render the PDF |
 | `credit-notes` | GET, POST 🔑 | view: `invoices.view`; create: `invoices.manage` | create against an invoice (lines/qty or value; restock flag) |
 | `credit-notes/{id}`, `/{id}/pdf` | GET | `invoices.view` | — |
-| `einvoices` | GET | `compliance.manage` | status list (PENDING/FAILED first) — Phase 7 |
-| `invoices/{id}/einvoice` | POST | `compliance.manage` | generate/retry IRN |
-| `einvoices/{id}/cancel` | POST | `compliance.manage` | within the permitted window (rule to verify) |
-| `ewaybills` | GET | `compliance.manage` | list |
-| `invoices/{id}/ewaybill` | POST | `compliance.manage` | generate with transport details |
-| `ewaybills/{id}/part-b`, `/cancel` | POST | `compliance.manage` | update vehicle / cancel |
+| `einvoices`, `/{id}`, `/counts` | GET | `compliance.manage` | status list (filter by status, type; search by number, shop or IRN; the reporting-limit date), counts for the dashboard — Phase 7 |
+| `invoices/{id}/einvoice`, `credit-notes/{id}/einvoice` | POST | `compliance.manage` | generate / retry the IRN |
+| `einvoices/{id}/cancel` | POST | `compliance.manage` | within the permitted window (rule to verify): reason code, remarks, outcome REISSUE (default) / TAKE_BACK (+ backorder or cancel the quantities); audited |
+| `ewaybills`, `/{id}`, `/counts` | GET | `compliance.manage` | list, detail with updates, counts |
+| `invoices/{id}/ewaybill` | POST | `compliance.manage` | generate / retry with transport details and distance |
+| `ewaybills/{id}/part-b`, `/cancel` | POST | `compliance.manage` | update the vehicle / cancel (window to verify); audited |
 | `receivables` | GET | `ledger.view` | per-retailer outstanding, overdue, last payment |
 | `receivables/ageing` | GET | `ledger.view` | 0–30 / 31–60 / 61–90 / 90+ |
 | `retailers/{id}/ledger` | GET | `ledger.view` | statement with running balance (export) |
@@ -681,7 +686,9 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `refunds/{id}`, `/{id}/voucher`, `/{id}/regenerate-voucher` | GET / POST | `payments.view` / `payments.record` | detail (the credit it used), refund voucher PDF |
 | `refunds/{id}/reverse` | POST | `payments.record` | reverse a refund entered in error (reason; the shop's credit is restored; audited; voucher marked "Reversed") |
 | `payment-intents` | GET | `payments.view` | online payment attempts (Phase 7) |
-| `/api/v1/webhooks/payments/{provider}/{token}/` | POST | 🌐 signature-verified | gateway webhooks (Phase 7) |
+| `payments/{id}/review` | POST | `payments.record` | mark a flagged online payment reviewed (Phase 7) |
+| `/api/v1/webhooks/payments/{provider}/{token}/` | POST | 🌐 signature-verified | gateway webhooks (Phase 7); the token is the distributor's `webhook_token` |
+| `/api/v1/dev/mock-gateway/{order}/` | GET, POST | 🌐 dev only (mock gateway, tenant host) | the test gateway's checkout page: pay or fail, which sends the signed webhook |
 
 ### 3.11 Notifications, dashboard, reports
 | Endpoint | Method | Permission | Purpose |
@@ -705,6 +712,8 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `/api/v1/public/documents/{token}` | GET | 🌐 token, on the tenant's address | 302 to a fresh 5-minute link to the current PDF; otherwise a short page: being prepared (200), expired or revoked (410), unknown (404) |
 | shop: `notifications`, `notifications/unread-count`, `/{id}/read`, `/read-all` | GET, POST | shop | the shop's notification centre |
 | shop: `notification-preferences` | GET, PUT | shop | per event and channel within the rules; compulsory ones locked |
+| shop: `payments/checkout` 🔑 | POST | shop (flag `payments`) | start or reuse the active checkout for a bill, everything owed, or a custom amount; returns the gateway's checkout parameters (Phase 7) |
+| shop: `payments/checkout/{id}` | GET, POST | shop | status ("waiting for confirmation" until the webhook); POST notes the client callback (informational only) |
 | shop: `whatsapp-consent`, `/prompted` | GET, PUT, POST | shop | opt in / out; `prompted` records that the one-time question was shown |
 | shop: `announcements` | GET | shop | current announcements (also on `home`) |
 | `dashboard` | GET | `dashboard.view` | "what needs action today" cards, filtered by the user's permissions |
@@ -1516,16 +1525,20 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 ### Phase 7 — Compliance & online payments (flags default OFF)
 | # | Task | Size |
 |---|---|---|
-| 7.1 | Verify official rules (e-invoice applicability, IRN time limits, cancel window, EWB thresholds) → ADR; GstCredential (encrypted) | S |
-| 7.2 | GSP adapter interface + mock; IRN payload builder (TODOs for unverified fields) | L |
-| 7.3 | E-invoice async flow, retries, status, IRN + QR on PDF, cancellation | L |
-| 7.4 | E-way bill generate / Part-B / cancel | M |
-| 7.5 | Payment gateway adapter interface + mock + Razorpay sandbox implementation (verified against docs) | L |
-| 7.6 | Payment intents + retailer checkout UI | M |
-| 7.7 | Webhook endpoint, signature verification, WebhookEvent idempotency | M |
-| 7.8 | Reconciliation job + receipts | S |
-| 7.9 | FE: compliance screens, integration settings | M |
-| 7.10 | Flags-off regression suite | S |
+| 7.1 | Docs: ADR-049, rules to verify on the checklist, CA questions | S |
+| 7.2 | Flags-off baseline snapshot of a full flow (before any Phase 7 code) | S |
+| 7.3 | WhatsApp template approval status (carry-over from Phase 6) | S |
+| 7.4 | `compliance` models, encrypted GST credentials, turnover band, GSP adapter interface + thorough mock, neutral e-invoice document | L |
+| 7.5 | E-invoice flow: automatic IRN, retries, status, failures, IRN + QR on the PDF, credit notes, the held bill message | L |
+| 7.6 | IRN cancellation: window, reason, re-issue (default) or take back | M |
+| 7.7 | E-way bill: eligibility, generate at dispatch, distance, Part-B, cancel, number on the invoice | M |
+| 7.8 | Gateway settings, adapter interface, mock gateway, Razorpay (SDK, `TODO(verify)`) | M |
+| 7.9 | Checkout (one active per bill), signature-verified webhooks, WebhookEvent, capture → existing payment flow, reconciliation + expiry | L |
+| 7.10 | APIs, isolation tests, end-to-end with the mocks, seed → backend checkpoint | M |
+| 7.11 | FE: compliance screens, credentials, dispatch distance, dashboard card | L |
+| 7.12 | FE: gateway settings, the shop's Pay flow, online payments for staff | M |
+| 7.13 | FE: WhatsApp approval status (super admin), rules editor gating | S |
+| 7.14 | E2E, responsive, flags-off proof — final review | M |
 
 ### Phase 8 — Dashboards & reports
 | # | Task | Size |
@@ -1587,6 +1600,7 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Shop confirms delivery | The shop marks a shipment received in the app (ADR-044 item 5). |
 | Proof of delivery code | A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
 | Shop return requests | The shop asks for a return from the app; staff approve it, which issues the return credit note (ADR-046 item 5). |
+| Convenience fee on online payments | Optional tenant setting: the shop pays a fee on top when paying online, subject to the gateway's and legal rules (ADR-049, Phase 7 plan answer 5). |
 | Distributor's own WhatsApp templates | When a distributor connects its own WhatsApp number (`WhatsAppSender`), it manages its own approved templates instead of the platform's (ADR-048, checkpoint decision 2). |
 | Cheque bounce charge | Optional tenant setting (on/off, amount): a bounced cheque debits the charge to the shop's ledger with its own document (ADR-048, checkpoint decision 4). |
 
@@ -1659,6 +1673,11 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Notifications | `notifications.document_link_days` | int | `30` | 1–365 | — | How long links to invoices, credit notes, receipts and vouchers in messages keep working. |
 | Notifications | `notifications.payment_reminder_days` | string | `-2,3,7,15,30` | — | — | Days relative to the due date when shops are reminded of overdue bills (minus = before). |
 | Notifications | `notifications.payment_reminder_repeat_days` | int | `15` | 0–90 (0 = no more) | — | After the last reminder above, remind again every this many days. |
+| Compliance | `compliance.turnover_band` | enum | `BELOW_5_CR` | `BELOW_5_CR`, `FROM_5_TO_10_CR`, `FROM_10_CR` | — | The business's annual turnover band. Suggests e-invoicing and shows the IRN reporting-limit warning; the module is switched on by the platform (Phase 7, ADR-049). |
+| Compliance | `einvoice.auto_generate` | bool | `true` | — | — | Create the IRN automatically when an invoice or credit note is issued (Phase 7). |
+| Compliance | `ewaybill.threshold_inter_state` | money | `50000.00` | ≥ 0 | — | E-way bills for goods to another state above this consignment value (placeholder until verified). |
+| Compliance | `ewaybill.threshold_intra_state` | money | `50000.00` | ≥ 0 | — | E-way bills within the state above this value (states differ; placeholder until verified). |
+| Compliance | `ewaybill.auto_generate` | bool | `true` | — | — | Create the e-way bill at dispatch when the invoice needs one (Phase 7). |
 | Notifications | `notifications.handover_reminder_days` | int | `2` | 1–30 | — | Remind a salesman and Accounts when a collection has not been handed over after this many days. |
 | Credit & Payments | `payments.cheque_credit_timing` | enum | `ON_RECEIPT` | `ON_RECEIPT`, `ON_CLEARANCE` | PAYMENT | Credit a cheque to the retailer's account when received (reversed automatically if it bounces) or only when it clears. |
 | Security | `security.require_staff_2fa` | bool | `false` | — | — | Require every staff member to set up two-step verification (an authenticator app) before they can sign in. Only owners can change this (ADR-030). |
@@ -1671,6 +1690,7 @@ Later phases add keys through the same registry (e.g. notification channels in P
 
 ### 9.2 Platform scope
 (Phase 6 adds `platform.whatsapp_price_utility`, `platform.whatsapp_price_marketing`, `platform.whatsapp_price_authentication`: money, empty until set; used only for the rules screen's cost estimate, ADR-048.)
+(Phase 7 adds `platform.einvoice_threshold_crore` (int, 5), `platform.irn_limit_threshold_crore` (int, 10), `platform.irn_reporting_days` (int, 30) and `platform.irn_cancel_window_hours` (int, 24), `platform.ewaybill_cancel_window_hours` (int, 24): current understanding, to verify (ADR-049 item 2).)
 
 
 | Group | Key | Type | Default | Allowed | Description |
@@ -1885,6 +1905,23 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | `tax.rate_change_upcoming` 🌙 | `products.manage` staff IN + EM |
 | `retailer.welcome` | shop SMS |
 | `announcement.published` 🌙 | shop IN (WA only when chosen) |
+
+### 10.2i Phase 7 plan decisions (2026-09-29, ADR-049)
+| # | Question | Answer |
+|---|---|---|
+| 1 | After an IRN is cancelled | Staff choose at cancellation: **re-issue a corrected invoice with a new number for the same shipment (default)**, or take the goods back (stock returns; quantities to backorder or cancelled). Outside the window: credit notes only, as today |
+| 2 | Which documents get IRNs | B2B invoices (shop has a GSTIN) and their credit notes; none for B2C. A permanent failure leaves the invoice valid, marked "IRN failed", for fixing and retry |
+| 3 | The shop's bill message | Held until the IRN is generated or fails, at most 10 minutes |
+| 4 | E-way bill details | Two ⚙ thresholds (between states / within the state), placeholder ₹50,000; distance per shop address, editable at dispatch; dispatch never waits, failures shown with generate/retry |
+| 5 | Online amounts | A bill = its full balance; custom ≥ ₹1, capped at what is owed when advances are off; no surcharge (backlog: optional convenience fee) |
+| 6 | Online payment records | Credited on the capture date; "paid online by <login>"; `payments.reverse` can reverse one entered in error (reason, audited, no gateway call); gateway refunds out of scope |
+| 7 | Who switches modules on | The super admin per distributor; the owner enters and verifies credentials |
+| 8 | IRN generation | Automatic by default (⚙); turnover band setting (owner and super admin, audited) drives suggestions and the reporting-limit warning (₹10 crore+ only); thresholds are platform settings to verify; duplicate checks are case-insensitive |
+| 9 | Unapproved WhatsApp templates | Skipped with the reason "Template not approved"; in-app and email still go |
+| 10 | Captured amount differs | Recorded as paid, allocated normally, flagged for staff; with advances off, an excess is kept as credit with the "held as credit" notice |
+| + | Concurrent Pay taps | One active checkout per shop per bill / "pay everything" / custom amount; a second tap reuses it; a stale one expires before a new one starts; concurrency test |
+
+Backend checkpoint changes (2026-09-30, ADR-049): cancellation refusals say what to do first; a re-issued invoice uses the shop's current details with the original prices, discounts and GST rates (a warning and confirmation when today's rate differs; CA question 30); "bill cancelled" by in-app and email with the new bill's link; failed e-way bills notified at once to compliance staff and the dispatcher, and shown on the dashboard until resolved; gateway calls the shop waits on time out after 10 seconds, are never retried there, and never lead to a second checkout.
 
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.

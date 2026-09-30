@@ -1,0 +1,248 @@
+"""E-invoicing and e-way bills (PLAN §2.10, spec 5.11, ADR-049). Data only: the rules are in
+``rules.py``, the work in the services, the GST provider behind ``adapters``."""
+
+from django.conf import settings
+from django.db import models
+from django.db.models import Q
+
+from common.crypto import EncryptedTextField
+from common.models import TenantScopedModel
+
+USER = settings.AUTH_USER_MODEL
+
+
+class GstCredential(TenantScopedModel):
+    """A distributor's own login with the GST provider (GSP). The provider's fields aren't known
+    until one is chosen, so they are kept as encrypted JSON (``credentials``) and never returned
+    in full."""
+
+    class Environment(models.TextChoices):
+        SANDBOX = "SANDBOX", "Sandbox"
+        PRODUCTION = "PRODUCTION", "Production"
+
+    class Status(models.TextChoices):
+        UNVERIFIED = "UNVERIFIED", "Not checked"
+        CHECKING = "CHECKING", "Checking"
+        VERIFIED = "VERIFIED", "Working"
+        FAILED = "FAILED", "Not working"
+
+    provider = models.CharField(max_length=30)  # settings.GSP_PROVIDER when saved
+    environment = models.CharField(
+        max_length=10, choices=Environment.choices, default=Environment.SANDBOX
+    )
+    gstin = models.CharField(max_length=15)
+    credentials = EncryptedTextField(default="")  # JSON object
+    is_active = models.BooleanField(default=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.UNVERIFIED)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True, default="")
+    updated_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "provider"], name="uniq_gst_credential"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.provider} {self.gstin}"
+
+
+class DocumentType(models.TextChoices):
+    INVOICE = "INVOICE", "Invoice"
+    CREDIT_NOTE = "CREDIT_NOTE", "Credit note"
+
+
+class CancelReason(models.TextChoices):
+    """Our reasons for cancelling an IRN; the real adapter maps them to the portal's codes.
+    TODO(verify): the portal's reason codes (PROGRESS pre-production item 13)."""
+
+    DUPLICATE = "DUPLICATE", "Duplicate"
+    DATA_ENTRY_MISTAKE = "DATA_ENTRY_MISTAKE", "Data entry mistake"
+    ORDER_CANCELLED = "ORDER_CANCELLED", "Order cancelled"
+    OTHER = "OTHER", "Other"
+
+
+class EInvoiceRecord(TenantScopedModel):
+    """One document's journey through the Invoice Registration Portal: submitted in the
+    background, retried when the portal is down, and GENERATED (IRN, acknowledgement, signed QR)
+    or FAILED with the portal's reason. The document keeps a copy of the outcome for printing."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Waiting to be sent"
+        SUBMITTED = "SUBMITTED", "Sent, waiting for the portal"
+        GENERATED = "GENERATED", "IRN generated"
+        FAILED = "FAILED", "IRN failed"
+        CANCELLING = "CANCELLING", "Cancelling"
+        CANCELLED = "CANCELLED", "IRN cancelled"
+
+    class CancelOutcome(models.TextChoices):
+        REISSUE = "REISSUE", "Re-issued with a new number"
+        TAKE_BACK = "TAKE_BACK", "Goods taken back"
+
+    document_type = models.CharField(max_length=11, choices=DocumentType.choices)
+    invoice = models.ForeignKey(
+        "billing.Invoice", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    credit_note = models.ForeignKey(
+        "billing.CreditNote", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    document_number = models.CharField(max_length=16)
+    document_number_key = models.CharField(max_length=16)  # upper case: duplicates by case
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    irn = models.CharField(max_length=64, blank=True, default="")
+    ack_no = models.CharField(max_length=20, blank=True, default="")
+    ack_date = models.DateTimeField(null=True, blank=True)
+    signed_invoice = models.TextField(blank=True, default="")
+    signed_qr = models.TextField(blank=True, default="")
+    request_document = models.JSONField(default=dict)  # our neutral document (``document.py``)
+    response = models.JSONField(default=dict)  # the provider's last answer, as the adapter gave it
+    error_code = models.CharField(max_length=30, blank=True, default="")
+    error_message = models.CharField(max_length=500, blank=True, default="")
+    retryable = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    # Set when the IRN is asked for (automatically at issue, or by staff); empty while a
+    # document waits for the "Get IRN" button.
+    requested_at = models.DateTimeField(null=True, blank=True)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    generated_at = models.DateTimeField(null=True, blank=True)
+    cancel_reason_code = models.CharField(max_length=20, blank=True, default="")
+    cancel_remarks = models.CharField(max_length=100, blank=True, default="")
+    cancel_outcome = models.CharField(
+        max_length=9, choices=CancelOutcome.choices, blank=True, default=""
+    )
+    cancel_to_backorder = models.BooleanField(default=False)  # TAKE_BACK: wait again, or cancel
+    cancel_requested_at = models.DateTimeField(null=True, blank=True)
+    cancel_requested_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    cancel_error = models.CharField(max_length=500, blank=True, default="")  # the last refusal
+    reissued_invoice = models.ForeignKey(
+        "billing.Invoice", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(document_type="INVOICE", invoice__isnull=False, credit_note__isnull=True)
+                    | Q(
+                        document_type="CREDIT_NOTE",
+                        invoice__isnull=True,
+                        credit_note__isnull=False,
+                    )
+                ),
+                name="einvoice_one_document",
+            ),
+            models.UniqueConstraint(
+                fields=["invoice"], condition=Q(invoice__isnull=False), name="uniq_einvoice_invoice"
+            ),
+            models.UniqueConstraint(
+                fields=["credit_note"],
+                condition=Q(credit_note__isnull=False),
+                name="uniq_einvoice_credit_note",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "status"], name="einvoice_status_idx"),
+            models.Index(fields=["tenant", "document_number_key"], name="einvoice_number_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.document_number} {self.status}"
+
+
+class EWayBill(TenantScopedModel):
+    """An invoice's e-way bill (ADR-049 item 8): generated at dispatch when the consignment is
+    worth more than the threshold, in the background (dispatch never waits), retried like IRNs;
+    its vehicle can be updated (Part-B) and it can be cancelled within the window."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Waiting to be sent"
+        SUBMITTED = "SUBMITTED", "Sent, waiting for the portal"
+        GENERATED = "GENERATED", "Generated"
+        FAILED = "FAILED", "Failed"
+        CANCELLED = "CANCELLED", "Cancelled"
+
+    class Mode(models.TextChoices):
+        ROAD = "ROAD", "Road"
+        RAIL = "RAIL", "Rail"
+        AIR = "AIR", "Air"
+        SHIP = "SHIP", "Ship"
+
+    invoice = models.ForeignKey("billing.Invoice", on_delete=models.PROTECT, related_name="+")
+    fulfilment = models.ForeignKey("orders.Fulfilment", on_delete=models.PROTECT, related_name="+")
+    status = models.CharField(max_length=9, choices=Status.choices, default=Status.PENDING)
+    consignment_value = models.DecimalField(max_digits=14, decimal_places=2)
+    ewb_number = models.CharField(max_length=20, blank=True, default="")
+    ewb_date = models.DateTimeField(null=True, blank=True)
+    valid_until = models.DateTimeField(null=True, blank=True)
+    transport_mode = models.CharField(max_length=4, choices=Mode.choices, default=Mode.ROAD)
+    vehicle_number = models.CharField(max_length=20, blank=True, default="")
+    transporter_id = models.CharField(max_length=15, blank=True, default="")
+    transporter_name = models.CharField(max_length=120, blank=True, default="")
+    transport_doc_no = models.CharField(max_length=40, blank=True, default="")
+    transport_doc_date = models.DateField(null=True, blank=True)
+    distance_km = models.PositiveIntegerField(null=True, blank=True)
+    request_document = models.JSONField(default=dict)
+    response = models.JSONField(default=dict)
+    error_code = models.CharField(max_length=30, blank=True, default="")
+    error_message = models.CharField(max_length=500, blank=True, default="")
+    retryable = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    requested_at = models.DateTimeField(null=True, blank=True)  # empty: waits for staff
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    generated_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invoice"],
+                condition=~Q(status__in=["CANCELLED", "FAILED"]),
+                name="uniq_live_ewaybill_per_invoice",
+            ),
+        ]
+        indexes = [models.Index(fields=["tenant", "status"], name="ewaybill_status_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.ewb_number or 'EWB'} {self.status}"
+
+
+class EWayBillUpdate(TenantScopedModel):
+    """Append-only history of what was asked of the portal after generation: a new vehicle
+    (Part-B) or a cancellation, and what it answered."""
+
+    class Kind(models.TextChoices):
+        PART_B = "PART_B", "Vehicle updated"
+        CANCEL = "CANCEL", "Cancelled"
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Waiting to be sent"
+        DONE = "DONE", "Done"
+        FAILED = "FAILED", "Refused"
+
+    eway_bill = models.ForeignKey(EWayBill, on_delete=models.PROTECT, related_name="updates")
+    kind = models.CharField(max_length=6, choices=Kind.choices)
+    status = models.CharField(max_length=7, choices=Status.choices, default=Status.PENDING)
+    vehicle_number = models.CharField(max_length=20, blank=True, default="")
+    transport_doc_no = models.CharField(max_length=40, blank=True, default="")
+    reason_code = models.CharField(max_length=30)
+    remarks = models.CharField(max_length=100, blank=True, default="")
+    request_document = models.JSONField(default=dict)
+    response = models.JSONField(default=dict)
+    error_message = models.CharField(max_length=500, blank=True, default="")
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    done_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["tenant", "status"], name="ewaybill_update_status_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.kind} {self.status}"

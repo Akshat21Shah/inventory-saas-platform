@@ -12,6 +12,7 @@ from common.tenancy import tenant_transaction
 # event type -> (document kind, payload field with its id)
 PDF_EVENTS: dict[str, tuple[str, str]] = {
     "invoice.issued": ("invoice", "invoice_id"),
+    "invoice.cancelled": ("invoice", "invoice_id"),  # printed again, marked "Cancelled"
     "credit_note.issued": ("credit_note", "credit_note_id"),
     "payment.received": ("receipt", "payment_id"),
     "payment.reversed": ("receipt", "payment_id"),  # printed again: "Cheque bounced"/"Cancelled"

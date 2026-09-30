@@ -7,6 +7,7 @@ from rest_framework import serializers
 from apps.accounts.models import LANGUAGE_CHOICES
 from apps.notifications.models import (
     Announcement,
+    ApprovalStatus,
     Audience,
     Channel,
     DeliveryAttempt,
@@ -59,11 +60,22 @@ class RulesUpdateSerializer(serializers.Serializer[Any]):
     rules = RuleSerializer(many=True)
 
 
+class WhatsAppApprovalSerializer(serializers.Serializer[Any]):
+    audience = serializers.ChoiceField(choices=Audience.choices)
+    status = serializers.ChoiceField(choices=ApprovalStatus.choices)
+    ready = serializers.BooleanField(
+        help_text="Can be sent: approved, or the provider doesn't need approval (the mock)."
+    )
+
+
 class WhatsAppEstimateSerializer(serializers.Serializer[Any]):
     enabled = serializers.BooleanField()
     messages_30_days = serializers.IntegerField()
     price = serializers.DecimalField(max_digits=10, decimal_places=4, allow_null=True)
     cost_30_days = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
+    templates = WhatsAppApprovalSerializer(
+        many=True, help_text="The English WhatsApp template per audience and its approval."
+    )
 
 
 class EventRulesSerializer(serializers.Serializer[Any]):
@@ -95,6 +107,9 @@ class RulesMatrixSerializer(serializers.Serializer[Any]):
         help_text="Channels each recipient can use.",
     )
     whatsapp_feature_enabled = serializers.BooleanField()
+    whatsapp_approval_required = serializers.BooleanField(
+        help_text="Whether the provider sends only approved templates (false with the mock)."
+    )
     prices_set = serializers.BooleanField()
     whatsapp_cost_30_days = serializers.DecimalField(
         max_digits=14, decimal_places=2, allow_null=True

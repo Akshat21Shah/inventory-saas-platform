@@ -36,6 +36,9 @@ interface AuthContextValue {
    * they were on. */
   signedOut: boolean;
   can: (permission: string) => boolean;
+  /** An optional module switched on for this business (e-invoices, payments…); screens of a
+   * module that is off stay hidden (the server refuses them regardless). */
+  feature: (code: string) => boolean;
   signIn: (access: string, expiresAt: string | undefined) => Promise<Me | null>;
   signOut: () => Promise<void>;
   reloadMe: () => Promise<void>;
@@ -113,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       blockedCode,
       signedOut,
       can: (permission) => Boolean(me?.permissions.includes(permission)),
+      feature: (code) => Boolean(me?.features?.[code]),
       signIn,
       signOut,
       reloadMe: async () => {

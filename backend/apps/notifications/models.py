@@ -25,6 +25,7 @@ class Recipient(models.TextChoices):
     COLLECTOR = "COLLECTOR", "The salesman who collected"
     STAFF_PERMISSION = "STAFF_PERMISSION", "Staff who can…"
     OWNERS = "OWNERS", "Owners"
+    DISPATCHER = "DISPATCHER", "The person who dispatched"  # failed e-way bills (Phase 7)
 
 
 class Audience(models.TextChoices):
@@ -39,6 +40,16 @@ class WhatsAppCategory(models.TextChoices):
     UTILITY = "UTILITY", "Utility"
     MARKETING = "MARKETING", "Marketing"
     AUTHENTICATION = "AUTHENTICATION", "Authentication"
+
+
+class ApprovalStatus(models.TextChoices):
+    """Where a WhatsApp template stands with the provider (set by the super admin, ADR-049
+    item 12). Only approved templates can be sent by a real provider."""
+
+    NOT_SUBMITTED = "NOT_SUBMITTED", "Not submitted"
+    SUBMITTED = "SUBMITTED", "Submitted"
+    APPROVED = "APPROVED", "Approved"
+    REJECTED = "REJECTED", "Rejected"
 
 
 class _TemplateFields(models.Model):
@@ -63,7 +74,14 @@ class _TemplateFields(models.Model):
 
 
 class PlatformTemplate(BaseModel, _TemplateFields):
-    """The platform's default text for an event and channel (managed by the super admin)."""
+    """The platform's default text for an event and channel (managed by the super admin).
+    WhatsApp rows also record the template's approval with the provider."""
+
+    approval_status = models.CharField(
+        max_length=13, choices=ApprovalStatus.choices, default=ApprovalStatus.NOT_SUBMITTED
+    )
+    approval_note = models.CharField(max_length=300, blank=True, default="")
+    approval_changed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -133,6 +151,7 @@ class Notification(TenantScopedModel):
         TURNED_OFF = "TURNED_OFF", "Switched off by the recipient"
         FEATURE_OFF = "FEATURE_OFF", "WhatsApp is not enabled"
         PAUSED = "PAUSED", "Reminders paused for this shop"
+        NOT_APPROVED = "NOT_APPROVED", "Template not approved"
 
     event_id = models.UUIDField()  # the OutboxEvent
     event_code = models.CharField(max_length=40)

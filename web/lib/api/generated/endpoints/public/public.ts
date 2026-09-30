@@ -6,16 +6,20 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -507,3 +511,99 @@ export function usePublicTenantBranding<TData = Awaited<ReturnType<typeof public
 
 
 
+export type paymentWebhookResponse200 = {
+  data: void
+  status: 200
+}
+
+export type paymentWebhookResponse400 = {
+  data: void
+  status: 400
+}
+
+export type paymentWebhookResponse404 = {
+  data: void
+  status: 404
+}
+
+export type paymentWebhookResponseSuccess = (paymentWebhookResponse200) & {
+  headers: Headers;
+};
+export type paymentWebhookResponseError = (paymentWebhookResponse400 | paymentWebhookResponse404) & {
+  headers: Headers;
+};
+
+export type paymentWebhookResponse = (paymentWebhookResponseSuccess | paymentWebhookResponseError)
+
+export const getPaymentWebhookUrl = (provider: string,
+    token: string,) => {
+
+
+
+
+  return `/api/v1/webhooks/payments/${provider}/${token}/`
+}
+
+/**
+ * Public: authenticated by the gateway's signature, with the distributor's webhook secret.
+ */
+export const paymentWebhook = async (provider: string,
+    token: string, options?: Parameters<typeof apiFetch>[1]): Promise<paymentWebhookResponse> => {
+
+  return apiFetch<paymentWebhookResponse>(getPaymentWebhookUrl(provider,token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPaymentWebhookMutationKey = () => ['paymentWebhook'] as const;
+
+export const getPaymentWebhookMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paymentWebhook>>, TError,PaymentWebhookMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof paymentWebhook>>, TError,PaymentWebhookMutationVariables, TContext> => {
+
+const mutationKey = getPaymentWebhookMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof paymentWebhook>>, PaymentWebhookMutationVariables> = (props) => {
+          const {provider,token} = props ?? {};
+
+          return  paymentWebhook(provider,token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PaymentWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof paymentWebhook>>>
+
+    export type PaymentWebhookMutationError = void
+    export type PaymentWebhookMutationVariables = {provider: string;token: string}
+
+    export const usePaymentWebhook = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof paymentWebhook>>, TError,PaymentWebhookMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof paymentWebhook>>,
+        TError,
+        PaymentWebhookMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPaymentWebhookMutationOptions(options), queryClient);
+    }

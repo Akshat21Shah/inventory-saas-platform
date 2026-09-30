@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 
 from apps.notifications.catalog import DEFAULT_RULES, EVENTS
-from apps.notifications.models import NotificationRule
+from apps.notifications.models import Channel, NotificationRule
 
 
 @dataclass(frozen=True)
@@ -20,6 +20,17 @@ class EffectiveRule:
     @property
     def key(self) -> tuple[str, str, str]:
         return (self.event, self.recipient, self.permission)
+
+
+def available(event_code: str) -> bool:
+    """Events of an optional module that is off don't exist for the tenant (ADR-049 item 1)."""
+    from apps.platform.selectors import is_feature_enabled
+    from common.tenancy import require_tenant_id
+
+    event = EVENTS.get(event_code)
+    if event is None:
+        return False
+    return not event.feature or is_feature_enabled(event.feature, require_tenant_id())
 
 
 def effective_rules(event_code: str | None = None) -> list[EffectiveRule]:
@@ -84,9 +95,14 @@ def _as_dict(rule: EffectiveRule) -> dict[str, object]:
     }
 
 
-def _check(event_code: str, rules: list[RuleInput]) -> None:
+def _check(
+    event_code: str, rules: list[RuleInput], in_force: dict[tuple[str, str], set[str]]
+) -> None:
+    """``in_force``: the channels each recipient gets now. WhatsApp can be added only where its
+    template is approved; where it is already used, the rules editor warns instead."""
     from apps.accounts.permissions import TENANT_PERMISSIONS
-    from apps.notifications.catalog import DEFAULT_TEXTS, RECIPIENT_CHANNELS
+    from apps.notifications import approval
+    from apps.notifications.catalog import DEFAULT_TEXTS, ONLY_FOR, RECIPIENT_CHANNELS
     from apps.notifications.models import Audience, Recipient
     from common.errors import InvalidFields
 
@@ -105,6 +121,9 @@ def _check(event_code: str, rules: list[RuleInput]) -> None:
             errors.append("Choose which staff (a permission) should get it.")
         if rule.recipient != Recipient.STAFF_PERMISSION and rule.permission:
             errors.append("Only 'Staff who can…' takes a permission.")
+        only = ONLY_FOR.get(rule.recipient)
+        if only is not None and only[0] != event_code:
+            errors.append("This recipient is only for failed e-way bills.")
         if rule.recipient == Recipient.SHOP and not event.shop_facing:
             errors.append("This message is for staff only.")
         if rule.recipient != Recipient.SHOP and not event.staff_facing:
@@ -118,6 +137,12 @@ def _check(event_code: str, rules: list[RuleInput]) -> None:
                 errors.append(f"{channel} can't be used for this recipient.")
             elif channel not in texts:
                 errors.append(f"There is no {channel} text for this message yet.")
+            elif (
+                channel == Channel.WHATSAPP
+                and channel not in in_force.get(rule.key, set())
+                and not approval.is_ready(event_code, audience)
+            ):
+                errors.append("This message's WhatsApp template isn't approved yet.")
     if errors:
         raise InvalidFields({"rules": list(dict.fromkeys(errors))})
 
@@ -128,10 +153,12 @@ def save_rules(event_code: str, rules: list[RuleInput]) -> list[EffectiveRule]:
     from apps.audit import services as audit
     from common.errors import NotFound
 
-    if event_code not in EVENTS:
+    if not available(event_code):
         raise NotFound()
-    _check(event_code, rules)
-    before = [_as_dict(r) for r in effective_rules(event_code)]
+    current = effective_rules(event_code)
+    in_force = {(r.recipient, r.permission): set(r.channels) for r in current if r.enabled}
+    _check(event_code, rules, in_force)
+    before = [_as_dict(r) for r in current]
     defaults = {(r.recipient, r.permission): r for r in DEFAULT_RULES if r.event == event_code}
     NotificationRule.objects.filter(event_code=event_code).delete()
     given = {rule.key for rule in rules}

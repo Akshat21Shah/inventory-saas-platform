@@ -27,4 +27,6 @@ export interface ShopAccount {
   overdue_bills: number;
   /** New orders wait for approval or are refused until overdue bills are paid. */
   orders_blocked_for_overdue: boolean;
+  /** The shop can pay online (the distributor's gateway is on and working). */
+  online_payments: boolean;
 }

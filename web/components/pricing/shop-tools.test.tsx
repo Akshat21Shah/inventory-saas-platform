@@ -11,7 +11,11 @@ import { CopyPricingDialog } from "./copy-pricing";
 import { DiscountGridPage } from "./discount-grid";
 
 const permissions = new Set(["pricing.view", "pricing.manage", "retailers.view"]);
-const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
+const auth = {
+  me: { id: "u1" },
+  can: (p: string) => permissions.has(p),
+  feature: () => false,
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({

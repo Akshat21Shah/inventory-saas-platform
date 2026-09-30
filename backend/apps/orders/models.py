@@ -283,6 +283,7 @@ class OrderEvent(models.TextChoices):
     BACKORDER_ALLOCATED = "BACKORDER_ALLOCATED", "Backorder allocated"
     BACKORDER_CANCELLED = "BACKORDER_CANCELLED", "Backorder cancelled"
     COMPLETE = "COMPLETE", "Completed"
+    TAKE_BACK = "TAKE_BACK", "Goods taken back"  # its invoice's IRN was cancelled (Phase 7)
 
 
 class OrderStatusHistory(TenantScopedModel):
@@ -334,6 +335,7 @@ class Fulfilment(TenantScopedModel):
     vehicle_number = models.CharField(max_length=20, blank=True, default="")
     transporter_name = models.CharField(max_length=120, blank=True, default="")
     lr_number = models.CharField(max_length=40, blank=True, default="")
+    distance_km = models.PositiveIntegerField(null=True, blank=True)  # for its e-way bill
     packed_at = models.DateTimeField(null=True, blank=True)
     dispatched_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)

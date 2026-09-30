@@ -12,11 +12,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.audit import services as audit
-from apps.notifications import delivery, selectors, texts
+from apps.notifications import approval, delivery, selectors, texts
 from apps.notifications.api import serializers as s
 from apps.notifications.api.views import Guarded, Newest, _uuid
 from apps.notifications.catalog import in_first_submission
-from apps.notifications.models import Notification, PlatformTemplate
+from apps.notifications.models import ApprovalStatus, Notification, PlatformTemplate
 from apps.platform.api.views import CommitThenReadView
 from common.errors import InvalidFields, NotFound
 from common.platform_db import platform_db
@@ -48,7 +48,11 @@ class PlatformTemplateSerializer(serializers.ModelSerializer[PlatformTemplate]):
             "variables",
             "updated_at",
             "submitted_by_default",
+            "approval_status",
+            "approval_note",
+            "approval_changed_at",
         ]
+        read_only_fields = fields
 
     def get_submitted_by_default(self, obj: PlatformTemplate) -> bool | None:
         if obj.channel != "WHATSAPP":
@@ -95,6 +99,31 @@ class PlatformTemplateView(Guarded):
             texts.WhatsAppFields(
                 v["whatsapp_template_name"], v["whatsapp_language"], v["whatsapp_category"]
             ),
+        )
+        return Response(PlatformTemplateSerializer(row).data)
+
+
+class TemplateApprovalInputSerializer(serializers.Serializer[Any]):
+    status = serializers.ChoiceField(choices=ApprovalStatus.choices)
+    note = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
+
+
+class PlatformTemplateApprovalView(Guarded):
+    """Record the provider's answer for a WhatsApp template (ADR-049 item 12)."""
+
+    required_permission = SETTINGS
+
+    @extend_schema(
+        operation_id="platform_notification_template_approval",
+        tags=TAGS,
+        request=TemplateApprovalInputSerializer,
+        responses=PlatformTemplateSerializer,
+    )
+    def post(self, request: Request, template_id: UUID) -> Response:
+        data = TemplateApprovalInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        row = approval.set_approval(
+            template_id, data.validated_data["status"], data.validated_data["note"]
         )
         return Response(PlatformTemplateSerializer(row).data)
 

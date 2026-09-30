@@ -31,6 +31,7 @@ export const GROUP_ORDER = [
   "stock",
   "credit_payments",
   "notifications",
+  "compliance",
   "security",
 ];
 

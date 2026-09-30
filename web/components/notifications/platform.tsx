@@ -13,6 +13,7 @@ import { FormSelect } from "@/components/shared/form-select";
 import { DateText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
 import { CardSkeleton } from "@/components/shared/skeletons";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { SubNav } from "@/components/shared/sub-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,16 +22,18 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   getPlatformNotificationTemplatesQueryKey,
   platformNotificationFailureRetry,
+  platformNotificationTemplateApproval,
   platformNotificationTemplateUpdate,
   platformNotificationTextPreview,
   usePlatformNotificationFailures,
   usePlatformNotificationTemplates,
 } from "@/lib/api/generated/endpoints/platform/platform";
-import type {
-  PlatformFailure,
-  PlatformTemplate,
-  PlatformTextInputRequest,
-  TextPreview,
+import {
+  TemplateApprovalStatusEnum,
+  type PlatformFailure,
+  type PlatformTemplate,
+  type PlatformTextInputRequest,
+  type TextPreview,
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
@@ -47,6 +50,93 @@ function PlatformNav() {
         { href: "/platform/notifications/failures", label: t("failures") },
       ]}
     />
+  );
+}
+
+/** Where a WhatsApp template stands with the provider (ADR-049 item 12): the super admin records
+ * each answer. A real provider sends only approved templates; editing an approved text sends it
+ * back to "Not submitted". */
+function ApprovalControls({ row }: { row: PlatformTemplate }) {
+  const t = useTranslations("platformMessages.texts.approval");
+  const statuses = useTranslations("approvalStatus");
+  const client = useQueryClient();
+  const { message, fields } = useErrorText();
+  const [status, setStatus] = useState<TemplateApprovalStatusEnum>(row.approval_status);
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const id = `${row.id}-approval`;
+
+  const record = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await platformNotificationTemplateApproval(row.id, { status, note: note.trim() });
+      await client.invalidateQueries({ queryKey: getPlatformNotificationTemplatesQueryKey() });
+      toast.success(t("recorded"));
+    } catch (thrown) {
+      const byField = fields(thrown);
+      setError(Object.values(byField)[0] ?? message(thrown));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="bg-muted/40 space-y-3 rounded-lg border p-3" aria-labelledby={`${id}-h`}>
+      <p id={`${id}-h`} className="flex flex-wrap items-center gap-2 text-sm font-medium">
+        {t("title")}
+        <StatusBadge status={row.approval_status} labels="approvalStatus" />
+        {row.approval_changed_at ? (
+          <span className="text-muted-foreground text-xs font-normal">
+            <DateText value={row.approval_changed_at} withTime />
+          </span>
+        ) : null}
+      </p>
+      {row.approval_note ? <p className="text-sm">{row.approval_note}</p> : null}
+      {row.approval_status === "APPROVED" ? (
+        <p className="text-muted-foreground text-xs">{t("editResets")}</p>
+      ) : null}
+      <div className="grid gap-3 sm:grid-cols-[12rem_1fr_auto] sm:items-end">
+        <div className="space-y-1">
+          <Label htmlFor={`${id}-status`}>{t("status")}</Label>
+          <FormSelect
+            id={`${id}-status`}
+            value={status}
+            onValueChange={(value) => setStatus(value as TemplateApprovalStatusEnum)}
+            options={Object.values(TemplateApprovalStatusEnum).map((value) => ({
+              value,
+              label: statuses(value),
+            }))}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor={`${id}-note`}>
+            {status === "REJECTED" ? t("reasonRequired") : t("note")}
+          </Label>
+          <Input
+            id={`${id}-note`}
+            maxLength={300}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="min-h-10"
+          />
+        </div>
+        <Button
+          variant="outline"
+          className="min-h-11"
+          disabled={busy || (status === row.approval_status && !note.trim())}
+          onClick={() => void record()}
+        >
+          {t("record")}
+        </Button>
+      </div>
+      {error ? (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -145,6 +235,9 @@ function PlatformTextEditor({ row }: { row: PlatformTemplate }) {
           <p className="text-muted-foreground text-xs sm:col-span-2">
             {t("parameters", { names: (row.variables as string[]).join(", ") })}
           </p>
+          <div className="sm:col-span-2">
+            <ApprovalControls row={row} />
+          </div>
         </div>
       ) : null}
       {preview ? (
@@ -207,20 +300,44 @@ export function PlatformTextsPage() {
   const all = query.data?.data ?? [];
   const events = [...new Set(all.map((row) => row.event_code))];
   const rows = all.filter((row) => row.event_code === event);
+  const whatsapp = all.filter((row) => row.channel === "WHATSAPP");
+  const counts = Object.values(TemplateApprovalStatusEnum)
+    .map((status) => ({
+      status,
+      count: whatsapp.filter((r) => r.approval_status === status).length,
+    }))
+    .filter((c) => c.count > 0);
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />
       <PlatformNav />
+      {counts.length ? (
+        <p
+          className="mb-4 flex flex-wrap items-center gap-2 text-sm"
+          aria-label={t("approval.summary")}
+        >
+          <span className="text-muted-foreground">{t("approval.summary")}</span>
+          {counts.map(({ status, count }) => (
+            <span key={status} className="inline-flex items-center gap-1">
+              <StatusBadge status={status} labels="approvalStatus" />
+              <span className="tabular-nums">{count}</span>
+            </span>
+          ))}
+        </p>
+      ) : null}
       <div className="mb-6 max-w-md space-y-1">
         <Label htmlFor="platform-event">{t("event")}</Label>
         <FormSelect
           id="platform-event"
           value={event}
           onValueChange={setEvent}
-          options={(events.length ? events : [event]).map((code) => ({
-            value: code,
-            label: n(`events.${eventKey(code)}`),
-          }))}
+          options={(events.length ? events : [event]).map((code) => {
+            const waiting = whatsapp.some(
+              (r) => r.event_code === code && r.approval_status !== "APPROVED",
+            );
+            const label = n(`events.${eventKey(code)}`);
+            return { value: code, label: waiting ? `${label} · ${t("approval.waiting")}` : label };
+          })}
         />
       </div>
       {query.isLoading ? (

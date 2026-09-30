@@ -64,4 +64,11 @@ export interface PaymentDetail {
   /** @maxLength 300 */
   reversal_reason?: string;
   used_for: UsedFor[];
+  /** @maxLength 60 */
+  gateway_payment_id?: string;
+  needs_review?: boolean;
+  /** @maxLength 300 */
+  review_reason?: string;
+  /** @nullable */
+  reviewed_at?: string | null;
 }

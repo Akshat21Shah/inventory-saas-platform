@@ -18,7 +18,7 @@ import { CopyPricingDialog } from "@/components/pricing/copy-pricing";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ErrorState } from "@/components/shared/error-state";
-import { FieldsDialog, type FieldValue } from "@/components/shared/fields-dialog";
+import { FieldsDialog, intOrNull, type FieldValue } from "@/components/shared/fields-dialog";
 import { FormField } from "@/components/shared/form-field";
 import { FormActions } from "@/components/shared/form-actions";
 import { FormSelect } from "@/components/shared/form-select";
@@ -419,7 +419,11 @@ function CreditCard({ retailer, onChanged }: { retailer: RetailerDetail; onChang
   );
 }
 
-const ADDRESS_FIELDS = (t: ReturnType<typeof useTranslations>, states: Option[]) => [
+const ADDRESS_FIELDS = (
+  t: ReturnType<typeof useTranslations>,
+  states: Option[],
+  withDistance: boolean,
+) => [
   {
     name: "kind",
     label: t("kind"),
@@ -444,10 +448,15 @@ const ADDRESS_FIELDS = (t: ReturnType<typeof useTranslations>, states: Option[])
     options: states,
   },
   { name: "is_default", label: t("isDefault"), kind: "bool" as const },
+  // For e-way bills (Phase 7), only while they are switched on.
+  ...(withDistance
+    ? [{ name: "distance_km", label: t("distance"), kind: "int" as const, hint: t("distanceHint") }]
+    : []),
 ];
 
 function addressPayload(v: Record<string, FieldValue>) {
   return {
+    ...("distance_km" in v ? { distance_km: intOrNull(v.distance_km) } : {}),
     kind: String(v.kind) as AddressKindEnum,
     label: String(v.label),
     line1: String(v.line1),
@@ -469,10 +478,11 @@ function AddressesCard({
 }) {
   const t = useTranslations("retailers.addresses");
   const errors = useErrorText();
-  const { can } = useAuth();
+  const { can, feature } = useAuth();
   const manage = can("retailers.manage");
   const states = useStateOptions();
-  const fields = ADDRESS_FIELDS(t, states);
+  const withDistance = feature("ewaybill");
+  const fields = ADDRESS_FIELDS(t, states, withDistance);
   const blank = {
     kind: "SHIPPING",
     label: "",
@@ -483,6 +493,7 @@ function AddressesCard({
     pincode: "",
     state_code: retailer.state_code,
     is_default: false,
+    ...(withDistance ? { distance_km: "" } : {}),
   };
   const valuesOf = (a: Address) => ({
     kind: a.kind,
@@ -494,6 +505,7 @@ function AddressesCard({
     pincode: a.pincode,
     state_code: a.state_code,
     is_default: a.is_default,
+    ...(withDistance ? { distance_km: a.distance_km !== null ? String(a.distance_km) : "" } : {}),
   });
   return (
     <Card>
@@ -532,6 +544,9 @@ function AddressesCard({
                   </span>
                   <span className="text-muted-foreground block">
                     {[a.line1, a.line2, a.city, a.district, a.pincode].filter(Boolean).join(", ")}
+                    {withDistance && a.distance_km !== null
+                      ? ` · ${t("km", { km: a.distance_km })}`
+                      : ""}
                   </span>
                 </span>
                 {manage ? (

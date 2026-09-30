@@ -3,7 +3,8 @@ channels (the tenant's rules), and what each message says. One row per person an
 by (event, person, channel), so a redelivered event creates nothing new.
 
 Rows that can't be sent are kept as SKIPPED with the reason (no WhatsApp consent, no address,
-switched off, WhatsApp not enabled), so the delivery log answers "why didn't the shop get it?".
+switched off, WhatsApp not enabled, template not approved), so the delivery log answers "why
+didn't the shop get it?".
 Delivery itself is ``apps.notifications.delivery`` (after this transaction commits)."""
 
 from dataclasses import dataclass
@@ -15,8 +16,8 @@ from django.utils import timezone
 
 from apps.accounts.models import Membership, User
 from apps.accounts.permissions import OWNER_ROLE
+from apps.notifications import approval, quiet
 from apps.notifications import context as contexts
-from apps.notifications import quiet
 from apps.notifications.catalog import EVENTS
 from apps.notifications.models import (
     Audience,
@@ -54,7 +55,10 @@ HANDLED_EVENTS: tuple[str, ...] = (
     "backorder.repriced_cancelled",
     "stock.alert_opened",
     "invoice.issued",
+    "invoice.cancelled",
     "credit_note.issued",
+    "einvoice.failed",
+    "ewaybill.failed",
     "payment.received",
     "payment.cleared",
     "payment.reversed",
@@ -163,6 +167,9 @@ def _people(rule: EffectiveRule, ctx: contexts.EventContext) -> list[tuple[User,
         return [(u, True) for u in _staff(Q(role__permissions__code=rule.permission))]
     if rule.recipient == Recipient.OWNERS:
         return [(u, True) for u in _staff(Q(role__code=OWNER_ROLE))]
+    if rule.recipient == Recipient.DISPATCHER:
+        dispatcher = ctx.extra.get("dispatcher_id")
+        return [(u, True) for u in _staff(Q(user_id=dispatcher))] if dispatcher else []
     return []
 
 
@@ -221,6 +228,15 @@ def _skip_reason(
     return ""
 
 
+def _irn_hold(ctx: contexts.EventContext, now: Any) -> Any:
+    """Until when a bill's shop messages wait for its IRN (None: they don't)."""
+    if ctx.code not in ("invoice.issued", "credit_note.issued") or ctx.document is None:
+        return None
+    from apps.compliance.einvoice import hold_until
+
+    return hold_until(ctx.document[0], ctx.document[1], now)
+
+
 def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
     """Create the event's notification rows. Scheduled jobs (reminders, announcements) call this
     with their own stable ``event_id``."""
@@ -241,6 +257,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
     paused = bool(ctx.extra.get("paused"))
     now = timezone.now()
     hold = None if event.urgent else quiet.current_hold(now)  # quiet hours (item 9)
+    irn_hold = _irn_hold(ctx, now)
     rows: list[Notification] = []
     document_link = ""
 
@@ -275,13 +292,22 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 turned_off=turned_off,
                 paused=paused,
             )
+            audience = Audience.SHOP if shop else Audience.STAFF
+            text_locale: str | None = locale
+            if channel == Channel.WHATSAPP and not reason:
+                # Only an approved template can be sent (ADR-049 item 12); the mock approves all.
+                text_locale = approval.sendable_locale(ctx.code, locale, audience)
+                reason = "" if text_locale else SKIP.NOT_APPROVED
             carries_link = shop and channel != Channel.IN_APP and not reason
             values["document_link"] = link_for_shop() if carries_link else ""
-            audience = Audience.SHOP if shop else Audience.STAFF
-            text = render(ctx.code, channel, values, locale, audience)
+            text = render(ctx.code, channel, values, text_locale or locale, audience)
             if text is None:
                 continue
             in_app = channel == Channel.IN_APP
+            send_after = hold if not in_app and not reason else None
+            held_for_irn = bool(irn_hold and shop and not in_app and not reason)
+            if held_for_irn:  # the bill waits for its IRN, at most 10 minutes (ADR-049 item 6)
+                send_after = max(send_after or now, irn_hold or now)
             rows.append(
                 Notification(
                     tenant_id=tenant.pk,  # bulk_create skips save(), which fills it in
@@ -303,6 +329,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                             else None
                         ),
                         "compulsory": target.compulsory,
+                        **({"held_for_irn": True} if held_for_irn else {}),
                     },
                     urgent=event.urgent,
                     status=(
@@ -314,7 +341,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                     ),
                     skip_reason=reason,
                     sent_at=now if in_app else None,
-                    send_after=hold if not in_app and not reason else None,
+                    send_after=send_after,
                     provider="in_app" if in_app else "",
                 )
             )

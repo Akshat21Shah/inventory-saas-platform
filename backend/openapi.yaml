@@ -1182,6 +1182,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreditNoteDetail'
           description: ''
+  /api/v1/credit-notes/{note_id}/einvoice/:
+    post:
+      operationId: credit_note_einvoice_request
+      parameters:
+      - in: path
+        name: note_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
   /api/v1/credit-notes/{note_id}/pdf/:
     get:
       operationId: credit_notes_pdf
@@ -1425,6 +1446,287 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Revoked'
+          description: ''
+  /api/v1/einvoices/:
+    get:
+      operationId: einvoices_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: document_type
+        schema:
+          type: string
+          enum:
+          - CREDIT_NOTE
+          - INVOICE
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Document number, shop name or IRN
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - CANCELLING
+          - FAILED
+          - GENERATED
+          - PENDING
+          - SUBMITTED
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEInvoiceRowList'
+          description: ''
+  /api/v1/einvoices/{record_id}/:
+    get:
+      operationId: einvoices_retrieve
+      parameters:
+      - in: path
+        name: record_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
+  /api/v1/einvoices/{record_id}/cancel/:
+    post:
+      operationId: einvoice_cancel
+      parameters:
+      - in: path
+        name: record_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EInvoiceCancelRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
+  /api/v1/einvoices/{record_id}/reissue-preview/:
+    get:
+      operationId: einvoice_reissue_preview
+      parameters:
+      - in: path
+        name: record_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReissuePreview'
+          description: ''
+  /api/v1/einvoices/counts/:
+    get:
+      operationId: einvoices_counts
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceCounts'
+          description: ''
+  /api/v1/ewaybills/:
+    get:
+      operationId: ewaybills_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: needs_action
+        schema:
+          type: boolean
+        description: Only failed bills staff still have to fix
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: E-way bill, invoice, shop or vehicle
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - FAILED
+          - GENERATED
+          - PENDING
+          - SUBMITTED
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEWayBillRowList'
+          description: ''
+  /api/v1/ewaybills/{ewaybill_id}/:
+    get:
+      operationId: ewaybills_retrieve
+      parameters:
+      - in: path
+        name: ewaybill_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
+          description: ''
+  /api/v1/ewaybills/{ewaybill_id}/cancel/:
+    post:
+      operationId: ewaybill_cancel
+      parameters:
+      - in: path
+        name: ewaybill_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EWayBillCancelRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
+          description: ''
+  /api/v1/ewaybills/{ewaybill_id}/part-b/:
+    post:
+      operationId: ewaybill_part_b
+      parameters:
+      - in: path
+        name: ewaybill_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartBInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
+          description: ''
+  /api/v1/ewaybills/counts/:
+    get:
+      operationId: ewaybills_counts
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillCounts'
           description: ''
   /api/v1/fulfilments/:
     get:
@@ -1823,6 +2125,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvoiceDetail'
+          description: ''
+  /api/v1/invoices/{invoice_id}/einvoice/:
+    post:
+      operationId: invoice_einvoice_request
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EInvoiceRow'
+          description: ''
+  /api/v1/invoices/{invoice_id}/ewaybill/:
+    post:
+      operationId: invoice_ewaybill_request
+      parameters:
+      - in: path
+        name: invoice_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransportInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EWayBillRow'
           description: ''
   /api/v1/invoices/{invoice_id}/pdf/:
     get:
@@ -2740,6 +3089,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReallocationResult'
           description: ''
+  /api/v1/payment-intents/:
+    get:
+      operationId: payment_intents_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: retailer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Shop, bill, receipt or gateway order
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ATTEMPTED
+          - CREATED
+          - EXPIRED
+          - PAID
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentIntentRowList'
+          description: ''
   /api/v1/payments/:
     get:
       operationId: payments_list
@@ -2782,7 +3183,13 @@ paths:
           - BANK_TRANSFER
           - CASH
           - CHEQUE
+          - ONLINE
           - UPI
+      - in: query
+        name: needs_review
+        schema:
+          type: boolean
+        description: Only online payments waiting for review
       - name: ordering
         required: false
         in: query
@@ -2824,7 +3231,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedPaymentRowList'
+                $ref: '#/components/schemas/PaginatedStaffPaymentRowList'
           description: ''
     post:
       operationId: payments_record
@@ -3018,6 +3425,32 @@ paths:
             schema:
               $ref: '#/components/schemas/PaymentReasonRequest'
         required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+          description: ''
+  /api/v1/payments/{payment_id}/review/:
+    post:
+      operationId: payment_review
+      parameters:
+      - in: path
+        name: payment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
       security:
       - jwtAuth: []
       responses:
@@ -3634,6 +4067,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlatformTemplate'
           description: ''
+  /api/v1/platform/notification-templates/{template_id}/approval/:
+    post:
+      operationId: platform_notification_template_approval
+      description: Record the provider's answer for a WhatsApp template (ADR-049 item
+        12).
+      parameters:
+      - in: path
+        name: template_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateApprovalInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformTemplate'
+          description: ''
   /api/v1/platform/notification-templates/preview/:
     post:
       operationId: platform_notification_text_preview
@@ -4144,6 +4606,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantDetail'
+          description: ''
+  /api/v1/platform/tenants/{tenant_id}/turnover-band/:
+    get:
+      operationId: platform_tenant_turnover
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turnover'
+          description: ''
+    put:
+      operationId: platform_tenant_turnover_set
+      parameters:
+      - in: path
+        name: tenant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnoverInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turnover'
           description: ''
   /api/v1/platform/tenants/{tenant_id}/users/:
     get:
@@ -6994,6 +7503,100 @@ paths:
               schema:
                 $ref: '#/components/schemas/TenantFeature'
           description: ''
+  /api/v1/settings/gst-credentials/:
+    get:
+      operationId: gst_credentials
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GstCredentials'
+          description: ''
+    put:
+      operationId: gst_credentials_save
+      tags:
+      - compliance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GstCredentialsInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GstCredentials'
+          description: ''
+  /api/v1/settings/gst-credentials/verify/:
+    post:
+      operationId: gst_credentials_verify
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GstCredentials'
+          description: ''
+  /api/v1/settings/payment-gateway/:
+    get:
+      operationId: payment_gateway
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewaySettings'
+          description: ''
+    put:
+      operationId: payment_gateway_save
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GatewaySettingsInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewaySettings'
+          description: ''
+  /api/v1/settings/payment-gateway/verify/:
+    post:
+      operationId: payment_gateway_verify
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewaySettings'
+          description: ''
   /api/v1/settings/registry/:
     get:
       operationId: settings_registry
@@ -7391,7 +7994,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InvoiceDetail'
+                $ref: '#/components/schemas/ShopInvoiceDetail'
           description: ''
   /api/v1/shop/invoices/{invoice_id}/pdf/:
     get:
@@ -7785,7 +8388,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentDetail'
+                $ref: '#/components/schemas/ShopPaymentDetail'
           description: ''
   /api/v1/shop/payments/{payment_id}/receipt/:
     get:
@@ -7813,6 +8416,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/shop/payments/checkout/:
+    post:
+      operationId: shop_checkout_start
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+          description: ''
+  /api/v1/shop/payments/checkout/{intent_id}/:
+    get:
+      operationId: shop_checkout
+      parameters:
+      - in: path
+        name: intent_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+          description: ''
+    post:
+      operationId: shop_checkout_outcome
+      description: 'What the page saw (informational: the payment counts only when
+        the gateway confirms it).'
+      parameters:
+      - in: path
+        name: intent_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutOutcomeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
           description: ''
   /api/v1/shop/products/:
     get:
@@ -8885,6 +9563,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Warehouse'
           description: ''
+  /api/v1/webhooks/payments/{provider}/{token}/:
+    post:
+      operationId: payment_webhook
+      description: 'Public: authenticated by the gateway''s signature, with the distributor''s
+        webhook secret.'
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          description: Handled (or already handled)
+        '400':
+          description: The signature doesn't match
+        '404':
+          description: Unknown webhook address
 components:
   schemas:
     AdditionRequest:
@@ -8935,8 +9640,13 @@ components:
         is_default:
           type: boolean
           readOnly: true
+        distance_km:
+          type: integer
+          readOnly: true
+          nullable: true
       required:
       - city
+      - distance_km
       - district
       - id
       - is_default
@@ -8990,6 +9700,13 @@ components:
         is_default:
           type: boolean
           nullable: true
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+          nullable: true
+          description: 'Road distance from the distributor, for e-way bills; left
+            out: unchanged.'
       required:
       - city
       - kind
@@ -10165,6 +10882,31 @@ components:
       description: |-
         * `PERCENT` - Percentage of taxable value
         * `SPECIFIC_PER_UNIT` - Fixed amount per unit (reserved)
+    CancelBlock:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/CancelBlockReasonEnum'
+        message:
+          type: string
+          description: What to do first, in plain words.
+        ewaybill_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - message
+      - reason
+    CancelBlockReasonEnum:
+      enum:
+      - WINDOW_OVER
+      - EWAY_BILL
+      - CREDIT_NOTES
+      type: string
+      description: |-
+        * `WINDOW_OVER` - WINDOW_OVER
+        * `EWAY_BILL` - EWAY_BILL
+        * `CREDIT_NOTES` - CREDIT_NOTES
     CancelOrderRequest:
       type: object
       properties:
@@ -10341,6 +11083,70 @@ components:
       required:
       - changed
       - warnings
+    Checkout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        purpose:
+          $ref: '#/components/schemas/CheckoutPurposeEnum'
+        invoice_id:
+          type: string
+          format: uuid
+          nullable: true
+        invoice_number:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/CheckoutStatusEnum'
+        provider:
+          type: string
+        checkout:
+          nullable: true
+          description: 'What the page opens: the gateway''s checkout options (no secrets);
+            for the test gateway, a checkout_url.'
+        expires_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        payment_id:
+          type: string
+          format: uuid
+          nullable: true
+        receipt_number:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        awaiting_confirmation:
+          type: boolean
+          description: The shop's page saw the payment go through and no failure came
+            after; the gateway's confirmation hasn't arrived yet.
+      required:
+      - amount
+      - awaiting_confirmation
+      - checkout
+      - created_at
+      - expires_at
+      - id
+      - invoice_id
+      - invoice_number
+      - last_error
+      - paid_at
+      - payment_id
+      - provider
+      - purpose
+      - receipt_number
+      - status
     CheckoutAttempt:
       type: object
       properties:
@@ -10371,6 +11177,61 @@ components:
       description: |-
         * `placed` - placed
         * `not_found` - not_found
+    CheckoutInputRequest:
+      type: object
+      properties:
+        purpose:
+          $ref: '#/components/schemas/CheckoutPurposeEnum'
+        invoice_id:
+          type: string
+          format: uuid
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - purpose
+    CheckoutOutcomeOutcomeEnum:
+      enum:
+      - success
+      - failed
+      - dismissed
+      type: string
+      description: |-
+        * `success` - success
+        * `failed` - failed
+        * `dismissed` - dismissed
+    CheckoutOutcomeRequest:
+      type: object
+      properties:
+        outcome:
+          $ref: '#/components/schemas/CheckoutOutcomeOutcomeEnum'
+      required:
+      - outcome
+    CheckoutPurposeEnum:
+      enum:
+      - INVOICE
+      - OUTSTANDING
+      - CUSTOM
+      type: string
+      description: |-
+        * `INVOICE` - A bill
+        * `OUTSTANDING` - Everything owed
+        * `CUSTOM` - An amount of the shop's choice
+    CheckoutStatusEnum:
+      enum:
+      - CREATED
+      - ATTEMPTED
+      - PAID
+      - EXPIRED
+      type: string
+      description: |-
+        * `CREATED` - Ready to pay
+        * `ATTEMPTED` - Tried
+        * `PAID` - Paid
+        * `EXPIRED` - Expired
     ChooseTenantInputRequest:
       type: object
       properties:
@@ -10402,7 +11263,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         mode:
-          $ref: '#/components/schemas/PaymentModeEnum'
+          $ref: '#/components/schemas/ManualPaymentModeEnum'
         payment_date:
           type: string
           format: date
@@ -10452,6 +11313,18 @@ components:
           minItems: 1
       required:
       - allocations
+    ConnectionStatusEnum:
+      enum:
+      - UNVERIFIED
+      - CHECKING
+      - VERIFIED
+      - FAILED
+      type: string
+      description: |-
+        * `UNVERIFIED` - Not checked
+        * `CHECKING` - Checking
+        * `VERIFIED` - Working
+        * `FAILED` - Not working
     ConsentState:
       type: object
       properties:
@@ -10716,13 +11589,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UsedFor'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+        einvoice:
+          allOf:
+          - $ref: '#/components/schemas/EInvoiceSummary'
+          nullable: true
+          readOnly: true
       required:
+      - ack_date
+      - ack_no
       - amount_in_words
       - applied_to_invoice
       - buyer
+      - einvoice
       - grand_total
       - id
       - invoice
+      - irn
       - kind
       - lines
       - note_date
@@ -11320,6 +12210,12 @@ components:
           type: string
           default: ''
           maxLength: 40
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+          nullable: true
+          description: 'Road distance for the e-way bill; default: the shop address''s.'
     DispositionEnum:
       enum:
       - RETURN_TO_STOCK
@@ -11398,6 +12294,17 @@ components:
       - is_live
       - kind
       - object_id
+    DocumentNumber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+      required:
+      - id
+      - number
     DocumentRef:
       type: object
       properties:
@@ -11442,6 +12349,14 @@ components:
       - issued
       - next_number
       - prefix
+    DocumentStatusEnum:
+      enum:
+      - ISSUED
+      - CANCELLED
+      type: string
+      description: |-
+        * `ISSUED` - Issued
+        * `CANCELLED` - Cancelled
     DocumentTypeEnum:
       enum:
       - INVOICE
@@ -11541,6 +12456,206 @@ components:
       - financial_year_start
       - position
       - unused_money
+    EInvoiceCancelRequest:
+      type: object
+      properties:
+        reason_code:
+          $ref: '#/components/schemas/IrnCancelReasonEnum'
+        remarks:
+          type: string
+          default: ''
+          maxLength: 200
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/IrnCancelOutcomeEnum'
+          default: REISSUE
+          description: |-
+            REISSUE (default): a corrected invoice with a new number for the same shipment. TAKE_BACK: the goods come back to stock.
+
+            * `REISSUE` - Re-issued with a new number
+            * `TAKE_BACK` - Goods taken back
+        to_backorder:
+          type: boolean
+          default: false
+          description: 'TAKE_BACK: the quantities wait on backorder (else cancelled).'
+        confirm_rate_changes:
+          type: boolean
+          default: false
+          description: 'REISSUE when a line''s GST rate valid today differs: the re-issued
+            invoice keeps the original rates (see reissue-preview).'
+      required:
+      - reason_code
+    EInvoiceCounts:
+      type: object
+      properties:
+        pending:
+          type: integer
+        failed:
+          type: integer
+        near_report_by:
+          type: integer
+          description: Still without an IRN, 3 days or less from the reporting limit.
+      required:
+      - failed
+      - near_report_by
+      - pending
+    EInvoiceDocumentTypeEnum:
+      enum:
+      - INVOICE
+      - CREDIT_NOTE
+      type: string
+      description: |-
+        * `INVOICE` - Invoice
+        * `CREDIT_NOTE` - Credit note
+    EInvoiceRecordStatusEnum:
+      enum:
+      - PENDING
+      - SUBMITTED
+      - GENERATED
+      - FAILED
+      - CANCELLING
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Waiting to be sent
+        * `SUBMITTED` - Sent, waiting for the portal
+        * `GENERATED` - IRN generated
+        * `FAILED` - IRN failed
+        * `CANCELLING` - Cancelling
+        * `CANCELLED` - IRN cancelled
+    EInvoiceRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EInvoiceRecordStatusEnum'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        report_by:
+          type: string
+          format: date
+          nullable: true
+          description: The last day for the IRN, when the reporting limit applies.
+        past_report_by:
+          type: boolean
+        can_request:
+          type: boolean
+          description: '"Get IRN" or "Try again" is offered.'
+        can_cancel:
+          type: boolean
+          description: An invoice's IRN, within the window, with nothing in the way.
+        cancel_blocked:
+          allOf:
+          - $ref: '#/components/schemas/CancelBlock'
+          nullable: true
+          description: Why the IRN can't be cancelled, and what to do first.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        cancel_reason_code:
+          type: string
+        cancel_remarks:
+          type: string
+        cancel_outcome:
+          oneOf:
+          - $ref: '#/components/schemas/IrnCancelOutcomeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        cancel_error:
+          type: string
+          description: Why the last cancellation was refused.
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        reissued_invoice:
+          allOf:
+          - $ref: '#/components/schemas/DocumentNumber'
+          nullable: true
+        document_type:
+          $ref: '#/components/schemas/EInvoiceDocumentTypeEnum'
+        document_id:
+          type: string
+          format: uuid
+        document_number:
+          type: string
+        document_date:
+          type: string
+          format: date
+        shop_name:
+          type: string
+        retailer_id:
+          type: string
+          format: uuid
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        invoice_id:
+          type: string
+          format: uuid
+          description: The invoice, or the one the credit note corrects.
+      required:
+      - ack_date
+      - ack_no
+      - attempts
+      - can_cancel
+      - can_request
+      - cancel_blocked
+      - cancel_error
+      - cancel_outcome
+      - cancel_reason_code
+      - cancel_remarks
+      - cancel_until
+      - cancelled_at
+      - document_date
+      - document_id
+      - document_number
+      - document_type
+      - error_code
+      - error_message
+      - generated_at
+      - grand_total
+      - id
+      - invoice_id
+      - irn
+      - next_retry_at
+      - past_report_by
+      - reissued_invoice
+      - report_by
+      - requested_at
+      - retailer_id
+      - retryable
+      - shop_name
+      - status
     EInvoiceStatusEnum:
       enum:
       - NOT_APPLICABLE
@@ -11555,6 +12670,440 @@ components:
         * `GENERATED` - Generated
         * `FAILED` - Failed
         * `CANCELLED` - Cancelled
+    EInvoiceSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EInvoiceRecordStatusEnum'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        report_by:
+          type: string
+          format: date
+          nullable: true
+          description: The last day for the IRN, when the reporting limit applies.
+        past_report_by:
+          type: boolean
+        can_request:
+          type: boolean
+          description: '"Get IRN" or "Try again" is offered.'
+        can_cancel:
+          type: boolean
+          description: An invoice's IRN, within the window, with nothing in the way.
+        cancel_blocked:
+          allOf:
+          - $ref: '#/components/schemas/CancelBlock'
+          nullable: true
+          description: Why the IRN can't be cancelled, and what to do first.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        cancel_reason_code:
+          type: string
+        cancel_remarks:
+          type: string
+        cancel_outcome:
+          oneOf:
+          - $ref: '#/components/schemas/IrnCancelOutcomeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        cancel_error:
+          type: string
+          description: Why the last cancellation was refused.
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        reissued_invoice:
+          allOf:
+          - $ref: '#/components/schemas/DocumentNumber'
+          nullable: true
+      required:
+      - ack_date
+      - ack_no
+      - attempts
+      - can_cancel
+      - can_request
+      - cancel_blocked
+      - cancel_error
+      - cancel_outcome
+      - cancel_reason_code
+      - cancel_remarks
+      - cancel_until
+      - cancelled_at
+      - error_code
+      - error_message
+      - generated_at
+      - id
+      - irn
+      - next_retry_at
+      - past_report_by
+      - reissued_invoice
+      - report_by
+      - requested_at
+      - retryable
+      - status
+    EWayBillCancelRequest:
+      type: object
+      properties:
+        reason_code:
+          $ref: '#/components/schemas/IrnCancelReasonEnum'
+        remarks:
+          type: string
+          default: ''
+          maxLength: 100
+      required:
+      - reason_code
+    EWayBillCounts:
+      type: object
+      properties:
+        pending:
+          type: integer
+        failed:
+          type: integer
+      required:
+      - failed
+      - pending
+    EWayBillRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EWayBillStatusEnum'
+        ewb_number:
+          type: string
+        ewb_date:
+          type: string
+          format: date-time
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        consignment_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        transport_mode:
+          $ref: '#/components/schemas/TransportModeEnum'
+        vehicle_number:
+          type: string
+        transporter_id:
+          type: string
+        transporter_name:
+          type: string
+        transport_doc_no:
+          type: string
+        transport_doc_date:
+          type: string
+          format: date
+          nullable: true
+        distance_km:
+          type: integer
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_request:
+          type: boolean
+          description: '"Make e-way bill" or "Try again".'
+        can_update:
+          type: boolean
+          description: A new vehicle (Part-B) can be given.
+        can_cancel:
+          type: boolean
+          description: Within the cancellation window.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        pending_update:
+          type: string
+          description: PART_B or CANCEL while one is being sent.
+        last_update_error:
+          type: string
+        invoice_id:
+          type: string
+          format: uuid
+        invoice_number:
+          type: string
+        invoice_date:
+          type: string
+          format: date
+        shop_name:
+          type: string
+        retailer_id:
+          type: string
+          format: uuid
+        shipment_number:
+          type: string
+        updates:
+          type: array
+          items:
+            $ref: '#/components/schemas/EWayBillUpdateRow'
+      required:
+      - attempts
+      - can_cancel
+      - can_request
+      - can_update
+      - cancel_until
+      - cancelled_at
+      - consignment_value
+      - distance_km
+      - error_code
+      - error_message
+      - ewb_date
+      - ewb_number
+      - generated_at
+      - id
+      - invoice_date
+      - invoice_id
+      - invoice_number
+      - last_update_error
+      - next_retry_at
+      - pending_update
+      - requested_at
+      - retailer_id
+      - retryable
+      - shipment_number
+      - shop_name
+      - status
+      - transport_doc_date
+      - transport_doc_no
+      - transport_mode
+      - transporter_id
+      - transporter_name
+      - updates
+      - valid_until
+      - vehicle_number
+    EWayBillStatusEnum:
+      enum:
+      - PENDING
+      - SUBMITTED
+      - GENERATED
+      - FAILED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Waiting to be sent
+        * `SUBMITTED` - Sent, waiting for the portal
+        * `GENERATED` - Generated
+        * `FAILED` - Failed
+        * `CANCELLED` - Cancelled
+    EWayBillSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EWayBillStatusEnum'
+        ewb_number:
+          type: string
+        ewb_date:
+          type: string
+          format: date-time
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        consignment_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        transport_mode:
+          $ref: '#/components/schemas/TransportModeEnum'
+        vehicle_number:
+          type: string
+        transporter_id:
+          type: string
+        transporter_name:
+          type: string
+        transport_doc_no:
+          type: string
+        transport_doc_date:
+          type: string
+          format: date
+          nullable: true
+        distance_km:
+          type: integer
+          nullable: true
+        error_code:
+          type: string
+        error_message:
+          type: string
+        retryable:
+          type: boolean
+        attempts:
+          type: integer
+        requested_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_request:
+          type: boolean
+          description: '"Make e-way bill" or "Try again".'
+        can_update:
+          type: boolean
+          description: A new vehicle (Part-B) can be given.
+        can_cancel:
+          type: boolean
+          description: Within the cancellation window.
+        cancel_until:
+          type: string
+          format: date-time
+          nullable: true
+        pending_update:
+          type: string
+          description: PART_B or CANCEL while one is being sent.
+        last_update_error:
+          type: string
+      required:
+      - attempts
+      - can_cancel
+      - can_request
+      - can_update
+      - cancel_until
+      - cancelled_at
+      - consignment_value
+      - distance_km
+      - error_code
+      - error_message
+      - ewb_date
+      - ewb_number
+      - generated_at
+      - id
+      - last_update_error
+      - next_retry_at
+      - pending_update
+      - requested_at
+      - retryable
+      - status
+      - transport_doc_date
+      - transport_doc_no
+      - transport_mode
+      - transporter_id
+      - transporter_name
+      - valid_until
+      - vehicle_number
+    EWayBillUpdateKindEnum:
+      enum:
+      - PART_B
+      - CANCEL
+      type: string
+      description: |-
+        * `PART_B` - Vehicle updated
+        * `CANCEL` - Cancelled
+    EWayBillUpdateRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/EWayBillUpdateKindEnum'
+        status:
+          $ref: '#/components/schemas/EWayBillUpdateStatusEnum'
+        vehicle_number:
+          type: string
+        reason_code:
+          type: string
+        remarks:
+          type: string
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        done_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - done_at
+      - error_message
+      - id
+      - kind
+      - reason_code
+      - remarks
+      - status
+      - vehicle_number
+    EWayBillUpdateStatusEnum:
+      enum:
+      - PENDING
+      - DONE
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Waiting to be sent
+        * `DONE` - Done
+        * `FAILED` - Refused
     EnrolmentConfirmInputRequest:
       type: object
       properties:
@@ -11597,6 +13146,7 @@ components:
       - REFUND
       - REFUND_REVERSAL
       - CREDIT_ADJUSTMENT
+      - INVOICE_CANCELLED
       type: string
       description: |-
         * `OPENING_BALANCE` - Opening balance
@@ -11608,6 +13158,7 @@ components:
         * `REFUND` - Refund paid
         * `REFUND_REVERSAL` - Refund reversed
         * `CREDIT_ADJUSTMENT` - Credit adjustment
+        * `INVOICE_CANCELLED` - Invoice cancelled
     EventEnum:
       enum:
       - PLACE
@@ -11624,6 +13175,7 @@ components:
       - BACKORDER_ALLOCATED
       - BACKORDER_CANCELLED
       - COMPLETE
+      - TAKE_BACK
       type: string
       description: |-
         * `PLACE` - Placed
@@ -11640,6 +13192,7 @@ components:
         * `BACKORDER_ALLOCATED` - Backorder allocated
         * `BACKORDER_CANCELLED` - Backorder cancelled
         * `COMPLETE` - Completed
+        * `TAKE_BACK` - Goods taken back
     EventRules:
       type: object
       properties:
@@ -11764,6 +13317,12 @@ components:
         lr_number:
           type: string
           readOnly: true
+        distance_km:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 'For its e-way bill: the distance given at dispatch, or before
+            that the shop address''s (null when unknown).'
         cancelled_reason:
           type: string
           readOnly: true
@@ -11777,6 +13336,7 @@ components:
       - created_at
       - delivered_at
       - dispatched_at
+      - distance_km
       - id
       - kind
       - lines
@@ -11832,6 +13392,12 @@ components:
         lr_number:
           type: string
           readOnly: true
+        distance_km:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 'For its e-way bill: the distance given at dispatch, or before
+            that the shop address''s (null when unknown).'
         cancelled_reason:
           type: string
           readOnly: true
@@ -11860,6 +13426,7 @@ components:
       - created_at
       - delivered_at
       - dispatched_at
+      - distance_km
       - id
       - kind
       - lines
@@ -12024,6 +13591,85 @@ components:
         * `DISPATCHED` - Dispatched
         * `DELIVERED` - Delivered
         * `CANCELLED` - Cancelled
+    GatewayModeEnum:
+      enum:
+      - TEST
+      - LIVE
+      type: string
+      description: |-
+        * `TEST` - Test
+        * `LIVE` - Live
+    GatewayProviderEnum:
+      enum:
+      - RAZORPAY
+      - MOCK
+      type: string
+      description: |-
+        * `RAZORPAY` - Razorpay
+        * `MOCK` - Test gateway (development)
+    GatewaySettings:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GatewayProviderEnum'
+        provider:
+          $ref: '#/components/schemas/GatewayProviderEnum'
+        mode:
+          $ref: '#/components/schemas/GatewayModeEnum'
+        live_allowed:
+          type: boolean
+          description: Live keys may be used here.
+        saved:
+          type: object
+          additionalProperties:
+            type: string
+          description: 'key_id, key_secret, webhook_secret: their last characters,
+            never the value.'
+        status:
+          $ref: '#/components/schemas/ConnectionStatusEnum'
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+        webhook_url:
+          type: string
+          description: Enter this in the gateway's webhook settings.
+      required:
+      - last_error
+      - live_allowed
+      - mode
+      - provider
+      - providers
+      - saved
+      - status
+      - verified_at
+      - webhook_url
+    GatewaySettingsInputRequest:
+      type: object
+      properties:
+        provider:
+          $ref: '#/components/schemas/GatewayProviderEnum'
+        mode:
+          $ref: '#/components/schemas/GatewayModeEnum'
+        key_id:
+          type: string
+          default: ''
+          maxLength: 200
+        key_secret:
+          type: string
+          default: ''
+          maxLength: 200
+        webhook_secret:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - mode
+      - provider
     GridItemRequest:
       type: object
       properties:
@@ -12133,6 +13779,70 @@ components:
       - price
       - product
       - simple
+    GstCredentials:
+      type: object
+      properties:
+        provider:
+          type: string
+        field_names:
+          type: array
+          items:
+            type: string
+          description: The provider's credential fields, in order.
+        required_fields:
+          type: array
+          items:
+            type: string
+        environment:
+          $ref: '#/components/schemas/GstEnvironmentEnum'
+        gstin:
+          type: string
+        saved:
+          type: object
+          additionalProperties:
+            type: string
+          description: Each field's last characters (empty when not saved); never
+            the value.
+        status:
+          $ref: '#/components/schemas/ConnectionStatusEnum'
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+      required:
+      - environment
+      - field_names
+      - gstin
+      - last_error
+      - provider
+      - required_fields
+      - saved
+      - status
+      - verified_at
+    GstCredentialsInputRequest:
+      type: object
+      properties:
+        environment:
+          $ref: '#/components/schemas/GstEnvironmentEnum'
+        values:
+          type: object
+          additionalProperties:
+            type: string
+            maxLength: 500
+          description: The provider's fields; a blank one keeps the saved value.
+      required:
+      - environment
+      - values
+    GstEnvironmentEnum:
+      enum:
+      - SANDBOX
+      - PRODUCTION
+      type: string
+      description: |-
+        * `SANDBOX` - Sandbox
+        * `PRODUCTION` - Production
     GstIdentityChangeRequest:
       type: object
       properties:
@@ -12841,6 +14551,14 @@ components:
           $ref: '#/components/schemas/PdfStatusEnum'
         einvoice_status:
           $ref: '#/components/schemas/EInvoiceStatusEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DocumentStatusEnum'
+          description: |-
+            CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+
+            * `ISSUED` - Issued
+            * `CANCELLED` - Cancelled
         seller: {}
         buyer: {}
         place_of_supply:
@@ -12887,6 +14605,16 @@ components:
           type: string
           format: date-time
           nullable: true
+        einvoice:
+          allOf:
+          - $ref: '#/components/schemas/EInvoiceSummary'
+          nullable: true
+          readOnly: true
+        ewaybill:
+          allOf:
+          - $ref: '#/components/schemas/EWayBillSummary'
+          nullable: true
+          readOnly: true
       required:
       - ack_date
       - ack_no
@@ -12899,7 +14627,9 @@ components:
       - credit_notes
       - days_overdue
       - due_date
+      - einvoice
       - einvoice_status
+      - ewaybill
       - fulfilment_id
       - grand_total
       - id
@@ -12914,6 +14644,7 @@ components:
       - place_of_supply
       - retailer
       - seller
+      - status
       - supply_type
       - totals
     InvoiceLine:
@@ -13084,6 +14815,14 @@ components:
           $ref: '#/components/schemas/PdfStatusEnum'
         einvoice_status:
           $ref: '#/components/schemas/EInvoiceStatusEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DocumentStatusEnum'
+          description: |-
+            CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+
+            * `ISSUED` - Issued
+            * `CANCELLED` - Cancelled
       required:
       - balance_due
       - days_overdue
@@ -13098,6 +14837,7 @@ components:
       - payment_status
       - pdf_status
       - retailer
+      - status
     InvoiceTriggerEnum:
       enum:
       - ON_DISPATCH
@@ -13110,6 +14850,26 @@ components:
         * `ON_ACCEPTANCE` - At acceptance
         * `ON_ALLOCATION` - At backorder allocation
         * `AFTER_DISPATCH` - After dispatch (Phase 4 data)
+    IrnCancelOutcomeEnum:
+      enum:
+      - REISSUE
+      - TAKE_BACK
+      type: string
+      description: |-
+        * `REISSUE` - Re-issued with a new number
+        * `TAKE_BACK` - Goods taken back
+    IrnCancelReasonEnum:
+      enum:
+      - DUPLICATE
+      - DATA_ENTRY_MISTAKE
+      - ORDER_CANCELLED
+      - OTHER
+      type: string
+      description: |-
+        * `DUPLICATE` - Duplicate
+        * `DATA_ENTRY_MISTAKE` - Data entry mistake
+        * `ORDER_CANCELLED` - Order cancelled
+        * `OTHER` - Other
     ItemInputRequest:
       type: object
       properties:
@@ -13518,6 +15278,18 @@ components:
       required:
       - low_stock
       - without_reorder_level
+    ManualPaymentModeEnum:
+      enum:
+      - CASH
+      - CHEQUE
+      - BANK_TRANSFER
+      - UPI
+      type: string
+      description: |-
+        * `CASH` - Cash
+        * `CHEQUE` - Cheque
+        * `BANK_TRANSFER` - Bank transfer
+        * `UPI` - UPI
     MarkedRead:
       type: object
       properties:
@@ -13950,6 +15722,7 @@ components:
       - COLLECTOR
       - STAFF_PERMISSION
       - OWNERS
+      - DISPATCHER
       type: string
       description: |-
         * `SHOP` - The shop
@@ -13957,6 +15730,7 @@ components:
         * `COLLECTOR` - The salesman who collected
         * `STAFF_PERMISSION` - Staff who can…
         * `OWNERS` - Owners
+        * `DISPATCHER` - The person who dispatched
     NotificationSkipReasonEnum:
       enum:
       - NO_ADDRESS
@@ -13964,6 +15738,7 @@ components:
       - TURNED_OFF
       - FEATURE_OFF
       - PAUSED
+      - NOT_APPROVED
       type: string
       description: |-
         * `NO_ADDRESS` - No email or mobile number
@@ -13971,6 +15746,7 @@ components:
         * `TURNED_OFF` - Switched off by the recipient
         * `FEATURE_OFF` - WhatsApp is not enabled
         * `PAUSED` - Reminders paused for this shop
+        * `NOT_APPROVED` - Template not approved
     NotificationStatusEnum:
       enum:
       - PENDING
@@ -14549,6 +16325,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DiscountRule'
+    PaginatedEInvoiceRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EInvoiceRow'
+    PaginatedEWayBillRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EWayBillRow'
     PaginatedFulfilmentRowList:
       type: object
       required:
@@ -14777,6 +16591,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrderRow'
+    PaginatedPaymentIntentRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentIntentRow'
     PaginatedPaymentRowList:
       type: object
       required:
@@ -15024,6 +16857,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShopProduct'
+    PaginatedStaffPaymentRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffPaymentRow'
     PaginatedStockRowList:
       type: object
       required:
@@ -15100,6 +16952,35 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ValuationRow'
+    PartBInputReasonCodeEnum:
+      enum:
+      - BREAKDOWN
+      - TRANSSHIPMENT
+      - OTHER
+      type: string
+      description: |-
+        * `BREAKDOWN` - Vehicle broke down
+        * `TRANSSHIPMENT` - Transshipment
+        * `OTHER` - Other
+    PartBInputRequest:
+      type: object
+      properties:
+        vehicle_number:
+          type: string
+          minLength: 1
+          maxLength: 20
+        transport_doc_no:
+          type: string
+          maxLength: 40
+        reason_code:
+          $ref: '#/components/schemas/PartBInputReasonCodeEnum'
+        remarks:
+          type: string
+          default: ''
+          maxLength: 100
+      required:
+      - reason_code
+      - vehicle_number
     PasswordAndFactorInputRequest:
       type: object
       properties:
@@ -15193,6 +17074,13 @@ components:
         is_default:
           type: boolean
           nullable: true
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+          nullable: true
+          description: 'Road distance from the distributor, for e-way bills; left
+            out: unchanged.'
     PatchedBrandRequest:
       type: object
       properties:
@@ -15846,6 +17734,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UsedFor'
+        gateway_payment_id:
+          type: string
+          maxLength: 60
+        needs_review:
+          type: boolean
+        review_reason:
+          type: string
+          maxLength: 300
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
       required:
       - amount
       - collected_by_name
@@ -15864,18 +17764,94 @@ components:
       - status
       - unapplied_amount
       - used_for
+    PaymentIntentRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        purpose:
+          $ref: '#/components/schemas/CheckoutPurposeEnum'
+        invoice_id:
+          type: string
+          format: uuid
+          nullable: true
+        invoice_number:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/CheckoutStatusEnum'
+        provider:
+          type: string
+        checkout:
+          nullable: true
+          description: 'What the page opens: the gateway''s checkout options (no secrets);
+            for the test gateway, a checkout_url.'
+        expires_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        payment_id:
+          type: string
+          format: uuid
+          nullable: true
+        receipt_number:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        awaiting_confirmation:
+          type: boolean
+          description: The shop's page saw the payment go through and no failure came
+            after; the gateway's confirmation hasn't arrived yet.
+        shop_name:
+          type: string
+        retailer_id:
+          type: string
+          format: uuid
+        client_outcome:
+          type: string
+      required:
+      - amount
+      - awaiting_confirmation
+      - checkout
+      - client_outcome
+      - created_at
+      - expires_at
+      - id
+      - invoice_id
+      - invoice_number
+      - last_error
+      - paid_at
+      - payment_id
+      - provider
+      - purpose
+      - receipt_number
+      - retailer_id
+      - shop_name
+      - status
     PaymentModeEnum:
       enum:
       - CASH
       - CHEQUE
       - BANK_TRANSFER
       - UPI
+      - ONLINE
       type: string
       description: |-
         * `CASH` - Cash
         * `CHEQUE` - Cheque
         * `BANK_TRANSFER` - Bank transfer
         * `UPI` - UPI
+        * `ONLINE` - Paid online
     PaymentReasonRequest:
       type: object
       properties:
@@ -16242,33 +18218,38 @@ components:
           readOnly: true
         event_code:
           type: string
-          maxLength: 40
+          readOnly: true
         audience:
           allOf:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
+          readOnly: true
           default: SHOP
         channel:
-          $ref: '#/components/schemas/NotificationChannelEnum'
+          allOf:
+          - $ref: '#/components/schemas/NotificationChannelEnum'
+          readOnly: true
         locale:
           type: string
+          readOnly: true
           default: en
-          maxLength: 5
         subject:
           type: string
-          maxLength: 200
+          readOnly: true
         body:
           type: string
+          readOnly: true
         whatsapp_template_name:
           type: string
-          maxLength: 100
+          readOnly: true
         whatsapp_language:
           type: string
-          maxLength: 10
+          readOnly: true
         whatsapp_category:
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/WhatsAppCategoryEnum'
-          - $ref: '#/components/schemas/BlankEnum'
-        variables: {}
+          readOnly: true
+        variables:
+          readOnly: true
         updated_at:
           type: string
           format: date-time
@@ -16279,13 +18260,35 @@ components:
           readOnly: true
           description: 'WhatsApp only: in the first batch submitted for approval (false:
             optional, not submitted by default). Null for other channels.'
+        approval_status:
+          allOf:
+          - $ref: '#/components/schemas/TemplateApprovalStatusEnum'
+          readOnly: true
+        approval_note:
+          type: string
+          readOnly: true
+        approval_changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
       required:
+      - approval_changed_at
+      - approval_note
+      - approval_status
+      - audience
       - body
       - channel
       - event_code
       - id
+      - locale
+      - subject
       - submitted_by_default
       - updated_at
+      - variables
+      - whatsapp_category
+      - whatsapp_language
+      - whatsapp_template_name
     PlatformTextInputRequest:
       type: object
       properties:
@@ -17925,7 +19928,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         mode:
-          $ref: '#/components/schemas/PaymentModeEnum'
+          $ref: '#/components/schemas/ManualPaymentModeEnum'
         payment_date:
           type: string
           format: date
@@ -18148,6 +20151,66 @@ components:
       description: |-
         * `REGULAR` - Regular
         * `COMPOSITION` - Composition (reserved)
+    ReissueBuyer:
+      type: object
+      properties:
+        name:
+          type: string
+        gstin:
+          type: string
+        state_code:
+          type: string
+      required:
+      - gstin
+      - name
+      - state_code
+    ReissuePreview:
+      type: object
+      properties:
+        buyer:
+          allOf:
+          - $ref: '#/components/schemas/ReissueBuyer'
+          description: 'The shop''s details now: the re-issue uses them.'
+        buyer_changed:
+          type: boolean
+        supply_type:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        supply_type_before:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        rate_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReissueRateChange'
+          description: Lines whose GST rate valid today differs from the original.
+      required:
+      - buyer
+      - buyer_changed
+      - rate_changes
+      - supply_type
+      - supply_type_before
+    ReissueRateChange:
+      type: object
+      properties:
+        line_no:
+          type: integer
+        description:
+          type: string
+        hsn_code:
+          type: string
+        original_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        today_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+      required:
+      - description
+      - hsn_code
+      - line_no
+      - original_rate
+      - today_rate
     ReminderPause:
       type: object
       properties:
@@ -18680,6 +20743,13 @@ components:
         * `WRONG_ITEM` - Wrong item
         * `EXCESS_SUPPLY` - Excess supply
         * `OTHER` - Other
+    ReviewRequest:
+      type: object
+      properties:
+        note:
+          type: string
+          default: ''
+          maxLength: 300
     Revoked:
       type: object
       properties:
@@ -18818,6 +20888,10 @@ components:
           description: Channels each recipient can use.
         whatsapp_feature_enabled:
           type: boolean
+        whatsapp_approval_required:
+          type: boolean
+          description: Whether the provider sends only approved templates (false with
+            the mock).
         prices_set:
           type: boolean
         whatsapp_cost_30_days:
@@ -18838,6 +20912,7 @@ components:
       - prices_set
       - recipients
       - shops
+      - whatsapp_approval_required
       - whatsapp_cost_30_days
       - whatsapp_feature_enabled
     RulesUpdateRequest:
@@ -19085,11 +21160,16 @@ components:
           type: boolean
           description: New orders wait for approval or are refused until overdue bills
             are paid.
+        online_payments:
+          type: boolean
+          description: The shop can pay online (the distributor's gateway is on and
+            working).
       required:
       - ageing
       - ageing_basis
       - available_credit
       - credit_limit
+      - online_payments
       - orders_blocked_for_overdue
       - overdue_bills
       - position
@@ -19294,6 +21374,135 @@ components:
       - alt_text
       - id
       - urls
+    ShopInvoiceDetail:
+      type: object
+      description: |-
+        The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
+        on the bill and its PDF).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        order:
+          $ref: '#/components/schemas/OrderRef'
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        payment_status:
+          $ref: '#/components/schemas/InvoicePaymentStatusEnum'
+        days_overdue:
+          type: integer
+          description: Days past the due date while something is owed; 0 otherwise.
+          readOnly: true
+        issued_trigger:
+          $ref: '#/components/schemas/InvoiceTriggerEnum'
+        rate_differs_from_order:
+          type: boolean
+        pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        einvoice_status:
+          $ref: '#/components/schemas/EInvoiceStatusEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DocumentStatusEnum'
+          description: |-
+            CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+
+            * `ISSUED` - Issued
+            * `CANCELLED` - Cancelled
+        seller: {}
+        buyer: {}
+        place_of_supply:
+          $ref: '#/components/schemas/Place'
+        supply_type:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        prices_include_tax:
+          type: boolean
+        reverse_charge:
+          type: boolean
+        totals:
+          $ref: '#/components/schemas/Totals'
+        amount_in_words:
+          type: string
+        amount_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        amount_credited:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        settings_snapshot: {}
+        fulfilment_id:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLine'
+        credit_notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditNoteRow'
+        applied:
+          type: array
+          items:
+            $ref: '#/components/schemas/Applied'
+        irn:
+          type: string
+        ack_no:
+          type: string
+        ack_date:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - ack_date
+      - ack_no
+      - amount_credited
+      - amount_in_words
+      - amount_paid
+      - applied
+      - balance_due
+      - buyer
+      - credit_notes
+      - days_overdue
+      - due_date
+      - einvoice_status
+      - fulfilment_id
+      - grand_total
+      - id
+      - invoice_date
+      - irn
+      - issued_trigger
+      - lines
+      - number
+      - order
+      - payment_status
+      - pdf_status
+      - place_of_supply
+      - retailer
+      - seller
+      - status
+      - supply_type
+      - totals
     ShopLastOrder:
       type: object
       properties:
@@ -19535,6 +21744,120 @@ components:
       required:
       - balance
       - overdue
+    ShopPaymentDetail:
+      type: object
+      description: 'The shop''s view: without the office''s review of online payments.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        payment_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        credit_timing:
+          $ref: '#/components/schemas/CreditTimingEnum'
+        credited:
+          type: boolean
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credited but not yet matched to dues.
+        reference_no:
+          type: string
+          maxLength: 60
+        cheque_number:
+          type: string
+          maxLength: 20
+        handover_status:
+          $ref: '#/components/schemas/HandoverStatusEnum'
+        collected_by_name:
+          type: string
+          readOnly: true
+        receipt_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        dated_in_previous_financial_year:
+          type: boolean
+          description: |-
+            The receipt is numbered in the year it was recorded; the payment is accounted on its
+            own date, which here falls in an earlier financial year (2026-09-28).
+          readOnly: true
+        held_as_credit_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        cheque_date:
+          type: string
+          format: date
+          nullable: true
+        bank_name:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+        recorded_by_name:
+          type: string
+          readOnly: true
+        handed_over_at:
+          type: string
+          format: date-time
+          nullable: true
+        handed_over_by_name:
+          type: string
+          readOnly: true
+        cleared_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversal_reason:
+          type: string
+          maxLength: 300
+        used_for:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsedFor'
+        gateway_payment_id:
+          type: string
+          maxLength: 60
+      required:
+      - amount
+      - collected_by_name
+      - credit_timing
+      - dated_in_previous_financial_year
+      - handed_over_by_name
+      - handover_status
+      - held_as_credit_while_advances_off
+      - id
+      - mode
+      - number
+      - payment_date
+      - receipt_pdf_status
+      - recorded_by_name
+      - retailer
+      - status
+      - unapplied_amount
+      - used_for
     ShopPrice:
       type: object
       properties:
@@ -20116,6 +22439,82 @@ components:
       - status
       - tax_total
       - taxable_total
+    StaffPaymentRow:
+      type: object
+      description: 'The office''s list: also whether an online payment waits for review
+        (never for shops).'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        payment_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        credit_timing:
+          $ref: '#/components/schemas/CreditTimingEnum'
+        credited:
+          type: boolean
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credited but not yet matched to dues.
+        reference_no:
+          type: string
+          maxLength: 60
+        cheque_number:
+          type: string
+          maxLength: 20
+        handover_status:
+          $ref: '#/components/schemas/HandoverStatusEnum'
+        collected_by_name:
+          type: string
+          readOnly: true
+        receipt_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        dated_in_previous_financial_year:
+          type: boolean
+          description: |-
+            The receipt is numbered in the year it was recorded; the payment is accounted on its
+            own date, which here falls in an earlier financial year (2026-09-28).
+          readOnly: true
+        held_as_credit_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        needs_review:
+          type: boolean
+      required:
+      - amount
+      - collected_by_name
+      - credit_timing
+      - dated_in_previous_financial_year
+      - handover_status
+      - held_as_credit_while_advances_off
+      - id
+      - mode
+      - number
+      - payment_date
+      - receipt_pdf_status
+      - retailer
+      - status
+      - unapplied_amount
     StaffPlaceOrderRequest:
       type: object
       properties:
@@ -20642,6 +23041,29 @@ components:
       required:
       - label
       - rate
+    TemplateApprovalInputRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/TemplateApprovalStatusEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - status
+    TemplateApprovalStatusEnum:
+      enum:
+      - NOT_SUBMITTED
+      - SUBMITTED
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `NOT_SUBMITTED` - Not submitted
+        * `SUBMITTED` - Submitted
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
     TenantChoice:
       type: object
       properties:
@@ -21024,6 +23446,84 @@ components:
       - round_off
       - sgst_total
       - taxable_total
+    TransportInputRequest:
+      type: object
+      properties:
+        transport_mode:
+          allOf:
+          - $ref: '#/components/schemas/TransportModeEnum'
+          default: ROAD
+        vehicle_number:
+          type: string
+          maxLength: 20
+        transporter_id:
+          type: string
+          maxLength: 15
+        transporter_name:
+          type: string
+          maxLength: 120
+        transport_doc_no:
+          type: string
+          maxLength: 40
+        transport_doc_date:
+          type: string
+          format: date
+          nullable: true
+        distance_km:
+          type: integer
+          maximum: 4000
+          minimum: 1
+    TransportModeEnum:
+      enum:
+      - ROAD
+      - RAIL
+      - AIR
+      - SHIP
+      type: string
+      description: |-
+        * `ROAD` - Road
+        * `RAIL` - Rail
+        * `AIR` - Air
+        * `SHIP` - Ship
+    Turnover:
+      type: object
+      properties:
+        turnover_band:
+          $ref: '#/components/schemas/TurnoverBandEnum'
+        einvoice_suggested:
+          type: boolean
+        reporting_limit_applies:
+          type: boolean
+        reporting_days:
+          type: integer
+        einvoice_enabled:
+          type: boolean
+        ewaybill_enabled:
+          type: boolean
+      required:
+      - einvoice_enabled
+      - einvoice_suggested
+      - ewaybill_enabled
+      - reporting_days
+      - reporting_limit_applies
+      - turnover_band
+    TurnoverBandEnum:
+      enum:
+      - BELOW_5_CR
+      - FROM_5_TO_10_CR
+      - FROM_10_CR
+      type: string
+      description: |-
+        * `BELOW_5_CR` - BELOW_5_CR
+        * `FROM_5_TO_10_CR` - FROM_5_TO_10_CR
+        * `FROM_10_CR` - FROM_10_CR
+    TurnoverInputRequest:
+      type: object
+      properties:
+        turnover_band:
+          $ref: '#/components/schemas/TurnoverBandEnum'
+      required:
+      - turnover_band
     Unit:
       type: object
       properties:
@@ -21379,6 +23879,21 @@ components:
       - code
       - details
       - message
+    WhatsAppApproval:
+      type: object
+      properties:
+        audience:
+          $ref: '#/components/schemas/NotificationAudienceEnum'
+        status:
+          $ref: '#/components/schemas/TemplateApprovalStatusEnum'
+        ready:
+          type: boolean
+          description: 'Can be sent: approved, or the provider doesn''t need approval
+            (the mock).'
+      required:
+      - audience
+      - ready
+      - status
     WhatsAppCategoryEnum:
       enum:
       - UTILITY
@@ -21406,11 +23921,17 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           nullable: true
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/WhatsAppApproval'
+          description: The English WhatsApp template per audience and its approval.
       required:
       - cost_30_days
       - enabled
       - messages_30_days
       - price
+      - templates
     WsTicket:
       type: object
       properties:

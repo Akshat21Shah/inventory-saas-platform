@@ -3,17 +3,20 @@ the saved documents (the thin-client rule)."""
 
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.billing.models import (
     CreditNote,
     CreditNoteLine,
+    DocumentStatus,
     DocumentType,
     EInvoiceStatus,
     Invoice,
     PaymentStatus,
     PdfStatus,
 )
+from apps.compliance.api.serializers import EInvoiceSummarySerializer, EWayBillSummarySerializer
 from apps.pricing.api.serializers import ShopRefSerializer, money, qty
 from common.dates import today_ist
 
@@ -47,6 +50,10 @@ class InvoiceRowSerializer(serializers.ModelSerializer[Invoice]):
     grand_total = money()
     balance_due = money()
     days_overdue = serializers.SerializerMethodField()
+    status = serializers.ChoiceField(
+        choices=DocumentStatus.choices,
+        help_text="CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.",
+    )
 
     class Meta:
         model = Invoice
@@ -65,6 +72,7 @@ class InvoiceRowSerializer(serializers.ModelSerializer[Invoice]):
             "rate_differs_from_order",
             "pdf_status",
             "einvoice_status",
+            "status",
         ]
 
     def get_days_overdue(self, invoice: Invoice) -> int:
@@ -191,6 +199,19 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
     irn = serializers.CharField()
     ack_no = serializers.CharField()
     ack_date = serializers.DateTimeField(allow_null=True)
+    einvoice = serializers.SerializerMethodField()
+    ewaybill = serializers.SerializerMethodField()
+
+    @extend_schema_field(EInvoiceSummarySerializer(allow_null=True))
+    def get_einvoice(self, obj: Invoice) -> dict[str, Any] | None:
+        return _einvoice(obj)
+
+    @extend_schema_field(EWayBillSummarySerializer(allow_null=True))
+    def get_ewaybill(self, obj: Invoice) -> dict[str, Any] | None:
+        from apps.compliance.selectors import ewaybill_for
+
+        found = ewaybill_for(obj)
+        return dict(EWayBillSummarySerializer(found).data) if found is not None else None
 
     class Meta(InvoiceRowSerializer.Meta):
         fields = [
@@ -213,7 +234,27 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
             "irn",
             "ack_no",
             "ack_date",
+            "einvoice",
+            "ewaybill",
         ]
+
+
+class ShopInvoiceDetailSerializer(InvoiceDetailSerializer):
+    """The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
+    on the bill and its PDF)."""
+
+    class Meta(InvoiceDetailSerializer.Meta):
+        fields = [
+            f for f in InvoiceDetailSerializer.Meta.fields if f not in ("einvoice", "ewaybill")
+        ]
+
+
+def _einvoice(doc: Invoice | CreditNote) -> dict[str, Any] | None:
+    """The document's IRN record, when it has one (Phase 7; null while e-invoicing is off)."""
+    from apps.compliance.selectors import summary_for
+
+    found = summary_for(doc)
+    return dict(EInvoiceSummarySerializer(found).data) if found is not None else None
 
 
 class CreditNoteLineSerializer(serializers.Serializer[Any]):
@@ -246,6 +287,14 @@ class CreditNoteDetailSerializer(CreditNoteRowSerializer):
     amount_in_words = serializers.CharField()
     lines = CreditNoteLineSerializer(many=True)
     used_for = UsedForSerializer(many=True, source="used_for_rows")
+    irn = serializers.CharField()
+    ack_no = serializers.CharField()
+    ack_date = serializers.DateTimeField(allow_null=True)
+    einvoice = serializers.SerializerMethodField()
+
+    @extend_schema_field(EInvoiceSummarySerializer(allow_null=True))
+    def get_einvoice(self, obj: CreditNote) -> dict[str, Any] | None:
+        return _einvoice(obj)
 
     class Meta(CreditNoteRowSerializer.Meta):
         fields = [
@@ -259,6 +308,10 @@ class CreditNoteDetailSerializer(CreditNoteRowSerializer):
             "amount_in_words",
             "lines",
             "used_for",
+            "irn",
+            "ack_no",
+            "ack_date",
+            "einvoice",
         ]
 
 

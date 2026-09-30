@@ -20,6 +20,10 @@ date_to?: string;
 handover_status?: PaymentsListHandoverStatus;
 mode?: PaymentsListMode;
 /**
+ * Only online payments waiting for review
+ */
+needs_review?: boolean;
+/**
  * Which field to use when ordering the results.
  */
 ordering?: string;

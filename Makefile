@@ -8,7 +8,7 @@ PY := .venv/bin
 OWNER_DB_URL := postgres://app_owner:app_owner@localhost:5432/inventory
 
 .DEFAULT_GOAL := help
-.PHONY: help setup up down logs ps migrate makemigrations seed shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost \
+.PHONY: help setup up down logs ps migrate makemigrations seed shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost webhook-tunnel \
         e2e lint lint-backend lint-frontend fmt api-client db-up check-schema
 
 help: ## Show this help
@@ -64,13 +64,18 @@ e2e: ## Playwright (starts the web dev server if not running)
 	cd web && npx playwright test
 
 e2e-stack: ## Acceptance E2E against the running stack (after make up + make seed)
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts
 
 lan: ## Open the dev stack to phones on your Wi-Fi via <lan-ip>.nip.io (undo: make localhost)
 	infra/dev-domain.sh lan
 
 localhost: ## Serve the dev stack on *.localhost again (this Mac only)
 	infra/dev-domain.sh localhost
+
+webhook-tunnel: ## Dev only: a public https address for payment webhooks ONLY (Razorpay test mode; needs cloudflared)
+	@python3 infra/webhook-relay.py 8765 & RELAY=$$!; trap "kill $$RELAY" EXIT INT TERM; \
+	echo "Webhook URL = the https://….trycloudflare.com address below + the path under Settings → Online payments → Webhook address"; \
+	cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8765
 
 e2e-responsive: ## Every screen at 360/768/1440 px (after make up + make seed); screenshots in web/test-results/responsive
 	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts

@@ -110,7 +110,7 @@ def _visible_shop(request: Request, retailer_id: UUID) -> UUID:
 
 class PaymentListCreateView(Guarded, generics.ListAPIView[Payment]):
     required_permissions = {"GET": VIEW, "POST": RECORD}
-    serializer_class = s.PaymentRowSerializer
+    serializer_class = s.StaffPaymentRowSerializer
     pagination_class = Newest
 
     def get_queryset(self) -> QuerySet[Payment]:
@@ -135,6 +135,7 @@ class PaymentListCreateView(Guarded, generics.ListAPIView[Payment]):
                 date_from=_date(q.get("date_from"), "date_from"),
                 date_to=_date(q.get("date_to"), "date_to"),
                 search=q.get("search", ""),
+                needs_review=q.get("needs_review", "") in ("1", "true"),
             ),
         )
 
@@ -150,6 +151,9 @@ class PaymentListCreateView(Guarded, generics.ListAPIView[Payment]):
             OpenApiParameter("date_from", date),
             OpenApiParameter("date_to", date),
             OpenApiParameter("search", str, description="Receipt, shop, reference or cheque"),
+            OpenApiParameter(
+                "needs_review", bool, description="Only online payments waiting for review"
+            ),
         ],
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:

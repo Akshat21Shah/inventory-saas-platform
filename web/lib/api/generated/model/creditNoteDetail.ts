@@ -9,6 +9,7 @@ import type { CreditNoteDetailReturnReason } from './creditNoteDetailReturnReaso
 import type { CreditNoteKindEnum } from './creditNoteKindEnum';
 import type { CreditNoteLine } from './creditNoteLine';
 import type { DocumentRef } from './documentRef';
+import type { EInvoiceSummary } from './eInvoiceSummary';
 import type { PdfStatusEnum } from './pdfStatusEnum';
 import type { Place } from './place';
 import type { ShopRef } from './shopRef';
@@ -45,4 +46,9 @@ export interface CreditNoteDetail {
   amount_in_words: string;
   lines: CreditNoteLine[];
   used_for: UsedFor[];
+  irn: string;
+  ack_no: string;
+  /** @nullable */
+  ack_date: string | null;
+  readonly einvoice: EInvoiceSummary | null;
 }

@@ -90,6 +90,7 @@
 
   {% if doc.irn %}
   <div class="irn">
+    {% if qr %}<img src="{{ qr }}" alt="e-invoice QR code">{% endif %}
     <div>
       <p><b>IRN</b> {{ doc.irn }}</p>
       <p><b>Ack. no.</b> {{ doc.ack_no }} · <b>Ack. date</b> {{ doc.ack_date|date:"d-m-Y H:i" }}</p>

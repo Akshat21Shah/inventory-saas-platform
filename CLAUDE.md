@@ -148,7 +148,7 @@ make migrate     # run migrations (as the schema-owner DB role)
 make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
-make e2e-stack   # acceptance E2E (Phases 1-6) against the running stack (needs make up + make seed)
+make e2e-stack   # acceptance E2E (Phases 1-7) against the running stack (needs make up + make seed)
 make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make fmt         # auto-format backend + frontend
@@ -157,6 +157,7 @@ make check-schema # fail if backend/openapi.yaml is stale
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts, stock, 11 orders, invoices, payments, a credit note and a refund each
 make lan         # open the dev stack to phones on your Wi-Fi: http://{slug}.<lan-ip-with-dashes>.nip.io:3000
 make localhost   # back to *.localhost (run before the E2E suites)
+make webhook-tunnel # dev only: public https address for payment webhooks only (Razorpay test mode)
 ```
 
 URLs in dev:

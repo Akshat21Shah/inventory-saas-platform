@@ -86,7 +86,10 @@ def test_each_role_is_allowed_exactly_what_its_permissions_say(tenant_a, role):
             content_type="application/json",
             HTTP_X_FORWARDED_HOST="alpha.localhost",
         )
-        denied = response.status_code == 403
+        # A module that is switched off (MODULE_NOT_ENABLED) is refused whatever the role.
+        denied = response.status_code == 403 and (
+            not response.content or response.json()["error"]["code"] != "MODULE_NOT_ENABLED"
+        )
         if denied == _allowed(code, role.permissions):
             wrong.append(f"{method} {path} ({code}) -> {response.status_code}")
     assert wrong == []

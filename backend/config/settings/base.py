@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.billing",
     "apps.payments",
     "apps.notifications",
+    "apps.compliance",
     "apps.dataio",
     "apps.shop",
 ]
@@ -158,6 +159,8 @@ CELERY_BEAT_SCHEDULE = {
     "login-records-purge": {"task": "accounts.purge_expired_login_records", "schedule": 3600.0},
     "impersonation-expiry": {"task": "accounts.expire_impersonation_sessions", "schedule": 60.0},
     "notifications-send-due": {"task": "notifications.send_due", "schedule": 60.0},
+    "compliance-retry-due": {"task": "compliance.retry_due", "schedule": 60.0},  # ADR-049
+    "payments-reconcile": {"task": "payments.reconcile", "schedule": 900.0},  # ADR-049
     # Daily notification jobs (ADR-048), IST times written in UTC (CELERY_TIMEZONE).
     "notifications-rate-change-warnings": {
         "task": "notifications.rate_change_warnings",
@@ -264,6 +267,26 @@ SPECTACULAR_SETTINGS = {
         "WhatsAppCategoryEnum": "apps.notifications.models.WhatsAppCategory",
         "NotificationTextSourceEnum": ["tenant", "platform", "catalogue"],
         "NotificationAudienceEnum": "apps.notifications.models.Audience",
+        "TemplateApprovalStatusEnum": "apps.notifications.models.ApprovalStatus",
+        "GstEnvironmentEnum": "apps.compliance.models.GstCredential.Environment",
+        "ConnectionStatusEnum": "apps.compliance.models.GstCredential.Status",  # also the gateway
+        "EInvoiceRecordStatusEnum": "apps.compliance.models.EInvoiceRecord.Status",
+        "EInvoiceDocumentTypeEnum": "apps.compliance.models.DocumentType",
+        "IrnCancelReasonEnum": "apps.compliance.models.CancelReason",
+        "ReasonCodeEnum": "apps.inventory.models.AdjustmentReason",  # keeps its Phase 3 name
+        "OutcomeEnum": ["OK", "NEEDS_APPROVAL", "BLOCKED"],  # the credit check; keeps its name
+        "SupplyTypeEnum": ["INTRA", "INTER"],
+        "DocumentStatusEnum": "apps.billing.models.DocumentStatus",
+        "IrnCancelOutcomeEnum": "apps.compliance.models.EInvoiceRecord.CancelOutcome",
+        "EWayBillStatusEnum": "apps.compliance.models.EWayBill.Status",
+        "EWayBillUpdateStatusEnum": "apps.compliance.models.EWayBillUpdate.Status",
+        "EWayBillUpdateKindEnum": "apps.compliance.models.EWayBillUpdate.Kind",
+        "TransportModeEnum": "apps.compliance.models.EWayBill.Mode",
+        "ManualPaymentModeEnum": "apps.payments.models.MANUAL_MODES",
+        "GatewayProviderEnum": "apps.payments.models.GatewayConfig.Provider",
+        "GatewayModeEnum": "apps.payments.models.GatewayConfig.Mode",
+        "CheckoutStatusEnum": "apps.payments.models.PaymentIntent.Status",
+        "CheckoutPurposeEnum": "apps.payments.models.PaymentIntent.Purpose",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",
@@ -322,6 +345,16 @@ SES_REGION = env("SES_REGION", default="ap-south-1")
 SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
 # WhatsApp: only "mock" until a provider is chosen (TODO(verify), PROGRESS pre-production 8).
 WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
+# Online payments (ADR-049 item 9): live gateway keys only where this is on (production).
+PAYMENTS_ALLOW_LIVE = env.bool("PAYMENTS_ALLOW_LIVE", default=False)
+# The platform's GST provider for e-invoices and e-way bills (ADR-049 item 4); each distributor
+# signs in with its own credentials. Only the mock exists until one is chosen (compliance.E001).
+GSP_PROVIDER = env("GSP_PROVIDER", default="mock")
+# A real provider sends only templates it has approved (ADR-049 item 12); the mock treats every
+# template as approved. Tests switch it on to check the rule.
+WHATSAPP_REQUIRE_APPROVED_TEMPLATES = env.bool(
+    "WHATSAPP_REQUIRE_APPROVED_TEMPLATES", default=WHATSAPP_PROVIDER != "mock"
+)
 WHATSAPP_PLATFORM_NUMBER = env("WHATSAPP_PLATFORM_NUMBER", default="")
 WHATSAPP_PLATFORM_NAME = env("WHATSAPP_PLATFORM_NAME", default="Inventory Platform")
 # Dev only: copy mock WhatsApp and SMS messages to Mailpit (common/mock_mailbox.py).

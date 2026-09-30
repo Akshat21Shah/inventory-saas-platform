@@ -51,6 +51,22 @@ def test_seed_is_idempotent(settings):
     with tenant_context(sharma.id):
         assert Retailer.objects.filter(whatsapp_opt_in=True).count() == 10
         assert Announcement.objects.count() == 1
+    # Phase 7: e-invoices, e-way bills and online payments on for Sharma only, with the mocks.
+    from apps.compliance.models import GstCredential
+    from apps.payments.models import GatewayConfig
+    from apps.platform.selectors import effective_features
+    from apps.retailers.models import RetailerAddress
+
+    patel = Tenant.objects.get(slug="patel")
+    on = ("einvoice", "ewaybill", "payments")
+    assert all(effective_features(sharma.id)[code] for code in on)
+    assert not any(effective_features(patel.id)[code] for code in on)
+    with tenant_context(sharma.id):
+        assert GstCredential.objects.get().status == "VERIFIED"
+        assert GatewayConfig.objects.get().provider == "MOCK"
+        assert not RetailerAddress.objects.filter(distance_km__isnull=True).exists()
+    with tenant_context(patel.id):
+        assert not GstCredential.objects.exists() and not GatewayConfig.objects.exists()
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):
@@ -157,6 +173,8 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "payment",
         "refund",
         "shop_invoice",
+        "ewaybill_invoice",
+        "shop_checkout",
     }
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]

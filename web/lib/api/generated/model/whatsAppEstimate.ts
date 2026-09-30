@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { WhatsAppApproval } from './whatsAppApproval';
 
 export interface WhatsAppEstimate {
   enabled: boolean;
@@ -19,4 +20,6 @@ export interface WhatsAppEstimate {
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
      */
   cost_30_days: string | null;
+  /** The English WhatsApp template per audience and its approval. */
+  templates: WhatsAppApproval[];
 }

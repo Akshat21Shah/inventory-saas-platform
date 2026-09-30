@@ -13,4 +13,11 @@ export interface DispatchRequest {
   transporter_name?: string;
   /** @maxLength 40 */
   lr_number?: string;
+  /**
+     * Road distance for the e-way bill; default: the shop address's.
+     * @minimum 1
+     * @maximum 4000
+     * @nullable
+     */
+  distance_km?: number | null;
 }

@@ -16,6 +16,7 @@
  * * `REFUND` - Refund paid
  * * `REFUND_REVERSAL` - Refund reversed
  * * `CREDIT_ADJUSTMENT` - Credit adjustment
+ * * `INVOICE_CANCELLED` - Invoice cancelled
  */
 export type EntryTypeEnum = typeof EntryTypeEnum[keyof typeof EntryTypeEnum];
 
@@ -30,4 +31,5 @@ export const EntryTypeEnum = {
   REFUND: 'REFUND',
   REFUND_REVERSAL: 'REFUND_REVERSAL',
   CREDIT_ADJUSTMENT: 'CREDIT_ADJUSTMENT',
+  INVOICE_CANCELLED: 'INVOICE_CANCELLED',
 } as const;

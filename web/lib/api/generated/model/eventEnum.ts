@@ -21,6 +21,7 @@
  * * `BACKORDER_ALLOCATED` - Backorder allocated
  * * `BACKORDER_CANCELLED` - Backorder cancelled
  * * `COMPLETE` - Completed
+ * * `TAKE_BACK` - Goods taken back
  */
 export type EventEnum = typeof EventEnum[keyof typeof EventEnum];
 
@@ -40,4 +41,5 @@ export const EventEnum = {
   BACKORDER_ALLOCATED: 'BACKORDER_ALLOCATED',
   BACKORDER_CANCELLED: 'BACKORDER_CANCELLED',
   COMPLETE: 'COMPLETE',
+  TAKE_BACK: 'TAKE_BACK',
 } as const;

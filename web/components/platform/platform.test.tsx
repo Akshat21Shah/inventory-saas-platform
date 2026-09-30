@@ -113,6 +113,39 @@ describe("OnboardingWizard", () => {
 });
 
 describe("TenantDetail", () => {
+  it("sets the turnover band and says what it suggests", async () => {
+    let band = "BELOW_5_CR";
+    const turnover = () => ({
+      turnover_band: band,
+      einvoice_suggested: band !== "BELOW_5_CR",
+      reporting_limit_applies: band === "FROM_10_CR",
+      reporting_days: 30,
+      einvoice_enabled: false,
+      ewaybill_enabled: false,
+    });
+    const calls = mockApi({
+      "/api/v1/platform/tenants/t1/": () => [200, tenant()],
+      "/api/v1/platform/feature-flags/": () => [200, []],
+      "/api/v1/platform/tenants/t1/turnover-band/": () => [200, turnover()],
+      "PUT /api/v1/platform/tenants/t1/turnover-band/": (body) => {
+        band = (body as { turnover_band: string }).turnover_band;
+        return [200, turnover()];
+      },
+    });
+    renderWithIntl(<TenantDetail tenantId="t1" />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("tab", { name: /modules/i }));
+    const select = await screen.findByLabelText("Turnover band");
+    expect(screen.queryByText(/E-invoicing is suggested/)).toBeNull();
+    await user.click(select);
+    await user.click(await screen.findByRole("option", { name: "₹10 crore and above" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "PUT")?.body).toEqual({ turnover_band: "FROM_10_CR" }),
+    );
+    expect(await screen.findByText(/E-invoicing is suggested/)).toBeVisible();
+    expect(screen.getByText(/within 30 days of the invoice date/)).toBeVisible();
+  });
+
   it("changes a locked GST identity only through its own action, with a reason", async () => {
     const calls = mockApi({
       "/api/v1/platform/tenants/t1/": () => [200, tenant({ gst_identity_locked: true })],

@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   paymentAllocationsReverse,
+  paymentReview,
   paymentsAllocate,
   paymentsBounce,
   paymentsClear,
@@ -47,6 +48,7 @@ import { useRetailersDues } from "@/lib/api/generated/endpoints/receivables/rece
 import { useRetailersRetrieve } from "@/lib/api/generated/endpoints/retailers/retailers";
 import {
   HandoverStatusEnum,
+  ManualPaymentModeEnum,
   PaymentModeEnum,
   PaymentStatusEnum,
   type Due,
@@ -57,6 +59,7 @@ import {
   type PaymentsListHandoverStatus,
   type PaymentsListMode,
   type PaymentsListStatus,
+  type StaffPaymentRow,
   type UsedFor,
 } from "@/lib/api/generated/model";
 import { ApiError } from "@/lib/api/errors";
@@ -119,7 +122,7 @@ function paymentColumns(
   t: ReturnType<typeof useTranslations>,
   modes: ReturnType<typeof useTranslations>,
 ) {
-  const columns: DataTableColumn<PaymentRow>[] = [
+  const columns: DataTableColumn<StaffPaymentRow>[] = [
     {
       id: "number",
       header: t("number"),
@@ -154,7 +157,14 @@ function paymentColumns(
     {
       id: "status",
       header: t("status"),
-      cell: ({ row }) => <StatusBadge status={row.original.status} labels="paymentStatus" />,
+      cell: ({ row }) => (
+        <span className="flex flex-wrap gap-1">
+          <StatusBadge status={row.original.status} labels="paymentStatus" />
+          {row.original.needs_review ? (
+            <StatusBadge status="NEEDS_REVIEW" labels="paymentStatus" />
+          ) : null}
+        </span>
+      ),
     },
     {
       id: "handover",
@@ -187,10 +197,12 @@ export function PaymentsPage() {
   const modes = useTranslations("billing.modes");
   const statuses = useTranslations("paymentStatus");
   const handovers = useTranslations("handoverStatus");
-  const { can } = useAuth();
+  const { can, feature } = useAuth();
+  const online = feature("payments");
   const cursor = useCursor();
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState<string>(ALL);
+  const [toReview, setToReview] = useState(false);
   const [status, setStatus] = useState<string>(ALL);
   const [handover, setHandover] = useState<string>(ALL);
   const [from, setFrom] = useState("");
@@ -204,9 +216,10 @@ export function PaymentsPage() {
     handover_status: handover === ALL ? undefined : (handover as PaymentsListHandoverStatus),
     date_from: from || undefined,
     date_to: to || undefined,
+    needs_review: toReview || undefined,
   });
   const page = query.data?.data;
-  const active = [term, mode !== ALL, status !== ALL, handover !== ALL, from, to].filter(
+  const active = [term, mode !== ALL, status !== ALL, handover !== ALL, from, to, toReview].filter(
     Boolean,
   ).length;
   const canRecord = can("payments.record");
@@ -259,6 +272,7 @@ export function PaymentsPage() {
               setHandover(ALL);
               setFrom("");
               setTo("");
+              setToReview(false);
               cursor.reset();
             }}
             search={
@@ -285,9 +299,26 @@ export function PaymentsPage() {
                   }}
                   options={[
                     { value: ALL, label: t("allModes") },
-                    ...Object.values(PaymentModeEnum).map((v) => ({ value: v, label: modes(v) })),
+                    ...Object.values(online ? PaymentModeEnum : ManualPaymentModeEnum).map((v) => ({
+                      value: v,
+                      label: modes(v),
+                    })),
                   ]}
                 />
+                {online ? (
+                  <label className="flex min-h-10 items-center gap-2 text-sm max-md:min-h-11">
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={toReview}
+                      onChange={(e) => {
+                        setToReview(e.target.checked);
+                        cursor.reset();
+                      }}
+                    />
+                    {t("needsReviewOnly")}
+                  </label>
+                ) : null}
                 <FilterSelect
                   label={t("status")}
                   value={status}
@@ -469,7 +500,7 @@ function PaymentForm({ shop, onChangeShop }: { shop: ShopChoice; onChangeShop: (
     const body = {
       retailer: shop.id,
       amount: amount.trim(),
-      mode: mode as PaymentModeEnum,
+      mode: mode as ManualPaymentModeEnum,
       payment_date: date,
       reference_no: reference,
       cheque_number: mode === "CHEQUE" ? cheque : "",
@@ -526,7 +557,10 @@ function PaymentForm({ shop, onChangeShop }: { shop: ShopChoice; onChangeShop: (
           <FormSelect
             value={mode}
             onValueChange={setMode}
-            options={Object.values(PaymentModeEnum).map((v) => ({ value: v, label: modes(v) }))}
+            options={Object.values(ManualPaymentModeEnum).map((v) => ({
+              value: v,
+              label: modes(v),
+            }))}
           />
         </FormField>
         <FormField label={t("date")} required hint={t("dateHint")} error={errors.payment_date}>
@@ -702,6 +736,29 @@ function AllocateDialog({ payment }: { payment: PaymentDetail }) {
   );
 }
 
+/** An online payment that didn't match its checkout (ADR-049 item 11): staff look, then note it. */
+function ReviewDialog({ payment }: { payment: PaymentDetail }) {
+  const t = useTranslations("billing.payments.detail");
+  const client = useQueryClient();
+  const [note, setNote] = useState("");
+  return (
+    <ActionDialog
+      trigger={<Button className="min-h-10">{t("markReviewed")}</Button>}
+      title={t("reviewTitle", { number: payment.number })}
+      description={payment.review_reason}
+      confirmLabel={t("markReviewed")}
+      onSubmit={async () => {
+        await paymentReview(payment.id, { note: note.trim() });
+        refreshMoney(client);
+      }}
+    >
+      <FormField label={t("reviewNote")} hint={t("reviewNoteHint")}>
+        <Textarea rows={2} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
+      </FormField>
+    </ActionDialog>
+  );
+}
+
 function PaymentActions({ payment }: { payment: PaymentDetail }) {
   const t = useTranslations("billing.payments.detail");
   const { can } = useAuth();
@@ -805,6 +862,9 @@ function PaymentActions({ payment }: { payment: PaymentDetail }) {
   if (payment.unapplied_amount !== "0.00" && can("payments.record")) {
     actions.push(<AllocateDialog key="allocate" payment={payment} />);
   }
+  if (payment.needs_review && can("payments.record")) {
+    actions.push(<ReviewDialog key="review" payment={payment} />);
+  }
   return <div className="flex flex-wrap gap-2">{actions}</div>;
 }
 
@@ -834,6 +894,15 @@ export function PaymentDetailPage({ paymentId }: { paymentId: string }) {
       : payment.reference_no
         ? ([[t("reference"), payment.reference_no]] as [string, ReactNode][])
         : []),
+    ...(payment.gateway_payment_id
+      ? ([[t("gatewayPayment"), payment.gateway_payment_id]] as [string, ReactNode][])
+      : []),
+    ...(payment.reviewed_at
+      ? ([[t("reviewedAt"), <DateText key="rv" value={payment.reviewed_at} withTime />]] as [
+          string,
+          ReactNode,
+        ][])
+      : []),
     [t("recordedBy"), payment.recorded_by_name || "—"],
     ...(payment.handover_status !== "NOT_TRACKED"
       ? ([
@@ -888,6 +957,12 @@ export function PaymentDetailPage({ paymentId }: { paymentId: string }) {
           <PaymentActions payment={payment} />
         </div>
         <PaymentNotices payment={payment} />
+        {payment.needs_review ? (
+          <p role="status" className="bg-warning/15 flex gap-2 rounded-xl p-3 text-sm">
+            <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
+            {t("needsReview", { reason: payment.review_reason ?? "" })}
+          </p>
+        ) : null}
         <div className="grid gap-6 xl:grid-cols-[1fr_24rem] xl:items-start">
           <section className="space-y-2" aria-labelledby="payment-used">
             <h2 id="payment-used" className="font-semibold">

@@ -13,6 +13,11 @@ urlpatterns = [
         v.PlatformTextPreviewView.as_view(),
         name="platform-notification-template-preview",
     ),
+    path(  # before the <event>/<channel> pattern, which would match it
+        "notification-templates/<uuid:template_id>/approval/",
+        v.PlatformTemplateApprovalView.as_view(),
+        name="platform-notification-template-approval",
+    ),
     path(
         "notification-templates/<str:event>/<str:channel>/",
         v.PlatformTemplateView.as_view(),
