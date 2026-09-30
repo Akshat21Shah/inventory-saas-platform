@@ -384,7 +384,13 @@ def _movement_class(ctx: Context) -> list[dict[str, Any]]:
         },
         ctx.scope,
     )
-    sold = grouped(period, F(INVOICE.product + "_id"), F("invoice_line__product_id"))
+    sold = grouped(
+        period,
+        F(INVOICE.product + "_id"),
+        F("invoice_line__product_id"),
+        costs=False,  # ranked by sales value or quantity; the cost comes from stock
+        counts=False,
+    )
     by_quantity = ctx.params.get("rank_by") == "quantity"
     ranked = sorted(
         (pk for pk, f in sold.items() if (f.qty if by_quantity else f.taxable) > 0),

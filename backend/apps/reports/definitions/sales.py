@@ -117,9 +117,21 @@ def credit_lines(ctx: Context) -> QuerySet[CreditNoteLine]:
     return _narrow(rows, ctx, CREDIT)
 
 
-def _figures(rows: QuerySet[Any], paths: Paths, key: Any) -> QuerySet[Any]:
-    """Per key: quantity, taxable value, GST, total, cost (recorded or today's), the taxable
-    value of lines with a cost, and how many lines were estimated or had no cost."""
+def _figures(rows: QuerySet[Any], paths: Paths, key: Any, *, costs: bool) -> QuerySet[Any]:
+    """Per key: quantity, taxable value, GST, total; with ``costs``, also the cost (recorded or
+    today's), the taxable value of lines with a cost, and how many lines were estimated or had no
+    cost. Costs join the product for today's cost price, which also makes PostgreSQL scan every
+    line of the distributor instead of the period's (``make perf``), so they are only worked out
+    when shown."""
+    sums: dict[str, Any] = {
+        "qty": Sum("quantity"),
+        "taxable": Sum("taxable_value"),
+        "tax": Sum(F("cgst_amount") + F("sgst_amount") + F("igst_amount") + F("cess_amount")),
+        "total": Sum("line_total"),
+    }
+    if not costs:
+        found: QuerySet[Any] = rows.annotate(key=key).values("key").annotate(**sums).order_by()
+        return found
     recorded = F(paths.unit_cost)
     today = F(f"{paths.product}__cost_price")
     cost = Coalesce(recorded, today)
@@ -129,14 +141,11 @@ def _figures(rows: QuerySet[Any], paths: Paths, key: Any) -> QuerySet[Any]:
     estimated = Q(**{f"{paths.unit_cost}__isnull": True}) & Q(
         **{f"{paths.product}__cost_price__isnull": False}
     )
-    found: QuerySet[Any] = (
+    found = (
         rows.annotate(key=key)
         .values("key")
         .annotate(
-            qty=Sum("quantity"),
-            taxable=Sum("taxable_value"),
-            tax=Sum(F("cgst_amount") + F("sgst_amount") + F("igst_amount") + F("cess_amount")),
-            total=Sum("line_total"),
+            **sums,
             cost=Sum(ExpressionWrapper(cost * F("quantity"), output_field=MONEY)),
             costed_taxable=Sum(
                 Case(When(has_cost, then=F("taxable_value")), default=Value(ZERO)),
@@ -166,9 +175,9 @@ class Figures:
 
     def add(self, row: dict[str, Any], sign: int) -> None:
         for name in ("qty", "taxable", "tax", "total", "cost", "costed_taxable"):
-            setattr(self, name, getattr(self, name) + sign * (row[name] or ZERO))
-        self.estimated += row["estimated"] or 0
-        self.uncosted += row["uncosted"] or 0
+            setattr(self, name, getattr(self, name) + sign * (row.get(name) or ZERO))
+        self.estimated += row.get("estimated") or 0
+        self.uncosted += row.get("uncosted") or 0
         if sign > 0:
             self.billed += row["total"] or ZERO
         else:
@@ -183,21 +192,33 @@ class Figures:
         return self.margin * 100 / self.costed_taxable if self.costed_taxable else None
 
 
-def grouped(ctx: Context, invoice_key: Any, credit_key: Any) -> dict[Any, Figures]:
-    """Invoices minus credit notes, per key; plus how many invoices each key had."""
+def grouped(
+    ctx: Context,
+    invoice_key: Any,
+    credit_key: Any,
+    *,
+    costs: bool | None = None,
+    counts: bool = True,
+) -> dict[Any, Figures]:
+    """Invoices minus credit notes, per key; plus how many invoices each key had (unless
+    ``counts`` is off: a distinct count costs more than the sums). Costs as the scope allows,
+    unless ``costs`` says otherwise."""
+    with_costs = ctx.scope.costs if costs is None else costs
     out: dict[Any, Figures] = defaultdict(Figures)
-    for row in _figures(invoice_lines(ctx), INVOICE, invoice_key):
+    for row in _figures(invoice_lines(ctx), INVOICE, invoice_key, costs=with_costs):
         out[row["key"]].add(row, +1)
-    for row in _figures(credit_lines(ctx), CREDIT, credit_key):
+    for row in _figures(credit_lines(ctx), CREDIT, credit_key, costs=with_costs):
         out[row["key"]].add(row, -1)
-    counts = (
+    if not counts:
+        return out
+    counts_found = (
         invoice_lines(ctx)
         .annotate(key=invoice_key)
         .values("key")
         .annotate(n=Count("invoice_id", distinct=True))
         .order_by()
     )
-    for row in counts:
+    for row in counts_found:
         out[row["key"]].invoices = row["n"]
     return out
 
@@ -270,8 +291,13 @@ QTY = Column("qty", "Quantity", Kind.QTY, total=True, width=12)
 MONEY_COLUMNS = (TAXABLE, TAX, TOTAL, SHARE, COST, MARGIN_COL, MARGIN_PCT)
 
 
-def _cached(ctx: Context, name: str, invoice_key: Any, credit_key: Any) -> dict[Any, Figures]:
-    groups: dict[Any, Figures] = ctx.once(name, lambda: grouped(ctx, invoice_key, credit_key))
+def _cached(
+    ctx: Context, name: str, invoice_key: Any, credit_key: Any, *, counts: bool = True
+) -> dict[Any, Figures]:
+    groups: dict[Any, Figures] = ctx.once(
+        name if counts else f"{name}:uncounted",
+        lambda: grouped(ctx, invoice_key, credit_key, counts=counts),
+    )
     return groups
 
 
@@ -372,12 +398,14 @@ register(
 # --- By product, category, brand ----------------------------------------------------------------
 
 
-def _products(ctx: Context) -> dict[Any, Figures]:
-    return _cached(ctx, "products", F(INVOICE.product + "_id"), F(CREDIT.product + "_id"))
+def _products(ctx: Context, *, counts: bool = True) -> dict[Any, Figures]:
+    return _cached(
+        ctx, "products", F(INVOICE.product + "_id"), F(CREDIT.product + "_id"), counts=counts
+    )
 
 
-def product_rows(ctx: Context) -> list[dict[str, Any]]:
-    groups = _products(ctx)
+def product_rows(ctx: Context, *, counts: bool = True) -> list[dict[str, Any]]:
+    groups = _products(ctx, counts=counts)
     whole = sum((f.total for f in groups.values()), ZERO)
     names = {
         p["id"]: p
@@ -514,12 +542,12 @@ register(
 # --- By shop and salesperson --------------------------------------------------------------------
 
 
-def _shops(ctx: Context) -> dict[Any, Figures]:
-    return _cached(ctx, "shops", F(INVOICE.shop + "_id"), F(CREDIT.shop + "_id"))
+def _shops(ctx: Context, *, counts: bool = True) -> dict[Any, Figures]:
+    return _cached(ctx, "shops", F(INVOICE.shop + "_id"), F(CREDIT.shop + "_id"), counts=counts)
 
 
-def shop_rows(ctx: Context) -> list[dict[str, Any]]:
-    groups = _shops(ctx)
+def shop_rows(ctx: Context, *, counts: bool = True) -> list[dict[str, Any]]:
+    groups = _shops(ctx, counts=counts)
     whole = sum((f.total for f in groups.values()), ZERO)
     shops = {
         s["id"]: s

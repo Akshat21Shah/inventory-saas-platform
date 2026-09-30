@@ -155,6 +155,8 @@ make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts, stock, 11 orders, invoices, payments, a credit note and a refund each
+make seed-volume # speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 5,000 / 5,000 orders over a year, reconciled (a few minutes; owner@vol-a.example.com …)
+make perf        # dashboard + every report's first page against p95 < 300 ms (after make seed-volume)
 make lan         # open the dev stack to phones on your Wi-Fi: http://{slug}.<lan-ip-with-dashes>.nip.io:3000
 make localhost   # back to *.localhost (run before the E2E suites)
 make webhook-tunnel # dev only: public https address for payment webhooks only (Razorpay test mode)

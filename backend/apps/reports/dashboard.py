@@ -103,7 +103,7 @@ def today(user: User) -> dict[str, Any]:
     scope = _sales_scope(user)
     if scope is not None:
         ctx = Context({"date_from": day, "date_to": day}, scope)
-        figures = grouped(ctx, INVOICE_DAY, CREDIT_DAY)
+        figures = grouped(ctx, INVOICE_DAY, CREDIT_DAY, counts=False)
         out["billed"] = _money(sum((f.total for f in figures.values()), ZERO))
     return out
 
@@ -126,7 +126,10 @@ def trends(user: User) -> dict[str, Any] | None:
     daily = {
         _day(k): f.total
         for k, f in grouped(
-            Context({"date_from": start, "date_to": end}, scope), INVOICE_DAY, CREDIT_DAY
+            Context({"date_from": start, "date_to": end}, scope),
+            INVOICE_DAY,
+            CREDIT_DAY,
+            counts=False,
         ).items()
     }
     days = [end - timedelta(days=TREND_DAYS - 1 - i) for i in range(TREND_DAYS)]
@@ -161,11 +164,11 @@ def trends(user: User) -> dict[str, Any] | None:
         ),
         "top_products": [
             {"product_id": r["product_id"], "name": r["name"], "total": _money(r["total"])}
-            for r in product_rows(month)[:TOP]
+            for r in product_rows(month, counts=False)[:TOP]
         ],
         "top_shops": [
             {"retailer_id": r["retailer_id"], "name": r["name"], "total": _money(r["total"])}
-            for r in shop_rows(month)[:TOP]
+            for r in shop_rows(month, counts=False)[:TOP]
         ],
         "new_shops": new,
         "repeat_shops": len(this_month) - new,

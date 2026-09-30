@@ -1,0 +1,65 @@
+"""Speed-check data (ADR-050 item 13): three test distributors with 40,000, 5,000 and 5,000 orders
+over a year (``common.demo_volume``), checked with ``reconcile()`` before it commits.
+
+Refuses to run unless DEBUG is on. A distributor that already has orders is left alone. Staff sign
+in as owner@vol-a.example.com (and manager@, warehouse@, accounts@, sales1@ …) with the demo staff
+password.
+"""
+
+import time
+from dataclasses import replace
+from typing import Any
+
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError, CommandParser
+from django.db import transaction
+
+from apps.platform.models import Tenant
+from common.demo_volume import TENANTS, reconcile, seed_tenant
+from common.tenancy import tenant_context
+
+
+class Command(BaseCommand):
+    help = "Load 3 test distributors with 40,000 / 5,000 / 5,000 orders over a year (DEBUG only)."
+
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument("--only", choices=[t.slug for t in TENANTS])
+        parser.add_argument("--days", type=int, default=365)
+        parser.add_argument(
+            "--scale",
+            type=float,
+            default=1.0,
+            help="Multiply the orders, shops and products (e.g. 0.1 for a quick try).",
+        )
+
+    def handle(self, *args: Any, **options: Any) -> None:
+        if not settings.DEBUG:
+            raise CommandError("seed_volume only runs with DEBUG=True")
+        scale = options["scale"]
+        for spec in TENANTS:
+            if options["only"] and spec.slug != options["only"]:
+                continue
+            if scale != 1:
+                spec = replace(
+                    spec,
+                    orders=max(1, round(spec.orders * scale)),
+                    shops=max(5, round(spec.shops * scale)),
+                    products=max(20, round(spec.products * scale)),
+                )
+            started = time.monotonic()
+            with transaction.atomic():
+                result = seed_tenant(spec, days=options["days"], progress=self.stdout.write)
+                if result is None:
+                    self.stdout.write(f"{spec.slug} already has orders: left alone")
+                    continue
+                with tenant_context(Tenant.objects.get(slug=spec.slug).pk):
+                    problems = reconcile()
+                if problems:  # raising rolls the distributor back
+                    raise CommandError(f"{spec.slug} does not reconcile: " + "; ".join(problems))
+            self.stdout.write(
+                f"{spec.slug}: {result.orders} orders, {result.invoices} invoices, "
+                f"{result.credit_notes} credit notes, {result.payments} payments, "
+                f"{result.ledger_entries} ledger entries, {result.movements} stock movements; "
+                f"reconciled in {time.monotonic() - started:.0f} s"
+            )
+        self.stdout.write(self.style.SUCCESS("seed_volume complete"))
