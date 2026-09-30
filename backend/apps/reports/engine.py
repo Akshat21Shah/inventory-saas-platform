@@ -52,18 +52,20 @@ def get(code: str, user: User) -> Report:
     return report
 
 
+def own_shops_only(user: User, full: str) -> bool:
+    """Figures only for the user's own shops: they lack the "every shop" permission ``full`` but
+    have the "own shops" one (sales staff), and the distributor shows sales staff only their own
+    shops (``orders.sales_visibility``)."""
+    if user.has_permission_code(full) or not user.has_permission_code(OWN_SHOPS):
+        return False
+    setting = get_setting("orders.sales_visibility", require_tenant_id())
+    return bool(setting == "ASSIGNED_RETAILERS")
+
+
 def scope_for(user: User, report: Report) -> Scope:
-    """Own shops only: the report is about shops, the user lacks its "every shop" permission but
-    has the "own shops" one (sales staff), and the distributor shows sales staff only their own
-    shops (``orders.sales_visibility``). Others who may open it (e.g. the warehouse on backorder
-    demand) see every shop."""
-    own = (
-        bool(report.full)
-        and not user.has_permission_code(report.full)
-        and user.has_permission_code(OWN_SHOPS)
-    )
-    if own:
-        own = get_setting("orders.sales_visibility", require_tenant_id()) == "ASSIGNED_RETAILERS"
+    """Own shops only as ``own_shops_only`` says, for reports about shops (``full`` set). Others
+    who may open the report (e.g. the warehouse on backorder demand) see every shop."""
+    own = bool(report.full) and own_shops_only(user, report.full)
     return Scope(user.pk, own_shops=own, costs=user.has_permission_code(COSTS))
 
 
@@ -121,6 +123,8 @@ def parse(report: Report, given: Mapping[str, Any]) -> dict[str, Any]:
             errors["date_to"] = ["The end date is before the start date."]
         elif days_between(params) > report.max_days:
             errors["date_to"] = [f"Choose at most {report.max_days} days."]
+    if not errors and report.check is not None:
+        errors = report.check(params)
     if errors:
         raise InvalidFields(errors)
     return params

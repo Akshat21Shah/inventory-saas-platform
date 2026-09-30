@@ -625,6 +625,10 @@
       "report_link_days": {
         "label": "Export download days",
         "description": "How many days a background export can be downloaded before it is deleted."
+      },
+      "b2cl_threshold": {
+        "label": "B2C large threshold (₹)",
+        "description": "Bills to shops without a GSTIN in another state above this value are listed one by one in the GST summary. To be verified."
       }
     },
     "retailers": {

@@ -421,6 +421,9 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _platform("platform.report_async_rows", Group.REPORTS, SettingType.INT, 5000,
               "Report exports with more rows than this are made in the background, with a "
               "message when ready.", min_value=100, max_value=100000),
+    _platform("platform.b2cl_threshold", Group.REPORTS, SettingType.MONEY, Decimal("100000"),
+              "Bills to shops without a GSTIN in another state above this value are listed one "
+              "by one in the GST summary (B2C large; to verify).", min_value=Decimal("0")),
     _platform("platform.report_link_days", Group.REPORTS, SettingType.INT, 7,
               "Days a background export can be downloaded before it is deleted.",
               min_value=1, max_value=30),

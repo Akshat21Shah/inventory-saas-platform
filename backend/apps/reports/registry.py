@@ -102,6 +102,7 @@ class Sheet:
     title: str
     columns: tuple[Column, ...]
     rows: Iterable[dict[str, Any]]
+    preamble: tuple[tuple[Any, ...], ...] = ()  # rows above the header (the GSTR-1 template's)
 
 
 @dataclass(frozen=True)
@@ -123,6 +124,8 @@ class Report:
     background_only: bool = False  # always exported in the background (the GST workbook)
     max_days: int = 366  # the longest date range a filter pair may span
     sheets: Callable[[Context], list[Sheet]] | None = None  # multi-sheet export
+    # Extra checks on the filters, e.g. "a whole month or quarter": field -> messages.
+    check: Callable[[dict[str, Any]], dict[str, list[str]]] | None = None
 
 
 REGISTRY: dict[str, Report] = {}

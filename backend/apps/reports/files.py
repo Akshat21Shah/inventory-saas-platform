@@ -70,6 +70,8 @@ def _write(book: Workbook, sheet: Sheet, totals: dict[str, Any] | None = None) -
     ws = book.create_sheet(title=_sheet_title(sheet.title))
     for index, c in enumerate(sheet.columns, start=1):
         ws.column_dimensions[get_column_letter(index)].width = c.width
+    for extra in sheet.preamble:
+        ws.append(list(extra))
     header = []
     for c in sheet.columns:
         cell = WriteOnlyCell(ws, value=c.label)
@@ -110,7 +112,7 @@ def excel(report: Report, ctx: Context, about_lines: list[tuple[str, str]]) -> t
         rows = 0
         for sheet in report.sheets(ctx):
             visible = tuple(c for c in sheet.columns if ctx.scope.costs or not c.cost)
-            rows += _write(book, Sheet(sheet.title, visible, sheet.rows))
+            rows += _write(book, Sheet(sheet.title, visible, sheet.rows, sheet.preamble))
     else:
         rows = _write(
             book, Sheet(report.title, cols, _iterate(report.rows(ctx))), _totals(report, ctx, cols)

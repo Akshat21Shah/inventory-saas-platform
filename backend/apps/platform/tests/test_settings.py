@@ -68,8 +68,9 @@ def test_registry_covers_plan_catalogue():
     assert len(TENANT_KEYS) == 49
     # PLAN §9.2 (3) + 7 login/OTP limits (ADR-030) + reset limit + 3 WhatsApp prices (ADR-048)
     # + 2 e-invoicing thresholds, the IRN reporting limit and cancellation window, the e-way
-    # bill cancellation window (ADR-049) + the export row limit and link days (ADR-050)
-    assert len(PLATFORM_KEYS) == 21
+    # bill cancellation window (ADR-049) + the export row limit, link days and the B2C large
+    # threshold (ADR-050)
+    assert len(PLATFORM_KEYS) == 22
     assert "security.require_staff_2fa" in TENANT_KEYS
     assert registry.REGISTRY["retailers.blocked_can_sign_in"].default is True
     assert registry.REGISTRY["pricing.discounts_on_special_prices"].default is True

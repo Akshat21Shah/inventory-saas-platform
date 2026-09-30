@@ -2,6 +2,7 @@
 3-6)."""
 
 from apps.reports.definitions import (
+    gst,  # noqa: F401
     money,  # noqa: F401
     sales,  # noqa: F401
     stock,  # noqa: F401
