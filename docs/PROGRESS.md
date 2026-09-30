@@ -271,7 +271,11 @@
      - "Report ready" and "Report could not be made" are system messages (a new `system` event flag): fixed rules to "The person who asked" (in-app only), never on the rules, texts or preferences screens, so the rules screen is unchanged.
      - Orders record the shop's salesperson when placed (earlier orders took the shop's salesperson in the migration); invoice lines record the product's cost price when issued, and a re-issued invoice keeps the original lines' cost.
      - Tests: 11 (catalogue, page and totals, filter checks, own shops, cost columns in rows / totals / files, exports at once and in the background with "Report ready", the row limit, expiry, a person no longer allowed, system messages not configurable, the salesperson and cost records) and the re-issue check; the flags-off snapshot allows the two new empty columns.
-  3. Sales reports and own brand vs traded margin
+  3. Sales reports and own brand vs traded margin — **done** (`backend/apps/reports/definitions/sales.py`):
+     - Invoice lines by invoice date minus credit note lines by note date (bills whose IRN was cancelled left out), grouped in the database and merged per key; filters for period, category (with its sub-categories), brand, shop and salesperson; biggest first with each row's share.
+     - `sales_summary` (per day, week or month; every period shown, even empty; invoices total, credit notes, net taxable, GST and net sales; PDF), `sales_by_product`, `sales_by_category` (full path, e.g. "Food > Biscuits"), `sales_by_brand` (own brand marked), `sales_by_shop` (with the last bill), `sales_by_salesperson` (the order's salesperson; "No salesperson"), and `margin_own_vs_traded` (`costs.view` with the sales or financial reports; by type, brand or product).
+     - Margins use the cost recorded on the invoice line, else today's cost price ("estimated", counted in a note), and leave out lines with no cost at all (also noted); returns take off their quantity at the invoice line's cost. Cost and margin columns appear only with `costs.view`.
+     - Tests: 7 on a small distributor (two bills on two days and a return; own brand and traded; estimated and missing costs; a nested category; the order's salesperson after the shop changed hands; own shops only; a bill whose IRN was cancelled; another business).
   4. Stock reports: summary, movements, low stock and valuation, fast / slow / dead / new, backorder demand, fulfilment rate
   5. Money reports: receivables ageing, collections, salesperson collections
   6. GST summary workbook (month or quarter)

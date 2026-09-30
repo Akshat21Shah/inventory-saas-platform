@@ -1,0 +1,706 @@
+"""Sales reports (ADR-050 items 3-5).
+
+Sales are invoices by invoice date minus credit notes by note date: taxable value, GST and total.
+Invoices whose IRN was cancelled (status CANCELLED) are left out; their re-issues count. Cost is
+the cost recorded on each invoice line when it was issued; lines issued before that (or of
+products then without a cost) use today's cost price and are counted as "estimated"; lines with
+no cost at all are left out of the margin. Returns take off their quantity at the invoice line's
+cost; value-only credit notes reduce the sales, not the cost."""
+
+from __future__ import annotations
+
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+from decimal import Decimal
+from typing import Any
+
+from django.db.models import (
+    Case,
+    Count,
+    DecimalField,
+    ExpressionWrapper,
+    F,
+    IntegerField,
+    Max,
+    Q,
+    QuerySet,
+    Sum,
+    Value,
+    When,
+)
+from django.db.models.functions import Coalesce, TruncDay, TruncMonth, TruncWeek
+
+from apps.accounts.models import User
+from apps.billing.models import CreditNoteLine, DocumentStatus, InvoiceLine
+from apps.catalog.models import Brand, Category, Product
+from apps.catalog.selectors import descendant_ids
+from apps.reports.registry import (
+    PERIOD,
+    Column,
+    Context,
+    Filter,
+    FilterKind,
+    Group,
+    Kind,
+    Report,
+    register,
+)
+from apps.retailers.models import Retailer
+from common.permissions import AllOf, AnyOf
+
+SALES = AnyOf(("reports.sales", "reports.sales_own"))
+MARGIN = AllOf(("costs.view", AnyOf(("reports.sales", "reports.financial"))))
+ZERO = Decimal("0")
+MONEY = DecimalField(max_digits=20, decimal_places=4)
+ISSUED = DocumentStatus.ISSUED
+
+CATEGORY = Filter("category", "Category", FilterKind.ID, entity="category")
+BRAND = Filter("brand", "Brand", FilterKind.ID, entity="brand")
+SHOP = Filter("shop", "Shop", FilterKind.ID, entity="shop")
+SALESPERSON = Filter("salesperson", "Salesperson", FilterKind.ID, entity="staff")
+
+
+# --- The facts: invoice lines and credit note lines in the period -------------------------------
+
+
+@dataclass(frozen=True)
+class Paths:
+    """How each kind of line reaches the product, the shop, the salesperson and its date."""
+
+    product: str
+    shop: str
+    salesperson: str
+    day: str
+    unit_cost: str
+
+
+INVOICE = Paths(
+    "product",
+    "invoice__retailer",
+    "invoice__order__salesperson",
+    "invoice__invoice_date",
+    "unit_cost",
+)
+CREDIT = Paths(
+    "invoice_line__product",
+    "credit_note__retailer",
+    "credit_note__invoice__order__salesperson",
+    "credit_note__note_date",
+    "invoice_line__unit_cost",
+)
+
+
+def _narrow(rows: QuerySet[Any], ctx: Context, paths: Paths) -> QuerySet[Any]:
+    p = ctx.params
+    rows = ctx.shops(rows, paths.shop).filter(
+        **{f"{paths.day}__gte": p["date_from"], f"{paths.day}__lte": p["date_to"]}
+    )
+    if p.get("category"):
+        rows = rows.filter(**{f"{paths.product}__category_id__in": descendant_ids(p["category"])})
+    if p.get("brand"):
+        rows = rows.filter(**{f"{paths.product}__brand_id": p["brand"]})
+    if p.get("shop"):
+        rows = rows.filter(**{f"{paths.shop}_id": p["shop"]})
+    if p.get("salesperson"):
+        rows = rows.filter(**{f"{paths.salesperson}_id": p["salesperson"]})
+    return rows
+
+
+def invoice_lines(ctx: Context) -> QuerySet[InvoiceLine]:
+    rows = InvoiceLine.objects.filter(invoice__status=ISSUED)
+    return _narrow(rows, ctx, INVOICE)
+
+
+def credit_lines(ctx: Context) -> QuerySet[CreditNoteLine]:
+    rows = CreditNoteLine.objects.filter(credit_note__status=ISSUED)
+    return _narrow(rows, ctx, CREDIT)
+
+
+def _figures(rows: QuerySet[Any], paths: Paths, key: Any) -> QuerySet[Any]:
+    """Per key: quantity, taxable value, GST, total, cost (recorded or today's), the taxable
+    value of lines with a cost, and how many lines were estimated or had no cost."""
+    recorded = F(paths.unit_cost)
+    today = F(f"{paths.product}__cost_price")
+    cost = Coalesce(recorded, today)
+    has_cost = Q(**{f"{paths.unit_cost}__isnull": False}) | Q(
+        **{f"{paths.product}__cost_price__isnull": False}
+    )
+    estimated = Q(**{f"{paths.unit_cost}__isnull": True}) & Q(
+        **{f"{paths.product}__cost_price__isnull": False}
+    )
+    found: QuerySet[Any] = (
+        rows.annotate(key=key)
+        .values("key")
+        .annotate(
+            qty=Sum("quantity"),
+            taxable=Sum("taxable_value"),
+            tax=Sum(F("cgst_amount") + F("sgst_amount") + F("igst_amount") + F("cess_amount")),
+            total=Sum("line_total"),
+            cost=Sum(ExpressionWrapper(cost * F("quantity"), output_field=MONEY)),
+            costed_taxable=Sum(
+                Case(When(has_cost, then=F("taxable_value")), default=Value(ZERO)),
+                output_field=MONEY,
+            ),
+            estimated=Count(Case(When(estimated, then=1), output_field=IntegerField())),
+            uncosted=Count(Case(When(~has_cost, then=1), output_field=IntegerField())),
+        )
+        .order_by()
+    )
+    return found
+
+
+@dataclass
+class Figures:
+    qty: Decimal = ZERO
+    taxable: Decimal = ZERO
+    tax: Decimal = ZERO
+    total: Decimal = ZERO
+    cost: Decimal = ZERO
+    costed_taxable: Decimal = ZERO
+    estimated: int = 0
+    uncosted: int = 0
+    invoices: int = 0
+    billed: Decimal = ZERO
+    credited: Decimal = ZERO
+
+    def add(self, row: dict[str, Any], sign: int) -> None:
+        for name in ("qty", "taxable", "tax", "total", "cost", "costed_taxable"):
+            setattr(self, name, getattr(self, name) + sign * (row[name] or ZERO))
+        self.estimated += row["estimated"] or 0
+        self.uncosted += row["uncosted"] or 0
+        if sign > 0:
+            self.billed += row["total"] or ZERO
+        else:
+            self.credited += row["total"] or ZERO
+
+    @property
+    def margin(self) -> Decimal:
+        return self.costed_taxable - self.cost
+
+    @property
+    def margin_pct(self) -> Decimal | None:
+        return self.margin * 100 / self.costed_taxable if self.costed_taxable else None
+
+
+def grouped(ctx: Context, invoice_key: Any, credit_key: Any) -> dict[Any, Figures]:
+    """Invoices minus credit notes, per key; plus how many invoices each key had."""
+    out: dict[Any, Figures] = defaultdict(Figures)
+    for row in _figures(invoice_lines(ctx), INVOICE, invoice_key):
+        out[row["key"]].add(row, +1)
+    for row in _figures(credit_lines(ctx), CREDIT, credit_key):
+        out[row["key"]].add(row, -1)
+    counts = (
+        invoice_lines(ctx)
+        .annotate(key=invoice_key)
+        .values("key")
+        .annotate(n=Count("invoice_id", distinct=True))
+        .order_by()
+    )
+    for row in counts:
+        out[row["key"]].invoices = row["n"]
+    return out
+
+
+def _money(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.01"))
+
+
+def _amounts(f: Figures, whole: Decimal) -> dict[str, Any]:
+    return {
+        "qty": f.qty,
+        "invoices": f.invoices,
+        "taxable": _money(f.taxable),
+        "tax": _money(f.tax),
+        "total": _money(f.total),
+        "share": f.total * 100 / whole if whole else None,
+        "cost": _money(f.cost),
+        "margin": _money(f.margin),
+        "margin_pct": f.margin_pct,
+    }
+
+
+def _totals(groups: dict[Any, Figures]) -> dict[str, Any]:
+    whole = Figures()
+    for f in groups.values():
+        for name in ("qty", "taxable", "tax", "total", "cost", "costed_taxable"):
+            setattr(whole, name, getattr(whole, name) + getattr(f, name))
+        whole.invoices += f.invoices
+        whole.estimated += f.estimated
+        whole.uncosted += f.uncosted
+        whole.billed += f.billed
+        whole.credited += f.credited
+    return {
+        **_amounts(whole, whole.total),
+        "share": Decimal("100") if whole.total else None,
+        "billed": _money(whole.billed),
+        "credited": _money(whole.credited),
+    }
+
+
+def cost_notes(groups: dict[Any, Figures]) -> list[str]:
+    estimated = sum(f.estimated for f in groups.values())
+    uncosted = sum(f.uncosted for f in groups.values())
+    notes = []
+    if estimated:
+        notes.append(
+            f"{estimated} line(s) had no cost recorded when invoiced: today's cost price is used "
+            "(estimated)."
+        )
+    if uncosted:
+        notes.append(f"{uncosted} line(s) have no cost price and are left out of the margin.")
+    return notes
+
+
+def _by_total(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(rows, key=lambda r: (-(r["total"] or ZERO), str(r.get("name", ""))))
+
+
+# --- Columns ------------------------------------------------------------------------------------
+
+TAXABLE = Column("taxable", "Taxable value", Kind.MONEY, total=True)
+TAX = Column("tax", "GST", Kind.MONEY, total=True)
+TOTAL = Column("total", "Total", Kind.MONEY, total=True, width=16)
+SHARE = Column("share", "Share %", Kind.PERCENT, total=True, width=10)
+COST = Column("cost", "Cost", Kind.MONEY, cost=True, total=True)
+MARGIN_COL = Column("margin", "Margin", Kind.MONEY, cost=True, total=True)
+MARGIN_PCT = Column("margin_pct", "Margin %", Kind.PERCENT, cost=True, total=True, width=10)
+INVOICES = Column("invoices", "Invoices", Kind.INT, total=True, width=10)
+QTY = Column("qty", "Quantity", Kind.QTY, total=True, width=12)
+MONEY_COLUMNS = (TAXABLE, TAX, TOTAL, SHARE, COST, MARGIN_COL, MARGIN_PCT)
+
+
+def _cached(ctx: Context, name: str, invoice_key: Any, credit_key: Any) -> dict[Any, Figures]:
+    groups: dict[Any, Figures] = ctx.once(name, lambda: grouped(ctx, invoice_key, credit_key))
+    return groups
+
+
+# --- By period ----------------------------------------------------------------------------------
+
+TRUNC = {"day": TruncDay, "week": TruncWeek, "month": TruncMonth}
+
+
+def _periods(start: date, end: date, by: str) -> list[date]:
+    if by == "month":
+        first, out = start.replace(day=1), []
+        while first <= end:
+            out.append(first)
+            first = (first + timedelta(days=32)).replace(day=1)
+        return out
+    step = 7 if by == "week" else 1
+    first = start - timedelta(days=start.weekday()) if by == "week" else start
+    return [first + timedelta(days=i) for i in range(0, (end - first).days + 1, step)]
+
+
+def _period_label(day: date, by: str) -> str:
+    if by == "month":
+        return f"{day:%b %Y}"
+    if by == "week":
+        return f"Week of {day:%d-%m-%Y}"
+    return f"{day:%d-%m-%Y}"
+
+
+def _period_groups(ctx: Context) -> dict[Any, Figures]:
+    trunc = TRUNC[ctx.params.get("group_by", "day")]
+    return _cached(ctx, "periods", trunc(INVOICE.day), trunc(CREDIT.day))
+
+
+def _period_key(value: Any) -> date:
+    day: date = value.date() if isinstance(value, datetime) else value
+    return day
+
+
+def summary_rows(ctx: Context) -> list[dict[str, Any]]:
+    by = ctx.params.get("group_by", "day")
+    groups = {_period_key(k): f for k, f in _period_groups(ctx).items()}
+    rows = []
+    for day in _periods(ctx.params["date_from"], ctx.params["date_to"], by):
+        f = groups.get(day, Figures())
+        rows.append(
+            {
+                "period": _period_label(day, by),
+                "start": day,
+                "invoices": f.invoices,
+                "billed": _money(f.billed),
+                "credited": _money(f.credited),
+                "taxable": _money(f.taxable),
+                "tax": _money(f.tax),
+                "total": _money(f.total),
+            }
+        )
+    return rows
+
+
+register(
+    Report(
+        code="sales_summary",
+        title="Sales summary",
+        group=Group.SALES,
+        description="Billed, credited and net sales per day, week or month.",
+        permission=SALES,
+        full="reports.sales",
+        columns=(
+            Column("period", "Period", width=18),
+            INVOICES,
+            Column("billed", "Invoices total", Kind.MONEY, total=True, width=16),
+            Column("credited", "Credit notes", Kind.MONEY, total=True, width=16),
+            TAXABLE,
+            TAX,
+            Column("total", "Net sales", Kind.MONEY, total=True, width=16),
+        ),
+        filters=(
+            *PERIOD,
+            Filter(
+                "group_by",
+                "By",
+                FilterKind.CHOICE,
+                choices=("day", "week", "month"),
+                default=lambda: "day",
+            ),
+            CATEGORY,
+            BRAND,
+            SHOP,
+            SALESPERSON,
+        ),
+        rows=summary_rows,
+        totals=lambda ctx: _totals(_period_groups(ctx)),
+        pdf=True,
+    )
+)
+
+
+# --- By product, category, brand ----------------------------------------------------------------
+
+
+def _products(ctx: Context) -> dict[Any, Figures]:
+    return _cached(ctx, "products", F(INVOICE.product + "_id"), F(CREDIT.product + "_id"))
+
+
+def product_rows(ctx: Context) -> list[dict[str, Any]]:
+    groups = _products(ctx)
+    whole = sum((f.total for f in groups.values()), ZERO)
+    names = {
+        p["id"]: p
+        for p in Product.objects.filter(pk__in=groups).values(
+            "id", "code", "name", "category__name", "brand__name"
+        )
+    }
+    rows = []
+    for pk, f in groups.items():
+        product = names.get(pk, {})
+        rows.append(
+            {
+                "product_id": pk,
+                "code": product.get("code", ""),
+                "name": product.get("name", ""),
+                "category": product.get("category__name") or "",
+                "brand": product.get("brand__name") or "",
+                **_amounts(f, whole),
+            }
+        )
+    return _by_total(rows)
+
+
+def _category_path(categories: dict[Any, dict[str, Any]], pk: Any) -> str:
+    parts, seen = [], set()
+    while pk and pk in categories and pk not in seen:
+        seen.add(pk)
+        parts.append(categories[pk]["name"])
+        pk = categories[pk]["parent_id"]
+    return " > ".join(reversed(parts))
+
+
+def _categories(ctx: Context) -> dict[Any, Figures]:
+    return _cached(
+        ctx, "categories", F(INVOICE.product + "__category_id"), F(CREDIT.product + "__category_id")
+    )
+
+
+def category_rows(ctx: Context) -> list[dict[str, Any]]:
+    groups = _categories(ctx)
+    whole = sum((f.total for f in groups.values()), ZERO)
+    categories = {c["id"]: c for c in Category.objects.values("id", "name", "parent_id")}
+    rows = [
+        {
+            "name": _category_path(categories, pk) if pk else "No category",
+            **_amounts(f, whole),
+        }
+        for pk, f in groups.items()
+    ]
+    return _by_total(rows)
+
+
+def _brands(ctx: Context) -> dict[Any, Figures]:
+    return _cached(
+        ctx, "brands", F(INVOICE.product + "__brand_id"), F(CREDIT.product + "__brand_id")
+    )
+
+
+def brand_rows(ctx: Context) -> list[dict[str, Any]]:
+    groups = _brands(ctx)
+    whole = sum((f.total for f in groups.values()), ZERO)
+    brands = {b["id"]: b for b in Brand.objects.values("id", "name", "own_brand")}
+    rows = [
+        {
+            "name": brands[pk]["name"] if pk in brands else "No brand",
+            "own_brand": "Yes" if pk in brands and brands[pk]["own_brand"] else "No",
+            **_amounts(f, whole),
+        }
+        for pk, f in groups.items()
+    ]
+    return _by_total(rows)
+
+
+PRODUCT_FILTERS = (*PERIOD, CATEGORY, BRAND, SHOP, SALESPERSON)
+
+register(
+    Report(
+        code="sales_by_product",
+        title="Sales by product",
+        group=Group.SALES,
+        description="What sold, net of returns, with margins for those who can see costs.",
+        permission=SALES,
+        full="reports.sales",
+        columns=(
+            Column("code", "Code", width=14),
+            Column("name", "Product", width=36),
+            Column("category", "Category", width=20),
+            Column("brand", "Brand", width=16),
+            QTY,
+            *MONEY_COLUMNS,
+        ),
+        filters=PRODUCT_FILTERS,
+        rows=product_rows,
+        totals=lambda ctx: _totals(_products(ctx)),
+        notes=lambda ctx: cost_notes(_products(ctx)) if ctx.scope.costs else [],
+    )
+)
+register(
+    Report(
+        code="sales_by_category",
+        title="Sales by category",
+        group=Group.SALES,
+        description="Sales per category (as set on each product), net of returns.",
+        permission=SALES,
+        full="reports.sales",
+        columns=(Column("name", "Category", width=36), *MONEY_COLUMNS),
+        filters=PRODUCT_FILTERS,
+        rows=category_rows,
+        totals=lambda ctx: _totals(_categories(ctx)),
+        notes=lambda ctx: cost_notes(_categories(ctx)) if ctx.scope.costs else [],
+    )
+)
+register(
+    Report(
+        code="sales_by_brand",
+        title="Sales by brand",
+        group=Group.SALES,
+        description="Sales per brand, your own brands marked, net of returns.",
+        permission=SALES,
+        full="reports.sales",
+        columns=(
+            Column("name", "Brand", width=24),
+            Column("own_brand", "Own brand", width=10),
+            *MONEY_COLUMNS,
+        ),
+        filters=PRODUCT_FILTERS,
+        rows=brand_rows,
+        totals=lambda ctx: _totals(_brands(ctx)),
+        notes=lambda ctx: cost_notes(_brands(ctx)) if ctx.scope.costs else [],
+    )
+)
+
+
+# --- By shop and salesperson --------------------------------------------------------------------
+
+
+def _shops(ctx: Context) -> dict[Any, Figures]:
+    return _cached(ctx, "shops", F(INVOICE.shop + "_id"), F(CREDIT.shop + "_id"))
+
+
+def shop_rows(ctx: Context) -> list[dict[str, Any]]:
+    groups = _shops(ctx)
+    whole = sum((f.total for f in groups.values()), ZERO)
+    shops = {
+        s["id"]: s
+        for s in Retailer.objects.filter(pk__in=groups).values(
+            "id", "code", "shop_name", "salesperson__full_name"
+        )
+    }
+    last = dict(
+        invoice_lines(ctx)
+        .values("invoice__retailer_id")
+        .annotate(last=Max("invoice__invoice_date"))
+        .values_list("invoice__retailer_id", "last")
+        .order_by()
+    )
+    rows = []
+    for pk, f in groups.items():
+        shop = shops.get(pk, {})
+        rows.append(
+            {
+                "retailer_id": pk,
+                "code": shop.get("code", ""),
+                "name": shop.get("shop_name", ""),
+                "salesperson": shop.get("salesperson__full_name") or "",
+                "last_invoice": last.get(pk),
+                **_amounts(f, whole),
+            }
+        )
+    return _by_total(rows)
+
+
+def _salespeople(ctx: Context) -> dict[Any, Figures]:
+    return _cached(
+        ctx, "salespeople", F(INVOICE.salesperson + "_id"), F(CREDIT.salesperson + "_id")
+    )
+
+
+def salesperson_rows(ctx: Context) -> list[dict[str, Any]]:
+    groups = _salespeople(ctx)
+    whole = sum((f.total for f in groups.values()), ZERO)
+    names = dict(
+        User.objects.filter(pk__in=[k for k in groups if k]).values_list("id", "full_name")
+    )
+    shops = dict(
+        invoice_lines(ctx)
+        .values(INVOICE.salesperson + "_id")
+        .annotate(n=Count("invoice__retailer_id", distinct=True))
+        .values_list(INVOICE.salesperson + "_id", "n")
+        .order_by()
+    )
+    rows = [
+        {
+            "user_id": pk,
+            "name": names.get(pk, "") if pk else "No salesperson",
+            "shops": shops.get(pk, 0),
+            **_amounts(f, whole),
+        }
+        for pk, f in groups.items()
+    ]
+    return _by_total(rows)
+
+
+register(
+    Report(
+        code="sales_by_shop",
+        title="Sales by shop",
+        group=Group.SALES,
+        description="Sales per shop, net of returns, with each shop's last bill.",
+        permission=SALES,
+        full="reports.sales",
+        columns=(
+            Column("code", "Code", width=12),
+            Column("name", "Shop", width=30),
+            Column("salesperson", "Salesperson", width=20),
+            INVOICES,
+            TAXABLE,
+            TAX,
+            TOTAL,
+            SHARE,
+            Column("last_invoice", "Last bill", Kind.DATE, width=12),
+        ),
+        filters=(*PERIOD, SALESPERSON, CATEGORY, BRAND),
+        rows=shop_rows,
+        totals=lambda ctx: _totals(_shops(ctx)),
+    )
+)
+register(
+    Report(
+        code="sales_by_salesperson",
+        title="Sales by salesperson",
+        group=Group.SALES,
+        description="Sales per salesperson (the shop's salesperson when the order was placed).",
+        permission=SALES,
+        full="reports.sales",
+        columns=(
+            Column("name", "Salesperson", width=24),
+            Column("shops", "Shops", Kind.INT, width=8),
+            INVOICES,
+            TAXABLE,
+            TAX,
+            TOTAL,
+            SHARE,
+        ),
+        filters=(*PERIOD, CATEGORY, BRAND),
+        rows=salesperson_rows,
+        totals=lambda ctx: _totals(_salespeople(ctx)),
+    )
+)
+
+
+# --- Own brand vs traded margin (costs.view) ----------------------------------------------------
+
+OWN = F(INVOICE.product + "__brand__own_brand")
+OWN_CREDIT = F(CREDIT.product + "__brand__own_brand")
+
+
+def _margin_groups(ctx: Context) -> dict[Any, Figures]:
+    by = ctx.params.get("group_by", "type")
+    if by == "brand":
+        return _brands(ctx)
+    if by == "product":
+        return _products(ctx)
+    return _cached(ctx, "own", Coalesce(OWN, Value(False)), Coalesce(OWN_CREDIT, Value(False)))
+
+
+def margin_rows(ctx: Context) -> list[dict[str, Any]]:
+    by = ctx.params.get("group_by", "type")
+    if by == "brand":
+        rows = brand_rows(ctx)
+    elif by == "product":
+        own = dict(
+            Product.objects.filter(pk__in=_products(ctx)).values_list("id", "brand__own_brand")
+        )
+        rows = [
+            {**r, "own_brand": "Yes" if own.get(r["product_id"]) else "No"}
+            for r in product_rows(ctx)
+        ]
+    else:
+        groups = _margin_groups(ctx)
+        whole = sum((f.total for f in groups.values()), ZERO)
+        rows = [
+            {
+                "name": "Own brand" if own else "Traded",
+                "own_brand": "Yes" if own else "No",
+                **_amounts(f, whole),
+            }
+            for own, f in sorted(groups.items(), key=lambda kv: not kv[0])
+        ]
+        return rows
+    return sorted(rows, key=lambda r: (r["own_brand"] != "Yes", -(r["margin"] or ZERO)))
+
+
+register(
+    Report(
+        code="margin_own_vs_traded",
+        title="Margin: own brand vs traded",
+        group=Group.SALES,
+        description="Taxable sales, cost and margin of your own brands against traded goods.",
+        permission=MARGIN,
+        full="reports.sales",
+        columns=(
+            Column("name", "Name", width=36),
+            Column("own_brand", "Own brand", width=10),
+            TAXABLE,
+            COST,
+            MARGIN_COL,
+            MARGIN_PCT,
+            SHARE,
+        ),
+        filters=(
+            *PERIOD,
+            Filter(
+                "group_by",
+                "By",
+                FilterKind.CHOICE,
+                choices=("type", "brand", "product"),
+                default=lambda: "type",
+            ),
+            CATEGORY,
+        ),
+        rows=margin_rows,
+        totals=lambda ctx: _totals(_margin_groups(ctx)),
+        notes=lambda ctx: cost_notes(_margin_groups(ctx)),
+    )
+)
