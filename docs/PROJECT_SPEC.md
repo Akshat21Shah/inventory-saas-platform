@@ -1,8 +1,9 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.7. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.8. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.8 (2026-09-30)** — Phase 8 plan (ADR-050): one report framework with permissions and own-shop scope built in; "Orders received" and "Billed" on the dashboard; the salesperson recorded on each order and the cost on each invoice line (margins); fast / slow / dead / new stock; the GST summary workbook for a month or a quarter; background exports with a "Report ready" message; the Tally export designed and on the backlog.
 - **1.7 (2026-09-29)** — Phase 7 plan (ADR-049): turnover band setting; IRNs for B2B invoices and their credit notes only; IRN cancellation re-issues a corrected invoice (default) or takes the goods back; e-way bill thresholds between states and within the state, distance per shop address; one active online checkout per bill; WhatsApp template approval status.
 - **1.6 (2026-09-29)** — Phase 6 plan (ADR-048): WhatsApp opt-in consent, compulsory events, secure document links, quiet hours, payment-reminder cadence and pauses, handover reminders, GST rate-change warning job, per-tenant WhatsApp sender, WhatsApp cost estimate.
 - **1.5 (2026-09-28)** — Phase 5 plan (ADR-046): invoice/credit-note/receipt number format, Order Confirmation PDF, return dispositions per line and return reasons, salesman collections with handover tracking, ageing basis setting, automatic use of advances with reallocation.
@@ -324,8 +325,9 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - One platform WhatsApp number for now, naming the distributor in every message; a distributor's own number can be connected later.
 
 ### 5.14 Dashboards & reports
-- **Distributor dashboard** ("what needs action today"): new orders, on-hold orders, backorders ready to allocate, low/out-of-stock count, overdue receivables, today's sales, pending e-invoices.
-- Reports (filterable, exportable to Excel/PDF): sales by period/product/category/retailer/salesperson, stock summary & valuation, stock movement history, low stock, fast/slow/dead stock, backorder report, receivables ageing, collections, GST summary (for filing support: B2B invoice-wise, HSN summary), order fulfilment rate.
+- **Distributor dashboard** ("what needs action today" first): new orders, on-hold orders, backorders to confirm, failed IRNs and e-way bills, collections pending handover, overdue receivables, low/out-of-stock count; then today's **Orders received** (orders placed, incl. GST) and **Billed** (invoices minus credit notes); then trends (billed per day for 30 days vs the 30 before, top 5 products and shops this month, new vs repeat shops). Each part only with its permission (ADR-050).
+- Reports (filterable, exportable to Excel; PDF for the sales summary, ageing, collections and the GST summary; heavy exports in the background with a "Report ready" message): sales by period/product/category/brand/retailer/salesperson, own brand vs traded margin (with `costs.view`), stock summary & valuation, stock movement history, low stock, fast/slow/dead/new stock (by value or quantity, over a set period), backorder demand, receivables ageing, collections and salesperson collections, GST summary for a month or a quarter (laid out like the GSTR-1 template: B2B invoice-wise, B2C large and others, credit notes, HSN summary for B2B and B2C, documents issued), order fulfilment rate. Every report respects the user's permissions: cost columns only with `costs.view`; sales staff see only their own shops when the distributor chose that.
+- Accounting export for Tally (sales invoices, credit notes, receipts): designed (ADR-050), built when a real TallyPrime import can be tested.
 - **Retailer home**: search, categories, "Repeat last order", recent orders, outstanding balance, announcements from distributor.
 - **Super admin dashboard**: see 5.1.
 
