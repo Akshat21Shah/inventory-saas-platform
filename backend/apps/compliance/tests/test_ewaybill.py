@@ -297,6 +297,8 @@ def test_the_ewaybill_api(ewb_world):
     assert world["staff"].get(f"{API}/ewaybills/?status=NOPE").status_code == 400
     assert world["staff"].get(f"{API}/ewaybills/{ok['id']}/").json()["invoice_id"] == str(done.pk)
     assert world["staff"].get(f"{API}/ewaybills/counts/").json() == {"pending": 0, "failed": 1}
+    to_fix = world["staff"].get(f"{API}/ewaybills/?needs_action=true").json()["results"]
+    assert [r["invoice_number"] for r in to_fix] == [failing.number]
     made = world["staff"].post(f"{API}/invoices/{done.pk}/ewaybill/", {}, format="json")
     assert made.json()["error"]["details"]["fields"] == {
         "invoice": ["This invoice already has an e-way bill."]
@@ -373,3 +375,27 @@ def test_the_dispatcher_recipient_only_while_ewaybills_are_on(ewb_world):
     other = world["other"].get(f"{API}/notification-rules/").json()
     assert "DISPATCHER" not in other["recipients"]
     assert "ewaybill.failed" not in {e["code"] for e in other["events"]}
+
+
+def test_a_failed_ewaybill_needs_nothing_more_once_its_invoice_is_cancelled(ewb_world):
+    """The dashboard shows failed e-way bills until they're resolved: cancelling the invoice
+    (its IRN) resolves one, as it can never be sent now."""
+    world = ewb_world
+    distance(world, "b2b", None)
+    invoice = dispatch(world)
+    assert world["staff"].get(f"{API}/ewaybills/counts/").json()["failed"] == 1
+    irn = record_of(world, invoice)
+    with world["run"]():
+        done = world["staff"].post(
+            f"{API}/einvoices/{irn.pk}/cancel/",
+            {"reason_code": "DATA_ENTRY_MISTAKE", "outcome": "TAKE_BACK"},
+            format="json",
+        )
+    assert done.status_code == 200
+    assert record_of(world, invoice).status == "CANCELLED"
+    ewb = bill_of(world, invoice)
+    assert ewb is not None and (ewb.status, ewb.error_code) == (S.FAILED, "INVOICE_CANCELLED")
+    assert world["staff"].get(f"{API}/ewaybills/counts/").json()["failed"] == 0
+    assert world["staff"].get(f"{API}/ewaybills/?needs_action=true").json()["results"] == []
+    shown = world["staff"].get(f"{API}/invoices/{invoice.pk}/").json()["ewaybill"]
+    assert shown["can_request"] is False

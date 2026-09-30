@@ -95,6 +95,11 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.payment.review_reason": "",
     "api.payment.reviewed_at": None,
     "api.shop-account.online_payments": False,
+    # An invoice's own status (commit 11b): cancelled only with its IRN, so always issued here.
+    "api.invoice.status": "ISSUED",
+    "api.invoices.results.status": "ISSUED",
+    "api.shop-invoice.status": "ISSUED",
+    "api.shop-invoices.results.status": "ISSUED",
 }
 
 # Random by design: stored as "<random>".

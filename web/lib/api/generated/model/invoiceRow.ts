@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { DocumentStatusEnum } from './documentStatusEnum';
 import type { EInvoiceStatusEnum } from './eInvoiceStatusEnum';
 import type { InvoicePaymentStatusEnum } from './invoicePaymentStatusEnum';
 import type { InvoiceTriggerEnum } from './invoiceTriggerEnum';
@@ -31,4 +32,11 @@ export interface InvoiceRow {
   rate_differs_from_order?: boolean;
   pdf_status: PdfStatusEnum;
   einvoice_status: EInvoiceStatusEnum;
+  /**
+     * CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+     *
+     * * `ISSUED` - Issued
+     * * `CANCELLED` - Cancelled
+     */
+  status: DocumentStatusEnum;
 }

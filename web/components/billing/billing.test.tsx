@@ -11,7 +11,12 @@ import { DocumentButton } from "./document-button";
 import { InvoiceDetailPage, InvoicesPage } from "./invoices";
 
 const permissions = new Set<string>();
-const auth = { me: { id: "u1", tenant: { id: "t1" } }, can: (p: string) => permissions.has(p) };
+const features = new Set<string>();
+const auth = {
+  me: { id: "u1", tenant: { id: "t1" } },
+  can: (p: string) => permissions.has(p),
+  feature: (f: string) => features.has(f),
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn() };
 let search = new URLSearchParams();
@@ -24,6 +29,7 @@ vi.mock("next/navigation", () => ({
 afterEach(() => {
   vi.unstubAllGlobals();
   permissions.clear();
+  features.clear();
   router.push.mockReset();
   search = new URLSearchParams();
 });
@@ -43,6 +49,7 @@ const row: InvoiceRow = {
   rate_differs_from_order: false,
   pdf_status: "READY",
   einvoice_status: "NOT_APPLICABLE",
+  status: "ISSUED",
 };
 
 const detail: InvoiceDetail = {

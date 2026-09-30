@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { SubNav } from "@/components/shared/sub-nav";
 
-/** Invoices and credit notes, with the invoicing settings for those who manage settings. */
+/** Invoices and credit notes (and, when those modules are on, e-invoices and e-way bills), with the invoicing settings for those who manage settings. */
 export function BillingNav() {
   const t = useTranslations("billing.nav");
   return (
@@ -18,6 +18,18 @@ export function BillingNav() {
             path === "/manage/invoices" || /^\/manage\/invoices\/[0-9a-f-]{36}$/.test(path),
         },
         { href: "/manage/invoices/credit-notes", label: t("creditNotes"), prefix: true },
+        {
+          href: "/manage/invoices/einvoices",
+          label: t("einvoices"),
+          permission: "compliance.manage",
+          features: ["einvoice"],
+        },
+        {
+          href: "/manage/invoices/ewaybills",
+          label: t("ewaybills"),
+          permission: "compliance.manage",
+          features: ["ewaybill"],
+        },
         {
           href: "/manage/settings/policies/invoicing",
           label: t("settings"),

@@ -149,6 +149,7 @@ export * from './documentNumber';
 export * from './documentRef';
 export * from './documentRefRequest';
 export * from './documentSeries';
+export * from './documentStatusEnum';
 export * from './documentTypeEnum';
 export * from './due';
 export * from './dueAmountRequest';

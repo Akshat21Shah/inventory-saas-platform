@@ -340,7 +340,8 @@ def _apply(record_id: UUID, cancelled_at: datetime, raw: dict[str, Any]) -> str:
         )
     from apps.compliance.models import EWayBill
 
-    EWayBill.objects.filter(invoice=invoice, status="PENDING").update(  # never to be sent now
+    # Never to be sent now; a failed one can't be tried again either (it no longer needs action).
+    EWayBill.objects.filter(invoice=invoice, status__in=("PENDING", "FAILED")).update(
         status="FAILED",
         error_code="INVOICE_CANCELLED",
         error_message="The invoice was cancelled.",

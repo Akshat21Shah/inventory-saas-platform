@@ -86,6 +86,7 @@ describe("My bills", () => {
               issued_trigger: "ON_DISPATCH",
               pdf_status: "READY",
               einvoice_status: "NOT_APPLICABLE",
+              status: "ISSUED",
             },
           ],
         },

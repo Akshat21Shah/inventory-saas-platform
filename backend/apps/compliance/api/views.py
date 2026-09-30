@@ -230,7 +230,10 @@ class EWayBillListView(generics.ListAPIView[EWayBill]):
         status = q.get("status", "")
         if status and status not in EWayBill.Status.values:
             raise InvalidFields({"status": ["Not a valid e-way bill status."]})
-        return selectors.ewaybill_list(selectors.Filters(status, "", q.get("search", "")))
+        needs_action = q.get("needs_action", "") in ("1", "true")
+        return selectors.ewaybill_list(
+            selectors.Filters(status, "", q.get("search", ""), needs_action=needs_action)
+        )
 
     def paginate_queryset(self, queryset: Any) -> Any:
         page = super().paginate_queryset(queryset)
@@ -242,6 +245,9 @@ class EWayBillListView(generics.ListAPIView[EWayBill]):
         parameters=[
             OpenApiParameter("status", str, enum=list(EWayBill.Status.values)),
             OpenApiParameter("search", str, description="E-way bill, invoice, shop or vehicle"),
+            OpenApiParameter(
+                "needs_action", bool, description="Only failed bills staff still have to fix"
+            ),
         ],
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:

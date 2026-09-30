@@ -9,6 +9,7 @@ from rest_framework import serializers
 from apps.billing.models import (
     CreditNote,
     CreditNoteLine,
+    DocumentStatus,
     DocumentType,
     EInvoiceStatus,
     Invoice,
@@ -49,6 +50,10 @@ class InvoiceRowSerializer(serializers.ModelSerializer[Invoice]):
     grand_total = money()
     balance_due = money()
     days_overdue = serializers.SerializerMethodField()
+    status = serializers.ChoiceField(
+        choices=DocumentStatus.choices,
+        help_text="CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.",
+    )
 
     class Meta:
         model = Invoice
@@ -67,6 +72,7 @@ class InvoiceRowSerializer(serializers.ModelSerializer[Invoice]):
             "rate_differs_from_order",
             "pdf_status",
             "einvoice_status",
+            "status",
         ]
 
     def get_days_overdue(self, invoice: Invoice) -> int:

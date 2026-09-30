@@ -10,7 +10,12 @@ import { renderWithIntl } from "@/tests/render";
 import { DocumentNumbering } from "./numbering";
 
 const permissions = new Set<string>();
-const auth = { me: { id: "u1", tenant: { id: "t1" } }, can: (p: string) => permissions.has(p) };
+const features = new Set<string>();
+const auth = {
+  me: { id: "u1", tenant: { id: "t1" } },
+  can: (p: string) => permissions.has(p),
+  feature: (f: string) => features.has(f),
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -21,6 +26,7 @@ vi.mock("next/navigation", () => ({
 afterEach(() => {
   vi.unstubAllGlobals();
   permissions.clear();
+  features.clear();
 });
 
 const series = (prefix: string): DocumentSeries[] => [

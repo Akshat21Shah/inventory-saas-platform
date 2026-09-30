@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { ComplianceCards, FailedEWayBillsAlert } from "@/components/compliance/dashboard";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { CardSkeleton } from "@/components/shared/skeletons";
@@ -37,6 +38,7 @@ export function DistributorDashboard() {
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />
+      <FailedEWayBillsAlert />
       {!can("orders.view") ? null : counts.isLoading ? (
         <CardSkeleton />
       ) : (
@@ -58,6 +60,7 @@ export function DistributorDashboard() {
           <ReceivablesCards linked />
         </section>
       ) : null}
+      <ComplianceCards />
       <div className="mt-8 max-w-2xl">
         <RateChangesCard />
       </div>

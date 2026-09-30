@@ -41,6 +41,7 @@ interface Ids {
   payment: string | null;
   refund: string | null;
   shop_invoice: string | null;
+  ewaybill_invoice: string | null;
 }
 
 function pages(ids: Ids) {
@@ -58,6 +59,9 @@ function pages(ids: Ids) {
     "/manage/invoices/credit-notes/new",
     ...(ids.invoice ? [`/manage/invoices/credit-notes/new?invoice=${ids.invoice}`] : []),
     ...(ids.credit_note ? [`/manage/invoices/credit-notes/${ids.credit_note}`] : []),
+    "/manage/invoices/einvoices",
+    "/manage/invoices/ewaybills",
+    ...(ids.ewaybill_invoice ? [`/manage/invoices/${ids.ewaybill_invoice}`] : []),
     "/manage/payments",
     "/manage/payments/new",
     `/manage/payments/new?retailer=${ids.retailer}`,
@@ -69,6 +73,7 @@ function pages(ids: Ids) {
     "/manage/receivables",
     `/manage/retailers/${ids.retailer}/ledger`,
     "/manage/settings/policies/invoicing",
+    "/manage/settings/compliance",
     "/manage/settings/policies/credit_payments",
     "/manage/products",
     "/manage/products/new",

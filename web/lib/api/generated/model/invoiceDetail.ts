@@ -7,6 +7,7 @@
  */
 import type { Applied } from './applied';
 import type { CreditNoteRow } from './creditNoteRow';
+import type { DocumentStatusEnum } from './documentStatusEnum';
 import type { EInvoiceStatusEnum } from './eInvoiceStatusEnum';
 import type { EInvoiceSummary } from './eInvoiceSummary';
 import type { EWayBillSummary } from './eWayBillSummary';
@@ -39,6 +40,13 @@ export interface InvoiceDetail {
   rate_differs_from_order?: boolean;
   pdf_status: PdfStatusEnum;
   einvoice_status: EInvoiceStatusEnum;
+  /**
+     * CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+     *
+     * * `ISSUED` - Issued
+     * * `CANCELLED` - Cancelled
+     */
+  status: DocumentStatusEnum;
   seller: unknown;
   buyer: unknown;
   place_of_supply: Place;

@@ -1596,6 +1596,11 @@ paths:
         description: The pagination cursor value.
         schema:
           type: string
+      - in: query
+        name: needs_action
+        schema:
+          type: boolean
+        description: Only failed bills staff still have to fix
       - name: ordering
         required: false
         in: query
@@ -12335,6 +12340,14 @@ components:
       - issued
       - next_number
       - prefix
+    DocumentStatusEnum:
+      enum:
+      - ISSUED
+      - CANCELLED
+      type: string
+      description: |-
+        * `ISSUED` - Issued
+        * `CANCELLED` - Cancelled
     DocumentTypeEnum:
       enum:
       - INVOICE
@@ -14529,6 +14542,14 @@ components:
           $ref: '#/components/schemas/PdfStatusEnum'
         einvoice_status:
           $ref: '#/components/schemas/EInvoiceStatusEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DocumentStatusEnum'
+          description: |-
+            CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+
+            * `ISSUED` - Issued
+            * `CANCELLED` - Cancelled
         seller: {}
         buyer: {}
         place_of_supply:
@@ -14614,6 +14635,7 @@ components:
       - place_of_supply
       - retailer
       - seller
+      - status
       - supply_type
       - totals
     InvoiceLine:
@@ -14784,6 +14806,14 @@ components:
           $ref: '#/components/schemas/PdfStatusEnum'
         einvoice_status:
           $ref: '#/components/schemas/EInvoiceStatusEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DocumentStatusEnum'
+          description: |-
+            CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+
+            * `ISSUED` - Issued
+            * `CANCELLED` - Cancelled
       required:
       - balance_due
       - days_overdue
@@ -14798,6 +14828,7 @@ components:
       - payment_status
       - pdf_status
       - retailer
+      - status
     InvoiceTriggerEnum:
       enum:
       - ON_DISPATCH
@@ -21355,6 +21386,14 @@ components:
           $ref: '#/components/schemas/PdfStatusEnum'
         einvoice_status:
           $ref: '#/components/schemas/EInvoiceStatusEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DocumentStatusEnum'
+          description: |-
+            CANCELLED only when its IRN was cancelled (Phase 7); it then owes nothing.
+
+            * `ISSUED` - Issued
+            * `CANCELLED` - Cancelled
         seller: {}
         buyer: {}
         place_of_supply:
@@ -21428,6 +21467,7 @@ components:
       - place_of_supply
       - retailer
       - seller
+      - status
       - supply_type
       - totals
     ShopLastOrder:

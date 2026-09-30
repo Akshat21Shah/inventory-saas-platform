@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { FilterSelect } from "@/components/catalog/controls";
+import { EInvoicePanel, einvoiceMoving } from "@/components/compliance/einvoice";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -243,7 +244,11 @@ export function CreditNoteDetailPage({ noteId }: { noteId: string }) {
   const { can } = useAuth();
   const client = useQueryClient();
   const { message } = useErrorText();
-  const query = useCreditNotesRetrieve(noteId);
+  const query = useCreditNotesRetrieve(noteId, {
+    query: {
+      refetchInterval: (q) => (einvoiceMoving(q.state.data?.data.einvoice) ? 3000 : false),
+    },
+  });
   if (query.isLoading) return <PageSkeleton />;
   if (query.error) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   const note = query.data?.data;
@@ -342,19 +347,30 @@ export function CreditNoteDetailPage({ noteId }: { noteId: string }) {
             </section>
             <DocumentLinksCard kind="CREDIT_NOTE" objectId={note.id} />
           </div>
-          <aside className="space-y-4 rounded-xl border p-4">
-            <h2 className="font-semibold">{t("totals")}</h2>
-            <DocumentTotals
-              totals={note.totals}
-              intra={intra}
-              totalLabel={totalsT("creditTotal")}
-              extra={[
-                { label: totalsT("againstInvoice"), value: note.applied_to_invoice },
-                { label: totalsT("creditLeft"), value: note.unapplied_amount, strong: true },
-              ]}
+          <div className="space-y-4">
+            <aside className="space-y-4 rounded-xl border p-4">
+              <h2 className="font-semibold">{t("totals")}</h2>
+              <DocumentTotals
+                totals={note.totals}
+                intra={intra}
+                totalLabel={totalsT("creditTotal")}
+                extra={[
+                  { label: totalsT("againstInvoice"), value: note.applied_to_invoice },
+                  { label: totalsT("creditLeft"), value: note.unapplied_amount, strong: true },
+                ]}
+              />
+              <p className="text-muted-foreground text-xs">{note.amount_in_words}</p>
+            </aside>
+            <EInvoicePanel
+              kind="credit_note"
+              documentId={note.id}
+              summary={note.einvoice}
+              registeredBuyer={Boolean((note.buyer as { gstin?: string } | null)?.gstin)}
+              onChanged={() =>
+                void client.invalidateQueries({ queryKey: getCreditNotesRetrieveQueryKey(note.id) })
+              }
             />
-            <p className="text-muted-foreground text-xs">{note.amount_in_words}</p>
-          </aside>
+          </div>
         </div>
       </div>
     </>

@@ -276,6 +276,7 @@ SPECTACULAR_SETTINGS = {
         "ReasonCodeEnum": "apps.inventory.models.AdjustmentReason",  # keeps its Phase 3 name
         "OutcomeEnum": ["OK", "NEEDS_APPROVAL", "BLOCKED"],  # the credit check; keeps its name
         "SupplyTypeEnum": ["INTRA", "INTER"],
+        "DocumentStatusEnum": "apps.billing.models.DocumentStatus",
         "IrnCancelOutcomeEnum": "apps.compliance.models.EInvoiceRecord.CancelOutcome",
         "EWayBillStatusEnum": "apps.compliance.models.EWayBill.Status",
         "EWayBillUpdateStatusEnum": "apps.compliance.models.EWayBillUpdate.Status",

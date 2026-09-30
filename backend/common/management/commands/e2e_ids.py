@@ -1,6 +1,6 @@
 """Print the ids of seeded Sharma records as JSON, so the responsive E2E check can open detail
 pages (a product, a shop, a price list, a discount rule, goods receipts, an adjustment, orders,
-a shipment, a product on backorder). Dev only:
+a shipment, a product on backorder, billing records, an invoice with an e-way bill). Dev only:
 refuses unless DEBUG is on."""
 
 import json
@@ -11,6 +11,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.billing.models import CreditNote, Invoice
 from apps.catalog.models import Product
+from apps.compliance.models import EWayBill
 from apps.dataio.models import ImportJob
 from apps.inventory.models import StockAdjustment, StockInward
 from apps.orders.models import Fulfilment, Order, OrderLine
@@ -71,5 +72,9 @@ class Command(BaseCommand):
                 "payment": _first(Payment.objects.filter(handover_status="WITH_SALESMAN")),
                 "refund": _first(Refund.objects.all()),
                 "shop_invoice": _first(Invoice.objects.filter(retailer__mobile="+919876500001")),
+                # Phase 7: an invoice with an e-way bill (Sharma has the modules on).
+                "ewaybill_invoice": _first(
+                    Invoice.objects.filter(pk__in=EWayBill.objects.values("invoice_id"))
+                ),
             }
         self.stdout.write(json.dumps(ids))

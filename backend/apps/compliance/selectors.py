@@ -18,11 +18,15 @@ S = EInvoiceRecord.Status
 OPEN = (S.PENDING, S.SUBMITTED, S.FAILED)
 
 
+INVOICE_CANCELLED = "INVOICE_CANCELLED"  # the error of bills never to be sent
+
+
 @dataclass(frozen=True)
 class Filters:
     status: str = ""
     document_type: str = ""
     search: str = ""
+    needs_action: bool = False
 
 
 def einvoice_list(filters: Filters) -> QuerySet[EInvoiceRecord]:
@@ -140,6 +144,8 @@ def counts() -> dict[str, int]:
 
 def ewaybill_list(filters: Filters) -> QuerySet[EWayBill]:
     rows = EWayBill.objects.select_related("invoice__retailer", "fulfilment")
+    if filters.needs_action:
+        rows = _needs_action(rows)
     if filters.status:
         rows = rows.filter(status=filters.status)
     if filters.search.strip():
@@ -183,7 +189,9 @@ def ewaybill_summary(ewb: EWayBill) -> dict[str, Any]:
         "next_retry_at": ewb.next_retry_at,
         "generated_at": ewb.generated_at,
         "cancelled_at": ewb.cancelled_at,
-        "can_request": ewb.status == EWayBill.Status.FAILED
+        "can_request": (
+            ewb.status == EWayBill.Status.FAILED and ewb.error_code != INVOICE_CANCELLED
+        )
         or (ewb.status == EWayBill.Status.PENDING and ewb.requested_at is None),
         "can_update": live and not (ewb.valid_until and now > ewb.valid_until),
         "can_cancel": live and ends is not None and now <= ends,
@@ -230,11 +238,14 @@ def ewaybill_for(invoice: Invoice) -> dict[str, Any] | None:
     return ewaybill_summary(ewb) if ewb is not None else None
 
 
+def _needs_action(rows: QuerySet[EWayBill]) -> QuerySet[EWayBill]:
+    """Failed bills staff still have to fix (not those whose invoice was cancelled)."""
+    return rows.filter(status=EWayBill.Status.FAILED).exclude(error_code=INVOICE_CANCELLED)
+
+
 def ewaybill_counts() -> dict[str, int]:
     rows = EWayBill.objects.filter(tenant_id=require_tenant_id())
     return {
         "pending": rows.filter(status__in=(EWayBill.Status.PENDING, "SUBMITTED")).count(),
-        "failed": rows.filter(status=EWayBill.Status.FAILED)
-        .exclude(error_code="INVOICE_CANCELLED")
-        .count(),
+        "failed": _needs_action(rows).count(),
     }

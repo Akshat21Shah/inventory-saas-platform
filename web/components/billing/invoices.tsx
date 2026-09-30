@@ -10,6 +10,8 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { FilterSelect } from "@/components/catalog/controls";
+import { EInvoicePanel, einvoiceMoving } from "@/components/compliance/einvoice";
+import { EWayBillPanel, ewaybillMoving } from "@/components/compliance/ewaybill";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -29,10 +31,12 @@ import {
 } from "@/lib/api/generated/endpoints/billing/billing";
 import {
   InvoicePaymentStatusEnum,
+  InvoicesListEinvoiceStatus,
   type Applied,
   type InvoiceDetail,
   type InvoiceLine,
   type InvoiceRow,
+  type InvoicesListEinvoiceStatus as EinvoiceFilter,
   type InvoicesListPaymentStatus,
   type Totals,
 } from "@/lib/api/generated/model";
@@ -65,9 +69,13 @@ export function DueText({ due, daysOverdue }: { due: string; daysOverdue: number
 export function InvoicesList({ retailerId }: { retailerId?: string } = {}) {
   const t = useTranslations("billing.invoices");
   const statuses = useTranslations("status");
+  const irnStatuses = useTranslations("einvoiceStatus");
+  const { feature } = useAuth();
+  const einvoiceOn = feature("einvoice");
   const cursor = useCursor();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>(ALL);
+  const [irn, setIrn] = useState<string>(ALL);
   const [overdue, setOverdue] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -80,6 +88,7 @@ export function InvoicesList({ retailerId }: { retailerId?: string } = {}) {
     overdue: overdue || undefined,
     date_from: from || undefined,
     date_to: to || undefined,
+    einvoice_status: irn === ALL ? undefined : (irn as EinvoiceFilter),
   });
   const page = query.data?.data;
   const columns: DataTableColumn<InvoiceRow>[] = [
@@ -125,10 +134,25 @@ export function InvoicesList({ retailerId }: { retailerId?: string } = {}) {
     {
       id: "status",
       header: t("status"),
-      cell: ({ row }) => <StatusBadge status={row.original.payment_status} />,
+      cell: ({ row }) => (
+        <StatusBadge
+          status={row.original.status === "CANCELLED" ? "CANCELLED" : row.original.payment_status}
+        />
+      ),
     },
+    ...(einvoiceOn
+      ? [
+          {
+            id: "einvoice",
+            header: t("einvoice"),
+            cell: ({ row }) => (
+              <StatusBadge status={row.original.einvoice_status} labels="einvoiceStatus" />
+            ),
+          } satisfies DataTableColumn<InvoiceRow>,
+        ]
+      : []),
   ];
-  const active = [term, status !== ALL, overdue, from, to].filter(Boolean).length;
+  const active = [term, status !== ALL, overdue, from, to, irn !== ALL].filter(Boolean).length;
   return (
     <DataTable
       columns={columns}
@@ -147,6 +171,7 @@ export function InvoicesList({ retailerId }: { retailerId?: string } = {}) {
         balance: "primary",
         status: "primary",
         due: "primary",
+        einvoice: "primary",
         date: "secondary",
         total: "secondary",
       }}
@@ -159,6 +184,7 @@ export function InvoicesList({ retailerId }: { retailerId?: string } = {}) {
             setOverdue(false);
             setFrom("");
             setTo("");
+            setIrn(ALL);
             cursor.reset();
           }}
           search={
@@ -191,6 +217,23 @@ export function InvoicesList({ retailerId }: { retailerId?: string } = {}) {
                   })),
                 ]}
               />
+              {einvoiceOn ? (
+                <FilterSelect
+                  label={t("einvoice")}
+                  value={irn}
+                  onChange={(value) => {
+                    setIrn(value);
+                    cursor.reset();
+                  }}
+                  options={[
+                    { value: ALL, label: t("allEinvoice") },
+                    ...Object.values(InvoicesListEinvoiceStatus).map((value) => ({
+                      value,
+                      label: irnStatuses(value),
+                    })),
+                  ]}
+                />
+              ) : null}
               <label className="flex min-h-10 items-center gap-2 text-sm max-md:min-h-11">
                 <input
                   type="checkbox"
@@ -362,12 +405,14 @@ function InvoiceActions({ invoice }: { invoice: InvoiceDetail }) {
       </DocumentButton>
       {can("invoices.manage") ? (
         <>
-          <Button asChild className="min-h-10 gap-2">
-            <Link href={`/manage/invoices/credit-notes/new?invoice=${invoice.id}`}>
-              <FilePlus2 aria-hidden className="size-4" />
-              {t("creditNote")}
-            </Link>
-          </Button>
+          {invoice.status === "ISSUED" ? (
+            <Button asChild className="min-h-10 gap-2">
+              <Link href={`/manage/invoices/credit-notes/new?invoice=${invoice.id}`}>
+                <FilePlus2 aria-hidden className="size-4" />
+                {t("creditNote")}
+              </Link>
+            </Button>
+          ) : null}
           {invoice.pdf_status === "FAILED" ? (
             <Button
               variant="outline"
@@ -398,13 +443,25 @@ function InvoiceActions({ invoice }: { invoice: InvoiceDetail }) {
 export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
   const t = useTranslations("billing.invoices");
   const totalsT = useTranslations("billing.totals");
-  const query = useInvoicesRetrieve(invoiceId);
+  const client = useQueryClient();
+  const query = useInvoicesRetrieve(invoiceId, {
+    query: {
+      refetchInterval: (q) => {
+        const data = q.state.data?.data;
+        return einvoiceMoving(data?.einvoice) || ewaybillMoving(data?.ewaybill) ? 3000 : false;
+      },
+    },
+  });
   const kinds = useTranslations("billing.creditNoteKinds");
   if (query.isLoading) return <PageSkeleton />;
   if (query.error) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   const invoice = query.data?.data;
   if (!invoice) return <EmptyState title={t("notFound")} />;
   const intra = invoice.supply_type === "INTRA";
+  const cancelled = invoice.status === "CANCELLED";
+  const reissued = invoice.einvoice?.reissued_invoice;
+  const refresh = () =>
+    void client.invalidateQueries({ queryKey: getInvoicesRetrieveQueryKey(invoice.id) });
   return (
     <>
       <Link
@@ -419,7 +476,7 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
           <div className="space-y-1">
             <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
               {t("heading", { number: invoice.number })}
-              <StatusBadge status={invoice.payment_status} />
+              <StatusBadge status={cancelled ? "CANCELLED" : invoice.payment_status} />
             </h1>
             <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 text-sm">
               <Link
@@ -442,6 +499,19 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
           </div>
           <InvoiceActions invoice={invoice} />
         </div>
+        {cancelled ? (
+          <p role="status" className="bg-muted flex flex-wrap gap-x-1 rounded-xl p-3 text-sm">
+            <span className="font-medium">{t("cancelledBanner")}</span>
+            {reissued ? (
+              <Link
+                href={`/manage/invoices/${reissued.id}`}
+                className="font-medium underline-offset-2 hover:underline"
+              >
+                {t("reissuedAs", { number: reissued.number })}
+              </Link>
+            ) : null}
+          </p>
+        ) : null}
         {invoice.rate_differs_from_order ? (
           <p className="bg-warning/15 flex gap-2 rounded-xl p-3 text-sm">
             <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -537,25 +607,40 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
             </section>
             <DocumentLinksCard kind="INVOICE" objectId={invoice.id} />
           </div>
-          <aside className="space-y-4 rounded-xl border p-4">
-            <h2 className="font-semibold">{t("totals")}</h2>
-            <DocumentTotals
-              totals={invoice.totals}
-              intra={intra}
-              totalLabel={totalsT("invoiceTotal")}
-              extra={[
-                { label: totalsT("paid"), value: invoice.amount_paid },
-                { label: totalsT("credited"), value: invoice.amount_credited },
-                { label: totalsT("balanceDue"), value: invoice.balance_due, strong: true },
-              ]}
+          <div className="space-y-4">
+            <aside className="space-y-4 rounded-xl border p-4">
+              <h2 className="font-semibold">{t("totals")}</h2>
+              <DocumentTotals
+                totals={invoice.totals}
+                intra={intra}
+                totalLabel={totalsT("invoiceTotal")}
+                extra={[
+                  { label: totalsT("paid"), value: invoice.amount_paid },
+                  { label: totalsT("credited"), value: invoice.amount_credited },
+                  { label: totalsT("balanceDue"), value: invoice.balance_due, strong: true },
+                ]}
+              />
+              <p className="text-muted-foreground text-xs">{invoice.amount_in_words}</p>
+              <p className="text-muted-foreground text-xs">
+                {t("placeOfSupply", {
+                  place: `${invoice.place_of_supply.name} (${invoice.place_of_supply.code})`,
+                })}
+              </p>
+            </aside>
+            <EInvoicePanel
+              kind="invoice"
+              documentId={invoice.id}
+              summary={invoice.einvoice}
+              registeredBuyer={Boolean((invoice.buyer as { gstin?: string } | null)?.gstin)}
+              onChanged={refresh}
             />
-            <p className="text-muted-foreground text-xs">{invoice.amount_in_words}</p>
-            <p className="text-muted-foreground text-xs">
-              {t("placeOfSupply", {
-                place: `${invoice.place_of_supply.name} (${invoice.place_of_supply.code})`,
-              })}
-            </p>
-          </aside>
+            <EWayBillPanel
+              invoiceId={invoice.id}
+              summary={invoice.ewaybill}
+              cancelled={cancelled}
+              onChanged={refresh}
+            />
+          </div>
         </div>
       </div>
     </>

@@ -13,6 +13,10 @@ export type EwaybillsListParams = {
  */
 cursor?: string;
 /**
+ * Only failed bills staff still have to fix
+ */
+needs_action?: boolean;
+/**
  * Which field to use when ordering the results.
  */
 ordering?: string;
