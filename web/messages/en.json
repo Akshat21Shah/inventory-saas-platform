@@ -883,7 +883,53 @@
       "total": "All distributors",
       "active": "Active",
       "onboarding": "Waiting for owner",
-      "suspended": "Suspended"
+      "suspended": "Suspended",
+      "orders": {
+        "title": "Orders across distributors",
+        "body": "Orders placed per day in the last 30 days, value incl. GST.",
+        "caption": "Value of orders placed per day across all distributors, last 30 days",
+        "value": "Order value",
+        "date": "Date"
+      },
+      "top": {
+        "title": "Top distributors",
+        "body": "By order value in the last 30 days.",
+        "name": "Distributor",
+        "orders": "Orders",
+        "value": "Value",
+        "empty": "No orders in the last 30 days"
+      },
+      "errors": {
+        "title": "Errors in the last 24 hours",
+        "body": "Server errors among all requests; Sentry keeps the details.",
+        "detail": "{errors, plural, one {# server error} other {# server errors}} in {requests, plural, one {# request} other {# requests}}"
+      },
+      "failures": {
+        "title": "Something failing",
+        "body": "Messages that failed in the last 7 days, IRNs and e-way bills still failed, and connections that stopped working.",
+        "name": "Distributor",
+        "messages": "Messages failed",
+        "irns": "IRNs failed",
+        "ewaybills": "E-way bills failed",
+        "connections": "Connections",
+        "gstLogin": "GST login",
+        "gateway": "Payment gateway",
+        "empty": "Nothing failing",
+        "emptyBody": "Messages, IRNs, e-way bills and every connection are working for all distributors."
+      },
+      "usage": {
+        "title": "Usage against plans",
+        "body": "Shops, staff and products against each plan's limits (shown even while limits aren't enforced). Near a limit: 90% or more.",
+        "name": "Distributor",
+        "plan": "Plan",
+        "shops": "Shops",
+        "staff": "Staff",
+        "products": "Products",
+        "near": "Limits",
+        "ofLimit": "{used} of {limit}",
+        "empty": "No distributors yet",
+        "showAll": "Show all {count}"
+      }
     },
     "tenants": {
       "title": "Distributors",
@@ -4650,5 +4696,8 @@
       "newShops": "{count, plural, one {# new shop} other {# new shops}}",
       "repeatShops": "{count, plural, one {# repeat shop} other {# repeat shops}}"
     }
+  },
+  "usageStatus": {
+    "NEAR_LIMIT": "Near a limit"
   }
 }

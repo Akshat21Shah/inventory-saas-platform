@@ -343,7 +343,12 @@
      - Charts (`DailyChart`, and a bar chart of net sales per period on the sales summary report) draw the server's figures only; each has a caption and, for screen readers, the same figures as a table (in an sr-only wrapper: a table ignores sr-only's width and widened the page at 360 px, caught by the responsive check).
      - `E2E_ONLY` takes a list, with `=path` for an exact screen (`E2E_ONLY="=/manage,sales_summary"`).
      - Tests: vitest 5 (the three sections in order with links, all clear and red failures; only what a role may see; own-shops notice; retry; the sales summary chart).
-  13. Frontend: super admin dashboard
+  13. Frontend: super admin dashboard — **done** (`components/platform/dashboard.tsx`, one request to `platform/dashboard/`, refreshed each minute):
+     - The distributor counts, then orders across distributors per day for 30 days (value incl. GST, with the figures as a table for screen readers), the top distributors by order value, and the error rate over 24 hours (server errors among requests).
+     - "Something failing": each distributor with failed messages (7 days), IRNs or e-way bills still failed, or a GST login or payment gateway that stopped working; "Nothing failing" otherwise.
+     - "Usage against plans": shops, staff and products as "46 of 50" (or the count when unlimited) with a "Near a limit" badge; those near a limit and the first ten others, then "Show all N" (300+ distributors would bury the page).
+     - Each distributor links to its page. Cards on phones.
+     - Tests: vitest 4 (every section; nothing failing and no requests yet; near-limit first then show all; retry).
   14. E2E, responsive, documented perf run — **final review**
 - **Phase 7 — E-invoicing, e-way bills and online payments** — **merged to `main` (PR #8, 2026-09-30)** (branch `phase-7` from `main` f15b76b; plan approved 2026-09-29 with ADR-049, PLAN §10.2i). Everything sits behind the tenant flags `einvoice`, `ewaybill` and `payments` (off by default, switched on by the super admin); with them off the app behaves exactly as before, proven by a baseline snapshot. The GSP is not chosen: an adapter interface and a thorough mock, no guessed field names (`TODO(verify)`, checklist items 10–25). Commits in order:
   1. Docs: ADR-049, PLAN (§2.10/§2.12 models, §3.10 endpoints, settings, §10.2i, Phase 7 tasks, backlog), checklist items 10–25, `docs/CA_REVIEW.md` §14 and questions 23–29 — **done**
