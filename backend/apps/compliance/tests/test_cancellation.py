@@ -96,6 +96,11 @@ def test_reissuing_replaces_the_invoice_with_a_new_number(world):
     check_ledger(world["t"])
     [told] = shop_told(world)
     assert told.body == f"Your bill {invoice.number} was cancelled. Bill {new.number} replaces it."
+    assert told.data["path"] == f"/shop/invoices/{new.pk}"  # opens the new bill
+    with tenant_context(world["t"].pk):
+        emailed = Notification.objects.get(event_code="invoice.cancelled", channel="EMAIL")
+    assert f"Bill {new.number} replaces it." in emailed.body
+    assert f"/shop/invoices/{new.pk}" in emailed.body
     actions = set(AuditLog.objects.values_list("action", flat=True))
     assert {"einvoice.cancel_requested", "einvoice.cancelled"} <= actions
 
@@ -158,9 +163,16 @@ def test_only_within_the_window_and_without_credit_notes(world):
             by=world["owner"],
         )
     noted = cancel(world, second)
-    assert noted.json()["error"]["details"]["fields"]["document"] == [
-        "This invoice has credit notes. Correct it with another credit note."
-    ]
+    with tenant_context(world["t"].pk):
+        number = second.credit_notes.get().number
+    message = (
+        f"This invoice's IRN can't be cancelled because credit note {number} was issued "
+        "against it. Correct the invoice with another credit note instead."
+    )
+    assert noted.json()["error"]["details"]["fields"]["document"] == [message]
+    shown = world["staff"].get(f"{API}/invoices/{second.pk}/").json()["einvoice"]
+    assert (shown["can_cancel"], shown["cancel_blocked"]["reason"]) == (False, "CREDIT_NOTES")
+    assert shown["cancel_blocked"]["message"] == message
     with tenant_context(world["t"].pk):
         note_record = EInvoiceRecord.objects.get(document_type="CREDIT_NOTE")
     with world["run"]():
@@ -254,3 +266,59 @@ def test_the_bill_cancelled_whatsapp_template_is_optional():
 
     assert not in_first_submission("invoice.cancelled", "SHOP")  # an optional module's event
     assert in_first_submission("invoice.issued", "SHOP")
+
+
+@covers("einvoice-reissue-preview")
+def test_a_reissue_uses_the_shop_now_but_the_original_prices_and_rates(world, monkeypatch):
+    from datetime import timedelta as days
+
+    from apps.catalog.models import ProductTaxRate
+    from apps.platform.tests.factories import make_gstin
+    from apps.retailers.models import Retailer
+    from common.dates import today_ist
+
+    invoice = sell(world, qty="2")  # ₹30,000 at 5%, to Karnataka (IGST)
+    corrected = make_gstin(8102, "29")
+    with tenant_context(world["t"].pk):
+        Retailer.objects.filter(pk=world["b2b"].pk).update(
+            shop_name="Kaveri Traders & Sons", gstin=corrected, pan=corrected[2:12]
+        )
+        tomorrow = today_ist() + days(days=1)
+        ProductTaxRate.objects.create(  # a rate change from tomorrow; the preview looks then
+            product=world["product"], gst_rate=D("18"), effective_from=tomorrow
+        )
+    monkeypatch.setattr("apps.compliance.cancellation.today_ist", lambda: tomorrow)
+    rec = record_of(world, invoice)
+    preview = world["staff"].get(f"{API}/einvoices/{rec.pk}/reissue-preview/").json()
+    assert preview["buyer"] == {
+        "name": "Kaveri Traders & Sons",
+        "gstin": corrected,
+        "state_code": "29",
+    }
+    assert preview["buyer_changed"] is True
+    assert (preview["supply_type"], preview["supply_type_before"]) == ("INTER", "INTER")
+    assert preview["rate_changes"] == [
+        {
+            "line_no": 1,
+            "description": world["product"].name,
+            "hsn_code": "8471",
+            "original_rate": "5.000",
+            "today_rate": "18.000",
+        }
+    ]
+    unconfirmed = cancel(world, invoice)
+    assert "confirm_rate_changes" in unconfirmed.json()["error"]["details"]["fields"]
+    cancel(world, invoice, confirm_rate_changes=True)
+    new = record_of(world, invoice).reissued_invoice
+    assert new is not None
+    with tenant_context(world["t"].pk):
+        new = Invoice.objects.get(pk=new.pk)
+        [line] = new.lines.all()
+    assert (new.buyer["name"], new.buyer["gstin"]) == ("Kaveri Traders & Sons", corrected)
+    assert (line.gst_rate, line.unit_price, new.grand_total) == (
+        D("5.000"),
+        D("30000.00"),
+        invoice.grand_total,
+    )
+    other = world["other"].get(f"{API}/einvoices/{rec.pk}/reissue-preview/")
+    assert other.status_code in (403, 404)

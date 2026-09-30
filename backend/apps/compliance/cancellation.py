@@ -22,6 +22,7 @@ can't be reused (PROGRESS pre-production item 13).
 
 import logging
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -62,12 +63,12 @@ def window_ends(record: EInvoiceRecord) -> datetime | None:
 
 
 def can_cancel(record: EInvoiceRecord) -> bool:
-    ends = window_ends(record)
+    """An invoice's IRN, generated, within the window, with nothing in the way."""
     return (
         record.document_type == DocumentType.INVOICE
         and record.status == S.GENERATED
-        and ends is not None
-        and timezone.now() <= ends
+        and record.invoice is not None
+        and blocked_by(record, record.invoice) is None
     )
 
 
@@ -76,27 +77,94 @@ def _check(record: EInvoiceRecord, invoice: Invoice) -> None:
         raise InvalidFields({"document": ["Only an invoice's IRN can be cancelled here."]})
     if record.status != S.GENERATED or invoice.status != DocumentStatus.ISSUED:
         raise InvalidFields({"document": ["Only an invoice with an IRN can be cancelled."]})
-    ends = window_ends(record)
-    if ends is None or timezone.now() > ends:
-        raise InvalidFields(
-            {
-                "document": [
-                    "The time allowed for cancelling this IRN has passed. Correct the invoice "
-                    "with a credit note instead."
-                ]
-            }
-        )
+    blocker = blocked_by(record, invoice)
+    if blocker is not None:
+        raise InvalidFields({"document": [blocker["message"]]})
+
+
+def blocked_by(record: EInvoiceRecord, invoice: Invoice) -> dict[str, Any] | None:
+    """What stands in the way of cancelling this IRN, in words that say what to do first
+    (backend checkpoint change 1); None when nothing does."""
     from apps.compliance.models import EWayBill
 
-    live_bill = EWayBill.objects.filter(invoice=invoice, status__in=("SUBMITTED", "GENERATED"))
-    if live_bill.exists():
-        raise InvalidFields(
-            {"document": ["This invoice has an e-way bill. Cancel the e-way bill first."]}
-        )
-    if CreditNote.objects.filter(invoice=invoice, status=DocumentStatus.ISSUED).exists():
-        raise InvalidFields(
-            {"document": ["This invoice has credit notes. Correct it with another credit note."]}
-        )
+    ends = window_ends(record)
+    if ends is None or timezone.now() > ends:
+        return {
+            "reason": "WINDOW_OVER",
+            "message": "The time allowed for cancelling this IRN has passed. Correct the invoice "
+            "with a credit note instead.",
+        }
+    bill = (
+        EWayBill.objects.filter(invoice=invoice, status__in=("SUBMITTED", "GENERATED"))
+        .order_by("-created_at")
+        .first()
+    )
+    if bill is not None and bill.status == "GENERATED":
+        return {
+            "reason": "EWAY_BILL",
+            "message": f"Cancel e-way bill {bill.ewb_number} first, then cancel the IRN.",
+            "ewaybill_id": str(bill.pk),
+        }
+    if bill is not None:
+        return {
+            "reason": "EWAY_BILL",
+            "message": "An e-way bill is being made for this invoice. Wait for it, cancel it, "
+            "then cancel the IRN.",
+            "ewaybill_id": str(bill.pk),
+        }
+    notes = list(
+        CreditNote.objects.filter(invoice=invoice, status=DocumentStatus.ISSUED)
+        .order_by("number")
+        .values_list("number", flat=True)
+    )
+    if notes:
+        listed = ", ".join(notes)
+        which = f"credit note {listed} was" if len(notes) == 1 else f"credit notes {listed} were"
+        return {
+            "reason": "CREDIT_NOTES",
+            "message": f"This invoice's IRN can't be cancelled because {which} issued against "
+            "it. Correct the invoice with another credit note instead.",
+        }
+    return None
+
+
+def reissue_preview(invoice: Invoice) -> dict[str, Any]:
+    """What a re-issue would change (shown to staff before they confirm): the shop's details now
+    against the bill's, and each line whose GST rate valid today differs from the original (the
+    re-issued bill keeps the original rate; CA question 30)."""
+    from apps.billing.invoicing import current_buyer
+    from apps.catalog.selectors import tax_rates_on
+
+    buyer, _place, supply = current_buyer(invoice.order)
+    lines = list(invoice.lines.order_by("line_no"))
+    today = tax_rates_on([line.product_id for line in lines], today_ist())
+    changes = []
+    for line in lines:
+        row = today.get(line.product_id)
+        if row is not None and Decimal(row.gst_rate) != Decimal(line.gst_rate):
+            changes.append(
+                {
+                    "line_no": line.line_no,
+                    "description": line.description,
+                    "hsn_code": line.hsn_code,
+                    "original_rate": Decimal(line.gst_rate),
+                    "today_rate": Decimal(row.gst_rate),
+                }
+            )
+    before = invoice.buyer
+    return {
+        "buyer": {
+            "name": buyer["name"],
+            "gstin": buyer["gstin"],
+            "state_code": buyer["state_code"],
+        },
+        "buyer_changed": any(
+            before.get(key, "") != buyer[key] for key in ("name", "gstin", "state_code")
+        ),
+        "supply_type": supply,
+        "supply_type_before": invoice.supply_type,
+        "rate_changes": changes,
+    }
 
 
 def request(
@@ -107,6 +175,7 @@ def request(
     outcome: str,
     to_backorder: bool,
     by: User,
+    confirm_rate_changes: bool = False,
 ) -> EInvoiceRecord:
     """Staff ask to cancel (``compliance.manage``); the portal is asked after this commits."""
     from apps.compliance.einvoice import require_module
@@ -136,6 +205,14 @@ def request(
     backorders_on = bool(invoice.order.settings_snapshot.get("backorders.enabled", True))
     if outcome == OUTCOME.TAKE_BACK and to_backorder and not backorders_on:
         errors["to_backorder"] = ["This order doesn't take backorders: cancel the quantities."]
+    if outcome == OUTCOME.REISSUE and not confirm_rate_changes:
+        changed = reissue_preview(invoice)["rate_changes"]
+        if changed:
+            errors["confirm_rate_changes"] = [
+                "The GST rate valid today differs from the original on "
+                f"{len(changed)} line(s). The re-issued invoice keeps the original rates: "
+                "confirm to continue."
+            ]
     if errors:
         raise InvalidFields(errors)
     record.status, record.cancel_error = S.CANCELLING, ""
@@ -280,7 +357,7 @@ def _apply(record_id: UUID, cancelled_at: datetime, raw: dict[str, Any]) -> str:
         )
     else:
         reissued = invoicing.issue_invoice_for_fulfilment(
-            shipment, trigger=invoice.issued_trigger, by=by
+            shipment, trigger=invoice.issued_trigger, by=by, reissue_of=invoice
         )
     allocation.settle(account, by=by)
     record.status, record.cancelled_at, record.cancelled_by = S.CANCELLED, cancelled_at, by

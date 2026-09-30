@@ -8,7 +8,8 @@
   secret (``X-Mock-Signature``) and an event id (``X-Mock-Event-Id``). Tests post it to our
   webhook; the dev page does too.
 - ``order_payments`` answers reconciliation from what was simulated.
-- ``script("DOWN")`` makes the next call fail as if the gateway were unavailable.
+- ``script("DOWN")`` / ``script("TIMEOUT")`` makes the next call fail as if the gateway were
+  unavailable / didn't answer in time.
 The mock's own header and field names are ours; nothing here describes a real gateway.
 """
 
@@ -56,6 +57,8 @@ class MockGateway:
             cache.set(_SCRIPT, queue[1:], None)
             if queue[0] == "DOWN":
                 raise GatewayError("UNAVAILABLE", "The gateway is not available.", retryable=True)
+            if queue[0] == "TIMEOUT":
+                raise GatewayError("TIMEOUT", "The gateway didn't answer in time.", retryable=True)
 
     def verify(self, keys: GatewayKeys) -> None:
         self._down()

@@ -16,6 +16,11 @@ urlpatterns = [
         "einvoices/<uuid:record_id>/cancel/", v.EInvoiceCancelView.as_view(), name="einvoice-cancel"
     ),
     path(
+        "einvoices/<uuid:record_id>/reissue-preview/",
+        v.EInvoiceReissuePreviewView.as_view(),
+        name="einvoice-reissue-preview",
+    ),
+    path(
         "invoices/<uuid:invoice_id>/einvoice/",
         v.InvoiceEInvoiceView.as_view(),
         name="invoice-einvoice",

@@ -98,6 +98,10 @@ EVENTS: dict[str, Event] = {
         Event("invoice.cancelled", "Invoice cancelled (its IRN was cancelled)", "billing",
               variables=("distributor", "shop", "invoice_number", "note", "link"),
               staff_facing=False, feature="einvoice"),
+        Event("ewaybill.failed", "E-way bill failed for a shipment", "billing",
+              variables=("distributor", "shop", "shipment", "vehicle", "invoice_number", "error",
+                         "link"),
+              shop_facing=False, feature="ewaybill"),
         Event("einvoice.failed", "IRN failed for an invoice or credit note", "billing",
               variables=("distributor", "shop", "document_number", "error", "link"),
               shop_facing=False, feature="einvoice"),
@@ -190,8 +194,11 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("stock.alert_opened", ST, (IN,), "stock.inward"),
     Rule("invoice.issued", S, (IN, WA, EM), compulsory=True),
     Rule("credit_note.issued", S, (IN, WA, EM), compulsory=True),
-    Rule("invoice.cancelled", S, (IN,)),
+    Rule("invoice.cancelled", S, (IN, EM)),  # Phase 7 backend checkpoint, change 3
     Rule("einvoice.failed", ST, (IN, EM), "compliance.manage"),
+    # Phase 7 backend checkpoint, change 4: at once, whatever the hour (urgent).
+    Rule("ewaybill.failed", ST, (IN, EM), "compliance.manage"),
+    Rule("ewaybill.failed", Recipient.DISPATCHER, (IN, EM)),
     Rule("payment.received", S, (IN, WA, EM)),
     Rule("payment.cleared", S, (IN,)),
     Rule("payment.bounced", S, (IN, WA), compulsory=True),
@@ -217,7 +224,10 @@ RECIPIENT_CHANNELS: dict[str, tuple[str, ...]] = {
     CO: (IN, WA, EM),
     ST: (IN, WA, EM),
     Recipient.OWNERS: (IN, WA, EM),
+    Recipient.DISPATCHER: (IN, WA, EM),
 }
+# Recipients that exist only for some events (and only while their module is on).
+ONLY_FOR: dict[str, tuple[str, str]] = {Recipient.DISPATCHER: ("ewaybill.failed", "ewaybill")}
 
 
 @dataclass(frozen=True)
@@ -319,7 +329,7 @@ SHOP_TEXTS: dict[str, dict[str, Text]] = {
     },
     "invoice.cancelled": {
         IN: Text("Bill {{ invoice_number }} cancelled", "Your bill {{ invoice_number }} was cancelled. {{ note }}"),
-        EM: Text("Bill {{ invoice_number }} cancelled", "Your bill {{ invoice_number }} from {{ distributor }} was cancelled. {{ note }}\n\n{{ link }}"),
+        EM: Text("Bill {{ invoice_number }} cancelled", "Your bill {{ invoice_number }} from {{ distributor }} was cancelled. {{ note }}\n\nSee it here: {{ link }}"),
         WA: Text("", f"{D}: your bill {{{{ invoice_number }}}} was cancelled. {{{{ note }}}}", ("distributor", "invoice_number", "note")),
     },
     "credit_note.issued": {
@@ -428,6 +438,11 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
         IN: Text("{{ product }}: {{ alert }}", "{{ product }} is {{ alert }} ({{ quantity }} left)."),
         EM: Text("{{ product }}: {{ alert }}", "{{ product }} is {{ alert }} ({{ quantity }} left).\n\n{{ link }}"),
         WA: Text("", f"{D}: {{{{ product }}}} is {{{{ alert }}}} ({{{{ quantity }}}} left).", ("distributor", "product", "alert", "quantity")),
+    },
+    "ewaybill.failed": {
+        IN: Text("E-way bill failed: {{ shipment }}", "No e-way bill for shipment {{ shipment }} ({{ shop }}, vehicle {{ vehicle }}, bill {{ invoice_number }}): {{ error }}"),
+        EM: Text("E-way bill failed: {{ shipment }}", "No e-way bill for shipment {{ shipment }} ({{ shop }}, vehicle {{ vehicle }}, bill {{ invoice_number }}): {{ error }}\n\nFix it and try again: {{ link }}"),
+        WA: Text("", f"{D}: e-way bill failed for {{{{ shipment }}}} ({{{{ shop }}}}, vehicle {{{{ vehicle }}}}): {{{{ error }}}}", ("distributor", "shipment", "shop", "vehicle", "error")),
     },
     "einvoice.failed": {
         IN: Text("IRN failed: {{ document_number }}", "The e-invoice portal did not give an IRN for {{ document_number }} ({{ shop }}): {{ error }}"),

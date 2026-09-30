@@ -105,6 +105,41 @@ class _Planned:
     cess_rate: Decimal
 
 
+def current_buyer(order: Order) -> tuple[dict[str, Any], str, str]:
+    """The shop as it is now, for re-issuing a corrected invoice (Phase 7 backend checkpoint,
+    change 2): its name, GSTIN and state now, its default billing address, and the order's
+    delivery address as that saved address reads now (else as ordered). The place of supply
+    follows the delivery address, else the shop's state. Returns (buyer, place, supply type)."""
+    from apps.orders.quote import supply_type_for
+    from apps.orders.services import _address_json
+    from apps.retailers.models import Retailer, RetailerAddress
+
+    shop = Retailer.objects.get(pk=order.retailer_id)
+    addresses = RetailerAddress.objects.filter(retailer=shop).select_related("state")
+    shipping_id = (order.shipping_address or {}).get("id")
+    shipping = addresses.filter(pk=shipping_id).first() if shipping_id else None
+    billing = addresses.filter(kind="BILLING", is_default=True).first()
+    buyer = {
+        "name": shop.shop_name,
+        "code": shop.code,
+        "contact": shop.owner_name,
+        "phone": shop.mobile,
+        "gstin": shop.gstin or "",
+        "state_code": shop.state_id,
+        "billing_address": _address_json(billing) if billing else order.billing_address,
+        "shipping_address": _address_json(shipping) if shipping else order.shipping_address,
+    }
+    place = (
+        shipping.state_id
+        if shipping
+        else (order.shipping_address or {}).get("state_code") or shop.state_id
+    )
+    tenant_state = str(
+        Tenant.objects.filter(pk=order.tenant_id).values_list("state_id", flat=True).get()
+    )
+    return buyer, str(place), supply_type_for(tenant_state, str(place)).value
+
+
 def _quantity(fl: FulfilmentLine, trigger: str) -> Decimal:
     """At dispatch the packed quantity; otherwise what the shipment holds."""
     if fl.cancelled_by_retailer_at is not None:
@@ -126,10 +161,19 @@ def _discount(fl: FulfilmentLine, line: OrderLine, quantity: Decimal, rounding: 
 
 
 def issue_invoice_for_fulfilment(
-    shipment: Fulfilment, *, trigger: str, by: User | None, on: date | None = None
+    shipment: Fulfilment,
+    *,
+    trigger: str,
+    by: User | None,
+    on: date | None = None,
+    reissue_of: Invoice | None = None,
 ) -> Invoice | None:
     """Issue the shipment's tax invoice (or return the one it has). ``None`` when nothing in it
-    is to be invoiced (everything declined or packed as zero)."""
+    is to be invoiced (everything declined or packed as zero).
+
+    ``reissue_of``: a cancelled invoice (its IRN cancelled) re-issued for the same supply with a
+    new number: the shop's current details and place of supply, but the original quantities,
+    prices, discounts, GST rates and rounding (Phase 7 backend checkpoint, change 2)."""
     existing: Invoice | None = Invoice.objects.filter(
         fulfilment=shipment, status=DocumentStatus.ISSUED
     ).first()
@@ -140,31 +184,56 @@ def issue_invoice_for_fulfilment(
     )
     tenant_id = require_tenant_id()
     invoice_date = on or today_ist()
-    snapshot = rounding_snapshot(tenant_id)
+    snapshot = reissue_of.settings_snapshot if reissue_of else rounding_snapshot(tenant_id)
     rounding = ComponentRounding(snapshot["tax.component_rounding"])
-    lines = list(
-        FulfilmentLine.objects.filter(fulfilment=shipment)
-        .select_related("order_line", "product")
-        .order_by("order_line__line_no")
-    )
-    rates = tax_rates_on([fl.product_id for fl in lines], invoice_date)
     planned: list[_Planned] = []
-    for fl in lines:
-        quantity = _quantity(fl, trigger)
-        if quantity <= 0:
-            continue
-        line = fl.order_line
-        rate_row = rates.get(fl.product_id)
-        rate = Decimal(rate_row.gst_rate) if rate_row else Decimal(line.gst_rate)
-        cess = Decimal(rate_row.cess_rate) if rate_row else Decimal(line.cess_rate)
-        planned.append(
-            _Planned(fl, line, quantity, _discount(fl, line, quantity, rounding), rate, cess)
+    if reissue_of is not None:
+        for old in reissue_of.lines.select_related("fulfilment_line", "order_line").order_by(
+            "line_no"
+        ):
+            fl, line, quantity = old.fulfilment_line, old.order_line, Decimal(old.quantity)
+            planned.append(
+                _Planned(
+                    fl,
+                    line,
+                    quantity,
+                    _discount(fl, line, quantity, rounding),
+                    Decimal(old.gst_rate),
+                    Decimal(old.cess_rate),
+                )
+            )
+    else:
+        lines = list(
+            FulfilmentLine.objects.filter(fulfilment=shipment)
+            .select_related("order_line", "product")
+            .order_by("order_line__line_no")
         )
+        rates = tax_rates_on([fl.product_id for fl in lines], invoice_date)
+        for fl in lines:
+            quantity = _quantity(fl, trigger)
+            if quantity <= 0:
+                continue
+            line = fl.order_line
+            rate_row = rates.get(fl.product_id)
+            rate = Decimal(rate_row.gst_rate) if rate_row else Decimal(line.gst_rate)
+            cess = Decimal(rate_row.cess_rate) if rate_row else Decimal(line.cess_rate)
+            planned.append(
+                _Planned(fl, line, quantity, _discount(fl, line, quantity, rounding), rate, cess)
+            )
     if not planned:
         return None
 
     account = ledger.lock_account(order.retailer_id)  # L1 (already held by the caller)
-    supply = SupplyType(order.supply_type)
+    if reissue_of is not None:
+        buyer, place, supply_value = current_buyer(order)
+    else:
+        buyer, place, supply_value = (
+            buyer_snapshot(order),
+            order.place_of_supply_id,
+            order.supply_type,
+        )
+    supply = SupplyType(supply_value)
+    inclusive = reissue_of.prices_include_tax if reissue_of else order.prices_include_tax
     taxes = [
         compute_line(
             qty=p.quantity,
@@ -173,7 +242,7 @@ def issue_invoice_for_fulfilment(
             supply_type=supply,
             discount_amount=p.discount,
             cess_rate=p.cess_rate,
-            inclusive=order.prices_include_tax,
+            inclusive=inclusive,
             rounding=rounding,
         )
         for p in planned
@@ -192,10 +261,10 @@ def issue_invoice_for_fulfilment(
         fy=series.fy,
         retailer_id=order.retailer_id,
         seller=seller_snapshot(tenant),
-        buyer=buyer_snapshot(order),
-        place_of_supply_id=order.place_of_supply_id,
-        supply_type=order.supply_type,
-        prices_include_tax=order.prices_include_tax,
+        buyer=buyer,
+        place_of_supply_id=place,
+        supply_type=supply_value,
+        prices_include_tax=inclusive,
         settings_snapshot=snapshot,
         gross_total=sum((t.gross_excl for t in taxes), ZERO),
         discount_total=sum((t.discount_excl for t in taxes), ZERO),

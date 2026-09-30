@@ -1921,6 +1921,8 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 | 10 | Captured amount differs | Recorded as paid, allocated normally, flagged for staff; with advances off, an excess is kept as credit with the "held as credit" notice |
 | + | Concurrent Pay taps | One active checkout per shop per bill / "pay everything" / custom amount; a second tap reuses it; a stale one expires before a new one starts; concurrency test |
 
+Backend checkpoint changes (2026-09-30, ADR-049): cancellation refusals say what to do first; a re-issued invoice uses the shop's current details with the original prices, discounts and GST rates (a warning and confirmation when today's rate differs; CA question 30); "bill cancelled" by in-app and email with the new bill's link; failed e-way bills notified at once to compliance staff and the dispatcher, and shown on the dashboard until resolved; gateway calls the shop waits on time out after 10 seconds, are never retried there, and never lead to a second checkout.
+
 ### 10.3 Pending from the product owner
 - CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.
 - Production domain — **before staging**.

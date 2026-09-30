@@ -102,7 +102,7 @@ def _check(
     template is approved; where it is already used, the rules editor warns instead."""
     from apps.accounts.permissions import TENANT_PERMISSIONS
     from apps.notifications import approval
-    from apps.notifications.catalog import DEFAULT_TEXTS, RECIPIENT_CHANNELS
+    from apps.notifications.catalog import DEFAULT_TEXTS, ONLY_FOR, RECIPIENT_CHANNELS
     from apps.notifications.models import Audience, Recipient
     from common.errors import InvalidFields
 
@@ -121,6 +121,9 @@ def _check(
             errors.append("Choose which staff (a permission) should get it.")
         if rule.recipient != Recipient.STAFF_PERMISSION and rule.permission:
             errors.append("Only 'Staff who can…' takes a permission.")
+        only = ONLY_FOR.get(rule.recipient)
+        if only is not None and only[0] != event_code:
+            errors.append("This recipient is only for failed e-way bills.")
         if rule.recipient == Recipient.SHOP and not event.shop_facing:
             errors.append("This message is for staff only.")
         if rule.recipient != Recipient.SHOP and not event.staff_facing:

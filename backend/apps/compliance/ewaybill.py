@@ -35,6 +35,7 @@ from apps.compliance.ewaybill_reasons import CANCEL_REASONS, PART_B_REASONS
 from apps.compliance.models import EWayBill, EWayBillUpdate
 from apps.orders.models import Fulfilment
 from apps.platform.selectors import get_platform_setting, get_setting, is_feature_enabled
+from common import outbox
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
 from common.tenancy import require_tenant_id, tenant_transaction
@@ -124,7 +125,7 @@ def _apply_transport(ewb: EWayBill, transport: TransportInput) -> None:
 # --- At dispatch ----------------------------------------------------------------------------------
 
 
-def on_dispatched(shipment: Fulfilment) -> EWayBill | None:
+def on_dispatched(shipment: Fulfilment, *, by: User | None = None) -> EWayBill | None:
     """In the dispatch transaction, after the invoice: the e-way bill when the invoice needs one."""
     invoice = Invoice.objects.filter(fulfilment=shipment, status=DocumentStatus.ISSUED).first()
     if invoice is None or not needs_ewaybill(invoice) or live_for(invoice) is not None:
@@ -135,6 +136,7 @@ def on_dispatched(shipment: Fulfilment) -> EWayBill | None:
         fulfilment=shipment,
         consignment_value=invoice.grand_total,
         requested_at=timezone.now() if auto else None,
+        created_by=by,  # told if it fails
     )
     _apply_transport(
         ewb,
@@ -182,6 +184,7 @@ def request(invoice_id: UUID, transport: TransportInput, *, by: User) -> EWayBil
             invoice=invoice,
             fulfilment_id=invoice.fulfilment_id,
             consignment_value=invoice.grand_total,
+            created_by=by,
         )
     _apply_transport(ewb, transport)
     ewb.status, ewb.attempts, ewb.next_retry_at = S.PENDING, 0, None
@@ -280,9 +283,29 @@ def _after_error(ewb_id: UUID, tenant_id: UUID, exc: GspError) -> str:
 
 
 def _failed(ewb: EWayBill, code: str, message: str, *, retryable: bool) -> None:
+    """FAILED, and staff told at once (Phase 7 backend checkpoint, change 4): those who manage
+    compliance and whoever dispatched the shipment, in the app and by email."""
     ewb.status, ewb.next_retry_at = S.FAILED, None
     ewb.error_code, ewb.error_message, ewb.retryable = code, message[:500], retryable
     ewb.save()
+    shipment = Fulfilment.objects.get(pk=ewb.fulfilment_id)
+    invoice = Invoice.objects.get(pk=ewb.invoice_id)
+    outbox.emit(
+        "ewaybill.failed",
+        aggregate_type="EWayBill",
+        aggregate_id=ewb.pk,
+        payload={
+            "ewaybill_id": str(ewb.pk),
+            "invoice_id": str(invoice.pk),
+            "invoice_number": invoice.number,
+            "shipment_number": shipment.number,
+            "vehicle_number": ewb.vehicle_number,
+            "retailer_id": str(invoice.retailer_id),
+            "dispatcher_id": str(ewb.created_by_id or ""),
+            "error_code": code,
+            "error": message[:300],
+        },
+    )
 
 
 # --- Part-B and cancellation ----------------------------------------------------------------------

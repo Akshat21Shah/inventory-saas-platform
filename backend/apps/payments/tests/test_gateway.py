@@ -179,9 +179,11 @@ class FakeRazorpay:
 
     created: list[dict[str, Any]] = []
     real: Any = None  # the SDK's own Client, for its signature helper
+    sessions: list[Any] = []
 
-    def __init__(self, auth: tuple[str, str]) -> None:
+    def __init__(self, auth: tuple[str, str], session: Any = None) -> None:
         self.auth = auth
+        FakeRazorpay.sessions.append(session)
         self.utility = FakeRazorpay.real(auth=auth).utility
         outer = self
 
@@ -288,3 +290,23 @@ def test_staff_cant_record_an_online_payment_by_hand(tenant_a):
     )
     assert answer.status_code == 400
     assert "mode" in answer.json()["error"]["details"]["fields"]
+
+
+def test_razorpay_calls_stop_after_ten_seconds_and_never_retry(monkeypatch):
+    import requests
+
+    from apps.payments.gateway import razorpay as adapter
+
+    keys = GatewayKeys("RAZORPAY", "TEST", "rzp_test_abc", "sec", "whsec")
+    calls: list[dict[str, Any]] = []
+
+    def slow(self: Any, method: str, url: str, **kwargs: Any) -> Any:
+        calls.append(kwargs)
+        raise requests.exceptions.ReadTimeout("slow")
+
+    monkeypatch.setattr(requests.Session, "request", slow)
+    with pytest.raises(GatewayError) as caught:
+        adapter.RazorpayGateway().create_order(keys, amount_paise=100, receipt="r", notes={})
+    assert (caught.value.code, caught.value.retryable) == ("TIMEOUT", True)
+    assert len(calls) == 1  # one try only
+    assert calls[0]["timeout"] == adapter.TIMEOUT_SECONDS == 10

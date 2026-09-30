@@ -52,6 +52,7 @@ def dispatch(
     *,
     vehicle: str = VEHICLE,
     km: int | None = None,
+    by: Any = None,
 ) -> Invoice:
     """Place, accept, pack and dispatch (the invoice is issued at dispatch)."""
     with world["run"]():
@@ -63,7 +64,7 @@ def dispatch(
         fulfilment.dispatch(
             shipment.pk,
             fulfilment.Transport(vehicle, "Speedy Roadways", "LR-1", km),
-            by=world["owner"],
+            by=by or world["owner"],
         )
     with tenant_context(world["t"].pk):
         invoice: Invoice = Invoice.objects.get(fulfilment=shipment, status="ISSUED")
@@ -226,8 +227,14 @@ def test_cancelling_within_the_window_and_then_the_irn(ewb_world):
         f"{API}/einvoices/{irn.pk}/cancel/", {"reason_code": "DUPLICATE"}, format="json"
     )
     assert blocked.json()["error"]["details"]["fields"]["document"] == [
-        "This invoice has an e-way bill. Cancel the e-way bill first."
+        f"Cancel e-way bill {ewb.ewb_number} first, then cancel the IRN."
     ]
+    shown = world["staff"].get(f"{API}/invoices/{invoice.pk}/").json()["einvoice"]
+    assert shown["cancel_blocked"] == {
+        "reason": "EWAY_BILL",
+        "message": f"Cancel e-way bill {ewb.ewb_number} first, then cancel the IRN.",
+        "ewaybill_id": str(ewb.pk),
+    }
     MockGspClient.script("PORTAL_DOWN")
     with world["run"]():
         world["staff"].post(
@@ -318,3 +325,51 @@ def test_the_pdf_has_no_ewaybill_while_there_is_none(ewb_world):
     small = dispatch(world, qty="1")
     with tenant_context(world["t"].pk):
         assert "ewb" not in documents.invoice_context(small, documents.COPIES[:1])
+
+
+def test_a_failed_ewaybill_tells_staff_and_the_dispatcher_at_once(ewb_world, monkeypatch):
+    from apps.accounts.tests.factories import make_staff_in
+    from apps.notifications import quiet
+    from apps.notifications.models import Notification
+
+    world = ewb_world
+    distance(world, "b2b", None)
+    packer = make_staff_in(world["t"], "WAREHOUSE")
+    monkeypatch.setattr(  # quiet hours now: this message doesn't wait for them
+        quiet, "current_hold", lambda now: now + timedelta(hours=8)
+    )
+    invoice = dispatch(world, by=packer)
+    with tenant_context(world["t"].pk):
+        shipment = Fulfilment.objects.get(pk=invoice.fulfilment_id)
+        rows = list(Notification.objects.filter(event_code="ewaybill.failed"))
+    told = {(n.recipient_id, n.channel) for n in rows}
+    assert told == {
+        (world["owner"].pk, "IN_APP"),
+        (world["owner"].pk, "EMAIL"),
+        (packer.pk, "IN_APP"),
+        (packer.pk, "EMAIL"),
+    }
+    email = next(n for n in rows if n.channel == "EMAIL")
+    assert email.send_after is None and email.status == "SENT"
+    assert email.title == f"E-way bill failed: {shipment.number}"
+    assert VEHICLE in email.body and "Enter the distance (1 to 4,000 km)." in email.body
+    assert email.data["path"] == f"/manage/invoices/{invoice.pk}"
+
+
+def test_the_dispatcher_recipient_only_while_ewaybills_are_on(ewb_world):
+    world = ewb_world
+    matrix = world["staff"].get(f"{API}/notification-rules/").json()
+    assert "DISPATCHER" in matrix["recipients"]
+    failed = next(e for e in matrix["events"] if e["code"] == "ewaybill.failed")
+    assert {r["recipient"] for r in failed["rules"]} == {"STAFF_PERMISSION", "DISPATCHER"}
+    elsewhere = world["staff"].put(
+        f"{API}/notification-rules/order.placed/",
+        {"rules": [{"recipient": "DISPATCHER", "channels": ["IN_APP"]}]},
+        format="json",
+    )
+    assert elsewhere.json()["error"]["details"]["fields"]["rules"] == [
+        "This recipient is only for failed e-way bills."
+    ]
+    other = world["other"].get(f"{API}/notification-rules/").json()
+    assert "DISPATCHER" not in other["recipients"]
+    assert "ewaybill.failed" not in {e["code"] for e in other["events"]}

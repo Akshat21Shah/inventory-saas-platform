@@ -365,3 +365,27 @@ def test_the_office_sees_checkouts_of_its_own_shops(world):
     assert other_shop.get(f"{API}/shop/payments/checkout/{body['id']}/").status_code == 404
     another_shop = shop_client(world["t"], make_shop(world["t"], "9876500097"))
     assert another_shop.get(f"{API}/shop/payments/checkout/{body['id']}/").status_code == 404
+
+
+def test_a_slow_gateway_asks_the_shop_to_try_again_without_a_second_checkout(world):
+    MockGateway.script("TIMEOUT")
+    slow = checkout(world)
+    assert (slow.status_code, slow.json()["error"]["code"]) == (503, "PAYMENT_GATEWAY_UNAVAILABLE")
+    assert slow.json()["error"]["message"] == (
+        "Payment service is busy, please try again in a minute."
+    )
+    with tenant_context(world["t"].pk):
+        assert not PaymentIntent.objects.exists()
+    first = checkout(world).json()
+    with tenant_context(world["t"].pk):  # stale: before replacing it, the gateway is asked
+        PaymentIntent.objects.filter(pk=first["id"]).update(
+            expires_at=timezone.now() - timedelta(minutes=1)
+        )
+    MockGateway.script("TIMEOUT")
+    unsure = checkout(world)
+    assert unsure.status_code == 503
+    assert intent(world, first["id"]).status == "CREATED"  # kept: it may have been paid
+    with tenant_context(world["t"].pk):
+        assert PaymentIntent.objects.count() == 1
+    replaced = checkout(world).json()  # the gateway answers: now it is replaced
+    assert replaced["id"] != first["id"]

@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { CancelBlock } from './cancelBlock';
 import type { DocumentNumber } from './documentNumber';
 import type { EInvoiceDocumentTypeEnum } from './eInvoiceDocumentTypeEnum';
 import type { EInvoiceRecordStatusEnum } from './eInvoiceRecordStatusEnum';
@@ -35,8 +36,10 @@ export interface EInvoiceRow {
   past_report_by: boolean;
   /** "Get IRN" or "Try again" is offered. */
   can_request: boolean;
-  /** An invoice's IRN within the window. */
+  /** An invoice's IRN, within the window, with nothing in the way. */
   can_cancel: boolean;
+  /** Why the IRN can't be cancelled, and what to do first. */
+  cancel_blocked: CancelBlock | null;
   /** @nullable */
   cancel_until: string | null;
   cancel_reason_code: string;

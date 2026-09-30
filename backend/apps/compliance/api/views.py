@@ -150,9 +150,31 @@ class EInvoiceCancelView(APIView):
             outcome=v["outcome"],
             to_backorder=v["to_backorder"],
             by=cast(User, request.user),
+            confirm_rate_changes=v["confirm_rate_changes"],
         )
         found = selectors.einvoice_list(selectors.Filters()).get(pk=record_id)
         return Response(s.EInvoiceRowSerializer(selectors.row(found)).data)
+
+
+class EInvoiceReissuePreviewView(APIView):
+    permission_classes = [HasPermission]
+    required_permission = MANAGE
+
+    @extend_schema(
+        operation_id="einvoice_reissue_preview",
+        tags=TAGS,
+        responses=s.ReissuePreviewSerializer,
+    )
+    def get(self, request: Request, record_id: UUID) -> Response:
+        found = (
+            EInvoiceRecord.objects.select_related("invoice__order")
+            .filter(pk=record_id, document_type=DocumentType.INVOICE)
+            .first()
+        )
+        if found is None or found.invoice is None:
+            raise NotFound()
+        body = cancellation.reissue_preview(found.invoice)
+        return Response(s.ReissuePreviewSerializer(body).data)
 
 
 class _RequestIrn(APIView):

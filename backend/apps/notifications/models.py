@@ -25,6 +25,7 @@ class Recipient(models.TextChoices):
     COLLECTOR = "COLLECTOR", "The salesman who collected"
     STAFF_PERMISSION = "STAFF_PERMISSION", "Staff who can…"
     OWNERS = "OWNERS", "Owners"
+    DISPATCHER = "DISPATCHER", "The person who dispatched"  # failed e-way bills (Phase 7)
 
 
 class Audience(models.TextChoices):

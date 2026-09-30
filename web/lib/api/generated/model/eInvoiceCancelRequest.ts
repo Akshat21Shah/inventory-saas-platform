@@ -21,4 +21,6 @@ export interface EInvoiceCancelRequest {
   outcome?: IrnCancelOutcomeEnum;
   /** TAKE_BACK: the quantities wait on backorder (else cancelled). */
   to_backorder?: boolean;
+  /** REISSUE when a line's GST rate valid today differs: the re-issued invoice keeps the original rates (see reissue-preview). */
+  confirm_rate_changes?: boolean;
 }

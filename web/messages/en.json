@@ -273,7 +273,7 @@
     "REFUND_EXCEEDS_CREDIT": "This is more than the shop's credit balance.",
     "GST_CREDENTIALS_NOT_READY": "Enter your GST provider credentials in Settings and check them first.",
     "PAYMENT_GATEWAY_NOT_READY": "Online payments aren't set up yet. Try again later or pay another way.",
-    "PAYMENT_GATEWAY_UNAVAILABLE": "Online payment isn't answering. Try again in a minute."
+    "PAYMENT_GATEWAY_UNAVAILABLE": "Payment service is busy, please try again in a minute."
   },
   "designSystem": {
     "title": "Design system",
@@ -3464,6 +3464,7 @@
       "stock_alert_opened": "Stock low, out, or wanted by waiting orders",
       "invoice_issued": "Tax invoice issued",
       "invoice_cancelled": "Invoice cancelled (its IRN was cancelled)",
+      "ewaybill_failed": "E-way bill failed for a shipment",
       "credit_note_issued": "Credit note issued",
       "einvoice_failed": "IRN failed for an invoice or credit note",
       "payment_received": "Payment received",
@@ -3538,7 +3539,8 @@
       "SALESPERSON": "The shop's salesperson",
       "COLLECTOR": "The salesman who collected",
       "STAFF_PERMISSION": "Staff who can…",
-      "OWNERS": "Owners"
+      "OWNERS": "Owners",
+      "DISPATCHER": "The person who dispatched"
     },
     "skip": {
       "NO_ADDRESS": "No email or mobile number",

@@ -412,3 +412,4 @@ Please answer yes or no, with a note where the answer is no.
 | 27 | When an IRN cannot be obtained (the GST system refuses or is down), is it acceptable to keep the invoice in our books, marked "IRN failed", and retry after correction? What should the distributor do about goods already dispatched? | | |
 | 28 | Is the e-way bill consignment value correctly taken as the invoice value including tax, and is ₹50,000 the right default for both inter-state and intra-state movement (knowing some states set their own limit)? | | |
 | 29 | Is recording an online payment on the date the gateway captured it (not the settlement date), with the gateway's fee outside the shop's account, acceptable? | | |
+| 30 | When an invoice's IRN is cancelled and the invoice re-issued for the same supply, should the re-issued invoice use the original tax rates or those valid on the new invoice date? (It currently keeps the original rates, and warns staff when today's rate differs.) | | |

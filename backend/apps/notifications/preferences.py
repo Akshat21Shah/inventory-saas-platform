@@ -22,6 +22,8 @@ def _staff_gets(user: User, rule: EffectiveRule) -> bool:
         return Retailer.objects.filter(salesperson=user, deleted_at__isnull=True).exists()
     if rule.recipient == Recipient.COLLECTOR:
         return user.has_permission_code("payments.collect")
+    if rule.recipient == Recipient.DISPATCHER:
+        return user.has_permission_code("orders.fulfil")
     return False
 
 

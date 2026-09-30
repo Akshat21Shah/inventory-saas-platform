@@ -1551,6 +1551,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/EInvoiceRow'
           description: ''
+  /api/v1/einvoices/{record_id}/reissue-preview/:
+    get:
+      operationId: einvoice_reissue_preview
+      parameters:
+      - in: path
+        name: record_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - compliance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReissuePreview'
+          description: ''
   /api/v1/einvoices/counts/:
     get:
       operationId: einvoices_counts
@@ -10852,6 +10873,31 @@ components:
       description: |-
         * `PERCENT` - Percentage of taxable value
         * `SPECIFIC_PER_UNIT` - Fixed amount per unit (reserved)
+    CancelBlock:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/CancelBlockReasonEnum'
+        message:
+          type: string
+          description: What to do first, in plain words.
+        ewaybill_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - message
+      - reason
+    CancelBlockReasonEnum:
+      enum:
+      - WINDOW_OVER
+      - EWAY_BILL
+      - CREDIT_NOTES
+      type: string
+      description: |-
+        * `WINDOW_OVER` - WINDOW_OVER
+        * `EWAY_BILL` - EWAY_BILL
+        * `CREDIT_NOTES` - CREDIT_NOTES
     CancelOrderRequest:
       type: object
       properties:
@@ -12410,6 +12456,11 @@ components:
           type: boolean
           default: false
           description: 'TAKE_BACK: the quantities wait on backorder (else cancelled).'
+        confirm_rate_changes:
+          type: boolean
+          default: false
+          description: 'REISSUE when a line''s GST rate valid today differs: the re-issued
+            invoice keeps the original rates (see reissue-preview).'
       required:
       - reason_code
     EInvoiceCounts:
@@ -12498,7 +12549,12 @@ components:
           description: '"Get IRN" or "Try again" is offered.'
         can_cancel:
           type: boolean
-          description: An invoice's IRN within the window.
+          description: An invoice's IRN, within the window, with nothing in the way.
+        cancel_blocked:
+          allOf:
+          - $ref: '#/components/schemas/CancelBlock'
+          nullable: true
+          description: Why the IRN can't be cancelled, and what to do first.
         cancel_until:
           type: string
           format: date-time
@@ -12551,6 +12607,7 @@ components:
       - attempts
       - can_cancel
       - can_request
+      - cancel_blocked
       - cancel_error
       - cancel_outcome
       - cancel_reason_code
@@ -12639,7 +12696,12 @@ components:
           description: '"Get IRN" or "Try again" is offered.'
         can_cancel:
           type: boolean
-          description: An invoice's IRN within the window.
+          description: An invoice's IRN, within the window, with nothing in the way.
+        cancel_blocked:
+          allOf:
+          - $ref: '#/components/schemas/CancelBlock'
+          nullable: true
+          description: Why the IRN can't be cancelled, and what to do first.
         cancel_until:
           type: string
           format: date-time
@@ -12669,6 +12731,7 @@ components:
       - attempts
       - can_cancel
       - can_request
+      - cancel_blocked
       - cancel_error
       - cancel_outcome
       - cancel_reason_code
@@ -15619,6 +15682,7 @@ components:
       - COLLECTOR
       - STAFF_PERMISSION
       - OWNERS
+      - DISPATCHER
       type: string
       description: |-
         * `SHOP` - The shop
@@ -15626,6 +15690,7 @@ components:
         * `COLLECTOR` - The salesman who collected
         * `STAFF_PERMISSION` - Staff who can…
         * `OWNERS` - Owners
+        * `DISPATCHER` - The person who dispatched
     NotificationSkipReasonEnum:
       enum:
       - NO_ADDRESS
@@ -20022,6 +20087,66 @@ components:
       description: |-
         * `REGULAR` - Regular
         * `COMPOSITION` - Composition (reserved)
+    ReissueBuyer:
+      type: object
+      properties:
+        name:
+          type: string
+        gstin:
+          type: string
+        state_code:
+          type: string
+      required:
+      - gstin
+      - name
+      - state_code
+    ReissuePreview:
+      type: object
+      properties:
+        buyer:
+          allOf:
+          - $ref: '#/components/schemas/ReissueBuyer'
+          description: 'The shop''s details now: the re-issue uses them.'
+        buyer_changed:
+          type: boolean
+        supply_type:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        supply_type_before:
+          $ref: '#/components/schemas/SupplyTypeEnum'
+        rate_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReissueRateChange'
+          description: Lines whose GST rate valid today differs from the original.
+      required:
+      - buyer
+      - buyer_changed
+      - rate_changes
+      - supply_type
+      - supply_type_before
+    ReissueRateChange:
+      type: object
+      properties:
+        line_no:
+          type: integer
+        description:
+          type: string
+        hsn_code:
+          type: string
+        original_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        today_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+      required:
+      - description
+      - hsn_code
+      - line_no
+      - original_rate
+      - today_rate
     ReminderPause:
       type: object
       properties:

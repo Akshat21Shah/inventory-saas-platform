@@ -27,6 +27,7 @@ dependencies = [
     "weasyprint>=70.0",
     "segno>=1.6",
     "razorpay>=2.0",
+    "requests>=2.32",
 ]
 
 [dependency-groups]

@@ -272,7 +272,7 @@ def dispatch(fulfilment_id: UUID, transport: Transport, *, by: User) -> Fulfilme
             invoicing.issue_invoice_for_fulfilment(shipment, trigger="ON_DISPATCH", by=by)
         from apps.compliance.ewaybill import on_dispatched
 
-        on_dispatched(shipment)  # the e-way bill, made in the background (Phase 7)
+        on_dispatched(shipment, by=by)  # the e-way bill, made in the background (Phase 7)
     return shipment
 
 

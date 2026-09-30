@@ -38,6 +38,7 @@ import type {
   PaginatedEInvoiceRowList,
   PaginatedEWayBillRowList,
   PartBInputRequest,
+  ReissuePreview,
   TransportInputRequest
 } from '../../model';
 
@@ -455,7 +456,113 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getEinvoiceCancelMutationOptions(options), queryClient);
     }
-    export type einvoicesCountsResponse200 = {
+    export type einvoiceReissuePreviewResponse200 = {
+  data: ReissuePreview
+  status: 200
+}
+
+export type einvoiceReissuePreviewResponseSuccess = (einvoiceReissuePreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type einvoiceReissuePreviewResponse = (einvoiceReissuePreviewResponseSuccess)
+
+export const getEinvoiceReissuePreviewUrl = (recordId: string,) => {
+
+
+
+
+  return `/api/v1/einvoices/${recordId}/reissue-preview/`
+}
+
+export const einvoiceReissuePreview = async (recordId: string, options?: Parameters<typeof apiFetch>[1]): Promise<einvoiceReissuePreviewResponse> => {
+
+  return apiFetch<einvoiceReissuePreviewResponse>(getEinvoiceReissuePreviewUrl(recordId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getEinvoiceReissuePreviewQueryKey = (recordId: string,) => {
+    return [
+    `/api/v1/einvoices/${recordId}/reissue-preview/`
+    ] as const;
+    }
+
+
+export const getEinvoiceReissuePreviewQueryOptions = <TData = Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError = unknown>(recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getEinvoiceReissuePreviewQueryKey(recordId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof einvoiceReissuePreview>>> = ({ signal }) => einvoiceReissuePreview(recordId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: recordId !== null && recordId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type EinvoiceReissuePreviewQueryResult = NonNullable<Awaited<ReturnType<typeof einvoiceReissuePreview>>>
+export type EinvoiceReissuePreviewQueryError = unknown
+
+
+export function useEinvoiceReissuePreview<TData = Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError = unknown>(
+ recordId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoiceReissuePreview>>,
+          TError,
+          Awaited<ReturnType<typeof einvoiceReissuePreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoiceReissuePreview<TData = Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError = unknown>(
+ recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof einvoiceReissuePreview>>,
+          TError,
+          Awaited<ReturnType<typeof einvoiceReissuePreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useEinvoiceReissuePreview<TData = Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError = unknown>(
+ recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useEinvoiceReissuePreview<TData = Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError = unknown>(
+ recordId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof einvoiceReissuePreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getEinvoiceReissuePreviewQueryOptions(recordId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type einvoicesCountsResponse200 = {
   data: EInvoiceCounts
   status: 200
 }

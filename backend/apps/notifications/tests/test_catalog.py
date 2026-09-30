@@ -116,7 +116,12 @@ def test_the_approved_compulsory_and_non_urgent_events():
         for rule in DEFAULT_RULES
         if rule.recipient == "SHOP" and "EMAIL" in rule.channels
     }
-    assert shop_email == {"invoice.issued", "credit_note.issued", "payment.received"}
+    assert shop_email == {
+        "invoice.issued",
+        "credit_note.issued",
+        "payment.received",
+        "invoice.cancelled",  # Phase 7 backend checkpoint, change 3
+    }
 
 
 @pytest.mark.django_db

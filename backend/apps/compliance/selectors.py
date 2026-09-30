@@ -28,7 +28,7 @@ class Filters:
 def einvoice_list(filters: Filters) -> QuerySet[EInvoiceRecord]:
     rows = EInvoiceRecord.objects.select_related(
         "invoice__retailer", "credit_note__retailer", "credit_note__invoice", "reissued_invoice"
-    )
+    )  # summary() also reads the invoice's e-way bills and credit notes (cancel_blocked)
     if filters.status:
         rows = rows.filter(status=filters.status)
     if filters.document_type:
@@ -59,7 +59,7 @@ def report_by(record: EInvoiceRecord) -> date | None:
 
 
 def summary(record: EInvoiceRecord) -> dict[str, Any]:
-    from apps.compliance.cancellation import can_cancel, window_ends
+    from apps.compliance.cancellation import blocked_by, can_cancel, window_ends
 
     last_day = report_by(record)
     reissued = record.reissued_invoice
@@ -82,6 +82,11 @@ def summary(record: EInvoiceRecord) -> dict[str, Any]:
         "can_request": record.status == S.FAILED
         or (record.status == S.PENDING and record.requested_at is None),
         "can_cancel": can_cancel(record),
+        "cancel_blocked": (
+            blocked_by(record, record.invoice)
+            if record.status == S.GENERATED and record.invoice is not None
+            else None
+        ),
         "cancel_until": window_ends(record) if record.document_type == "INVOICE" else None,
         "cancel_reason_code": record.cancel_reason_code,
         "cancel_remarks": record.cancel_remarks,

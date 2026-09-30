@@ -57,6 +57,12 @@ class DocumentNumberSerializer(serializers.Serializer[Any]):
     number = serializers.CharField()
 
 
+class CancelBlockSerializer(serializers.Serializer[Any]):
+    reason = serializers.ChoiceField(choices=["WINDOW_OVER", "EWAY_BILL", "CREDIT_NOTES"])
+    message = serializers.CharField(help_text="What to do first, in plain words.")
+    ewaybill_id = serializers.UUIDField(required=False, allow_null=True)
+
+
 class EInvoiceSummarySerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=EInvoiceRecord.Status.choices)
@@ -75,7 +81,12 @@ class EInvoiceSummarySerializer(serializers.Serializer[Any]):
     )
     past_report_by = serializers.BooleanField()
     can_request = serializers.BooleanField(help_text='"Get IRN" or "Try again" is offered.')
-    can_cancel = serializers.BooleanField(help_text="An invoice's IRN within the window.")
+    can_cancel = serializers.BooleanField(
+        help_text="An invoice's IRN, within the window, with nothing in the way."
+    )
+    cancel_blocked = CancelBlockSerializer(
+        allow_null=True, help_text="Why the IRN can't be cancelled, and what to do first."
+    )
     cancel_until = serializers.DateTimeField(allow_null=True)
     cancel_reason_code = serializers.CharField(allow_blank=True)
     cancel_remarks = serializers.CharField(allow_blank=True)
@@ -113,6 +124,35 @@ class EInvoiceCancelSerializer(serializers.Serializer[Any]):
     )
     to_backorder = serializers.BooleanField(
         default=False, help_text="TAKE_BACK: the quantities wait on backorder (else cancelled)."
+    )
+    confirm_rate_changes = serializers.BooleanField(
+        default=False,
+        help_text="REISSUE when a line's GST rate valid today differs: the re-issued invoice "
+        "keeps the original rates (see reissue-preview).",
+    )
+
+
+class ReissueRateChangeSerializer(serializers.Serializer[Any]):
+    line_no = serializers.IntegerField()
+    description = serializers.CharField()
+    hsn_code = serializers.CharField()
+    original_rate = serializers.DecimalField(max_digits=6, decimal_places=3)
+    today_rate = serializers.DecimalField(max_digits=6, decimal_places=3)
+
+
+class ReissueBuyerSerializer(serializers.Serializer[Any]):
+    name = serializers.CharField()
+    gstin = serializers.CharField(allow_blank=True)
+    state_code = serializers.CharField()
+
+
+class ReissuePreviewSerializer(serializers.Serializer[Any]):
+    buyer = ReissueBuyerSerializer(help_text="The shop's details now: the re-issue uses them.")
+    buyer_changed = serializers.BooleanField()
+    supply_type = serializers.ChoiceField(choices=["INTRA", "INTER"])
+    supply_type_before = serializers.ChoiceField(choices=["INTRA", "INTER"])
+    rate_changes = ReissueRateChangeSerializer(
+        many=True, help_text="Lines whose GST rate valid today differs from the original."
     )
 
 

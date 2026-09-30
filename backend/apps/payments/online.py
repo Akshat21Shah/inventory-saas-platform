@@ -69,7 +69,7 @@ P = PaymentIntent.Purpose
 class GatewayUnavailable(DomainError):
     status_code = 503
     code = ErrorCode.PAYMENT_GATEWAY_UNAVAILABLE
-    default_message = "Online payment isn't answering. Try again in a minute."
+    default_message = "Payment service is busy, please try again in a minute."
 
 
 def _paise(amount: Decimal) -> int:
@@ -136,7 +136,8 @@ def start_checkout(
         if active.amount == amount_for(shop, purpose, invoice, amount):
             return active  # a second tap or tab
     if active is not None:  # stale, or for an amount no longer right
-        _reconcile_one(active, config)  # it may have been paid after all
+        if not _reconcile_one(active, config):  # it may have been paid; not knowing, keep it
+            raise GatewayUnavailable()
         active.refresh_from_db()
         if active.status == ST.PAID:
             return active
@@ -319,12 +320,16 @@ def _record_captured(intent_id: UUID, captured: list[GatewayPayment]) -> None:
     PaymentIntent.objects.filter(pk=intent_id).update(reconciled_at=timezone.now())
 
 
-def _reconcile_one(intent: PaymentIntent, config: GatewayConfig) -> None:
-    """Before a checkout is replaced: ask the gateway whether it was paid after all."""
-    if intent.provider_order_id:
-        captured = _captured(config, intent.provider_order_id)
-        if captured is not None:
-            _record_captured(intent.pk, captured)
+def _reconcile_one(intent: PaymentIntent, config: GatewayConfig) -> bool:
+    """Before a checkout is replaced: ask the gateway whether it was paid after all. False when
+    the gateway doesn't answer (then nothing may replace it: the shop could pay twice)."""
+    if not intent.provider_order_id:
+        return True
+    captured = _captured(config, intent.provider_order_id)
+    if captured is None:
+        return False
+    _record_captured(intent.pk, captured)
+    return True
 
 
 def reconcile(tenant_id: UUID) -> dict[str, int]:

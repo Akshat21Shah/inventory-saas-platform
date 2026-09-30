@@ -13,6 +13,8 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+import requests
+
 from apps.payments.gateway.base import (
     GatewayError,
     GatewayEvent,
@@ -22,16 +24,27 @@ from apps.payments.gateway.base import (
     SignatureInvalid,
 )
 
+# Calls the shop waits on stop after this; the SDK's own retries stay off (backend checkpoint,
+# change 5): a slow gateway means "try again in a minute", never a second attempt here.
+TIMEOUT_SECONDS = 10
 SIGNATURE_HEADER = "X-Razorpay-Signature"  # TODO(verify)
 EVENT_ID_HEADER = "X-Razorpay-Event-Id"  # TODO(verify)
 EVENTS = {"payment.captured": "PAYMENT_CAPTURED", "payment.failed": "PAYMENT_FAILED"}
 STATUSES = {"captured": "CAPTURED", "failed": "FAILED"}  # TODO(verify); others: PENDING
 
 
+class _TimedSession(requests.Session):
+    """Every request gets a timeout unless one is given."""
+
+    def request(self, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("timeout", TIMEOUT_SECONDS)
+        return super().request(*args, **kwargs)
+
+
 def _client(keys: GatewayKeys) -> Any:
     import razorpay
 
-    return razorpay.Client(auth=(keys.key_id, keys.key_secret))
+    return razorpay.Client(auth=(keys.key_id, keys.key_secret), session=_TimedSession())
 
 
 def _error(exc: Exception) -> GatewayError:
@@ -39,6 +52,8 @@ def _error(exc: Exception) -> GatewayError:
 
     if isinstance(exc, razorpay.errors.BadRequestError):
         return GatewayError("REFUSED", str(exc) or "Razorpay refused the request.")
+    if isinstance(exc, requests.exceptions.Timeout):
+        return GatewayError("TIMEOUT", "Razorpay didn't answer in time.", retryable=True)
     return GatewayError("UNAVAILABLE", "Razorpay could not be reached.", retryable=True)
 
 

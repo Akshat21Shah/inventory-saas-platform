@@ -58,6 +58,7 @@ HANDLED_EVENTS: tuple[str, ...] = (
     "invoice.cancelled",
     "credit_note.issued",
     "einvoice.failed",
+    "ewaybill.failed",
     "payment.received",
     "payment.cleared",
     "payment.reversed",
@@ -166,6 +167,9 @@ def _people(rule: EffectiveRule, ctx: contexts.EventContext) -> list[tuple[User,
         return [(u, True) for u in _staff(Q(role__permissions__code=rule.permission))]
     if rule.recipient == Recipient.OWNERS:
         return [(u, True) for u in _staff(Q(role__code=OWNER_ROLE))]
+    if rule.recipient == Recipient.DISPATCHER:
+        dispatcher = ctx.extra.get("dispatcher_id")
+        return [(u, True) for u in _staff(Q(user_id=dispatcher))] if dispatcher else []
     return []
 
 
