@@ -28,4 +28,6 @@ export interface Checkout {
   created_at: string;
   /** @nullable */
   paid_at: string | null;
+  /** The shop's page saw the payment go through and no failure came after; the gateway's confirmation hasn't arrived yet. */
+  awaiting_confirmation: boolean;
 }

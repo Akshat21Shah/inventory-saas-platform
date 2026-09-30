@@ -110,6 +110,7 @@ describe("Online checkouts", () => {
     shop_name: "Ganesh Kirana",
     retailer_id: "r1",
     client_outcome: "success",
+    awaiting_confirmation: false,
   };
 
   it("lists what shops started paying, with the receipt once paid", async () => {

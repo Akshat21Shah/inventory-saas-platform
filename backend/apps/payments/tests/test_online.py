@@ -157,7 +157,7 @@ def test_what_the_page_says_is_never_enough(world):
     noted = world["shop_api"].post(
         f"{API}/shop/payments/checkout/{body['id']}/", {"outcome": "success"}, format="json"
     )
-    assert noted.json()["status"] == "ATTEMPTED"
+    assert (noted.json()["status"], noted.json()["awaiting_confirmation"]) == ("ATTEMPTED", True)
     assert online_payments(world) == []
 
 
@@ -277,6 +277,16 @@ def test_a_failed_try_keeps_the_checkout_open(world):
     pay(world, body["checkout"]["order_id"], outcome="FAILED")
     failed = intent(world, body["id"])
     assert (failed.status, failed.last_error) == ("ATTEMPTED", "The payment was declined.")
+    url = f"{API}/shop/payments/checkout/{body['id']}/"
+    shown = world["shop_api"].get(url).json()
+    assert (shown["awaiting_confirmation"], shown["last_error"]) == (
+        False,  # the shop sees why, not "waiting for the bank"
+        "The payment was declined.",
+    )
+    noted = world["shop_api"].post(url, {"outcome": "success"}, format="json").json()
+    assert (noted["awaiting_confirmation"], noted["last_error"]) == (True, "")  # tried again
+    pay(world, body["checkout"]["order_id"], outcome="FAILED")  # the gateway has the last word
+    assert world["shop_api"].get(url).json()["awaiting_confirmation"] is False
     pay(world, body["checkout"]["order_id"])
     assert intent(world, body["id"]).status == "PAID"
 

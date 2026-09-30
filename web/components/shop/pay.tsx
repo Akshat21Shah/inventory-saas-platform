@@ -224,7 +224,7 @@ export function ShopCheckoutPage({ intentId }: { intentId: string }) {
   const checkout = query.data?.data;
   if (!checkout) return <EmptyState title={t("notFound")} />;
   const back = checkout.invoice_id ? `/shop/invoices/${checkout.invoice_id}` : "/shop/account";
-  const tried = checkout.status === "ATTEMPTED";
+  const waiting = checkout.awaiting_confirmation;
   return (
     <div className="mx-auto max-w-md space-y-5">
       <Link
@@ -271,7 +271,7 @@ export function ShopCheckoutPage({ intentId }: { intentId: string }) {
         </section>
       ) : (
         <section className="space-y-3">
-          {tried ? (
+          {waiting ? (
             <p
               className="bg-muted flex items-center gap-2 rounded-xl p-3 text-sm"
               aria-live="polite"

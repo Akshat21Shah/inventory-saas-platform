@@ -267,6 +267,10 @@ class CheckoutSerializer(serializers.Serializer[Any]):
     receipt_number = serializers.CharField(allow_blank=True)
     created_at = serializers.DateTimeField()
     paid_at = serializers.DateTimeField(allow_null=True)
+    awaiting_confirmation = serializers.BooleanField(
+        help_text="The shop's page saw the payment go through and no failure came after; the "
+        "gateway's confirmation hasn't arrived yet."
+    )
 
 
 class CheckoutOutcomeSerializer(serializers.Serializer[Any]):

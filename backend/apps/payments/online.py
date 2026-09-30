@@ -197,7 +197,9 @@ def note_outcome(intent: PaymentIntent, outcome: str) -> PaymentIntent:
     intent.client_outcome = outcome
     if intent.status == ST.CREATED:
         intent.status = ST.ATTEMPTED
-    intent.save(update_fields=["client_outcome", "status", "updated_at"])
+    if outcome == "success":
+        intent.last_error = ""  # this try went through; an earlier failed try no longer applies
+    intent.save(update_fields=["client_outcome", "status", "last_error", "updated_at"])
     return intent
 
 
@@ -408,4 +410,8 @@ def describe(intent: PaymentIntent) -> dict[str, Any]:
         "shop_name": intent.retailer.shop_name,
         "retailer_id": intent.retailer_id,
         "client_outcome": intent.client_outcome,
+        # The page saw it go through and no failure came after: only the gateway's word is left.
+        "awaiting_confirmation": intent.status == ST.ATTEMPTED
+        and intent.client_outcome == "success"
+        and not intent.last_error,
     }

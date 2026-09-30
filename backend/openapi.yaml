@@ -11127,8 +11127,13 @@ components:
           type: string
           format: date-time
           nullable: true
+        awaiting_confirmation:
+          type: boolean
+          description: The shop's page saw the payment go through and no failure came
+            after; the gateway's confirmation hasn't arrived yet.
       required:
       - amount
+      - awaiting_confirmation
       - checkout
       - created_at
       - expires_at
@@ -17803,6 +17808,10 @@ components:
           type: string
           format: date-time
           nullable: true
+        awaiting_confirmation:
+          type: boolean
+          description: The shop's page saw the payment go through and no failure came
+            after; the gateway's confirmation hasn't arrived yet.
         shop_name:
           type: string
         retailer_id:
@@ -17812,6 +17821,7 @@ components:
           type: string
       required:
       - amount
+      - awaiting_confirmation
       - checkout
       - client_outcome
       - created_at

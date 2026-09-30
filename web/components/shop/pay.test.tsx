@@ -37,6 +37,7 @@ const checkout = (over: Partial<Checkout> = {}): Checkout => ({
   receipt_number: "",
   created_at: "2026-09-30T05:30:00Z",
   paid_at: null,
+  awaiting_confirmation: false,
   ...over,
 });
 
@@ -127,7 +128,10 @@ describe("The checkout page", () => {
 
   it("waits for the bank, then shows the receipt", async () => {
     mockApi({
-      "/api/v1/shop/payments/checkout/c1/": () => [200, checkout({ status: "ATTEMPTED" })],
+      "/api/v1/shop/payments/checkout/c1/": () => [
+        200,
+        checkout({ status: "ATTEMPTED", awaiting_confirmation: true }),
+      ],
     });
     const { unmount } = renderWithIntl(<ShopCheckoutPage intentId="c1" />);
     expect(await screen.findByText(/Waiting for the bank to confirm/)).toBeVisible();
@@ -142,6 +146,21 @@ describe("The checkout page", () => {
     expect(await screen.findByText("Thank you. Receipt RCT/26-27/000007.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Download receipt" })).toBeVisible();
     expect(screen.queryByRole("button", { name: /now$/ })).toBeNull();
+  });
+
+  it("after a failed try, says why and offers Pay again (not 'waiting for the bank')", async () => {
+    mockApi({
+      "/api/v1/shop/payments/checkout/c1/": () => [
+        200,
+        checkout({ status: "ATTEMPTED", last_error: "Declined by the bank." }),
+      ],
+    });
+    renderWithIntl(<ShopCheckoutPage intentId="c1" />);
+    expect(
+      await screen.findByText("The last try didn't go through: Declined by the bank."),
+    ).toBeVisible();
+    expect(screen.queryByText(/Waiting for the bank/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Pay ₹210.00 now" })).toBeVisible();
   });
 
   it("starts again once a checkout expired", async () => {
