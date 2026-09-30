@@ -63,6 +63,7 @@ class PaymentFilters:
     date_from: date | None = None
     date_to: date | None = None
     search: str = ""
+    needs_review: bool = False
 
 
 def payments_for(user: User) -> QuerySet[Payment]:
@@ -86,6 +87,8 @@ def payment_list(user: User, f: PaymentFilters) -> QuerySet[Payment]:
         qs = qs.filter(payment_date__gte=f.date_from)
     if f.date_to:
         qs = qs.filter(payment_date__lte=f.date_to)
+    if f.needs_review:
+        qs = qs.filter(needs_review=True)
     if f.search:
         term = f.search.strip()
         qs = qs.filter(

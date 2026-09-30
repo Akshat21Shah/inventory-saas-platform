@@ -33,8 +33,8 @@ import type {
   HandoverRequest,
   HandoverResult,
   PaginatedPaymentIntentRowList,
-  PaginatedPaymentRowList,
   PaginatedRefundList,
+  PaginatedStaffPaymentRowList,
   PaymentAllocateRequest,
   PaymentDetail,
   PaymentIntentsListParams,
@@ -283,7 +283,7 @@ export function usePaymentIntentsList<TData = Awaited<ReturnType<typeof paymentI
 
 
 export type paymentsListResponse200 = {
-  data: PaginatedPaymentRowList
+  data: PaginatedStaffPaymentRowList
   status: 200
 }
 

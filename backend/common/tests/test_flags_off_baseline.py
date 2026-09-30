@@ -95,6 +95,7 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.payment.review_reason": "",
     "api.payment.reviewed_at": None,
     "api.shop-account.online_payments": False,
+    "api.payments.results.needs_review": False,  # the office's list (commit 12)
     # An invoice's own status (commit 11b): cancelled only with its IRN, so always issued here.
     "api.invoice.status": "ISSUED",
     "api.invoices.results.status": "ISSUED",

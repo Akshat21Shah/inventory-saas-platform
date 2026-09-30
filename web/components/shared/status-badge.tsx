@@ -61,6 +61,7 @@ const TONES: Record<string, StatusTone> = {
   CREATED: "info",
   ATTEMPTED: "warning",
   EXPIRED: "neutral",
+  NEEDS_REVIEW: "warning",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {

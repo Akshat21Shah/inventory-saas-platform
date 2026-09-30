@@ -66,6 +66,13 @@ class PaymentRowSerializer(serializers.ModelSerializer[Payment]):
         return payment.collected_by.full_name if payment.collected_by else ""
 
 
+class StaffPaymentRowSerializer(PaymentRowSerializer):
+    """The office's list: also whether an online payment waits for review (never for shops)."""
+
+    class Meta(PaymentRowSerializer.Meta):
+        fields = [*PaymentRowSerializer.Meta.fields, "needs_review"]
+
+
 class PaymentDetailSerializer(PaymentRowSerializer):
     recorded_by_name = serializers.SerializerMethodField()
     handed_over_by_name = serializers.SerializerMethodField()

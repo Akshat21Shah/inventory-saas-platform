@@ -49,6 +49,12 @@ const SECTIONS: Section[] = [
     features: ["einvoice", "ewaybill"],
   },
   {
+    href: "/manage/settings/online-payments",
+    labelKey: "onlinePayments",
+    permission: "settings.manage",
+    features: ["payments"],
+  },
+  {
     href: "/manage/settings/notifications",
     labelKey: "notifications",
     permission: "notifications.manage",

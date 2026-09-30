@@ -22,7 +22,7 @@ ordering?: string;
 page_size?: number;
 retailer?: string;
 /**
- * A search term.
+ * Shop, bill, receipt or gateway order
  */
 search?: string;
 status?: PaymentIntentsListStatus;

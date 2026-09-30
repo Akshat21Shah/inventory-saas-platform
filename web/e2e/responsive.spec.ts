@@ -42,6 +42,7 @@ interface Ids {
   refund: string | null;
   shop_invoice: string | null;
   ewaybill_invoice: string | null;
+  shop_checkout: string | null;
 }
 
 function pages(ids: Ids) {
@@ -67,6 +68,7 @@ function pages(ids: Ids) {
     `/manage/payments/new?retailer=${ids.retailer}`,
     ...(ids.payment ? [`/manage/payments/${ids.payment}`] : []),
     "/manage/payments/handover",
+    "/manage/payments/online",
     "/manage/payments/refunds",
     "/manage/payments/refunds/new",
     ...(ids.refund ? [`/manage/payments/refunds/${ids.refund}`] : []),
@@ -74,6 +76,7 @@ function pages(ids: Ids) {
     `/manage/retailers/${ids.retailer}/ledger`,
     "/manage/settings/policies/invoicing",
     "/manage/settings/compliance",
+    "/manage/settings/online-payments",
     "/manage/settings/policies/credit_payments",
     "/manage/products",
     "/manage/products/new",
@@ -157,6 +160,7 @@ function pages(ids: Ids) {
     ...(ids.shop_invoice ? [`/shop/invoices/${ids.shop_invoice}`] : []),
     "/shop/statement",
     "/shop/payments",
+    ...(ids.shop_checkout ? [`/shop/payments/checkout/${ids.shop_checkout}`] : []),
     "/shop/notifications",
   ];
   return { staff, platform, shop };

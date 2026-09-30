@@ -174,6 +174,7 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "refund",
         "shop_invoice",
         "ewaybill_invoice",
+        "shop_checkout",
     }
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]

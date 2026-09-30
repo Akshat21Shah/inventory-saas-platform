@@ -28,6 +28,7 @@ from apps.payments.gateway.base import GatewayKeys
 from apps.payments.gateway.mock import EVENT_ID, SIGNATURE, MockGateway
 from apps.payments.models import GatewayConfig, Payment, PaymentIntent, WebhookEvent
 from apps.payments.tests.test_gateway import payments_on
+from apps.retailers.models import Retailer
 from common.tenancy import tenant_context
 from common.testing.isolation import covers
 
@@ -238,6 +239,10 @@ def test_another_amount_is_recorded_and_flagged(world):
     assert (shown["needs_review"], shown["review_reason"]) == (True, payment.review_reason)
     shop_view = world["shop_api"].get(f"{API}/shop/payments/{payment.pk}/").json()
     assert "needs_review" not in shop_view
+    listed = world["staff"].get(f"{API}/payments/?needs_review=true").json()["results"]
+    assert [(r["id"], r["needs_review"]) for r in listed] == [(str(payment.pk), True)]
+    shop_list = world["shop_api"].get(f"{API}/shop/payments/").json()["results"]
+    assert "needs_review" not in shop_list[0]
     url = f"{API}/payments/{payment.pk}/review/"
     assert world["sales"].post(url, {}, format="json").status_code == 403
     reviewed = world["staff"].post(url, {"note": "Shop paid the rest in cash"}, format="json")
@@ -245,6 +250,7 @@ def test_another_amount_is_recorded_and_flagged(world):
     assert AuditLog.objects.filter(action="payments.online_reviewed").count() == 1
     again = world["staff"].post(url, {}, format="json")
     assert again.status_code == 400
+    assert world["staff"].get(f"{API}/payments/?needs_review=true").json()["results"] == []
 
 
 def test_with_advances_off_an_excess_is_kept_as_credit(world):
@@ -359,6 +365,20 @@ def test_the_office_sees_checkouts_of_its_own_shops(world):
         (body["id"], world["shop"].shop_name, "CREATED")
     ]
     assert world["staff"].get(f"{API}/payment-intents/?status=PAID").json()["results"] == []
+    for term in (world["shop"].shop_name[:5], world["bill"].number, body["checkout"]["order_id"]):
+        found = world["staff"].get(f"{API}/payment-intents/", {"search": term}).json()
+        assert [r["id"] for r in found["results"]] == [body["id"]]
+    assert world["staff"].get(f"{API}/payment-intents/?search=nobody").json()["results"] == []
+    assert world["staff"].get(f"{API}/payment-intents/?status=NOPE").status_code == 400
+    assert world["staff"].get(f"{API}/payment-intents/?retailer=abc").status_code == 400
+    # Sales staff who see only their own shops see only those shops' checkouts.
+    salesman = make_staff_in(world["t"], "SALES")
+    settings(world["t"], orders__sales_visibility="ASSIGNED_RETAILERS")
+    own = client_for(world["t"], salesman)
+    assert own.get(f"{API}/payment-intents/").json()["results"] == []
+    with tenant_context(world["t"].pk):
+        Retailer.objects.filter(pk=world["shop"].pk).update(salesperson=salesman)
+    assert [r["id"] for r in own.get(f"{API}/payment-intents/").json()["results"]] == [body["id"]]
     other = client_for(world["tb"], make_staff_in(world["tb"], "OWNER"))
     assert other.get(f"{API}/payment-intents/").json()["results"] == []
     other_shop = shop_client(world["tb"], make_shop(world["tb"], "9876500098"))

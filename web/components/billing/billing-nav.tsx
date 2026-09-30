@@ -56,6 +56,7 @@ export function PaymentsNav() {
             /^\/manage\/payments\/[0-9a-f-]{36}$/.test(path),
         },
         { href: "/manage/payments/refunds", label: t("refunds"), prefix: true },
+        { href: "/manage/payments/online", label: t("checkouts"), features: ["payments"] },
         {
           href: "/manage/payments/handover",
           label: t("handover"),

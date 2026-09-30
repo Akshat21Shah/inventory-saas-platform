@@ -1167,7 +1167,8 @@
       "roles": "Roles",
       "audit": "Audit log",
       "notifications": "Messages",
-      "compliance": "E-invoices & e-way bills"
+      "compliance": "E-invoices & e-way bills",
+      "onlinePayments": "Online payments"
     },
     "policyBodies": {
       "tax": "How GST is applied to your products and invoices.",
@@ -2305,7 +2306,8 @@
         "REVERSED": "Cancelled",
         "PENDING_CLEARANCE": "Waiting for the cheque to clear"
       },
-      "messages": "Messages"
+      "messages": "Messages",
+      "billCancelled": "This bill was cancelled. You don't owe anything for it."
     },
     "messages": {
       "title": "Messages",
@@ -2327,6 +2329,32 @@
       "promptYes": "Yes, send on WhatsApp",
       "promptNo": "Not now",
       "announcements": "From your distributor"
+    },
+    "pay": {
+      "title": "Pay online",
+      "payBill": "Pay {amount}",
+      "payAll": "Pay everything: {amount}",
+      "otherAmount": "Or pay another amount (₹)",
+      "payAmount": "Pay",
+      "payNow": "Pay {amount} now",
+      "couldNotOpen": "The payment page didn't open. Check your internet and try again.",
+      "notFound": "Payment not found",
+      "backToBill": "Back to the bill",
+      "backToAccount": "Back to my account",
+      "forBill": "For bill {number}",
+      "purposes": {
+        "INVOICE": "For a bill",
+        "OUTSTANDING": "Everything you owe",
+        "CUSTOM": "An amount you chose"
+      },
+      "paid": "Paid",
+      "paidBody": "Thank you. Receipt {receipt}.",
+      "receipt": "Download receipt",
+      "expired": "This payment wasn't finished in time.",
+      "startAgain": "Start again",
+      "waiting": "Waiting for the bank to confirm. This page updates by itself.",
+      "lastError": "The last try didn't go through: {error}",
+      "safe": "You pay on the payment company's secure page. We never see your card or bank details."
     }
   },
   "filters": {
@@ -2983,7 +3011,8 @@
       "receivables": "Receivables",
       "paymentSettings": "Credit & payment settings",
       "einvoices": "E-invoices",
-      "ewaybills": "E-way bills"
+      "ewaybills": "E-way bills",
+      "checkouts": "Online checkouts"
     },
     "invoices": {
       "title": "Invoices",
@@ -3265,8 +3294,16 @@
         "collectedBy": "Collected by",
         "handoverStatus": "Handover",
         "handedOverAt": "Handed over",
-        "reversalReason": "Reason"
-      }
+        "reversalReason": "Reason",
+        "markReviewed": "Mark reviewed",
+        "reviewTitle": "Review payment {number}",
+        "reviewNote": "Note",
+        "reviewNoteHint": "Optional: what you checked or did (for example, the shop paid the rest in cash).",
+        "needsReview": "This online payment needs a look: {reason}",
+        "gatewayPayment": "Gateway payment ID",
+        "reviewedAt": "Reviewed"
+      },
+      "needsReviewOnly": "Needs review only"
     },
     "handover": {
       "title": "Collections to hand over",
@@ -3429,6 +3466,78 @@
       "prefix": "Prefix",
       "save": "Save",
       "saved": "Prefix changed. It applies from the next number."
+    },
+    "online": {
+      "settings": {
+        "title": "Online payments",
+        "description": "Your own payment gateway account. Shops pay into it; a payment counts only when the gateway confirms it.",
+        "off": "Online payments aren't switched on",
+        "offBody": "Ask us to switch online payments on for your business.",
+        "keysTitle": "Gateway account",
+        "keysBody": "Saved encrypted and never shown again. Leave a field blank to keep what is saved.",
+        "provider": "Gateway",
+        "providers": {
+          "RAZORPAY": "Razorpay",
+          "MOCK": "Test gateway (no money moves)"
+        },
+        "mode": "Mode",
+        "modes": {
+          "TEST": "Test",
+          "LIVE": "Live"
+        },
+        "liveHint": "Live keys take real money.",
+        "testOnly": "Only test keys can be used on this site.",
+        "fields": {
+          "key_id": "Key ID",
+          "key_secret": "Key secret",
+          "webhook_secret": "Webhook secret"
+        },
+        "fieldHints": {
+          "key_id": "From the gateway's API keys page.",
+          "key_secret": "Shown once by the gateway when you create the key.",
+          "webhook_secret": "The secret you type when you add the webhook below."
+        },
+        "savedHint": "Saved: {value}. Leave blank to keep it.",
+        "lastError": "The gateway said: {error}",
+        "verifiedAt": "Working since",
+        "checking": "Checking the keys with the gateway…",
+        "save": "Save",
+        "saved": "Saved. Checking the keys with the gateway.",
+        "check": "Check again",
+        "checkStarted": "Checking the keys with the gateway.",
+        "webhookTitle": "Webhook address",
+        "webhookBody": {
+          "RAZORPAY": "In your Razorpay dashboard, add a webhook with this address and the same webhook secret as above.",
+          "MOCK": "The test gateway sends its confirmations here by itself."
+        },
+        "webhookEvents": "Choose the events payment.captured and payment.failed.",
+        "copy": "Copy",
+        "copied": "Copied.",
+        "copyFailed": "Couldn't copy. Select the address and copy it."
+      },
+      "checkouts": {
+        "title": "Online checkouts",
+        "description": "Every online payment a shop started, and what the gateway said.",
+        "off": "Online payments aren't switched on",
+        "offBody": "Ask us to switch online payments on for your business.",
+        "shop": "Shop",
+        "for": "For",
+        "bill": "Bill {number}",
+        "purposes": {
+          "INVOICE": "A bill",
+          "OUTSTANDING": "Everything owed",
+          "CUSTOM": "An amount"
+        },
+        "amount": "Amount",
+        "status": "Status",
+        "started": "Started",
+        "receipt": "Receipt",
+        "empty": "No online checkouts yet",
+        "emptyBody": "They appear here when shops tap Pay.",
+        "searchPlaceholder": "Shop, bill, receipt or gateway order",
+        "search": "Search",
+        "allStatuses": "All statuses"
+      }
     }
   },
   "paymentStatus": {
@@ -3436,7 +3545,8 @@
     "PENDING_CLEARANCE": "Waiting to clear",
     "CLEARED": "Cleared",
     "BOUNCED": "Bounced",
-    "REVERSED": "Reversed"
+    "REVERSED": "Reversed",
+    "NEEDS_REVIEW": "Needs review"
   },
   "handoverStatus": {
     "NOT_TRACKED": "Recorded in the office",

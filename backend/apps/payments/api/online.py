@@ -6,6 +6,7 @@ from typing import Any, cast
 from uuid import UUID
 
 from django.conf import settings
+from django.db.models import Q
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics
@@ -20,9 +21,11 @@ from apps.accounts.models import User
 from apps.payments import gateway_config, online
 from apps.payments.api import serializers as s
 from apps.payments.api.serializers import PaymentDetailSerializer
+from apps.payments.api.views import _uuid
 from apps.payments.models import PaymentIntent
+from apps.retailers.selectors import sees_own_retailers_only
 from apps.shop.api.views import ShopView, _retailer
-from common.errors import NotFound
+from common.errors import InvalidFields, NotFound
 from common.hosts import HostKind
 from common.idempotency import idempotent
 from common.permissions import HasPermission
@@ -198,13 +201,28 @@ class PaymentIntentListView(generics.ListAPIView[PaymentIntent]):
     def get_queryset(self) -> Any:
         if getattr(self, "swagger_fake_view", False):
             return PaymentIntent.objects.none()
+        q = self.request.query_params
+        user = cast(User, self.request.user)
         rows = _intents()
-        status = self.request.query_params.get("status", "")
+        if sees_own_retailers_only(user):
+            rows = rows.filter(retailer__salesperson=user)
+        status = q.get("status", "")
+        if status and status not in PaymentIntent.Status.values:
+            raise InvalidFields({"status": ["Not a valid value."]})
         if status:
             rows = rows.filter(status=status)
-        retailer = self.request.query_params.get("retailer", "")
+        retailer = _uuid(q.get("retailer"), "retailer")
         if retailer:
             rows = rows.filter(retailer_id=retailer)
+        term = q.get("search", "").strip()
+        if term:
+            rows = rows.filter(
+                Q(retailer__shop_name__icontains=term)
+                | Q(retailer__code__iexact=term)
+                | Q(invoice__number__icontains=term)
+                | Q(payment__number__icontains=term)
+                | Q(provider_order_id=term)
+            )
         return rows
 
     def paginate_queryset(self, queryset: Any) -> Any:
@@ -217,6 +235,7 @@ class PaymentIntentListView(generics.ListAPIView[PaymentIntent]):
         parameters=[
             OpenApiParameter("status", str, enum=list(PaymentIntent.Status.values)),
             OpenApiParameter("retailer", UUID),
+            OpenApiParameter("search", str, description="Shop, bill, receipt or gateway order"),
         ],
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:

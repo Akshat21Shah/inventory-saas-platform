@@ -6,12 +6,17 @@ import type { Dues, PaymentDetail, ReceivablesPage as Page } from "@/lib/api/gen
 import { mockApi } from "@/tests/mock-api";
 import { renderWithIntl } from "@/tests/render";
 
-import { HandoverPage, NewPaymentPage, PaymentDetailPage } from "./payments";
+import { HandoverPage, NewPaymentPage, PaymentDetailPage, PaymentsPage } from "./payments";
 import { ReceivablesPage } from "./receivables";
 import { RefundDetailPage } from "./refunds";
 
 const permissions = new Set<string>();
-const auth = { me: { id: "u1", tenant: { id: "t1" } }, can: (p: string) => permissions.has(p) };
+const features = new Set<string>();
+const auth = {
+  me: { id: "u1", tenant: { id: "t1" } },
+  can: (p: string) => permissions.has(p),
+  feature: (f: string) => features.has(f),
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn() };
 let search = new URLSearchParams();
@@ -24,6 +29,7 @@ vi.mock("next/navigation", () => ({
 afterEach(() => {
   vi.unstubAllGlobals();
   permissions.clear();
+  features.clear();
   router.push.mockReset();
   search = new URLSearchParams();
 });
@@ -319,5 +325,64 @@ describe("A refund", () => {
     renderWithIntl(<RefundDetailPage refundId="rf1" />);
     expect(await screen.findByText("Paid back")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Reverse (error)" })).toBeNull();
+  });
+});
+
+describe("Online payments for staff", () => {
+  const onlinePayment: PaymentDetail = {
+    ...payment,
+    mode: "ONLINE",
+    status: "RECEIVED",
+    cheque_number: "",
+    bank_name: "",
+    handover_status: "NOT_TRACKED",
+    collected_by_name: "",
+    dated_in_previous_financial_year: false,
+    held_as_credit_while_advances_off: null,
+    gateway_payment_id: "pay_mock_1",
+    needs_review: true,
+    review_reason: "Paid ₹200.00; the checkout was for ₹210.00.",
+    reviewed_at: null,
+  };
+
+  it("shows why an online payment needs a look, and marks it reviewed with a note", async () => {
+    permissions.add("payments.record");
+    const user = userEvent.setup();
+    const calls = mockApi({
+      "/api/v1/payments/p1/": () => [200, onlinePayment],
+      "POST /api/v1/payments/p1/review/": () => [200, { ...onlinePayment, needs_review: false }],
+    });
+    renderWithIntl(<PaymentDetailPage paymentId="p1" />);
+    expect(
+      await screen.findByText(
+        "This online payment needs a look: Paid ₹200.00; the checkout was for ₹210.00.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("pay_mock_1")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Mark reviewed" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.type(within(dialog).getByLabelText(/^Note/), "Rest paid in cash");
+    await user.click(within(dialog).getByRole("button", { name: "Mark reviewed" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.path === "/api/v1/payments/p1/review/")?.body).toEqual({
+        note: "Rest paid in cash",
+      }),
+    );
+  });
+
+  it("filters online payments and those to review only while online payments are on", async () => {
+    const row = { ...onlinePayment, needs_review: true };
+    const calls = mockApi({
+      "/api/v1/payments/": () => [200, { next: null, previous: null, results: [row] }],
+    });
+    const { unmount } = renderWithIntl(<PaymentsPage />);
+    expect(await screen.findAllByText("RCT/26-27/000001")).not.toHaveLength(0);
+    expect(screen.queryAllByLabelText("Needs review only")).toHaveLength(0);
+    unmount();
+    features.add("payments");
+    renderWithIntl(<PaymentsPage />);
+    expect((await screen.findAllByText("Needs review"))[0]).toBeVisible();
+    await userEvent.setup().click(screen.getAllByLabelText("Needs review only")[0]!);
+    await waitFor(() => expect(calls.at(-1)!.url.searchParams.get("needs_review")).toBe("true"));
   });
 });

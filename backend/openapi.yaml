@@ -3116,12 +3116,11 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: search
-        required: false
-        in: query
-        description: A search term.
+      - in: query
+        name: search
         schema:
           type: string
+        description: Shop, bill, receipt or gateway order
       - in: query
         name: status
         schema:
@@ -3186,6 +3185,11 @@ paths:
           - CHEQUE
           - ONLINE
           - UPI
+      - in: query
+        name: needs_review
+        schema:
+          type: boolean
+        description: Only online payments waiting for review
       - name: ordering
         required: false
         in: query
@@ -3227,7 +3231,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedPaymentRowList'
+                $ref: '#/components/schemas/PaginatedStaffPaymentRowList'
           description: ''
     post:
       operationId: payments_record
@@ -16848,6 +16852,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShopProduct'
+    PaginatedStaffPaymentRowList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffPaymentRow'
     PaginatedStockRowList:
       type: object
       required:
@@ -22406,6 +22429,82 @@ components:
       - status
       - tax_total
       - taxable_total
+    StaffPaymentRow:
+      type: object
+      description: 'The office''s list: also whether an online payment waits for review
+        (never for shops).'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          maxLength: 16
+        payment_date:
+          type: string
+          format: date
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        mode:
+          $ref: '#/components/schemas/PaymentModeEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        credit_timing:
+          $ref: '#/components/schemas/CreditTimingEnum'
+        credited:
+          type: boolean
+        unapplied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Credited but not yet matched to dues.
+        reference_no:
+          type: string
+          maxLength: 60
+        cheque_number:
+          type: string
+          maxLength: 20
+        handover_status:
+          $ref: '#/components/schemas/HandoverStatusEnum'
+        collected_by_name:
+          type: string
+          readOnly: true
+        receipt_pdf_status:
+          $ref: '#/components/schemas/PdfStatusEnum'
+        dated_in_previous_financial_year:
+          type: boolean
+          description: |-
+            The receipt is numbered in the year it was recorded; the payment is accounted on its
+            own date, which here falls in an earlier financial year (2026-09-28).
+          readOnly: true
+        held_as_credit_while_advances_off:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        needs_review:
+          type: boolean
+      required:
+      - amount
+      - collected_by_name
+      - credit_timing
+      - dated_in_previous_financial_year
+      - handover_status
+      - held_as_credit_while_advances_off
+      - id
+      - mode
+      - number
+      - payment_date
+      - receipt_pdf_status
+      - retailer
+      - status
+      - unapplied_amount
     StaffPlaceOrderRequest:
       type: object
       properties:

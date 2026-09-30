@@ -39,6 +39,8 @@ import { useCursor } from "@/lib/api/pagination";
 import { formatDate, formatMoney, formatQty } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+import { PayAccountCard, PayBillButton } from "./pay";
+
 function Pager({ pager }: { pager: ReturnType<ReturnType<typeof useCursor>["pagination"]> }) {
   const t = useTranslations("shop.money");
   if (!pager) return null;
@@ -167,6 +169,7 @@ export function ShopAccountPage() {
               </div>
             ) : null}
           </dl>
+          <PayAccountCard owed={account.position.owed} online={account.online_payments} />
           {account.orders_blocked_for_overdue ? (
             <p className="bg-destructive/10 rounded-xl p-3 text-sm">{t("blocked")}</p>
           ) : account.overdue_bills ? (
@@ -292,7 +295,7 @@ export function ShopBillPage({ invoiceId }: { invoiceId: string }) {
       <div className="space-y-1">
         <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
           {t("billHeading", { number: bill.number })}
-          <StatusBadge status={bill.payment_status} />
+          <StatusBadge status={bill.status === "CANCELLED" ? "CANCELLED" : bill.payment_status} />
         </h1>
         <p className="text-muted-foreground text-sm">
           {formatDate(bill.invoice_date)} · {t("forOrder", { number: bill.order.number })}
@@ -310,9 +313,17 @@ export function ShopBillPage({ invoiceId }: { invoiceId: string }) {
               : t("dueOn", { date: formatDate(bill.due_date) })}
           </p>
         ) : null}
-        <DocumentButton fetchLink={() => shopInvoicesPdf(bill.id)} variant="default">
-          {t("downloadBill")}
-        </DocumentButton>
+        {bill.status === "CANCELLED" ? (
+          <p className="bg-muted rounded-xl p-3 text-sm">{t("billCancelled")}</p>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {bill.status === "ISSUED" ? (
+            <PayBillButton invoiceId={bill.id} balance={bill.balance_due} />
+          ) : null}
+          <DocumentButton fetchLink={() => shopInvoicesPdf(bill.id)} variant="default">
+            {t("downloadBill")}
+          </DocumentButton>
+        </div>
       </section>
       <section className="space-y-2" aria-labelledby="bill-items">
         <h2 id="bill-items" className="font-semibold">
