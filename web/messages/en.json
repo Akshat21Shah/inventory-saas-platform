@@ -3513,7 +3513,8 @@
         "webhookEvents": "Choose the events payment.captured and payment.failed.",
         "copy": "Copy",
         "copied": "Copied.",
-        "copyFailed": "Couldn't copy. Select the address and copy it."
+        "copyFailed": "Couldn't copy. Select the address and copy it.",
+        "mockHint": "Development only: any key ID starting with mock_ and any secret work; no money moves."
       },
       "checkouts": {
         "title": "Online checkouts",
@@ -4000,7 +4001,7 @@
       "retrying": "The portal didn't answer ({error}). Trying again at <at></at>.",
       "sending": "Sent to the GST portal. This page updates when it answers.",
       "cancelling": "Cancelling the IRN on the GST portal…",
-      "failed": "The GST portal refused it: {error}. Correct the shop's or the products' details, then try again.",
+      "failed": "The GST portal refused it: {error}",
       "reportBy": "Must get its IRN by <day></day> (the reporting limit for your turnover).",
       "pastReportBy": "The reporting limit (<day></day>) has passed. The portal may refuse it: check with your CA.",
       "cancelRefused": "Cancelling the IRN was refused: {error}",
@@ -4047,7 +4048,8 @@
         "keepRates": "Keep the original rates on the new invoice",
         "confirm": "Cancel IRN",
         "started": "Cancelling the IRN. This page updates when the portal answers."
-      }
+      },
+      "failedHint": "Correct the shop's or the products' details, then try again."
     },
     "ewaybill": {
       "title": "E-way bill",
@@ -4058,7 +4060,7 @@
       "waiting": "Waiting to be sent to the e-way bill portal.",
       "retrying": "The portal didn't answer ({error}). Trying again at <at></at>.",
       "sending": "Sent to the e-way bill portal. This page updates when it answers.",
-      "failed": "The e-way bill portal refused it: {error}. Correct the details and try again.",
+      "failed": "The e-way bill portal refused it: {error}",
       "cancelling": "Cancelling the e-way bill on the portal…",
       "changing": "Sending the new vehicle to the portal…",
       "updateRefused": "The last change was refused: {error}",
@@ -4103,7 +4105,8 @@
       "cancelTitle": "Cancel e-way bill {number}?",
       "cancelBody": "Allowed until <until></until>, and only if the goods haven't moved.",
       "cancelConfirm": "Cancel e-way bill",
-      "cancelSent": "Cancelling the e-way bill on the portal."
+      "cancelSent": "Cancelling the e-way bill on the portal.",
+      "failedHint": "Correct the details and try again."
     },
     "lists": {
       "einvoicesTitle": "E-invoices",

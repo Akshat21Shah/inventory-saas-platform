@@ -137,7 +137,11 @@ function GatewayForm({ saved }: { saved: GatewaySettings }) {
       <CardContent>
         <form onSubmit={submit} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label={t("provider")} error={errors.provider}>
+            <FormField
+              label={t("provider")}
+              hint={provider === "MOCK" ? t("mockHint") : undefined}
+              error={errors.provider}
+            >
               <FormSelect
                 value={provider}
                 onValueChange={(value) => setProvider(value as GatewayProviderEnum)}

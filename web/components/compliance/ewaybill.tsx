@@ -460,6 +460,7 @@ export function EWayBillPanel({
           {summary.status === "FAILED" ? (
             <p role="alert" className="bg-destructive/10 rounded-lg p-3 text-sm">
               {t("failed", { error: summary.error_message })}
+              <span className="mt-1 block">{t("failedHint")}</span>
             </p>
           ) : null}
           {summary.pending_update ? (
