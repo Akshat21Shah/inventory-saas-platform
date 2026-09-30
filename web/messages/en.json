@@ -617,6 +617,14 @@
       "ewaybill_cancel_window_hours": {
         "label": "E-way bill cancellation window (hours)",
         "description": "Hours after an e-way bill within which it can be cancelled. To be verified."
+      },
+      "report_async_rows": {
+        "label": "Background export limit (rows)",
+        "description": "Report exports with more rows than this are made in the background; the person gets a message when the file is ready."
+      },
+      "report_link_days": {
+        "label": "Export download days",
+        "description": "How many days a background export can be downloaded before it is deleted."
       }
     },
     "retailers": {
@@ -713,7 +721,8 @@
       "retailers": "Shops",
       "pricing": "Pricing",
       "notifications": "Notifications",
-      "compliance": "E-invoices & e-way bills"
+      "compliance": "E-invoices & e-way bills",
+      "reports": "Reports"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -3611,7 +3620,9 @@
       "handover_reminder": "Collections not yet handed over",
       "tax_rate_change_upcoming": "GST rate changes in 7 days",
       "retailer_welcome": "Welcome message to a new shop",
-      "announcement_published": "Announcement"
+      "announcement_published": "Announcement",
+      "report_ready": "Report ready to download",
+      "report_failed": "Report could not be made"
     },
     "shopEvents": {
       "order_placed": "Order received",

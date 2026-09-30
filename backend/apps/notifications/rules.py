@@ -23,12 +23,13 @@ class EffectiveRule:
 
 
 def available(event_code: str) -> bool:
-    """Events of an optional module that is off don't exist for the tenant (ADR-049 item 1)."""
+    """Events of an optional module that is off don't exist for the tenant (ADR-049 item 1);
+    system messages ("Report ready") are never configurable (ADR-050)."""
     from apps.platform.selectors import is_feature_enabled
     from common.tenancy import require_tenant_id
 
     event = EVENTS.get(event_code)
-    if event is None:
+    if event is None or event.system:
         return False
     return not event.feature or is_feature_enabled(event.feature, require_tenant_id())
 
@@ -102,7 +103,12 @@ def _check(
     template is approved; where it is already used, the rules editor warns instead."""
     from apps.accounts.permissions import TENANT_PERMISSIONS
     from apps.notifications import approval
-    from apps.notifications.catalog import DEFAULT_TEXTS, ONLY_FOR, RECIPIENT_CHANNELS
+    from apps.notifications.catalog import (
+        DEFAULT_TEXTS,
+        ONLY_FOR,
+        RECIPIENT_CHANNELS,
+        SYSTEM_RECIPIENTS,
+    )
     from apps.notifications.models import Audience, Recipient
     from common.errors import InvalidFields
 
@@ -111,7 +117,7 @@ def _check(
     errors: list[str] = []
     seen: set[tuple[str, str]] = set()
     for rule in rules:
-        if rule.recipient not in Recipient.values:
+        if rule.recipient not in Recipient.values or rule.recipient in SYSTEM_RECIPIENTS:
             errors.append(f"Unknown recipient {rule.recipient}.")
             continue
         if rule.key in seen:

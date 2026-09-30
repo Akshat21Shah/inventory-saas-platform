@@ -5978,6 +5978,142 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/report-runs/:
+    get:
+      operationId: report_runs_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReportRunList'
+          description: ''
+  /api/v1/report-runs/{run_id}/:
+    get:
+      operationId: report_runs_retrieve
+      parameters:
+      - in: path
+        name: run_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRun'
+          description: ''
+  /api/v1/reports/:
+    get:
+      operationId: reports_catalogue
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+          description: ''
+  /api/v1/reports/{code}/:
+    get:
+      operationId: reports_run
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: filters
+        schema:
+          type: string
+        description: Each of the report's filters as its own query parameter (date_from,
+          date_to, …); see the catalogue.
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportPage'
+          description: ''
+  /api/v1/reports/{code}/export/:
+    post:
+      operationId: reports_export
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: The file, when small enough to make at once
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRun'
+          description: 'Made in the background: see My exports'
   /api/v1/reports/collections-pending-handover/:
     get:
       operationId: reports_collections_pending_handover
@@ -11292,6 +11428,43 @@ components:
       - mode
       - payment_date
       - retailer
+    Column:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ColumnKindEnum'
+        cost:
+          type: boolean
+          description: Shown only with permission to see costs.
+        total:
+          type: boolean
+          description: Has a figure in the totals row.
+      required:
+      - cost
+      - key
+      - kind
+      - label
+      - total
+    ColumnKindEnum:
+      enum:
+      - text
+      - money
+      - qty
+      - int
+      - date
+      - percent
+      type: string
+      description: |-
+        * `text` - text
+        * `money` - money
+        * `qty` - qty
+        * `int` - int
+        * `date` - date
+        * `percent` - percent
     CompleteCostsRequest:
       type: object
       properties:
@@ -13226,6 +13399,16 @@ components:
       - shop_facing
       - urgent
       - whatsapp
+    ExportRequestRequest:
+      type: object
+      properties:
+        format:
+          allOf:
+          - $ref: '#/components/schemas/ReportFormatEnum'
+          default: XLSX
+        filters:
+          type: object
+          additionalProperties: {}
     FeatureFlag:
       type: object
       properties:
@@ -13257,6 +13440,48 @@ components:
           type: boolean
       required:
       - enabled
+    Filter:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        kind:
+          $ref: '#/components/schemas/FilterKindEnum'
+        required:
+          type: boolean
+        choices:
+          type: array
+          items:
+            type: string
+        default:
+          type: string
+          nullable: true
+        entity:
+          type: string
+      required:
+      - choices
+      - default
+      - entity
+      - key
+      - kind
+      - label
+      - required
+    FilterKindEnum:
+      enum:
+      - date
+      - choice
+      - id
+      - text
+      - bool
+      type: string
+      description: |-
+        * `date` - date
+        * `choice` - choice
+        * `id` - id
+        * `text` - text
+        * `bool` - bool
     FreeProduct:
       type: object
       properties:
@@ -15723,6 +15948,7 @@ components:
       - STAFF_PERMISSION
       - OWNERS
       - DISPATCHER
+      - REQUESTER
       type: string
       description: |-
         * `SHOP` - The shop
@@ -15731,6 +15957,7 @@ components:
         * `STAFF_PERMISSION` - Staff who can…
         * `OWNERS` - Owners
         * `DISPATCHER` - The person who dispatched
+        * `REQUESTER` - The person who asked
     NotificationSkipReasonEnum:
       enum:
       - NO_ADDRESS
@@ -16781,6 +17008,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ReportRow'
+    PaginatedReportRunList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportRun'
     PaginatedRetailerListList:
       type: object
       required:
@@ -20268,6 +20514,109 @@ components:
       required:
       - cart
       - skipped
+    Report:
+      type: object
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        group:
+          $ref: '#/components/schemas/ReportGroupEnum'
+        description:
+          type: string
+        pdf:
+          type: boolean
+          description: Also exported to PDF.
+        background_only:
+          type: boolean
+          description: Always made in the background.
+        max_days:
+          type: integer
+          description: The longest date range.
+        own_shops:
+          type: boolean
+          description: Rows only for the user's own shops.
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Column'
+          description: Only the columns this user may see.
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Filter'
+      required:
+      - background_only
+      - code
+      - columns
+      - description
+      - filters
+      - group
+      - max_days
+      - own_shops
+      - pdf
+      - title
+    ReportFormatEnum:
+      enum:
+      - XLSX
+      - PDF
+      type: string
+      description: |-
+        * `XLSX` - Excel
+        * `PDF` - PDF
+    ReportGroupEnum:
+      enum:
+      - sales
+      - stock
+      - money
+      - gst
+      type: string
+      description: |-
+        * `sales` - sales
+        * `stock` - stock
+        * `money` - money
+        * `gst` - gst
+    ReportPage:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Column'
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: Keyed by column; money and quantities as strings; link ids
+            such as retailer_id where a row links somewhere.
+        totals:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: For the whole report, not the page.
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        own_shops:
+          type: boolean
+        notes:
+          type: array
+          items:
+            type: string
+      required:
+      - columns
+      - count
+      - notes
+      - own_shops
+      - page
+      - page_size
+      - rows
+      - totals
     ReportRow:
       type: object
       properties:
@@ -20297,6 +20646,85 @@ components:
       - shop_name
       - shop_rule_count
       - special_price_count
+    ReportRun:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        report_code:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        format:
+          allOf:
+          - $ref: '#/components/schemas/ReportFormatEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReportRunStatusEnum'
+          readOnly: true
+        params:
+          readOnly: true
+        row_count:
+          type: integer
+          readOnly: true
+          nullable: true
+        file_name:
+          type: string
+          readOnly: true
+        error:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        download_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - created_at
+      - download_url
+      - error
+      - expires_at
+      - file_name
+      - finished_at
+      - format
+      - id
+      - params
+      - report_code
+      - row_count
+      - status
+      - title
+    ReportRunStatusEnum:
+      enum:
+      - QUEUED
+      - RUNNING
+      - READY
+      - FAILED
+      - EXPIRED
+      type: string
+      description: |-
+        * `QUEUED` - Waiting
+        * `RUNNING` - Being made
+        * `READY` - Ready
+        * `FAILED` - Failed
+        * `EXPIRED` - Expired
     RequiredReasonRequest:
       type: object
       properties:

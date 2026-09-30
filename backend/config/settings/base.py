@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.notifications",
     "apps.compliance",
+    "apps.reports",
     "apps.dataio",
     "apps.shop",
 ]
@@ -153,6 +154,8 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_SOFT_TIME_LIMIT = 240
 CELERY_TIMEZONE = "UTC"
+# Report exports run on their own queue (its own worker), so they never delay messages or IRNs.
+CELERY_TASK_ROUTES = {"reports.build_run": {"queue": "reports"}}
 CELERY_BEAT_SCHEDULE = {
     "outbox-sweeper": {"task": "common.outbox.sweep_outbox", "schedule": 60.0},
     "idempotency-purge": {"task": "common.idempotency.purge_expired", "schedule": 3600.0},
@@ -161,6 +164,7 @@ CELERY_BEAT_SCHEDULE = {
     "notifications-send-due": {"task": "notifications.send_due", "schedule": 60.0},
     "compliance-retry-due": {"task": "compliance.retry_due", "schedule": 60.0},  # ADR-049
     "payments-reconcile": {"task": "payments.reconcile", "schedule": 900.0},  # ADR-049
+    "reports-expire": {"task": "reports.expire_runs", "schedule": 3600.0},  # ADR-050
     # Daily notification jobs (ADR-048), IST times written in UTC (CELERY_TIMEZONE).
     "notifications-rate-change-warnings": {
         "task": "notifications.rate_change_warnings",
@@ -287,6 +291,8 @@ SPECTACULAR_SETTINGS = {
         "GatewayModeEnum": "apps.payments.models.GatewayConfig.Mode",
         "CheckoutStatusEnum": "apps.payments.models.PaymentIntent.Status",
         "CheckoutPurposeEnum": "apps.payments.models.PaymentIntent.Purpose",
+        "ReportFormatEnum": "apps.reports.models.ReportRun.Format",
+        "ReportGroupEnum": "apps.reports.registry.GROUP_CHOICES",
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

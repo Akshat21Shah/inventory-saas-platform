@@ -26,6 +26,7 @@ class Recipient(models.TextChoices):
     STAFF_PERMISSION = "STAFF_PERMISSION", "Staff who can…"
     OWNERS = "OWNERS", "Owners"
     DISPATCHER = "DISPATCHER", "The person who dispatched"  # failed e-way bills (Phase 7)
+    REQUESTER = "REQUESTER", "The person who asked"  # "Report ready" (Phase 8; system only)
 
 
 class Audience(models.TextChoices):

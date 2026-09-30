@@ -96,6 +96,10 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.payment.reviewed_at": None,
     "api.shop-account.online_payments": False,
     "api.payments.results.needs_review": False,  # the office's list (commit 12)
+    # Phase 8 (ADR-050), for reports: the order's salesperson (the shop has none here) and the
+    # cost on each invoice line (no cost prices here).
+    "db.orders.Order.salesperson_id": None,
+    "db.billing.InvoiceLine.unit_cost": None,
     # An invoice's own status (commit 11b): cancelled only with its IRN, so always issued here.
     "api.invoice.status": "ISSUED",
     "api.invoices.results.status": "ISSUED",

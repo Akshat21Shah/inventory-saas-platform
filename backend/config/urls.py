@@ -29,6 +29,7 @@ api_v1: list[URLPattern | URLResolver] = [
     path("", include("apps.payments.api.urls")),
     path("", include("apps.notifications.api.urls")),
     path("", include("apps.compliance.api.urls")),
+    path("", include("apps.reports.api.urls")),
     path("shop/", include("apps.shop.api.urls")),
     path("shop/", include("apps.notifications.api.shop_urls")),
     path("shop/", include("apps.payments.api.shop_urls")),

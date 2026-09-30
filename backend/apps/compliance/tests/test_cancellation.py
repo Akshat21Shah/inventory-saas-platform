@@ -272,17 +272,20 @@ def test_the_bill_cancelled_whatsapp_template_is_optional():
 def test_a_reissue_uses_the_shop_now_but_the_original_prices_and_rates(world, monkeypatch):
     from datetime import timedelta as days
 
-    from apps.catalog.models import ProductTaxRate
+    from apps.catalog.models import Product, ProductTaxRate
     from apps.platform.tests.factories import make_gstin
     from apps.retailers.models import Retailer
     from common.dates import today_ist
 
-    invoice = sell(world, qty="2")  # ₹30,000 at 5%, to Karnataka (IGST)
+    with tenant_context(world["t"].pk):
+        Product.objects.filter(pk=world["product"].pk).update(cost_price=D("21000"))
+    invoice = sell(world, qty="2")  # ₹30,000 at 5%, to Karnataka (IGST); cost ₹21,000
     corrected = make_gstin(8102, "29")
     with tenant_context(world["t"].pk):
         Retailer.objects.filter(pk=world["b2b"].pk).update(
             shop_name="Kaveri Traders & Sons", gstin=corrected, pan=corrected[2:12]
         )
+        Product.objects.filter(pk=world["product"].pk).update(cost_price=D("25000"))  # since
         tomorrow = today_ist() + days(days=1)
         ProductTaxRate.objects.create(  # a rate change from tomorrow; the preview looks then
             product=world["product"], gst_rate=D("18"), effective_from=tomorrow
@@ -315,10 +318,11 @@ def test_a_reissue_uses_the_shop_now_but_the_original_prices_and_rates(world, mo
         new = Invoice.objects.get(pk=new.pk)
         [line] = new.lines.all()
     assert (new.buyer["name"], new.buyer["gstin"]) == ("Kaveri Traders & Sons", corrected)
-    assert (line.gst_rate, line.unit_price, new.grand_total) == (
+    assert (line.gst_rate, line.unit_price, new.grand_total, line.unit_cost) == (
         D("5.000"),
         D("30000.00"),
         invoice.grand_total,
+        D("21000"),  # the same supply keeps its cost (ADR-050), not today's
     )
     other = world["other"].get(f"{API}/einvoices/{rec.pk}/reissue-preview/")
     assert other.status_code in (403, 404)

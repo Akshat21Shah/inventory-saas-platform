@@ -316,6 +316,7 @@ def _place(p: Placement) -> Order:
         placed_by=p.placed_by,
         placed_via=p.via,
         placed_by_label=staff_label(p.placed_by) if p.via == Order.PlacedVia.STAFF else "",
+        salesperson_id=retailer.salesperson_id,
         status=status,
         hold_reason=check.reason if status == OrderStatus.ON_HOLD else "",
         settings_snapshot=snapshot,

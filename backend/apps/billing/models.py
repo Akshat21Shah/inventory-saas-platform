@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
 
-from common.fields import MoneyField, QtyField, RateField
+from common.fields import MoneyField, QtyField, RateField, UnitCostField
 from common.models import TenantScopedModel
 
 USER = settings.AUTH_USER_MODEL
@@ -222,6 +222,9 @@ class InvoiceLine(TenantScopedModel):
     line_total = MoneyField()
     order_rate = RateField()  # the GST rate when the order was placed
     rate_differs_from_order = models.BooleanField(default=False)
+    # The product's cost price (per base unit, before GST) when issued: margins (ADR-050). Null
+    # on earlier lines or without a cost price: margin then uses today's cost, "estimated".
+    unit_cost = UnitCostField(null=True, blank=True)
 
     class Meta:
         constraints = [

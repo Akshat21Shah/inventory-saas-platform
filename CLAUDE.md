@@ -141,7 +141,7 @@ Every screen works at three widths, and CI checks them: **360 px** (phone), **76
 
 ```
 make setup       # local toolchains: backend/.venv (uv sync) + web/node_modules (npm ci)
-make up          # docker compose up: postgres, redis, mailpit, s3 (SeaweedFS), migrate, backend, worker, beat, web
+make up          # docker compose up: postgres, redis, mailpit, s3 (SeaweedFS), migrate, backend, worker, reports-worker, beat, web
 make down        # stop the stack            make logs / make ps   # logs / status
 make db-up       # only postgres + redis (for host-run tests)
 make migrate     # run migrations (as the schema-owner DB role)

@@ -32,6 +32,7 @@ class Group(StrEnum):
     SECURITY = "security"
     NOTIFICATIONS = "notifications"
     COMPLIANCE = "compliance"
+    REPORTS = "reports"
 
 
 class SettingType(StrEnum):
@@ -411,6 +412,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _platform("platform.irn_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
               "Hours after the IRN within which it can be cancelled (to verify).",
               min_value=1, max_value=720),
+    _platform("platform.report_async_rows", Group.REPORTS, SettingType.INT, 5000,
+              "Report exports with more rows than this are made in the background, with a "
+              "message when ready.", min_value=100, max_value=100000),
+    _platform("platform.report_link_days", Group.REPORTS, SettingType.INT, 7,
+              "Days a background export can be downloaded before it is deleted.",
+              min_value=1, max_value=30),
     _platform("platform.ewaybill_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
               "Hours after an e-way bill within which it can be cancelled (to verify).",
               min_value=1, max_value=720),

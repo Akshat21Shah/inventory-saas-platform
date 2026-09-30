@@ -91,7 +91,7 @@ class TextInput:
 def _check(data: TextInput, *, platform: bool) -> None:
     errors: dict[str, list[str]] = {}
     event = EVENTS.get(data.event_code)
-    if event is None:
+    if event is None or (event.system and not platform):
         raise NotFound()
     if data.audience not in event.audiences:
         errors["audience"] = [

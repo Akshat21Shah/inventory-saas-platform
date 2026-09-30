@@ -171,7 +171,7 @@ jobs:
           if-no-files-found: warn
       - name: Service logs
         if: failure()
-        run: docker compose -f infra/docker-compose.yml logs --tail=200 backend worker web
+        run: docker compose -f infra/docker-compose.yml logs --tail=200 backend worker reports-worker web
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

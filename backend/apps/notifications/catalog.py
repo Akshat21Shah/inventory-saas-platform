@@ -32,6 +32,9 @@ class Event:
     shop_facing: bool = True  # the shop can be a recipient
     staff_facing: bool = True  # staff can be recipients (not: the welcome, announcements)
     feature: str = ""  # an optional module's flag: the event is hidden while it is off
+    # A personal system message ("Report ready"): fixed rules, never on the rules, texts or
+    # preferences screens (ADR-050).
+    system: bool = False
 
     @property
     def audiences(self) -> tuple[str, ...]:
@@ -102,6 +105,10 @@ EVENTS: dict[str, Event] = {
               variables=("distributor", "shop", "shipment", "vehicle", "invoice_number", "error",
                          "link"),
               shop_facing=False, feature="ewaybill"),
+        Event("report.ready", "Report ready to download", "other",
+              variables=("report", "rows", "days", "link"), shop_facing=False, system=True),
+        Event("report.failed", "Report could not be made", "other",
+              variables=("report", "error", "link"), shop_facing=False, system=True),
         Event("einvoice.failed", "IRN failed for an invoice or credit note", "billing",
               variables=("distributor", "shop", "document_number", "error", "link"),
               shop_facing=False, feature="einvoice"),
@@ -199,6 +206,8 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     # Phase 7 backend checkpoint, change 4: at once, whatever the hour (urgent).
     Rule("ewaybill.failed", ST, (IN, EM), "compliance.manage"),
     Rule("ewaybill.failed", Recipient.DISPATCHER, (IN, EM)),
+    Rule("report.ready", Recipient.REQUESTER, (IN,)),  # ADR-050: in-app only
+    Rule("report.failed", Recipient.REQUESTER, (IN,)),
     Rule("payment.received", S, (IN, WA, EM)),
     Rule("payment.cleared", S, (IN,)),
     Rule("payment.bounced", S, (IN, WA), compulsory=True),
@@ -225,7 +234,10 @@ RECIPIENT_CHANNELS: dict[str, tuple[str, ...]] = {
     ST: (IN, WA, EM),
     Recipient.OWNERS: (IN, WA, EM),
     Recipient.DISPATCHER: (IN, WA, EM),
+    Recipient.REQUESTER: (IN,),
 }
+# Recipients of system messages only: never offered on the rules screen.
+SYSTEM_RECIPIENTS = frozenset({Recipient.REQUESTER})
 # Recipients that exist only for some events (and only while their module is on).
 ONLY_FOR: dict[str, tuple[str, str]] = {Recipient.DISPATCHER: ("ewaybill.failed", "ewaybill")}
 
@@ -399,6 +411,14 @@ SHOP_TEXTS: dict[str, dict[str, Text]] = {
 
 # The office's words: "Ganesh Kirana's order …". Every event staff can get has them.
 STAFF_TEXTS: dict[str, dict[str, Text]] = {
+    "report.ready": {
+        IN: Text("Report ready: {{ report }}", "{{ report }} is ready ({{ rows }} rows). Download it within {{ days }} days."),
+        EM: Text("Report ready: {{ report }}", "{{ report }} is ready ({{ rows }} rows). Download it within {{ days }} days.\n\n{{ link }}"),
+    },
+    "report.failed": {
+        IN: Text("Report not made: {{ report }}", "{{ report }} could not be made: {{ error }}"),
+        EM: Text("Report not made: {{ report }}", "{{ report }} could not be made: {{ error }}\n\n{{ link }}"),
+    },
     "order.placed": {
         IN: Text("New order {{ order_number }}", "{{ shop }} placed order {{ order_number }} for {{ total }}."),
         EM: Text("New order {{ order_number }} from {{ shop }}", "{{ shop }} placed order {{ order_number }} for {{ total }}.\n\nOpen it: {{ link }}"),

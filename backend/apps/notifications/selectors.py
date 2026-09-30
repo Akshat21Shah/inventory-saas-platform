@@ -12,7 +12,13 @@ from django.utils import timezone
 
 from apps.accounts.models import Permission, User
 from apps.notifications import approval
-from apps.notifications.catalog import DEFAULT_TEXTS, EVENTS, ONLY_FOR, RECIPIENT_CHANNELS
+from apps.notifications.catalog import (
+    DEFAULT_TEXTS,
+    EVENTS,
+    ONLY_FOR,
+    RECIPIENT_CHANNELS,
+    SYSTEM_RECIPIENTS,
+)
 from apps.notifications.consent import opted_in_count
 from apps.notifications.models import (
     ApprovalStatus,
@@ -166,7 +172,7 @@ def rules_matrix() -> dict[str, Any]:
     events = []
     total_cost: Decimal | None = Decimal("0")
     for code, event in EVENTS.items():
-        if event.feature and not available(code):
+        if not available(code):  # a module that is off, or a system message
             continue
         rules = by_event.get(code, [])
         uses_whatsapp = any(r["enabled"] and Channel.WHATSAPP in r["channels"] for r in rules)
@@ -211,7 +217,8 @@ def rules_matrix() -> dict[str, Any]:
         "recipients": {
             k: list(v)
             for k, v in RECIPIENT_CHANNELS.items()
-            if k not in ONLY_FOR or is_feature_enabled(ONLY_FOR[k][1], require_tenant_id())
+            if k not in SYSTEM_RECIPIENTS
+            and (k not in ONLY_FOR or is_feature_enabled(ONLY_FOR[k][1], require_tenant_id()))
         },
         "whatsapp_feature_enabled": is_feature_enabled("whatsapp", require_tenant_id()),
         "whatsapp_approval_required": required,
