@@ -10,6 +10,7 @@ records every query; production is a little faster.
 
 import statistics
 import time
+from datetime import timedelta
 from typing import Any
 
 from django.conf import settings
@@ -19,6 +20,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import User
 from apps.accounts.tokens import issue_tokens
 from apps.platform.models import Tenant
+from common.dates import today_ist
 
 API = "/api/v1"
 
@@ -31,6 +33,12 @@ class Command(BaseCommand):
         parser.add_argument("--user", default="owner", help="owner, manager, sales1, …")
         parser.add_argument("--runs", type=int, default=20)
         parser.add_argument("--target-ms", type=float, default=300.0)
+        parser.add_argument(
+            "--last-month",
+            action="store_true",
+            help="Time the reports over the last whole month instead of their default (this "
+            "month so far, nearly empty early in a month).",
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         tenant = Tenant.objects.filter(slug=options["tenant"]).first()
@@ -46,12 +54,17 @@ class Command(BaseCommand):
         catalogue = client.get(f"{API}/reports/")
         if catalogue.status_code != 200:
             raise CommandError(f"the report list answered {catalogue.status_code}")
+        period = ""
+        if options["last_month"]:
+            end = today_ist().replace(day=1) - timedelta(days=1)
+            period = f"?date_from={end.replace(day=1).isoformat()}&date_to={end.isoformat()}"
         pages = [("dashboard", f"{API}/dashboard/")] + [
-            (r["code"], f"{API}/reports/{r['code']}/") for r in catalogue.json()
+            (r["code"], f"{API}/reports/{r['code']}/{period}") for r in catalogue.json()
         ]
         target, runs = options["target_ms"], options["runs"]
         self.stdout.write(
             f"{tenant.slug} as {email}, {runs} runs each, target p95 < {target:.0f} ms"
+            + (f"; reports over {period[1:]}" if period else "; reports over their default")
         )
         self.stdout.write(f"{'page':<26}{'p50':>8}{'p95':>8}{'max':>8}  rows")
         slow = []

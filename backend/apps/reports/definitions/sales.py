@@ -10,6 +10,7 @@ cost; value-only credit notes reduce the sales, not the cost."""
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -33,6 +34,7 @@ from django.db.models import (
 )
 from django.db.models.fields.json import KT
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth, TruncWeek
+from django.db.models.lookups import IsNull
 
 from apps.accounts.models import User
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
@@ -46,7 +48,6 @@ from apps.reports.registry import (
     FilterKind,
     Group,
     Kind,
-    Mapped,
     Report,
     register,
 )
@@ -745,8 +746,7 @@ register(
 
 REGISTER = (
     "day", "doc_number", "doc_type", "shop_code", "shop_name", "gstin", "place",
-    "taxable", "cgst", "sgst", "igst", "cess", "total", "salesperson", "cost", "margin",
-    "doc_id", "retailer_ref",
+    "taxable", "cgst", "sgst", "igst", "cess", "total", "salesperson", "doc_id", "retailer_ref",
 )  # fmt: skip
 DOC_TYPES = {"INVOICE": "Invoice", "CREDIT_NOTE": "Credit note"}
 _AMOUNTS = {
@@ -784,13 +784,18 @@ def _register_notes(ctx: Context) -> QuerySet[Any]:
 def _line_figures(prefix: str) -> dict[str, Any]:
     """Per line: its cost at the recorded cost, else today's (credit notes at their invoice
     lines' cost; value-only notes have no quantity, so no cost), and its margin, only for lines
-    with a cost (lines with none are left out of the margin, as in the other sales reports)."""
-    unit = Coalesce(F(f"{prefix}unit_cost"), F(f"{prefix}product__cost_price"))
+    with a cost (lines with none are left out of the margin, as in the other sales reports).
+    Today's cost price is looked up per line, not joined: a join with the products makes
+    PostgreSQL read every line of the distributor instead of the period's (``make perf``)."""
+    today = Subquery(
+        Product.objects.filter(pk=OuterRef(f"{prefix}product_id")).values("cost_price")[:1],
+        output_field=MONEY,
+    )
+    unit = Coalesce(F(f"{prefix}unit_cost"), today)
     cost = ExpressionWrapper(unit * F("quantity"), output_field=MONEY)
     margin = Case(
         When(
-            Q(**{f"{prefix}unit_cost__isnull": False})
-            | Q(**{f"{prefix}product__cost_price__isnull": False}),
+            IsNull(unit, False),
             then=ExpressionWrapper(F("taxable_value") - unit * F("quantity"), output_field=MONEY),
         ),
         output_field=MONEY,
@@ -798,34 +803,10 @@ def _line_figures(prefix: str) -> dict[str, Any]:
     return {"cost": Sum(cost), "margin": Sum(margin)}
 
 
-def _line_money(model: Any, parent: str, prefix: str, figure: str) -> Subquery:
-    """A document's cost or margin, from its lines."""
-    return Subquery(
-        model.objects.filter(**{parent: OuterRef("pk")})
-        .order_by()
-        .values(parent)
-        .annotate(figure=_line_figures(prefix)[figure])
-        .values("figure"),
-        output_field=MONEY,
-    )
-
-
 def _register_values(
-    rows: QuerySet[Any],
-    kind: str,
-    sign: int,
-    day: str,
-    salesperson: str,
-    lines: tuple[Any, str, str] | None,
+    rows: QuerySet[Any], kind: str, sign: int, day: str, salesperson: str
 ) -> QuerySet[Any]:
-    """The register's columns for one kind of document (``lines``: the line model, its link
-    to the document and its path to the cost, when costs are shown)."""
-
-    def money(figure: str) -> Any:
-        if lines is None:
-            return Value(None, output_field=MONEY)
-        return ExpressionWrapper(_line_money(*lines, figure) * sign, output_field=MONEY)
-
+    """The register's columns for one kind of document (credit notes as minus amounts)."""
     fields: dict[str, Any] = {
         "day": F(day),
         "doc_number": F("number"),
@@ -839,8 +820,6 @@ def _register_values(
             for key, field in _AMOUNTS.items()
         },
         "salesperson": F(f"{salesperson}__full_name"),
-        "cost": money("cost"),
-        "margin": money("margin"),
         "doc_id": F("id"),
         "retailer_ref": F("retailer_id"),
     }
@@ -848,35 +827,80 @@ def _register_values(
     return found
 
 
-def _register_row(row: dict[str, Any]) -> dict[str, Any]:
-    kind = row["doc_type"]
-    return {
-        **row,
-        "doc_type": DOC_TYPES[kind],
-        "invoice_id" if kind == "INVOICE" else "credit_note_id": row["doc_id"],
-        "retailer_id": row["retailer_ref"],
-    }
+def _money_per_document(model: Any, parent: str, prefix: str, ids: list[Any]) -> dict[Any, Any]:
+    """Cost and margin per document, for the documents of one page or export chunk."""
+    if not ids:
+        return {}
+    found = (
+        model.objects.filter(**{f"{parent}__in": ids})
+        .order_by()
+        .values(parent)
+        .annotate(**_line_figures(prefix))
+    )
+    return {r[parent]: r for r in found}
 
 
-def register_rows(ctx: Context) -> Mapped:
-    costs = ctx.scope.costs
+class RegisterRows:
+    """The register's rows: read without costs (the database sorts and pages just the
+    documents), then cost and margin for each page, or each export chunk, in two grouped
+    queries, instead of working them out for every document before sorting."""
+
+    def __init__(self, rows: QuerySet[Any], costs: bool) -> None:
+        self.rows = rows
+        self.costs = costs
+
+    def count(self) -> int:
+        return int(self.rows.count())
+
+    def __getitem__(self, part: slice) -> list[dict[str, Any]]:
+        return self._complete(list(self.rows[part]))
+
+    def iterator(self, chunk_size: int = 2000) -> Iterator[dict[str, Any]]:
+        chunk: list[dict[str, Any]] = []
+        for row in self.rows.iterator(chunk_size=chunk_size):
+            chunk.append(row)
+            if len(chunk) >= chunk_size:
+                yield from self._complete(chunk)
+                chunk = []
+        yield from self._complete(chunk)
+
+    def _complete(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        money: dict[Any, Any] = {}
+        if self.costs:
+            ids = {kind: [r["doc_id"] for r in rows if r["doc_type"] == kind] for kind in DOC_TYPES}
+            money = {
+                **_money_per_document(InvoiceLine, "invoice_id", "", ids["INVOICE"]),
+                **_money_per_document(
+                    CreditNoteLine, "credit_note_id", "invoice_line__", ids["CREDIT_NOTE"]
+                ),
+            }
+        out = []
+        for row in rows:
+            kind = row["doc_type"]
+            sign = 1 if kind == "INVOICE" else -1
+            figures = money.get(row["doc_id"]) or {}
+            out.append(
+                {
+                    **row,
+                    "doc_type": DOC_TYPES[kind],
+                    "cost": None if figures.get("cost") is None else sign * figures["cost"],
+                    "margin": None if figures.get("margin") is None else sign * figures["margin"],
+                    "invoice_id" if kind == "INVOICE" else "credit_note_id": row["doc_id"],
+                    "retailer_id": row["retailer_ref"],
+                }
+            )
+        return out
+
+
+def register_rows(ctx: Context) -> RegisterRows:
     invoices = _register_values(
-        _register_invoices(ctx),
-        "INVOICE",
-        1,
-        "invoice_date",
-        "order__salesperson",
-        (InvoiceLine, "invoice", "") if costs else None,
+        _register_invoices(ctx), "INVOICE", 1, "invoice_date", "order__salesperson"
     )
     notes = _register_values(
-        _register_notes(ctx),
-        "CREDIT_NOTE",
-        -1,
-        "note_date",
-        "invoice__order__salesperson",
-        (CreditNoteLine, "credit_note", "invoice_line__") if costs else None,
+        _register_notes(ctx), "CREDIT_NOTE", -1, "note_date", "invoice__order__salesperson"
     )
-    return Mapped(invoices.union(notes, all=True).order_by("day", "doc_number"), _register_row)
+    union = invoices.union(notes, all=True).order_by("day", "doc_number")
+    return RegisterRows(union, ctx.scope.costs)
 
 
 def _register_totals(ctx: Context) -> dict[str, Any]:
@@ -891,10 +915,10 @@ def _register_totals(ctx: Context) -> dict[str, Any]:
     billed, credited = sums(_register_invoices(ctx)), sums(_register_notes(ctx))
     out: dict[str, Any] = {key: billed[key] - credited[key] for key in _AMOUNTS}
     if ctx.scope.costs:
-        sold = money_of(InvoiceLine.objects.filter(invoice__in=_register_invoices(ctx)), "")
-        returned = money_of(
-            CreditNoteLine.objects.filter(credit_note__in=_register_notes(ctx)), "invoice_line__"
-        )
+        # The sales facts' own lines: the same documents (issued, in the period, own shops, shop
+        # and salesperson), filtered through the join, which PostgreSQL starts from the period.
+        sold = money_of(invoice_lines(ctx), "")
+        returned = money_of(credit_lines(ctx), "invoice_line__")
         out.update({key: sold[key] - returned[key] for key in ("cost", "margin")})
     return out
 
