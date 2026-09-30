@@ -1090,6 +1090,15 @@
       "status": "Status",
       "empty": "No support sessions yet.",
       "search": "Search reason or person"
+    },
+    "turnover": {
+      "title": "Annual turnover",
+      "loading": "Loading…",
+      "band": "Turnover band",
+      "bandHint": "What the business declares. It only decides suggestions and warnings; the modules below are switched on separately.",
+      "saved": "Turnover band saved",
+      "suggestEinvoice": "E-invoicing is suggested for this turnover. Switch on \"E-invoices\" below when the business is ready.",
+      "reportingLimit": "IRNs must be obtained within {days} days of the invoice date for this turnover: the business will be warned."
     }
   },
   "account": {
@@ -1157,7 +1166,8 @@
       "staff": "Staff",
       "roles": "Roles",
       "audit": "Audit log",
-      "notifications": "Messages"
+      "notifications": "Messages",
+      "compliance": "E-invoices & e-way bills"
     },
     "policyBodies": {
       "tax": "How GST is applied to your products and invoices.",
@@ -1781,7 +1791,10 @@
       "isDefault": "Default for its type",
       "default": "Default",
       "remove": "Remove address",
-      "removeTitle": "Remove this address?"
+      "removeTitle": "Remove this address?",
+      "distance": "Distance (km)",
+      "distanceHint": "Road distance from your warehouse, for e-way bills. It can be changed at dispatch.",
+      "km": "{km} km"
     },
     "prices": {
       "title": "What this shop pays",
@@ -2833,7 +2846,10 @@
       "cancelItems": "Cancel them",
       "reason": "Reason",
       "declined": "declined by the shop",
-      "priceUp": "Price went up from {before} to {now}"
+      "priceUp": "Price went up from {before} to {now}",
+      "distance": "Distance (km)",
+      "distanceHint": "Road distance for the e-way bill; from the shop's address when it has one. A new distance is kept for the shop if it had none.",
+      "km": "{km} km"
     },
     "shipments": {
       "title": "Shipments",
@@ -3781,6 +3797,68 @@
       "retried": "Trying again",
       "empty": "No failed messages",
       "emptyBody": "Failed messages from any business show up here."
+    }
+  },
+  "connectionStatus": {
+    "UNVERIFIED": "Not checked",
+    "CHECKING": "Checking",
+    "VERIFIED": "Working",
+    "FAILED": "Not working"
+  },
+  "einvoiceStatus": {
+    "NOT_APPLICABLE": "No IRN needed",
+    "PENDING": "IRN pending",
+    "SUBMITTED": "Sent to the portal",
+    "GENERATED": "IRN generated",
+    "FAILED": "IRN failed",
+    "CANCELLING": "Cancelling IRN",
+    "CANCELLED": "IRN cancelled"
+  },
+  "ewaybillStatus": {
+    "PENDING": "Waiting to be sent",
+    "SUBMITTED": "Sent to the portal",
+    "GENERATED": "Generated",
+    "FAILED": "Failed",
+    "CANCELLED": "Cancelled"
+  },
+  "checkoutStatus": {
+    "CREATED": "Ready to pay",
+    "ATTEMPTED": "Tried",
+    "PAID": "Paid",
+    "EXPIRED": "Expired"
+  },
+  "compliance": {
+    "settings": {
+      "title": "E-invoices & e-way bills",
+      "description": "Your GST provider login, and the rules for IRNs and e-way bills.",
+      "off": "E-invoices and e-way bills aren't switched on",
+      "offBody": "Ask us to switch them on for your business.",
+      "credentialsTitle": "GST provider login",
+      "credentialsBody": "The login your GST provider gave you for your GSTIN. We keep it encrypted and never show it again; we check it with the provider after you save.",
+      "provider": "Provider",
+      "gstin": "For GSTIN",
+      "environment": "Environment",
+      "environments": {
+        "SANDBOX": "Sandbox (testing)",
+        "PRODUCTION": "Production"
+      },
+      "fields": {
+        "username": "Username",
+        "password": "Password",
+        "client_id": "Client ID",
+        "client_secret": "Client secret"
+      },
+      "savedHint": "Saved: {value}. Leave blank to keep it.",
+      "notSaved": "Not saved yet.",
+      "lastError": "The provider said: {error}",
+      "verifiedAt": "Checked",
+      "checking": "Checking with the provider…",
+      "save": "Save",
+      "saved": "Saved. Checking with the provider…",
+      "check": "Check again",
+      "checkStarted": "Checking with the provider…",
+      "rulesTitle": "Rules",
+      "rulesBody": "Your turnover band, automatic IRNs and e-way bills, and the e-way bill limits (placeholders until verified)."
     }
   }
 }

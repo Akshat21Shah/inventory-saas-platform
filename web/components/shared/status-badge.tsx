@@ -52,6 +52,15 @@ const TONES: Record<string, StatusTone> = {
   SENT: "success",
   FAILED: "danger",
   SKIPPED: "neutral",
+  UNVERIFIED: "neutral",
+  CHECKING: "progress",
+  VERIFIED: "success",
+  GENERATED: "success",
+  SUBMITTED: "progress",
+  CANCELLING: "progress",
+  CREATED: "info",
+  ATTEMPTED: "warning",
+  EXPIRED: "neutral",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {
@@ -84,7 +93,11 @@ export function StatusBadge({
     | "paymentStatus"
     | "handoverStatus"
     | "refundStatus"
-    | "deliveryStatus";
+    | "deliveryStatus"
+    | "connectionStatus"
+    | "einvoiceStatus"
+    | "ewaybillStatus"
+    | "checkoutStatus";
 }) {
   const t = useTranslations(labels);
   const tone = statusTone(status);

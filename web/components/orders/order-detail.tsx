@@ -321,7 +321,12 @@ function PackDialog({ orderId, shipment }: { orderId: string; shipment: Fulfilme
 function DispatchDialog({ orderId, shipment }: { orderId: string; shipment: Fulfilment }) {
   const t = useTranslations("orders.shipment");
   const apply = useApply(orderId);
+  const { feature } = useAuth();
+  const ewaybills = feature("ewaybill");
   const [form, setForm] = useState({ vehicle_number: "", transporter_name: "", lr_number: "" });
+  const [distance, setDistance] = useState(
+    shipment.distance_km !== null ? String(shipment.distance_km) : "",
+  );
   const field = (name: keyof typeof form, label: string) => (
     <div className="space-y-1.5">
       <Label htmlFor={`${name}-${shipment.id}`}>{label}</Label>
@@ -340,13 +345,33 @@ function DispatchDialog({ orderId, shipment }: { orderId: string; shipment: Fulf
       description={t("dispatchBody")}
       confirmLabel={t("dispatch")}
       onSubmit={async () => {
-        await fulfilmentsDispatch(shipment.id, form);
+        const km = distance.trim();
+        await fulfilmentsDispatch(shipment.id, {
+          ...form,
+          // For the e-way bill (Phase 7): sent as typed; the server checks it.
+          ...(ewaybills && km
+            ? { distance_km: /^\d+$/.test(km) ? Number(km) : (km as never) }
+            : {}),
+        });
         apply();
       }}
     >
       {field("vehicle_number", t("vehicle"))}
       {field("transporter_name", t("transporter"))}
       {field("lr_number", t("lr"))}
+      {ewaybills ? (
+        <div className="space-y-1.5">
+          <Label htmlFor={`distance-${shipment.id}`}>{t("distance")}</Label>
+          <Input
+            id={`distance-${shipment.id}`}
+            inputMode="numeric"
+            value={distance}
+            onChange={(e) => setDistance(e.target.value)}
+            className="min-h-10"
+          />
+          <p className="text-muted-foreground text-xs">{t("distanceHint")}</p>
+        </div>
+      ) : null}
     </ActionDialog>
   );
 }
@@ -454,6 +479,7 @@ function ShipmentCard({ order, shipment }: { order: StaffOrder; shipment: Fulfil
             .filter(Boolean)
             .map((part) => ` · ${part}`)
             .join("")}
+          {shipment.distance_km !== null ? ` · ${t("km", { km: shipment.distance_km })}` : ""}
         </p>
       ) : null}
       {shipment.cancelled_reason ? (

@@ -29,6 +29,8 @@ interface Section {
   prefix?: boolean;
   /** Another page that belongs to this section. */
   also?: string;
+  /** Shown only while one of these optional modules is on. */
+  features?: string[];
 }
 
 const SECTIONS: Section[] = [
@@ -40,6 +42,12 @@ const SECTIONS: Section[] = [
     labelKey: `policies.${group}`,
   })),
   { href: "/manage/settings/features", labelKey: "features" },
+  {
+    href: "/manage/settings/compliance",
+    labelKey: "compliance",
+    permission: "settings.manage",
+    features: ["einvoice", "ewaybill"],
+  },
   {
     href: "/manage/settings/notifications",
     labelKey: "notifications",
@@ -56,8 +64,12 @@ const SECTIONS: Section[] = [
 export function SettingsLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("distributorSettings.nav");
   const pathname = usePathname();
-  const { can } = useAuth();
-  const sections = SECTIONS.filter((s) => !s.permission || can(s.permission));
+  const { can, feature } = useAuth();
+  const sections = SECTIONS.filter(
+    (s) =>
+      (!s.permission || can(s.permission)) &&
+      (!s.features || s.features.some((code) => feature(code))),
+  );
   return (
     <div className="grid gap-6 lg:grid-cols-[13rem_1fr]">
       <nav aria-label={t("label")} className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">

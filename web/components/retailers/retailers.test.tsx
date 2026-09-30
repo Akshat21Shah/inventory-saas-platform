@@ -16,7 +16,11 @@ const permissions = new Set([
   "pricing.manage",
   "credit.manage",
 ]);
-const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
+const auth = {
+  me: { id: "u1" },
+  can: (p: string) => permissions.has(p),
+  feature: () => false,
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/manage" }));
