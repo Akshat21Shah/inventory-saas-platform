@@ -2,6 +2,7 @@
 way the services keep it, the dashboard and every report open on it, and the sales reports agree
 with each other and with the invoices."""
 
+import json
 from decimal import Decimal as D
 
 import pytest
@@ -15,6 +16,7 @@ from apps.orders.models import Order, OrderStatus
 from apps.orders.tests.helpers import client_for
 from apps.payments.models import Payment
 from apps.platform.models import Tenant
+from apps.reports.models import ReportRun
 from common.dates import today_ist
 from common.demo_volume import VolumeTenant, reconcile, seed_tenant
 from common.tenancy import tenant_context
@@ -57,7 +59,7 @@ def test_the_dashboard_and_every_report_open_on_it(year):
     owner = client_for(tenant, User.objects.get(email="owner@vol-t.example.com"))
     assert owner.get("/api/v1/dashboard/").status_code == 200
     codes = [r["code"] for r in owner.get("/api/v1/reports/").json()]
-    assert len(codes) == 18
+    assert len(codes) == 19
     pages = {}
     for code in codes:
         response = owner.get(f"/api/v1/reports/{code}/")
@@ -87,3 +89,13 @@ def test_the_speed_check_times_every_page(year, capsys):
     out = capsys.readouterr().out
     assert "dashboard" in out and "sales_by_product" in out and "gst_summary" in out
     assert "under 60000 ms" in out
+
+
+def test_the_export_check_makes_each_export_as_the_worker_does(year, capsys):
+    for name in ("sales_by_invoice", "gst_summary", "stock_movements"):
+        call_command("perf_exports", "--one", name, "--tenant", "vol-t")
+        measured = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+        assert measured["export"] == name
+        assert measured["rows"] > 0 and measured["file_mb"] > 0 and measured["peak_mb"] > 0
+    with tenant_context(year[0].pk):
+        assert not ReportRun.objects.exists()  # a measurement leaves nothing behind

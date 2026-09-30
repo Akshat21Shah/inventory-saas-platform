@@ -23,7 +23,9 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
-from django.db.models import F, Sum
+from django.db.models import BooleanField, Case, F, Sum, Value, When
+from django.db.models.fields.json import KT, KeyTextTransform
+from django.db.models.lookups import GreaterThan
 
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
 from apps.catalog.models import Unit
@@ -120,12 +122,17 @@ def _notes(ctx: Context) -> Any:
 
 
 def _kind(invoice: dict[str, Any], threshold: Decimal) -> str:
-    """b2b, b2cl or b2cs, from the invoice's buyer, supply type and value."""
-    if (invoice["buyer"] or {}).get("gstin"):
+    """b2b, b2cl or b2cs, from the invoice's buyer GSTIN, supply type and value."""
+    if invoice["gstin"]:
         return "b2b"
     if invoice["supply_type"] == "INTER" and Decimal(invoice["grand_total"]) > threshold:
         return "b2cl"
     return "b2cs"
+
+
+# The buyer as the document recorded it: only the GSTIN and name are read (as text), not the
+# whole snapshot with its addresses. A quarter of a large distributor holds thousands of them.
+BUYER = {"gstin": KT("buyer__gstin"), "buyer_name": KT("buyer__name")}
 
 
 def _invoice_rows(ctx: Context) -> dict[str, Any]:
@@ -144,10 +151,10 @@ def _collect(ctx: Context) -> dict[str, Any]:
             "number",
             "invoice_date",
             "grand_total",
-            "buyer",
             "supply_type",
             "reverse_charge",
             pos=F("place_of_supply_id"),
+            **BUYER,
         )
     }
     per_rate = (
@@ -167,21 +174,29 @@ def _collect(ctx: Context) -> dict[str, Any]:
         lambda: {"taxable": ZERO, "cess": ZERO}
     )
     nil: dict[str, Decimal] = defaultdict(lambda: ZERO)
-    for r in per_rate:
+    b2cs_invoices: set[Any] = set()  # B2C others are totals only: just count their invoices
+    for r in per_rate.iterator(chunk_size=2000):
         inv = invoices[r["invoice_id"]]
         kind = _kind(inv, threshold)
         registered = kind == "b2b"
         if Decimal(r["gst_rate"]) == 0:
             nil[_nil_key(inv["supply_type"], registered)] += r["taxable"] or ZERO
             continue
-        row = {**r, "invoice": inv, "kind": kind}
         if kind == "b2cs":
             key = (inv["pos"], Decimal(r["gst_rate"]))
             b2cs[key]["taxable"] += r["taxable"] or ZERO
             b2cs[key]["cess"] += r["cess"] or ZERO
-        sections[kind].append(row)
+            b2cs_invoices.add(inv["id"])
+            continue
+        sections[kind].append({**r, "invoice": inv, "kind": kind})
     notes = _note_rows(ctx, threshold, b2cs, nil)
-    return {"sections": sections, "b2cs": b2cs, "notes": notes, "nil": nil}
+    return {
+        "sections": sections,
+        "b2cs": b2cs,
+        "b2cs_documents": len(b2cs_invoices),
+        "notes": notes,
+        "nil": nil,
+    }
 
 
 def _nil_key(supply_type: str, registered: bool) -> str:
@@ -203,11 +218,11 @@ def _note_rows(
             "number",
             "note_date",
             "grand_total",
-            "buyer",  # a credit note carries its invoice's buyer, supply type and place
-            "supply_type",
+            "supply_type",  # a credit note carries its invoice's buyer, supply type and place
             "reverse_charge",
             invoice_total=F("invoice__grand_total"),
             pos=F("place_of_supply_id"),
+            **BUYER,
         )
     }
     per_rate = (
@@ -217,11 +232,11 @@ def _note_rows(
         .order_by("credit_note_id", "rate")
     )
     out: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for r in per_rate:
+    for r in per_rate.iterator(chunk_size=2000):
         note = notes[r["credit_note_id"]]
         kind = _kind(
             {
-                "buyer": note["buyer"],
+                "gstin": note["gstin"],
                 "supply_type": note["supply_type"],
                 "grand_total": note["invoice_total"],
             },
@@ -272,8 +287,8 @@ def _rate(value: Any) -> Any:
 def b2b_sheet(data: dict[str, Any]) -> Sheet:
     rows = [
         {
-            "GSTIN/UIN of Recipient": r["invoice"]["buyer"].get("gstin", ""),
-            "Receiver Name": r["invoice"]["buyer"].get("name", ""),
+            "GSTIN/UIN of Recipient": r["invoice"]["gstin"] or "",
+            "Receiver Name": r["invoice"]["buyer_name"] or "",
             "Invoice Number": r["invoice"]["number"],
             "Invoice date": gst_date(r["invoice"]["invoice_date"]),
             "Invoice Value": _money(r["invoice"]["grand_total"]),
@@ -435,8 +450,8 @@ def b2cs_sheet(data: dict[str, Any]) -> Sheet:
 def cdnr_sheet(data: dict[str, Any]) -> Sheet:
     rows = [
         {
-            "GSTIN/UIN of Recipient": (r["note"]["buyer"] or {}).get("gstin", ""),
-            "Receiver Name": (r["note"]["buyer"] or {}).get("name", ""),
+            "GSTIN/UIN of Recipient": r["note"]["gstin"] or "",
+            "Receiver Name": r["note"]["buyer_name"] or "",
             "Note Number": r["note"]["number"],
             "Note Date": gst_date(r["note"]["note_date"]),
             "Note Type": G.CREDIT_NOTE,
@@ -591,6 +606,16 @@ def hsn_groups(ctx: Context) -> dict[str, dict[tuple[str, str, Decimal], dict[st
     return found
 
 
+def _registered(buyer: str) -> Case:
+    """Whether the buyer had a GSTIN, worked out in the database: the lines are grouped by it,
+    not by the whole buyer snapshot."""
+    return Case(
+        When(GreaterThan(KeyTextTransform("gstin", buyer), Value("")), then=Value(True)),
+        default=Value(False),
+        output_field=BooleanField(),
+    )
+
+
 def _hsn(ctx: Context) -> dict[str, dict[tuple[str, str, Decimal], dict[str, Decimal]]]:
     uqcs = _uqcs()
     groups: dict[str, dict[tuple[str, str, Decimal], dict[str, Decimal]]] = {
@@ -608,7 +633,7 @@ def _hsn(ctx: Context) -> dict[str, dict[tuple[str, str, Decimal], dict[str, Dec
     }
     lines = (
         InvoiceLine.objects.filter(invoice__in=_invoices(ctx).filter(status=ISSUED))
-        .values("hsn_code", "unit_code", "gst_rate", buyer=F("invoice__buyer"))
+        .values("hsn_code", "unit_code", "gst_rate", registered=_registered("invoice__buyer"))
         .annotate(**figures)
         .order_by()
     )
@@ -618,14 +643,14 @@ def _hsn(ctx: Context) -> dict[str, dict[tuple[str, str, Decimal], dict[str, Dec
             hsn_code=F("invoice_line__hsn_code"),
             unit_code=F("invoice_line__unit_code"),
             gst_rate=F("invoice_line__gst_rate"),
-            buyer=F("credit_note__invoice__buyer"),
+            registered=_registered("credit_note__invoice__buyer"),
         )
         .annotate(**figures)
         .order_by()
     )
     for sign, rows in ((1, lines), (-1, credits)):
         for r in rows:
-            tab = "b2b" if (r["buyer"] or {}).get("gstin") else "b2c"
+            tab = "b2b" if r["registered"] else "b2c"
             key = (r["hsn_code"], uqcs.get(r["unit_code"], G.OTHER_UQC), Decimal(r["gst_rate"]))
             for name in HSN_FIGURES:
                 groups[tab][key][name] += sign * (r[name] or ZERO)
@@ -778,7 +803,7 @@ def summary_rows(ctx: Context) -> list[dict[str, Any]]:
     out.append(
         {
             "section": SECTION_LABELS["b2cs"],
-            "documents": len({r["invoice"]["id"] for r in data["sections"]["b2cs"]}),
+            "documents": data["b2cs_documents"],
             "taxable": _money(sum((v["taxable"] for v in b2cs.values()), ZERO)),
             "tax": None,
             "cess": _money(sum((v["cess"] for v in b2cs.values()), ZERO)),

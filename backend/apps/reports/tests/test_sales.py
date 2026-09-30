@@ -2,11 +2,13 @@
 own-brand and traded products, one product costed only after it was billed (estimated) and one
 never costed, a nested category, and two shops (one with a salesperson)."""
 
+import io
 from datetime import date
 from decimal import Decimal as D
 from typing import Any
 
 import pytest
+from openpyxl import load_workbook
 
 from apps.accounts.tests.factories import make_staff_in
 from apps.billing import credit_notes
@@ -178,3 +180,67 @@ def test_a_bill_whose_irn_was_cancelled_is_not_a_sale(world):
 def test_another_business_sees_none_of_it(world):
     assert report(world["other"], "sales_by_product")["rows"] == []
     assert report(world["other"], "sales_summary")["totals"]["total"] == "0.00"
+
+
+def test_sales_by_invoice_is_the_register_of_bills_and_credit_notes(world):
+    body = report(world["owner"], "sales_by_invoice")
+    rows = {(r["day"], r["doc_type"]): r for r in body["rows"]}
+    assert [r["day"] for r in body["rows"]] == sorted(r["day"] for r in body["rows"])
+    assert set(rows) == {
+        ("2026-09-01", "Invoice"),
+        ("2026-09-02", "Invoice"),
+        ("2026-09-02", "Credit note"),
+    }
+    first, note, second = (
+        rows[("2026-09-01", "Invoice")],
+        rows[("2026-09-02", "Credit note")],
+        rows[("2026-09-02", "Invoice")],
+    )
+    assert (first["shop_name"], first["taxable"], first["place"]) == (
+        "Anand Stores",
+        "250.00",
+        "Maharashtra",
+    )
+    assert first["total"] == f"{world['first'].grand_total:.2f}"
+    assert first["invoice_id"] == str(world["first"].pk)
+    # The credit note as a minus, against its shop; costs at the invoice line's cost.
+    assert (note["shop_name"], note["taxable"], note["cost"], note["margin"]) == (
+        "Anand Stores",
+        "-100.00",
+        "-60.00",
+        "-40.00",
+    )
+    assert "credit_note_id" in note and "invoice_id" not in note
+    # LATER costed after billing (today's cost, 12); NEVER has no cost and is left out.
+    assert (second["cost"], second["margin"]) == ("72.00", "48.00")
+    totals = body["totals"]
+    assert (totals["taxable"], totals["cost"], totals["margin"]) == ("280.00", "162.00", "108.00")
+    with tenant_context(world["t"].pk):
+        returned = world["first"].credit_notes.get().grand_total
+    assert D(totals["total"]) == world["first"].grand_total + world["second"].grand_total - returned
+
+
+def test_sales_by_invoice_without_costs_for_own_shops_and_per_shop(world):
+    settings(world["t"], orders__sales_visibility="ASSIGNED_RETAILERS")
+    with tenant_context(world["t"].pk):
+        balaji = Retailer.objects.get(shop_name="Balaji Mart")
+        Retailer.objects.filter(pk=balaji.pk).update(salesperson=world["sales_user"])
+    mine = report(world["sales"], "sales_by_invoice")
+    assert [r["shop_name"] for r in mine["rows"]] == ["Balaji Mart"]
+    assert "cost" not in mine["rows"][0] and "cost" not in mine["totals"]
+    one = report(world["owner"], "sales_by_invoice", f"shop={balaji.pk}")
+    assert [r["doc_type"] for r in one["rows"]] == ["Invoice"]
+    assert report(world["other"], "sales_by_invoice")["rows"] == []
+
+
+def test_sales_by_invoice_exports_to_excel(world):
+    got = world["owner"].post(
+        f"{API}/reports/sales_by_invoice/export/",
+        {"format": "XLSX", "filters": {"date_from": "2026-09-01", "date_to": "2026-09-03"}},
+        format="json",
+    )
+    assert got.status_code == 200, got.content[:300]
+    sheet = list(load_workbook(io.BytesIO(got.content))["Sales by invoice"].values)
+    assert sheet[0][:3] == ("Date", "Number", "Type")
+    assert len(sheet) == 5  # header, three documents, totals
+    assert sheet[-1][0] == "Total" and sheet[-1][7] == D("280.00")

@@ -8,10 +8,12 @@ expires (``platform.report_link_days``)."""
 
 from __future__ import annotations
 
+import io
 import logging
+import tempfile
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any
+from typing import Any, BinaryIO
 from uuid import UUID
 
 from django.db import transaction
@@ -82,12 +84,19 @@ def described(report: Report, params: dict[str, Any]) -> list[tuple[str, str]]:
     return out
 
 
-def build(report: Report, ctx: Context, fmt: str, by: str) -> Built:
+def write(report: Report, ctx: Context, fmt: str, by: str, out: BinaryIO) -> tuple[str, int]:
+    """Write the file to ``out``; returns its name and how many rows it holds."""
     about = files.about(report, ctx, described(report, ctx.params), by)
     maker = files.pdf if fmt == F.PDF else files.excel
-    data, rows = maker(report, ctx, about)
-    extension = EXTENSION[F(fmt)]
-    return Built(data, files.file_name(report, ctx, extension), CONTENT_TYPE[F(fmt)], rows)
+    rows = maker(report, ctx, about, out)
+    return files.file_name(report, ctx, EXTENSION[F(fmt)]), rows
+
+
+def build(report: Report, ctx: Context, fmt: str, by: str) -> Built:
+    """A small export, made in the request."""
+    out = io.BytesIO()
+    name, rows = write(report, ctx, fmt, by, out)
+    return Built(out.getvalue(), name, CONTENT_TYPE[F(fmt)], rows)
 
 
 def _who(user: User) -> str:
@@ -161,13 +170,17 @@ def make_run(run_id: UUID) -> str:
             _finish(run.pk, status=S.FAILED, error="You can no longer open this report.")
         return "refused"
     try:
-        with tenant_transaction(tenant_id):
-            ctx = Context(
-                engine.parse(report, run.params), Scope(user.pk, run.own_shops, run.costs)
-            )
-            built = build(report, ctx, run.format, _who(user))
-        key = f"tenants/{tenant_id}/reports/{run.pk}/{built.name}"
-        get_storage().put(key, built.data, built.content_type)
+        # Rows are read in chunks and the file is written to disk, then uploaded in parts: memory
+        # stays flat however large the export (``make perf-exports``).
+        with tempfile.TemporaryFile() as out:
+            with tenant_transaction(tenant_id):
+                ctx = Context(
+                    engine.parse(report, run.params), Scope(user.pk, run.own_shops, run.costs)
+                )
+                name, rows = write(report, ctx, run.format, _who(user), out)
+            out.seek(0)
+            key = f"tenants/{tenant_id}/reports/{run.pk}/{name}"
+            get_storage().put_file(key, out, CONTENT_TYPE[F(run.format)])
     except Exception:
         logger.exception("report export failed", extra={"report": run.report_code})
         with tenant_transaction(tenant_id):
@@ -179,8 +192,8 @@ def make_run(run_id: UUID) -> str:
             run.pk,
             status=S.READY,
             file_key=key,
-            file_name=built.name,
-            row_count=built.rows,
+            file_name=name,
+            row_count=rows,
             expires_at=timezone.now() + timedelta(days=days),
         )
     return "ready"

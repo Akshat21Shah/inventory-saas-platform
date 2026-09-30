@@ -23,16 +23,19 @@ from django.db.models import (
     F,
     IntegerField,
     Max,
+    OuterRef,
     Q,
     QuerySet,
+    Subquery,
     Sum,
     Value,
     When,
 )
+from django.db.models.fields.json import KT
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth, TruncWeek
 
 from apps.accounts.models import User
-from apps.billing.models import CreditNoteLine, DocumentStatus, InvoiceLine
+from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
 from apps.catalog.models import Brand, Category, Product
 from apps.catalog.selectors import descendant_ids
 from apps.reports.registry import (
@@ -43,6 +46,7 @@ from apps.reports.registry import (
     FilterKind,
     Group,
     Kind,
+    Mapped,
     Report,
     register,
 )
@@ -730,5 +734,211 @@ register(
         rows=margin_rows,
         totals=lambda ctx: _totals(_margin_groups(ctx)),
         notes=lambda ctx: cost_notes(_margin_groups(ctx)),
+    )
+)
+
+
+# --- By invoice: the sales register -------------------------------------------------------------
+# One row per invoice and per credit note (as a minus), with the document's own totals (its total
+# includes the round-off), as issued: the buyer's name and GSTIN from the document. One query for
+# both kinds (a UNION), so a page is read with LIMIT and an export streams in chunks.
+
+REGISTER = (
+    "day", "doc_number", "doc_type", "shop_code", "shop_name", "gstin", "place",
+    "taxable", "cgst", "sgst", "igst", "cess", "total", "salesperson", "cost", "margin",
+    "doc_id", "retailer_ref",
+)  # fmt: skip
+DOC_TYPES = {"INVOICE": "Invoice", "CREDIT_NOTE": "Credit note"}
+_AMOUNTS = {
+    "taxable": "taxable_total",
+    "cgst": "cgst_total",
+    "sgst": "sgst_total",
+    "igst": "igst_total",
+    "cess": "cess_total",
+    "total": "grand_total",
+}
+
+
+def _register_documents(ctx: Context, model: Any, day: str, salesperson: str) -> QuerySet[Any]:
+    p = ctx.params
+    rows: QuerySet[Any] = ctx.shops(
+        model.objects.filter(
+            status=ISSUED, **{f"{day}__gte": p["date_from"], f"{day}__lte": p["date_to"]}
+        )
+    )
+    if p.get("shop"):
+        rows = rows.filter(retailer_id=p["shop"])
+    if p.get("salesperson"):
+        rows = rows.filter(**{f"{salesperson}_id": p["salesperson"]})
+    return rows
+
+
+def _register_invoices(ctx: Context) -> QuerySet[Any]:
+    return _register_documents(ctx, Invoice, "invoice_date", "order__salesperson")
+
+
+def _register_notes(ctx: Context) -> QuerySet[Any]:
+    return _register_documents(ctx, CreditNote, "note_date", "invoice__order__salesperson")
+
+
+def _line_figures(prefix: str) -> dict[str, Any]:
+    """Per line: its cost at the recorded cost, else today's (credit notes at their invoice
+    lines' cost; value-only notes have no quantity, so no cost), and its margin, only for lines
+    with a cost (lines with none are left out of the margin, as in the other sales reports)."""
+    unit = Coalesce(F(f"{prefix}unit_cost"), F(f"{prefix}product__cost_price"))
+    cost = ExpressionWrapper(unit * F("quantity"), output_field=MONEY)
+    margin = Case(
+        When(
+            Q(**{f"{prefix}unit_cost__isnull": False})
+            | Q(**{f"{prefix}product__cost_price__isnull": False}),
+            then=ExpressionWrapper(F("taxable_value") - unit * F("quantity"), output_field=MONEY),
+        ),
+        output_field=MONEY,
+    )
+    return {"cost": Sum(cost), "margin": Sum(margin)}
+
+
+def _line_money(model: Any, parent: str, prefix: str, figure: str) -> Subquery:
+    """A document's cost or margin, from its lines."""
+    return Subquery(
+        model.objects.filter(**{parent: OuterRef("pk")})
+        .order_by()
+        .values(parent)
+        .annotate(figure=_line_figures(prefix)[figure])
+        .values("figure"),
+        output_field=MONEY,
+    )
+
+
+def _register_values(
+    rows: QuerySet[Any],
+    kind: str,
+    sign: int,
+    day: str,
+    salesperson: str,
+    lines: tuple[Any, str, str] | None,
+) -> QuerySet[Any]:
+    """The register's columns for one kind of document (``lines``: the line model, its link
+    to the document and its path to the cost, when costs are shown)."""
+
+    def money(figure: str) -> Any:
+        if lines is None:
+            return Value(None, output_field=MONEY)
+        return ExpressionWrapper(_line_money(*lines, figure) * sign, output_field=MONEY)
+
+    fields: dict[str, Any] = {
+        "day": F(day),
+        "doc_number": F("number"),
+        "doc_type": Value(kind),
+        "shop_code": KT("buyer__code"),
+        "shop_name": KT("buyer__name"),
+        "gstin": KT("buyer__gstin"),
+        "place": F("place_of_supply__name"),
+        **{
+            key: ExpressionWrapper(F(field) * sign, output_field=MONEY)
+            for key, field in _AMOUNTS.items()
+        },
+        "salesperson": F(f"{salesperson}__full_name"),
+        "cost": money("cost"),
+        "margin": money("margin"),
+        "doc_id": F("id"),
+        "retailer_ref": F("retailer_id"),
+    }
+    found: QuerySet[Any] = rows.annotate(**fields).values(*REGISTER)
+    return found
+
+
+def _register_row(row: dict[str, Any]) -> dict[str, Any]:
+    kind = row["doc_type"]
+    return {
+        **row,
+        "doc_type": DOC_TYPES[kind],
+        "invoice_id" if kind == "INVOICE" else "credit_note_id": row["doc_id"],
+        "retailer_id": row["retailer_ref"],
+    }
+
+
+def register_rows(ctx: Context) -> Mapped:
+    costs = ctx.scope.costs
+    invoices = _register_values(
+        _register_invoices(ctx),
+        "INVOICE",
+        1,
+        "invoice_date",
+        "order__salesperson",
+        (InvoiceLine, "invoice", "") if costs else None,
+    )
+    notes = _register_values(
+        _register_notes(ctx),
+        "CREDIT_NOTE",
+        -1,
+        "note_date",
+        "invoice__order__salesperson",
+        (CreditNoteLine, "credit_note", "invoice_line__") if costs else None,
+    )
+    return Mapped(invoices.union(notes, all=True).order_by("day", "doc_number"), _register_row)
+
+
+def _register_totals(ctx: Context) -> dict[str, Any]:
+    def sums(rows: QuerySet[Any]) -> dict[str, Decimal]:
+        found = rows.aggregate(**{key: Sum(field) for key, field in _AMOUNTS.items()})
+        return {key: found[key] or ZERO for key in _AMOUNTS}
+
+    def money_of(rows: QuerySet[Any], prefix: str) -> dict[str, Decimal]:
+        found = rows.aggregate(**_line_figures(prefix))
+        return {key: Decimal(found[key] or ZERO) for key in ("cost", "margin")}
+
+    billed, credited = sums(_register_invoices(ctx)), sums(_register_notes(ctx))
+    out: dict[str, Any] = {key: billed[key] - credited[key] for key in _AMOUNTS}
+    if ctx.scope.costs:
+        sold = money_of(InvoiceLine.objects.filter(invoice__in=_register_invoices(ctx)), "")
+        returned = money_of(
+            CreditNoteLine.objects.filter(credit_note__in=_register_notes(ctx)), "invoice_line__"
+        )
+        out.update({key: sold[key] - returned[key] for key in ("cost", "margin")})
+    return out
+
+
+register(
+    Report(
+        code="sales_by_invoice",
+        title="Sales by invoice",
+        group=Group.SALES,
+        description="The sales register: every invoice and credit note in the period, one a row.",
+        permission=SALES,
+        full="reports.sales",
+        columns=(
+            Column("day", "Date", Kind.DATE, width=12),
+            Column("doc_number", "Number", width=20),
+            Column("doc_type", "Type", width=12),
+            Column("shop_code", "Shop code", width=12),
+            Column("shop_name", "Shop", width=30),
+            Column("gstin", "GSTIN", width=18),
+            Column("place", "Place of supply", width=18),
+            TAXABLE,
+            Column("cgst", "CGST", Kind.MONEY, total=True),
+            Column("sgst", "SGST", Kind.MONEY, total=True),
+            Column("igst", "IGST", Kind.MONEY, total=True),
+            Column("cess", "Cess", Kind.MONEY, total=True),
+            TOTAL,
+            Column("salesperson", "Salesperson", width=20),
+            COST,
+            MARGIN_COL,
+        ),
+        filters=(*PERIOD, SHOP, SALESPERSON),
+        rows=register_rows,
+        totals=lambda ctx: ctx.once("register_totals", lambda: _register_totals(ctx)),
+        notes=lambda ctx: [
+            "Credit notes are shown as minus amounts. Each total includes its round-off.",
+            *(
+                [
+                    "Cost is what each invoice line recorded when issued; bills from before that "
+                    "use today's cost price (estimated). Lines with no cost price are left out "
+                    "of the margin."
+                ]
+                if ctx.scope.costs
+                else []
+            ),
+        ],
     )
 )

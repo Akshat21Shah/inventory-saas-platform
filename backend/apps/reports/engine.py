@@ -176,7 +176,15 @@ class Page:
     notes: list[str]
 
 
-LINKS = ("retailer_id", "product_id", "invoice_id", "order_id", "payment_id", "user_id")
+LINKS = (
+    "retailer_id",
+    "product_id",
+    "invoice_id",
+    "credit_note_id",
+    "order_id",
+    "payment_id",
+    "user_id",
+)
 
 
 def count(rows: Any) -> int:

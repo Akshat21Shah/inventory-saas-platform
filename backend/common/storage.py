@@ -11,7 +11,7 @@ written with long ``Cache-Control`` headers, so browsers and the CDN keep them i
 """
 
 from functools import lru_cache
-from typing import Any, ClassVar, Protocol
+from typing import Any, BinaryIO, ClassVar, Protocol
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -19,6 +19,10 @@ from django.core.exceptions import ImproperlyConfigured
 
 class Storage(Protocol):
     def put(self, key: str, data: bytes, content_type: str) -> None: ...
+
+    def put_file(self, key: str, file: BinaryIO, content_type: str) -> None:
+        """Upload from an open file, in parts: a large file is never read into memory whole."""
+        ...
 
     def get(self, key: str) -> bytes: ...
 
@@ -51,6 +55,9 @@ class InMemoryStorage:
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
         self.objects[key] = (data, content_type)
+
+    def put_file(self, key: str, file: BinaryIO, content_type: str) -> None:
+        self.objects[key] = (file.read(), content_type)
 
     def get(self, key: str) -> bytes:
         return self.objects[key][0]
@@ -90,6 +97,9 @@ class S3Storage:
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
         self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
+
+    def put_file(self, key: str, file: BinaryIO, content_type: str) -> None:
+        self.client.upload_fileobj(file, self.bucket, key, ExtraArgs={"ContentType": content_type})
 
     def get(self, key: str) -> bytes:
         body: bytes = self.client.get_object(Bucket=self.bucket, Key=key)["Body"].read()

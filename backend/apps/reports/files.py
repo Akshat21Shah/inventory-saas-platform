@@ -4,12 +4,11 @@ file contains (filters, who asked and when, own shops only, notes)."""
 
 from __future__ import annotations
 
-import io
 import re
 from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, BinaryIO
 
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -104,8 +103,9 @@ def about(
     return lines
 
 
-def excel(report: Report, ctx: Context, about_lines: list[tuple[str, str]]) -> tuple[bytes, int]:
-    """The workbook and how many data rows it holds."""
+def excel(report: Report, ctx: Context, about_lines: list[tuple[str, str]], out: BinaryIO) -> int:
+    """Write the workbook to ``out`` (a temporary file for background runs, so a large export's
+    file is never held in memory); returns how many data rows it holds."""
     book = Workbook(write_only=True)
     cols = columns(report, ctx.scope)
     if report.sheets is not None:
@@ -120,9 +120,8 @@ def excel(report: Report, ctx: Context, about_lines: list[tuple[str, str]]) -> t
     info = book.create_sheet(title="About")
     for label, value in about_lines:
         info.append([label, value])
-    buffer = io.BytesIO()
-    book.save(buffer)
-    return buffer.getvalue(), rows
+    book.save(out)
+    return rows
 
 
 def _totals(report: Report, ctx: Context, cols: tuple[Column, ...]) -> dict[str, Any] | None:
@@ -155,7 +154,7 @@ def _pdf_value(column: Column, value: Any) -> str:
     return str(value)
 
 
-def pdf(report: Report, ctx: Context, about_lines: list[tuple[str, str]]) -> tuple[bytes, int]:
+def pdf(report: Report, ctx: Context, about_lines: list[tuple[str, str]], out: BinaryIO) -> int:
     cols = columns(report, ctx.scope)
     rows = [row_out(r, cols) for r in _iterate(report.rows(ctx))]
     totals = _totals(report, ctx, cols)
@@ -179,4 +178,5 @@ def pdf(report: Report, ctx: Context, about_lines: list[tuple[str, str]]) -> tup
             "totals": total_row,
         },
     )
-    return get_renderer().render(html), len(rows)
+    out.write(get_renderer().render(html))
+    return len(rows)

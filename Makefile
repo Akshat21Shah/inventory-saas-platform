@@ -8,7 +8,7 @@ PY := .venv/bin
 OWNER_DB_URL := postgres://app_owner:app_owner@localhost:5432/inventory
 
 .DEFAULT_GOAL := help
-.PHONY: help setup up down logs ps migrate makemigrations seed seed-volume perf shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost webhook-tunnel \
+.PHONY: help setup up down logs ps migrate makemigrations seed seed-volume perf perf-exports shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost webhook-tunnel \
         e2e lint lint-backend lint-frontend fmt api-client db-up check-schema
 
 help: ## Show this help
@@ -54,6 +54,9 @@ seed-volume: ## Speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 
 
 perf: ## Dashboard + every report's first page, p95 < 300 ms at 50,000 orders (after make seed-volume)
 	$(COMPOSE) exec backend python manage.py perf_reports
+
+perf-exports: ## The heaviest background exports: time and memory (after make seed-volume)
+	$(COMPOSE) exec backend python manage.py perf_exports
 
 shell: ## Django shell inside the backend container
 	$(COMPOSE) exec backend python manage.py shell
