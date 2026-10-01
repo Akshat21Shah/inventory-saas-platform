@@ -32,6 +32,7 @@ import { isZero } from "@/lib/qty";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";
 
+import { FreeOfferBadge, FreeOfferDetails } from "./free-goods";
 import { useCart } from "./cart-state";
 import { QuantityStepper } from "./quantity-stepper";
 
@@ -204,6 +205,7 @@ export function ProductCard({
             </span>
           ) : null}
           <PriceBlock price={product.price} mrp={product.mrp} />
+          {product.free_offer ? <FreeOfferBadge offer={product.free_offer} /> : null}
           <Availability product={product} />
           <OrderingNote product={product} />
         </span>
@@ -515,6 +517,7 @@ export function ProductPage({ productId }: { productId: string }) {
               })}
             </p>
           ) : null}
+          {product.free_offer ? <FreeOfferDetails offer={product.free_offer} /> : null}
           {product.slab_hints.length ? (
             <section className="bg-success/10 space-y-1 rounded-xl p-4">
               <h2 className="font-semibold">{t("buyMore")}</h2>

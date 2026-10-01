@@ -1511,10 +1511,10 @@
     "warnings": {
       "PRICE_ABOVE_MRP": "The price including GST ({price_with_gst}) is above the MRP ({mrp}). It is saved; check that this is right.",
       "HSN_RATE_DIFFERS": "HSN {hsn_prefix} usually has {suggested_rate}% GST. Check the rate.",
-      "FREE_GOODS": "This rule makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_SPECIAL": "This special price makes this product free for this retailer. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_PRICE_LIST": "This price list makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_GRID": "These discounts make {products, plural, one {# product} other {# products}} free for this shop. Free-goods schemes are not supported yet."
+      "FREE_GOODS": "This rule makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}",
+      "FREE_GOODS_SPECIAL": "This special price makes this product free for this retailer. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}",
+      "FREE_GOODS_PRICE_LIST": "This price list makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}",
+      "FREE_GOODS_GRID": "These discounts make {products, plural, one {# product} other {# products}} free for this shop. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}"
     },
     "products": {
       "title": "Products",
@@ -1993,6 +1993,7 @@
       "priceLists": "Price lists",
       "specialPrices": "Special prices",
       "discounts": "Discounts",
+      "freeGoods": "Free goods",
       "settings": "Pricing settings",
       "report": "Shop pricing"
     },
@@ -2236,6 +2237,61 @@
       "emptyTitle": "No shop has its own pricing",
       "emptyBody": "Special prices and shop-only discounts will show up here.",
       "freeNote": "Free products are worked out from today's prices and discounts, including discounts that add up to the whole price."
+    },
+    "freeGoods": {
+      "title": "Free goods",
+      "description": "Buy-X-get-Y offers: the free units are added to orders at ₹0 and shown on invoices.",
+      "add": "Add an offer",
+      "name": "Name",
+      "nameHint": "Shops see it next to the free goods in their cart, orders and invoices.",
+      "product": "When they buy",
+      "offer": "Offer",
+      "repeats": "For every lot bought",
+      "onceALine": "Once on each order",
+      "atMost": "at most {qty} free",
+      "forShops": "For shops",
+      "onList": "On {name}",
+      "allShops": "All shops",
+      "dates": "Dates",
+      "always": "Always",
+      "status": "Status",
+      "search": "Search offers",
+      "searchPlaceholder": "Name or product",
+      "anyStatus": "Any status",
+      "activeOnly": "Active",
+      "inactiveOnly": "Switched off",
+      "emptyTitle": "No offers yet",
+      "emptyBody": "Add one, for example buy 10 packets and get 1 free.",
+      "noMatchTitle": "No offers match",
+      "noMatchBody": "Try another search or status.",
+      "offTitle": "Free goods are switched off",
+      "offBody": "Ask us to switch on free-goods offers for your business.",
+      "theOffer": "The offer",
+      "buyProduct": "Product bought",
+      "buyQty": "Quantity to buy",
+      "sameProduct": "The free goods are the same product",
+      "freeProduct": "Product given free",
+      "freeQty": "Quantity free",
+      "repeat": "For every lot bought",
+      "repeatHint": "On: buy 20, get 2 free. Off: the free goods once on each order, however much is bought.",
+      "maxFree": "Most free on one order",
+      "maxFreeHint": "Optional.",
+      "whoAndWhen": "Who and when",
+      "audiencePriceList": "Shops on a price list",
+      "audienceShop": "One shop",
+      "validFrom": "From",
+      "validTo": "Until",
+      "datesHint": "Optional; both dates count.",
+      "isActive": "Active",
+      "howItWorks": "The free goods are added to the order automatically, from stock like any line. When one product has several offers, the shop gets the one with the most free goods. Orders already placed keep the offer they got.",
+      "saved": "Saved",
+      "save": "Save",
+      "create": "Add the offer",
+      "back": "Free goods",
+      "newTitle": "New offer",
+      "delete": "Delete",
+      "deleteTitle": "Delete {name}?",
+      "deleteBody": "Orders already placed keep their free goods."
     }
   },
   "shop": {
@@ -2415,8 +2471,10 @@
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "This order is over your credit limit ({amount} available). Please pay your dues or contact your distributor.",
         "OVERDUE_INVOICES": "You have overdue bills. Please pay them or contact your distributor.",
-        "OTHER": "Something in your cart needs a change."
-      }
+        "OTHER": "Something in your cart needs a change.",
+        "FREE_GOODS_REDUCED": "Only {qty} of the {earned} free can be sent: not enough stock."
+      },
+      "freeQty": "{qty} free"
     },
     "money": {
       "title": "My account",
@@ -2523,6 +2581,15 @@
       "waiting": "Waiting for the bank to confirm. This page updates by itself.",
       "lastError": "The last try didn't go through: {error}",
       "safe": "You pay on the payment company's secure page. We never see your card or bank details."
+    },
+    "free": {
+      "offer": "{same, select, true {Buy {buy}, get {free} free} other {Buy {buy}, get {free} {product} free}}",
+      "every": "For every {buy} you buy.",
+      "once": "Once on each order.",
+      "cap": "Up to {max} free on one order.",
+      "addMore": "Add {qty} more to get {free} free",
+      "badge": "Free",
+      "under": "with {scheme}"
     }
   },
   "filters": {
@@ -3163,8 +3230,10 @@
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "Over the shop's credit limit ({amount} available).",
         "OVERDUE_INVOICES": "The shop has overdue invoices to pay first.",
-        "OTHER": "Something in the cart needs a change."
-      }
+        "OTHER": "Something in the cart needs a change.",
+        "FREE_GOODS_REDUCED": "Only {qty} of the {earned} free can be sent: not enough stock."
+      },
+      "freeQty": "{qty} free"
     }
   },
   "billing": {
@@ -4941,6 +5010,7 @@
       "priceLists": "Price lists",
       "discounts": "Discounts",
       "specialPrices": "Special prices",
+      "freeGoods": "Free goods",
       "stock": "Stock",
       "goodsReceipts": "Goods receipts",
       "newGoodsReceipt": "Receive stock",
@@ -5054,7 +5124,8 @@
       "plans": "subscriptions",
       "featureFlags": "modules, features",
       "taxRates": "GST, HSN, tax rates",
-      "shopActivity": "win back, stopped ordering, inactive shops, dormant, slowing, not ordering, lost customers"
+      "shopActivity": "win back, stopped ordering, inactive shops, dormant, slowing, not ordering, lost customers",
+      "freeGoods": "schemes, offers, buy one get one, bonus, free items, scheme"
     }
   },
   "purchasing": {

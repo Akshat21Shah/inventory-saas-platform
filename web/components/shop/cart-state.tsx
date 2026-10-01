@@ -111,7 +111,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<CartState>(() => {
-    const serverQty = new Map(cart?.lines.map((line) => [line.product_id, line.quantity]) ?? []);
+    // Free lines (ADR-056) aren't what the shop asked for: only bought lines set the steppers.
+    const bought = (cart?.lines ?? []).filter((line) => !line.is_free);
+    const serverQty = new Map(bought.map((line) => [line.product_id, line.quantity]));
     const ids = new Set([...serverQty.keys(), ...Object.keys(overlay)]);
     const quantityOf = (id: string) => overlay[id] ?? serverQty.get(id) ?? "0";
     const count = [...ids].filter((id) => !isZero(quantityOf(id))).length;
@@ -122,7 +124,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setQuantity,
       pending: Object.keys(overlay).length > 0,
       count,
-      version: (cart?.lines ?? []).map((l) => `${l.product_id}:${l.quantity}`).join("|"),
+      version: bought.map((l) => `${l.product_id}:${l.quantity}`).join("|"),
     };
   }, [cart, overlay, query.isLoading, setQuantity]);
 

@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 
 import { OnHoldNotice } from "./catalog";
 import { useCart } from "./cart-state";
+import { FreeLineLabel, OfferHint } from "./free-goods";
 import { QuantityStepper } from "./quantity-stepper";
 
 /** A problem from the server in plain words (codes from apps/orders/quote.py), worded for the
@@ -62,6 +63,8 @@ export function ProblemText({
     case "NOT_ENOUGH_STOCK":
     case "PARTLY_AVAILABLE":
       return <>{t(problem.code, { qty: qty(d.available), unit: unit ?? "" })}</>;
+    case "FREE_GOODS_REDUCED":
+      return <>{t("FREE_GOODS_REDUCED", { qty: qty(d.available), earned: qty(d.earned) })}</>;
     case "MIN_ORDER_VALUE":
       return (
         <>
@@ -101,6 +104,11 @@ function Notice({
   );
 }
 
+/** A product can be in the cart twice: bought, and free under a scheme (ADR-056). */
+export function lineKey(line: Pick<QuoteLine, "product_id" | "is_free">): string {
+  return `${line.product_id}${line.is_free ? ":free" : ""}`;
+}
+
 function CartLine({ line }: { line: QuoteLine }) {
   const t = useTranslations("shop.cart");
   const product = line.product;
@@ -131,7 +139,12 @@ function CartLine({ line }: { line: QuoteLine }) {
           <Link href={`/shop/products/${product.id}`} className="font-medium hover:underline">
             {product.name}
           </Link>
-          {line.unit_price ? (
+          {line.is_free ? (
+            <p>
+              <FreeLineLabel scheme={line.scheme?.name ?? ""} />
+            </p>
+          ) : null}
+          {line.unit_price && !line.is_free ? (
             <p className="text-muted-foreground text-xs">
               <MoneyText value={line.unit_price} /> {t("each")}
               {line.discount_total && line.discount_total !== "0.00" ? (
@@ -156,13 +169,23 @@ function CartLine({ line }: { line: QuoteLine }) {
             </p>
           ) : null}
         </div>
-        {line.line_total ? (
+        {line.is_free ? (
+          <span className="text-success-strong shrink-0 font-semibold">
+            {t("freeQty", { qty: formatQty(line.quantity) })}
+          </span>
+        ) : line.line_total ? (
           <MoneyText value={line.line_total} className="shrink-0 font-semibold" />
         ) : null}
       </div>
-      <div className="flex justify-end">
-        <QuantityStepper product={{ ...product, unit: product.unit }} className="w-44 max-w-full" />
-      </div>
+      {line.is_free ? null : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <OfferHint offer={line.offer} />
+          <QuantityStepper
+            product={{ ...product, unit: product.unit }}
+            className="ml-auto w-44 max-w-full"
+          />
+        </div>
+      )}
       {line.problems.map((problem) => (
         <p
           key={problem.code}
@@ -332,11 +355,11 @@ export function CartPage() {
           {ready.length ? (
             <section className="space-y-2" aria-labelledby="ready-heading">
               <h2 id="ready-heading" className="font-semibold">
-                {t("readyTitle", { count: ready.length })}
+                {t("readyTitle", { count: ready.filter((l) => !l.is_free).length || ready.length })}
               </h2>
               <ul className="space-y-2">
                 {ready.map((line) => (
-                  <CartLine key={line.product_id} line={line} />
+                  <CartLine key={lineKey(line)} line={line} />
                 ))}
               </ul>
             </section>
@@ -351,7 +374,7 @@ export function CartPage() {
               </p>
               <ul className="space-y-2">
                 {later.map((line) => (
-                  <CartLine key={line.product_id} line={line} />
+                  <CartLine key={lineKey(line)} line={line} />
                 ))}
               </ul>
               {canReduce ? (

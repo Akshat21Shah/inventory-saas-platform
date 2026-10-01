@@ -22,6 +22,7 @@ import { PageSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FreeLineLabel } from "@/components/shop/free-goods";
 import {
   getInvoicesRetrieveQueryKey,
   invoicesPdf,
@@ -534,7 +535,8 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
                     <div className="flex flex-wrap justify-between gap-2">
                       <span className="min-w-0">
                         <span className="block font-medium">{line.description}</span>
-                        <span className="text-muted-foreground text-xs">
+                        {line.is_free ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                        <span className="text-muted-foreground block text-xs">
                           {t("lineMeta", {
                             code: line.product_code,
                             hsn: line.hsn_code,

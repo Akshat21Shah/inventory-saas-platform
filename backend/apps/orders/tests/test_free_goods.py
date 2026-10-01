@@ -27,6 +27,7 @@ from apps.platform.models import FeatureFlag, TenantFeature
 from apps.platform.selectors import invalidate_tenant_features
 from apps.pricing.models import FreeGoodsScheme
 from apps.pricing.schemes import Terms, best, headline
+from common.errors import InvalidFields
 from common.tenancy import tenant_context
 
 pytestmark = pytest.mark.django_db
@@ -211,6 +212,16 @@ def test_a_smaller_bought_line_keeps_only_the_free_goods_it_earns(world):
     assert (free.qty_ordered, free.qty_cancelled, free.qty_reserved) == (D("2"), D("1"), D("1"))
     assert level(world, world["p1"]).quantity_reserved == D("16")
     check_order_invariants(t)
+
+
+def test_a_free_line_is_not_raised_on_its_own(world):
+    t, owner = world["t"], world["owner"]
+    settings(t, orders__pre_acceptance_edit_mode="FULL_EDIT")
+    scheme(t, world["p1"], world["p1"])
+    order = place(t, world["shop"], (world["p1"], "10"))
+    _, free = lines_of(world, order)
+    with tenant_context(t.pk), pytest.raises(InvalidFields):
+        modify_order(order.pk, Modification({free.pk: D("5")}, []), by=owner)
 
 
 def test_cancelling_the_wait_on_a_bought_line_trims_its_free_goods(world):

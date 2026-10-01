@@ -312,6 +312,10 @@ def modify_order(order_id: UUID, change: Modification, *, by: User) -> Order:
             current = line.qty_ordered - line.qty_cancelled
             if new_qty < 0:
                 raise InvalidFields({"lines": ["Quantities can't be negative."]})
+            if line.free_of_line_id is not None and new_qty > current:
+                raise InvalidFields(
+                    {"lines": ["Free goods follow what is bought: change that line instead."]}
+                )
             if new_qty < current:
                 reductions[line] = current - new_qty
             elif new_qty > current:

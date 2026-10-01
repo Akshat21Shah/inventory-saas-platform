@@ -17,7 +17,7 @@ from apps.inventory.models import StockAdjustment, StockInward
 from apps.orders.models import Fulfilment, Order, OrderLine
 from apps.payments.models import Payment, PaymentIntent, Refund
 from apps.platform.models import Tenant
-from apps.pricing.models import DiscountRule, PriceList
+from apps.pricing.models import DiscountRule, FreeGoodsScheme, PriceList
 from apps.purchasing.models import PurchaseOrder, Supplier
 from apps.retailers.models import Retailer
 from common.tenancy import tenant_transaction
@@ -81,6 +81,8 @@ class Command(BaseCommand):
                 "supplier": _first(Supplier.objects.all()),
                 "purchase_order": _first(PurchaseOrder.objects.filter(status="SENT")),
                 "draft_purchase_order": _first(PurchaseOrder.objects.filter(status="DRAFT")),
+                # Phase 9b: a free-goods scheme (Sharma has free goods on).
+                "free_goods_scheme": _first(FreeGoodsScheme.objects.all()),
                 "shop_checkout": _first(
                     PaymentIntent.objects.filter(retailer__mobile="+919876500001")
                 ),

@@ -32,6 +32,12 @@ export const STAFF_PAGES: Destination[] = [
   { key: "priceLists", href: "/manage/pricing/price-lists", permission: "pricing.view" },
   { key: "discounts", href: "/manage/pricing/discounts", permission: "pricing.view" },
   { key: "specialPrices", href: "/manage/pricing/special-prices", permission: "pricing.view" },
+  {
+    key: "freeGoods",
+    href: "/manage/pricing/free-goods",
+    permission: "pricing.view",
+    feature: "free_goods",
+  },
   { key: "stock", href: "/manage/stock", permission: "stock.view" },
   {
     key: "purchaseOrders",

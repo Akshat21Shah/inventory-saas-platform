@@ -158,6 +158,35 @@ describe("Product page", () => {
   });
 });
 
+describe("Free goods", () => {
+  const offer = {
+    scheme_id: "s1",
+    name: "Diwali",
+    buy_qty: "10.000",
+    free_qty: "1.000",
+    repeat: true,
+    max_free_qty: "3.000",
+    same_product: false,
+    free_product_name: "Tea 100g",
+    free_unit: "PCS",
+  };
+
+  it("shows the offer on the product's page", async () => {
+    const detail: ShopProductDetail = {
+      ...product("p1", "Parle-G", { free_offer: offer }),
+      description: "",
+      images: [],
+      slab_hints: [],
+    };
+    mockApi({ "/api/v1/shop/products/p1/": () => [200, detail] });
+    renderShop(<ProductPage productId="p1" />);
+    expect(
+      await screen.findByRole("heading", { name: "Buy 10, get 1 Tea 100g free" }),
+    ).toBeVisible();
+    expect(screen.getByText("For every 10 you buy. Up to 3 free on one order.")).toBeVisible();
+  });
+});
+
 describe("Stock labels", () => {
   it("shows the server's label, and a quantity only when the distributor allows it", async () => {
     mockApi({

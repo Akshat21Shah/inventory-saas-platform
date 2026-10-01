@@ -18,6 +18,7 @@ import { OrderTimeline } from "@/components/shared/order-timeline";
 import { CardSkeleton, PageSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
+import { FreeLineLabel } from "@/components/shop/free-goods";
 import {
   getShopCartRetrieveQueryKey,
   getShopOrderQueryKey,
@@ -164,7 +165,8 @@ function Lines({ order }: { order: ShopOrder }) {
             <div className="flex justify-between gap-3">
               <span className="min-w-0">
                 <span className="block font-medium">{line.product_name}</span>
-                <span className="text-muted-foreground text-xs">
+                {line.free_of_line ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                <span className="text-muted-foreground block text-xs">
                   {formatQty(line.qty_ordered)} {line.unit_code} ×{" "}
                   <MoneyText value={line.unit_price} />
                 </span>

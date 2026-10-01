@@ -14,7 +14,8 @@ import { MoneyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
 import { CardSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { ProblemText } from "@/components/shop/cart";
+import { lineKey, ProblemText } from "@/components/shop/cart";
+import { FreeLineLabel, OfferHint } from "@/components/shop/free-goods";
 import { StepperControl } from "@/components/shop/quantity-stepper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +105,7 @@ function AddProducts({ shopId, cart }: { shopId: string; cart: Quote | undefined
     { search, page_size: 10 },
     { query: { enabled: search.length > 1 } },
   );
-  const inCart = new Set(cart?.lines.map((l) => l.product_id));
+  const inCart = new Set(cart?.lines.filter((l) => !l.is_free).map((l) => l.product_id));
   const add = async (productId: string) => {
     try {
       const response = await retailerCartLineSet(shopId, productId, {
@@ -228,17 +229,25 @@ function StaffCart({ shopId }: { shopId: string }) {
           <>
             <ul className="space-y-3">
               {cart.lines.map((line) => (
-                <li key={line.product_id} className="space-y-1.5">
+                <li key={lineKey(line)} className="space-y-1.5">
                   <div className="flex justify-between gap-2 text-sm">
                     <span className="font-medium">{line.product?.name ?? line.product_id}</span>
-                    {line.line_total ? <MoneyText value={line.line_total} /> : null}
+                    {line.is_free ? (
+                      <span className="text-success-strong font-medium">
+                        {t("freeQty", { qty: formatQty(line.quantity) })}
+                      </span>
+                    ) : line.line_total ? (
+                      <MoneyText value={line.line_total} />
+                    ) : null}
                   </div>
+                  {line.is_free ? <FreeLineLabel scheme={line.scheme?.name ?? ""} /> : null}
                   {line.later_qty !== "0.000" ? (
                     <p className="text-info-strong text-xs">
                       {t("later", { qty: formatQty(line.later_qty) })}
                     </p>
                   ) : null}
-                  {line.product ? (
+                  {line.is_free ? null : <OfferHint offer={line.offer} />}
+                  {line.product && !line.is_free ? (
                     <StepperControl
                       product={line.product}
                       qty={line.quantity}
