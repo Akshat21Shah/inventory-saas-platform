@@ -185,6 +185,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "notifications.handover_reminders",
         "schedule": crontab(hour=3, minute=30),  # 09:00 IST
     },
+    # The daily summary (ADR-056): each distributor at its own time, checked every 15 minutes.
+    "notifications-daily-summaries": {
+        "task": "notifications.daily_summaries",
+        "schedule": crontab(minute="*/15"),
+    },
     "notifications-payment-reminders": {
         "task": "notifications.payment_reminders",
         "schedule": crontab(hour=4, minute=30),  # 10:00 IST

@@ -424,6 +424,14 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("notifications.document_link_days", Group.NOTIFICATIONS, SettingType.INT, 30,
             "How many days a bill or receipt link sent by WhatsApp or email keeps working.",
             min_value=1, max_value=365),
+    # The daily summary (ADR-056).
+    _tenant("notifications.daily_summary_enabled", Group.NOTIFICATIONS, SettingType.BOOL, True,
+            "Send a summary each morning: yesterday's orders, billing and collections, and what "
+            "needs action. Who gets it, and how, is set under Who gets which message."),
+    _tenant("notifications.daily_summary_time", Group.NOTIFICATIONS, SettingType.STRING, "08:00",
+            "When the daily summary goes out (Indian time).", pattern=r"([01]\d|2[0-3]):[0-5]\d"),
+    _tenant("notifications.daily_summary_skip_sunday", Group.NOTIFICATIONS, SettingType.BOOL,
+            False, "Don't send the daily summary on Sundays."),
     _tenant("notifications.payment_reminder_days", Group.NOTIFICATIONS, SettingType.STRING,
             "-2,3,7,15,30",
             "Days to remind shops of their bills: a minus number is days before the due date, the "

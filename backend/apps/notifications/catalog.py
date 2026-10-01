@@ -153,6 +153,11 @@ EVENTS: dict[str, Event] = {
         Event("handover.reminder", "Collections not yet handed over", "reminders", urgent=False,
               variables=("distributor", "salesman", "count", "amount", "oldest", "link"),
               shop_facing=False),
+        # ADR-056: one per person per morning, with only what their permissions show.
+        Event("summary.daily", "Daily summary", "reminders", urgent=False,
+              variables=("distributor", "date", "yesterday", "attention", "yesterday_lines",
+                         "attention_lines", "link"),
+              shop_facing=False),
         Event("tax.rate_change_upcoming", "GST rate changes in 7 days", "other", urgent=False,
               variables=("distributor", "count", "change_date", "products", "link"),
               shop_facing=False),
@@ -235,6 +240,7 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("payment.reminder", SP, (IN,)),
     Rule("handover.reminder", CO, (IN, WA)),
     Rule("handover.reminder", ST, (IN,), "payments.record"),
+    Rule("summary.daily", Recipient.OWNERS, (IN, EM)),  # ADR-056
     Rule("tax.rate_change_upcoming", ST, (IN, EM), "products.manage"),
     Rule("retailer.welcome", S, (SMS,), compulsory=True),
     Rule("announcement.published", S, (IN,)),
@@ -496,6 +502,11 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
         IN: Text("{{ amount }} not handed over", "{{ salesman }} has {{ count }} collections ({{ amount }}) not handed over; the oldest is from {{ oldest }}."),
         EM: Text("Collections not handed over", "{{ salesman }} has {{ count }} collections ({{ amount }}) not handed over; the oldest is from {{ oldest }}.\n\n{{ link }}"),
         WA: Text("", f"{D}: {{{{ count }}}} collections ({{{{ amount }}}}) are not handed over yet; the oldest is from {{{{ oldest }}}}.", ("distributor", "count", "amount", "oldest")),
+    },
+    "summary.daily": {
+        IN: Text("Your summary for {{ date }}", "Yesterday: {{ yesterday }}. Needs action: {{ attention }}."),
+        EM: Text("{{ distributor }}: summary for {{ date }}", "Yesterday, {{ date }}:\n{{ yesterday_lines }}\n\nNeeds action now:\n{{ attention_lines }}\n\n{{ link }}"),
+        WA: Text("", f"{D}: yesterday {{{{ yesterday }}}}. Needs action: {{{{ attention }}}}.", ("distributor", "yesterday", "attention")),
     },
     "tax.rate_change_upcoming": {
         IN: Text("GST changes on {{ change_date }}", "The GST rate of {{ count }} products changes on {{ change_date }}: {{ products }}."),

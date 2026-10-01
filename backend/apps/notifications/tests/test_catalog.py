@@ -116,6 +116,7 @@ def test_the_approved_compulsory_and_non_urgent_events():
         "stock.alert_opened",
         "payment.reminder",
         "handover.reminder",
+        "summary.daily",  # ADR-056: at the distributor's time, never inside quiet hours
         "tax.rate_change_upcoming",
         "announcement.published",
     }

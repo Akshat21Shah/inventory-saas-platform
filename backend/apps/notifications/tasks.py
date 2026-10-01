@@ -97,3 +97,18 @@ def handover_reminders() -> int:
 def rate_change_warnings() -> int:
     """Daily 08:30 IST."""
     return _each_tenant(rate_change_warnings_for_tenant)
+
+
+@shared_task(name="notifications.daily_summaries_for_tenant", base=TenantTask)
+def daily_summaries_for_tenant(*, tenant_id: str) -> int:
+    from django.utils import timezone
+
+    from apps.notifications import jobs
+
+    return jobs.daily_summaries(timezone.now())
+
+
+@shared_task(name="notifications.daily_summaries")
+def daily_summaries() -> int:
+    """Every 15 minutes: each distributor whose summary time has passed sends it, once a day."""
+    return _each_tenant(daily_summaries_for_tenant)

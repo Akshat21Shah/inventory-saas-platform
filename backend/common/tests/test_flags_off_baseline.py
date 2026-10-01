@@ -127,11 +127,16 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
     # Phase 8 (ADR-050): the fast / slow / dead stock settings, at their defaults.
     # Phase 9b (ADR-056, core): the shop-activity settings, at their defaults.
     "api.settings-registry": lambda item: (
-        (item.get("group") == "reports" or item["key"].startswith("insights."))
+        (
+            item.get("group") == "reports"
+            or item["key"].startswith(("insights.", "notifications.daily_summary_"))
+        )
         and item["is_default"]
     ),
     # Phase 9a (ADR-053): the purchasing permissions and the new modules, switched off.
     "api.notification-rules.permissions": lambda item: item["code"].startswith("purchasing."),
+    # Phase 9b (ADR-056, core): the daily summary, to owners in the app and by email.
+    "api.notification-rules.events": lambda item: item["code"] == "summary.daily",
     "api.settings-features": lambda item: (
         item["code"] in ("stock_planning", "purchasing") and item["enabled"] is False
     ),

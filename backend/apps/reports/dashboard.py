@@ -111,8 +111,10 @@ def action(user: User) -> dict[str, Any]:
     return out
 
 
-def today(user: User) -> dict[str, Any]:
-    day = today_ist()
+def today(user: User, day: date | None = None) -> dict[str, Any]:
+    """Orders received and billed on ``day`` (today unless given: the daily summary asks for
+    yesterday, ADR-056)."""
+    day = day or today_ist()
     out: dict[str, Any] = {"orders_received": None, "billed": None}
     if user.has_permission_code("orders.view"):
         first, last = ist_bounds(day, day)
