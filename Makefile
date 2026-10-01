@@ -52,8 +52,9 @@ seed: ## Load demo data (super admin, 2 tenants: staff, 20 shops, 200 products, 
 seed-volume: ## Speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 5,000 / 5,000 orders over a year
 	$(COMPOSE) exec backend python manage.py seed_volume
 
-perf: ## Dashboard + every report's first page over the last whole month, p95 < 300 ms (after make seed-volume)
+perf: ## Dashboard + every report's first page over the last whole month (p95 < 300 ms), global search (p95 < 200 ms) and the purchasing pages (after make seed-volume)
 	$(COMPOSE) exec backend python manage.py perf_reports --last-month
+	$(COMPOSE) exec backend python manage.py perf_search
 
 perf-exports: ## The heaviest background exports: time and memory (after make seed-volume)
 	$(COMPOSE) exec backend python manage.py perf_exports

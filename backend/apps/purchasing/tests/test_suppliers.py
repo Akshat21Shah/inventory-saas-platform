@@ -283,6 +283,9 @@ def test_making_a_supplier_preferred_for_many_products(world):
     assert preferred == {tea.pk: "Patel Agencies", soap.pk: "Patel Agencies"}
     listed = owner.get(url).json()["results"]
     assert [r["product_code"] for r in listed] == ["SOAP", "TEA"]
+    first = owner.get(url, {"page_size": 1}).json()  # page by page, by product code
+    second = owner.get(first["next"]).json()
+    assert [r["product_code"] for r in first["results"] + second["results"]] == ["SOAP", "TEA"]
     b_product = make_product(world["b"], "B-1")
     assert owner.post(url, {"product_ids": [str(b_product.pk)]}, format="json").json() == {
         "changed": 0

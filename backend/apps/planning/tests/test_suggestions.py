@@ -187,6 +187,12 @@ def test_the_list_and_who_sees_the_supplier(world):
         "90.000",
         "4.000",
     )
+    paged, url = [], f"{API}/reorder-suggestions/?page_size=1"
+    while url:  # page by page, in the same order
+        page = world["owner"].get(url).json()
+        paged += [r["product_code"] for r in page["results"]]
+        url = page["next"]
+    assert paged == [r["product_code"] for r in rows]
     sales = world["sales"].get(f"{API}/reorder-suggestions/").json()["results"]  # stock.view
     assert {r["supplier_name"] for r in sales} == {None}
     assert not {k for r in rows for k in r if "cost" in k or "value" in k}

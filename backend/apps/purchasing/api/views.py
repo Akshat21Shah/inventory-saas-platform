@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -125,7 +125,7 @@ class ProductCodePagination(CursorPagination):
     page_size = 50
     page_size_query_param = "page_size"
     max_page_size = 200
-    ordering = ("product__code", "id")
+    ordering = ("sort_code", "id")  # an annotation: the cursor reads it from each row
 
 
 class SupplierProductsView(PurchasingView, generics.ListAPIView[SupplierProduct]):
@@ -142,9 +142,12 @@ class SupplierProductsView(PurchasingView, generics.ListAPIView[SupplierProduct]
         supplier = selectors.supplier(self.kwargs["supplier_id"])
         if supplier is None:
             raise NotFound()
-        return SupplierProduct.objects.filter(
-            supplier=supplier, product__deleted_at__isnull=True
-        ).select_related("supplier", "product")
+        rows: QuerySet[SupplierProduct] = (
+            SupplierProduct.objects.filter(supplier=supplier, product__deleted_at__isnull=True)
+            .select_related("supplier", "product")
+            .annotate(sort_code=F("product__code"))
+        )
+        return rows
 
     def get_serializer_context(self) -> dict[str, Any]:
         return {**super().get_serializer_context(), "costs": _costs(self.request)}
