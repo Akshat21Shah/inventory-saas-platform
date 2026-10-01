@@ -11,7 +11,12 @@ import { ReceiptEditor } from "./receipt-editor";
 import { ReceiptPage, ReceiptsPage } from "./receipts";
 
 const permissions = new Set(["stock.view", "stock.inward", "costs.view", "costs.manage"]);
-const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
+const features = new Set<string>();
+const auth = {
+  me: { id: "u1" },
+  can: (p: string) => permissions.has(p),
+  feature: (code: string) => features.has(code),
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
 const params = { value: new URLSearchParams() };
@@ -191,6 +196,109 @@ describe("receiving goods on a laptop", () => {
     expect(calls.find((c) => c.path === "/api/v1/products/p1/barcodes/")?.body).toEqual({
       barcode: "999000111",
     });
+  });
+});
+
+describe("receiving against a purchase order (purchasing on)", () => {
+  it("shows the order and what was ordered, and asks before receiving more than ordered", async () => {
+    features.add("purchasing");
+    const draft = detail({
+      id: "r9",
+      status: "DRAFT",
+      number: null,
+      purchase_order_id: "po1",
+      purchase_order_number: "PO-2026-00003",
+      supplier_id: "s1",
+      supplier_name: "Hindustan Traders",
+      lines: [
+        line({
+          id: "l1",
+          entered_unit: "BASE",
+          entered_qty: "12.000",
+          quantity: "12.000",
+          purchase_order_line_id: "pol1",
+          ordered: "10.000",
+          received_before: "0.000",
+        }),
+      ],
+    });
+    let attempt = 0;
+    const calls = mockApi({
+      "/api/v1/stock/": () => [200, page([])],
+      "PATCH /api/v1/stock/inwards/r9/": () => [200, draft],
+      "POST /api/v1/stock/inwards/r9/post/": () => {
+        attempt += 1;
+        return attempt === 1
+          ? [
+              409,
+              {
+                error: {
+                  code: "OVER_RECEIPT",
+                  message: "More is being received than was ordered.",
+                  details: {
+                    lines: [
+                      {
+                        line_id: "pol1",
+                        product_code: "P2",
+                        ordered: "10.000",
+                        received_before: "0.000",
+                        receiving: "12.000",
+                        beyond_tolerance: true,
+                      },
+                    ],
+                    tolerance_percent: 10,
+                    can_confirm: true,
+                  },
+                },
+              },
+            ]
+          : [200, { ...draft, status: "POSTED" }];
+      },
+    });
+    renderWithIntl(<ReceiptEditor draft={draft} />);
+    expect(screen.getByRole("link", { name: "PO-2026-00003" })).toHaveAttribute(
+      "href",
+      "/manage/purchasing/orders/po1",
+    );
+    expect(screen.getByText("Ordered 10 PCS, 0 received before")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Supplier" })).toBeNull(); // the order's own
+    await userEvent.click(screen.getByRole("button", { name: "Post" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Post" }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: "More than ordered" });
+    expect(
+      within(dialog).getByText("P2: ordered 10, 0 received before, 12 now"),
+    ).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Receive anyway" }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/manage/stock/inwards/r9"));
+    const posts = calls.filter((c) => c.path === "/api/v1/stock/inwards/r9/post/");
+    expect(posts.map((c) => c.body)).toEqual([{}, { confirm_over_receipt: true }]);
+    expect(posts[0]!.headers.get("Idempotency-Key")).not.toEqual(
+      posts[1]!.headers.get("Idempotency-Key"),
+    );
+    features.delete("purchasing");
+  });
+
+  it("picks the supplier from the list on a new receipt", async () => {
+    features.add("purchasing");
+    const calls = mockApi({
+      "/api/v1/stock/lookup/": (_b, url) => lookup(url),
+      "/api/v1/stock/": () => [200, page([])],
+      "/api/v1/suppliers/": () => [200, page([{ id: "s1", name: "Hindustan Traders" }])],
+      "POST /api/v1/stock/inwards/": () => [201, detail()],
+    });
+    renderWithIntl(<ReceiptEditor />);
+    await userEvent.type(screen.getByLabelText("Scan or search a product"), "8901719101038{Enter}");
+    await screen.findByLabelText("Quantity of Parle-G 100g in PCS");
+    await userEvent.click(screen.getByRole("combobox", { name: "Supplier" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Hindustan Traders" }));
+    expect(screen.queryByRole("textbox", { name: "Supplier" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Save as draft" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "POST")?.body).toMatchObject({ supplier_id: "s1" }),
+    );
+    features.delete("purchasing");
   });
 });
 

@@ -21106,6 +21106,8 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+          nullable: true
+          description: Before GST; null without costs.view.
         revision:
           type: integer
           readOnly: true
@@ -21129,6 +21131,8 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+          nullable: true
+          description: For information only; null without costs.view.
         supplier_snapshot:
           readOnly: true
         sent_by:
@@ -21232,6 +21236,17 @@ components:
         unit_code:
           type: string
           readOnly: true
+        pack_unit_code:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The product's pack (for changing a line between units and packs).
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
         entered_unit:
           allOf:
           - $ref: '#/components/schemas/EnteredUnitEnum'
@@ -21293,6 +21308,8 @@ components:
       - id
       - line_no
       - line_total
+      - pack_size
+      - pack_unit_code
       - product_code
       - product_id
       - product_name
@@ -21340,6 +21357,8 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+          nullable: true
+          description: Before GST; null without costs.view.
         revision:
           type: integer
           readOnly: true

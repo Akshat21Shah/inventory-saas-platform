@@ -32,6 +32,18 @@ export const STAFF_PAGES: Destination[] = [
   { key: "specialPrices", href: "/manage/pricing/special-prices", permission: "pricing.view" },
   { key: "stock", href: "/manage/stock", permission: "stock.view" },
   {
+    key: "purchaseOrders",
+    href: "/manage/purchasing/orders",
+    permission: "purchasing.view",
+    feature: "purchasing",
+  },
+  {
+    key: "newPurchaseOrder",
+    href: "/manage/purchasing/orders/new",
+    permission: "purchasing.manage",
+    feature: "purchasing",
+  },
+  {
     key: "suppliers",
     href: "/manage/purchasing/suppliers",
     permission: "purchasing.view",

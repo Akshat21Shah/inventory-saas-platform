@@ -15,6 +15,16 @@ export interface PurchaseOrderLine {
   readonly product_name: string;
   readonly supplier_code: string;
   readonly unit_code: string;
+  /**
+     * The product's pack (for changing a line between units and packs).
+     * @nullable
+     */
+  readonly pack_unit_code: string | null;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,11}(?:\.\d{0,3})?$
+     */
+  readonly pack_size: string | null;
   readonly entered_unit: EnteredUnitEnum;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   readonly entered_qty: string;

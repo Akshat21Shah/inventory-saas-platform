@@ -194,6 +194,13 @@ class PurchaseOrderListSerializer(serializers.ModelSerializer[PurchaseOrder]):
     supplier_name = serializers.CharField(source="supplier.name", read_only=True)
     line_count = serializers.IntegerField(read_only=True)
     is_late = serializers.SerializerMethodField()
+    subtotal = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        read_only=True,
+        allow_null=True,
+        help_text="Before GST; null without costs.view.",
+    )
 
     class Meta:
         model = PurchaseOrder
@@ -229,6 +236,20 @@ class PurchaseOrderListSerializer(serializers.ModelSerializer[PurchaseOrder]):
 
 class PurchaseOrderLineSerializer(serializers.ModelSerializer[PurchaseOrderLine]):
     product_id = serializers.UUIDField(read_only=True)
+    pack_unit_code = serializers.CharField(
+        source="product.pack_unit.code",
+        read_only=True,
+        allow_null=True,
+        default=None,
+        help_text="The product's pack (for changing a line between units and packs).",
+    )
+    pack_size = serializers.DecimalField(
+        source="product.pack_size",
+        max_digits=14,
+        decimal_places=3,
+        read_only=True,
+        allow_null=True,
+    )
     entered_cost = serializers.SerializerMethodField()
     due = serializers.DecimalField(max_digits=14, decimal_places=3, read_only=True)
 
@@ -242,6 +263,8 @@ class PurchaseOrderLineSerializer(serializers.ModelSerializer[PurchaseOrderLine]
             "product_name",
             "supplier_code",
             "unit_code",
+            "pack_unit_code",
+            "pack_size",
             "entered_unit",
             "entered_qty",
             "quantity",
@@ -278,6 +301,13 @@ class OrderReceiptSerializer(serializers.Serializer[Any]):
 
 
 class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
+    estimated_tax = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        read_only=True,
+        allow_null=True,
+        help_text="For information only; null without costs.view.",
+    )
     lines = serializers.SerializerMethodField()
     receipts = serializers.SerializerMethodField()
     sent_by = serializers.SerializerMethodField()
@@ -307,9 +337,8 @@ class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
 
     @extend_schema_field(PurchaseOrderLineSerializer(many=True))
     def get_lines(self, order: PurchaseOrder) -> list[dict[str, Any]]:
-        return list(
-            PurchaseOrderLineSerializer(order.lines.all(), many=True, context=self.context).data
-        )
+        lines = order.lines.select_related("product__pack_unit")
+        return list(PurchaseOrderLineSerializer(lines, many=True, context=self.context).data)
 
     @extend_schema_field(serializers.CharField())
     def get_sent_by(self, order: PurchaseOrder) -> str:

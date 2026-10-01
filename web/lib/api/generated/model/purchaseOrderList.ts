@@ -20,8 +20,12 @@ export interface PurchaseOrderList {
   readonly expected_date: string | null;
   readonly is_late: boolean;
   readonly line_count: number;
-  /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
-  readonly subtotal: string;
+  /**
+     * Before GST; null without costs.view.
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  readonly subtotal: string | null;
   readonly revision: number;
   readonly changed_since_sent: boolean;
   /** @nullable */

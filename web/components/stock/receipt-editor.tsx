@@ -1,18 +1,29 @@
 "use client";
 
 import { ChevronDown, Minus, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { useSupplierOptions } from "@/components/purchasing/options";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { FormActions } from "@/components/shared/form-actions";
 import { FormField } from "@/components/shared/form-field";
+import { FormSelect } from "@/components/shared/form-select";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -28,6 +39,7 @@ import type {
   ReceiptLineInputRequest,
   StockProductRef,
 } from "@/lib/api/generated/model";
+import { ApiError } from "@/lib/api/errors";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useIsPhone } from "@/lib/use-media";
@@ -36,7 +48,10 @@ import { cn } from "@/lib/utils";
 import { ScanBar } from "./scan-bar";
 import { BackTo } from "./shared";
 
-type Product = Pick<StockProductRef, "id" | "code" | "name" | "unit" | "pack_unit" | "pack_size">;
+export type Product = Pick<
+  StockProductRef,
+  "id" | "code" | "name" | "unit" | "pack_unit" | "pack_size"
+>;
 
 interface Line {
   key: string;
@@ -45,7 +60,26 @@ interface Line {
   unit: EnteredUnitEnum;
   qty: string;
   cost: string;
+  /** From a purchase order: what was ordered and already received (base unit). */
+  ordered?: string | null;
+  receivedBefore?: string | null;
 }
+
+interface OverLine {
+  line_id: string;
+  product_code: string;
+  ordered: string;
+  received_before: string;
+  receiving: string;
+  beyond_tolerance: boolean;
+}
+interface OverReceipt {
+  lines: OverLine[];
+  tolerance_percent: number;
+  can_confirm: boolean;
+}
+
+const TYPED = "typed";
 
 let counter = 0;
 const lineKey = () => `line-${++counter}`;
@@ -56,11 +90,18 @@ function plusOne(qty: string, delta = 1): string {
   return next > 0 ? String(Number(next.toFixed(3))) : "";
 }
 
-function unitLabel(product: Product, unit: EnteredUnitEnum): string {
+export function unitLabel(product: Product, unit: EnteredUnitEnum): string {
   return unit === "PACK" && product.pack_unit ? product.pack_unit.code : product.unit.code;
 }
 
-function UnitChoice({ line, onChange }: { line: Line; onChange: (unit: EnteredUnitEnum) => void }) {
+/** Base unit or pack, for a line being entered (receipts, purchase orders). */
+export function UnitChoice({
+  line,
+  onChange,
+}: {
+  line: { product: Product; unit: EnteredUnitEnum };
+  onChange: (unit: EnteredUnitEnum) => void;
+}) {
   const t = useTranslations("stock.receipt");
   const { product } = line;
   if (!product.pack_unit) return <span className="text-sm">{product.unit.code}</span>;
@@ -98,7 +139,13 @@ function UnitChoice({ line, onChange }: { line: Line; onChange: (unit: EnteredUn
 
 export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
   const t = useTranslations("stock.receipt");
-  const { can } = useAuth();
+  const { can, feature } = useAuth();
+  // Purchasing (ADR-053): pick a supplier from the list; a draft from an order keeps its own.
+  const fromOrder = Boolean(draft?.purchase_order_id);
+  const pickSupplier = feature("purchasing") && !fromOrder;
+  const supplierOptions = useSupplierOptions(pickSupplier);
+  const [supplierId, setSupplierId] = useState(draft?.supplier_id ?? TYPED);
+  const [over, setOver] = useState<OverReceipt | null>(null);
   const errors = useErrorText();
   const router = useRouter();
   const params = useSearchParams();
@@ -130,6 +177,8 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
         unit: line.entered_unit,
         qty: String(Number(line.entered_qty)),
         cost: line.entered_cost ? String(Number(line.entered_cost)) : "",
+        ordered: line.ordered,
+        receivedBefore: line.received_before,
       })) ?? [],
   );
 
@@ -193,9 +242,13 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
     scanRef.current?.focus();
   }
 
-  function body(): { lines: ReceiptLineInputRequest[] } & typeof header {
+  function body(): {
+    lines: ReceiptLineInputRequest[];
+    supplier_id?: string | null;
+  } & typeof header {
     return {
       ...header,
+      ...(pickSupplier ? { supplier_id: supplierId === TYPED ? null : supplierId } : {}),
       lines: lines.map((line) => ({
         ...(line.id ? { id: line.id } : {}),
         product_id: line.product.id,
@@ -228,7 +281,18 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
       let id = draft?.id;
       if (draft) {
         await stockReceiptsUpdate(draft.id, payload());
-        if (post) await stockReceiptsPost(draft.id, {}, idempotent(postKey.current));
+        if (post) {
+          try {
+            await stockReceiptsPost(draft.id, {}, idempotent(postKey.current));
+          } catch (err) {
+            if (err instanceof ApiError && err.code === "OVER_RECEIPT") {
+              postKey.current = newIdempotencyKey();
+              setOver(err.details as unknown as OverReceipt);
+              return;
+            }
+            throw err;
+          }
+        }
       } else {
         const created = await stockReceiptsCreate(
           { ...payload(), post },
@@ -246,16 +310,47 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
     }
   }
 
+  async function receiveAnyway() {
+    if (!draft) return;
+    setSaving(true);
+    try {
+      await stockReceiptsPost(
+        draft.id,
+        { confirm_over_receipt: true },
+        idempotent(postKey.current),
+      );
+      setOver(null);
+      toast.success(t("posted"));
+      router.replace(`/manage/stock/inwards/${draft.id}`);
+    } catch (err) {
+      toast.error(errors.message(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const billFields = (
     <>
-      <FormField label={t("supplier")} error={fieldErrors.supplier_name}>
-        <Input
-          value={header.supplier_name}
-          onChange={(e) => setHeader({ ...header, supplier_name: e.target.value })}
-          className="h-11"
-          autoComplete="organization"
-        />
-      </FormField>
+      {pickSupplier ? (
+        <FormField label={t("supplierFromList")} error={fieldErrors.supplier_id}>
+          <FormSelect
+            value={supplierId}
+            onValueChange={setSupplierId}
+            options={[{ value: TYPED, label: t("supplierTyped") }, ...supplierOptions]}
+          />
+        </FormField>
+      ) : null}
+      {!pickSupplier || supplierId === TYPED ? (
+        <FormField label={t("supplier")} error={fieldErrors.supplier_name}>
+          <Input
+            value={header.supplier_name}
+            onChange={(e) => setHeader({ ...header, supplier_name: e.target.value })}
+            className="h-11"
+            autoComplete="organization"
+            readOnly={fromOrder}
+          />
+        </FormField>
+      ) : null}
       <FormField label={t("billNumber")} error={fieldErrors.bill_number}>
         <Input
           value={header.bill_number}
@@ -286,7 +381,29 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
   return (
     <>
       <BackTo href="/manage/stock/inwards">{t("back")}</BackTo>
-      <PageHeader title={draft ? t("draftTitle") : t("newTitle")} description={t("newBody")} />
+      <PageHeader
+        title={draft ? t("draftTitle") : t("newTitle")}
+        description={fromOrder ? t("fromOrderBody") : t("newBody")}
+      />
+      {draft?.purchase_order_id ? (
+        <p className="mb-4 text-sm">
+          {t("againstOrder")}{" "}
+          <Link
+            href={`/manage/purchasing/orders/${draft.purchase_order_id}`}
+            className="text-primary font-medium hover:underline"
+          >
+            {draft.purchase_order_number}
+          </Link>
+        </p>
+      ) : null}
+      {over ? (
+        <OverReceiptDialog
+          over={over}
+          busy={saving}
+          onConfirm={() => void receiveAnyway()}
+          onClose={() => setOver(null)}
+        />
+      ) : null}
       <div className="space-y-6">
         {phone ? (
           // Phones: scanning comes first; the bill details are one tap away.
@@ -338,6 +455,7 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
                         <div className="min-w-0">
                           <p className="font-medium">{line.product.name}</p>
                           <p className="text-muted-foreground text-xs">{line.product.code}</p>
+                          <OrderedHint line={line} />
                         </div>
                         <Button
                           type="button"
@@ -436,6 +554,7 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
                       <td className="px-3 py-2">
                         <p className="font-medium">{line.product.name}</p>
                         <p className="text-muted-foreground text-xs">{line.product.code}</p>
+                        <OrderedHint line={line} />
                         {lineError(index) ? (
                           <p role="alert" className="text-destructive mt-1 text-xs">
                             {lineError(index)}
@@ -548,5 +667,68 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
         </FormActions>
       </div>
     </>
+  );
+}
+
+/** A line from a purchase order: what was ordered and already received (the server decides,
+ * when posting, whether more than ordered needs a confirmation). */
+function OrderedHint({ line }: { line: Line }) {
+  const t = useTranslations("stock.receipt");
+  if (!line.ordered) return null;
+  return (
+    <p className="text-muted-foreground text-xs">
+      {t("orderedHint", {
+        ordered: Number(line.ordered),
+        received: Number(line.receivedBefore ?? 0),
+        unit: line.product.unit.code,
+      })}
+    </p>
+  );
+}
+
+function OverReceiptDialog({
+  over,
+  busy,
+  onConfirm,
+  onClose,
+}: {
+  over: OverReceipt;
+  busy: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("stock.receipt.over");
+  return (
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("body", { percent: over.tolerance_percent })}</DialogDescription>
+        </DialogHeader>
+        <ul className="space-y-1 text-sm">
+          {over.lines.map((line) => (
+            <li key={line.line_id} className={line.beyond_tolerance ? "font-medium" : undefined}>
+              {t("line", {
+                code: line.product_code,
+                ordered: Number(line.ordered),
+                before: Number(line.received_before),
+                receiving: Number(line.receiving),
+              })}
+            </li>
+          ))}
+        </ul>
+        <p className="text-sm">{over.can_confirm ? t("canConfirm") : t("askManager")}</p>
+        <DialogFooter>
+          <Button variant="outline" className="min-h-11" onClick={onClose}>
+            {t("change")}
+          </Button>
+          {over.can_confirm ? (
+            <Button className="min-h-11" disabled={busy} onClick={onConfirm}>
+              {t("confirm")}
+            </Button>
+          ) : null}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

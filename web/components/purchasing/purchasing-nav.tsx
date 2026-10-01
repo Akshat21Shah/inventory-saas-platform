@@ -18,7 +18,10 @@ export function PurchasingLayout({ children }: { children: ReactNode }) {
     <>
       <SubNav
         label={t("label")}
-        items={[{ href: "/manage/purchasing/suppliers", label: t("suppliers"), prefix: true }]}
+        items={[
+          { href: "/manage/purchasing/orders", label: t("orders"), prefix: true },
+          { href: "/manage/purchasing/suppliers", label: t("suppliers"), prefix: true },
+        ]}
       />
       {children}
     </>

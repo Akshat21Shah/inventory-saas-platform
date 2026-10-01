@@ -113,6 +113,15 @@ function pages(ids: Ids) {
     "/manage/stock/adjustments/new",
     ...(ids.adjustment ? [`/manage/stock/adjustments/${ids.adjustment}`] : []),
     // Purchasing (ADR-053; Sharma has it on).
+    "/manage/purchasing/orders",
+    "/manage/purchasing/orders/new",
+    ...(ids.purchase_order ? [`/manage/purchasing/orders/${ids.purchase_order}`] : []),
+    ...(ids.draft_purchase_order
+      ? [
+          `/manage/purchasing/orders/${ids.draft_purchase_order}`,
+          `/manage/purchasing/orders/${ids.draft_purchase_order}/edit`,
+        ]
+      : []),
     "/manage/purchasing/suppliers",
     "/manage/purchasing/suppliers/new",
     ...(ids.supplier ? [`/manage/purchasing/suppliers/${ids.supplier}`] : []),

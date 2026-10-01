@@ -24,16 +24,24 @@ export interface PurchaseOrderDetail {
   readonly expected_date: string | null;
   readonly is_late: boolean;
   readonly line_count: number;
-  /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
-  readonly subtotal: string;
+  /**
+     * Before GST; null without costs.view.
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  readonly subtotal: string | null;
   readonly revision: number;
   readonly changed_since_sent: boolean;
   /** @nullable */
   readonly sent_at: string | null;
   readonly created_at: string;
   readonly notes: string;
-  /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
-  readonly estimated_tax: string;
+  /**
+     * For information only; null without costs.view.
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  readonly estimated_tax: string | null;
   readonly supplier_snapshot: unknown;
   readonly sent_by: string;
   /** @nullable */
