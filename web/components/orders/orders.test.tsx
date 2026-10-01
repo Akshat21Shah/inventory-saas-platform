@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { OrderRow, StaffOrder, WaitingLine } from "@/lib/api/generated/model";
+import type { OrderRow, StaffOrder, StaffOrderLine, WaitingLine } from "@/lib/api/generated/model";
 import { mockApi } from "@/tests/mock-api";
 import { renderWithIntl } from "@/tests/render";
 
@@ -11,7 +11,12 @@ import { OrdersBoard } from "./board";
 import { StaffOrderPage } from "./order-detail";
 
 const permissions = new Set<string>();
-const auth = { me: { id: "u1", tenant: { id: "t1" } }, can: (p: string) => permissions.has(p) };
+const features = new Set<string>();
+const auth = {
+  me: { id: "u1", tenant: { id: "t1" } },
+  can: (p: string) => permissions.has(p),
+  feature: (code: string) => features.has(code),
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -22,6 +27,7 @@ vi.mock("next/navigation", () => ({
 afterEach(() => {
   vi.unstubAllGlobals();
   permissions.clear();
+  features.clear();
 });
 
 const page = (results: unknown[]) => ({ next: null, previous: null, results });
@@ -177,6 +183,42 @@ describe("Order page", () => {
     await screen.findByText(/over the shop's credit limit/);
     expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
   });
+
+  it("shows what is on order for a waiting line, and when it's expected", async () => {
+    permissions.add("orders.view");
+    const line: StaffOrderLine = {
+      id: "l1",
+      line_no: 1,
+      product: "p1",
+      product_code: "TEA",
+      product_name: "Tata Tea Gold",
+      unit_code: "PCS",
+      unit_price: "100.00",
+      discount_per_unit: "0.00",
+      gst_rate: "5.000",
+      qty_ordered: "5.000",
+      qty_pending: "0.000",
+      qty_reserved: "2.000",
+      qty_backordered: "3.000",
+      qty_allocated: "0.000",
+      qty_cancelled: "0.000",
+      qty_dispatched: "0.000",
+      qty_delivered: "0.000",
+      ready_qty: "0.000",
+      line_total: "525.00",
+      on_order: { quantity: "12.000", expected_date: "2026-10-05", late: true },
+    };
+    mockApi({
+      "/api/v1/orders/o1/": () => [
+        200,
+        order({ status: "ACCEPTED", backorder_state: "OPEN", lines: [line] }),
+      ],
+    });
+    renderWithIntl(<StaffOrderPage orderId="o1" />);
+    expect(await screen.findByText(/On order: 12 PCS/)).toHaveTextContent(
+      "On order: 12 PCS expected 05-10-2026 · late",
+    );
+  });
 });
 
 const waiting = (extra: Partial<WaitingLine> = {}): WaitingLine => ({
@@ -275,5 +317,44 @@ describe("Backorder allocation", () => {
     await user.click(screen.getByRole("button", { name: "Allocate chosen" }));
     expect(await screen.findByText(/Someone who manages credit can allocate it/)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Allocate anyway" })).toBeNull();
+  });
+});
+
+describe("Backorders of a product", () => {
+  it("shows what is on order from suppliers while purchasing is on", async () => {
+    permissions.add("orders.view");
+    features.add("purchasing");
+    mockApi({
+      "/api/v1/backorders/p1/": () => [200, [waiting()]],
+      "/api/v1/backorders/": () => [
+        200,
+        [
+          {
+            product_id: "p1",
+            product_code: "A",
+            product_name: "Parle-G",
+            unit_code: "PCS",
+            waiting: "3.000",
+            lines: 1,
+            oldest_placed_at: "2026-09-27T10:00:00Z",
+            available: "0.000",
+            proposed: "0.000",
+            skipped_credit: 0,
+            blocked: 0,
+            approved_over_limit: 0,
+          },
+        ],
+      ],
+      "/api/v1/backorders/allocations/": () => [200, page([])],
+      "/api/v1/products/p1/on-order/": () => [
+        200,
+        { quantity: "24.000", expected_date: "2026-10-05", late: false },
+      ],
+    });
+    renderWithIntl(<BackorderProductPage productId="p1" />);
+    expect(await screen.findByText(/On order: 24 PCS/)).toHaveTextContent(
+      "On order: 24 PCS, expected 05-10-2026",
+    );
+    expect(screen.queryByText("Late")).toBeNull();
   });
 });

@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { ProductPlanningCard } from "@/components/planning/product-planning";
+import { ProductSuppliersPanel } from "@/components/purchasing/product-suppliers";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState } from "@/components/shared/error-state";
 import { FormField } from "@/components/shared/form-field";
@@ -35,8 +37,6 @@ import type { ProductDetail, Warning } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney, formatQty } from "@/lib/format";
 import { useDebounced } from "@/lib/use-debounced";
-
-import { ProductSuppliersPanel } from "@/components/purchasing/product-suppliers";
 
 import { BarcodesPanel, ImagesPanel, TaxRatesPanel } from "./product-panels";
 import {
@@ -564,6 +564,7 @@ export function EditProductPage({ productId }: { productId: string }) {
         <ProductForm key={product.updated_at} product={product} />
         <div className="space-y-6">
           {can("stock.view") ? <ProductStockCard productId={product.id} /> : null}
+          <ProductPlanningCard productId={product.id} unit={product.unit.code} />
           <TaxRatesPanel product={product} onChanged={() => void query.refetch()} />
           <ImagesPanel productId={product.id} />
           <BarcodesPanel product={product} onChanged={() => void query.refetch()} />

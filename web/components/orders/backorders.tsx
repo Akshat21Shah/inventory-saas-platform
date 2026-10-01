@@ -8,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { OnOrderLine } from "@/components/planning/product-planning";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -423,6 +424,7 @@ export function BackorderProductPage({ productId }: { productId: string }) {
                   : undefined
               }
             />
+            <OnOrderLine productId={productId} unit={group?.unit_code} />
             <Proposals productId={productId} />
             <section className="space-y-3" aria-labelledby="waiting-heading">
               <div className="flex flex-wrap items-end justify-between gap-3">

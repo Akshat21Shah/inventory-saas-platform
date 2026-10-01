@@ -21,6 +21,8 @@ export function PurchasingLayout({ children }: { children: ReactNode }) {
         items={[
           { href: "/manage/purchasing/orders", label: t("orders"), prefix: true },
           { href: "/manage/purchasing/suppliers", label: t("suppliers"), prefix: true },
+          // Stock planning's suggestions live under Stock; purchasing staff get there from here.
+          { href: "/manage/stock/reorder", label: t("suggestions"), features: ["stock_planning"] },
         ]}
       />
       {children}

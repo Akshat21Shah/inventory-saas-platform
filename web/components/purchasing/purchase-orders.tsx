@@ -101,11 +101,12 @@ function LateBadge() {
 export function PurchaseOrdersPage() {
   const t = useTranslations("purchasing.orders");
   const { can } = useAuth();
+  const params = useSearchParams();
   const suppliers = useSupplierOptions();
   const [search, setSearch] = useState(initialQuery);
   const [status, setStatus] = useState(ALL);
   const [supplier, setSupplier] = useState(ALL);
-  const [late, setLate] = useState(ALL);
+  const [late, setLate] = useState(params.get("late") ? "late" : ALL); // the dashboard's tile
   const cursor = useCursor();
   const debounced = useDebounced(search.trim());
   const query = usePurchaseOrdersList({

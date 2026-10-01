@@ -69,6 +69,12 @@ export const STAFF_PAGES: Destination[] = [
   { key: "newGoodsReceipt", href: "/manage/stock/inwards/new", permission: "stock.inward" },
   { key: "adjustments", href: "/manage/stock/adjustments", permission: "stock.adjust" },
   { key: "stockAlerts", href: "/manage/stock/alerts", permission: "stock.view" },
+  {
+    key: "reorderSuggestions",
+    href: "/manage/stock/reorder",
+    permission: ["purchasing.view", "stock.view"],
+    feature: "stock_planning",
+  },
   { key: "movements", href: "/manage/stock/movements", permission: "stock.view" },
   { key: "invoices", href: "/manage/invoices", permission: "invoices.view" },
   { key: "creditNotes", href: "/manage/invoices/credit-notes", permission: "invoices.view" },

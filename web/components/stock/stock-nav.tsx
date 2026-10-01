@@ -22,6 +22,7 @@ export function StockLayout({ children }: { children: ReactNode }) {
           { href: "/manage/stock/inwards", label: t("receipts"), prefix: true },
           { href: "/manage/stock/adjustments", label: t("adjustments"), prefix: true },
           { href: "/manage/stock/alerts", label: t("alerts") },
+          { href: "/manage/stock/reorder", label: t("reorder"), features: ["stock_planning"] },
           { href: "/manage/stock/movements", label: t("movements") },
           { href: "/manage/reports/low-stock", label: t("lowStock"), permission: "reports.stock" },
           {

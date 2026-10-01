@@ -6,6 +6,7 @@ import {
   Download,
   FileSpreadsheet,
   TrendingUp,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +27,7 @@ const GROUPS: [string, LucideIcon][] = [
   ["stock", Boxes],
   ["money", Banknote],
   ["gst", FileSpreadsheet],
+  ["purchasing", Truck],
 ];
 
 /** Reports with a screen of their own from before the framework (Phase 3), richer than the

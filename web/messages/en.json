@@ -1285,7 +1285,9 @@
         "pricing": "Pricing",
         "retailers": "Shops",
         "notifications": "Quiet hours & reminders",
-        "reports": "Reports"
+        "reports": "Reports",
+        "planning": "Stock planning",
+        "purchasing": "Purchasing"
       },
       "features": "Modules",
       "staff": "Staff",
@@ -1305,7 +1307,9 @@
       "pricing": "How discounts combine and whether they apply on top of shop special prices.",
       "retailers": "What shops on hold can do and what shops see in the app.",
       "notifications": "Quiet hours, reminders and how long bill links work.",
-      "reports": "How the reports sort products into fast, slow, dead and new stock."
+      "reports": "How the reports sort products into fast, slow, dead and new stock.",
+      "planning": "How demand, safety stock and reorder suggestions are worked out.",
+      "purchasing": "Receiving against purchase orders."
     },
     "unknownGroup": "This settings page does not exist.",
     "noSettings": "Nothing to set here yet",
@@ -2509,7 +2513,8 @@
       "movements": "Movements",
       "lowStock": "Low stock",
       "valuation": "Stock value",
-      "settings": "Settings"
+      "settings": "Settings",
+      "reorder": "Reorder suggestions"
     },
     "movementTypes": {
       "INWARD": "Goods received",
@@ -2984,7 +2989,10 @@
       },
       "documents": "Invoices and documents",
       "confirmation": "Order Confirmation",
-      "onHoldOverdue": "This shop has overdue bills, so the order waits for someone who manages credit."
+      "onHoldOverdue": "This shop has overdue bills, so the order waits for someone who manages credit.",
+      "onOrder": "On order: {qty} {unit}",
+      "expectedOn": "expected",
+      "late": "late"
     },
     "shipment": {
       "backorder": "backorder",
@@ -4771,7 +4779,10 @@
       "overdueBody": "{count, plural, one {# shop} other {# shops}}",
       "lowStock": "Low or out of stock",
       "lowStockBody": "{out, plural, =0 {none out of stock} one {# out of stock} other {# out of stock}}",
-      "clear": "All clear"
+      "clear": "All clear",
+      "toReorder": "Products to reorder",
+      "latePurchaseOrders": "Purchase orders late",
+      "latePurchaseOrdersBody": "Expected before today"
     },
     "today": {
       "title": "Today so far",
@@ -4914,7 +4925,8 @@
       "newSupplier": "Add a supplier",
       "suppliersFromReceipts": "Suppliers from past goods receipts",
       "purchaseOrders": "Purchase orders",
-      "newPurchaseOrder": "New purchase order"
+      "newPurchaseOrder": "New purchase order",
+      "reorderSuggestions": "Reorder suggestions"
     }
   },
   "purchasing": {
@@ -5178,5 +5190,100 @@
     "RECEIVED": "Received",
     "CLOSED": "Closed",
     "CANCELLED": "Cancelled"
+  },
+  "planning": {
+    "onOrder": {
+      "line": "On order: {qty} {unit}",
+      "expected": "expected",
+      "late": "Late"
+    },
+    "stats": {
+      "title": "Stock planning",
+      "failed": "The figures couldn't be loaded.",
+      "notYet": "Not worked out yet: they're worked out every night.",
+      "perDay": "Ordered per day",
+      "demandNote": "Over the last {days} days.",
+      "daysOfStock": "Stock lasts",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "noDemand": "Not ordered lately",
+      "abc": "Sales class",
+      "abcClasses": {
+        "A": "A: your top sellers",
+        "B": "B: steady sellers",
+        "C": "C: small sellers"
+      },
+      "noSales": "No sales lately",
+      "movement": "Movement",
+      "movementClasses": {
+        "FAST": "Fast",
+        "SLOW": "Slow",
+        "DEAD": "Not selling",
+        "NEW": "New"
+      },
+      "noMovement": "—",
+      "lastSold": "Last sold",
+      "never": "Not yet",
+      "worked": "Worked out"
+    },
+    "why": {
+      "demand": "Shops ordered {demand} {unit} in the last {days} days ({perDay} a day).",
+      "lowHistory": "Little sales history, so this goes by the reorder level and any shops waiting.",
+      "position": "{available} {unit} available{hasWaiting, select, true {, {waiting} waiting for shops} other {}}{hasOnOrder, select, true {, {onOrder} on order} other {}}.",
+      "point": "Reorder at {point} {unit}: {lead} days to arrive ({source}) plus {safety} days of safety stock.",
+      "cover": "This order covers {cover} days after it arrives.",
+      "upToLevel": "It brings stock up to the reorder level of {level} {unit}{hasWaiting, select, true { and covers the shops waiting} other {}}.",
+      "pack": "Rounded up to packs of {pack} {unit}.",
+      "lead": {
+        "PRODUCT_SUPPLIER": "the supplier's time for this product",
+        "SUPPLIER": "the supplier's usual time",
+        "DEFAULT": "your usual delivery time"
+      }
+    },
+    "suggestions": {
+      "title": "Reorder suggestions",
+      "description": "What to order before it runs out, worked out every night from what shops order.",
+      "offTitle": "Stock planning isn't switched on",
+      "offBody": "Ask the platform team to switch on stock planning for your business.",
+      "search": "Search suggestions",
+      "searchPlaceholder": "Product name or code",
+      "product": "Product and why",
+      "daysLeft": "Stock lasts",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "shopsWaiting": "Shops waiting",
+      "atLevel": "At reorder level",
+      "supplier": "Supplier",
+      "noSupplier": "No preferred supplier",
+      "toOrder": "To order",
+      "quantityFor": "Quantity of {name} to order, in {unit}",
+      "suggested": "suggested {qty}",
+      "actions": "Actions",
+      "dismiss": "Dismiss",
+      "dismissTitle": "Dismiss the suggestion for {name}?",
+      "dismissBody": "It won't be suggested again until the date you choose (a week if you leave it empty).",
+      "until": "Until",
+      "keep": "Keep it",
+      "dismissed": "Suggestion dismissed",
+      "refresh": "Work out again now",
+      "refreshing": "Working out the figures again. They'll be here in a minute.",
+      "refreshTooSoon": "They're already being worked out. Try again in a few minutes.",
+      "basis": "Based on",
+      "anyBasis": "Anything",
+      "bases": {
+        "DEMAND": "Daily demand",
+        "LOW_HISTORY": "Little sales history"
+      },
+      "anySupplier": "Any supplier",
+      "selectPage": "Select all suggestions on this page",
+      "selectRow": "Select {name}",
+      "bulkLabel": "Selected suggestions",
+      "createOrders": "Create purchase orders",
+      "ordersCreated": "{count, plural, one {Draft purchase order {numbers} created} other {# draft purchase orders created: {numbers}}}",
+      "useAsLevels": "Use as reorder levels",
+      "levelsApplied": "{count, plural, =0 {The reorder levels were already set} one {Reorder level set for # product} other {Reorder levels set for # products}}",
+      "emptyTitle": "Nothing to reorder",
+      "emptyBody": "Every product has enough stock for now.",
+      "noMatchTitle": "No suggestions match",
+      "noMatchBody": "Try another product or clear the filters."
+    }
   }
 }
