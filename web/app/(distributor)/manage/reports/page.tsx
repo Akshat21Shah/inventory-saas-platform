@@ -1,5 +1,5 @@
-import { ReportsIndex } from "@/components/stock/reports";
+import { ReportsHub } from "@/components/reports/hub";
 
 export default function Page() {
-  return <ReportsIndex />;
+  return <ReportsHub />;
 }

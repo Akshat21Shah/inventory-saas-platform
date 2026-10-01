@@ -141,20 +141,23 @@ Every screen works at three widths, and CI checks them: **360 px** (phone), **76
 
 ```
 make setup       # local toolchains: backend/.venv (uv sync) + web/node_modules (npm ci)
-make up          # docker compose up: postgres, redis, mailpit, s3 (SeaweedFS), migrate, backend, worker, beat, web
+make up          # docker compose up: postgres, redis, mailpit, s3 (SeaweedFS), migrate, backend, worker, reports-worker, beat, web
 make down        # stop the stack            make logs / make ps   # logs / status
 make db-up       # only postgres + redis (for host-run tests)
 make migrate     # run migrations (as the schema-owner DB role)
 make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
-make e2e-stack   # acceptance E2E (Phases 1-7) against the running stack (needs make up + make seed)
+make e2e-stack   # acceptance E2E (Phases 1-8) against the running stack (needs make up + make seed)
 make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts, stock, 11 orders, invoices, payments, a credit note and a refund each
+make seed-volume # speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 5,000 / 5,000 orders over a year, reconciled (a few minutes; owner@vol-a.example.com …)
+make perf        # dashboard + every report's first page over the last whole month against p95 < 300 ms (after make seed-volume)
+make perf-exports # the heaviest background exports (full-year sales register, GSTR-1 quarter, 92-day stock movements): time and memory growth
 make lan         # open the dev stack to phones on your Wi-Fi: http://{slug}.<lan-ip-with-dashes>.nip.io:3000
 make localhost   # back to *.localhost (run before the E2E suites)
 make webhook-tunnel # dev only: public https address for payment webhooks only (Razorpay test mode)

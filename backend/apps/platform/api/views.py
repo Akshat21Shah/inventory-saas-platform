@@ -352,7 +352,10 @@ class DashboardView(PlatformView):
         responses=s.DashboardSerializer, operation_id="platform_dashboard", tags=["platform"]
     )
     def get(self, request: Request) -> Response:
-        return Response(s.DashboardSerializer(platform_selectors.platform_counts()).data)
+        from apps.reports.platform_dashboard import health
+
+        body = {**platform_selectors.platform_counts(), **health()}
+        return Response(s.DashboardSerializer(body).data)
 
 
 # --- Plans & flag catalogue ---------------------------------------------------------------------

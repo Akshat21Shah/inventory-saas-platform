@@ -115,6 +115,14 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
 
+  # Report exports (ADR-050): their own queue and worker, so a large export never delays
+  # messages, IRNs or payments on the main worker.
+  reports-worker:
+    <<: *backend
+    command: ["celery", "-A", "config", "worker", "-Q", "reports", "-l", "info", "--concurrency", "1"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
   beat:
     <<: *backend
     command: ["celery", "-A", "config", "beat", "-l", "info", "--schedule", "/tmp/celerybeat-schedule"]

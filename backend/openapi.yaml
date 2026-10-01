@@ -1251,6 +1251,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/dashboard/:
+    get:
+      operationId: dashboard
+      description: What needs action today, today's figures and trends (ADR-050 item
+        11).
+      tags:
+      - dashboard
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistributorDashboard'
+          description: ''
   /api/v1/discount-rules/:
     get:
       operationId: discount_rules_list
@@ -5978,6 +5994,142 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/report-runs/:
+    get:
+      operationId: report_runs_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReportRunList'
+          description: ''
+  /api/v1/report-runs/{run_id}/:
+    get:
+      operationId: report_runs_retrieve
+      parameters:
+      - in: path
+        name: run_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRun'
+          description: ''
+  /api/v1/reports/:
+    get:
+      operationId: reports_catalogue
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+          description: ''
+  /api/v1/reports/{code}/:
+    get:
+      operationId: reports_run
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: filters
+        schema:
+          type: string
+        description: Each of the report's filters as its own query parameter (date_from,
+          date_to, …); see the catalogue.
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportPage'
+          description: ''
+  /api/v1/reports/{code}/export/:
+    post:
+      operationId: reports_export
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: The file, when small enough to make at once
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRun'
+          description: 'Made in the background: see My exports'
   /api/v1/reports/collections-pending-handover/:
     get:
       operationId: reports_collections_pending_handover
@@ -11292,6 +11444,43 @@ components:
       - mode
       - payment_date
       - retailer
+    Column:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ColumnKindEnum'
+        cost:
+          type: boolean
+          description: Shown only with permission to see costs.
+        total:
+          type: boolean
+          description: Has a figure in the totals row.
+      required:
+      - cost
+      - key
+      - kind
+      - label
+      - total
+    ColumnKindEnum:
+      enum:
+      - text
+      - money
+      - qty
+      - int
+      - date
+      - percent
+      type: string
+      description: |-
+        * `text` - text
+        * `money` - money
+        * `qty` - qty
+        * `int` - int
+        * `date` - date
+        * `percent` - percent
     CompleteCostsRequest:
       type: object
       properties:
@@ -11458,6 +11647,18 @@ components:
       description: |-
         * `SET` - Cost entered
         * `PENDING` - Cost pending
+    CountAmount:
+      type: object
+      properties:
+        count:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - count
     Credit:
       type: object
       properties:
@@ -11800,11 +12001,140 @@ components:
           type: integer
         suspended:
           type: integer
+        orders_per_day:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrdersDay'
+          description: The last 30 days, all distributors.
+        top_tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopTenant'
+          description: By order value, last 30 days.
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantFailures'
+        usage:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanUsage'
+          description: Against each plan's limits.
+        errors_24h:
+          $ref: '#/components/schemas/ErrorRate'
       required:
       - active
+      - errors_24h
+      - failures
       - onboarding
+      - orders_per_day
       - suspended
+      - top_tenants
       - total
+      - usage
+    DashboardAction:
+      type: object
+      description: |-
+        What needs action today. A part is null for someone without its permission (or while
+        its module is off).
+      properties:
+        new_orders:
+          type: integer
+          nullable: true
+        on_hold:
+          type: integer
+          nullable: true
+        backorders_to_confirm:
+          type: integer
+          nullable: true
+        to_pack:
+          type: integer
+          nullable: true
+        failed_irns:
+          type: integer
+          nullable: true
+        failed_ewaybills:
+          type: integer
+          nullable: true
+        handover:
+          allOf:
+          - $ref: '#/components/schemas/CountAmount'
+          nullable: true
+          description: Collections not handed over.
+        overdue:
+          allOf:
+          - $ref: '#/components/schemas/ShopsAmount'
+          nullable: true
+          description: Overdue receivables.
+        low_stock:
+          allOf:
+          - $ref: '#/components/schemas/LowStockCounts'
+          nullable: true
+      required:
+      - backorders_to_confirm
+      - failed_ewaybills
+      - failed_irns
+      - handover
+      - low_stock
+      - new_orders
+      - on_hold
+      - overdue
+      - to_pack
+    DashboardToday:
+      type: object
+      properties:
+        orders_received:
+          allOf:
+          - $ref: '#/components/schemas/CountAmount'
+          nullable: true
+          description: Orders placed today (value incl. GST).
+        billed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+          nullable: true
+          description: Invoices minus credit notes today.
+      required:
+      - billed
+      - orders_received
+    DashboardTrends:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendDay'
+        billed_30_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        billed_previous_30_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        top_products:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopProduct'
+          description: This month, by net sales.
+        top_shops:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopShop'
+          description: This month, by net sales.
+        new_shops:
+          type: integer
+          description: Ordered this month for the first time.
+        repeat_shops:
+          type: integer
+      required:
+      - billed_30_days
+      - billed_previous_30_days
+      - days
+      - new_shops
+      - repeat_shops
+      - top_products
+      - top_shops
     DeliveryAddress:
       type: object
       properties:
@@ -12226,6 +12556,26 @@ components:
         * `RETURN_TO_STOCK` - Return to stock
         * `DAMAGED` - Received damaged
         * `NOT_RETURNED` - Not physically returned
+    DistributorDashboard:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/DashboardAction'
+        today:
+          $ref: '#/components/schemas/DashboardToday'
+        trends:
+          allOf:
+          - $ref: '#/components/schemas/DashboardTrends'
+          nullable: true
+          description: With the sales reports.
+        own_shops:
+          type: boolean
+          description: Figures only for the user's own shops.
+      required:
+      - action
+      - own_shops
+      - today
+      - trends
     DocumentLink:
       type: object
       properties:
@@ -13159,6 +13509,23 @@ components:
         * `REFUND_REVERSAL` - Refund reversed
         * `CREDIT_ADJUSTMENT` - Credit adjustment
         * `INVOICE_CANCELLED` - Invoice cancelled
+    ErrorRate:
+      type: object
+      properties:
+        requests:
+          type: integer
+        server_errors:
+          type: integer
+          description: Server errors (5xx).
+        rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - rate
+      - requests
+      - server_errors
     EventEnum:
       enum:
       - PLACE
@@ -13226,6 +13593,16 @@ components:
       - shop_facing
       - urgent
       - whatsapp
+    ExportRequestRequest:
+      type: object
+      properties:
+        format:
+          allOf:
+          - $ref: '#/components/schemas/ReportFormatEnum'
+          default: XLSX
+        filters:
+          type: object
+          additionalProperties: {}
     FeatureFlag:
       type: object
       properties:
@@ -13257,6 +13634,48 @@ components:
           type: boolean
       required:
       - enabled
+    Filter:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        kind:
+          $ref: '#/components/schemas/FilterKindEnum'
+        required:
+          type: boolean
+        choices:
+          type: array
+          items:
+            type: string
+        default:
+          type: string
+          nullable: true
+        entity:
+          type: string
+      required:
+      - choices
+      - default
+      - entity
+      - key
+      - kind
+      - label
+      - required
+    FilterKindEnum:
+      enum:
+      - date
+      - choice
+      - id
+      - text
+      - bool
+      type: string
+      description: |-
+        * `date` - date
+        * `choice` - choice
+        * `id` - id
+        * `text` - text
+        * `bool` - bool
     FreeProduct:
       type: object
       properties:
@@ -15170,6 +15589,16 @@ components:
       - status
       - thumbnail_url
       - unit
+    LowStockCounts:
+      type: object
+      properties:
+        low:
+          type: integer
+        out:
+          type: integer
+      required:
+      - low
+      - out
     LowStockRow:
       type: object
       properties:
@@ -15723,6 +16152,7 @@ components:
       - STAFF_PERMISSION
       - OWNERS
       - DISPATCHER
+      - REQUESTER
       type: string
       description: |-
         * `SHOP` - The shop
@@ -15731,6 +16161,7 @@ components:
         * `STAFF_PERMISSION` - Staff who can…
         * `OWNERS` - Owners
         * `DISPATCHER` - The person who dispatched
+        * `REQUESTER` - The person who asked
     NotificationSkipReasonEnum:
       enum:
       - NO_ADDRESS
@@ -16116,6 +16547,23 @@ components:
         * `COMPLETED` - Completed
         * `REJECTED` - Rejected
         * `CANCELLED` - Cancelled
+    OrdersDay:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        count:
+          type: integer
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+          description: Incl. GST.
+      required:
+      - count
+      - date
+      - value
     OutcomeEnum:
       enum:
       - OK
@@ -16781,6 +17229,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ReportRow'
+    PaginatedReportRunList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportRun'
     PaginatedRetailerListList:
       type: object
       required:
@@ -18142,6 +18609,46 @@ components:
       required:
       - code
       - name
+    PlanUsage:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        plan:
+          type: string
+        shops:
+          type: integer
+        staff:
+          type: integer
+        products:
+          type: integer
+        max_shops:
+          type: integer
+          nullable: true
+          description: 'Null: no limit.'
+        max_staff:
+          type: integer
+          nullable: true
+        max_products:
+          type: integer
+          nullable: true
+        near_limit:
+          type: boolean
+          description: At 90% or more of a limit.
+      required:
+      - max_products
+      - max_shops
+      - max_staff
+      - name
+      - near_limit
+      - plan
+      - products
+      - shops
+      - staff
+      - tenant_id
     PlatformFailure:
       type: object
       properties:
@@ -20268,6 +20775,109 @@ components:
       required:
       - cart
       - skipped
+    Report:
+      type: object
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        group:
+          $ref: '#/components/schemas/ReportGroupEnum'
+        description:
+          type: string
+        pdf:
+          type: boolean
+          description: Also exported to PDF.
+        background_only:
+          type: boolean
+          description: Always made in the background.
+        max_days:
+          type: integer
+          description: The longest date range.
+        own_shops:
+          type: boolean
+          description: Rows only for the user's own shops.
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Column'
+          description: Only the columns this user may see.
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Filter'
+      required:
+      - background_only
+      - code
+      - columns
+      - description
+      - filters
+      - group
+      - max_days
+      - own_shops
+      - pdf
+      - title
+    ReportFormatEnum:
+      enum:
+      - XLSX
+      - PDF
+      type: string
+      description: |-
+        * `XLSX` - Excel
+        * `PDF` - PDF
+    ReportGroupEnum:
+      enum:
+      - sales
+      - stock
+      - money
+      - gst
+      type: string
+      description: |-
+        * `sales` - sales
+        * `stock` - stock
+        * `money` - money
+        * `gst` - gst
+    ReportPage:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Column'
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: Keyed by column; money and quantities as strings; link ids
+            such as retailer_id where a row links somewhere.
+        totals:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: For the whole report, not the page.
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        own_shops:
+          type: boolean
+        notes:
+          type: array
+          items:
+            type: string
+      required:
+      - columns
+      - count
+      - notes
+      - own_shops
+      - page
+      - page_size
+      - rows
+      - totals
     ReportRow:
       type: object
       properties:
@@ -20297,6 +20907,85 @@ components:
       - shop_name
       - shop_rule_count
       - special_price_count
+    ReportRun:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        report_code:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        format:
+          allOf:
+          - $ref: '#/components/schemas/ReportFormatEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReportRunStatusEnum'
+          readOnly: true
+        params:
+          readOnly: true
+        row_count:
+          type: integer
+          readOnly: true
+          nullable: true
+        file_name:
+          type: string
+          readOnly: true
+        error:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        download_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - created_at
+      - download_url
+      - error
+      - expires_at
+      - file_name
+      - finished_at
+      - format
+      - id
+      - params
+      - report_code
+      - row_count
+      - status
+      - title
+    ReportRunStatusEnum:
+      enum:
+      - QUEUED
+      - RUNNING
+      - READY
+      - FAILED
+      - EXPIRED
+      type: string
+      description: |-
+        * `QUEUED` - Waiting
+        * `RUNNING` - Being made
+        * `READY` - Ready
+        * `FAILED` - Failed
+        * `EXPIRED` - Expired
     RequiredReasonRequest:
       type: object
       properties:
@@ -22170,6 +22859,18 @@ components:
       required:
       - code
       - name
+    ShopsAmount:
+      type: object
+      properties:
+        shops:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - shops
     SkippedProduct:
       type: object
       properties:
@@ -23190,6 +23891,33 @@ components:
       - suspended_at
       - suspended_reason
       - usage
+    TenantFailures:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        failed_messages:
+          type: integer
+          description: In the last 7 days.
+        failed_irns:
+          type: integer
+        failed_ewaybills:
+          type: integer
+        gst_login_failed:
+          type: boolean
+        gateway_failed:
+          type: boolean
+      required:
+      - failed_ewaybills
+      - failed_irns
+      - failed_messages
+      - gateway_failed
+      - gst_login_failed
+      - name
+      - tenant_id
     TenantFeature:
       type: object
       properties:
@@ -23397,6 +24125,57 @@ components:
       required:
       - access
       - access_expires_at
+    TopProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - name
+      - product_id
+      - total
+    TopShop:
+      type: object
+      properties:
+        retailer_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - name
+      - retailer_id
+      - total
+    TopTenant:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        orders:
+          type: integer
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+      required:
+      - name
+      - orders
+      - tenant_id
+      - value
     Totals:
       type: object
       properties:
@@ -23485,6 +24264,25 @@ components:
         * `RAIL` - Rail
         * `AIR` - Air
         * `SHIP` - Ship
+    TrendDay:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        billed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        previous:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+          description: Billed on the same day of the 30 days before.
+      required:
+      - billed
+      - date
+      - previous
     Turnover:
       type: object
       properties:

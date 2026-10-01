@@ -245,6 +245,8 @@ Legend:
 | **FulfilmentLine** (tenant) | `fulfilment` FK, `order_line` FK, `product` FK, `quantity` Qty, `qty_packed` Qty null, `unit_price` Money (order snapshot, or re-resolved when `backorders.billing_price=CURRENT`), `price_source` (ORDER_SNAPSHOT, REPRICED), `price_increased` bool, `cancelled_by_retailer_at` null | unique `(fulfilment, order_line)`; check `quantity>0` |
 | **BackorderAllocation** (tenant) | `order_line` FK, `product` FK, `warehouse` FK, `quantity` Qty, `status` (PROPOSED, CONFIRMED, REJECTED, SKIPPED_CREDIT), `trigger` (INWARD, MANUAL, ADJUSTMENT_IN, RELEASE), `source_id` uuid null, `fulfilment` FK null, `decided_by`, `decided_at`, `note` | index `(t, status, created_at)`, `(t, order_line)`; check `quantity>0` |
 
+Phase 8 (ADR-050): **Order** gains `salesperson` FK→User null (the shop's salesperson when the order is placed; earlier orders take the shop's salesperson at migration), index `(t, salesperson, placed_at)`.
+
 ### 2.9 `billing`
 | Model | Fields | Constraints / indexes |
 |---|---|---|
@@ -254,6 +256,8 @@ Legend:
 | **CreditNote** (tenant) | `number`, `series` FK, `fy`, `note_date`, `invoice` FK, `settings_snapshot` jsonb, `retailer` FK, `reason` (returns: DAMAGED, EXPIRED, WRONG_ITEM, EXCESS_SUPPLY, OTHER with `reason_note`; SHORT_SUPPLY, CANCELLATION, PRICE_ADJUSTMENT), `issued_automatically` bool (ADR-046), `status` (ISSUED, CANCELLED), totals as Invoice, `pdf_key`, `pdf_status`, `einvoice_status`, `irn`, `ack_no`, `ack_date`, `signed_qr` | unique `(t, number)` |
 | **OrderConfirmation** (tenant) | `order` FK (unique), `content` jsonb (snapshot of items, prices, tax estimate), `pdf_key`, `pdf_status` | "This is not a tax invoice." (ADR-022, ADR-046) |
 | **CreditNoteLine** (tenant) | `credit_note` FK, `invoice_line` FK, `quantity` Qty (0 for pure value adjustments), `disposition` (RETURN_TO_STOCK default, DAMAGED, NOT_RETURNED; ADR-046), `taxable_value`, tax breakup as InvoiceLine, `line_total` | service invariant: Σ credited qty/value per invoice line ≤ invoiced |
+
+Phase 8 (ADR-050): **InvoiceLine** gains `unit_cost` UnitCost null (the product's cost price per base unit, before GST, when the invoice is issued; null on lines issued earlier or without a cost price: margin then uses today's cost and is marked "estimated").
 
 ### 2.10 `compliance` (Phase 7)
 | Model | Fields | Constraints / indexes |
@@ -302,8 +306,8 @@ Legend:
 | Model | Fields | Constraints / indexes |
 |---|---|---|
 | **dataio.ImportJob** (tenant) | `kind` (PRODUCTS, RETAILERS, PRICE_LIST_ITEMS, OPENING_STOCK, OPENING_BALANCES), `source_key`, `status` (UPLOADED, VALIDATING, VALIDATED, IMPORTING, COMPLETED, FAILED), `total_rows`, `valid_rows`, `error_rows`, `report_key`, `options` jsonb, `started_at`, `finished_at` | `(t, created_at desc)`; max 10 MB, xlsx/csv |
-| **reports.ReportRun** (tenant null) | `report_code`, `params` jsonb, `format` (XLSX, CSV, PDF), `status` (QUEUED, RUNNING, READY, FAILED), `file_key`, `row_count`, `requested_by`, `started_at`, `finished_at`, `error`, `expires_at` | `(t, requested_by, created_at desc)` |
-| **reports.DailySalesSummary** (Phase 8, if needed) | `date`, `product` FK, `retailer` FK, `salesperson` FK null, `qty`, `taxable`, `tax`, `total` | unique `(t, date, product, retailer)` |
+| **reports.ReportRun** (tenant; Phase 8, ADR-050) | `report_code`, `params` jsonb (validated filters), `format` (XLSX, PDF), `status` (QUEUED, RUNNING, READY, FAILED, EXPIRED), `file_key`, `row_count`, `requested_by` FK, `scope` jsonb (own shops only, cost columns allowed: fixed at request time), `started_at`, `finished_at`, `error`, `expires_at` (⚙ platform `platform.report_link_days`) | `(t, requested_by, created_at desc)`; RLS; the file is deleted when it expires |
+| **reports summary tables** (Phase 8, only if `make perf` shows the need; **not needed** at 50,000 orders, measured 2026-09-30) | e.g. `DailySalesSummary` (`date`, `product`, `retailer`, `salesperson` null, `qty`, `taxable`, `tax`, `total`), maintained in the same transaction as invoices and credit notes and rebuildable by a command | unique `(t, date, product, retailer)`; each one documented with the measurement that justified it |
 | **audit.AuditLog** (append-only) | `tenant` FK null, `actor` FK null, `actor_type` (PLATFORM, STAFF, RETAILER, SYSTEM), `impersonator` FK null, `impersonation_session` FK null, `action` (e.g. `pricing.price_changed`), `target_type`, `target_id`, `target_repr`, `changes` jsonb (`{field: [before, after]}`), `metadata` jsonb, `ip` inet, `user_agent`, `request_id` | `(tenant, created_at desc)`, `(tenant, target_type, target_id)`, `(actor, created_at)`, BRIN `created_at` |
 | **ai.*** (Phase 9) | `ProductEmbedding` (product unique, `model`, `embedding` vector, `text_hash`), `AIUsage` (user, feature, provider, model, tokens in/out, cost), `ReorderSuggestion` (product, suggested_qty, reasoning jsonb, status), `ProductClassification` (product, abc_class, movement_class, computed_at), `Forecast` (product, period, qty, method) | all tenant-scoped, `(t, …)` indexes |
 
@@ -451,7 +455,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 ### 3.2 Health, public, auth
 | Endpoint | Method | Permission | Purpose |
 |---|---|---|---|
-| `/health/live`, `/health/ready` | GET | 🌐 | liveness; readiness (DB, Redis, Celery ping) |
+| `/health/live`, `/health/ready` | GET | 🌐 | liveness; readiness (DB, Redis; 503 when not ready). Answered for any host over plain HTTP, before host validation and the HTTPS redirect (ADR-052) |
 | `/api/v1/schema/`, `/api/v1/docs/` | GET | 🌐 (dev) / staff (prod) | OpenAPI schema and Swagger UI |
 | `/api/v1/public/tenants/{slug}/branding` | GET | 🌐 | pre-login branding (name, logo, colour, favicon) and `available` (never the specific status, ADR-032) |
 | `/api/v1/public/states` | GET | 🌐 | GST state list |
@@ -716,11 +720,12 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | shop: `payments/checkout/{id}` | GET, POST | shop | status ("waiting for confirmation" until the webhook); POST notes the client callback (informational only) |
 | shop: `whatsapp-consent`, `/prompted` | GET, PUT, POST | shop | opt in / out; `prompted` records that the one-time question was shown |
 | shop: `announcements` | GET | shop | current announcements (also on `home`) |
-| `dashboard` | GET | `dashboard.view` | "what needs action today" cards, filtered by the user's permissions |
-| `reports` | GET | any staff | available report catalogue for this user |
-| `reports/{code}` | GET | per report (`reports.sales` / `reports.sales_own` / `reports.stock` / `reports.financial`) | paginated JSON (sync, bounded ranges) |
-| `reports/{code}/runs` | POST | same | async export (xlsx/csv/pdf) |
-| `report-runs/{id}` | GET | owner of run | status + signed download URL |
+| `dashboard` | GET | `dashboard.view` | "What needs action today" (new orders, holds, backorders to confirm, failed IRNs and e-way bills, collections pending handover, overdue receivables, low / out of stock), today's "Orders received" and "Billed", 30-day trends, top products and shops, new vs repeat shops; each part only with its permission (ADR-050) |
+| `reports` | GET | any staff | the reports this user may open, by group, with their filters and columns (cost columns only with `costs.view`) |
+| `reports/{code}` | GET | per report (`reports.sales` / `reports.sales_own` / `reports.stock` / `reports.financial`, `costs.view` for cost columns) | a page of rows with totals for the filters (bounded ranges); own shops only where the sales-visibility rule applies |
+| `reports/{code}/export` | POST | same | Excel (or PDF where offered): small exports answer at once with the file link; larger ones (over ⚙ `platform.report_async_rows`) and every GST workbook return a queued `ReportRun` |
+| `report-runs`, `report-runs/{id}` | GET | the requester | "My exports": status, rows, a fresh signed download link while not expired |
+| `platform/dashboard` | GET | `platform.dashboard.view` | active distributors, orders per day (count, value incl. GST), failed messages and compliance errors per distributor, usage against plans (audited `platform_db` path) |
 | `ai/*` | — | Phase 9 | assistant chat, reorder suggestions, semantic search (flag `ai`) |
 
 ---
@@ -1540,19 +1545,23 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 7.13 | FE: WhatsApp approval status (super admin), rules editor gating | S |
 | 7.14 | E2E, responsive, flags-off proof — final review | M |
 
-### Phase 8 — Dashboards & reports
+### Phase 8 — Dashboards & reports (ADR-050, §10.2j)
 | # | Task | Size |
 |---|---|---|
-| 8.1 | "Action today" dashboard selectors + FE | M |
-| 8.2 | Report framework: registry, params, sync + async runs, xlsx/csv/pdf export | L |
-| 8.3 | Sales reports (period/product/category/retailer/salesperson) | M |
-| 8.4 | Stock summary & valuation, movement history, low stock, fast/slow/dead | M |
-| 8.5 | Backorder report, fulfilment rate | S |
-| 8.6 | Receivables ageing, collections | S |
-| 8.7 | GST summary: B2B invoice-wise, B2C, HSN summary (thresholds verified) | M |
-| 8.8 | Super admin platform dashboard | M |
-| 8.9 | Seed 50k orders; perf tuning (indexes, summaries, partitioning decision) | L |
-| 8.10 | FE: report catalogue + viewer + exports | L |
+| 8.1 | Docs: ADR-050, PLAN, SPEC 1.8, CA questions and checklist items (incl. the Tally design) | S |
+| 8.2 | Report framework: registry, permission and own-shop scope, cost columns, filters, totals, Excel/PDF, `ReportRun`, background exports on the `reports` queue, "Report ready", expiry; `Order.salesperson`, `InvoiceLine.unit_cost` | L |
+| 8.3 | Sales reports: period, product, category, brand, shop, salesperson; own brand vs traded margin (`costs.view`) | M |
+| 8.4 | Stock reports: summary, movement history, low stock and valuation (moved in), fast / slow / dead / new, backorder demand, fulfilment rate | M |
+| 8.5 | Money reports: receivables ageing, collections, salesperson collections | S |
+| 8.6 | GST summary workbook (month or quarter): B2B, B2C large, B2C others, credit notes, HSN B2B / B2C, documents issued | M |
+| 8.7 | Distributor dashboard endpoint (action today, today, trends) | M |
+| 8.8 | Super admin platform dashboard endpoint | M |
+| 8.9 | Volume seed (50,000 orders), `make perf`, indexes / summaries documented — **backend checkpoint** | L |
+| 8.10 | FE: reports hub, report page template, My exports | L |
+| 8.11 | FE: every report page | L |
+| 8.12 | FE: distributor dashboard with charts (`recharts`) | M |
+| 8.13 | FE: super admin dashboard | M |
+| 8.14 | E2E, responsive, documented perf run — **final review** | M |
 
 ### Phase 9 — Smart inventory & AI (flag `ai` and others)
 | # | Task | Size |
@@ -1596,12 +1605,15 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 |---|---|
 | Free-goods schemes ("buy X get Y free") | Until then, a discount rule, special price or price-list price that brings a net price to zero hides the product from those shops (ADR-034). Saving one shows the `FREE_GOODS` warning (ADR-036). |
 | Manufacturing / production | Raw materials, recipes (bill of materials), production entries that consume raw materials and produce finished goods, with cost roll-up into the finished goods' cost price. Builds on own brand and cost price (ADR-039). |
-| Margin reports | Own brand vs traded margins from cost price (ADR-039), with Phase 8 reports. |
 | Shop confirms delivery | The shop marks a shipment received in the app (ADR-044 item 5). |
 | Proof of delivery code | A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
 | Shop return requests | The shop asks for a return from the app; staff approve it, which issues the return credit note (ADR-046 item 5). |
 | Convenience fee on online payments | Optional tenant setting: the shop pays a fee on top when paying online, subject to the gateway's and legal rules (ADR-049, Phase 7 plan answer 5). |
 | Distributor's own WhatsApp templates | When a distributor connects its own WhatsApp number (`WhatsAppSender`), it manages its own approved templates instead of the platform's (ADR-048, checkpoint decision 2). |
+| Accounting export for Tally | Designed in ADR-050 item 15: Sales, Credit Note and Receipt vouchers as accounting entries (no stock items) in TallyPrime's XML import format, optional party-ledger masters, a ledger-name mapping page, "beta" until a real import succeeds. Built once someone (the CA) can test an import in TallyPrime; the format is matched to a sample voucher exported from their TallyPrime. |
+| Saved filters and scheduled email reports | Phase 8 remembers each person's last filters in the browser only (ADR-050). |
+| Daily morning summary for owners | Yesterday's orders received, billed sales, collections and newly overdue bills, by email or WhatsApp; a distributor setting (product owner, 2026-09-30). |
+| GSTR-1 JSON for the portal | The GST summary's upload file for the GST portal, after CA review (ADR-050 item 9). |
 | Cheque bounce charge | Optional tenant setting (on/off, amount): a bounced cheque debits the charge to the shop's ledger with its own document (ADR-048, checkpoint decision 4). |
 
 ---
@@ -1685,10 +1697,13 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Pricing | `pricing.discount_combination` | enum `BEST` / `ADD` / `SEQUENTIAL` | `BEST` | — | — (ORDER from Phase 4) | When several discounts apply: the best single one, add them together, or apply one after another from the most specific (ADR-038). |
 | Retailers | `retailers.blocked_can_sign_in` | bool | `true` | — | — | Blocked shops can still sign in and see their account, but cannot order. Turn off to refuse their sign-in (ADR-036). |
 | Retailers | `retailers.show_own_brand_badge` | bool | `false` | — | — | Show an "own brand" badge on own-brand products in the shop (ADR-039). |
+| Reports | `reports.movement_days` | int | `90` | 7–365 | — | The period for fast, slow and dead stock (ADR-050). |
+| Reports | `reports.fast_share_percent` | int | `20` | 5–50 | — | The share of products that sold, ranked from the top, counted as fast-moving (ADR-050). |
 
 Later phases add keys through the same registry (e.g. notification channels in Phase 6; e-invoice/e-way bill and gateway options in Phase 7). Feature flags stay a separate mechanism (`FeatureFlag`/`TenantFeature`), because they gate whole modules.
 
 ### 9.2 Platform scope
+(Phase 8 adds `platform.b2cl_threshold` (money, ₹1,00,000: inter-state invoices to unregistered buyers above it are listed invoice by invoice in the GST summary; to verify), `platform.report_async_rows` (int, 5,000: larger exports run in the background) and `platform.report_link_days` (int, 7: how long an export's download link lasts), ADR-050.)
 (Phase 6 adds `platform.whatsapp_price_utility`, `platform.whatsapp_price_marketing`, `platform.whatsapp_price_authentication`: money, empty until set; used only for the rules screen's cost estimate, ADR-048.)
 (Phase 7 adds `platform.einvoice_threshold_crore` (int, 5), `platform.irn_limit_threshold_crore` (int, 10), `platform.irn_reporting_days` (int, 30) and `platform.irn_cancel_window_hours` (int, 24), `platform.ewaybill_cancel_window_hours` (int, 24): current understanding, to verify (ADR-049 item 2).)
 
@@ -1923,6 +1938,25 @@ Platform **master data** (managed by super admin, not registry keys): `TaxRate`,
 
 Backend checkpoint changes (2026-09-30, ADR-049): cancellation refusals say what to do first; a re-issued invoice uses the shop's current details with the original prices, discounts and GST rates (a warning and confirmation when today's rate differs; CA question 30); "bill cancelled" by in-app and email with the new bill's link; failed e-way bills notified at once to compliance staff and the dispatcher, and shown on the dashboard until resolved; gateway calls the shop waits on time out after 10 seconds, are never retried there, and never lead to a second checkout.
 
+### 10.2j Phase 8 plan decisions (2026-09-30, ADR-050)
+| # | Question | Answer |
+|---|---|---|
+| 1 | What counts as sales | Invoices by invoice date minus credit notes by note date; taxable value, GST and total; invoices whose IRN was cancelled excluded (their re-issues count). The dashboard shows both **"Orders received"** (orders placed, by order date, incl. GST) and **"Billed"** |
+| 2 | Salesperson of a sale | Recorded on each order when placed; earlier orders take the shop's salesperson |
+| 3 | Margin cost | The product's cost price recorded on each invoice line at issue; older lines use today's cost, marked "estimated" |
+| 4 | Fast / slow / dead stock | Ranked by sales value by default (switch: by quantity); 90 days (⚙); products first stocked within the period are "New", not "Dead" |
+| 5 | Fulfilment rate | Both: by quantity (delivered ÷ ordered, shop cancellations left out) and by order (delivered in full) |
+| 6 | Salesperson collections | Money each salesperson collected themselves with its handover status, plus a column for everything received from their shops |
+| 7 | GST workbook | A month or a quarter (QRMP), laid out like the official GSTR-1 template; the portal JSON later, after CA review |
+| 8 | Exports | Excel for every report; PDF for ageing, collections, the GST summary and the sales summary; over 5,000 rows and every GST workbook in the background; in-app "Report ready"; link valid 7 days |
+| 9 | Tally | Designed (ADR-050 item 15) and on the backlog until someone can test a real import; the question is in `docs/CA_REVIEW.md` |
+| 10 | Dashboard trends | Billed per day for 30 days vs the 30 before; top 5 products and shops this month; new vs repeat shops |
+| 11 | Super admin figures | Orders = count and value incl. GST of orders placed, per day; usage vs plan = shops, staff, products against the plan's limits, even while enforcement is off |
+| 12 | Speed | Dashboard and every report's first page (default: this month) p95 < 300 ms at 50,000 orders (40k / 5k / 5k across three test distributors); longer ranges as background exports |
+| 13 | Saved filters, scheduled reports | Out of scope; backlog, with a daily morning summary for owners |
+
+No CA is engaged until all features are built (product owner, 2026-09-30): work never waits on CA answers; every question and to-verify item goes to `docs/CA_REVIEW.md` and the pre-production checklist.
+
 ### 10.3 Pending from the product owner
-- CA confirmation of ADR-009 (tax engine & rounding) — **before Phase 5**.
+- A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.
 - Production domain — **before staging**.

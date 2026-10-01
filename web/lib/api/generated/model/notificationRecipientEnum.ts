@@ -13,6 +13,7 @@
  * * `STAFF_PERMISSION` - Staff who can…
  * * `OWNERS` - Owners
  * * `DISPATCHER` - The person who dispatched
+ * * `REQUESTER` - The person who asked
  */
 export type NotificationRecipientEnum = typeof NotificationRecipientEnum[keyof typeof NotificationRecipientEnum];
 
@@ -24,4 +25,5 @@ export const NotificationRecipientEnum = {
   STAFF_PERMISSION: 'STAFF_PERMISSION',
   OWNERS: 'OWNERS',
   DISPATCHER: 'DISPATCHER',
+  REQUESTER: 'REQUESTER',
 } as const;

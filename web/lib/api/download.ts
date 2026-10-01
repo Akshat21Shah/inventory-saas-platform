@@ -24,11 +24,24 @@ async function get(url: string): Promise<Response> {
   });
 }
 
-/** Fetch `url` and save it; throws `ApiError` (with the server's code) when it fails. */
-export async function downloadFile(url: string, fallbackName: string): Promise<void> {
+async function post(url: string, body: unknown): Promise<Response> {
+  const token = getAccessToken();
+  return fetch(url, {
+    method: "POST",
+    headers: {
+      "X-Requested-With": "fetch",
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+}
+
+async function send(request: () => Promise<Response>): Promise<Response> {
   if (getAccessToken() !== null && accessTokenStale()) await refreshSession();
-  let response = await get(url);
-  if (response.status === 401 && (await refreshSession())) response = await get(url);
+  let response = await request();
+  if (response.status === 401 && (await refreshSession())) response = await request();
   if (!response.ok) {
     let body: unknown = null;
     try {
@@ -43,6 +56,10 @@ export async function downloadFile(url: string, fallbackName: string): Promise<v
         : { code: UNKNOWN_ERROR, message: response.statusText, details: {} },
     );
   }
+  return response;
+}
+
+async function save(response: Response, fallbackName: string): Promise<void> {
   const blob = await response.blob();
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -51,4 +68,24 @@ export async function downloadFile(url: string, fallbackName: string): Promise<v
   link.click();
   link.remove();
   URL.revokeObjectURL(link.href);
+}
+
+/** Fetch `url` and save it; throws `ApiError` (with the server's code) when it fails. */
+export async function downloadFile(url: string, fallbackName: string): Promise<void> {
+  await save(await send(() => get(url)), fallbackName);
+}
+
+/**
+ * POST `body` to an export endpoint that answers either with the file (200: saved, returns
+ * `null`) or, for a large export, with the queued run (202: returned as JSON, nothing saved).
+ */
+export async function postForDownload<T>(
+  url: string,
+  body: unknown,
+  fallbackName: string,
+): Promise<T | null> {
+  const response = await send(() => post(url, body));
+  if (response.status === 202) return (await response.json()) as T;
+  await save(response, fallbackName);
+  return null;
 }

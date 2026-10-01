@@ -96,11 +96,22 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.payment.reviewed_at": None,
     "api.shop-account.online_payments": False,
     "api.payments.results.needs_review": False,  # the office's list (commit 12)
+    # Phase 8 (ADR-050), for reports: the order's salesperson (the shop has none here) and the
+    # cost on each invoice line (no cost prices here).
+    "db.orders.Order.salesperson_id": None,
+    "db.billing.InvoiceLine.unit_cost": None,
     # An invoice's own status (commit 11b): cancelled only with its IRN, so always issued here.
     "api.invoice.status": "ISSUED",
     "api.invoices.results.status": "ISSUED",
     "api.shop-invoice.status": "ISSUED",
     "api.shop-invoices.results.status": "ISSUED",
+}
+
+# Lists that may gain items since the snapshot, each new item checked by a rule (removed before
+# comparing; every other item is still compared in order).
+ALLOWED_NEW_ITEMS: dict[str, Any] = {
+    # Phase 8 (ADR-050): the fast / slow / dead stock settings, at their defaults.
+    "api.settings-registry": lambda item: item.get("group") == "reports" and item["is_default"],
 }
 
 # Random by design: stored as "<random>".
@@ -421,6 +432,9 @@ def _compare(before: Any, now: Any, path: str, diffs: list[str]) -> None:
             elif not (expected(now[key]) if callable(expected) else now[key] == expected):
                 diffs.append(f"{where}: {now[key]!r} while the flags are off")
     elif isinstance(before, list) and isinstance(now, list):
+        allowed = ALLOWED_NEW_ITEMS.get(_pattern(path))
+        if allowed is not None:
+            now = [item for item in now if item in before or not allowed(item)]
         if len(before) != len(now):
             diffs.append(f"{path}: {len(before)} items before, {len(now)} now")
         for i, (b, n) in enumerate(zip(before, now, strict=False)):

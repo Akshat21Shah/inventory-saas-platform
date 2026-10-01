@@ -32,6 +32,7 @@ class Group(StrEnum):
     SECURITY = "security"
     NOTIFICATIONS = "notifications"
     COMPLIANCE = "compliance"
+    REPORTS = "reports"
 
 
 class SettingType(StrEnum):
@@ -323,6 +324,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Turn off to stop them signing in."),
     _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
             "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
+    # --- Tenant: Reports (ADR-050) -------------------------------------------------------------
+    _tenant("reports.movement_days", Group.REPORTS, SettingType.INT, 90,
+            "The period for fast, slow and dead stock, in days.", min_value=7, max_value=365),
+    _tenant("reports.fast_share_percent", Group.REPORTS, SettingType.INT, 20,
+            "The share of products that sold, from the top, counted as fast-moving.",
+            min_value=5, max_value=50),
     # --- Tenant: Security (ADR-030) -------------------------------------------------------------
     _tenant("security.require_staff_2fa", Group.SECURITY, SettingType.BOOL, False,
             "Require every staff member to set up two-step verification (an authenticator app) "
@@ -411,6 +418,15 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _platform("platform.irn_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
               "Hours after the IRN within which it can be cancelled (to verify).",
               min_value=1, max_value=720),
+    _platform("platform.report_async_rows", Group.REPORTS, SettingType.INT, 5000,
+              "Report exports with more rows than this are made in the background, with a "
+              "message when ready.", min_value=100, max_value=100000),
+    _platform("platform.b2cl_threshold", Group.REPORTS, SettingType.MONEY, Decimal("100000"),
+              "Bills to shops without a GSTIN in another state above this value are listed one "
+              "by one in the GST summary (B2C large; to verify).", min_value=Decimal("0")),
+    _platform("platform.report_link_days", Group.REPORTS, SettingType.INT, 7,
+              "Days a background export can be downloaded before it is deleted.",
+              min_value=1, max_value=30),
     _platform("platform.ewaybill_cancel_window_hours", Group.COMPLIANCE, SettingType.INT, 24,
               "Hours after an e-way bill within which it can be cancelled (to verify).",
               min_value=1, max_value=720),

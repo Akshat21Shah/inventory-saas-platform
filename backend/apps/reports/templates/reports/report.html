@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title }}</title>
+  {% include "billing/_style.html" %}
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    table.report { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    table.report th { text-align: left; border-bottom: 1px solid #333; padding: 3px 4px; }
+    table.report td { border-bottom: 1px solid #ddd; padding: 3px 4px; }
+    table.report .n { text-align: right; white-space: nowrap; }
+    table.report tr.total td { font-weight: bold; border-top: 1px solid #333; border-bottom: none; }
+    table.about { font-size: 9pt; margin-bottom: 8px; }
+    table.about td.k { color: #555; padding-right: 12px; }
+  </style>
+</head>
+<body>
+<h2>{{ title }}</h2>
+<table class="about">
+  {% for label, value in about %}<tr><td class="k">{{ label }}</td><td>{{ value }}</td></tr>{% endfor %}
+</table>
+<table class="report">
+  <thead><tr>{% for label, numeric in headers %}<th{% if numeric %} class="n"{% endif %}>{{ label }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    {% for row in rows %}<tr>{% for value, numeric in row %}<td{% if numeric %} class="n"{% endif %}>{{ value }}</td>{% endfor %}</tr>{% endfor %}
+    {% if totals %}<tr class="total">{% for value, numeric in totals %}<td{% if numeric %} class="n"{% endif %}>{{ value }}</td>{% endfor %}</tr>{% endif %}
+  </tbody>
+</table>
+</body>
+</html>

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, FileCheck2, FileClock, FileWarning, Truck } from "lucide-react";
+import { AlertTriangle, FileCheck2, FileClock, Truck } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
@@ -86,12 +86,6 @@ export function ComplianceCards() {
   const cards = [
     ...(einvoiceOn
       ? [
-          {
-            href: "/manage/invoices/einvoices",
-            label: t("irnFailed"),
-            value: irn?.failed,
-            icon: FileWarning,
-          },
           {
             href: "/manage/invoices/einvoices",
             label: t("irnWaiting"),

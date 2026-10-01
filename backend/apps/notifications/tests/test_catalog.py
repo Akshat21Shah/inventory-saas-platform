@@ -42,7 +42,9 @@ def test_every_event_has_texts_in_the_words_of_everyone_it_can_reach():
     for code, event in EVENTS.items():
         assert set(DEFAULT_TEXTS[code]) == set(event.audiences), code
         for audience in event.audiences:
-            assert {"IN_APP", "EMAIL", "WHATSAPP"} <= set(DEFAULT_TEXTS[code][audience]), (
+            # A system message ("Report ready") never goes by WhatsApp (ADR-050).
+            expected = {"IN_APP", "EMAIL"} if event.system else {"IN_APP", "EMAIL", "WHATSAPP"}
+            assert expected <= set(DEFAULT_TEXTS[code][audience]), (
                 code,
                 audience,
             )

@@ -1,12 +1,13 @@
 # GST invoicing: how the software works, for review by a Chartered Accountant
 
 **Prepared for:** the Chartered Accountant reviewing the platform before it goes live.
-**Status:** draft for review (September 2026). Nothing here is live yet. Until you confirm, the
+**Status:** draft for review (September 2026). Nothing here is live yet. No CA is engaged yet:
+this pack is reviewed in one go once every feature is built, before launch. Until you confirm, the
 software uses the defaults described below.
 
 **How to read this document.** Each section explains one rule in plain words, with worked examples
 in rupees that come from the software itself. Settings a distributor can change are marked
-*(setting)*, with the default named. Section 15 lists the questions we would like you to answer
+*(setting)*, with the default named. Section 16 lists the questions we would like you to answer
 with a yes or no (and a note where needed). Sample documents are in `docs/ca/`:
 `sample-invoice.pdf` (Example 5 in section 5, as the shop receives it),
 `sample-invoice-copies.pdf` (the same invoice in the three labelled copies staff print) and
@@ -377,7 +378,42 @@ our technical checklist.
 
 ---
 
-## 15. Questions for you
+## 15. Reports for GST filing, and the export to your accounts (Tally)
+
+**GST summary for filing (built in Phase 8).** For a month, or a quarter for quarterly filers, the
+software produces a workbook laid out like the official GSTR-1 Excel template, for you to prepare
+the return. It is a summary of what the software issued; the return itself is filed by you.
+- **B2B:** each invoice to a shop with a GSTIN, one row per GST rate on the invoice (invoice number,
+  date, value, place of supply, taxable value, rate, taxes).
+- **B2C large:** invoices to shops without a GSTIN in another state above ₹1,00,000 *(platform
+  setting; the limit was reduced from ₹2,50,000 from August 2024)*, invoice by invoice.
+- **B2C others:** all other sales to shops without a GSTIN, totalled by rate and place of supply.
+- **Credit notes:** to registered shops note by note; to unregistered shops as the template requires.
+- **HSN summary:** in two tabs, B2B and B2C (the portal's split from May 2025), by HSN code, unit
+  (UQC), quantity, values and taxes per rate.
+- **Documents issued:** the invoice and credit note series used in the period, with counts of
+  cancelled documents.
+- Invoices whose IRN was cancelled (section 14) are left out of the sections above and counted as
+  cancelled; the corrected invoice issued in their place is reported normally.
+- Credit notes are reported in the period of their own date, not the invoice's.
+
+**Export to Tally (designed, not built yet).** Many distributors keep their books in TallyPrime.
+The plan is an export file Tally can import: our sales invoices as Sales vouchers, credit notes as
+Credit Note vouchers and receipts as Receipt vouchers, as accounting entries without stock items.
+- Each voucher carries our document number and date, the shop as the party, and a bill reference
+  (a new reference for an invoice; against the invoice for a credit note or a receipt).
+- The distributor names its Tally ledgers once: the shop's ledger (default: the shop's name, with an
+  optional file to create the shop ledgers first, including GSTIN, state and address), the sales
+  ledger (one, or one per GST rate), the output CGST, SGST, IGST and cess ledgers, round-off, and
+  the cash and bank ledgers for each payment mode.
+- Tally's own guidance is that a file must match what TallyPrime itself exports for the same voucher.
+  So before building it we would ask you to create one sample Sales, Credit Note and Receipt voucher
+  in your TallyPrime, export them as XML and send them to us. The export stays labelled "beta" until
+  a real import succeeds.
+
+---
+
+## 16. Questions for you
 
 Please answer yes or no, with a note where the answer is no.
 
@@ -413,3 +449,13 @@ Please answer yes or no, with a note where the answer is no.
 | 28 | Is the e-way bill consignment value correctly taken as the invoice value including tax, and is ₹50,000 the right default for both inter-state and intra-state movement (knowing some states set their own limit)? | | |
 | 29 | Is recording an online payment on the date the gateway captured it (not the settlement date), with the gateway's fee outside the shop's account, acceptable? | | |
 | 30 | When an invoice's IRN is cancelled and the invoice re-issued for the same supply, should the re-issued invoice use the original tax rates or those valid on the new invoice date? (It currently keeps the original rates, and warns staff when today's rate differs.) | | |
+| 31 | Is a workbook laid out like the official GSTR-1 Excel template (B2B, B2C large, B2C others, credit notes, HSN summary in B2B and B2C tabs, documents issued; section 15) what you need to prepare GSTR-1? Is any other table needed for this business (for example nil-rated or exempt supplies, or advances received)? | | |
+| 32 | Is it correct that invoices to unregistered buyers in another state above ₹1,00,000 are reported invoice by invoice (B2C large), and all other B2C supplies are totalled by rate and place of supply? | | |
+| 33 | HSN summary: separate B2B and B2C tabs, the HSN code at the digits the distributor requires on products (4 by default), and the unit's UQC — correct? Should the description be the product's or the HSN's official description? | | |
+| 34 | Which credit notes to unregistered buyers must be reported note by note, and which are simply netted in B2C others? | | |
+| 35 | Invoices whose IRN was cancelled: left out of B2B and the HSN summary and counted as cancelled under documents issued, with the corrected invoice reported normally — correct? | | |
+| 36 | Documents issued: should it list only tax invoices and credit notes (not payment receipts or refund vouchers)? | | |
+| 37 | For quarterly (QRMP) filers, is one workbook for the quarter useful, or should the monthly B2B invoices (IFF) come separately? | | |
+| 38 | **Can you test a Tally import?** Do you use TallyPrime for the distributor's books, and could you export one sample Sales, Credit Note and Receipt voucher from it as XML and later test importing our file (section 15)? | | |
+| 39 | Tally: are accounting entries without stock items right for importing sales? One sales ledger, or one per GST rate? Output tax ledgers per tax (CGST, SGST, IGST, cess) or per rate as well? Shop ledgers under Sundry Debtors named as the shop? | | |
+| 40 | Tally: how should an invoice whose IRN was cancelled appear — as a cancelled voucher, or left out with only the corrected invoice exported? And receipts: one bank ledger per payment mode (cash, cheque, UPI, bank transfer, online gateway), with gateway fees entered by the distributor separately? | | |

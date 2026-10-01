@@ -95,6 +95,10 @@ class Order(TenantScopedModel):
     placed_via = models.CharField(max_length=14, choices=PlacedVia.choices)
     # "Priya (Sales)" when staff placed it for the shop (ADR-044); empty when the shop did.
     placed_by_label = models.CharField(max_length=160, blank=True, default="")
+    # The shop's salesperson when the order was placed: sales by salesperson (ADR-050).
+    salesperson = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
     status = models.CharField(max_length=16, choices=OrderStatus.choices)
     backorder_state = models.CharField(
         max_length=6, choices=BackorderState.choices, default=BackorderState.NONE
@@ -154,6 +158,9 @@ class Order(TenantScopedModel):
             models.Index("tenant", "status", F("placed_at").desc(), name="order_status_idx"),
             models.Index("tenant", "retailer", F("placed_at").desc(), name="order_retailer_idx"),
             models.Index(fields=["tenant", "backorder_state"], name="order_backorder_idx"),
+            models.Index(
+                "tenant", "salesperson", F("placed_at").desc(), name="order_salesperson_idx"
+            ),
         ]
 
     def __str__(self) -> str:

@@ -2,7 +2,6 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DistributorDashboard } from "@/components/orders/dashboard";
 import type { DocumentSeries } from "@/lib/api/generated/model";
 import { mockApi } from "@/tests/mock-api";
 import { renderWithIntl } from "@/tests/render";
@@ -74,31 +73,5 @@ describe("Document numbers", () => {
     renderWithIntl(<DocumentNumbering />);
     expect(await screen.findByText("Tax invoices")).toBeVisible();
     expect(screen.queryByLabelText("Prefix")).toBeNull();
-  });
-});
-
-describe("Dashboard", () => {
-  it("adds money to collect for those who see receivables", async () => {
-    permissions.add("ledger.view");
-    mockApi({
-      "/api/v1/receivables/summary/": () => [
-        200,
-        {
-          owed: "4251.00",
-          overdue: "950.00",
-          shops_overdue: 1,
-          due_this_week: "0.00",
-          unapplied_credit: "1498.00",
-          collections_pending_handover: "500.00",
-        },
-      ],
-    });
-    renderWithIntl(<DistributorDashboard />);
-    expect(await screen.findByText("Money to collect")).toBeVisible();
-    expect(await screen.findByText("₹4,251.00")).toBeVisible();
-    expect(screen.getByRole("link", { name: /With salesmen/ })).toHaveAttribute(
-      "href",
-      "/manage/payments/handover",
-    );
   });
 });

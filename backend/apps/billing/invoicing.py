@@ -103,6 +103,7 @@ class _Planned:
     discount: Decimal
     rate: Decimal
     cess_rate: Decimal
+    unit_cost: Decimal | None  # the cost recorded on the invoice line (ADR-050)
 
 
 def current_buyer(order: Order) -> tuple[dict[str, Any], str, str]:
@@ -200,6 +201,7 @@ def issue_invoice_for_fulfilment(
                     _discount(fl, line, quantity, rounding),
                     Decimal(old.gst_rate),
                     Decimal(old.cess_rate),
+                    old.unit_cost,  # the same supply: the same cost
                 )
             )
     else:
@@ -218,7 +220,15 @@ def issue_invoice_for_fulfilment(
             rate = Decimal(rate_row.gst_rate) if rate_row else Decimal(line.gst_rate)
             cess = Decimal(rate_row.cess_rate) if rate_row else Decimal(line.cess_rate)
             planned.append(
-                _Planned(fl, line, quantity, _discount(fl, line, quantity, rounding), rate, cess)
+                _Planned(
+                    fl,
+                    line,
+                    quantity,
+                    _discount(fl, line, quantity, rounding),
+                    rate,
+                    cess,
+                    fl.product.cost_price,
+                )
             )
     if not planned:
         return None
@@ -315,6 +325,7 @@ def issue_invoice_for_fulfilment(
                 line_total=tax.line_total,
                 order_rate=p.line.gst_rate,
                 rate_differs_from_order=differ,
+                unit_cost=p.unit_cost,
             )
             for index, (p, tax, differ) in enumerate(zip(planned, taxes, differs, strict=True), 1)
         ]

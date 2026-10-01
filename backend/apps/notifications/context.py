@@ -328,7 +328,30 @@ def _ewaybill(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventConte
     )
 
 
+def _report(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
+    from apps.platform.selectors import get_platform_setting
+    from apps.reports.models import ReportRun
+
+    run = ReportRun.objects.filter(pk=event.payload["run_id"]).first()
+    if run is None:
+        return None
+    values = {
+        **base,
+        "report": run.title,
+        "rows": f"{run.row_count or 0:,}",
+        "days": get_platform_setting("platform.report_link_days"),
+        "error": run.error,
+    }
+    return EventContext(
+        code,
+        values,
+        staff_path="/manage/reports/exports",
+        extra={"requester_id": run.requested_by_id},
+    )
+
+
 BUILDERS = {
+    "report": _report,
     "einvoice": _einvoice,
     "ewaybill": _ewaybill,
     "order": _order,

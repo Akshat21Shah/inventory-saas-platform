@@ -35,6 +35,10 @@ USER app
 # Without this, manage.py/asgi.py fall back to dev settings (DEBUG on).
 ENV DJANGO_SETTINGS_MODULE=config.settings.prod
 EXPOSE 8000
+# Liveness for Docker and for orchestrators that use the image's check. The health endpoints answer
+# any host over plain HTTP (common.health.HealthCheckMiddleware); readiness is /health/ready.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=4)"]
 # Startup gate: deployment checks with database access must pass before serving (mock SMS,
 # fixed OTP, the public dev 2FA key: accounts.E001-E003); warnings do not block.
 # No --proxy-headers: Django's TrustedProxyMiddleware decides which forwarded headers to trust.

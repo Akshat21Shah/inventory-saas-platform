@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
 
+from common import metrics
 from common.context import (
     RequestMeta,
     actor_var,
@@ -48,4 +49,5 @@ class RequestContextMiddleware:
             request_meta_var.reset(tokens[3])
             actor_var.reset(tokens[4])
         response["X-Request-ID"] = request_id
+        metrics.record(request.path, response.status_code)
         return response

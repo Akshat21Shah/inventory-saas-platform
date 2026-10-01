@@ -14,7 +14,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from django.db.models import Sum
+from django.db.models import Q, QuerySet, Sum
 
 from apps.billing.models import Invoice
 from apps.ledger.allocation import CREDIT_KINDS, DEBIT_KINDS
@@ -159,18 +159,39 @@ def receivables_summary(
 ) -> dict[str, Any]:
     """Dashboard totals: owed, overdue, shops overdue, and what falls due in the next 7 days."""
     today = on or today_ist()
+    week = today + timedelta(days=7)
     retailer_ids = None if retailer_ids is None else list(retailer_ids)
-    dues = open_dues(retailer_ids)
-    late = [d for d in dues if d.due_date < today]
-    soon = [d for d in dues if today <= d.due_date <= today + timedelta(days=7)]
+    # The same dues as ``open_dues``, added up in the database: a large distributor has
+    # thousands open (``make perf``). Each source with the field its due date is in.
+    sources: list[tuple[QuerySet[Any], str]] = [
+        (Invoice.objects.filter(status="ISSUED", balance_due__gt=0), "due_date"),
+        (LedgerAdjustment.objects.filter(kind__in=DEBIT_KINDS, balance_due__gt=0), "due_date"),
+        (Refund.objects.filter(balance_due__gt=0), "refund_date"),
+    ]
+    owed = overdue = soon = ZERO
+    late_shops: set[UUID] = set()
+    for rows, due in sources:
+        if retailer_ids is not None:
+            rows = rows.filter(retailer_id__in=retailer_ids)
+        found = rows.aggregate(
+            owed=Sum("balance_due"),
+            overdue=Sum("balance_due", filter=Q(**{f"{due}__lt": today})),
+            soon=Sum("balance_due", filter=Q(**{f"{due}__gte": today, f"{due}__lte": week})),
+        )
+        owed += found["owed"] or ZERO
+        overdue += found["overdue"] or ZERO
+        soon += found["soon"] or ZERO
+        late_shops.update(
+            rows.filter(**{f"{due}__lt": today}).values_list("retailer_id", flat=True).distinct()
+        )
     credit = RetailerAccount.objects.filter(unapplied_credit__gt=0)
     if retailer_ids is not None:
         credit = credit.filter(retailer_id__in=retailer_ids)
     return {
-        "owed": sum((d.balance_due for d in dues), ZERO),
-        "overdue": sum((d.balance_due for d in late), ZERO),
-        "shops_overdue": len({d.retailer_id for d in late}),
-        "due_this_week": sum((d.balance_due for d in soon), ZERO),
+        "owed": owed,
+        "overdue": overdue,
+        "shops_overdue": len(late_shops),
+        "due_this_week": soon,
         "unapplied_credit": Decimal(
             credit.aggregate(total=Sum("unapplied_credit"))["total"] or ZERO
         ),

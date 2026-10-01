@@ -251,11 +251,58 @@ class HsnImportResultSerializer(serializers.Serializer[Any]):
     updated = serializers.IntegerField()
 
 
+class OrdersDaySerializer(serializers.Serializer[Any]):
+    date = serializers.DateField()
+    count = serializers.IntegerField()
+    value = serializers.DecimalField(max_digits=16, decimal_places=2, help_text="Incl. GST.")
+
+
+class TopTenantSerializer(serializers.Serializer[Any]):
+    tenant_id = serializers.UUIDField()
+    name = serializers.CharField()
+    orders = serializers.IntegerField()
+    value = serializers.DecimalField(max_digits=16, decimal_places=2)
+
+
+class TenantFailuresSerializer(serializers.Serializer[Any]):
+    tenant_id = serializers.UUIDField()
+    name = serializers.CharField()
+    failed_messages = serializers.IntegerField(help_text="In the last 7 days.")
+    failed_irns = serializers.IntegerField()
+    failed_ewaybills = serializers.IntegerField()
+    gst_login_failed = serializers.BooleanField()
+    gateway_failed = serializers.BooleanField()
+
+
+class PlanUsageSerializer(serializers.Serializer[Any]):
+    tenant_id = serializers.UUIDField()
+    name = serializers.CharField()
+    plan = serializers.CharField(allow_blank=True)
+    shops = serializers.IntegerField()
+    staff = serializers.IntegerField()
+    products = serializers.IntegerField()
+    max_shops = serializers.IntegerField(allow_null=True, help_text="Null: no limit.")
+    max_staff = serializers.IntegerField(allow_null=True)
+    max_products = serializers.IntegerField(allow_null=True)
+    near_limit = serializers.BooleanField(help_text="At 90% or more of a limit.")
+
+
+class ErrorRateSerializer(serializers.Serializer[Any]):
+    requests = serializers.IntegerField()
+    server_errors = serializers.IntegerField(help_text="Server errors (5xx).")
+    rate = serializers.DecimalField(max_digits=6, decimal_places=2, allow_null=True)
+
+
 class DashboardSerializer(serializers.Serializer[Any]):
     total = serializers.IntegerField()
     active = serializers.IntegerField()
     onboarding = serializers.IntegerField()
     suspended = serializers.IntegerField()
+    orders_per_day = OrdersDaySerializer(many=True, help_text="The last 30 days, all distributors.")
+    top_tenants = TopTenantSerializer(many=True, help_text="By order value, last 30 days.")
+    failures = TenantFailuresSerializer(many=True)
+    usage = PlanUsageSerializer(many=True, help_text="Against each plan's limits.")
+    errors_24h = ErrorRateSerializer()
 
 
 class SlugAvailabilitySerializer(serializers.Serializer[Any]):

@@ -154,7 +154,7 @@ jobs:
           E2E_FULL_STACK: "1"
           E2E_BASE_URL: http://localhost:3000
         # One at a time: the specs share the super admin, whose 2FA codes are single-use.
-        run: npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts
+        run: npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts
       - name: Responsive check (every screen at 360, 768 and 1440 px)
         if: success() || failure()
         working-directory: web
@@ -171,7 +171,7 @@ jobs:
           if-no-files-found: warn
       - name: Service logs
         if: failure()
-        run: docker compose -f infra/docker-compose.yml logs --tail=200 backend worker web
+        run: docker compose -f infra/docker-compose.yml logs --tail=200 backend worker reports-worker web
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -184,6 +184,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Build backend image
-        run: docker build -f infra/backend.Dockerfile --target prod backend
+        run: docker build -f infra/backend.Dockerfile --target prod -t backend-prod backend
+      # As a load balancer probes a container: by its address, over plain HTTP, with production
+      # settings (host validation and the HTTPS redirect on). Health must answer; nothing else.
+      - name: Production backend answers health probes from any host
+        run: |
+          docker run -d --name api -p 8000:8000 \
+            -e DJANGO_SECRET_KEY=ci-health-check-secret-key-0123456789abcdef \
+            -e JWT_SIGNING_KEY=ci-health-check-jwt-key-0123456789abcdef \
+            -e FIELD_ENCRYPTION_KEYS="$(python3 -c 'import base64,os;print(base64.urlsafe_b64encode(os.urandom(32)).decode())')" \
+            -e DATABASE_URL=postgres://x@127.0.0.1/x \
+            -e PLATFORM_DOMAIN=app.example.com \
+            backend-prod uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --no-proxy-headers
+          code() { curl -s -o /dev/null -w '%{http_code}' -H 'Host: 10.0.3.17:8000' "http://127.0.0.1:8000$1"; }
+          for i in $(seq 1 30); do [ "$(code /health/live)" = 200 ] && break; sleep 2; done
+          test "$(code /health/live)" = 200
+          test "$(code /api/v1/meta/)" = 400
+          for i in $(seq 1 30); do [ "$(docker inspect --format '{{.State.Health.Status}}' api)" = healthy ] && break; sleep 3; done
+          docker inspect --format '{{.State.Health.Status}}' api | grep -qx healthy || (docker logs api; exit 1)
       - name: Build web image
         run: docker build -f infra/web.Dockerfile --target prod web

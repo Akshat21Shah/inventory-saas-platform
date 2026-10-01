@@ -112,12 +112,34 @@ function pages(ids: Ids) {
     "/manage/reports",
     "/manage/reports/low-stock",
     "/manage/reports/stock-valuation",
+    "/manage/reports/exports",
+    // Every report on the standard report screen (ADR-050): each lays its cards out differently.
+    ...[
+      "sales_summary",
+      "sales_by_product",
+      "sales_by_category",
+      "sales_by_brand",
+      "sales_by_shop",
+      "sales_by_salesperson",
+      "sales_by_invoice",
+      "margin_own_vs_traded",
+      "stock_summary",
+      "stock_movements",
+      "stock_movement_class",
+      "backorder_demand",
+      "fulfilment_rate",
+      "receivables_ageing",
+      "collections",
+      "salesperson_collections",
+      "gst_summary",
+    ].map((code) => `/manage/reports/${code}`),
     "/manage/settings/business",
     "/manage/settings/branding",
     "/manage/settings/policies/tax",
     "/manage/settings/policies/pricing",
     "/manage/settings/policies/retailers",
     "/manage/settings/policies/stock",
+    "/manage/settings/policies/reports",
     "/manage/settings/features",
     "/manage/settings/staff",
     "/manage/settings/roles",
@@ -278,7 +300,15 @@ function findProblems(phone: boolean): Problem[] {
   return problems;
 }
 
-async function sweep(page: Page, base: string, paths: string[], width: number, area: string) {
+/** Locally, `E2E_ONLY=reports,=/manage` checks just some screens: those whose path contains an
+ * entry, or equals one written with `=`. */
+const ONLY = (process.env.E2E_ONLY ?? "").split(",").filter(Boolean);
+const wanted = (path: string) =>
+  !ONLY.length ||
+  ONLY.some((entry) => (entry.startsWith("=") ? path === entry.slice(1) : path.includes(entry)));
+
+async function sweep(page: Page, base: string, all: string[], width: number, area: string) {
+  const paths = all.filter(wanted);
   const found: string[] = [];
   const dir = join(SHOTS, String(width));
   mkdirSync(dir, { recursive: true });

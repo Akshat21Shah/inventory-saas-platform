@@ -617,6 +617,18 @@
       "ewaybill_cancel_window_hours": {
         "label": "E-way bill cancellation window (hours)",
         "description": "Hours after an e-way bill within which it can be cancelled. To be verified."
+      },
+      "report_async_rows": {
+        "label": "Background export limit (rows)",
+        "description": "Report exports with more rows than this are made in the background; the person gets a message when the file is ready."
+      },
+      "report_link_days": {
+        "label": "Export download days",
+        "description": "How many days a background export can be downloaded before it is deleted."
+      },
+      "b2cl_threshold": {
+        "label": "B2C large threshold (₹)",
+        "description": "Bills to shops without a GSTIN in another state above this value are listed one by one in the GST summary. To be verified."
       }
     },
     "retailers": {
@@ -700,6 +712,16 @@
         "label": "Make e-way bills automatically",
         "description": "Make the e-way bill at dispatch when the invoice needs one. Off: staff make it with the \"Make e-way bill\" button."
       }
+    },
+    "reports": {
+      "movement_days": {
+        "label": "Fast, slow and dead stock period (days)",
+        "description": "How far back to look when sorting products into fast, slow and dead stock."
+      },
+      "fast_share_percent": {
+        "label": "Fast-moving share (%)",
+        "description": "The share of products that sold, counted from the top, that is called fast-moving."
+      }
     }
   },
   "settingsForm": {
@@ -713,7 +735,8 @@
       "retailers": "Shops",
       "pricing": "Pricing",
       "notifications": "Notifications",
-      "compliance": "E-invoices & e-way bills"
+      "compliance": "E-invoices & e-way bills",
+      "reports": "Reports"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -860,7 +883,53 @@
       "total": "All distributors",
       "active": "Active",
       "onboarding": "Waiting for owner",
-      "suspended": "Suspended"
+      "suspended": "Suspended",
+      "orders": {
+        "title": "Orders across distributors",
+        "body": "Orders placed per day in the last 30 days, value incl. GST.",
+        "caption": "Value of orders placed per day across all distributors, last 30 days",
+        "value": "Order value",
+        "date": "Date"
+      },
+      "top": {
+        "title": "Top distributors",
+        "body": "By order value in the last 30 days.",
+        "name": "Distributor",
+        "orders": "Orders",
+        "value": "Value",
+        "empty": "No orders in the last 30 days"
+      },
+      "errors": {
+        "title": "Errors in the last 24 hours",
+        "body": "Server errors among all requests; Sentry keeps the details.",
+        "detail": "{errors, plural, one {# server error} other {# server errors}} in {requests, plural, one {# request} other {# requests}}"
+      },
+      "failures": {
+        "title": "Something failing",
+        "body": "Messages that failed in the last 7 days, IRNs and e-way bills still failed, and connections that stopped working.",
+        "name": "Distributor",
+        "messages": "Messages failed",
+        "irns": "IRNs failed",
+        "ewaybills": "E-way bills failed",
+        "connections": "Connections",
+        "gstLogin": "GST login",
+        "gateway": "Payment gateway",
+        "empty": "Nothing failing",
+        "emptyBody": "Messages, IRNs, e-way bills and every connection are working for all distributors."
+      },
+      "usage": {
+        "title": "Usage against plans",
+        "body": "Shops, staff and products against each plan's limits (shown even while limits aren't enforced). Near a limit: 90% or more.",
+        "name": "Distributor",
+        "plan": "Plan",
+        "shops": "Shops",
+        "staff": "Staff",
+        "products": "Products",
+        "near": "Limits",
+        "ofLimit": "{used} of {limit}",
+        "empty": "No distributors yet",
+        "showAll": "Show all {count}"
+      }
     },
     "tenants": {
       "title": "Distributors",
@@ -1160,7 +1229,8 @@
         "security": "Security",
         "pricing": "Pricing",
         "retailers": "Shops",
-        "notifications": "Quiet hours & reminders"
+        "notifications": "Quiet hours & reminders",
+        "reports": "Reports"
       },
       "features": "Modules",
       "staff": "Staff",
@@ -1179,7 +1249,8 @@
       "security": "Sign-in rules for your staff.",
       "pricing": "How discounts combine and whether they apply on top of shop special prices.",
       "retailers": "What shops on hold can do and what shops see in the app.",
-      "notifications": "Quiet hours, reminders and how long bill links work."
+      "notifications": "Quiet hours, reminders and how long bill links work.",
+      "reports": "How the reports sort products into fast, slow, dead and new stock."
     },
     "unknownGroup": "This settings page does not exist.",
     "noSettings": "Nothing to set here yet",
@@ -2649,10 +2720,6 @@
       "noneResolved": "No resolved alerts yet"
     },
     "reports": {
-      "indexTitle": "Reports",
-      "indexDescription": "More reports (sales, receivables) come with ordering and billing.",
-      "noReports": "No reports for your role",
-      "noReportsBody": "Ask the owner if you need stock reports.",
       "lowTitle": "Low stock",
       "lowDescription": "Products at or below their reorder level, with how much you are short.",
       "valuationTitle": "Stock value",
@@ -2741,15 +2808,6 @@
       "shipments": "Shipments",
       "backorders": "Backorders",
       "settings": "Order settings"
-    },
-    "dashboard": {
-      "title": "Today",
-      "description": "What needs your action now.",
-      "new": "New orders",
-      "onHold": "Waiting for credit approval",
-      "proposals": "Backorders to confirm",
-      "toPack": "Shipments to pack",
-      "money": "Money to collect"
     },
     "live": {
       "placed": "New order {number} from {shop}",
@@ -3611,7 +3669,9 @@
       "handover_reminder": "Collections not yet handed over",
       "tax_rate_change_upcoming": "GST rate changes in 7 days",
       "retailer_welcome": "Welcome message to a new shop",
-      "announcement_published": "Announcement"
+      "announcement_published": "Announcement",
+      "report_ready": "Report ready to download",
+      "report_failed": "Report could not be made"
     },
     "shopEvents": {
       "order_placed": "Order received",
@@ -4157,7 +4217,6 @@
       "noVehicle": "No vehicle given",
       "fix": "Fix and try again",
       "seeAll": "See all {count}",
-      "irnFailed": "IRNs failed",
       "irnWaiting": "IRNs waiting",
       "irnNearLimit": "IRNs near the reporting limit",
       "ewbWaiting": "E-way bills waiting"
@@ -4168,5 +4227,477 @@
     "SUBMITTED": "Submitted",
     "APPROVED": "Approved",
     "REJECTED": "Rejected"
+  },
+  "reports": {
+    "hub": {
+      "title": "Reports",
+      "description": "Sales, stock, money and GST for any period. Every report exports to Excel.",
+      "myExports": "My exports",
+      "empty": "No reports for your role",
+      "emptyBody": "Ask the owner if you need to see a report."
+    },
+    "groups": {
+      "sales": "Sales",
+      "stock": "Stock",
+      "money": "Money",
+      "gst": "GST"
+    },
+    "viewer": {
+      "back": "All reports",
+      "notFound": "This report isn't available",
+      "notFoundBody": "It doesn't exist, or your role can't open it.",
+      "exportExcel": "Excel",
+      "exportPdf": "PDF",
+      "exportExcelLabel": "Export to Excel",
+      "exportPdfLabel": "Export to PDF",
+      "preparing": "Preparing…",
+      "queued": "We're preparing your file. You'll get a message when it's ready.",
+      "queuedAction": "My exports",
+      "ownShops": "Only the shops assigned to you.",
+      "totals": "Totals",
+      "totalsBody": "For the whole report, not just this page.",
+      "notes": "Good to know",
+      "empty": "Nothing to show",
+      "emptyBody": "Try a different period or fewer filters.",
+      "rows": "{count, plural, one {# row} other {# rows}}",
+      "page": "Page {page} of {pages}",
+      "backgroundOnly": "This report is prepared in the background: export it and we'll tell you when it's ready.",
+      "any": "Any",
+      "anyShop": "Any shop",
+      "anyProduct": "Any product",
+      "searchShop": "Search shops",
+      "searchProduct": "Search products",
+      "maxDays": "Up to {days} days at a time.",
+      "caption": "{title}: rows",
+      "open": "Open",
+      "chartNetSales": "Net sales per period on this page"
+    },
+    "exports": {
+      "title": "My exports",
+      "description": "Reports you exported that were prepared in the background. Each link lasts a few days; export again after that.",
+      "empty": "No exports yet",
+      "emptyBody": "Large reports are prepared in the background and listed here when they're ready.",
+      "report": "Report",
+      "asked": "Asked",
+      "status": "Status",
+      "rows": "Rows",
+      "until": "Link until",
+      "download": "Download",
+      "downloadLabel": "Download {name}",
+      "failed": "Couldn't be made. Try exporting again.",
+      "caption": "Your exports"
+    },
+    "catalogue": {
+      "backorder_demand": {
+        "title": "Backorder demand",
+        "description": "What shops are waiting for, how long, and what could go out now.",
+        "columns": {
+          "code": "Code",
+          "name": "Product",
+          "unit": "Unit",
+          "shops": "Shops waiting",
+          "qty": "Waiting",
+          "oldest": "Oldest order",
+          "available": "Available now",
+          "proposed": "Proposed to send",
+          "value": "Value waiting"
+        }
+      },
+      "collections": {
+        "title": "Collections",
+        "description": "Every payment received in the period, by mode and who collected it.",
+        "columns": {
+          "payment_date": "Date",
+          "number": "Receipt",
+          "shop": "Shop",
+          "mode": "Mode",
+          "amount": "Amount",
+          "status": "Status",
+          "collector": "Collected by",
+          "handover": "Handover",
+          "reference": "Reference / cheque"
+        }
+      },
+      "fulfilment_rate": {
+        "title": "Order fulfilment rate",
+        "description": "How much of what shops ordered was delivered, by order date.",
+        "columns": {
+          "period": "Period",
+          "orders": "Orders",
+          "open": "Still open",
+          "in_full": "Delivered in full",
+          "in_full_pct": "In full %",
+          "delivered_pct": "Quantity delivered %"
+        }
+      },
+      "gst_summary": {
+        "title": "GST summary (GSTR-1)",
+        "description": "Sales in the layout of the GSTR-1 Excel template, for your CA.",
+        "columns": {
+          "section": "Section",
+          "documents": "Documents",
+          "taxable": "Taxable value",
+          "tax": "IGST + CGST + SGST",
+          "cess": "Cess"
+        }
+      },
+      "low_stock": {
+        "title": "Low stock",
+        "description": "Products at or below their reorder level.",
+        "columns": {
+          "code": "Code",
+          "name": "Product",
+          "category": "Category",
+          "brand": "Brand",
+          "unit": "Unit",
+          "available": "Available",
+          "reorder_level": "Reorder level",
+          "shortfall": "Short by"
+        }
+      },
+      "margin_own_vs_traded": {
+        "title": "Margin: own brand vs traded",
+        "description": "Taxable sales, cost and margin of your own brands against traded goods.",
+        "columns": {
+          "name": "Name",
+          "own_brand": "Own brand",
+          "taxable": "Taxable value",
+          "cost": "Cost",
+          "margin": "Margin",
+          "margin_pct": "Margin %",
+          "share": "Share %"
+        }
+      },
+      "receivables_ageing": {
+        "title": "Receivables ageing",
+        "description": "What each shop owes, by how long it has been owed.",
+        "columns": {
+          "code": "Code",
+          "name": "Shop",
+          "salesperson": "Salesperson",
+          "not_due": "Not due",
+          "d0_30": "0-30 days",
+          "d31_60": "31-60 days",
+          "d61_90": "61-90 days",
+          "d90_plus": "Over 90 days",
+          "owed": "Owed",
+          "credit": "Credit with us",
+          "net": "Balance",
+          "credit_limit": "Credit limit",
+          "oldest_due": "Oldest due",
+          "last_payment": "Last payment"
+        }
+      },
+      "sales_by_brand": {
+        "title": "Sales by brand",
+        "description": "Sales per brand, your own brands marked, net of returns.",
+        "columns": {
+          "name": "Brand",
+          "own_brand": "Own brand",
+          "taxable": "Taxable value",
+          "tax": "GST",
+          "total": "Total",
+          "share": "Share %",
+          "cost": "Cost",
+          "margin": "Margin",
+          "margin_pct": "Margin %"
+        }
+      },
+      "sales_by_category": {
+        "title": "Sales by category",
+        "description": "Sales per category (as set on each product), net of returns.",
+        "columns": {
+          "name": "Category",
+          "taxable": "Taxable value",
+          "tax": "GST",
+          "total": "Total",
+          "share": "Share %",
+          "cost": "Cost",
+          "margin": "Margin",
+          "margin_pct": "Margin %"
+        }
+      },
+      "sales_by_invoice": {
+        "title": "Sales by invoice",
+        "description": "The sales register: every invoice and credit note in the period, one per row.",
+        "columns": {
+          "day": "Date",
+          "doc_number": "Number",
+          "doc_type": "Type",
+          "shop_code": "Shop code",
+          "shop_name": "Shop",
+          "gstin": "GSTIN",
+          "place": "Place of supply",
+          "taxable": "Taxable value",
+          "cgst": "CGST",
+          "sgst": "SGST",
+          "igst": "IGST",
+          "cess": "Cess",
+          "total": "Total",
+          "salesperson": "Salesperson",
+          "cost": "Cost",
+          "margin": "Margin"
+        }
+      },
+      "sales_by_product": {
+        "title": "Sales by product",
+        "description": "What sold, net of returns, with margins for those who can see costs.",
+        "columns": {
+          "code": "Code",
+          "name": "Product",
+          "category": "Category",
+          "brand": "Brand",
+          "qty": "Quantity",
+          "taxable": "Taxable value",
+          "tax": "GST",
+          "total": "Total",
+          "share": "Share %",
+          "cost": "Cost",
+          "margin": "Margin",
+          "margin_pct": "Margin %"
+        }
+      },
+      "sales_by_salesperson": {
+        "title": "Sales by salesperson",
+        "description": "Sales per salesperson (the shop's salesperson when the order was placed).",
+        "columns": {
+          "name": "Salesperson",
+          "shops": "Shops",
+          "invoices": "Invoices",
+          "taxable": "Taxable value",
+          "tax": "GST",
+          "total": "Total",
+          "share": "Share %"
+        }
+      },
+      "sales_by_shop": {
+        "title": "Sales by shop",
+        "description": "Sales per shop, net of returns, with each shop's last bill.",
+        "columns": {
+          "code": "Code",
+          "name": "Shop",
+          "salesperson": "Salesperson",
+          "invoices": "Invoices",
+          "taxable": "Taxable value",
+          "tax": "GST",
+          "total": "Total",
+          "share": "Share %",
+          "last_invoice": "Last bill"
+        }
+      },
+      "sales_summary": {
+        "title": "Sales summary",
+        "description": "Billed, credited and net sales per day, week or month.",
+        "columns": {
+          "period": "Period",
+          "invoices": "Invoices",
+          "billed": "Invoices total",
+          "credited": "Credit notes",
+          "taxable": "Taxable value",
+          "tax": "GST",
+          "total": "Net sales"
+        }
+      },
+      "salesperson_collections": {
+        "title": "Salesperson collections",
+        "description": "What each salesperson collected, handed over and still holds.",
+        "columns": {
+          "name": "Salesperson",
+          "count": "Collections",
+          "cash": "Cash",
+          "cheque": "Cheque",
+          "upi": "UPI",
+          "total": "Collected",
+          "handed_over": "Handed over",
+          "with_salesman": "Still with them",
+          "oldest_pending": "Oldest not handed over",
+          "from_shops": "Received from their shops"
+        }
+      },
+      "stock_movement_class": {
+        "title": "Fast, slow and dead stock",
+        "description": "Which products sell fast, slowly or not at all (and which are new).",
+        "columns": {
+          "class": "Class",
+          "code": "Code",
+          "name": "Product",
+          "category": "Category",
+          "brand": "Brand",
+          "sold_qty": "Sold",
+          "sales_value": "Sales (taxable)",
+          "on_hand": "On hand",
+          "last_sale": "Last sold",
+          "stock_value": "Stock value"
+        }
+      },
+      "stock_movements": {
+        "title": "Stock movement history",
+        "description": "Every change to stock: received, dispatched, returned, adjusted.",
+        "columns": {
+          "when": "When",
+          "code": "Code",
+          "name": "Product",
+          "type": "What happened",
+          "delta_on_hand": "Change",
+          "on_hand_after": "On hand after",
+          "unit": "Unit",
+          "reference_number": "Reference",
+          "reason": "Reason",
+          "value": "Value"
+        }
+      },
+      "stock_summary": {
+        "title": "Stock summary",
+        "description": "Every product's stock: on hand, held for orders, available and its value.",
+        "columns": {
+          "code": "Code",
+          "name": "Product",
+          "category": "Category",
+          "brand": "Brand",
+          "unit": "Unit",
+          "on_hand": "On hand",
+          "reserved": "Held for orders",
+          "available": "Available",
+          "reorder_level": "Reorder level",
+          "status": "Status",
+          "cost_price": "Cost price",
+          "value": "Stock value"
+        }
+      },
+      "stock_valuation": {
+        "title": "Stock valuation",
+        "description": "Stock on hand valued at cost price.",
+        "columns": {
+          "code": "Code",
+          "name": "Product",
+          "category": "Category",
+          "brand": "Brand",
+          "unit": "Unit",
+          "on_hand": "On hand",
+          "cost_price": "Cost price",
+          "value": "Stock value"
+        }
+      }
+    },
+    "filters": {
+      "category": "Category",
+      "brand": "Brand",
+      "date_from": "From",
+      "date_to": "To",
+      "mode": "Mode",
+      "status": "Status",
+      "collected_by": "Collected by",
+      "shop": "Shop",
+      "group_by": "By",
+      "salesperson": "Salesperson",
+      "overdue_only": "Overdue only",
+      "rank_by": "Rank by",
+      "class": "Class",
+      "product": "Product",
+      "movement_type": "What happened"
+    },
+    "choices": {
+      "group_by": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "type": "Own brand or traded",
+        "brand": "Brand",
+        "product": "Product"
+      },
+      "rank_by": {
+        "value": "Sales value",
+        "quantity": "Quantity"
+      },
+      "class": {
+        "fast": "Fast",
+        "slow": "Slow",
+        "dead": "Dead",
+        "new": "New"
+      },
+      "status": {
+        "IN_STOCK": "In stock",
+        "LOW": "Low",
+        "OUT": "Out of stock",
+        "BACKORDERED": "Backordered",
+        "RECEIVED": "Received",
+        "PENDING_CLEARANCE": "Waiting for the cheque to clear",
+        "CLEARED": "Cheque cleared",
+        "BOUNCED": "Cheque bounced",
+        "REVERSED": "Reversed"
+      },
+      "mode": {
+        "CASH": "Cash",
+        "CHEQUE": "Cheque",
+        "BANK_TRANSFER": "Bank transfer",
+        "UPI": "UPI",
+        "ONLINE": "Paid online"
+      },
+      "movement_type": {
+        "INWARD": "Goods received",
+        "SALE": "Dispatched",
+        "RETURN": "Returned",
+        "ADJUSTMENT_IN": "Adjustment in",
+        "ADJUSTMENT_OUT": "Adjustment out",
+        "DAMAGE": "Damaged",
+        "TRANSFER_IN": "Transfer in",
+        "TRANSFER_OUT": "Transfer out",
+        "RESERVE": "Reserved for an order",
+        "RELEASE": "Reservation released"
+      }
+    }
+  },
+  "reportRunStatus": {
+    "QUEUED": "Waiting",
+    "RUNNING": "Being prepared",
+    "READY": "Ready",
+    "FAILED": "Failed",
+    "EXPIRED": "Link expired"
+  },
+  "dashboard": {
+    "title": "Today",
+    "description": "What needs your action now, then how sales are going.",
+    "ownShops": "Figures for the shops assigned to you.",
+    "action": {
+      "title": "Needs action",
+      "newOrders": "New orders",
+      "onHold": "Waiting for credit approval",
+      "backorders": "Backorders to confirm",
+      "toPack": "Shipments to pack",
+      "failedIrns": "IRNs failed",
+      "failedEwaybills": "E-way bills failed",
+      "handover": "Collections with salesmen",
+      "overdue": "Shops overdue",
+      "overdueBody": "{count, plural, one {# shop} other {# shops}}",
+      "lowStock": "Low or out of stock",
+      "lowStockBody": "{out, plural, =0 {none out of stock} one {# out of stock} other {# out of stock}}",
+      "clear": "All clear"
+    },
+    "today": {
+      "title": "Today so far",
+      "ordersReceived": "Orders received",
+      "ordersReceivedBody": "{count, plural, one {# order} other {# orders}}, value incl. GST",
+      "billed": "Billed",
+      "billedBody": "Invoices minus credit notes"
+    },
+    "trends": {
+      "title": "Last 30 days",
+      "allReports": "All reports",
+      "billed": "Billed in the last 30 days",
+      "previous": "The 30 days before: {amount}",
+      "chartSummary": "Billed per day: {amount} in the last 30 days, against {previous} in the 30 days before.",
+      "thisPeriod": "Last 30 days",
+      "previousPeriod": "The 30 days before",
+      "date": "Date",
+      "topProducts": "Top products this month",
+      "topShops": "Top shops this month",
+      "nothingYet": "No sales this month yet.",
+      "shops": "Shops ordering this month",
+      "newShops": "{count, plural, one {# new shop} other {# new shops}}",
+      "repeatShops": "{count, plural, one {# repeat shop} other {# repeat shops}}"
+    }
+  },
+  "usageStatus": {
+    "NEAR_LIMIT": "Near a limit"
   }
 }

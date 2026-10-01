@@ -8,7 +8,7 @@ import { renderWithIntl } from "@/tests/render";
 
 import { AdjustmentEditor, AdjustmentPage } from "./adjustments";
 import { AlertsPage } from "./alerts";
-import { LowStockReport, ReportsIndex, ValuationReport } from "./reports";
+import { LowStockReport, ValuationReport } from "./reports";
 
 const permissions = new Set(["stock.view", "stock.adjust", "reports.stock", "costs.view"]);
 const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
@@ -232,25 +232,5 @@ describe("reports", () => {
     expect(calls.some((c) => c.url.searchParams.get("missing_cost") === "true")).toBe(true);
     await userEvent.click(screen.getByRole("tab", { name: "Brand" }));
     expect(screen.getByText("(none)")).toBeInTheDocument();
-  });
-
-  it("offers the valuation report only with costs.view", () => {
-    permissions.delete("costs.view");
-    renderWithIntl(<ReportsIndex />);
-    expect(screen.getByRole("link", { name: /Low stock/ })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Stock value/ })).not.toBeInTheDocument();
-  });
-
-  it("offers it to accounts staff through the financial reports", () => {
-    permissions.delete("reports.stock");
-    permissions.add("reports.financial");
-    try {
-      renderWithIntl(<ReportsIndex />);
-      expect(screen.getByRole("link", { name: /Stock value/ })).toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: /Low stock/ })).not.toBeInTheDocument();
-    } finally {
-      permissions.add("reports.stock");
-      permissions.delete("reports.financial");
-    }
   });
 });
