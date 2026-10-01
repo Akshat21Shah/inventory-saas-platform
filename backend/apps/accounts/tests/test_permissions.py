@@ -46,6 +46,8 @@ PLAN_MATRIX: dict[str, set[str]] = {
     "stock.view": {OWN, MGR, SAL, WH, ACC},
     "stock.inward": {OWN, MGR, WH},
     "stock.adjust": {OWN, MGR, WH},
+    "purchasing.view": {OWN, MGR, WH, ACC},  # ADR-053
+    "purchasing.manage": {OWN, MGR},
     "orders.view": {OWN, MGR, SAL, WH, ACC},
     "orders.manage": {OWN, MGR, SAL},
     "orders.create_on_behalf": {OWN, MGR, SAL},

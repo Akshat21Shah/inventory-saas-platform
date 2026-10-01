@@ -3554,6 +3554,22 @@ paths:
                 items:
                   $ref: '#/components/schemas/Permission'
           description: ''
+  /api/v1/planning/stats/refresh/:
+    post:
+      operationId: planning_stats_refresh
+      description: Work the figures out again now, in the background; once every five
+        minutes.
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanningRefresh'
+          description: ''
   /api/v1/platform/audit-logs/:
     get:
       operationId: platform_audit_logs
@@ -5444,6 +5460,31 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/products/{product_id}/stats/:
+    get:
+      operationId: product_stats
+      description: A product's demand, days of stock and classes, as last worked out
+        (ADR-053 item 3).
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductStats'
+          description: ''
+        '204':
+          description: Not worked out yet
   /api/v1/products/{product_id}/tax-rates/:
     get:
       operationId: catalog_product_tax_rates_list
@@ -9815,6 +9856,16 @@ paths:
           description: Unknown webhook address
 components:
   schemas:
+    AbcClassEnum:
+      enum:
+      - A
+      - B
+      - C
+      type: string
+      description: |-
+        * `A` - A
+        * `B` - B
+        * `C` - C
     AdditionRequest:
       type: object
       properties:
@@ -16153,6 +16204,18 @@ components:
       - reserved_after
       - unit_cost
       - value
+    MovementClassEnum:
+      enum:
+      - FAST
+      - SLOW
+      - DEAD
+      - NEW
+      type: string
+      description: |-
+        * `FAST` - Fast
+        * `SLOW` - Slow
+        * `DEAD` - Dead
+        * `NEW` - New
     MovementReferenceTypeEnum:
       enum:
       - INWARD
@@ -18720,6 +18783,18 @@ components:
       - shops
       - staff
       - tenant_id
+    PlanningRefresh:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/PlanningRefreshStatusEnum'
+      required:
+      - status
+    PlanningRefreshStatusEnum:
+      enum:
+      - QUEUED
+      type: string
+      description: '* `QUEUED` - QUEUED'
     PlatformFailure:
       type: object
       properties:
@@ -19559,6 +19634,69 @@ components:
       - code
       - id
       - name
+    ProductStats:
+      type: object
+      description: |-
+        A product's demand and classes. No money: the classes come from sales value, which sales
+        staff limited to their own shops may not see.
+      properties:
+        computed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        demand_days:
+          type: integer
+          readOnly: true
+        demand_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        per_day:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        movement_days:
+          type: integer
+          readOnly: true
+        abc_class:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AbcClassEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        movement_class:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MovementClassEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        last_sale_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        days_of_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+      required:
+      - abc_class
+      - available
+      - computed_at
+      - days_of_stock
+      - demand_days
+      - demand_qty
+      - last_sale_date
+      - movement_class
+      - movement_days
+      - per_day
     ProductTaxRate:
       type: object
       properties:

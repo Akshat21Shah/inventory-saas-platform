@@ -43,6 +43,7 @@ def test_feature_flags_seeded_off_and_not_tenant_toggleable():
         "whatsapp",
         "batches",
         "multi_warehouse",
+        "stock_planning",  # ADR-053
         "ai",
     }
     assert not FeatureFlag.objects.filter(default_enabled=True).exists()

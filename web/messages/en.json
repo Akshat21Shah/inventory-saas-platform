@@ -722,6 +722,32 @@
         "label": "Fast-moving share (%)",
         "description": "The share of products that sold, counted from the top, that is called fast-moving."
       }
+    },
+    "planning": {
+      "demand_days": {
+        "label": "Demand period (days)",
+        "description": "Daily demand is what shops ordered over this many days."
+      },
+      "safety_days": {
+        "label": "Safety stock (days)",
+        "description": "Extra stock, in days of demand, kept for late deliveries and busy weeks."
+      },
+      "cover_days": {
+        "label": "Order to cover (days)",
+        "description": "A suggested order covers this many days of demand after it arrives."
+      },
+      "default_lead_days": {
+        "label": "Usual delivery time (days)",
+        "description": "Days from ordering to receiving, when the supplier's own time isn't set."
+      },
+      "abc_a_percent": {
+        "label": "Class A share (%)",
+        "description": "Class A: your top products that together make this share of sales value."
+      },
+      "abc_b_percent": {
+        "label": "Class B share (%)",
+        "description": "Class B: the next products, up to this share of sales value. The rest are class C."
+      }
     }
   },
   "settingsForm": {
@@ -736,7 +762,8 @@
       "pricing": "Pricing",
       "notifications": "Notifications",
       "compliance": "E-invoices & e-way bills",
-      "reports": "Reports"
+      "reports": "Reports",
+      "planning": "Stock planning"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -1399,6 +1426,7 @@
       "retailers": "Shops",
       "credit": "Credit",
       "stock": "Stock",
+      "purchasing": "Purchasing",
       "orders": "Orders",
       "invoices": "Invoices",
       "compliance": "GST compliance",

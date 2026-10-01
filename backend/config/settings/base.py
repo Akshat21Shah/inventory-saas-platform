@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.compliance",
     "apps.reports",
     "apps.search",
+    "apps.planning",
     "apps.dataio",
     "apps.shop",
 ]
@@ -186,6 +187,8 @@ CELERY_BEAT_SCHEDULE = {
         "task": "notifications.payment_reminders",
         "schedule": crontab(hour=4, minute=30),  # 10:00 IST
     },
+    # Product stats (ADR-053), after the day's orders: 01:30 IST.
+    "planning-refresh": {"task": "planning.refresh_all", "schedule": crontab(hour=20, minute=0)},
 }
 
 CHANNEL_LAYERS = {
@@ -225,6 +228,8 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
         "SearchHitTypeEnum": "apps.search.api.serializers.HIT_TYPES",
+        "AbcClassEnum": "apps.planning.models.AbcClass",
+        "MovementClassEnum": "apps.planning.models.MovementClass",
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",
         "ImportModeEnum": "apps.dataio.models.ImportJob.Mode",

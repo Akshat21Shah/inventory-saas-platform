@@ -62,6 +62,25 @@ class HasPermission(BasePermission):
         return user_has_permission(request.user, code)
 
 
+class FeatureOn(BasePermission):
+    """The optional module named by ``view.required_feature`` must be switched on for the active
+    tenant; otherwise ``403 MODULE_NOT_ENABLED`` (ADR-049 item 1)."""
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        from apps.platform.selectors import is_feature_enabled
+        from common.error_codes import ErrorCode
+        from common.errors import DomainError
+
+        code: str = getattr(view, "required_feature", "")
+        if code and not is_feature_enabled(code):
+            raise DomainError(
+                "This module isn't switched on for your business.",
+                code=ErrorCode.MODULE_NOT_ENABLED,
+                status_code=403,
+            )
+        return True
+
+
 class _UserTypePermission(BasePermission):
     user_type: str = ""
 

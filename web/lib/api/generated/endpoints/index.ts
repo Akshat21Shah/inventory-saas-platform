@@ -9,6 +9,7 @@ export * from './meta/meta';
 export * from './notifications/notifications';
 export * from './orders/orders';
 export * from './payments/payments';
+export * from './planning/planning';
 export * from './platform/platform';
 export * from './pricing/pricing';
 export * from './public/public';

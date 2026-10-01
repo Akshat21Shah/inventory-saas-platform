@@ -392,7 +392,7 @@ def test_plans_crud_and_default_switch(api, run):
 
 @covers("platform-feature-flags", "platform-feature-flag-detail")
 def test_flag_catalogue_default_change_applies_everywhere(api, run, tenant_a, tenant_b):
-    assert len(api.get(f"{P}/feature-flags/").json()) == 8
+    assert len(api.get(f"{P}/feature-flags/").json()) == 9
     run(
         api.patch,
         f"{P}/feature-flags/batches/",
