@@ -22,6 +22,11 @@ import { RequireArea } from "@/components/auth/require-area";
 import { NotificationBell } from "@/components/notifications/bell";
 import { SidebarShell, type NavItem } from "@/components/shared/app-shell";
 import { DistributorLiveUpdates } from "@/components/orders/live";
+import {
+  GlobalSearchProvider,
+  SearchField,
+  SearchIconButton,
+} from "@/components/search/global-search";
 import { useStockSummary } from "@/lib/api/generated/endpoints/inventory/inventory";
 import { useOrdersCounts } from "@/lib/api/generated/endpoints/orders/orders";
 
@@ -59,16 +64,20 @@ function useNavBadges(): Partial<Record<string, number>> {
 
 function Shell({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <SidebarShell
-      title={title}
-      items={ITEMS}
-      badges={useNavBadges()}
-      banner={<ImpersonationBanner />}
-      account={<AccountMenu accountHref="/manage/account" />}
-      headerActions={<NotificationBell scope="staff" />}
-    >
-      {children}
-    </SidebarShell>
+    <GlobalSearchProvider scope="staff">
+      <SidebarShell
+        title={title}
+        items={ITEMS}
+        badges={useNavBadges()}
+        banner={<ImpersonationBanner />}
+        account={<AccountMenu accountHref="/manage/account" />}
+        headerActions={<NotificationBell scope="staff" />}
+        search={<SearchField />}
+        searchIcon={<SearchIconButton />}
+      >
+        {children}
+      </SidebarShell>
+    </GlobalSearchProvider>
   );
 }
 

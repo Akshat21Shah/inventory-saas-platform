@@ -31,6 +31,7 @@ import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { useDebounced } from "@/lib/use-debounced";
 import { formatIndianMobile } from "@/lib/utils";
+import { initialQuery } from "@/lib/initial-query";
 
 import { usePriceListOptions, useSalespeopleOptions } from "./options";
 
@@ -43,7 +44,7 @@ export function RetailersPage() {
   const manage = can("retailers.manage");
   const priceLists = usePriceListOptions();
   const salespeople = useSalespeopleOptions();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
   const [status, setStatus] = useState(ALL);
   const [salesperson, setSalesperson] = useState(ALL);
   const [priceList, setPriceList] = useState(ALL);

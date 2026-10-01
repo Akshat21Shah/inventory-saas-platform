@@ -68,6 +68,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney } from "@/lib/format";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
+import { initialQuery } from "@/lib/initial-query";
 
 import { PaymentsNav } from "./billing-nav";
 import { DocumentButton } from "./document-button";
@@ -200,7 +201,7 @@ export function PaymentsPage() {
   const { can, feature } = useAuth();
   const online = feature("payments");
   const cursor = useCursor();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
   const [mode, setMode] = useState<string>(ALL);
   const [toReview, setToReview] = useState(false);
   const [status, setStatus] = useState<string>(ALL);

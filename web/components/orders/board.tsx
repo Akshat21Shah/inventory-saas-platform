@@ -32,6 +32,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";
+import { initialQuery } from "@/lib/initial-query";
 
 import { OrdersNav } from "./orders-nav";
 import { useOrderSound } from "./sound";
@@ -61,7 +62,7 @@ export function OrdersBoard() {
   const { message } = useErrorText();
   const sound = useOrderSound();
   const [tab, setTab] = useState<OrdersListTab>("new");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
   const [status, setStatus] = useState<string>(ALL);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");

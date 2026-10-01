@@ -324,6 +324,21 @@ async function sweep(page: Page, base: string, all: string[], width: number, are
   return found;
 }
 
+/** Global search (ADR-053), open with results: full screen on phones, a dialog elsewhere. */
+async function searchOpen(page: Page, base: string, width: number, area: string, text: string) {
+  if (!wanted("search")) return [];
+  await page.goto(`${base}${area === "platform" ? "/platform" : "/manage"}`);
+  await page.waitForLoadState("networkidle").catch(() => undefined);
+  await page.keyboard.press("Control+K");
+  await page.getByRole("combobox", { name: "Search" }).fill(text);
+  await page.getByRole("option").first().waitFor();
+  await page.waitForTimeout(300);
+  const problems = await page.evaluate(findProblems, width < 768);
+  await page.screenshot({ path: join(SHOTS, String(width), `${area}_search.png`) });
+  await page.keyboard.press("Escape");
+  return problems.map((p) => `${width}px ${area} search: ${p.kind}: ${p.what}`);
+}
+
 async function staffPage(browser: Browser, width: number) {
   resetLimits({ emails: ["owner@sharma.example.com"] });
   const context = await browser.newContext({ viewport: { width, height: 900 } });
@@ -366,12 +381,14 @@ for (const width of WIDTHS) {
 
     const s = await staffPage(browser, width);
     problems.push(...(await sweep(s.page, origin("sharma"), staff, width, "staff")));
+    problems.push(...(await searchOpen(s.page, origin("sharma"), width, "staff", "ganesh")));
     await s.context.close();
 
     const adminContext = await browser.newContext({ viewport: { width, height: 900 } });
     const admin = await adminContext.newPage();
     await signInAsSuperAdmin(admin);
     problems.push(...(await sweep(admin, origin("admin"), platform, width, "platform")));
+    problems.push(...(await searchOpen(admin, origin("admin"), width, "platform", "sharma")));
     await adminContext.close();
 
     const r = await shopPage(browser, width);

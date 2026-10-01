@@ -31,6 +31,7 @@ import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { useDebounced } from "@/lib/use-debounced";
+import { initialQuery } from "@/lib/initial-query";
 
 import { FilterSelect, PickDialog } from "./controls";
 import { percent, useBrandOptions, useCategoryOptions } from "./options";
@@ -45,7 +46,7 @@ export function ProductsPage() {
   const categories = useCategoryOptions();
   const brands = useBrandOptions();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
   const [category, setCategory] = useState(ALL);
   const [brand, setBrand] = useState(ALL);
   const [status, setStatus] = useState(ALL);
