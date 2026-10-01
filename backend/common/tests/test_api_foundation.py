@@ -84,9 +84,9 @@ def test_has_permission_fails_closed(api_client_for, tenant_a):
 
 
 def test_request_id_generated_and_echoed(client):
-    generated = client.get("/health/live")
+    generated = client.get("/test-api/public/")
     assert len(generated["X-Request-ID"]) == 32
-    echoed = client.get("/health/live", HTTP_X_REQUEST_ID="req-abc-12345")
+    echoed = client.get("/test-api/public/", HTTP_X_REQUEST_ID="req-abc-12345")
     assert echoed["X-Request-ID"] == "req-abc-12345"
 
 
@@ -102,6 +102,20 @@ def test_health_endpoints(client):
     ready = client.get("/health/ready")
     assert ready.status_code == 200
     assert ready.json()["checks"] == {"database": "ok", "cache": "ok"}
+
+
+@override_settings(ALLOWED_HOSTS=["example.com", ".example.com"], SECURE_SSL_REDIRECT=True)
+def test_health_endpoints_answer_any_host_over_plain_http(client):
+    """As a load balancer probes a container: by its address, over HTTP. Docker's own check
+    calls localhost, which LAN mode doesn't allow. Nothing else gets past the host check."""
+    for host in ("10.0.3.17:8000", "localhost:8000"):
+        live = client.get("/health/live", HTTP_HOST=host)
+        assert (live.status_code, live.json()) == (200, {"status": "ok"}), host
+        assert client.get("/health/ready", HTTP_HOST=host).status_code == 200, host
+    assert client.get("/test-api/public/", HTTP_HOST="10.0.3.17:8000").status_code == 400
+    assert client.post("/health/live", HTTP_HOST="10.0.3.17:8000").status_code == 400
+    # A known host still gets the HTTPS redirect everywhere else.
+    assert client.get("/test-api/public/", HTTP_HOST="example.com").status_code == 301
 
 
 @override_settings(ROOT_URLCONF="config.urls")

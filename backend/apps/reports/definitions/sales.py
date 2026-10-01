@@ -25,10 +25,10 @@ from django.db.models import (
     IntegerField,
     Max,
     OuterRef,
-    Q,
     QuerySet,
     Subquery,
     Sum,
+    UUIDField,
     Value,
     When,
 )
@@ -122,12 +122,25 @@ def credit_lines(ctx: Context) -> QuerySet[CreditNoteLine]:
     return _narrow(rows, ctx, CREDIT)
 
 
+def product_value(product: str, field: str, output_field: Any) -> Subquery:
+    """A field of a line's product (``product``: the path to it), looked up per line rather than
+    joined: a join with the products makes PostgreSQL misjudge how many lines match and read
+    every line of the distributor instead of the period's (``make perf``, ADR-051)."""
+    return Subquery(
+        Product.objects.filter(pk=OuterRef(f"{product}_id")).order_by().values(field)[:1],
+        output_field=output_field,
+    )
+
+
+def today_cost(product: str) -> Subquery:
+    """Today's cost price of a line's product."""
+    return product_value(product, "cost_price", MONEY)
+
+
 def _figures(rows: QuerySet[Any], paths: Paths, key: Any, *, costs: bool) -> QuerySet[Any]:
     """Per key: quantity, taxable value, GST, total; with ``costs``, also the cost (recorded or
     today's), the taxable value of lines with a cost, and how many lines were estimated or had no
-    cost. Costs join the product for today's cost price, which also makes PostgreSQL scan every
-    line of the distributor instead of the period's (``make perf``), so they are only worked out
-    when shown."""
+    cost. Costs are only worked out when shown."""
     sums: dict[str, Any] = {
         "qty": Sum("quantity"),
         "taxable": Sum("taxable_value"),
@@ -138,14 +151,10 @@ def _figures(rows: QuerySet[Any], paths: Paths, key: Any, *, costs: bool) -> Que
         found: QuerySet[Any] = rows.annotate(key=key).values("key").annotate(**sums).order_by()
         return found
     recorded = F(paths.unit_cost)
-    today = F(f"{paths.product}__cost_price")
+    today = today_cost(paths.product)
     cost = Coalesce(recorded, today)
-    has_cost = Q(**{f"{paths.unit_cost}__isnull": False}) | Q(
-        **{f"{paths.product}__cost_price__isnull": False}
-    )
-    estimated = Q(**{f"{paths.unit_cost}__isnull": True}) & Q(
-        **{f"{paths.product}__cost_price__isnull": False}
-    )
+    has_cost = IsNull(cost, False)
+    estimated = IsNull(recorded, True) & IsNull(today, False)
     found = (
         rows.annotate(key=key)
         .values("key")
@@ -157,7 +166,7 @@ def _figures(rows: QuerySet[Any], paths: Paths, key: Any, *, costs: bool) -> Que
                 output_field=MONEY,
             ),
             estimated=Count(Case(When(estimated, then=1), output_field=IntegerField())),
-            uncosted=Count(Case(When(~has_cost, then=1), output_field=IntegerField())),
+            uncosted=Count(Case(When(IsNull(cost, True), then=1), output_field=IntegerField())),
         )
         .order_by()
     )
@@ -187,6 +196,15 @@ class Figures:
             self.billed += row["total"] or ZERO
         else:
             self.credited += row["total"] or ZERO
+
+    def merge(self, other: Figures) -> None:
+        """Fold another group's figures into this one (its invoices may overlap: not counted)."""
+        for name in (
+            "qty", "taxable", "tax", "total", "cost", "costed_taxable", "billed", "credited",
+        ):  # fmt: skip
+            setattr(self, name, getattr(self, name) + getattr(other, name))
+        self.estimated += other.estimated
+        self.uncosted += other.uncosted
 
     @property
     def margin(self) -> Decimal:
@@ -445,7 +463,10 @@ def _category_path(categories: dict[Any, dict[str, Any]], pk: Any) -> str:
 
 def _categories(ctx: Context) -> dict[Any, Figures]:
     return _cached(
-        ctx, "categories", F(INVOICE.product + "__category_id"), F(CREDIT.product + "__category_id")
+        ctx,
+        "categories",
+        product_value(INVOICE.product, "category_id", UUIDField()),
+        product_value(CREDIT.product, "category_id", UUIDField()),
     )
 
 
@@ -465,7 +486,10 @@ def category_rows(ctx: Context) -> list[dict[str, Any]]:
 
 def _brands(ctx: Context) -> dict[Any, Figures]:
     return _cached(
-        ctx, "brands", F(INVOICE.product + "__brand_id"), F(CREDIT.product + "__brand_id")
+        ctx,
+        "brands",
+        product_value(INVOICE.product, "brand_id", UUIDField()),
+        product_value(CREDIT.product, "brand_id", UUIDField()),
     )
 
 
@@ -664,8 +688,17 @@ register(
 
 # --- Own brand vs traded margin (costs.view) ----------------------------------------------------
 
-OWN = F(INVOICE.product + "__brand__own_brand")
-OWN_CREDIT = F(CREDIT.product + "__brand__own_brand")
+
+def _own_vs_traded(ctx: Context) -> dict[Any, Figures]:
+    """The per-product figures folded into own brand (True) and traded (False): one grouped
+    query and a small lookup of which products are own brand, instead of grouping every line by
+    its product's brand (``make perf``: 1.35 s against 0.1 s)."""
+    products = _products(ctx, counts=False)
+    own = dict(Product.objects.filter(pk__in=list(products)).values_list("id", "brand__own_brand"))
+    groups: dict[Any, Figures] = defaultdict(Figures)
+    for pk, figures in products.items():
+        groups[bool(own.get(pk))].merge(figures)
+    return groups
 
 
 def _margin_groups(ctx: Context) -> dict[Any, Figures]:
@@ -674,7 +707,8 @@ def _margin_groups(ctx: Context) -> dict[Any, Figures]:
         return _brands(ctx)
     if by == "product":
         return _products(ctx)
-    return _cached(ctx, "own", Coalesce(OWN, Value(False)), Coalesce(OWN_CREDIT, Value(False)))
+    groups: dict[Any, Figures] = ctx.once("own", lambda: _own_vs_traded(ctx))
+    return groups
 
 
 def margin_rows(ctx: Context) -> list[dict[str, Any]]:
@@ -784,14 +818,8 @@ def _register_notes(ctx: Context) -> QuerySet[Any]:
 def _line_figures(prefix: str) -> dict[str, Any]:
     """Per line: its cost at the recorded cost, else today's (credit notes at their invoice
     lines' cost; value-only notes have no quantity, so no cost), and its margin, only for lines
-    with a cost (lines with none are left out of the margin, as in the other sales reports).
-    Today's cost price is looked up per line, not joined: a join with the products makes
-    PostgreSQL read every line of the distributor instead of the period's (``make perf``)."""
-    today = Subquery(
-        Product.objects.filter(pk=OuterRef(f"{prefix}product_id")).values("cost_price")[:1],
-        output_field=MONEY,
-    )
-    unit = Coalesce(F(f"{prefix}unit_cost"), today)
+    with a cost (lines with none are left out of the margin, as in the other sales reports)."""
+    unit = Coalesce(F(f"{prefix}unit_cost"), today_cost(f"{prefix}product"))
     cost = ExpressionWrapper(unit * F("quantity"), output_field=MONEY)
     margin = Case(
         When(

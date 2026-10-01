@@ -455,7 +455,7 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 ### 3.2 Health, public, auth
 | Endpoint | Method | Permission | Purpose |
 |---|---|---|---|
-| `/health/live`, `/health/ready` | GET | 🌐 | liveness; readiness (DB, Redis, Celery ping) |
+| `/health/live`, `/health/ready` | GET | 🌐 | liveness; readiness (DB, Redis; 503 when not ready). Answered for any host over plain HTTP, before host validation and the HTTPS redirect (ADR-052) |
 | `/api/v1/schema/`, `/api/v1/docs/` | GET | 🌐 (dev) / staff (prod) | OpenAPI schema and Swagger UI |
 | `/api/v1/public/tenants/{slug}/branding` | GET | 🌐 | pre-login branding (name, logo, colour, favicon) and `available` (never the specific status, ADR-032) |
 | `/api/v1/public/states` | GET | 🌐 | GST state list |

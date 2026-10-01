@@ -61,7 +61,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "common.net.TrustedProxyMiddleware",  # first: forwarded headers only from trusted proxies
+    "common.health.HealthCheckMiddleware",  # first: health probes from any host, plain HTTP
+    "common.net.TrustedProxyMiddleware",  # forwarded headers only from trusted proxies
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "common.middleware.RequestContextMiddleware",
@@ -112,6 +113,12 @@ if env("PLATFORM_DATABASE_URL", default=""):
         "CONN_MAX_AGE": env.int("DB_CONN_MAX_AGE", default=60),
         "TEST": {"MIRROR": "default"},
     }
+# PostgreSQL's JIT compiler suits long analytical queries. On this app's short queries it spends
+# far longer compiling than it saves (a month's sales by product: 396 ms with it, 18 ms without),
+# so every connection turns it off (ADR-051).
+for _alias in DATABASES.values():
+    _options = _alias.setdefault("OPTIONS", {})
+    _options["options"] = f"{_options.get('options', '')} -c jit=off".strip()
 DATABASE_ROUTERS = ["common.db_router.PlatformAliasRouter"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
