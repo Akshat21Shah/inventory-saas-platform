@@ -14,6 +14,8 @@ export interface ReceiptDetail {
   readonly number: string | null;
   readonly status: ReceiptStatusEnum;
   readonly supplier_name: string;
+  /** @nullable */
+  readonly supplier_id: string | null;
   readonly supplier_ref: string;
   readonly bill_number: string;
   /** @nullable */

@@ -13,6 +13,7 @@ export * from './planning/planning';
 export * from './platform/platform';
 export * from './pricing/pricing';
 export * from './public/public';
+export * from './purchasing/purchasing';
 export * from './receivables/receivables';
 export * from './reports/reports';
 export * from './retailers/retailers';

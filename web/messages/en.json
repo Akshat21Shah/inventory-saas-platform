@@ -879,6 +879,14 @@
       },
       "platform": {
         "users_searched": "Searched for people across businesses"
+      },
+      "purchasing": {
+        "supplier_created": "Added a supplier",
+        "supplier_changed": "Changed a supplier",
+        "supplier_deleted": "Deleted a supplier",
+        "product_suppliers_changed": "Changed who a product is bought from",
+        "preferred_supplier_set": "Set the preferred supplier for products",
+        "receipt_suppliers_confirmed": "Linked past goods receipts to suppliers"
       }
     },
     "title": "Audit log",
@@ -903,6 +911,7 @@
       "impersonationsession": "Support session",
       "platformsetting": "Platform settings",
       "retailer": "Shop",
+      "supplier": "Supplier",
       "other": "Record"
     }
   },
@@ -1665,7 +1674,8 @@
       "PRICE_LIST_ITEMS": "Price-list prices",
       "DISCOUNT_RULES": "Discounts",
       "OPENING_STOCK": "Opening stock",
-      "OPENING_BALANCES": "Opening balances"
+      "OPENING_BALANCES": "Opening balances",
+      "SUPPLIERS": "Suppliers"
     },
     "kindHint": {
       "PRODUCTS": "Codes, names, prices, GST, categories and brands.",
@@ -1674,7 +1684,8 @@
       "PRICE_LIST_ITEMS": "Prices on your price lists, by list name and product code.",
       "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab.",
       "OPENING_STOCK": "How much of each product you have, by product code; optionally its cost. The whole file becomes one stock adjustment.",
-      "OPENING_BALANCES": "What each shop owed you (or had paid in advance) when you started, by shop mobile or code. One per shop."
+      "OPENING_BALANCES": "What each shop owed you (or had paid in advance) when you started, by shop mobile or code. One per shop.",
+      "SUPPLIERS": "The firms you buy from: name, GSTIN, contact, phone, email and delivery days. Matched by GSTIN, or by name."
     },
     "template": "Download the {kind} template",
     "modeTitle": "What should happen to rows that already exist?",
@@ -1711,7 +1722,8 @@
       "PRICE_LIST_ITEMS": "Go to price lists",
       "DISCOUNT_RULES": "Go to discounts",
       "OPENING_STOCK": "Go to stock",
-      "OPENING_BALANCES": "Go to shops"
+      "OPENING_BALANCES": "Go to shops",
+      "SUPPLIERS": "Go to suppliers"
     },
     "counts": {
       "new": "New",

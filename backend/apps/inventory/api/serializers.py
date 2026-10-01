@@ -263,6 +263,7 @@ class ReceiptLineSerializer(serializers.ModelSerializer[StockInwardLine]):
 
 
 class ReceiptSerializer(serializers.ModelSerializer[StockInward]):
+    supplier_id = serializers.UUIDField(read_only=True, allow_null=True)
     line_count = serializers.IntegerField(read_only=True)
     total_cost = serializers.SerializerMethodField()
     posted_by = serializers.SerializerMethodField()
@@ -275,6 +276,7 @@ class ReceiptSerializer(serializers.ModelSerializer[StockInward]):
             "number",
             "status",
             "supplier_name",
+            "supplier_id",
             "supplier_ref",
             "bill_number",
             "bill_date",
@@ -326,6 +328,7 @@ class ReceiptLineInputSerializer(serializers.Serializer[Any]):
 
 class ReceiptInputSerializer(serializers.Serializer[Any]):
     supplier_name = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    supplier_id = serializers.UUIDField(required=False, allow_null=True)
     supplier_ref = serializers.CharField(required=False, allow_blank=True, max_length=60)
     bill_number = serializers.CharField(required=False, allow_blank=True, max_length=60)
     bill_date = serializers.DateField(required=False, allow_null=True)

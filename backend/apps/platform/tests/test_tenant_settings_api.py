@@ -335,7 +335,7 @@ def test_public_branding_for_pre_login_pages(tenant_a, tenant_b, owner, run):
 @covers("settings-features", "settings-feature-toggle")
 def test_owner_toggles_only_tenant_toggleable_modules(tenant_a, tenant_b, owner, sales, run):
     flags = {f["code"]: f for f in sales.get("/api/v1/settings/features/").json()}
-    assert len(flags) == 9 and flags["batches"]["enabled"] is False
+    assert len(flags) == 10 and flags["batches"]["enabled"] is False
     refused = owner.put("/api/v1/settings/features/batches/", {"enabled": True}, format="json")
     assert "enabled" in refused.json()["error"]["details"]["fields"]
     FeatureFlag.objects.filter(code="batches").update(tenant_toggleable=True)

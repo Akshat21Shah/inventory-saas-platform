@@ -17,6 +17,7 @@
  * * `goods_receipt` - goods_receipt
  * * `adjustment` - adjustment
  * * `staff` - staff
+ * * `supplier` - supplier
  * * `tenant` - tenant
  */
 export type SearchHitTypeEnum = typeof SearchHitTypeEnum[keyof typeof SearchHitTypeEnum];
@@ -33,5 +34,6 @@ export const SearchHitTypeEnum = {
   goods_receipt: 'goods_receipt',
   adjustment: 'adjustment',
   staff: 'staff',
+  supplier: 'supplier',
   tenant: 'tenant',
 } as const;

@@ -82,6 +82,11 @@ FEATURE_FLAGS = [
     ("batches", "Batches and expiry", "Track stock by batch number and expiry date."),
     ("multi_warehouse", "Multiple warehouses", "Keep stock in more than one warehouse."),
     (
+        "purchasing",
+        "Purchasing",
+        "Suppliers, purchase orders and receiving against them.",
+    ),
+    (
         "stock_planning",
         "Stock planning",
         "Product demand and classes (ABC, fast and slow), and reorder suggestions.",

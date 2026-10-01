@@ -57,6 +57,7 @@ class ReceiptInput:
     supplier_ref: str = ""
     bill_number: str = ""
     bill_date: date | None = None
+    supplier_id: UUID | None = None  # flag purchasing (ADR-053); its name unless one is typed
     notes: str = ""
 
 
@@ -139,8 +140,24 @@ def _quantity_problem(product: Product, line: LineInput) -> str | None:
     return None
 
 
+def _supplier(supplier_id: UUID) -> Any:
+    from apps.platform.selectors import is_feature_enabled
+    from apps.purchasing.models import Supplier
+
+    if not is_feature_enabled("purchasing"):
+        raise InvalidFields({"supplier_id": ["Purchasing isn't switched on for your business."]})
+    found = Supplier.objects.filter(pk=supplier_id, deleted_at__isnull=True, is_active=True).first()
+    if found is None:
+        raise InvalidFields({"supplier_id": ["Choose one of your active suppliers."]})
+    return found
+
+
 def _header(inward: StockInward, data: ReceiptInput) -> None:
     inward.supplier_name = data.supplier_name.strip()[:200]
+    inward.supplier = None
+    if data.supplier_id is not None:
+        inward.supplier = _supplier(data.supplier_id)
+        inward.supplier_name = inward.supplier_name or inward.supplier.name[:200]
     inward.supplier_ref = data.supplier_ref.strip()[:60]
     inward.bill_number = data.bill_number.strip()[:60]
     inward.bill_date = data.bill_date

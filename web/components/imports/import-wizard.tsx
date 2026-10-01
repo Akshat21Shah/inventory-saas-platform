@@ -83,6 +83,7 @@ const PERMISSION: Record<ImportKindEnum, string> = {
   DISCOUNT_RULES: "pricing.manage",
   OPENING_STOCK: "stock.adjust",
   OPENING_BALANCES: "ledger.adjust",
+  SUPPLIERS: "purchasing.manage",
 };
 const LIST_PAGE: Record<ImportKindEnum, string> = {
   PRODUCTS: "/manage/products",
@@ -93,6 +94,8 @@ const LIST_PAGE: Record<ImportKindEnum, string> = {
   OPENING_STOCK: "/manage/stock",
   // TODO(phase-5 frontend): the receivables page once it exists.
   OPENING_BALANCES: "/manage/retailers",
+  // TODO(9a.10): offered in KINDS (while purchasing is on) with the suppliers screens.
+  SUPPLIERS: "/manage/purchasing/suppliers",
 };
 const BUSY = new Set(["VALIDATING", "COMMITTING"]);
 

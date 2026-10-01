@@ -59,6 +59,7 @@ class Source:
     exact: Callable[[User, str], list[Hit]] | None = None
     # Only searched when the text has a digit: these are found by their numbers.
     numbers_only: bool = False
+    feature: str = ""  # an optional module that must be on (e.g. purchasing)
 
 
 def mobile_of(text: str) -> str | None:
@@ -318,6 +319,33 @@ def _staff(user: User, text: str, limit: int) -> list[Hit]:
     ]
 
 
+def _supplier_hit(supplier: Any) -> Hit:
+    detail = " · ".join(x for x in (supplier.code, supplier.city) if x)
+    return Hit(
+        "supplier",
+        supplier.pk,
+        supplier.name,
+        detail,
+        status="ACTIVE" if supplier.is_active else "INACTIVE",
+    )
+
+
+def _suppliers(user: User, text: str, limit: int) -> list[Hit]:
+    from apps.purchasing.selectors import suppliers
+
+    return [_supplier_hit(s) for s in suppliers(search=text)[:limit]]
+
+
+def _supplier_exact(user: User, text: str) -> list[Hit]:
+    from apps.purchasing.models import Supplier
+
+    gstin = text.upper().replace(" ", "")
+    if not GSTIN.fullmatch(gstin):
+        return []
+    found = Supplier.objects.filter(gstin=gstin, deleted_at__isnull=True)
+    return [_supplier_hit(s) for s in found[:2]]
+
+
 SOURCES: tuple[Source, ...] = (
     Source("product", "products.view", _products, _product_exact),
     Source("shop", "retailers.view", _shops, _shop_exact),
@@ -353,5 +381,6 @@ SOURCES: tuple[Source, ...] = (
     Source("goods_receipt", AnyOf(("stock.inward", "costs.view")), _receipts, _receipt_exact),
     Source("adjustment", "stock.adjust", _adjustments, _adjustment_exact, numbers_only=True),
     Source("staff", "staff.manage", _staff),
+    Source("supplier", "purchasing.view", _suppliers, _supplier_exact, feature="purchasing"),
 )
 TYPES = tuple(source.type for source in SOURCES)

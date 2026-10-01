@@ -23,6 +23,9 @@ DiscountRuleExport = extend_schema_view(get=extend_schema(operation_id="discount
 StockCountExport = extend_schema_view(get=extend_schema(operation_id="stock_count_export"))(
     v.StockCountExportView
 )
+SupplierExport = extend_schema_view(get=extend_schema(operation_id="suppliers_export"))(
+    v.SupplierExportView
+)
 
 urlpatterns = [
     path("imports/", v.ImportListCreateView.as_view(), name="imports"),
@@ -40,4 +43,5 @@ urlpatterns = [
     ),
     path("discount-rules/export/", DiscountRuleExport.as_view(), name="discount-rules-export"),
     path("stock/export/", StockCountExport.as_view(), name="stock-count-export"),
+    path("suppliers/export/", SupplierExport.as_view(), name="suppliers-export"),
 ]

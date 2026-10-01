@@ -105,6 +105,10 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.invoices.results.status": "ISSUED",
     "api.shop-invoice.status": "ISSUED",
     "api.shop-invoices.results.status": "ISSUED",
+    # Phase 9a (ADR-053): no supplier on goods receipts while purchasing is off.
+    "db.inventory.StockInward.supplier_id": None,
+    "api.receipt.supplier_id": None,
+    "api.receipts.results.supplier_id": None,
 }
 
 # Lists that may gain items since the snapshot, each new item checked by a rule (removed before

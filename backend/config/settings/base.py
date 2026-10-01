@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.search",
     "apps.planning",
+    "apps.purchasing",
     "apps.dataio",
     "apps.shop",
 ]

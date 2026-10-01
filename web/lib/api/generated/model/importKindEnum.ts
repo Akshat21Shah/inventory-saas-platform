@@ -14,6 +14,7 @@
  * * `DISCOUNT_RULES` - Discount rules
  * * `OPENING_STOCK` - Opening stock
  * * `OPENING_BALANCES` - Opening balances
+ * * `SUPPLIERS` - Suppliers
  */
 export type ImportKindEnum = typeof ImportKindEnum[keyof typeof ImportKindEnum];
 
@@ -26,4 +27,5 @@ export const ImportKindEnum = {
   DISCOUNT_RULES: 'DISCOUNT_RULES',
   OPENING_STOCK: 'OPENING_STOCK',
   OPENING_BALANCES: 'OPENING_BALANCES',
+  SUPPLIERS: 'SUPPLIERS',
 } as const;

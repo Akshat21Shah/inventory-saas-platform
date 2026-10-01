@@ -315,6 +315,7 @@ class AlertListView(Guarded, generics.ListAPIView[StockAlert]):
 def _receipt_input(data: dict[str, Any]) -> receipts.ReceiptInput:
     return receipts.ReceiptInput(
         supplier_name=data.get("supplier_name", ""),
+        supplier_id=data.get("supplier_id"),
         supplier_ref=data.get("supplier_ref", ""),
         bill_number=data.get("bill_number", ""),
         bill_date=data.get("bill_date"),

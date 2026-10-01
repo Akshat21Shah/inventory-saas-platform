@@ -15,6 +15,7 @@ class ImportJob(TenantScopedModel):
         DISCOUNT_RULES = "DISCOUNT_RULES", "Discount rules"
         OPENING_STOCK = "OPENING_STOCK", "Opening stock"
         OPENING_BALANCES = "OPENING_BALANCES", "Opening balances"
+        SUPPLIERS = "SUPPLIERS", "Suppliers"
 
     class Mode(models.TextChoices):
         ADD_ONLY = "ADD_ONLY", "Add new only"

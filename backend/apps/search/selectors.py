@@ -15,6 +15,7 @@ from django.db.models import Q
 
 from apps.accounts.models import Membership, User
 from apps.platform.models import Tenant
+from apps.platform.selectors import is_feature_enabled
 from apps.retailers.models import RetailerUser
 from apps.search.sources import GSTIN, SOURCES, Hit, mobile_of
 from common.permissions import user_has_permission
@@ -61,7 +62,12 @@ def search(user: User, text: str, *, per_type: int = PER_TYPE) -> Results:
     text = normalize(text)
     if len(text) < MIN_LENGTH:
         return Results(text)
-    sources = [s for s in SOURCES if user_has_permission(user, s.requirement)]
+    sources = [
+        s
+        for s in SOURCES
+        if user_has_permission(user, s.requirement)
+        and (not s.feature or is_feature_enabled(s.feature))
+    ]
     exact = [hit for s in sources if s.exact is not None for hit in s.exact(user, text)]
     jump = exact[0] if len(exact) == 1 else None
     has_digit = any(ch.isdigit() for ch in text)

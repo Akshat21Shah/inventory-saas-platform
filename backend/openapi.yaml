@@ -5485,6 +5485,63 @@ paths:
           description: ''
         '204':
           description: Not worked out yet
+  /api/v1/products/{product_id}/suppliers/:
+    get:
+      operationId: product_suppliers_list
+      description: |-
+        Who a product is bought from: codes, delivery times, packs and the last cost (with
+        ``costs.view``).
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplierProduct'
+          description: ''
+    put:
+      operationId: product_suppliers_set
+      description: |-
+        Who a product is bought from: codes, delivery times, packs and the last cost (with
+        ``costs.view``).
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductSuppliersRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplierProduct'
+          description: ''
   /api/v1/products/{product_id}/tax-rates/:
     get:
       operationId: catalog_product_tax_rates_list
@@ -9648,6 +9705,257 @@ paths:
               schema:
                 $ref: '#/components/schemas/Summary'
           description: ''
+  /api/v1/suppliers/:
+    get:
+      operationId: suppliers_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+          nullable: true
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplierListList'
+          description: ''
+    post:
+      operationId: suppliers_create
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierDetail'
+          description: ''
+  /api/v1/suppliers/{supplier_id}/:
+    get:
+      operationId: suppliers_get
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierDetail'
+          description: ''
+    patch:
+      operationId: suppliers_update
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSupplierWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierDetail'
+          description: ''
+    delete:
+      operationId: suppliers_delete
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/suppliers/{supplier_id}/products/:
+    get:
+      operationId: supplier_products_list
+      description: |-
+        What a supplier supplies; POST makes it the preferred supplier for the products given
+        (the products list's bulk action).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplierProductList'
+          description: ''
+    post:
+      operationId: supplier_products_set_preferred
+      description: |-
+        What a supplier supplies; POST makes it the preferred supplier for the products given
+        (the products list's bulk action).
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPreferredRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferredChanged'
+          description: ''
+  /api/v1/suppliers/export/:
+    get:
+      operationId: suppliers_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/suppliers/from-receipts/:
+    get:
+      operationId: suppliers_from_receipts
+      description: The one-time review of supplier names typed on past goods receipts.
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReceiptSupplierName'
+          description: ''
+    post:
+      operationId: suppliers_from_receipts_confirm
+      description: The one-time review of supplier names typed on past goods receipts.
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmReceiptSuppliersRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmResult'
+          description: ''
   /api/v1/tax/upcoming-rate-changes/:
     get:
       operationId: tax_upcoming_rate_changes
@@ -11624,6 +11932,25 @@ components:
           minItems: 1
       required:
       - allocations
+    ConfirmReceiptSuppliersRequest:
+      type: object
+      properties:
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptSupplierChoiceRequest'
+      required:
+      - choices
+    ConfirmResult:
+      type: object
+      properties:
+        suppliers_created:
+          type: integer
+        receipts_linked:
+          type: integer
+      required:
+      - receipts_linked
+      - suppliers_created
     ConnectionStatusEnum:
       enum:
       - UNVERIFIED
@@ -14865,6 +15192,7 @@ components:
       - DISCOUNT_RULES
       - OPENING_STOCK
       - OPENING_BALANCES
+      - SUPPLIERS
       type: string
       description: |-
         * `PRODUCTS` - Products
@@ -14874,6 +15202,7 @@ components:
         * `DISCOUNT_RULES` - Discount rules
         * `OPENING_STOCK` - Opening stock
         * `OPENING_BALANCES` - Opening balances
+        * `SUPPLIERS` - Suppliers
     ImportModeEnum:
       enum:
       - ADD_ONLY
@@ -15567,6 +15896,31 @@ components:
       required:
       - line
       - quantity
+    LinkRequest:
+      type: object
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+        is_preferred:
+          type: boolean
+          default: false
+        supplier_code:
+          type: string
+          default: ''
+          maxLength: 40
+        lead_time_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+      required:
+      - supplier_id
     LoginResponse:
       type: object
       description: One shape for every sign-in step; ``status`` says what the client
@@ -17496,6 +17850,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StockRow'
+    PaginatedSupplierListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierList'
+    PaginatedSupplierProductList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierProduct'
     PaginatedTenantListList:
       type: object
       required:
@@ -18039,6 +18431,10 @@ components:
         supplier_name:
           type: string
           maxLength: 200
+        supplier_id:
+          type: string
+          format: uuid
+          nullable: true
         supplier_ref:
           type: string
           maxLength: 60
@@ -18126,6 +18522,58 @@ components:
           type: object
           additionalProperties:
             nullable: true
+    PatchedSupplierWriteRequest:
+      type: object
+      description: Validation of shapes only; the service checks GSTINs, phone numbers
+        and the rest.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          nullable: true
+          maxLength: 20
+        state_code:
+          type: string
+          nullable: true
+          maxLength: 2
+        contact_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          maxLength: 254
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        pincode:
+          type: string
+          maxLength: 6
+        payment_terms_days:
+          type: integer
+          maximum: 365
+          minimum: 0
+        lead_time_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+        is_active:
+          type: boolean
     PatchedTaxRateUpdateRequest:
       type: object
       properties:
@@ -19060,6 +19508,13 @@ components:
       - event
       - group
       - label
+    PreferredChanged:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
     PreferredLanguageEnum:
       enum:
       - en
@@ -19697,6 +20152,15 @@ components:
       - movement_class
       - movement_days
       - per_day
+    ProductSuppliersRequest:
+      type: object
+      properties:
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkRequest'
+      required:
+      - links
     ProductTaxRate:
       type: object
       properties:
@@ -20217,6 +20681,11 @@ components:
         supplier_name:
           type: string
           readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
         supplier_ref:
           type: string
           readOnly: true
@@ -20271,6 +20740,7 @@ components:
       - posted_at
       - posted_by
       - status
+      - supplier_id
       - supplier_name
       - supplier_ref
       - total_cost
@@ -20280,6 +20750,10 @@ components:
         supplier_name:
           type: string
           maxLength: 200
+        supplier_id:
+          type: string
+          format: uuid
+          nullable: true
         supplier_ref:
           type: string
           maxLength: 60
@@ -20321,6 +20795,11 @@ components:
         supplier_name:
           type: string
           readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
         supplier_ref:
           type: string
           readOnly: true
@@ -20381,6 +20860,7 @@ components:
       - posted_at
       - posted_by
       - status
+      - supplier_id
       - supplier_name
       - supplier_ref
       - total_cost
@@ -20481,6 +20961,46 @@ components:
       description: |-
         * `DRAFT` - Draft
         * `POSTED` - Posted
+    ReceiptSupplierChoiceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        supplier_id:
+          type: string
+          format: uuid
+          nullable: true
+        new:
+          type: boolean
+          default: false
+          description: Make a new supplier with this name.
+      required:
+      - name
+    ReceiptSupplierName:
+      type: object
+      properties:
+        name:
+          type: string
+        receipts:
+          type: integer
+        last_date:
+          type: string
+          format: date
+          nullable: true
+        match_id:
+          type: string
+          format: uuid
+          nullable: true
+        match_name:
+          type: string
+      required:
+      - last_date
+      - match_id
+      - match_name
+      - name
+      - receipts
     ReceivableRow:
       type: object
       properties:
@@ -21937,6 +22457,7 @@ components:
       - goods_receipt
       - adjustment
       - staff
+      - supplier
       - tenant
       type: string
       description: |-
@@ -21950,6 +22471,7 @@ components:
         * `goods_receipt` - goods_receipt
         * `adjustment` - adjustment
         * `staff` - staff
+        * `supplier` - supplier
         * `tenant` - tenant
     SearchResult:
       type: object
@@ -22049,6 +22571,18 @@ components:
       - id
       - name
       - slug
+    SetPreferredRequest:
+      type: object
+      properties:
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+          minItems: 1
+      required:
+      - product_ids
     Setting:
       type: object
       description: A registry definition with the current value; the settings UI is
@@ -23984,6 +24518,272 @@ components:
       required:
       - alerts
       - receipts_awaiting_cost
+    SupplierDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        state_code:
+          type: string
+          readOnly: true
+          nullable: true
+        contact_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        lead_time_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        product_count:
+          type: integer
+          readOnly: true
+        state_name:
+          type: string
+          readOnly: true
+          nullable: true
+        address_line1:
+          type: string
+          readOnly: true
+        address_line2:
+          type: string
+          readOnly: true
+        pincode:
+          type: string
+          readOnly: true
+        payment_terms_days:
+          type: integer
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_line1
+      - address_line2
+      - city
+      - code
+      - contact_name
+      - created_at
+      - email
+      - gstin
+      - id
+      - is_active
+      - lead_time_days
+      - name
+      - notes
+      - payment_terms_days
+      - phone
+      - pincode
+      - product_count
+      - state_code
+      - state_name
+      - updated_at
+    SupplierList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        state_code:
+          type: string
+          readOnly: true
+          nullable: true
+        contact_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        lead_time_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        product_count:
+          type: integer
+          readOnly: true
+      required:
+      - city
+      - code
+      - contact_name
+      - email
+      - gstin
+      - id
+      - is_active
+      - lead_time_days
+      - name
+      - phone
+      - product_count
+      - state_code
+    SupplierProduct:
+      type: object
+      description: '``last_unit_cost`` is left out without ``costs.view`` (``context["costs"]``).'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_code_number:
+          type: string
+          readOnly: true
+        supplier_name:
+          type: string
+          readOnly: true
+        product_id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        is_preferred:
+          type: boolean
+          readOnly: true
+        supplier_code:
+          type: string
+          readOnly: true
+        lead_time_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        last_unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+      required:
+      - id
+      - is_preferred
+      - last_unit_cost
+      - lead_time_days
+      - pack_size
+      - product_code
+      - product_id
+      - product_name
+      - supplier_code
+      - supplier_code_number
+      - supplier_id
+      - supplier_name
+    SupplierWriteRequest:
+      type: object
+      description: Validation of shapes only; the service checks GSTINs, phone numbers
+        and the rest.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          nullable: true
+          maxLength: 20
+        state_code:
+          type: string
+          nullable: true
+          maxLength: 2
+        contact_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          maxLength: 254
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        pincode:
+          type: string
+          maxLength: 6
+        payment_terms_days:
+          type: integer
+          maximum: 365
+          minimum: 0
+        lead_time_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+        is_active:
+          type: boolean
+      required:
+      - name
     SupplyTypeEnum:
       enum:
       - INTRA

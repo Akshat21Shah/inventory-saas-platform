@@ -59,6 +59,7 @@ const detail = (extra: Partial<ReceiptDetail> = {}): ReceiptDetail => ({
   number: "GRN-2026-00007",
   status: "POSTED",
   supplier_name: "Acme",
+  supplier_id: null,
   supplier_ref: "",
   bill_number: "B-1",
   bill_date: null,

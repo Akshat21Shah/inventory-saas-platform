@@ -157,7 +157,16 @@ class StockInward(TenantScopedModel):
     # GRN-2026-00012, given when posted; NULL (not "") so drafts don't collide on the unique key.
     number = models.CharField(max_length=24, null=True, blank=True)  # noqa: DJ001
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT, related_name="+")
-    supplier_name = models.CharField(max_length=200, blank=True, default="")
+    supplier_name = models.CharField(max_length=200, blank=True, default="")  # as typed
+    # The supplier (ADR-053, flag purchasing): chosen on new receipts, or linked once to a past
+    # one through the review of typed names; never changed after that.
+    supplier = models.ForeignKey(
+        "purchasing.Supplier",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="receipts",
+    )
     supplier_ref = models.CharField(max_length=60, blank=True, default="")
     bill_number = models.CharField(max_length=60, blank=True, default="")
     bill_date = models.DateField(null=True, blank=True)
