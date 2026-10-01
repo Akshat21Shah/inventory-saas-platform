@@ -1,34 +1,21 @@
 name: CI
 
-# ADR-055: a private repository on 3,000 Actions minutes a month, counted per job and rounded up.
-# - Every push: the quick checks, once per commit (lint, types, migrations and schema, the
-#   generated client, backend and frontend unit tests, the secrets scan).
-# - When a pull request is marked ready for review, on main, and by hand: the full suites too
-#   (Playwright on the production build, the full-stack acceptance suites and the responsive
-#   check, the production images). They also run locally before a push (`make e2e-stack`,
-#   `make e2e-responsive`).
+# ADR-055 (amended 2026-10-02: Actions minutes are no longer limited): every push runs every
+# check once (no second run for a pull request), in parallel jobs for a short wall time: the quick
+# checks, Playwright on the production build, the full-stack suites in six jobs (acceptance in
+# three groups of specs, the responsive check per width), the production images.
 on:
   push:
     branches: ["**"]
-  pull_request:
-    types: [ready_for_review]
   workflow_dispatch:
-    inputs:
-      full:
-        description: "Also run the full suites (Playwright, full stack, images)"
-        type: boolean
-        default: true
 
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   # A newer push to the same branch replaces a running check; main always finishes.
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-# The full suites' condition (each job repeats it: `if:` can't read workflow env): a PR marked
-# ready (its head's quick checks already ran on push), main, or by hand.
 jobs:
   backend:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -94,7 +81,6 @@ jobs:
         run: uv run pytest -m perf
 
   frontend:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -122,10 +108,7 @@ jobs:
       - name: Generated API client is up to date
         run: npm run api:generate && git diff --exit-code -- lib/api/generated
 
-  # ---- The full suites ----------------------------------------------------------------------
-
   e2e:
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.full)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -161,12 +144,29 @@ jobs:
           path: web/playwright-report
           retention-days: 7
 
-  # Phase acceptance flows and the responsive check against the real stack (docker compose):
-  # one job, so the stack starts once. The images come from the Docker layer cache.
+  # Phase acceptance flows and the responsive check against the real stack (docker compose), in
+  # six parallel jobs, each with its own stack: the specs share the super admin, whose 2FA codes are
+  # single-use, so a stack runs its specs one at a time.
   e2e-stack:
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.full)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: acceptance-1
+            specs: e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts
+          - suite: acceptance-2
+            specs: e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts
+          - suite: acceptance-3
+            specs: e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts
+          - suite: responsive-360
+            width: 360px
+          - suite: responsive-768
+            width: 768px
+          - suite: responsive-1440
+            width: 1440px
+    name: e2e-stack (${{ matrix.suite }})
     env:
       COMPOSE: docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml
     steps:
@@ -205,6 +205,8 @@ jobs:
           load: true
           cache-from: type=gha,scope=backend-dev
           cache-to: type=gha,scope=backend-dev,mode=max
+      # Built fresh (about 2.5 minutes): exporting its layers to the Actions cache stalled for
+      # longer than the build takes.
       - name: Web image (production build)
         uses: docker/build-push-action@v7
         with:
@@ -214,8 +216,6 @@ jobs:
           tags: inventory-web:ci
           load: true
           build-args: API_INTERNAL_URL=http://backend:8000
-          cache-from: type=gha,scope=web-prod
-          cache-to: type=gha,scope=web-prod,mode=max
       - name: Start the stack
         run: cp .env.example .env && $COMPOSE up -d
       - name: Wait for the API and the web server
@@ -230,24 +230,24 @@ jobs:
       - name: Load demo data
         run: $COMPOSE exec -T backend python manage.py seed --no-photos
       - name: Acceptance tests
+        if: matrix.specs
         working-directory: web
         env:
           E2E_FULL_STACK: "1"
           E2E_BASE_URL: http://localhost:3000
-        # One at a time: the specs share the super admin, whose 2FA codes are single-use.
-        run: npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts
-      - name: Responsive check (every screen at 360, 768 and 1440 px)
-        if: success() || failure()
+        run: npx playwright test --workers=1 ${{ matrix.specs }}
+      - name: Responsive check (${{ matrix.width }})
+        if: matrix.width
         working-directory: web
         env:
           E2E_FULL_STACK: "1"
           E2E_BASE_URL: http://localhost:3000
-        run: npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts
-      - name: Screenshots of every screen at every width
-        if: always()
+        run: npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts -g "every screen at ${{ matrix.width }}"
+      - name: Screenshots of every screen at this width
+        if: always() && matrix.width
         uses: actions/upload-artifact@v7
         with:
-          name: responsive-screenshots
+          name: responsive-screenshots-${{ matrix.suite }}
           path: web/test-results/responsive
           if-no-files-found: warn
           retention-days: 7
@@ -257,12 +257,11 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report-stack
+          name: playwright-report-${{ matrix.suite }}
           path: web/playwright-report
           retention-days: 7
 
   images:
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.full)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -302,4 +301,3 @@ jobs:
           file: infra/web.Dockerfile
           target: prod
           build-args: API_INTERNAL_URL=http://backend:8000
-          cache-from: type=gha,scope=web-prod
