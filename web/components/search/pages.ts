@@ -200,6 +200,7 @@ export const SETTING_PAGES: Record<string, { href: string; feature?: string }> =
   receivables: { href: "/manage/settings/policies/credit_payments" },
   pricing: { href: "/manage/settings/policies/pricing" },
   retailers: { href: "/manage/settings/policies/retailers" },
+  insights: { href: "/manage/settings/policies/retailers" },
   reports: { href: "/manage/settings/policies/reports" },
   security: { href: "/manage/settings/policies/security" },
   notifications: { href: "/manage/settings/policies/notifications" },

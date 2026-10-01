@@ -7240,6 +7240,28 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/retailers/{retailer_id}/activity/:
+    get:
+      operationId: retailer_activity
+      description: A shop's activity and its latest contacts (the shop's page).
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - insights
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopActivityDetail'
+          description: ''
   /api/v1/retailers/{retailer_id}/addresses/:
     post:
       operationId: retailers_addresses_create
@@ -7484,6 +7506,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Quote'
+          description: ''
+  /api/v1/retailers/{retailer_id}/contacts/:
+    post:
+      operationId: retailer_contact_create
+      description: Log a call, WhatsApp message or visit (ADR-056 item 3).
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - insights
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopContactInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopContact'
           description: ''
   /api/v1/retailers/{retailer_id}/copy-pricing/:
     post:
@@ -8456,6 +8506,85 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Setting'
+          description: ''
+  /api/v1/shop-activity/:
+    get:
+      operationId: shop_activity_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: salesperson
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: segment
+        schema:
+          enum:
+          - NEW
+          - ACTIVE
+          - SLOWING
+          - DORMANT
+          - NEVER_ORDERED
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `NEW` - New
+          * `ACTIVE` - Active
+          * `SLOWING` - Slowing down
+          * `DORMANT` - Stopped ordering
+          * `NEVER_ORDERED` - Never ordered
+      - in: query
+        name: win_back
+        schema:
+          type: boolean
+          default: false
+        description: Only shops to win back (ADR-056 item 3).
+      tags:
+      - insights
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShopActivityList'
+          description: ''
+  /api/v1/shop-activity/refresh/:
+    post:
+      operationId: shop_activity_refresh
+      description: Work the figures out again now, in the background; once every five
+        minutes.
+      tags:
+      - insights
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRefresh'
           description: ''
   /api/v1/shop/account/:
     get:
@@ -10663,6 +10792,14 @@ components:
         * `receive` - receive
         * `cancel` - cancel
         * `close` - close
+    ActivityRefresh:
+      type: object
+      properties:
+        status:
+          type: string
+          description: 'QUEUED: worked out in the background.'
+      required:
+      - status
     AdditionRequest:
       type: object
       properties:
@@ -13033,6 +13170,11 @@ components:
           type: integer
           nullable: true
           description: Sent or partly received, expected before today (purchasing).
+        win_back:
+          type: integer
+          nullable: true
+          description: 'Shops to win back (ADR-056): slowing, stopped or never ordered,
+            not contacted lately.'
       required:
       - backorders_to_confirm
       - failed_ewaybills
@@ -13045,6 +13187,7 @@ components:
       - overdue
       - to_pack
       - to_reorder
+      - win_back
     DashboardToday:
       type: object
       properties:
@@ -18472,6 +18615,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RetailerPrice'
+    PaginatedShopActivityList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopActivity'
     PaginatedShopOrderRowList:
       type: object
       required:
@@ -24068,6 +24230,133 @@ components:
       - orders_blocked_for_overdue
       - overdue_bills
       - position
+    ShopActivity:
+      type: object
+      description: |-
+        A shop's ordering pattern. Values (order totals incl. GST) are null without a sales-report
+        permission (``context["values"]``).
+      properties:
+        retailer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_code:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        mobile:
+          type: string
+          readOnly: true
+        shop_status:
+          type: string
+          readOnly: true
+        salesperson_name:
+          type: string
+          nullable: true
+          readOnly: true
+        segment:
+          allOf:
+          - $ref: '#/components/schemas/ShopSegmentEnum'
+          readOnly: true
+        computed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        first_order_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_order_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        days_since_last:
+          type: integer
+          readOnly: true
+          nullable: true
+        usual_gap_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        orders_90:
+          type: integer
+          readOnly: true
+        orders_prev_90:
+          type: integer
+          readOnly: true
+        value_90:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        value_prev_90:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        last_contact_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_contact_outcome:
+          nullable: true
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/ShopContactOutcomeEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        last_contact_by:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - computed_at
+      - days_since_last
+      - first_order_date
+      - last_contact_at
+      - last_contact_by
+      - last_contact_outcome
+      - last_order_date
+      - mobile
+      - orders_90
+      - orders_prev_90
+      - owner_name
+      - retailer_code
+      - retailer_id
+      - salesperson_name
+      - segment
+      - shop_name
+      - shop_status
+      - usual_gap_days
+      - value_90
+      - value_prev_90
+    ShopActivityDetail:
+      type: object
+      description: A shop's activity (null until first worked out) and its latest
+        contacts.
+      properties:
+        activity:
+          allOf:
+          - $ref: '#/components/schemas/ShopActivity'
+          nullable: true
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopContact'
+      required:
+      - activity
+      - contacts
     ShopAnnouncement:
       type: object
       properties:
@@ -24172,6 +24461,78 @@ components:
           type: boolean
       required:
       - agreed
+    ShopContact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ShopContactChannelEnum'
+          readOnly: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/ShopContactOutcomeEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        by_name:
+          type: string
+          readOnly: true
+      required:
+      - by_name
+      - channel
+      - created_at
+      - id
+      - note
+      - outcome
+    ShopContactChannelEnum:
+      enum:
+      - CALL
+      - WHATSAPP
+      - VISIT
+      - OTHER
+      type: string
+      description: |-
+        * `CALL` - Call
+        * `WHATSAPP` - WhatsApp
+        * `VISIT` - Visit
+        * `OTHER` - Other
+    ShopContactInputRequest:
+      type: object
+      properties:
+        channel:
+          $ref: '#/components/schemas/ShopContactChannelEnum'
+        outcome:
+          $ref: '#/components/schemas/ShopContactOutcomeEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - channel
+      - outcome
+    ShopContactOutcomeEnum:
+      enum:
+      - REACHED
+      - NO_ANSWER
+      - WILL_ORDER
+      - NOT_INTERESTED
+      - OTHER
+      type: string
+      description: |-
+        * `REACHED` - Spoke to them
+        * `NO_ANSWER` - No answer
+        * `WILL_ORDER` - Will order
+        * `NOT_INTERESTED` - Not interested
+        * `OTHER` - Other
     ShopCredit:
       type: object
       properties:
@@ -25055,6 +25416,20 @@ components:
       - price
       - thumbnail_url
       - unit
+    ShopSegmentEnum:
+      enum:
+      - NEW
+      - ACTIVE
+      - SLOWING
+      - DORMANT
+      - NEVER_ORDERED
+      type: string
+      description: |-
+        * `NEW` - New
+        * `ACTIVE` - Active
+        * `SLOWING` - Slowing down
+        * `DORMANT` - Stopped ordering
+        * `NEVER_ORDERED` - Never ordered
     ShopUnit:
       type: object
       properties:

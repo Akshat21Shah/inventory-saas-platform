@@ -336,6 +336,19 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Turn off to stop them signing in."),
     _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
             "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
+    # Shop activity and win-back (ADR-056): how shops are grouped.
+    _tenant("insights.new_days", Group.RETAILERS, SettingType.INT, 30,
+            "A shop counts as new for this many days after its first order.",
+            min_value=7, max_value=120),
+    _tenant("insights.dormant_days", Group.RETAILERS, SettingType.INT, 45,
+            "A shop that hasn't ordered for this many days has stopped ordering.",
+            min_value=14, max_value=365),
+    _tenant("insights.slowing_percent", Group.RETAILERS, SettingType.INT, 150,
+            "A shop is slowing down when it hasn't ordered for this share of its usual gap "
+            "between orders (150% of 10 days: 15 days).", min_value=110, max_value=400),
+    _tenant("insights.contact_snooze_days", Group.RETAILERS, SettingType.INT, 14,
+            "After someone contacts a shop, it leaves the win-back list for this many days.",
+            min_value=1, max_value=90),
     # --- Tenant: Reports (ADR-050) -------------------------------------------------------------
     _tenant("reports.movement_days", Group.REPORTS, SettingType.INT, 90,
             "The period for fast, slow and dead stock, in days.", min_value=7, max_value=365),

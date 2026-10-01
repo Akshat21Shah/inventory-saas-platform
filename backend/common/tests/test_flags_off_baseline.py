@@ -111,6 +111,8 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.order.lines.on_order": None,  # nothing on order while purchasing is off
     "api.receipt.supplier_id": None,
     "api.receipts.results.supplier_id": None,
+    # ADR-056 (core): shops to win back on the dashboard (none worked out in the baseline data).
+    "api.dashboard.action.win_back": lambda v: isinstance(v, int),
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -123,7 +125,11 @@ ALLOWED_NEW: dict[str, Any] = {
 # comparing; every other item is still compared in order).
 ALLOWED_NEW_ITEMS: dict[str, Any] = {
     # Phase 8 (ADR-050): the fast / slow / dead stock settings, at their defaults.
-    "api.settings-registry": lambda item: item.get("group") == "reports" and item["is_default"],
+    # Phase 9b (ADR-056, core): the shop-activity settings, at their defaults.
+    "api.settings-registry": lambda item: (
+        (item.get("group") == "reports" or item["key"].startswith("insights."))
+        and item["is_default"]
+    ),
     # Phase 9a (ADR-053): the purchasing permissions and the new modules, switched off.
     "api.notification-rules.permissions": lambda item: item["code"].startswith("purchasing."),
     "api.settings-features": lambda item: (

@@ -756,6 +756,24 @@
         "label": "Receiving more than ordered (%)",
         "description": "Up to this share over the order is accepted. Beyond it, someone who manages purchasing must confirm."
       }
+    },
+    "insights": {
+      "new_days": {
+        "label": "A shop is new for (days)",
+        "description": "A shop counts as new for this many days after its first order."
+      },
+      "dormant_days": {
+        "label": "Stopped ordering after (days)",
+        "description": "A shop that hasn't ordered for this many days has stopped ordering."
+      },
+      "slowing_percent": {
+        "label": "Slowing down at (% of its usual gap)",
+        "description": "A shop is slowing down when it hasn't ordered for this share of its usual gap between orders (150% of 10 days: 15 days)."
+      },
+      "contact_snooze_days": {
+        "label": "After a contact, leave the list for (days)",
+        "description": "After someone contacts a shop, it leaves the win-back list for this many days."
+      }
     }
   },
   "settingsForm": {
@@ -4685,6 +4703,24 @@
           "cost_price": "Cost price",
           "value": "Stock value"
         }
+      },
+      "shop_activity": {
+        "title": "Shop activity",
+        "description": "Who is ordering less or has stopped: each shop's last order, usual gap and the last 90 days against the 90 before.",
+        "columns": {
+          "code": "Code",
+          "name": "Shop",
+          "salesperson": "Salesperson",
+          "segment": "Segment",
+          "last_order": "Last order",
+          "days_since": "Days since",
+          "usual_gap": "Usual gap (days)",
+          "orders_90": "Orders, last 90 days",
+          "orders_prev_90": "Orders, 90 days before",
+          "value_90": "Value, last 90 days",
+          "value_prev_90": "Value, 90 days before",
+          "last_contact": "Last contacted"
+        }
       }
     },
     "filters": {
@@ -4702,7 +4738,8 @@
       "rank_by": "Rank by",
       "class": "Class",
       "product": "Product",
-      "movement_type": "What happened"
+      "movement_type": "What happened",
+      "segment": "Segment"
     },
     "choices": {
       "group_by": {
@@ -4752,6 +4789,13 @@
         "TRANSFER_OUT": "Transfer out",
         "RESERVE": "Reserved for an order",
         "RELEASE": "Reservation released"
+      },
+      "segment": {
+        "NEW": "New",
+        "ACTIVE": "Active",
+        "SLOWING": "Slowing down",
+        "DORMANT": "Stopped ordering",
+        "NEVER_ORDERED": "Never ordered"
       }
     }
   },

@@ -58,6 +58,7 @@ def action(user: User) -> dict[str, Any]:
             "low_stock",
             "to_reorder",
             "late_purchase_orders",
+            "win_back",
         )
     )
     if has("orders.view"):
@@ -102,6 +103,11 @@ def action(user: User) -> dict[str, Any]:
         from apps.purchasing.selectors import OrderFilters, purchase_orders
 
         out["late_purchase_orders"] = purchase_orders(OrderFilters(late=True)).count()
+    # ADR-056: shops to win back, within the sales-visibility rule.
+    if has("retailers.view"):
+        from apps.insights.selectors import win_back_count
+
+        out["win_back"] = win_back_count(user)
     return out
 
 

@@ -59,7 +59,7 @@ def test_the_dashboard_and_every_report_open_on_it(year):
     owner = client_for(tenant, User.objects.get(email="owner@vol-t.example.com"))
     assert owner.get("/api/v1/dashboard/").status_code == 200
     codes = [r["code"] for r in owner.get("/api/v1/reports/").json()]
-    assert len(codes) == 19
+    assert len(codes) == 20  # + shop activity (ADR-056)
     pages = {}
     for code in codes:
         response = owner.get(f"/api/v1/reports/{code}/")
