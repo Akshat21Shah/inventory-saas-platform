@@ -1627,8 +1627,18 @@ Each sub-phase is its own branch and PR, mergeable on its own; 9d and 9e (AI) ma
 #### 9a+ — withdrawn (product owner, 2026-10-02; ADR-055)
 Every feature is built before anything goes to staging or production, so the staging environment moves to Phase 10 (task 10.6, design and cost notes in §10.6 below). Demos before launch use LAN mode (`make lan`) or a temporary tunnel from the owner's Mac. The CI part was done at once, re-planned for a private repository on GitHub Pro (3,000 Actions minutes a month; ADR-055).
 
-#### 9b — Sales growth
-Re-engagement insights (dormant shops, declining order frequency); daily morning summary for owners (email or WhatsApp, a distributor setting); free-goods schemes ("buy X get Y", GST treatment to the CA without blocking).
+#### 9b — Sales growth (ADR-056; free goods behind the flag `free_goods`) — §10.2l
+| # | Task | Size |
+|---|---|---|
+| 9b.1 | Docs: ADR-056, PLAN, SPEC 1.10, CA_REVIEW §15a and questions 41–45 | S |
+| 9b.2 | Shop activity: nightly figures and segments, contacts log, API, dashboard tile, report, settings | M |
+| 9b.3 | Daily summary: the `summary.daily` notification per recipient and permission, the morning job, settings | M |
+| 9b.4 | Free-goods schemes: model, API, audit; applied in the quote (cart, checkout, staff orders, changes); free order lines; stock and short supply | L |
+| 9b.5 | Free goods on invoices, PDFs, e-invoices and returns; reports (free quantity, margin) | M |
+| 9b.6 | Demo data, volume data and a speed check — **backend checkpoint** | S |
+| 9b.7 | FE: shop activity screens, the shop's activity card and contacts, dashboard tile | M |
+| 9b.8 | FE: schemes (Pricing → Free goods), badges and hints in the shop app, free lines everywhere | L |
+| 9b.9 | E2E, responsive, flags-off proof — **final review** | M |
 
 #### 9c — Shop self-service and money
 The shop confirms delivery; a one-time delivery code (proof of delivery); shop return requests (approval issues the return credit note); cheque bounce charge (a setting).
@@ -2083,6 +2093,18 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | 13 | Permissions | `purchasing.view` (owner, manager, warehouse, accounts), `purchasing.manage` (owner, manager); quantity on order and expected dates for anyone with `orders.view` or `stock.view`, without supplier or prices. Backlog: expected dates to shops |
 | 14 | Reorder levels | Never changed automatically; "use as reorder level" per product or in bulk (audited) |
 | — | Global search | First feature commit; distributor and super admin scopes; smart matching of numbers, GSTINs and mobiles; permissions, sales visibility and isolation; p95 < 200 ms at 40,000 orders; keyboard and recent searches; ready for "Ask the assistant" |
+
+### 10.2l Phase 9b decisions (2026-10-02, ADR-056; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Shop activity | Nightly + on demand; first/last order, orders and value over 90 days vs the 90 before, usual gap (median of the last 10 gaps), days since |
+| 2 | Segments **[assumed]** | New 30 days; dormant 45 days; slowing at 150% of the usual gap (≥ 7 days) or half the orders of the 90 days before; never ordered after 14 days; settings in Shop settings |
+| 3 | Win back | Slowing, dormant, never ordered; not contacted in 14 days; call / WhatsApp from the staff phone / place an order / log a contact; no automatic messages |
+| 4 | Who sees **[assumed]** | `retailers.view` within sales visibility; values with a sales-report permission |
+| 5 | Daily summary **[assumed]** | Owners, in-app + email, 08:00 IST every day (Sundays optional off); per recipient and permission; quiet days still send |
+| 6 | Schemes | Buy N get M (same or another product), repeat or once, cap, audience like discount rules, dates; best scheme per product; flag `free_goods` |
+| 7 | Stock **[assumed]** | Free lines reserve and backorder like any line; capped to stock when backorders are off; shrink with the bought line |
+| 8 | Tax **[assumed, CA 41–45]** | Free line at ₹0, no GST, HSN and quantity shown; returns may take free units back at ₹0 |
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.
