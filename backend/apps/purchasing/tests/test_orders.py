@@ -274,6 +274,9 @@ def test_sending_emails_the_suppliers_copy_and_gives_a_link_to_share(world, run)
     [email] = mail.outbox
     assert email.to == ["orders@hindustan.example.com"]
     assert email.subject == f"Purchase order PO-{YEAR}-00001 from Alpha"
+    # The PDF is attached too (ADR-054), and the link stays.
+    [(filename, content, mimetype)] = email.attachments
+    assert (filename, mimetype) == (f"PO-{YEAR}-00001.pdf", "application/pdf") and content
     found = re.search(r"/public/documents/([A-Za-z0-9_-]+)/", str(email.body))
     assert found is not None, email.body
     token = found.group(1)

@@ -9,12 +9,18 @@ mid-send leaves SENDING; after ``STALE_SENDING`` the row is tried again (at-leas
 outbox).
 
 In-app rows are delivered when created; the person's open sessions are told to refresh their
-bell (``push_in_app``)."""
+bell (``push_in_app``).
+
+A shop's or supplier's email about a document also carries its PDF (ADR-054), besides the secure
+link: while the PDF is still being printed the email waits (``PDF_RECHECK`` at a time, at most
+``PDF_WAIT``, not counted as a try); a PDF that failed, is still not ready, can't be read or is
+over ``MAX_ATTACHMENT_BYTES`` leaves the link alone. What happened is kept on the row and the
+attempt (``attachment``)."""
 
 import logging
 import time
-from dataclasses import dataclass
-from datetime import timedelta
+from dataclasses import dataclass, replace
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -26,7 +32,9 @@ from apps.notifications.models import Channel, DeliveryAttempt, Notification
 from common.tenancy import require_tenant_id, tenant_transaction
 
 if TYPE_CHECKING:
+    from apps.notifications.adapters.email import Attachment
     from apps.notifications.adapters.whatsapp import SenderIdentity
+    from apps.notifications.links import Pdf
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +43,9 @@ RETRY_MINUTES = (1, 2, 4, 8, 16)
 STALE_SENDING = timedelta(minutes=10)
 LOST_AFTER = timedelta(minutes=2)  # PENDING, never tried: its enqueue was lost
 BATCH = 500
+PDF_RECHECK = timedelta(seconds=5)  # a PDF is usually printed within seconds
+PDF_WAIT = timedelta(minutes=3)
+MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024  # bigger: the link alone
 S = Notification.Status
 
 
@@ -112,6 +123,37 @@ class Claimed:
     distributor: str
     reply_to: str
     whatsapp: "SenderIdentity | None"
+    pdf: "Pdf | None" = None
+
+
+def _pdf_for(row: Notification) -> "Pdf | None":
+    from apps.notifications.links import pdf_of
+
+    document = row.data.get("document") or {}
+    if row.channel != Channel.EMAIL or not row.data.get("attach") or not document:
+        return None
+    return pdf_of(document.get("kind", ""), UUID(document["id"]))
+
+
+def _wait_for_pdf(row: Notification, now: datetime) -> bool:
+    """The PDF is being printed: hold the email for ``PDF_RECHECK`` (not a try), up to
+    ``PDF_WAIT`` from the first time it was due."""
+    since = row.data.get("pdf_wait_since")
+    if since is not None and now - datetime.fromisoformat(since) >= PDF_WAIT:
+        return False
+    row.send_after = now + PDF_RECHECK
+    row.data = {**row.data, "pdf_wait_since": since or now.isoformat()}
+    row.save(update_fields=["send_after", "data", "updated_at"])
+    from apps.notifications.tasks import deliver
+
+    tenant_id, pk = str(require_tenant_id()), str(row.pk)
+    transaction.on_commit(  # ``send_due`` would also pick it up
+        lambda: deliver.apply_async(
+            kwargs={"notification_id": pk, "tenant_id": tenant_id},
+            countdown=int(PDF_RECHECK.total_seconds()),
+        )
+    )
+    return True
 
 
 def _claim(notification_id: UUID) -> Claimed | None:
@@ -128,11 +170,14 @@ def _claim(notification_id: UUID) -> Claimed | None:
         )
         if row is None or (row.send_after is not None and row.send_after > now):
             return None
+        pdf = _pdf_for(row)
+        if pdf is not None and pdf.status not in ("READY", "FAILED") and _wait_for_pdf(row, now):
+            return None
         row.status, row.attempts = S.SENDING, row.attempts + 1
         row.save(update_fields=["status", "attempts", "updated_at"])
         tenant = current_tenant()
         sender = tenant_sender() if row.channel == Channel.WHATSAPP else None
-        return Claimed(row, distributor_name(tenant), tenant.email, sender)
+        return Claimed(row, distributor_name(tenant), tenant.email, sender, pdf)
 
 
 def _send(claimed: Claimed) -> SendResult:
@@ -140,8 +185,10 @@ def _send(claimed: Claimed) -> SendResult:
     if row.channel == Channel.EMAIL:
         from apps.notifications.adapters.email import Email, get_email_sender
 
-        email = Email(row.address, row.title, row.body, name, claimed.reply_to)
-        return get_email_sender().send(email)
+        attachments, note = _attachments(claimed.pdf)
+        email = Email(row.address, row.title, row.body, name, claimed.reply_to, attachments)
+        result = get_email_sender().send(email)
+        return replace(result, response={**result.response, "attachment": note}) if note else result
     if row.channel == Channel.WHATSAPP and claimed.whatsapp is not None:
         from apps.notifications.adapters.whatsapp import WhatsAppMessage, get_whatsapp_client
 
@@ -165,6 +212,25 @@ def _send(claimed: Claimed) -> SendResult:
         get_sms_sender().send_text(row.address, row.body, sender_name=name, template=template)
         return SendResult(f"sms-{settings.SMS_PROVIDER}")
     raise PermanentDeliveryError(f"nothing sends {row.channel}")
+
+
+def _attachments(pdf: "Pdf | None") -> tuple[tuple["Attachment", ...], dict[str, str]]:
+    """The PDF to attach and what happened: ``{"file": …}`` or ``{"skipped": reason}``."""
+    from apps.notifications.adapters.email import Attachment
+    from common.storage import get_storage
+
+    if pdf is None:
+        return (), {}
+    if pdf.status != "READY" or not pdf.key:
+        return (), {"skipped": "PDF_FAILED" if pdf.status == "FAILED" else "NOT_READY"}
+    try:
+        content = get_storage().get(pdf.key)
+    except Exception:  # the link still opens it
+        logger.warning("attachment unreadable", extra={"key": pdf.key}, exc_info=True)
+        return (), {"skipped": "UNREADABLE"}
+    if len(content) > MAX_ATTACHMENT_BYTES:
+        return (), {"skipped": "TOO_LARGE"}
+    return (Attachment(pdf.filename, content),), {"file": pdf.filename}
 
 
 def deliver(notification_id: UUID) -> str:
@@ -207,6 +273,8 @@ def deliver(notification_id: UUID) -> str:
                 "provider_message_id": result.message_id[:120],
                 "last_error": "",
             }
+            if "attachment" in result.response:
+                fields["data"] = {**row.data, "attachment": result.response["attachment"]}
         elif permanent or row.attempts % MAX_ATTEMPTS == 0:  # a retry by hand: 6 more
             fields |= {"status": S.FAILED, "last_error": error[:500]}
         else:

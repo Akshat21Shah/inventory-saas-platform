@@ -111,6 +111,12 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.order.lines.on_order": None,  # nothing on order while purchasing is off
     "api.receipt.supplier_id": None,
     "api.receipts.results.supplier_id": None,
+    # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
+    # link that was already there.
+    "db.notifications.Notification.data.attach": True,
+    "db.notifications.Notification.data.attachment": lambda v: (
+        set(v) == {"file"} and v["file"].endswith(".pdf")
+    ),
 }
 
 # Lists that may gain items since the snapshot, each new item checked by a rule (removed before

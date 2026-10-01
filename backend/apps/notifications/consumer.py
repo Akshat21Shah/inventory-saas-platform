@@ -361,6 +361,12 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                         ),
                         "compulsory": target.compulsory,
                         **({"held_for_irn": True} if held_for_irn else {}),
+                        # The shop's or supplier's email also carries the PDF (delivery).
+                        **(
+                            {"attach": True}
+                            if carries_link and channel == Channel.EMAIL and ctx.document
+                            else {}
+                        ),
                     },
                     urgent=event.urgent,
                     status=(

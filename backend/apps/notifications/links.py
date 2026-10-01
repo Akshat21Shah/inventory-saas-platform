@@ -12,6 +12,7 @@ proxied by the web app); the tenant comes from the host and the token is looked 
 """
 
 import hashlib
+import re
 import secrets
 from dataclasses import dataclass
 from datetime import timedelta
@@ -92,6 +93,29 @@ def _document(kind: str, object_id: UUID) -> Any:
 
     source = SOURCES[kind]
     return apps.get_model(source.model).objects.filter(pk=object_id).first()
+
+
+@dataclass(frozen=True)
+class Pdf:
+    filename: str  # "INV-26-27-000001.pdf"
+    key: str
+    status: str  # PENDING (being printed), READY or FAILED
+
+
+def pdf_of(kind: str, object_id: UUID) -> Pdf | None:
+    """The document's current PDF, for attaching to an email (None: no such document)."""
+    if kind not in SOURCES:
+        return None
+    document = _document(kind, object_id)
+    if document is None:
+        return None
+    source = SOURCES[kind]
+    number = str(getattr(document, "number", "") or kind.lower())
+    return Pdf(
+        filename=f"{re.sub(r'[^A-Za-z0-9._-]+', '-', number)}.pdf",
+        key=getattr(document, source.key) or "",
+        status=getattr(document, source.status),
+    )
 
 
 def open_link(token: str) -> tuple[str, str]:

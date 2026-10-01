@@ -163,6 +163,16 @@ interface MailpitSummary {
   ID: string;
 }
 
+/** The attachments' file names of the newest email to `to` (ADR-054: documents' PDFs). */
+export async function attachmentsOf(to: string): Promise<string[]> {
+  const search = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`);
+  const { messages } = (await search.json()) as { messages: MailpitSummary[] };
+  if (messages.length === 0) return [];
+  const message = await fetch(`${MAILPIT}/api/v1/message/${messages[0]!.ID}`);
+  const { Attachments } = (await message.json()) as { Attachments?: { FileName: string }[] };
+  return (Attachments ?? []).map((a) => a.FileName);
+}
+
 /** The first link in the newest email to `to` matching `pattern`, polling while the worker sends. */
 export async function linkFromEmail(to: string, pattern: RegExp): Promise<string> {
   for (let attempt = 0; attempt < 40; attempt++) {

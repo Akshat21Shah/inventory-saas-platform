@@ -1,13 +1,13 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
-import { FULL_STACK, linkFromEmail, origin, resetLimits } from "./support/stack";
+import { attachmentsOf, FULL_STACK, linkFromEmail, origin, resetLimits } from "./support/stack";
 
 /**
  * Phase 9a acceptance (spec 5.7, 5.15, 5.17; ADR-053) on the seeded demo businesses:
  * - global search: a shop's mobile number opens the shop on Enter; "See all" opens the products
  *   list with the same search;
- * - purchasing (on for Sharma): a new supplier, a purchase order sent by email with a link to its
- *   PDF, received into a goods receipt past the over-receipt tolerance (confirmed), and the order
+ * - purchasing (on for Sharma): a new supplier, a purchase order sent by email with its PDF
+ *   attached and a link to it, received into a goods receipt past the over-receipt tolerance (confirmed), and the order
  *   received;
  * - stock planning: a reorder suggestion explained in plain words becomes a draft purchase order;
  * - permissions: the salesperson gets no purchasing;
@@ -117,6 +117,8 @@ test("a supplier, a purchase order emailed to them, and receiving more than orde
       timeout: 60_000, // the worker makes the PDF
     })
     .toContain("application/pdf");
+  // The PDF is attached too (ADR-054).
+  expect(await attachmentsOf(email)).toEqual([`${number}.pdf`]);
   await page.getByRole("button", { name: "Done" }).click();
 
   // 12 arrive against 10 ordered: beyond the 10% tolerance, so the owner confirms.
