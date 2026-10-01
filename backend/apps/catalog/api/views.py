@@ -287,8 +287,16 @@ class ProductListCreateView(CatalogView, generics.ListAPIView[Product]):
         return {**super().get_serializer_context(), "rates": getattr(self, "_rates", {})}
 
     def paginate_queryset(self, queryset: Any) -> Any:
+        # A typed code or barcode: its product heads the first page and leaves the name-ordered
+        # pages, so it is never shown twice.
+        exact = selectors.exact_matches(queryset, self.request.query_params.get("search", ""))
+        if exact:
+            queryset = queryset.exclude(pk__in=[p.pk for p in exact])
         page = super().paginate_queryset(queryset)
-        if page is not None:  # the current GST rate of the page's products, in one query
+        if page is not None:
+            if exact and not self.request.query_params.get(NamePagination.cursor_query_param):
+                page = [*exact, *page]
+            # The current GST rate of the page's products, in one query.
             self._rates = selectors.tax_rates_on([p.pk for p in page])
         return page
 

@@ -252,6 +252,32 @@ def test_list_filters_include_sub_categories_and_search(a, tenant_a):
     ] == ["MG-1"]
 
 
+def test_list_search_puts_an_exact_code_or_barcode_first(a, tenant_a):
+    _create(a, tenant_a, code="SH-0002", name="Apple Juice")
+    _create(a, tenant_a, code="SH-0020", name="Banana Chips")
+    _create(a, tenant_a, code="SH-0021", name="Zebra Biscuits", barcodes=["8901234567893"])
+
+    def codes(text: str, **params: str) -> tuple[list[str], str | None]:
+        page = a.get(f"{API}/products/", {"search": text, **params}).json()
+        return [p["code"] for p in page["results"]], page["next"]
+
+    # Name order would put it last; the typed code (any case) puts it first, once.
+    found, _ = codes("sh-0021")
+    assert found[0] == "SH-0021" and found.count("SH-0021") == 1
+    assert codes("8901234567893")[0] == ["SH-0021"]
+    # Paged: the first page has it on top, the next pages never repeat it.
+    first, after = codes("SH-0021", page_size="1")
+    assert first[0] == "SH-0021"
+    seen = list(first)
+    while after:
+        page = a.get(after).json()
+        seen += [p["code"] for p in page["results"]]
+        after = page["next"]
+    assert seen.count("SH-0021") == 1
+    # Other filters still apply to it.
+    assert "SH-0021" not in codes("SH-0021", is_active="false")[0]
+
+
 @covers("catalog-product-lookup", "catalog-product-barcodes", "catalog-product-barcode-detail")
 def test_lookup_barcodes_and_soft_delete(a, b, tenant_a):
     product = _create(a, tenant_a, barcodes=["111"]).json()
