@@ -60,6 +60,8 @@ const detail = (extra: Partial<ReceiptDetail> = {}): ReceiptDetail => ({
   status: "POSTED",
   supplier_name: "Acme",
   supplier_id: null,
+  purchase_order_id: null,
+  purchase_order_number: null,
   supplier_ref: "",
   bill_number: "B-1",
   bill_date: null,
@@ -92,6 +94,9 @@ const line = (extra: Partial<ReceiptLine> = {}): ReceiptLine => ({
   unit_cost: null,
   line_cost: null,
   cost_status: "PENDING",
+  purchase_order_line_id: null,
+  ordered: null,
+  received_before: null,
   ...extra,
 });
 const lookup = (url: URL): [number, unknown] =>

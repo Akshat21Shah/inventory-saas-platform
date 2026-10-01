@@ -232,6 +232,9 @@ class ReceiptLineSerializer(serializers.ModelSerializer[StockInwardLine]):
     entered_cost = serializers.SerializerMethodField()
     unit_cost = serializers.SerializerMethodField()
     line_cost = serializers.SerializerMethodField()
+    purchase_order_line_id = serializers.UUIDField(read_only=True, allow_null=True)
+    ordered = serializers.SerializerMethodField()
+    received_before = serializers.SerializerMethodField()
 
     class Meta:
         model = StockInwardLine
@@ -246,8 +249,22 @@ class ReceiptLineSerializer(serializers.ModelSerializer[StockInwardLine]):
             "unit_cost",
             "line_cost",
             "cost_status",
+            "purchase_order_line_id",
+            "ordered",
+            "received_before",
         )
         read_only_fields = fields
+
+    @extend_schema_field(qty_field(allow_null=True))
+    def get_ordered(self, line: StockInwardLine) -> str | None:
+        """On the purchase order (less what was cancelled), to warn before receiving more."""
+        po_line = line.purchase_order_line
+        return None if po_line is None else f"{po_line.quantity - po_line.qty_cancelled:.3f}"
+
+    @extend_schema_field(qty_field(allow_null=True))
+    def get_received_before(self, line: StockInwardLine) -> str | None:
+        po_line = line.purchase_order_line
+        return None if po_line is None else f"{po_line.qty_received:.3f}"
 
     @extend_schema_field(unit_cost_field(allow_null=True))
     def get_entered_cost(self, line: StockInwardLine) -> str | None:
@@ -264,6 +281,10 @@ class ReceiptLineSerializer(serializers.ModelSerializer[StockInwardLine]):
 
 class ReceiptSerializer(serializers.ModelSerializer[StockInward]):
     supplier_id = serializers.UUIDField(read_only=True, allow_null=True)
+    purchase_order_id = serializers.UUIDField(read_only=True, allow_null=True)
+    purchase_order_number = serializers.CharField(
+        source="purchase_order.number", read_only=True, allow_null=True, default=None
+    )
     line_count = serializers.IntegerField(read_only=True)
     total_cost = serializers.SerializerMethodField()
     posted_by = serializers.SerializerMethodField()
@@ -277,6 +298,8 @@ class ReceiptSerializer(serializers.ModelSerializer[StockInward]):
             "status",
             "supplier_name",
             "supplier_id",
+            "purchase_order_id",
+            "purchase_order_number",
             "supplier_ref",
             "bill_number",
             "bill_date",
@@ -334,6 +357,13 @@ class ReceiptInputSerializer(serializers.Serializer[Any]):
     bill_date = serializers.DateField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_blank=True, max_length=2000)
     lines = ReceiptLineInputSerializer(many=True, allow_empty=False, max_length=500)  # type: ignore[call-arg]
+
+
+class ReceiptPostSerializer(serializers.Serializer[Any]):
+    confirm_over_receipt = serializers.BooleanField(
+        default=False,
+        help_text="Receive more than ordered beyond the tolerance (needs purchasing.manage).",
+    )
 
 
 class ReceiptCreateSerializer(ReceiptInputSerializer):

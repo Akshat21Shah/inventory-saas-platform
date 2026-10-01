@@ -37,6 +37,16 @@ urlpatterns = [
         name="purchase-order-close",
     ),
     path(
+        "purchase-orders/<uuid:order_id>/receive/",
+        v.PurchaseOrderReceiveView.as_view(),
+        name="purchase-order-receive",
+    ),
+    path(
+        "products/<uuid:product_id>/on-order/",
+        v.ProductOnOrderView.as_view(),
+        name="product-on-order",
+    ),
+    path(
         "purchase-orders/<uuid:order_id>/pdf/",
         v.PurchaseOrderPdfView.as_view(),
         name="purchase-order-pdf",

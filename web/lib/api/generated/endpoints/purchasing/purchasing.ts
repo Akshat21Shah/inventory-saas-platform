@@ -28,6 +28,7 @@ import type {
   ConfirmReceiptSuppliersRequest,
   ConfirmResult,
   DocumentLink,
+  OnOrder,
   PaginatedPurchaseOrderListList,
   PaginatedSupplierListList,
   PaginatedSupplierProductList,
@@ -39,6 +40,7 @@ import type {
   PurchaseOrderInputRequest,
   PurchaseOrderReasonRequest,
   PurchaseOrdersListParams,
+  ReceiptDetail,
   ReceiptSupplierName,
   SendResult,
   SetPreferredRequest,
@@ -70,6 +72,116 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export type productOnOrderResponse200 = {
+  data: OnOrder
+  status: 200
+}
+
+export type productOnOrderResponseSuccess = (productOnOrderResponse200) & {
+  headers: Headers;
+};
+;
+
+export type productOnOrderResponse = (productOnOrderResponseSuccess)
+
+export const getProductOnOrderUrl = (productId: string,) => {
+
+
+
+
+  return `/api/v1/products/${productId}/on-order/`
+}
+
+/**
+ * How much of a product is on order and when it is expected: for anyone who sees orders or
+ * stock (sales staff too), without suppliers or prices.
+ */
+export const productOnOrder = async (productId: string, options?: Parameters<typeof apiFetch>[1]): Promise<productOnOrderResponse> => {
+
+  return apiFetch<productOnOrderResponse>(getProductOnOrderUrl(productId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getProductOnOrderQueryKey = (productId: string,) => {
+    return [
+    `/api/v1/products/${productId}/on-order/`
+    ] as const;
+    }
+
+
+export const getProductOnOrderQueryOptions = <TData = Awaited<ReturnType<typeof productOnOrder>>, TError = unknown>(productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productOnOrder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getProductOnOrderQueryKey(productId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof productOnOrder>>> = ({ signal }) => productOnOrder(productId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: productId !== null && productId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof productOnOrder>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ProductOnOrderQueryResult = NonNullable<Awaited<ReturnType<typeof productOnOrder>>>
+export type ProductOnOrderQueryError = unknown
+
+
+export function useProductOnOrder<TData = Awaited<ReturnType<typeof productOnOrder>>, TError = unknown>(
+ productId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof productOnOrder>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof productOnOrder>>,
+          TError,
+          Awaited<ReturnType<typeof productOnOrder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProductOnOrder<TData = Awaited<ReturnType<typeof productOnOrder>>, TError = unknown>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productOnOrder>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof productOnOrder>>,
+          TError,
+          Awaited<ReturnType<typeof productOnOrder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProductOnOrder<TData = Awaited<ReturnType<typeof productOnOrder>>, TError = unknown>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productOnOrder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useProductOnOrder<TData = Awaited<ReturnType<typeof productOnOrder>>, TError = unknown>(
+ productId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productOnOrder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getProductOnOrderQueryOptions(productId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 export type productSuppliersListResponse200 = {
   data: SupplierProduct[]
@@ -1067,7 +1179,90 @@ export function usePurchaseOrdersPdf<TData = Awaited<ReturnType<typeof purchaseO
 
 
 
-export type purchaseOrdersSendResponse200 = {
+export type purchaseOrdersReceiveResponse201 = {
+  data: ReceiptDetail
+  status: 201
+}
+
+export type purchaseOrdersReceiveResponseSuccess = (purchaseOrdersReceiveResponse201) & {
+  headers: Headers;
+};
+;
+
+export type purchaseOrdersReceiveResponse = (purchaseOrdersReceiveResponseSuccess)
+
+export const getPurchaseOrdersReceiveUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/purchase-orders/${orderId}/receive/`
+}
+
+/**
+ * A goods-receipt draft with what is still due and the order's costs (the open draft, if one
+ * is being entered already).
+ */
+export const purchaseOrdersReceive = async (orderId: string, options?: Parameters<typeof apiFetch>[1]): Promise<purchaseOrdersReceiveResponse> => {
+
+  return apiFetch<purchaseOrdersReceiveResponse>(getPurchaseOrdersReceiveUrl(orderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPurchaseOrdersReceiveMutationKey = () => ['purchaseOrdersReceive'] as const;
+
+export const getPurchaseOrdersReceiveMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrdersReceive>>, TError,PurchaseOrdersReceiveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseOrdersReceive>>, TError,PurchaseOrdersReceiveMutationVariables, TContext> => {
+
+const mutationKey = getPurchaseOrdersReceiveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseOrdersReceive>>, PurchaseOrdersReceiveMutationVariables> = (props) => {
+          const {orderId} = props ?? {};
+
+          return  purchaseOrdersReceive(orderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PurchaseOrdersReceiveMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseOrdersReceive>>>
+
+    export type PurchaseOrdersReceiveMutationError = unknown
+    export type PurchaseOrdersReceiveMutationVariables = {orderId: string}
+
+    export const usePurchaseOrdersReceive = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrdersReceive>>, TError,PurchaseOrdersReceiveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof purchaseOrdersReceive>>,
+        TError,
+        PurchaseOrdersReceiveMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPurchaseOrdersReceiveMutationOptions(options), queryClient);
+    }
+    export type purchaseOrdersSendResponse200 = {
   data: SendResult
   status: 200
 }

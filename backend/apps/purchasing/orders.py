@@ -383,6 +383,15 @@ def send_order(order_id: UUID, *, by: User) -> Sent:
     return Sent(order, share, bool(supplier.email))
 
 
+def _no_open_receipt(order: PurchaseOrder) -> None:
+    from apps.inventory.models import StockInward
+
+    if StockInward.objects.filter(purchase_order=order, status=StockInward.Status.DRAFT).exists():
+        raise NotEditable(
+            "A goods receipt is being entered for this order. Post or delete that draft first."
+        )
+
+
 def _cancel_due(order: PurchaseOrder) -> None:
     for line in order.lines.all():
         due = line.due
@@ -402,6 +411,7 @@ def cancel_order(order_id: UUID, *, reason: str, by: User) -> PurchaseOrder:
         )
     if order.status == S.SENT and not reason.strip():
         raise InvalidFields({"reason": ["Say why the order is cancelled."]})
+    _no_open_receipt(order)
     _cancel_due(order)
     order.status = S.CANCELLED
     order.closed_at, order.closed_by, order.closed_reason = timezone.now(), by, reason.strip()[:300]
@@ -426,6 +436,7 @@ def close_order(order_id: UUID, *, reason: str, by: User) -> PurchaseOrder:
         )
     if not reason.strip():
         raise InvalidFields({"reason": ["Say why the rest won't come."]})
+    _no_open_receipt(order)
     _cancel_due(order)
     order.status = S.CLOSED
     order.closed_at, order.closed_by, order.closed_reason = timezone.now(), by, reason.strip()[:300]

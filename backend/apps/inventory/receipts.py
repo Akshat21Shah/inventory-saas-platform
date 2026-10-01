@@ -103,10 +103,17 @@ def _lines(
             errors[key] = ["Enter a cost of 0 or more."]
             continue
         factor = product.pack_size if line.entered_unit == "PACK" else Decimal("1")
+        old = existing.get(line.id) if line.id is not None else None
         rows.append(
             StockInwardLine(
                 line_no=index,
                 product=product,
+                # A line from a purchase order stays linked to it (same product).
+                purchase_order_line_id=(
+                    old.purchase_order_line_id
+                    if old is not None and old.product_id == product.pk
+                    else None
+                ),
                 entered_unit=line.entered_unit,
                 entered_qty=line.entered_qty,
                 quantity=(line.entered_qty * factor).quantize(QTY_STEP),
@@ -154,10 +161,14 @@ def _supplier(supplier_id: UUID) -> Any:
 
 def _header(inward: StockInward, data: ReceiptInput) -> None:
     inward.supplier_name = data.supplier_name.strip()[:200]
-    inward.supplier = None
-    if data.supplier_id is not None:
-        inward.supplier = _supplier(data.supplier_id)
+    if inward.purchase_order_id is not None and inward.supplier is not None:
+        # The order's supplier, whatever is sent.
         inward.supplier_name = inward.supplier_name or inward.supplier.name[:200]
+    else:
+        inward.supplier = None
+        if data.supplier_id is not None:
+            inward.supplier = _supplier(data.supplier_id)
+            inward.supplier_name = inward.supplier_name or inward.supplier.name[:200]
     inward.supplier_ref = data.supplier_ref.strip()[:60]
     inward.bill_number = data.bill_number.strip()[:60]
     inward.bill_date = data.bill_date
@@ -225,14 +236,20 @@ def delete_draft(inward_id: UUID, *, by: User) -> None:
 
 
 @retry_on_deadlock()
-def post(inward_id: UUID, *, by: User) -> StockInward:
+def post(inward_id: UUID, *, by: User, confirm_over_receipt: bool = False) -> StockInward:
     """Post a draft: stock up, one movement per line, the cost method for lines with a cost, and
-    "cost pending" for lines without one. Idempotency is handled by the API (Idempotency-Key)."""
+    "cost pending" for lines without one. Idempotency is handled by the API (Idempotency-Key).
+    A draft from a purchase order also updates the order (``apps.purchasing.receiving``)."""
     with transaction.atomic():
         inward = _locked_draft(inward_id)
         lines = sorted(inward.lines.all(), key=lambda row: (row.product_id, row.line_no))
         if not lines:
             raise InvalidFields({"lines": ["Add at least one product."]})
+        from apps.purchasing import receiving
+
+        order = None
+        if inward.purchase_order_id is not None:
+            order = receiving.before_post(inward, lines, by=by, confirm=confirm_over_receipt)
         inactive = Product.objects.filter(
             pk__in={line.product_id for line in lines}, deleted_at__isnull=False
         ).values_list("code", flat=True)
@@ -274,6 +291,9 @@ def post(inward_id: UUID, *, by: User) -> StockInward:
         inward.cost_pending_lines = pending
         inward.save()
         services.serve_backorders(levels, waiting, trigger="INWARD", source_id=inward.pk, by=by)
+        if order is not None:
+            receiving.after_post(order, lines)
+        receiving.record_costs(inward, lines, by=by)
         audit.record(
             "stock.inward_posted",
             target=inward,

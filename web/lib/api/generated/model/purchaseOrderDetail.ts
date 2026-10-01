@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ActionsEnum } from './actionsEnum';
+import type { OrderReceipt } from './orderReceipt';
 import type { PdfStatusEnum } from './pdfStatusEnum';
 import type { PurchaseOrderLine } from './purchaseOrderLine';
 import type { PurchaseOrderStatusEnum } from './purchaseOrderStatusEnum';
@@ -40,5 +41,6 @@ export interface PurchaseOrderDetail {
   readonly closed_reason: string;
   readonly pdf_status: PdfStatusEnum;
   readonly lines: readonly PurchaseOrderLine[];
+  readonly receipts: readonly OrderReceipt[];
   readonly actions: readonly ActionsEnum[];
 }

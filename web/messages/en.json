@@ -240,6 +240,7 @@
     "IDEMPOTENCY_KEY_REUSED": "This request was already sent with different details. Please start again.",
     "INVALID_STATE_TRANSITION": "This can't be done at the current stage.",
     "MODULE_NOT_ENABLED": "This module isn't switched on for your business. Ask us to switch it on.",
+    "OVER_RECEIPT": "More is being received than was ordered. Someone who manages purchasing must confirm it.",
     "INVALID_CREDENTIALS": "The email or password is incorrect. After several failed attempts, sign-in is paused for a few minutes.",
     "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
     "TENANT_UNAVAILABLE": "This account is currently unavailable. Please contact your distributor.",
@@ -748,6 +749,12 @@
         "label": "Class B share (%)",
         "description": "Class B: the next products, up to this share of sales value. The rest are class C."
       }
+    },
+    "purchasing": {
+      "over_receipt_tolerance_percent": {
+        "label": "Receiving more than ordered (%)",
+        "description": "Up to this share over the order is accepted. Beyond it, someone who manages purchasing must confirm."
+      }
     }
   },
   "settingsForm": {
@@ -763,7 +770,8 @@
       "notifications": "Notifications",
       "compliance": "E-invoices & e-way bills",
       "reports": "Reports",
-      "planning": "Stock planning"
+      "planning": "Stock planning",
+      "purchasing": "Purchasing"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -886,7 +894,14 @@
         "supplier_deleted": "Deleted a supplier",
         "product_suppliers_changed": "Changed who a product is bought from",
         "preferred_supplier_set": "Set the preferred supplier for products",
-        "receipt_suppliers_confirmed": "Linked past goods receipts to suppliers"
+        "receipt_suppliers_confirmed": "Linked past goods receipts to suppliers",
+        "po_created": "Created a purchase order",
+        "po_changed": "Changed a purchase order",
+        "po_deleted": "Deleted a draft purchase order",
+        "po_sent": "Sent a purchase order",
+        "po_cancelled": "Cancelled a purchase order",
+        "po_closed": "Closed a purchase order",
+        "over_receipt_confirmed": "Confirmed receiving more than ordered"
       }
     },
     "title": "Audit log",

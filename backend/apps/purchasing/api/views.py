@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -11,17 +12,24 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import User
 from apps.billing.api.serializers import DocumentLinkSerializer
-from apps.purchasing import orders, selectors, services
+from apps.inventory.api.serializers import ReceiptDetailSerializer
+from apps.purchasing import orders, receiving, selectors, services
 from apps.purchasing.api import serializers as s
 from apps.purchasing.models import PurchaseOrder, Supplier, SupplierProduct
 from common.errors import NotFound
 from common.idempotency import idempotent
 from common.pagination import DefaultCursorPagination
-from common.permissions import FeatureOn, HasPermission
+from common.permissions import AnyOf, FeatureOn, HasPermission, Requirement
 
 VIEW = "purchasing.view"
 MANAGE = "purchasing.manage"
-READ_WRITE = {"GET": VIEW, "POST": MANAGE, "PUT": MANAGE, "PATCH": MANAGE, "DELETE": MANAGE}
+READ_WRITE: dict[str, Requirement] = {
+    "GET": VIEW,
+    "POST": MANAGE,
+    "PUT": MANAGE,
+    "PATCH": MANAGE,
+    "DELETE": MANAGE,
+}
 
 
 def _user(request: Request) -> User:
@@ -36,7 +44,7 @@ def _costs(request: Request) -> bool:
 class PurchasingView(APIView):
     permission_classes = [HasPermission, FeatureOn]
     required_feature = "purchasing"
-    required_permissions = READ_WRITE
+    required_permissions: dict[str, Requirement] = READ_WRITE
 
 
 class NamePagination(CursorPagination):
@@ -386,3 +394,46 @@ class PurchaseOrderPdfView(PurchasingView):
         key = order.pdf_key if _costs(request) else order.plain_pdf_key
         body, status = link(key, order.pdf_status)
         return Response(body, status=status)
+
+
+class PurchaseOrderReceiveView(PurchasingView):
+    """A goods-receipt draft with what is still due and the order's costs (the open draft, if one
+    is being entered already)."""
+
+    required_permissions = {"POST": "stock.inward"}
+
+    @extend_schema(
+        request=None,
+        responses={201: ReceiptDetailSerializer},
+        operation_id="purchase_orders_receive",
+        tags=["purchasing"],
+    )
+    def post(self, request: Request, order_id: UUID) -> Response:
+        from apps.inventory import selectors as stock_selectors
+
+        inward = receiving.receive_order(order_id, by=_user(request))
+        found = stock_selectors.receipt(inward.pk)
+        context = {"request": request, "show_cost": _costs(request)}
+        return Response(ReceiptDetailSerializer(found, context=context).data, status=201)
+
+
+class ProductOnOrderView(PurchasingView):
+    """How much of a product is on order and when it is expected: for anyone who sees orders or
+    stock (sales staff too), without suppliers or prices."""
+
+    required_permissions: dict[str, Requirement] = {"GET": AnyOf(("orders.view", "stock.view"))}
+
+    @extend_schema(
+        responses=s.OnOrderSerializer, operation_id="product_on_order", tags=["purchasing"]
+    )
+    def get(self, request: Request, product_id: UUID) -> Response:
+        if not selectors.product_exists(product_id):
+            raise NotFound()
+        found = selectors.on_order([product_id]).get(product_id)
+        body = {
+            "quantity": found.quantity if found else Decimal("0"),
+            "expected_date": found.expected_date if found else None,
+            "late": found.late if found else False,
+            "orders": selectors.on_order_detail(product_id),
+        }
+        return Response(s.OnOrderSerializer(body).data)

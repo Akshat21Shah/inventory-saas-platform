@@ -265,7 +265,7 @@ def test_sending_emails_the_suppliers_copy_and_gives_a_link_to_share(world, run)
         1,
         True,
     )
-    assert body["order"]["actions"] == ["edit", "send", "cancel"]
+    assert body["order"]["actions"] == ["edit", "send", "receive", "cancel"]
     [email] = mail.outbox
     assert email.to == ["orders@hindustan.example.com"]
     assert email.subject == f"Purchase order PO-{YEAR}-00001 from Alpha"
@@ -357,7 +357,7 @@ def test_cancel_before_anything_arrives_close_the_rest_after(world, run):
         )
         PurchaseOrder.objects.filter(pk=second["id"]).update(status="PARTLY_RECEIVED")
     url = f"{API}/purchase-orders/{second['id']}"
-    assert world["owner"].get(f"{url}/").json()["actions"] == ["close"]
+    assert world["owner"].get(f"{url}/").json()["actions"] == ["receive", "close"]
     assert run(owner.post, f"{url}/cancel/", {"reason": "x"}, format="json").status_code == 409
     closed = run(
         owner.post, f"{url}/close/", {"reason": "Supplier out of stock"}, format="json"

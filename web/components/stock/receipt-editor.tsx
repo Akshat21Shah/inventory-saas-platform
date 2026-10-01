@@ -228,7 +228,7 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
       let id = draft?.id;
       if (draft) {
         await stockReceiptsUpdate(draft.id, payload());
-        if (post) await stockReceiptsPost(draft.id, idempotent(postKey.current));
+        if (post) await stockReceiptsPost(draft.id, {}, idempotent(postKey.current));
       } else {
         const created = await stockReceiptsCreate(
           { ...payload(), post },

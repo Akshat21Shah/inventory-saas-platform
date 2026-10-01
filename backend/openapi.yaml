@@ -5462,6 +5462,30 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/products/{product_id}/on-order/:
+    get:
+      operationId: product_on_order
+      description: |-
+        How much of a product is on order and when it is expected: for anyone who sees orders or
+        stock (sales staff too), without suppliers or prices.
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnOrder'
+          description: ''
   /api/v1/products/{product_id}/stats/:
     get:
       operationId: product_stats
@@ -6102,6 +6126,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/purchase-orders/{order_id}/receive/:
+    post:
+      operationId: purchase_orders_receive
+      description: |-
+        A goods-receipt draft with what is still due and the order's costs (the open draft, if one
+        is being entered already).
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetail'
           description: ''
   /api/v1/purchase-orders/{order_id}/send/:
     post:
@@ -9831,6 +9879,11 @@ paths:
         required: true
       tags:
       - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptPostRequest'
       security:
       - jwtAuth: []
       responses:
@@ -10436,6 +10489,7 @@ components:
       - edit
       - send
       - delete
+      - receive
       - cancel
       - close
       type: string
@@ -10443,6 +10497,7 @@ components:
         * `edit` - edit
         * `send` - send
         * `delete` - delete
+        * `receive` - receive
         * `cancel` - cancel
         * `close` - close
     AdditionRequest:
@@ -16970,6 +17025,48 @@ components:
     NullEnum:
       enum:
       - null
+    OnOrder:
+      type: object
+      description: 'Quantities and dates only: no supplier, no price (ADR-053 item
+        7).'
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+          description: The earliest.
+        late:
+          type: boolean
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OnOrderLine'
+      required:
+      - expected_date
+      - late
+      - orders
+      - quantity
+    OnOrderLine:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+        late:
+          type: boolean
+      required:
+      - expected_date
+      - late
+      - quantity
     OnboardingRequest:
       type: object
       properties:
@@ -17233,6 +17330,26 @@ components:
       required:
       - entered_qty
       - product_id
+    OrderReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+          nullable: true
+        status:
+          type: string
+        posted_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - number
+      - posted_at
+      - status
     OrderRef:
       type: object
       properties:
@@ -20777,6 +20894,11 @@ components:
           items:
             $ref: '#/components/schemas/PurchaseOrderLine'
           readOnly: true
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderReceipt'
+          readOnly: true
         actions:
           type: array
           items:
@@ -20797,6 +20919,7 @@ components:
       - notes
       - number
       - pdf_status
+      - receipts
       - revision
       - sent_at
       - sent_by
@@ -21344,6 +21467,15 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        purchase_order_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        purchase_order_number:
+          type: string
+          readOnly: true
+          nullable: true
         supplier_ref:
           type: string
           readOnly: true
@@ -21397,6 +21529,8 @@ components:
       - number
       - posted_at
       - posted_by
+      - purchase_order_id
+      - purchase_order_number
       - status
       - supplier_id
       - supplier_name
@@ -21458,6 +21592,15 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        purchase_order_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        purchase_order_number:
+          type: string
+          readOnly: true
+          nullable: true
         supplier_ref:
           type: string
           readOnly: true
@@ -21517,6 +21660,8 @@ components:
       - number
       - posted_at
       - posted_by
+      - purchase_order_id
+      - purchase_order_number
       - status
       - supplier_id
       - supplier_name
@@ -21574,6 +21719,23 @@ components:
           oneOf:
           - $ref: '#/components/schemas/CostStatusEnum'
           - $ref: '#/components/schemas/NullEnum'
+        purchase_order_line_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          readOnly: true
+        received_before:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          readOnly: true
       required:
       - cost_status
       - entered_cost
@@ -21582,8 +21744,11 @@ components:
       - id
       - line_cost
       - line_no
+      - ordered
       - product
+      - purchase_order_line_id
       - quantity
+      - received_before
       - unit_cost
     ReceiptLineInputRequest:
       type: object
@@ -21611,6 +21776,13 @@ components:
       required:
       - entered_qty
       - product_id
+    ReceiptPostRequest:
+      type: object
+      properties:
+        confirm_over_receipt:
+          type: boolean
+          default: false
+          description: Receive more than ordered beyond the tolerance (needs purchasing.manage).
     ReceiptStatusEnum:
       enum:
       - DRAFT

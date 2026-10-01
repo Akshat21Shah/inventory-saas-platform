@@ -34,6 +34,7 @@ class Group(StrEnum):
     COMPLIANCE = "compliance"
     REPORTS = "reports"
     PLANNING = "planning"
+    PURCHASING = "purchasing"
 
 
 class SettingType(StrEnum):
@@ -360,6 +361,11 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("planning.abc_b_percent", Group.PLANNING, SettingType.INT, 95,
             "Class B: the next products, up to this share of sales value; the rest are C.",
             min_value=60, max_value=99, features=("stock_planning",)),
+    # --- Tenant: Purchasing (ADR-053; shown while the module is on) -----------------------------
+    _tenant("purchasing.over_receipt_tolerance_percent", Group.PURCHASING, SettingType.INT, 10,
+            "Receiving more than ordered is accepted up to this share over the order; beyond it, "
+            "someone who manages purchasing must confirm.",
+            min_value=0, max_value=100, features=("purchasing",)),
     # --- Tenant: Security (ADR-030) -------------------------------------------------------------
     _tenant("security.require_staff_2fa", Group.SECURITY, SettingType.BOOL, False,
             "Require every staff member to set up two-step verification (an authenticator app) "

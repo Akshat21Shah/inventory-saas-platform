@@ -270,8 +270,16 @@ class PurchaseOrderLineSerializer(serializers.ModelSerializer[PurchaseOrderLine]
         return _hide_costs(data, ("entered_cost", "unit_cost", "line_total"))
 
 
+class OrderReceiptSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    number = serializers.CharField(allow_null=True)
+    status = serializers.CharField()
+    posted_at = serializers.DateTimeField(allow_null=True)
+
+
 class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
     lines = serializers.SerializerMethodField()
+    receipts = serializers.SerializerMethodField()
     sent_by = serializers.SerializerMethodField()
     actions = serializers.SerializerMethodField()
 
@@ -286,9 +294,16 @@ class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
             "closed_reason",
             "pdf_status",
             "lines",
+            "receipts",
             "actions",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(OrderReceiptSerializer(many=True))
+    def get_receipts(self, order: PurchaseOrder) -> list[dict[str, Any]]:
+        """Goods receipts against this order (a draft is being entered)."""
+        rows = order.receipts.order_by("created_at").values("id", "number", "status", "posted_at")
+        return list(OrderReceiptSerializer(rows, many=True).data)
 
     @extend_schema_field(PurchaseOrderLineSerializer(many=True))
     def get_lines(self, order: PurchaseOrder) -> list[dict[str, Any]]:
@@ -303,7 +318,9 @@ class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
 
     @extend_schema_field(
         serializers.ListField(
-            child=serializers.ChoiceField(choices=["edit", "send", "delete", "cancel", "close"])
+            child=serializers.ChoiceField(
+                choices=["edit", "send", "delete", "receive", "cancel", "close"]
+            )
         )
     )
     def get_actions(self, order: PurchaseOrder) -> list[str]:
@@ -312,9 +329,11 @@ class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
         if order.status == "DRAFT":
             return ["edit", "send", "delete", "cancel"]
         if order.status == "SENT" and not received:
-            return ["edit", "send", "cancel"]
+            return ["edit", "send", "receive", "cancel"]
         if order.status == "PARTLY_RECEIVED":
-            return ["close"]
+            return ["receive", "close"]
+        if order.status == "SENT":
+            return ["receive"]
         return []
 
     def to_representation(self, instance: PurchaseOrder) -> dict[str, Any]:
@@ -350,3 +369,17 @@ class SendResultSerializer(serializers.Serializer[Any]):
 class PurchaseOrderReasonSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
 
+
+class OnOrderLineSerializer(serializers.Serializer[Any]):
+    quantity = serializers.DecimalField(max_digits=14, decimal_places=3)
+    expected_date = serializers.DateField(allow_null=True)
+    late = serializers.BooleanField()
+
+
+class OnOrderSerializer(serializers.Serializer[Any]):
+    """Quantities and dates only: no supplier, no price (ADR-053 item 7)."""
+
+    quantity = serializers.DecimalField(max_digits=14, decimal_places=3)
+    expected_date = serializers.DateField(allow_null=True, help_text="The earliest.")
+    late = serializers.BooleanField()
+    orders = OnOrderLineSerializer(many=True)

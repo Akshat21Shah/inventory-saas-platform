@@ -39,6 +39,7 @@ import type {
   PatchedWarehouseRequest,
   ReceiptCreateRequest,
   ReceiptDetail,
+  ReceiptPostRequest,
   StockAdjustmentsListParams,
   StockAlertsListParams,
   StockDetail,
@@ -1410,14 +1411,29 @@ export const getStockReceiptsPostUrl = (inwardId: string,) => {
   return `/api/v1/stock/inwards/${inwardId}/post/`
 }
 
-export const stockReceiptsPost = async (inwardId: string, options?: Parameters<typeof apiFetch>[1]): Promise<stockReceiptsPostResponse> => {
+export const stockReceiptsPost = async (inwardId: string,
+    receiptPostRequest?: ReceiptPostRequest, options?: Parameters<typeof apiFetch>[1]): Promise<stockReceiptsPostResponse> => {
 
-  return apiFetch<stockReceiptsPostResponse>(getStockReceiptsPostUrl(inwardId),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<stockReceiptsPostResponse>(getStockReceiptsPostUrl(inwardId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(receiptPostRequest)
   }
 );}
 
@@ -1442,9 +1458,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof stockReceiptsPost>>, StockReceiptsPostMutationVariables> = (props) => {
-          const {inwardId} = props ?? {};
+          const {inwardId,data} = props ?? {};
 
-          return  stockReceiptsPost(inwardId,requestOptions)
+          return  stockReceiptsPost(inwardId,data,requestOptions)
         }
 
 
@@ -1455,9 +1471,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type StockReceiptsPostMutationResult = NonNullable<Awaited<ReturnType<typeof stockReceiptsPost>>>
-
+    export type StockReceiptsPostMutationBody = ReceiptPostRequest | undefined
     export type StockReceiptsPostMutationError = unknown
-    export type StockReceiptsPostMutationVariables = {inwardId: string}
+    export type StockReceiptsPostMutationVariables = {inwardId: string;data?: ReceiptPostRequest}
 
     export const useStockReceiptsPost = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stockReceiptsPost>>, TError,StockReceiptsPostMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}

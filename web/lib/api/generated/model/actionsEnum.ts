@@ -10,6 +10,7 @@
  * * `edit` - edit
  * * `send` - send
  * * `delete` - delete
+ * * `receive` - receive
  * * `cancel` - cancel
  * * `close` - close
  */
@@ -20,6 +21,7 @@ export const ActionsEnum = {
   edit: 'edit',
   send: 'send',
   delete: 'delete',
+  receive: 'receive',
   cancel: 'cancel',
   close: 'close',
 } as const;

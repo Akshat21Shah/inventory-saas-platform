@@ -27,6 +27,7 @@ class ErrorCode(StrEnum):
     IDEMPOTENCY_KEY_REUSED = "IDEMPOTENCY_KEY_REUSED"
     INVALID_STATE_TRANSITION = "INVALID_STATE_TRANSITION"
     MODULE_NOT_ENABLED = "MODULE_NOT_ENABLED"  # an optional module that is switched off
+    OVER_RECEIPT = "OVER_RECEIPT"  # more received than ordered, beyond the tolerance (ADR-053)
     # authentication & sessions
     INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
     RATE_LIMITED = "RATE_LIMITED"

@@ -423,13 +423,19 @@ class ReceiptPostView(Guarded):
     @extend_schema(
         operation_id="stock_receipts_post",
         tags=["inventory"],
-        request=None,
+        request=s.ReceiptPostSerializer,
         responses=s.ReceiptDetailSerializer,
         parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, True)],
     )
     @idempotent("stock.receipts.post")
     def post(self, request: Request, inward_id: UUID) -> Response:
-        receipts.post(inward_id, by=_user(request))
+        data = s.ReceiptPostSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        receipts.post(
+            inward_id,
+            by=_user(request),
+            confirm_over_receipt=data.validated_data["confirm_over_receipt"],
+        )
         return _receipt_response(request, inward_id)
 
 

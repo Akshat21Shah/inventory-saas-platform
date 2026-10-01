@@ -5,14 +5,15 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
 from django.contrib.postgres.search import TrigramWordSimilarity
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, F, Min, Q, QuerySet, Sum
 
 from apps.inventory.models import StockInward
-from apps.purchasing.models import PurchaseOrder, Supplier, SupplierProduct
+from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier, SupplierProduct
 from common.dates import to_ist, today_ist
 
 OPEN_STATUSES = (PurchaseOrder.Status.SENT, PurchaseOrder.Status.PARTLY_RECEIVED)
@@ -160,3 +161,56 @@ def open_orders_for(supplier_id: UUID) -> int:
     return PurchaseOrder.objects.filter(
         supplier_id=supplier_id, status__in=(PurchaseOrder.Status.DRAFT, *OPEN_STATUSES)
     ).count()
+
+
+# --- On order (ADR-053 item 7: quantities and dates, never suppliers or prices) ----------------
+
+
+@dataclass(frozen=True)
+class OnOrder:
+    quantity: Decimal
+    expected_date: date | None  # the earliest
+    late: bool
+
+
+def on_order(product_ids: list[UUID] | None = None) -> dict[UUID, OnOrder]:
+    """What is still due on sent and partly received orders, per product."""
+    lines = PurchaseOrderLine.objects.filter(order__status__in=OPEN_STATUSES)
+    if product_ids is not None:
+        lines = lines.filter(product_id__in=product_ids)
+    rows = (
+        lines.values("product_id")
+        .annotate(
+            due=Sum(F("quantity") - F("qty_received") - F("qty_cancelled")),
+            expected=Min("order__expected_date"),
+        )
+        .order_by()
+    )
+    today = today_ist()
+    out: dict[UUID, OnOrder] = {}
+    for row in rows:
+        due = max(row["due"] or Decimal("0"), Decimal("0"))
+        if due > 0:
+            expected = row["expected"]
+            out[row["product_id"]] = OnOrder(due, expected, bool(expected and expected < today))
+    return out
+
+
+def on_order_detail(product_id: UUID) -> list[dict[str, Any]]:
+    """Each open order's due quantity and expected date for one product, soonest first."""
+    rows = (
+        PurchaseOrderLine.objects.filter(order__status__in=OPEN_STATUSES, product_id=product_id)
+        .values("order__expected_date")
+        .annotate(due=Sum(F("quantity") - F("qty_received") - F("qty_cancelled")))
+        .order_by(F("order__expected_date").asc(nulls_last=True))
+    )
+    today = today_ist()
+    return [
+        {
+            "quantity": row["due"],
+            "expected_date": row["order__expected_date"],
+            "late": bool(row["order__expected_date"] and row["order__expected_date"] < today),
+        }
+        for row in rows
+        if row["due"] and row["due"] > 0
+    ]

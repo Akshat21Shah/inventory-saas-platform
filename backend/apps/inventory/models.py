@@ -167,6 +167,14 @@ class StockInward(TenantScopedModel):
         blank=True,
         related_name="receipts",
     )
+    # Received against a purchase order (ADR-053 item 6): set when the draft is made from it.
+    purchase_order = models.ForeignKey(
+        "purchasing.PurchaseOrder",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="receipts",
+    )
     supplier_ref = models.CharField(max_length=60, blank=True, default="")
     bill_number = models.CharField(max_length=60, blank=True, default="")
     bill_date = models.DateField(null=True, blank=True)
@@ -211,6 +219,13 @@ class StockInwardLine(TenantScopedModel):
 
     inward = models.ForeignKey(StockInward, on_delete=models.CASCADE, related_name="lines")
     line_no = models.PositiveSmallIntegerField()
+    purchase_order_line = models.ForeignKey(
+        "purchasing.PurchaseOrderLine",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="receipt_lines",
+    )
     product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, related_name="+")
     entered_unit = models.CharField(
         max_length=4, choices=EnteredUnit.choices, default=EnteredUnit.BASE
