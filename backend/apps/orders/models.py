@@ -201,11 +201,29 @@ class OrderLine(TenantScopedModel):
     taxable_amount = MoneyField(default=0)
     tax_amount = MoneyField(default=0)
     line_total = MoneyField(default=0)
+    # Free goods (ADR-056 item 8): a free line at ₹0, linked to the line that earned it, with the
+    # scheme's name and terms as they were when ordered (``schemes.Terms.rule``).
+    free_of_line = models.ForeignKey(
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="free_lines"
+    )
+    scheme = models.ForeignKey(
+        "pricing.FreeGoodsScheme",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    scheme_name = models.CharField(max_length=120, blank=True, default="")
+    scheme_rule = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["line_no"]
         constraints = [
             models.UniqueConstraint(fields=["order", "line_no"], name="uniq_order_line_no"),
+            models.CheckConstraint(
+                condition=Q(free_of_line__isnull=True) | Q(unit_price=0, discount_amount=0),
+                name="order_line_free_at_zero",
+            ),
             models.CheckConstraint(
                 condition=Q(
                     qty_ordered=F("qty_pending")

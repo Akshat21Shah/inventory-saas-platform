@@ -113,6 +113,16 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.receipts.results.supplier_id": None,
     # ADR-056 (core): shops to win back on the dashboard (none worked out in the baseline data).
     "api.dashboard.action.win_back": lambda v: isinstance(v, int),
+    # ADR-056 (free goods, off): no free lines and no offers.
+    "db.orders.OrderLine.free_of_line_id": None,
+    "db.orders.OrderLine.scheme_id": None,
+    "db.orders.OrderLine.scheme_name": "",
+    "db.orders.OrderLine.scheme_rule": {},
+    "api.order.lines.free_of_line": None,
+    "api.order.lines.scheme_name": "",
+    "api.shop-order.lines.free_of_line": None,
+    "api.shop-order.lines.scheme_name": "",
+    "api.shop-home.last_order.items.free_offer": None,
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -138,7 +148,7 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
     # Phase 9b (ADR-056, core): the daily summary, to owners in the app and by email.
     "api.notification-rules.events": lambda item: item["code"] == "summary.daily",
     "api.settings-features": lambda item: (
-        item["code"] in ("stock_planning", "purchasing") and item["enabled"] is False
+        item["code"] in ("stock_planning", "purchasing", "free_goods") and item["enabled"] is False
     ),
 }
 

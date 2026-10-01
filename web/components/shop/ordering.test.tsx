@@ -60,6 +60,10 @@ function quote(lines: Array<{ id: string; qty: string; later?: string }>): Quote
       later_qty: later,
       stock: null,
       problems: [],
+      is_free: false,
+      free_of_product_id: null,
+      scheme: null,
+      offer: null,
     })),
     item_count: lines.length,
     totals: {

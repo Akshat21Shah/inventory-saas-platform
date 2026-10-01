@@ -207,6 +207,8 @@ describe("Order page", () => {
       ready_qty: "0.000",
       line_total: "525.00",
       on_order: { quantity: "12.000", expected_date: "2026-10-05", late: true },
+      free_of_line: null,
+      scheme_name: "",
     };
     mockApi({
       "/api/v1/orders/o1/": () => [

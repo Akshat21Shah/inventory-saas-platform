@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Ref } from './ref';
+import type { SchemeTerms } from './schemeTerms';
 import type { ShopAvailability } from './shopAvailability';
 import type { ShopImage } from './shopImage';
 import type { ShopPrice } from './shopPrice';
@@ -42,6 +43,8 @@ export interface ShopProductDetail {
   readonly own_brand: boolean;
   price: ShopPrice;
   readonly availability: ShopAvailability;
+  /** A free-goods scheme on this product ("Buy 10 get 1 free"), when there is one. */
+  readonly free_offer: SchemeTerms | null;
   description: string;
   images: ShopImage[];
   /** Lower prices for larger quantities, e.g. 24 or more. */

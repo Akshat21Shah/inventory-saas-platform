@@ -188,3 +188,63 @@ class DiscountSlab(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.rule_id} ≥{self.min_qty}: {self.value}"
+
+
+class FreeGoodsScheme(TenantScopedModel):
+    """Buy ``buy_qty`` of a product, get ``free_qty`` of a product (the same or another) free
+    (ADR-056 items 7-9, flag ``free_goods``). ``repeat``: for every ``buy_qty`` bought, else once
+    per order line; ``max_free_qty`` caps the free quantity per order line. How a scheme applies
+    lives in ``schemes.py``."""
+
+    Audience = DiscountRule.Audience
+
+    name = models.CharField(max_length=120)
+    buy_product = models.ForeignKey("catalog.Product", on_delete=models.CASCADE, related_name="+")
+    buy_qty = QtyField()
+    free_product = models.ForeignKey("catalog.Product", on_delete=models.CASCADE, related_name="+")
+    free_qty = QtyField()
+    repeat = models.BooleanField(default=True)
+    max_free_qty = QtyField(null=True, blank=True)
+    audience_type = models.CharField(max_length=12, choices=DiscountRule.Audience.choices)
+    price_list = models.ForeignKey(
+        PriceList, on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    retailer = models.ForeignKey(
+        "retailers.Retailer", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    valid_from = models.DateField(null=True, blank=True)  # IST dates, inclusive
+    valid_to = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(condition=Q(buy_qty__gt=0), name="scheme_buy_qty_pos"),
+            models.CheckConstraint(condition=Q(free_qty__gt=0), name="scheme_free_qty_pos"),
+            models.CheckConstraint(
+                condition=Q(max_free_qty__isnull=True) | Q(max_free_qty__gt=0),
+                name="scheme_max_free_qty_pos",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(audience_type="ALL", price_list__isnull=True, retailer__isnull=True)
+                    | Q(audience_type="PRICE_LIST", price_list__isnull=False, retailer__isnull=True)
+                    | Q(audience_type="RETAILER", price_list__isnull=True, retailer__isnull=False)
+                ),
+                name="scheme_audience_matches_target",
+            ),
+            models.CheckConstraint(
+                condition=Q(valid_from__isnull=True)
+                | Q(valid_to__isnull=True)
+                | Q(valid_to__gte=models.F("valid_from")),
+                name="scheme_valid_range",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["tenant", "buy_product", "is_active"], name="scheme_buy_product_idx"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.name

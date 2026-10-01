@@ -13,7 +13,7 @@ from apps.inventory.availability import LABELS, availability
 from apps.orders.api.quote_serializers import QuoteSerializer
 from apps.orders.api.serializers import OrderSerializer
 from apps.orders.models import Order, OrderStatusHistory
-from apps.pricing.api.serializers import money, qty
+from apps.pricing.api.serializers import SchemeTermsSerializer, money, qty
 
 
 class ShopPriceSerializer(serializers.Serializer[Any]):
@@ -60,6 +60,14 @@ class ShopProductSerializer(serializers.Serializer[Any]):
     own_brand = serializers.SerializerMethodField()
     price = ShopPriceSerializer()
     availability = serializers.SerializerMethodField()
+    free_offer = serializers.SerializerMethodField(
+        help_text='A free-goods scheme on this product ("Buy 10 get 1 free"), when there is one.'
+    )
+
+    @extend_schema_field(SchemeTermsSerializer(allow_null=True))
+    def get_free_offer(self, row: dict[str, Any]) -> dict[str, Any] | None:
+        terms = self.context.get("offers", {}).get(row["product"].pk)
+        return None if terms is None else dict(SchemeTermsSerializer(terms).data)
 
     @extend_schema_field(ShopAvailabilitySerializer())
     def get_availability(self, row: dict[str, Any]) -> dict[str, Any]:

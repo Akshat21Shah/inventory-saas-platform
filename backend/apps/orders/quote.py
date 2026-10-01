@@ -6,7 +6,9 @@ the cart and order placement so both give the same answer:
 - the split between what can be sent now and what goes on backorder (an estimate: final at
   placement, where the stock rows are locked);
 - problems the shop has to fix (minimums, multiples, unavailable products, not enough stock with
-  backorders off, minimum order value) and the credit outcome.
+  backorders off, minimum order value) and the credit outcome;
+- free lines earned under free-goods schemes (flag ``free_goods``, ADR-056 items 7-9), each right
+  after the line that earns it, at ₹0, from the stock left after the bought lines.
 
 Nothing here writes to the database.
 """
@@ -27,11 +29,14 @@ from apps.billing.tax import (
     compute_document,
     compute_line,
 )
+from apps.catalog import selectors as catalog
 from apps.catalog.models import Product
-from apps.inventory.availability import Availability, ShopStockRules, availability
+from apps.inventory.availability import Availability, ShopStockRules, availability, with_available
 from apps.orders import credit
 from apps.platform.models import Tenant
-from apps.pricing.resolve import PriceResult, resolve_prices
+from apps.pricing import schemes
+from apps.pricing.resolve import PriceResult, free_price, resolve_prices
+from apps.pricing.schemes import Terms
 from apps.retailers.models import Retailer, RetailerAddress
 from apps.shop.selectors import visible_products
 from common.dates import today_ist
@@ -88,10 +93,18 @@ class QuoteLine:
     later_qty: Decimal = ZERO  # backordered, or dropped with backorders off (see problems)
     stock: Availability | None = None
     problems: list[Problem] = field(default_factory=list)
+    free_of: "QuoteLine | None" = None  # a free line: the bought line that earns it
+    scheme: Terms | None = None  # a free line's scheme, or the scheme a bought line earns under
+    scheme_options: list[Terms] = field(default_factory=list)  # a bought line: schemes on offer
+    offer: tuple[Terms, Decimal, Decimal] | None = None  # (scheme, buy more, get more free)
 
     @property
     def orderable(self) -> bool:
         return self.price is not None and self.tax is not None
+
+    @property
+    def is_free(self) -> bool:
+        return self.free_of is not None
 
 
 @dataclass
@@ -119,7 +132,7 @@ class Quote:
 
     @property
     def item_count(self) -> int:
-        return len(self.lines)
+        return sum(1 for line in self.lines if not line.is_free)
 
 
 def delivery_address(retailer: Retailer, address_id: UUID | None) -> RetailerAddress | None:
@@ -198,6 +211,17 @@ def build_quote(
         )
         _check_quantity(line, product)
         _split(line, product, rules, stock_rules)
+    if any(line.orderable for line in lines) and schemes.enabled(retailer.tenant_id):
+        lines = _with_free_lines(
+            retailer,
+            lines,
+            rules=rules,
+            stock_rules=stock_rules,
+            supply=supply,
+            rounding=rounding,
+            include_gst=include_gst,
+            day=day,
+        )
 
     taxes = [line.tax for line in lines if line.tax is not None]
     totals = compute_document(
@@ -243,6 +267,88 @@ def build_quote(
         credit=status,
         problems=problems,
     )
+
+
+def earning_quantity(line: QuoteLine, rules: OrderRules) -> Decimal:
+    """What a bought line earns free goods on: with backorders off, only what can be sent."""
+    return line.qty if rules.backorders_enabled else line.ready_qty
+
+
+def _with_free_lines(
+    retailer: Retailer,
+    lines: list[QuoteLine],
+    *,
+    rules: OrderRules,
+    stock_rules: ShopStockRules,
+    supply: SupplyType,
+    rounding: ComponentRounding,
+    include_gst: bool,
+    day: date,
+) -> list[QuoteLine]:
+    """Each bought line followed by the free line it earns. A free line takes the stock left after
+    every bought line; with backorders off it shows only what is there (the shop is told)."""
+    bought = [line for line in lines if line.orderable]
+    offers = schemes.for_shop(retailer, {line.product_id for line in bought}, on=day)
+    if not offers:
+        return lines
+    chosen: dict[int, Terms] = {}
+    for line in bought:
+        line.scheme_options = offers.get(line.product_id, [])
+        line.offer = schemes.hint(line.scheme_options, line.qty)
+        terms = schemes.best(line.scheme_options, earning_quantity(line, rules))
+        if terms is not None:
+            chosen[id(line)] = line.scheme = terms
+    if not chosen:
+        return lines
+    free_ids = list({terms.free_product_id for terms in chosen.values()})
+    products = {
+        p.pk: p
+        for p in with_available(
+            Product.objects.filter(pk__in=free_ids, is_active=True, deleted_at__isnull=True)
+        ).select_related("unit", "pack_unit", "brand")
+    }
+    rates = catalog.tax_rates_on(free_ids, day)
+    used: dict[UUID, Decimal] = {}
+    for line in bought:
+        used[line.product_id] = used.get(line.product_id, ZERO) + line.ready_qty
+    result: list[QuoteLine] = []
+    for line in lines:
+        result.append(line)
+        terms = chosen.get(id(line))
+        if terms is None:
+            continue
+        product, rate = products.get(terms.free_product_id), rates.get(terms.free_product_id)
+        if product is None or rate is None:
+            continue
+        qty = terms.earned(earning_quantity(line, rules))
+        free = QuoteLine(product.pk, qty, product, free_of=line, scheme=terms)
+        free.price = free_price(product, qty, rate, include_gst=include_gst, on=day)
+        free.tax = compute_line(
+            qty=qty,
+            unit_price=free.price.unit_price,
+            rate=rate.gst_rate,
+            supply_type=supply,
+            discount_amount=ZERO,
+            cess_rate=rate.cess_rate,
+            inclusive=include_gst,
+            rounding=rounding,
+        )
+        available = max(Decimal(getattr(product, "stock_available", ZERO)), ZERO)
+        free.available = max(available - used.get(product.pk, ZERO), ZERO)
+        free.ready_qty = min(qty, free.available)
+        free.later_qty = qty - free.ready_qty
+        free.stock = availability(free.available, product.reorder_level, stock_rules)
+        used[product.pk] = used.get(product.pk, ZERO) + free.ready_qty
+        if free.later_qty > 0 and not rules.backorders_enabled:
+            free.problems.append(
+                Problem(
+                    "FREE_GOODS_REDUCED",
+                    {"available": str(free.ready_qty), "earned": str(qty)},
+                    blocking=False,
+                )
+            )
+        result.append(free)
+    return result
 
 
 def _check_quantity(line: QuoteLine, product: Product) -> None:

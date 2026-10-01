@@ -70,7 +70,7 @@ class PriceResult:
     qty: Decimal
     base_price: Decimal
     unit_price: Decimal
-    price_source: str  # SPECIAL, PRICE_LIST or BASE
+    price_source: str  # SPECIAL, PRICE_LIST or BASE; SCHEME for a free line
     discounts: tuple[AppliedDiscount, ...]  # every rule applied, in the order applied
     discount_total: Decimal  # for the line; never more than the gross
     discount_percent: Decimal  # of the gross, to two decimals (what the shop sees)
@@ -329,6 +329,31 @@ def resolve_prices(
             )
         )
     return results
+
+
+def free_price(
+    product: Product, qty: Decimal, rate: Any, *, include_gst: bool, on: date
+) -> PriceResult:
+    """A free line's price under a free-goods scheme (ADR-056 item 8): ₹0 and no discounts; the
+    product's GST rate is kept for the invoice's HSN summary."""
+    nil = Decimal("0.00")
+    return PriceResult(
+        product_id=product.pk,
+        qty=qty,
+        base_price=product.base_price,
+        unit_price=nil,
+        price_source="SCHEME",
+        discounts=(),
+        discount_total=nil,
+        discount_percent=nil,
+        gross=nil,
+        line_net=nil,
+        net_unit_price=nil,
+        gst_rate=rate.gst_rate,
+        cess_rate=rate.cess_rate,
+        prices_include_gst=include_gst,
+        on=on,
+    )
 
 
 def resolve_price(

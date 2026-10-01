@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import User
 from apps.inventory.availability import ShopStockRules
 from apps.platform.selectors import get_setting
+from apps.pricing import schemes
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import own_retailer
 from apps.shop import selectors
@@ -26,10 +27,11 @@ from common.errors import NotFound
 from common.permissions import IsRetailer
 
 
-def _context(retailer: Retailer) -> dict[str, Any]:
+def _context(retailer: Retailer, product_ids: list[UUID] | None = None) -> dict[str, Any]:
     return {
         "own_brand_badge": bool(get_setting("retailers.show_own_brand_badge", retailer.tenant_id)),
         "stock": ShopStockRules.for_tenant(retailer.tenant_id),
+        "offers": schemes.headlines(retailer, product_ids) if product_ids else {},
     }
 
 
@@ -120,8 +122,10 @@ class ShopProductsView(ShopView):
 
     @staticmethod
     def _rows(retailer: Retailer, page: list[Any]) -> list[Any]:
-        rows = [{"product": p, "price": r} for p, r in selectors.priced(retailer, page)]
-        return list(s.ShopProductSerializer(rows, many=True, context=_context(retailer)).data)
+        found = selectors.priced(retailer, page)
+        rows = [{"product": p, "price": r} for p, r in found]
+        context = _context(retailer, [p.pk for p, _ in found])
+        return list(s.ShopProductSerializer(rows, many=True, context=context).data)
 
 
 class ShopProductDetailView(ShopView):
@@ -134,4 +138,5 @@ class ShopProductDetailView(ShopView):
         if found is None:
             raise NotFound()
         row = {"product": found.product, "price": found.price, "slab_hints": found.slab_hints}
-        return Response(s.ShopProductDetailSerializer(row, context=_context(retailer)).data)
+        context = _context(retailer, [found.product.pk])
+        return Response(s.ShopProductDetailSerializer(row, context=context).data)

@@ -65,6 +65,7 @@ const product = (id: string, name: string, extra: Partial<ShopProduct> = {}): Sh
     gst_rate: "18.000",
     prices_include_gst: false,
   },
+  free_offer: null,
   ...extra,
 });
 
