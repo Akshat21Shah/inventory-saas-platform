@@ -21135,6 +21135,11 @@ components:
           description: For information only; null without costs.view.
         supplier_snapshot:
           readOnly: true
+        send_to_email:
+          type: string
+          readOnly: true
+          description: 'Where sending emails it: the supplier''s email now (each send
+            copies the supplier''s current details); empty when it has none.'
         sent_by:
           type: string
           readOnly: true
@@ -21182,6 +21187,7 @@ components:
       - pdf_status
       - receipts
       - revision
+      - send_to_email
       - sent_at
       - sent_by
       - status

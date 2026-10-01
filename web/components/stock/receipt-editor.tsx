@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  getStockReceiptsRetrieveQueryKey,
   stockReceiptsCreate,
   stockReceiptsDestroy,
   stockReceiptsPost,
@@ -148,6 +150,7 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
   const [over, setOver] = useState<OverReceipt | null>(null);
   const errors = useErrorText();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useSearchParams();
   const phone = useIsPhone();
   const canCost = can("costs.view");
@@ -278,8 +281,9 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
     setSaving(true);
     setFieldErrors({});
     try {
-      let id = draft?.id;
+      let id: string;
       if (draft) {
+        id = draft.id;
         await stockReceiptsUpdate(draft.id, payload());
         if (post) {
           try {
@@ -301,13 +305,19 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
         id = created.data.id;
       }
       toast.success(post ? t("posted") : t("saved"));
-      router.replace(`/manage/stock/inwards/${id}`);
+      await open(id);
     } catch (err) {
       // The dialog closes so the messages next to the lines are visible.
       showErrors(err);
     } finally {
       setSaving(false);
     }
+  }
+
+  /** The receipt's page; a draft is already on it, so its data is fetched again (now posted). */
+  async function open(id: string) {
+    await queryClient.invalidateQueries({ queryKey: getStockReceiptsRetrieveQueryKey(id) });
+    router.replace(`/manage/stock/inwards/${id}`);
   }
 
   async function receiveAnyway() {
@@ -321,7 +331,7 @@ export function ReceiptEditor({ draft }: { draft?: ReceiptDetail }) {
       );
       setOver(null);
       toast.success(t("posted"));
-      router.replace(`/manage/stock/inwards/${draft.id}`);
+      await open(draft.id);
     } catch (err) {
       toast.error(errors.message(err));
     } finally {

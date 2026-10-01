@@ -44,7 +44,7 @@ import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
 import { useDebounced } from "@/lib/use-debounced";
-import { initialQuery } from "@/lib/initial-query";
+import { useListSearch } from "@/lib/list-search";
 
 import { BillingNav } from "./billing-nav";
 import { DocumentButton } from "./document-button";
@@ -74,7 +74,7 @@ export function InvoicesList({ retailerId }: { retailerId?: string } = {}) {
   const { feature } = useAuth();
   const einvoiceOn = feature("einvoice");
   const cursor = useCursor();
-  const [search, setSearch] = useState(initialQuery);
+  const [search, setSearch] = useListSearch();
   const [status, setStatus] = useState<string>(ALL);
   const [irn, setIrn] = useState<string>(ALL);
   const [overdue, setOverdue] = useState(false);

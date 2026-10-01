@@ -256,6 +256,11 @@ def test_staff_who_cant_see_costs_neither_see_nor_change_them(world, run):
 @covers("purchase-order-send")
 def test_sending_emails_the_suppliers_copy_and_gives_a_link_to_share(world, run):
     order = _create(world, run)
+    # A draft has no copy of the supplier's details yet; it shows where sending will email it.
+    assert (order["supplier_snapshot"], order["send_to_email"]) == (
+        {},
+        "orders@hindustan.example.com",
+    )
     key = f"k-{uuid4().hex}"
     sent = _send(world, run, order["id"], key)
     assert sent.status_code == 200, sent.json()
@@ -310,6 +315,7 @@ def test_a_supplier_without_email_gets_the_link_only(world, run):
         f"{API}/suppliers/{world['supplier']['id']}/", {"email": ""}, format="json"
     )
     order = _create(world, run)
+    assert order["send_to_email"] == ""
     body = _send(world, run, order["id"]).json()
     assert body["emailed"] is False and "/public/documents/" in body["share_link"]
     assert mail.outbox == []

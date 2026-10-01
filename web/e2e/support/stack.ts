@@ -7,7 +7,11 @@ import { resolve } from "node:path";
  * Every value here is a public demo value from `make seed`.
  */
 export const FULL_STACK = Boolean(process.env.E2E_FULL_STACK);
-export const PORT = new URL(process.env.E2E_BASE_URL ?? "http://localhost:3000").port || "3000";
+const BASE_URL = new URL(process.env.E2E_BASE_URL ?? "http://localhost:3000");
+export const PORT = BASE_URL.port || "3000";
+/** `localhost`, or the dev stack's LAN domain (`make lan`, e.g. 192-168-0-106.nip.io) when
+ * E2E_BASE_URL names it, so the suites also run without switching the stack back. */
+const DOMAIN = BASE_URL.hostname;
 export const MAILPIT = process.env.E2E_MAILPIT_URL ?? "http://localhost:8025";
 export const ADMIN = {
   email: "admin@platform.local",
@@ -65,7 +69,7 @@ export function workbook(args: string[]): Buffer {
   return Buffer.from(manage(["e2e_workbook", ...args]).trim(), "base64");
 }
 
-export const origin = (sub?: string) => `http://${sub ? `${sub}.` : ""}localhost:${PORT}`;
+export const origin = (sub?: string) => `http://${sub ? `${sub}.` : ""}${DOMAIN}:${PORT}`;
 
 function base32(secret: string): Buffer {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

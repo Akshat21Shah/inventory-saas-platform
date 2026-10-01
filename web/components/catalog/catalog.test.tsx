@@ -26,7 +26,11 @@ const auth = {
 };
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
-vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/manage" }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/manage",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 afterEach(() => {
   vi.unstubAllGlobals();

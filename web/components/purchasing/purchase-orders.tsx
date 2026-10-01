@@ -61,7 +61,7 @@ import type {
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
-import { initialQuery } from "@/lib/initial-query";
+import { useListSearch } from "@/lib/list-search";
 import { useDebounced } from "@/lib/use-debounced";
 import { useIsCompact } from "@/lib/use-media";
 
@@ -103,7 +103,7 @@ export function PurchaseOrdersPage() {
   const { can } = useAuth();
   const params = useSearchParams();
   const suppliers = useSupplierOptions();
-  const [search, setSearch] = useState(initialQuery);
+  const [search, setSearch] = useListSearch();
   const [status, setStatus] = useState(ALL);
   const [supplier, setSupplier] = useState(ALL);
   const [late, setLate] = useState(params.get("late") ? "late" : ALL); // the dashboard's tile
@@ -876,10 +876,8 @@ function SendDialog({
   const t = useTranslations("purchasing.order");
   const errors = useErrorText();
   const key = useRef(newIdempotencyKey());
-  const email =
-    order.supplier_snapshot && typeof order.supplier_snapshot === "object"
-      ? (order.supplier_snapshot as { email?: string }).email
-      : undefined;
+  // Each send copies the supplier's current details: a draft has no copy yet.
+  const email = order.send_to_email;
   const again = order.status === "SENT" && !order.changed_since_sent;
   return (
     <ConfirmDialog

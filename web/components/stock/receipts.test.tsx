@@ -223,8 +223,10 @@ describe("receiving against a purchase order (purchasing on)", () => {
       ],
     });
     let attempt = 0;
+    const posted = { ...draft, status: "POSTED" as const, number: "GRN-2026-00009" };
     const calls = mockApi({
       "/api/v1/stock/": () => [200, page([])],
+      "/api/v1/stock/inwards/r9/": () => [200, attempt === 2 ? posted : draft],
       "PATCH /api/v1/stock/inwards/r9/": () => [200, draft],
       "POST /api/v1/stock/inwards/r9/post/": () => {
         attempt += 1;
@@ -252,11 +254,11 @@ describe("receiving against a purchase order (purchasing on)", () => {
                 },
               },
             ]
-          : [200, { ...draft, status: "POSTED" }];
+          : [200, posted];
       },
     });
-    renderWithIntl(<ReceiptEditor draft={draft} />);
-    expect(screen.getByRole("link", { name: "PO-2026-00003" })).toHaveAttribute(
+    renderWithIntl(<ReceiptPage receiptId="r9" />);
+    expect(await screen.findByRole("link", { name: "PO-2026-00003" })).toHaveAttribute(
       "href",
       "/manage/purchasing/orders/po1",
     );
@@ -272,6 +274,8 @@ describe("receiving against a purchase order (purchasing on)", () => {
     ).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole("button", { name: "Receive anyway" }));
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/manage/stock/inwards/r9"));
+    // Already on the draft's address: the page shows the receipt again, now posted.
+    expect(await screen.findByRole("heading", { name: "GRN-2026-00009" })).toBeInTheDocument();
     const posts = calls.filter((c) => c.path === "/api/v1/stock/inwards/r9/post/");
     expect(posts.map((c) => c.body)).toEqual([{}, { confirm_over_receipt: true }]);
     expect(posts[0]!.headers.get("Idempotency-Key")).not.toEqual(

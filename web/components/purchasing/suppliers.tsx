@@ -49,7 +49,7 @@ import type { SupplierDetail, SupplierList, SupplierProduct } from "@/lib/api/ge
 import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
-import { initialQuery } from "@/lib/initial-query";
+import { useListSearch } from "@/lib/list-search";
 import { useDebounced } from "@/lib/use-debounced";
 
 const ALL = "all";
@@ -73,7 +73,7 @@ export function SuppliersPage() {
   const { can } = useAuth();
   const errors = useErrorText();
   const manage = can("purchasing.manage");
-  const [search, setSearch] = useState(initialQuery);
+  const [search, setSearch] = useListSearch();
   const [status, setStatus] = useState(ALL);
   const cursor = useCursor();
   const debounced = useDebounced(search.trim());

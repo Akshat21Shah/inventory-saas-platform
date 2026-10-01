@@ -308,6 +308,12 @@ class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
         allow_null=True,
         help_text="For information only; null without costs.view.",
     )
+    send_to_email = serializers.CharField(
+        source="supplier.email",
+        read_only=True,
+        help_text="Where sending emails it: the supplier's email now (each send copies the "
+        "supplier's current details); empty when it has none.",
+    )
     lines = serializers.SerializerMethodField()
     receipts = serializers.SerializerMethodField()
     sent_by = serializers.SerializerMethodField()
@@ -319,6 +325,7 @@ class PurchaseOrderDetailSerializer(PurchaseOrderListSerializer):
             "notes",
             "estimated_tax",
             "supplier_snapshot",
+            "send_to_email",
             "sent_by",
             "closed_at",
             "closed_reason",

@@ -20,7 +20,11 @@ vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
-vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/manage" }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/manage",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 beforeEach(() => {
   permissions = new Set(["purchasing.view", "purchasing.manage", "costs.view"]);

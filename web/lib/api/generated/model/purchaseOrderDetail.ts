@@ -43,6 +43,8 @@ export interface PurchaseOrderDetail {
      */
   readonly estimated_tax: string | null;
   readonly supplier_snapshot: unknown;
+  /** Where sending emails it: the supplier's email now (each send copies the supplier's current details); empty when it has none. */
+  readonly send_to_email: string;
   readonly sent_by: string;
   /** @nullable */
   readonly closed_at: string | null;

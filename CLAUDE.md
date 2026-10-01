@@ -148,7 +148,7 @@ make migrate     # run migrations (as the schema-owner DB role)
 make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
-make e2e-stack   # acceptance E2E (Phases 1-8) against the running stack (needs make up + make seed)
+make e2e-stack   # acceptance E2E (Phases 1-9a) against the running stack (needs make up + make seed)
 make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make fmt         # auto-format backend + frontend
@@ -169,7 +169,7 @@ URLs in dev:
 - health: http://localhost:8000/health/ready
 - mailpit: http://localhost:8025 (emails, and copies of what the mock WhatsApp and SMS providers "send": `[WhatsApp mock] …`, `[SMS mock] …`)
 - S3: http://localhost:8333
-- After `make lan` (dev only): the same pages on `<lan-ip-with-dashes>.nip.io`, e.g. http://sharma.192-168-0-106.nip.io:3000. Only web (3000) and photos (8333) are reachable from other devices; database, Redis, API and Mailpit stay on this machine. `*.localhost` doesn't work until `make localhost`.
+- After `make lan` (dev only): the same pages on `<lan-ip-with-dashes>.nip.io`, e.g. http://sharma.192-168-0-106.nip.io:3000. Only web (3000) and photos (8333) are reachable from other devices; database, Redis, API and Mailpit stay on this machine. `*.localhost` doesn't work until `make localhost`. The full-stack E2E suites run in this mode too: `E2E_FULL_STACK=1 E2E_BASE_URL=http://<lan-ip-with-dashes>.nip.io:3000 npx playwright test …` (from `web/`).
 - Camera barcode scanning over `make lan` (dev only, ADR-041): browsers allow the camera only on https or localhost. On an Android phone, open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, enter the tenant address (e.g. `http://sharma.192-168-0-106.nip.io:3000`; several are separated by commas), choose Enabled and relaunch Chrome. iPhones have no such switch. Typed codes and USB/Bluetooth scanners work without it; real camera testing is on staging (https).
 
 Database roles:
