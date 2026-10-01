@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProductStats, ReorderSuggestion } from "@/lib/api/generated/model";
 import { mockApi } from "@/tests/mock-api";
 import { renderWithIntl } from "@/tests/render";
+import { setViewport } from "@/tests/viewport";
 
 import { ProductPlanningCard } from "./product-planning";
 import { SuggestionsPage } from "./suggestions";
@@ -31,13 +32,17 @@ beforeEach(() => {
   toast.success.mockReset();
   toast.error.mockReset();
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  setViewport(1440);
+});
 
 const page = (results: unknown[]) =>
   [200, { next: null, previous: null, results }] as [number, unknown];
 
 const suggestion = (extra: Partial<ReorderSuggestion> = {}): ReorderSuggestion => ({
   id: "g1",
+  status: "OPEN",
   product_id: "p1",
   product_code: "TEA",
   product_name: "Tata Tea Gold",
@@ -63,7 +68,9 @@ const suggestion = (extra: Partial<ReorderSuggestion> = {}): ReorderSuggestion =
   suggested_qty: "48.000",
   quantity: null,
   to_order: "48.000",
+  packs: 4,
   days_left: "2.0",
+  last_sale_date: "2026-09-30",
   ...extra,
 });
 
@@ -84,21 +91,42 @@ describe("SuggestionsPage", () => {
             waiting: "0.000",
             on_order: "0.000",
             pack_size: null,
+            packs: null,
+            days_left: null,
+            last_sale_date: null,
+          }),
+          suggestion({
+            id: "g3",
+            product_id: "p3",
+            product_name: "Old Oats",
+            basis: "LOW_HISTORY",
+            available: "0.000",
+            on_order: "0.000",
+            reorder_level: "0.000",
+            pack_size: null,
+            packs: null,
+            to_order: "3.000",
             days_left: null,
           }),
         ]),
     });
     renderWithIntl(<SuggestionsPage />);
     const tea = (await screen.findByText("Tata Tea Gold")).closest("tr")!;
+    // The action and its urgency first, then why.
+    expect(
+      within(tea).getByText(
+        "Order 48 PCS (4 packs of 12) · about 2 days of stock left, 3 PCS waiting",
+      ),
+    ).toBeInTheDocument();
     expect(
       within(tea).getByText(
         "Shops ordered 60 PCS in the last 30 days (about 2 PCS a day). 4 PCS available, 3 waiting for " +
           "shops, 12 on order. Reorder at 24 PCS: 5 days to arrive (the supplier's time for " +
           "this product) plus 7 days of safety stock. This order covers 14 days after it " +
-          "arrives. Rounded up to packs of 12 PCS.",
+          "arrives and the 3 PCS shops are waiting for. Rounded up to packs of 12 PCS.",
       ),
     ).toBeInTheDocument();
-    expect(within(tea).getByText("2 days")).toBeInTheDocument();
+    expect(within(tea).getByText("About 2 days")).toBeInTheDocument();
     expect(within(tea).getByText("Hindustan Traders")).toBeInTheDocument();
     expect(within(tea).getByLabelText("Quantity of Tata Tea Gold to order, in PCS")).toHaveValue(
       "48",
@@ -111,8 +139,101 @@ describe("SuggestionsPage", () => {
           "4 PCS available. It brings stock up to the reorder level of 10 PCS.",
       ),
     ).toBeInTheDocument();
+    expect(within(biscuits).getByText("Order 48 PCS · at its reorder level")).toBeInTheDocument();
     expect(within(biscuits).getByText("At reorder level")).toBeInTheDocument();
     expect(within(biscuits).getByText("No preferred supplier")).toBeInTheDocument();
+
+    // Sold before, but no order lately; out of stock, shops waiting, no reorder level.
+    const oats = screen.getByText("Old Oats").closest("tr")!;
+    expect(within(oats).getByText("Order 3 PCS · out of stock, 3 PCS waiting")).toBeInTheDocument();
+    expect(
+      within(oats).getByText(
+        "No shop ordered this in the last 30 days, so this goes by the reorder level and any " +
+          "shops waiting. 0 PCS available, 3 waiting for shops. It covers the 3 PCS shops are " +
+          "waiting for.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(oats).getByText("Out of stock")).toBeInTheDocument();
+  });
+
+  it("shows the days left in whole days, and less than a day", async () => {
+    mockApi({
+      "/api/v1/suppliers/": () => page([]),
+      "/api/v1/reorder-suggestions/": () =>
+        page([
+          suggestion({ days_left: "12.0", waiting: "0.000" }),
+          suggestion({ id: "g2", product_name: "Quick Tea", days_left: "0.0", waiting: "0.000" }),
+        ]),
+    });
+    renderWithIntl(<SuggestionsPage />);
+    expect(
+      await screen.findByText("Order 48 PCS (4 packs of 12) · about 12 days of stock left"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("About 12 days")).toBeInTheDocument();
+    expect(
+      screen.getByText("Order 48 PCS (4 packs of 12) · less than a day of stock left"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Less than a day")).toBeInTheDocument();
+  });
+
+  it("lists products below their reorder level that aren't selling, apart", async () => {
+    const calls = mockApi({
+      "/api/v1/suppliers/": () => page([]),
+      "/api/v1/reorder-suggestions/": (_body, url) =>
+        url.searchParams.get("status") === "NOT_SELLING"
+          ? page([
+              suggestion({
+                id: "g9",
+                status: "NOT_SELLING",
+                product_id: "p9",
+                product_name: "Dusty Dates",
+                basis: "LOW_HISTORY",
+                available: "17.000",
+                reorder_level: "24.000",
+              }),
+            ])
+          : page([]),
+    });
+    const user = userEvent.setup();
+    renderWithIntl(<SuggestionsPage />);
+    expect(await screen.findByText("Nothing to reorder")).toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Show" }));
+    await user.click(
+      await screen.findByRole("option", { name: "Below reorder level, not selling" }),
+    );
+    const row = (await screen.findByText("Dusty Dates")).closest("tr")!;
+    expect(calls.at(-1)?.url.searchParams.get("status")).toBe("NOT_SELLING");
+    expect(
+      within(row).getByText(
+        "Below its reorder level but not selling. Consider lowering the reorder level.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(row).getByText("17 PCS available · reorder level 24 PCS")).toBeInTheDocument();
+    expect(within(row).getByRole("link", { name: "Change the reorder level" })).toHaveAttribute(
+      "href",
+      "/manage/stock/p9",
+    );
+    expect(within(row).queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull(); // never ordered from here
+  });
+
+  it("folds the explanation away on phones", async () => {
+    setViewport(360);
+    mockApi({
+      "/api/v1/suppliers/": () => page([]),
+      "/api/v1/reorder-suggestions/": () => page([suggestion()]),
+    });
+    const user = userEvent.setup();
+    renderWithIntl(<SuggestionsPage />);
+    expect(
+      await screen.findByText(
+        "Order 48 PCS (4 packs of 12) · about 2 days of stock left, 3 PCS waiting",
+      ),
+    ).toBeVisible();
+    const explanation = screen.getByText(/^Shops ordered 60 PCS/);
+    expect(explanation).not.toBeVisible();
+    await user.click(screen.getByText("Why this much"));
+    expect(explanation).toBeVisible();
   });
 
   it("tells slow demand per week or month, and less than 1 a month", async () => {
@@ -269,7 +390,8 @@ const stats = (extra: Partial<ProductStats> = {}): ProductStats => ({
   movement_class: "FAST",
   last_sale_date: "2026-09-30",
   available: "9.000",
-  days_of_stock: "4.5",
+  days_of_stock: "4.0",
+  not_selling: false,
   ...extra,
 });
 
@@ -285,12 +407,38 @@ describe("ProductPlanningCard", () => {
     renderWithIntl(<ProductPlanningCard productId="p1" unit="PCS" />);
     expect(await screen.findByText("A: your top sellers")).toBeInTheDocument();
     expect(screen.getByText("about 2 PCS a day")).toBeInTheDocument();
-    expect(screen.getByText("4.5 days")).toBeInTheDocument();
+    expect(screen.getByText("About 4 days")).toBeInTheDocument();
     expect(screen.getByText("Fast")).toBeInTheDocument();
     expect(screen.getByText("Over the last 30 days.")).toBeInTheDocument();
     expect(await screen.findByText(/On order: 24 PCS/)).toHaveTextContent(
       "On order: 24 PCS, expected 05-10-2026Late",
     );
+  });
+
+  it("says when stock is out, and when the reorder level looks too high", async () => {
+    mockApi({
+      "/api/v1/products/p1/stats/": () => [
+        200,
+        stats({
+          available: "0.000",
+          days_of_stock: "0.0",
+          movement_class: "DEAD",
+          abc_class: null,
+          not_selling: true,
+        }),
+      ],
+      "/api/v1/products/p1/on-order/": () => [
+        200,
+        { quantity: "0.000", expected_date: null, late: false },
+      ],
+    });
+    renderWithIntl(<ProductPlanningCard productId="p1" unit="PCS" />);
+    expect(await screen.findByText("Out of stock")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Below its reorder level but not selling. Consider lowering the reorder level.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("says when the figures aren't worked out yet", async () => {

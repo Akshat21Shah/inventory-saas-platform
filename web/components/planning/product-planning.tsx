@@ -9,17 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductStats } from "@/lib/api/generated/endpoints/planning/planning";
 import { useProductOnOrder } from "@/lib/api/generated/endpoints/purchasing/purchasing";
-import type { DemandRate } from "@/lib/api/generated/model";
 import { formatQty } from "@/lib/format";
 
-/** "about 2 PCS a month": the server's rate (per day from 1 a day, else per week or month). */
-export function useDemandRate() {
-  const t = useTranslations("planning.rate");
-  return (rate: DemandRate, unit: string) =>
-    Number(rate.quantity) === 0
-      ? t("lessThanOne", { unit })
-      : t("about", { qty: formatQty(rate.quantity, 2), unit, period: rate.period });
-}
+import { useDemandRate, useStockLasts } from "./words";
 
 /**
  * What is on order for a product and when (purchasing on; for anyone who sees orders or stock,
@@ -58,6 +50,8 @@ export function ProductPlanningCard({ productId, unit }: { productId: string; un
   const purchasing = feature("purchasing") && (can("orders.view") || can("stock.view"));
   const stats = useProductStats(productId, { query: { enabled: planning } });
   const rate = useDemandRate();
+  const stockLasts = useStockLasts();
+  const notSelling = useTranslations("planning.notSelling");
   if (!planning && !purchasing) return null;
   const figures = stats.data?.status === 200 ? stats.data.data : null;
   return (
@@ -75,6 +69,11 @@ export function ProductPlanningCard({ productId, unit }: { productId: string; un
           <p className="text-muted-foreground">{t("notYet")}</p>
         ) : (
           <>
+            {figures.not_selling ? (
+              <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+                {notSelling("note")}
+              </p>
+            ) : null}
             <Fact label={t("ordered")}>
               {Number(figures.demand_qty) > 0 ? rate(figures.demand_rate, unit) : t("noDemand")}
             </Fact>
@@ -82,9 +81,7 @@ export function ProductPlanningCard({ productId, unit }: { productId: string; un
               {t("demandNote", { days: figures.demand_days })}
             </p>
             <Fact label={t("daysOfStock")}>
-              {figures.days_of_stock !== null
-                ? t("days", { count: Number(figures.days_of_stock) })
-                : t("noDemand")}
+              {stockLasts(figures.available, figures.days_of_stock) ?? t("noDemand")}
             </Fact>
             <Fact label={t("abc")}>
               {figures.abc_class ? t(`abcClasses.${figures.abc_class}`) : t("noSales")}

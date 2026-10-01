@@ -4,7 +4,7 @@
   orders placed in that period: rejected orders and orders the shop itself cancelled are left out;
   orders the distributor cancelled still count (the shop wanted the goods).
 - **Per day** is demand ÷ days; **days of stock** is what is available (on hand less reserved) ÷
-  per day, none when nothing was ordered.
+  per day in whole days, rounded down, none when nothing was ordered.
 - **ABC class** by sales value (taxable, net of credit notes) over ⚙ ``reports.movement_days``:
   ranked from the top, a product is A while the products above it make less than
   ⚙ ``planning.abc_a_percent`` of the value, B while they make less than ⚙
@@ -153,8 +153,8 @@ def refresh_stats(*, today: date | None = None) -> int:
         per_day = (ordered / demand_days).quantize(QTY, ROUND_HALF_UP)
         available = product["available"]
         days = None
-        if per_day > 0:
-            days = (max(available, ZERO) / per_day).quantize(TENTH, ROUND_HALF_UP)
+        if per_day > 0:  # whole days, rounded down (urgency first)
+            days = Decimal(int(max(available, ZERO) / per_day)).quantize(TENTH)
         rows.append(
             ProductStats(
                 tenant_id=tenant,

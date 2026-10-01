@@ -22,10 +22,15 @@ def stats_for(product_id: UUID) -> ProductStats | None:
 
 
 def open_suggestions(
-    *, supplier_id: UUID | None = None, basis: str = "", search: str = ""
+    *,
+    supplier_id: UUID | None = None,
+    basis: str = "",
+    search: str = "",
+    status: str = ReorderSuggestion.Status.OPEN,
 ) -> QuerySet[ReorderSuggestion]:
+    """To order (OPEN), or kept apart: below the reorder level but not selling (NOT_SELLING)."""
     qs = (
-        ReorderSuggestion.objects.filter(status=ReorderSuggestion.Status.OPEN)
+        ReorderSuggestion.objects.filter(status=status)
         .select_related("product", "product__unit", "supplier")
         .annotate(urgency=Coalesce("days_left", Value(Decimal("-1"))))
     )
@@ -47,6 +52,13 @@ def suggestion(suggestion_id: UUID) -> ReorderSuggestion | None:
         .first()
     )
     return found
+
+
+def not_selling(product_id: UUID) -> bool:
+    """Below its reorder level but not selling (no suggestion; the level may be too high)."""
+    return ReorderSuggestion.objects.filter(
+        product_id=product_id, status=ReorderSuggestion.Status.NOT_SELLING
+    ).exists()
 
 
 def open_suggestion_count() -> int:

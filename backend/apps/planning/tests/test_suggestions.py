@@ -177,6 +177,77 @@ def test_whole_units_round_up_and_split_units_to_two_decimals(world):
     assert world["owner"].patch(rice_url, {"quantity": "8.25"}, format="json").status_code == 200
 
 
+def test_a_dead_product_below_its_level_is_kept_apart_unless_shops_wait(world, run):
+    """Final review: not selling (dead in the classification period) and below its reorder level:
+    no suggestion, but listed apart and on the product's card; with shops waiting, suggested."""
+    with tenant_context(world["t"].pk):
+        ProductStats.objects.create(
+            product=world["levelled"],
+            computed_at=timezone.now(),
+            demand_days=30,
+            demand_qty=D("0"),
+            per_day=D("0"),
+            movement_days=90,
+            movement_class="DEAD",
+            last_sale_date=today_ist() - timedelta(days=200),
+        )
+    found = refresh(world)
+    assert "LVL" not in found  # nothing to order
+    owner = world["owner"]
+    listed = owner.get(f"{API}/reorder-suggestions/").json()["results"]
+    assert "LVL" not in [row["product_code"] for row in listed]
+    [apart] = owner.get(f"{API}/reorder-suggestions/", {"status": "NOT_SELLING"}).json()["results"]
+    assert (apart["product_code"], apart["status"], apart["reorder_level"]) == (
+        "LVL",
+        "NOT_SELLING",
+        "10.000",
+    )
+    stats = owner.get(f"{API}/products/{world['levelled'].pk}/stats/").json()
+    assert stats["not_selling"] is True
+    assert owner.get(f"{API}/products/{world['tea'].pk}/stats/").json()["not_selling"] is False
+    # Never ordered, never counted on the dashboard.
+    made = run(
+        owner.post,
+        f"{API}/reorder-suggestions/create-orders/",
+        {"suggestion_ids": [apart["id"]]},
+        format="json",
+        HTTP_IDEMPOTENCY_KEY=uuid4().hex,
+    )
+    assert made.status_code == 400
+    with tenant_context(world["t"].pk):
+        from apps.planning.selectors import open_suggestion_count
+
+        assert open_suggestion_count() == 2  # TEA and NEW
+    # A shop waits for it: suggested as before.
+    place(world["t"], world["shop"], (world["levelled"], "8"))
+    again = refresh(world)
+    assert again["LVL"].status == "OPEN" and again["LVL"].waiting > 0
+    assert again["LVL"].last_sale_date == today_ist() - timedelta(days=200)
+    with tenant_context(world["t"].pk):
+        assert not ReorderSuggestion.objects.filter(status="NOT_SELLING").exists()
+
+
+def test_days_left_in_whole_days_rounded_down_and_packs(world):
+    with tenant_context(world["t"].pk):
+        ProductStats.objects.filter(product=world["tea"]).update(per_day=D("3"))
+    tea = refresh(world)["TEA"]
+    assert tea.days_left == D("6")  # 20 / 3 = 6.67: about 6 days
+    [row] = [
+        r
+        for r in world["owner"].get(f"{API}/reorder-suggestions/").json()["results"]
+        if r["product_code"] == "TEA"
+    ]
+    assert row["packs"] == int(D(row["to_order"]) / 10)  # whole packs of 10
+    with tenant_context(world["t"].pk):
+        suggestions.change_quantity(tea.pk, D("55"), by=world["owner_user"])
+    [row] = [
+        r
+        for r in world["owner"].get(f"{API}/reorder-suggestions/").json()["results"]
+        if r["product_code"] == "TEA"
+    ]
+    assert row["packs"] is None  # 55 isn't whole packs
+
+
 def test_what_is_on_order_counts(world, run):
     owner = world["owner"]
     order = run(

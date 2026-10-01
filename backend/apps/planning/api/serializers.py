@@ -27,6 +27,7 @@ class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
     abc_class = serializers.ChoiceField(choices=AbcClass.choices, allow_null=True)
     movement_class = serializers.ChoiceField(choices=MovementClass.choices, allow_null=True)
     demand_rate = serializers.SerializerMethodField()
+    not_selling = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductStats
@@ -42,12 +43,18 @@ class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
             "last_sale_date",
             "available",
             "days_of_stock",
+            "not_selling",
         ]
         read_only_fields = fields
 
     @extend_schema_field(DemandRateSerializer)
     def get_demand_rate(self, stats: ProductStats) -> dict[str, Any]:
         return _rate(stats.demand_qty, stats.demand_days, stats.product)
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_not_selling(self, stats: ProductStats) -> bool:
+        """Below its reorder level but not selling: consider lowering the level."""
+        return bool(self.context.get("not_selling"))
 
 
 class PlanningRefreshSerializer(serializers.Serializer[object]):
@@ -60,6 +67,12 @@ class SuggestionFilterSerializer(serializers.Serializer[object]):
         choices=ReorderSuggestion.Basis.choices, required=False, allow_blank=True, default=""
     )
     search = serializers.CharField(required=False, allow_blank=True, default="", max_length=100)
+    status = serializers.ChoiceField(
+        choices=[ReorderSuggestion.Status.OPEN, ReorderSuggestion.Status.NOT_SELLING],
+        required=False,
+        default=ReorderSuggestion.Status.OPEN,
+        help_text="OPEN: to order; NOT_SELLING: below the reorder level but not selling.",
+    )
 
 
 class ReorderSuggestionSerializer(serializers.ModelSerializer[ReorderSuggestion]):
@@ -74,11 +87,13 @@ class ReorderSuggestionSerializer(serializers.ModelSerializer[ReorderSuggestion]
     supplier_name = serializers.SerializerMethodField()
     to_order = serializers.DecimalField(max_digits=14, decimal_places=3, read_only=True)
     demand_rate = serializers.SerializerMethodField()
+    packs = serializers.SerializerMethodField()
 
     class Meta:
         model = ReorderSuggestion
         fields = [
             "id",
+            "status",
             "product_id",
             "product_code",
             "product_name",
@@ -104,13 +119,23 @@ class ReorderSuggestionSerializer(serializers.ModelSerializer[ReorderSuggestion]
             "suggested_qty",
             "quantity",
             "to_order",
+            "packs",
             "days_left",
+            "last_sale_date",
         ]
         read_only_fields = fields
 
     @extend_schema_field(DemandRateSerializer)
     def get_demand_rate(self, row: ReorderSuggestion) -> dict[str, Any]:
         return _rate(row.demand_qty, row.demand_days, row.product)
+
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
+    def get_packs(self, row: ReorderSuggestion) -> int | None:
+        """How many of the supplier's packs the quantity to order is (when it is whole packs)."""
+        if not row.pack_size:
+            return None
+        packs = row.to_order / row.pack_size
+        return int(packs) if packs == packs.to_integral() else None
 
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_supplier_name(self, row: ReorderSuggestion) -> str | None:

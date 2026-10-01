@@ -8,6 +8,7 @@
 import type { DemandRate } from './demandRate';
 import type { LeadSourceEnum } from './leadSourceEnum';
 import type { ReorderSuggestionBasisEnum } from './reorderSuggestionBasisEnum';
+import type { ReorderSuggestionStatusEnum } from './reorderSuggestionStatusEnum';
 
 /**
  * The figures behind a suggestion, for the app to explain it in plain words. The supplier is
@@ -15,6 +16,7 @@ import type { ReorderSuggestionBasisEnum } from './reorderSuggestionBasisEnum';
  */
 export interface ReorderSuggestion {
   readonly id: string;
+  readonly status: ReorderSuggestionStatusEnum;
   readonly product_id: string;
   readonly product_code: string;
   readonly product_name: string;
@@ -59,9 +61,13 @@ export interface ReorderSuggestion {
   readonly quantity: string | null;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   readonly to_order: string;
+  /** @nullable */
+  readonly packs: number | null;
   /**
      * @nullable
      * @pattern ^-?\d{0,8}(?:\.\d{0,1})?$
      */
   readonly days_left: string | null;
+  /** @nullable */
+  readonly last_sale_date: string | null;
 }

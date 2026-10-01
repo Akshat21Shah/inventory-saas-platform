@@ -81,6 +81,9 @@ class ReorderSuggestion(TenantScopedModel):
         ORDERED = "ORDERED", "Ordered"  # put on a purchase order
         DISMISSED = "DISMISSED", "Dismissed"  # not suggested again until ``dismissed_until``
         RESOLVED = "RESOLVED", "No longer needed"
+        # Below its reorder level but not selling, no shop waiting: shown apart, never ordered
+        # (final review): the reorder level may be too high.
+        NOT_SELLING = "NOT_SELLING", "Below its reorder level, not selling"
 
     class Basis(models.TextChoices):
         DEMAND = "DEMAND", "Daily demand"
@@ -97,7 +100,7 @@ class ReorderSuggestion(TenantScopedModel):
     supplier = models.ForeignKey(
         "purchasing.Supplier", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
-    status = models.CharField(max_length=9, choices=Status.choices, default=Status.OPEN)
+    status = models.CharField(max_length=11, choices=Status.choices, default=Status.OPEN)
     computed_at = models.DateTimeField()
     basis = models.CharField(max_length=11, choices=Basis.choices)
     demand_qty = QtyField(default=0)
@@ -116,6 +119,7 @@ class ReorderSuggestion(TenantScopedModel):
     suggested_qty = QtyField()
     quantity = QtyField(null=True, blank=True)  # changed by staff; null = the suggestion
     days_left = models.DecimalField(max_digits=9, decimal_places=1, null=True, blank=True)
+    last_sale_date = models.DateField(null=True, blank=True)  # none: never sold
     purchase_order_line = models.ForeignKey(
         "purchasing.PurchaseOrderLine",
         on_delete=models.SET_NULL,

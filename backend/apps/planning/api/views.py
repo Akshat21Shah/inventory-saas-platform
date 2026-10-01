@@ -49,7 +49,8 @@ class ProductStatsView(PlanningView):
         stats = selectors.stats_for(product_id)
         if stats is None:
             return Response(status=204)
-        return Response(s.ProductStatsSerializer(stats).data)
+        context = {"not_selling": selectors.not_selling(product_id)}
+        return Response(s.ProductStatsSerializer(stats, context=context).data)
 
 
 class StatsRefreshView(PlanningView):
@@ -108,7 +109,7 @@ class SuggestionListView(PlanningView, generics.ListAPIView[ReorderSuggestion]):
         f.is_valid(raise_exception=True)
         v = f.validated_data
         return selectors.open_suggestions(
-            supplier_id=v["supplier"], basis=v["basis"], search=v["search"]
+            supplier_id=v["supplier"], basis=v["basis"], search=v["search"], status=v["status"]
         )
 
     def get_serializer_context(self) -> dict[str, Any]:

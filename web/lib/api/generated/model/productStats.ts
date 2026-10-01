@@ -34,4 +34,5 @@ export interface ProductStats {
      * @pattern ^-?\d{0,8}(?:\.\d{0,1})?$
      */
   readonly days_of_stock: string | null;
+  readonly not_selling: boolean;
 }

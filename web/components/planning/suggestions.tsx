@@ -8,7 +8,6 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { FilterSelect } from "@/components/catalog/controls";
-import { useDemandRate } from "@/components/planning/product-planning";
 import { useSupplierOptions } from "@/components/purchasing/options";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -42,6 +41,9 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
+import { useIsPhone } from "@/lib/use-media";
+
+import { useDemandRate, useStockLasts } from "./words";
 
 const ALL = "all";
 // Whole numbers come whole from the server; units that can be split show at most 2 decimals.
@@ -52,6 +54,7 @@ export function Explanation({ row }: { row: ReorderSuggestion }) {
   const t = useTranslations("planning.why");
   const rate = useDemandRate();
   const unit = row.unit_code;
+  const waiting = { waiting: q(row.waiting), unit, hasWaiting: String(Number(row.waiting) > 0) };
   const parts: string[] = [];
   if (row.basis === "DEMAND") {
     parts.push(
@@ -63,16 +66,17 @@ export function Explanation({ row }: { row: ReorderSuggestion }) {
       }),
     );
   } else {
-    parts.push(t("lowHistory"));
+    // Older sales but no order lately, or never sold at all.
+    parts.push(
+      row.last_sale_date ? t("noRecentOrders", { days: row.demand_days }) : t("lowHistory"),
+    );
   }
   parts.push(
     t("position", {
       available: q(row.available),
-      waiting: q(row.waiting),
       onOrder: q(row.on_order),
-      unit,
-      hasWaiting: String(Number(row.waiting) > 0),
       hasOnOrder: String(Number(row.on_order) > 0),
+      ...waiting,
     }),
   );
   if (row.basis === "DEMAND") {
@@ -85,18 +89,39 @@ export function Explanation({ row }: { row: ReorderSuggestion }) {
         unit,
       }),
     );
-    parts.push(t("cover", { cover: row.cover_days }));
+    parts.push(t("cover", { cover: row.cover_days, ...waiting }));
+  } else if (Number(row.reorder_level) > 0) {
+    parts.push(t("upToLevel", { level: q(row.reorder_level), ...waiting }));
   } else {
-    parts.push(
-      t("upToLevel", {
-        level: q(row.reorder_level),
-        unit,
-        hasWaiting: String(Number(row.waiting) > 0),
-      }),
-    );
+    parts.push(t("waitingOnly", waiting));
   }
   if (row.pack_size) parts.push(t("pack", { pack: q(row.pack_size), unit }));
   return <p className="text-muted-foreground text-xs leading-relaxed">{parts.join(" ")}</p>;
+}
+
+/** The action and how urgent it is: "Order 150 PCS (15 packs of 10) · about 10 days of stock
+ * left", "Order 810 PCS (81 packs of 10) · out of stock, 297 PCS waiting". */
+export function Headline({ row }: { row: ReorderSuggestion }) {
+  const t = useTranslations("planning.headline");
+  const unit = row.unit_code;
+  const action =
+    row.packs && row.pack_size
+      ? t("orderPacks", { qty: q(row.to_order), unit, packs: row.packs, pack: q(row.pack_size) })
+      : t("order", { qty: q(row.to_order), unit });
+  const urgency: string[] = [];
+  if (Number(row.available) <= 0) urgency.push(t("outOfStock"));
+  else if (row.days_left !== null) {
+    const days = Number(row.days_left);
+    urgency.push(days < 1 ? t("lessThanDay") : t("daysLeft", { count: days }));
+  } else if (Number(row.reorder_level) > 0 && Number(row.available) <= Number(row.reorder_level)) {
+    urgency.push(t("atLevel"));
+  }
+  if (Number(row.waiting) > 0) urgency.push(t("waiting", { qty: q(row.waiting), unit }));
+  return (
+    <p className="font-medium">
+      {urgency.length ? t("line", { action, urgency: urgency.join(", ") }) : action}
+    </p>
+  );
 }
 
 function QuantityCell({
@@ -222,6 +247,7 @@ function DismissDialog({ row, onDone }: { row: ReorderSuggestion; onDone: () => 
 
 export function SuggestionsPage() {
   const t = useTranslations("planning.suggestions");
+  const notSelling = useTranslations("planning.notSelling");
   const errors = useErrorText();
   const { can, feature } = useAuth();
   const purchasing = feature("purchasing");
@@ -232,6 +258,11 @@ export function SuggestionsPage() {
   const [search, setSearch] = useState("");
   const [basis, setBasis] = useState(ALL);
   const [supplier, setSupplier] = useState(ALL);
+  // To order, or kept apart: below the reorder level but not selling (final review).
+  const [show, setShow] = useState<"OPEN" | "NOT_SELLING">("OPEN");
+  const apart = show === "NOT_SELLING";
+  const phone = useIsPhone();
+  const stockLasts = useStockLasts();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const ordersKey = useRef(newIdempotencyKey());
   const cursor = useCursor();
@@ -242,6 +273,7 @@ export function SuggestionsPage() {
       search: debounced || undefined,
       basis: basis === ALL ? undefined : (basis as ReorderSuggestion["basis"]),
       supplier: supplier === ALL ? undefined : supplier,
+      status: show,
     },
     { query: { enabled: feature("stock_planning") } },
   );
@@ -296,36 +328,78 @@ export function SuggestionsPage() {
     }
   }
 
+  const name = (row: ReorderSuggestion) => (
+    <Link href={`/manage/products/${row.product_id}`} className="block hover:underline">
+      <span className="block font-medium">{row.product_name}</span>
+      <span className="text-muted-foreground block text-xs">{row.product_code}</span>
+    </Link>
+  );
+
+  const apartColumns: DataTableColumn<ReorderSuggestion>[] = [
+    {
+      id: "product",
+      header: t("product"),
+      cell: ({ row }) => (
+        <div className="max-w-xl space-y-1 whitespace-normal lg:min-w-64">
+          {name(row.original)}
+          <p className="text-sm">{notSelling("note")}</p>
+          <p className="text-muted-foreground text-xs">
+            {t("apartFigures", {
+              available: q(row.original.available),
+              level: q(row.original.reorder_level),
+              unit: row.original.unit_code,
+            })}
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: t("actions"),
+      cell: ({ row }) => (
+        <Button asChild size="sm" variant="outline" className="min-h-9">
+          <Link href={`/manage/stock/${row.original.product_id}`}>{t("changeLevel")}</Link>
+        </Button>
+      ),
+    },
+  ];
+
   const columns: DataTableColumn<ReorderSuggestion>[] = [
     {
       id: "product",
       header: t("product"),
       cell: ({ row }) => (
         <div className="max-w-xl space-y-1 whitespace-normal lg:min-w-64">
-          <Link
-            href={`/manage/products/${row.original.product_id}`}
-            className="block hover:underline"
-          >
-            <span className="block font-medium">{row.original.product_name}</span>
-            <span className="text-muted-foreground block text-xs">{row.original.product_code}</span>
-          </Link>
-          <Explanation row={row.original} />
+          {name(row.original)}
+          <Headline row={row.original} />
+          {phone ? (
+            <details className="group">
+              <summary className="text-primary flex min-h-11 cursor-pointer items-center text-xs">
+                {t("why")}
+              </summary>
+              <Explanation row={row.original} />
+            </details>
+          ) : (
+            <Explanation row={row.original} />
+          )}
         </div>
       ),
     },
     {
       id: "left",
       header: t("daysLeft"),
-      cell: ({ row }) =>
-        row.original.days_left !== null ? (
-          <span className="tabular-nums">
-            {t("days", { count: Number(row.original.days_left) })}
-          </span>
-        ) : Number(row.original.waiting) > 0 ? (
+      cell: ({ row }) => {
+        const lasts = stockLasts(row.original.available, row.original.days_left);
+        if (Number(row.original.available) <= 0) {
+          return <Badge variant="destructive">{lasts}</Badge>;
+        }
+        if (lasts) return <span className="tabular-nums">{lasts}</span>;
+        return Number(row.original.waiting) > 0 ? (
           <Badge variant="destructive">{t("shopsWaiting")}</Badge>
         ) : (
           <Badge variant="outline">{t("atLevel")}</Badge>
-        ),
+        );
+      },
     },
     ...(showSuppliers
       ? [
@@ -357,7 +431,7 @@ export function SuggestionsPage() {
       : []),
   ];
 
-  const bulk = (purchasing && manage) || levels;
+  const bulk = !apart && ((purchasing && manage) || levels);
   return (
     <>
       <PageHeader
@@ -373,7 +447,7 @@ export function SuggestionsPage() {
         }
       />
       <DataTable
-        columns={columns}
+        columns={apart ? apartColumns : columns}
         data={rows}
         getRowId={(row) => row.id}
         isLoading={query.isLoading}
@@ -384,15 +458,21 @@ export function SuggestionsPage() {
         empty={
           debounced || basis !== ALL || supplier !== ALL
             ? { title: t("noMatchTitle"), description: t("noMatchBody") }
-            : { title: t("emptyTitle"), description: t("emptyBody") }
+            : apart
+              ? { title: t("apartEmptyTitle"), description: t("apartEmptyBody") }
+              : { title: t("emptyTitle"), description: t("emptyBody") }
         }
-        cardLayout={{
-          product: "title",
-          left: "primary",
-          supplier: "primary",
-          order: "primary",
-          actions: "actions",
-        }}
+        cardLayout={
+          apart
+            ? { product: "title", actions: "actions" }
+            : {
+                product: "title",
+                left: "primary",
+                supplier: "primary",
+                order: "primary",
+                actions: "actions",
+              }
+        }
         selection={
           bulk
             ? {
@@ -420,10 +500,12 @@ export function SuggestionsPage() {
         }
         toolbar={
           <FilterBar
-            active={[basis, supplier].filter((f) => f !== ALL).length}
+            active={[basis, supplier].filter((f) => f !== ALL).length + (apart ? 1 : 0)}
             onClear={() => {
               setBasis(ALL);
               setSupplier(ALL);
+              setShow("OPEN");
+              setSelected(new Set());
               cursor.reset();
             }}
             search={
@@ -441,6 +523,19 @@ export function SuggestionsPage() {
             }
             filters={
               <>
+                <FilterSelect
+                  label={t("show")}
+                  value={show}
+                  onChange={(value) => {
+                    setShow(value as "OPEN" | "NOT_SELLING");
+                    setSelected(new Set());
+                    cursor.reset();
+                  }}
+                  options={[
+                    { value: "OPEN", label: t("shows.OPEN") },
+                    { value: "NOT_SELLING", label: t("shows.NOT_SELLING") },
+                  ]}
+                />
                 <FilterSelect
                   label={t("basis")}
                   value={basis}

@@ -6479,6 +6479,20 @@ paths:
           default: ''
           maxLength: 100
       - in: query
+        name: status
+        schema:
+          enum:
+          - OPEN
+          - NOT_SELLING
+          type: string
+          default: OPEN
+          minLength: 1
+        description: |-
+          OPEN: to order; NOT_SELLING: below the reorder level but not selling.
+
+          * `OPEN` - OPEN
+          * `NOT_SELLING` - NOT_SELLING
+      - in: query
         name: supplier
         schema:
           type: string
@@ -20862,6 +20876,9 @@ components:
           pattern: ^-?\d{0,8}(?:\.\d{0,1})?$
           readOnly: true
           nullable: true
+        not_selling:
+          type: boolean
+          readOnly: true
       required:
       - abc_class
       - available
@@ -20873,6 +20890,7 @@ components:
       - last_sale_date
       - movement_class
       - movement_days
+      - not_selling
       - per_day
     ProductSuppliersRequest:
       type: object
@@ -22643,6 +22661,10 @@ components:
           type: string
           format: uuid
           readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReorderSuggestionStatusEnum'
+          readOnly: true
         product_id:
           type: string
           format: uuid
@@ -22750,10 +22772,19 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           readOnly: true
+        packs:
+          type: integer
+          nullable: true
+          readOnly: true
         days_left:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        last_sale_date:
+          type: string
+          format: date
           readOnly: true
           nullable: true
       required:
@@ -22766,10 +22797,12 @@ components:
       - demand_qty
       - demand_rate
       - id
+      - last_sale_date
       - lead_days
       - lead_source
       - on_order
       - pack_size
+      - packs
       - per_day
       - product_code
       - product_id
@@ -22778,6 +22811,7 @@ components:
       - reorder_level
       - reorder_point
       - safety_days
+      - status
       - suggested_qty
       - supplier_id
       - supplier_name
@@ -22792,6 +22826,20 @@ components:
       description: |-
         * `DEMAND` - Daily demand
         * `LOW_HISTORY` - Little or no sales history
+    ReorderSuggestionStatusEnum:
+      enum:
+      - OPEN
+      - ORDERED
+      - DISMISSED
+      - RESOLVED
+      - NOT_SELLING
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `ORDERED` - Ordered
+        * `DISMISSED` - Dismissed
+        * `RESOLVED` - No longer needed
+        * `NOT_SELLING` - Below its reorder level, not selling
     RepeatResult:
       type: object
       properties:

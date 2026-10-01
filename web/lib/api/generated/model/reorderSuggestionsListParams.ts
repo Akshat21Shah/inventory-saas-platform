@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ReorderSuggestionsListBasis } from './reorderSuggestionsListBasis';
+import type { ReorderSuggestionsListStatus } from './reorderSuggestionsListStatus';
 
 export type ReorderSuggestionsListParams = {
 /**
@@ -25,6 +26,14 @@ page_size?: number;
  * @maxLength 100
  */
 search?: string;
+/**
+ * OPEN: to order; NOT_SELLING: below the reorder level but not selling.
+ *
+ * * `OPEN` - OPEN
+ * * `NOT_SELLING` - NOT_SELLING
+ * @minLength 1
+ */
+status?: ReorderSuggestionsListStatus;
 /**
  * @nullable
  */

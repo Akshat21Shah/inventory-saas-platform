@@ -578,6 +578,8 @@ export * from './reorderSuggestion';
 export * from './reorderSuggestionBasisEnum';
 export * from './reorderSuggestionsListBasis';
 export * from './reorderSuggestionsListParams';
+export * from './reorderSuggestionsListStatus';
+export * from './reorderSuggestionStatusEnum';
 export * from './repeatResult';
 export * from './report';
 export * from './reportFormatEnum';

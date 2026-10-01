@@ -7,7 +7,9 @@
   it, order d x (lead time + ⚙ ``planning.cover_days``) + safety stock - position.
 - Little or no history (nothing ordered in the demand period): only when shops are waiting or
   stock is at or below the product's own reorder level, ordering up to that level plus what is
-  waiting.
+  waiting. A dead product (in stock, not sold in the classification period) below its level with
+  no shop waiting is not suggested: it is kept apart as NOT_SELLING, so staff can lower the level.
+- Days left: whole days, rounded down (urgency first).
 - Reorder points and quantities round up: whole numbers for units that can't be split, 2 decimals
   otherwise; a quantity then goes up to the preferred supplier's pack (``quantities``).
 - Staff change the quantity, dismiss for a while, put suggestions on purchase orders (grouped by
@@ -20,7 +22,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -32,7 +34,7 @@ from apps.audit import services as audit
 from apps.catalog.selectors import ProductFilters
 from apps.catalog.selectors import product_list as catalog_products
 from apps.inventory import selectors as stock
-from apps.planning.models import ProductStats, ReorderSuggestion
+from apps.planning.models import MovementClass, ProductStats, ReorderSuggestion
 from apps.planning.quantities import up, up_to_pack
 from apps.platform.selectors import get_setting, is_feature_enabled
 from common.dates import today_ist
@@ -128,7 +130,11 @@ def refresh_suggestions(*, today: date | None = None) -> int:
             quantity = level + waiting - available - ordered
         if not needed or quantity <= 0:
             continue
+        dead = found is not None and found.movement_class == MovementClass.DEAD
+        not_selling = basis == ReorderSuggestion.Basis.LOW_HISTORY and dead and waiting <= 0
         wanted[pk] = {
+            "status": S.NOT_SELLING if not_selling else S.OPEN,
+            "last_sale_date": found.last_sale_date if found else None,
             "supplier_id": lead.supplier_id,
             "computed_at": now,
             "basis": basis,
@@ -146,14 +152,14 @@ def refresh_suggestions(*, today: date | None = None) -> int:
             "reorder_point": point,
             "pack_size": lead.pack,
             "suggested_qty": up_to_pack(quantity, lead.pack, whole),
-            "days_left": (max(available, ZERO) / d).quantize(TENTH, ROUND_HALF_UP)
-            if d > 0
-            else None,
+            "days_left": Decimal(int(max(available, ZERO) / d)).quantize(TENTH) if d > 0 else None,
         }
     with transaction.atomic():
         open_rows = {
             s.product_id: s
-            for s in ReorderSuggestion.objects.select_for_update().filter(status=S.OPEN)
+            for s in ReorderSuggestion.objects.select_for_update().filter(
+                status__in=[S.OPEN, S.NOT_SELLING]
+            )
         }
         for pk, row in open_rows.items():
             if pk not in wanted:
@@ -166,8 +172,10 @@ def refresh_suggestions(*, today: date | None = None) -> int:
                 continue
             for field, value in values.items():
                 setattr(existing, field, value)
-            existing.save()  # a quantity staff changed stays
-    return len(wanted)
+            if existing.status == S.NOT_SELLING:
+                existing.quantity = None
+            existing.save()  # a quantity staff changed stays while it is to order
+    return sum(1 for values in wanted.values() if values["status"] == S.OPEN)
 
 
 # --- What staff do with them ------------------------------------------------------------------

@@ -148,7 +148,10 @@ test("a reorder suggestion, explained, becomes a draft purchase order", async ({
     .click();
   await expect(page.getByRole("heading", { name: "Reorder suggestions" })).toBeVisible();
   const first = page.getByRole("row").nth(1);
-  await expect(first.getByText(/^(Shops ordered|Little sales history)/)).toBeVisible();
+  await expect(first.getByText(/^Order \d+ \w+/)).toBeVisible(); // the action first
+  await expect(
+    first.getByText(/^(Shops ordered|No shop ordered|Little sales history)/),
+  ).toBeVisible();
   await first.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Create purchase orders" }).click();
   const created = page.getByText(/^Draft purchase orders? .*PO-\d{4}-\d{5}/);

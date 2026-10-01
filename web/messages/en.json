@@ -5270,7 +5270,6 @@
       "ordered": "Shops order",
       "demandNote": "Over the last {days} days.",
       "daysOfStock": "Stock lasts",
-      "days": "{count, plural, one {# day} other {# days}}",
       "noDemand": "Not ordered lately",
       "abc": "Sales class",
       "abcClasses": {
@@ -5296,14 +5295,16 @@
       "lowHistory": "Little sales history, so this goes by the reorder level and any shops waiting.",
       "position": "{available} {unit} available{hasWaiting, select, true {, {waiting} waiting for shops} other {}}{hasOnOrder, select, true {, {onOrder} on order} other {}}.",
       "point": "Reorder at {point} {unit}: {lead} days to arrive ({source}) plus {safety} days of safety stock.",
-      "cover": "This order covers {cover} days after it arrives.",
-      "upToLevel": "It brings stock up to the reorder level of {level} {unit}{hasWaiting, select, true { and covers the shops waiting} other {}}.",
+      "cover": "This order covers {cover} days after it arrives{hasWaiting, select, true { and the {waiting} {unit} shops are waiting for} other {}}.",
+      "upToLevel": "It brings stock up to the reorder level of {level} {unit}{hasWaiting, select, true {, plus the {waiting} {unit} shops are waiting for} other {}}.",
       "pack": "Rounded up to packs of {pack} {unit}.",
       "lead": {
         "PRODUCT_SUPPLIER": "the supplier's time for this product",
         "SUPPLIER": "the supplier's usual time",
         "DEFAULT": "your usual delivery time"
-      }
+      },
+      "noRecentOrders": "No shop ordered this in the last {days} days, so this goes by the reorder level and any shops waiting.",
+      "waitingOnly": "It covers the {waiting} {unit} shops are waiting for."
     },
     "suggestions": {
       "title": "Reorder suggestions",
@@ -5314,7 +5315,6 @@
       "searchPlaceholder": "Product name or code",
       "product": "Product and why",
       "daysLeft": "Stock lasts",
-      "days": "{count, plural, one {# day} other {# days}}",
       "shopsWaiting": "Shops waiting",
       "atLevel": "At reorder level",
       "supplier": "Supplier",
@@ -5349,11 +5349,39 @@
       "emptyTitle": "Nothing to reorder",
       "emptyBody": "Every product has enough stock for now.",
       "noMatchTitle": "No suggestions match",
-      "noMatchBody": "Try another product or clear the filters."
+      "noMatchBody": "Try another product or clear the filters.",
+      "why": "Why this much",
+      "show": "Show",
+      "shows": {
+        "OPEN": "To order",
+        "NOT_SELLING": "Below reorder level, not selling"
+      },
+      "apartFigures": "{available} {unit} available · reorder level {level} {unit}",
+      "changeLevel": "Change the reorder level",
+      "apartEmptyTitle": "Nothing here",
+      "apartEmptyBody": "No product is below its reorder level without selling."
     },
     "rate": {
       "about": "about {qty} {unit} {period, select, DAY {a day} WEEK {a week} other {a month}}",
       "lessThanOne": "less than 1 {unit} a month"
+    },
+    "notSelling": {
+      "note": "Below its reorder level but not selling. Consider lowering the reorder level."
+    },
+    "stock": {
+      "out": "Out of stock",
+      "lessThanDay": "Less than a day",
+      "days": "{count, plural, one {About # day} other {About # days}}"
+    },
+    "headline": {
+      "order": "Order {qty} {unit}",
+      "orderPacks": "Order {qty} {unit} ({packs, plural, one {# pack} other {# packs}} of {pack})",
+      "line": "{action} · {urgency}",
+      "outOfStock": "out of stock",
+      "lessThanDay": "less than a day of stock left",
+      "daysLeft": "{count, plural, one {about # day} other {about # days}} of stock left",
+      "atLevel": "at its reorder level",
+      "waiting": "{qty} {unit} waiting"
     }
   }
 }
