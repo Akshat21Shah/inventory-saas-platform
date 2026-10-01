@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { ShopActivityCard } from "@/components/insights/shop-activity";
 import type { Option } from "@/components/catalog/options";
 import { WarningList } from "@/components/catalog/product-editor";
 import { CopyPricingDialog } from "@/components/pricing/copy-pricing";
@@ -936,6 +937,7 @@ export function RetailerDetailPage({ retailerId }: { retailerId: string }) {
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <RetailerForm key={retailer.updated_at} retailer={retailer} />
         <div className="space-y-6">
+          <ShopActivityCard retailerId={retailer.id} />
           {can("ledger.view") ? (
             <Card>
               <CardHeader>

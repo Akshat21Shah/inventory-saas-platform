@@ -4840,7 +4840,9 @@
       "clear": "All clear",
       "toReorder": "Products to reorder",
       "latePurchaseOrders": "Purchase orders late",
-      "latePurchaseOrdersBody": "Expected before today"
+      "latePurchaseOrdersBody": "Expected before today",
+      "winBack": "Shops to win back",
+      "winBackBody": "Stopped ordering, slowing or never ordered"
     },
     "today": {
       "title": "Today so far",
@@ -4935,6 +4937,7 @@
       "units": "Units",
       "retailers": "Shops",
       "newRetailer": "Add a shop",
+      "shopActivity": "Shop activity",
       "priceLists": "Price lists",
       "discounts": "Discounts",
       "specialPrices": "Special prices",
@@ -5050,7 +5053,8 @@
       "distributors": "tenants, dealers, clients",
       "plans": "subscriptions",
       "featureFlags": "modules, features",
-      "taxRates": "GST, HSN, tax rates"
+      "taxRates": "GST, HSN, tax rates",
+      "shopActivity": "win back, stopped ordering, inactive shops, dormant, slowing, not ordering, lost customers"
     }
   },
   "purchasing": {
@@ -5440,6 +5444,92 @@
       "daysLeft": "{count, plural, one {about # day} other {about # days}} of stock left",
       "atLevel": "at its reorder level",
       "waiting": "{qty} {unit} waiting"
+    }
+  },
+  "segmentStatus": {
+    "ACTIVE": "Ordering as usual",
+    "NEW": "New",
+    "SLOWING": "Slowing down",
+    "DORMANT": "Stopped ordering",
+    "NEVER_ORDERED": "Never ordered"
+  },
+  "insights": {
+    "nav": {
+      "label": "Shops",
+      "all": "All shops",
+      "activity": "Shop activity"
+    },
+    "list": {
+      "title": "Shop activity",
+      "description": "Who stopped ordering, who orders less than usual and who never ordered, most urgent first. Worked out every night.",
+      "refresh": "Work it out now",
+      "refreshing": "Working it out. The list updates in a moment.",
+      "computed": "Worked out {when}",
+      "show": "Show",
+      "winBack": "To win back",
+      "everyone": "All shops",
+      "segment": "Activity",
+      "anySegment": "Any activity",
+      "salesperson": "Salesperson",
+      "anySalesperson": "Any salesperson",
+      "search": "Search shops",
+      "searchPlaceholder": "Shop, owner or mobile",
+      "shop": "Shop",
+      "lastOrder": "Last order",
+      "usually": "Usually orders",
+      "orders": "Orders (90 days)",
+      "value": "Value (90 days)",
+      "contact": "Last contact",
+      "actions": "Actions",
+      "never": "Never",
+      "daysAgo": "{days, plural, =0 {today} one {# day ago} other {# days ago}}",
+      "every": "{days, plural, one {every day} other {every # days}}",
+      "ordersWas": "{now} (was {before})",
+      "call": "Call",
+      "callShop": "Call {shop}",
+      "whatsapp": "WhatsApp",
+      "whatsappShop": "WhatsApp {shop}",
+      "order": "Place an order",
+      "message": "Namaste {name}, this is {staff} from {business}. We haven't had an order from {shop} for a while. Is there anything we can help with? You can order on our app any time.",
+      "emptyWinBackTitle": "Nobody to win back",
+      "emptyWinBackBody": "Every shop is ordering as usual, or someone contacted it lately.",
+      "emptyTitle": "No shops yet",
+      "emptyBody": "Add shops to see how often they order.",
+      "noMatchTitle": "No shops match",
+      "noMatchBody": "Try another search or filter.",
+      "salespersonIs": "Salesperson: {name}"
+    },
+    "contact": {
+      "open": "Log a contact",
+      "title": "Log a contact with {shop}",
+      "body": "The shop leaves the win-back list for a while after a contact.",
+      "how": "How",
+      "outcome": "What happened",
+      "note": "Note",
+      "noteHint": "Optional, for example when they will order.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saved": "Saved. {shop} leaves the win-back list for a while.",
+      "channels": {
+        "CALL": "Call",
+        "WHATSAPP": "WhatsApp",
+        "VISIT": "Visit",
+        "OTHER": "Other"
+      },
+      "outcomes": {
+        "REACHED": "Reached",
+        "NO_ANSWER": "No answer",
+        "WILL_ORDER": "Will order",
+        "NOT_INTERESTED": "Not interested",
+        "OTHER": "Other"
+      }
+    },
+    "card": {
+      "title": "Ordering",
+      "notYet": "Worked out tonight.",
+      "contacts": "Contacts",
+      "noContacts": "No contacts logged yet.",
+      "by": "{by} · {when}"
     }
   }
 }

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { RetailersNav } from "@/components/insights/shop-activity";
 import { FilterSelect, PickDialog } from "@/components/catalog/controls";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
@@ -181,6 +182,7 @@ export function RetailersPage() {
           </>
         }
       />
+      <RetailersNav />
       <DataTable
         columns={columns}
         data={rows}

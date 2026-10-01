@@ -88,6 +88,7 @@ function pages(ids: Ids) {
     "/manage/products/brands",
     "/manage/products/units",
     "/manage/retailers",
+    "/manage/retailers/activity",
     "/manage/retailers/new",
     `/manage/retailers/${ids.retailer}`,
     `/manage/retailers/${ids.retailer}/discounts`,

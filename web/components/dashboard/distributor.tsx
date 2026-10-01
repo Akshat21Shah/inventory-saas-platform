@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   ShoppingCart,
   Truck,
+  UserX,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -196,6 +197,17 @@ function useTiles(action: DashboardAction): Tile[] {
           detail: t("latePurchaseOrdersBody"),
           icon: Truck,
           urgent: true,
+        },
+    // ADR-056: shops that stopped ordering, are slowing or never ordered, not contacted lately.
+    action.win_back === null || action.win_back === undefined
+      ? null
+      : {
+          key: "winBack",
+          href: "/manage/retailers/activity",
+          label: t("winBack"),
+          value: action.win_back,
+          detail: t("winBackBody"),
+          icon: UserX,
         },
   ];
   return tiles.filter((tile): tile is Tile => tile !== null);

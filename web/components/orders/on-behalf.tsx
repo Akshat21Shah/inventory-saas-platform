@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Search } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -333,9 +333,23 @@ function StaffCart({ shopId }: { shopId: string }) {
 
 /** A salesman (or other staff with orders.create_on_behalf) orders for a shop from a separate
  * cart of their own (ADR-044); the order says "Placed by Priya (Sales)". */
+type PickedShop = Pick<RetailerList, "id" | "shop_name" | "status">;
+
 export function OrderOnBehalfPage() {
   const t = useTranslations("orders.onBehalf");
-  const [shop, setShop] = useState<RetailerList | null>(null);
+  // ``?shop=`` opens the shop straight away (e.g. "Place an order" on the shop activity list).
+  const presetId = useSearchParams().get("shop");
+  const [picked, setPicked] = useState<PickedShop | null>(null);
+  const [usePreset, setUsePreset] = useState(Boolean(presetId));
+  const preset = useRetailersRetrieve(presetId ?? "", {
+    query: { enabled: usePreset && Boolean(presetId) },
+  });
+  const shop: PickedShop | null = picked ?? (usePreset && preset.data ? preset.data.data : null);
+  const setShop = (next: PickedShop | null) => {
+    setPicked(next);
+    setUsePreset(false);
+  };
+  if (usePreset && presetId && preset.isLoading) return <CardSkeleton />;
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />

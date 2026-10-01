@@ -109,6 +109,16 @@ describe("DistributorDashboard", () => {
     expect(within(late).getByText("Expected before today")).toBeInTheDocument();
   });
 
+  it("shows the shops to win back, linked to the shop activity list", async () => {
+    mockApi({
+      "/api/v1/dashboard/": () => [200, owner({ action: { ...owner().action, win_back: 4 } })],
+    });
+    renderWithIntl(<DistributorDashboard />);
+    const action = await screen.findByRole("region", { name: "Needs action" });
+    const tile = within(action).getByRole("link", { name: "Shops to win back: 4" });
+    expect(tile).toHaveAttribute("href", "/manage/retailers/activity");
+  });
+
   it("shows only what the role may see", async () => {
     const warehouse = owner({
       action: { ...owner().action, handover: null, overdue: null },
