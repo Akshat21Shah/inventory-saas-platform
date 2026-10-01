@@ -196,6 +196,8 @@ class DeliveryRowSerializer(serializers.ModelSerializer[Notification]):
 
     def get_recipient_name(self, obj: Notification) -> str:
         user = obj.recipient
+        if user is None:  # a supplier (ADR-053)
+            return obj.supplier.name if obj.supplier else ""
         return user.full_name or user.email or user.phone or ""
 
 

@@ -36,6 +36,7 @@ ORDER_NUMBER = re.compile(r"ORD-(\d{4})-(\d{1,8})(?:/\d+)?", re.IGNORECASE)  # a
 SERIES_NUMBER = re.compile(r"([A-Z0-9-]{1,8})/(\d{2}-\d{2})/(\d{1,8})", re.IGNORECASE)
 GRN_NUMBER = re.compile(r"GRN-(\d{4})-(\d{1,8})", re.IGNORECASE)
 ADJ_NUMBER = re.compile(r"ADJ-(\d{4})-(\d{1,8})", re.IGNORECASE)
+PO_NUMBER = re.compile(r"PO-(\d{4})-(\d{1,8})", re.IGNORECASE)
 GSTIN = re.compile(r"\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]")
 BARCODE = re.compile(r"\d{8,14}")
 
@@ -346,6 +347,40 @@ def _supplier_exact(user: User, text: str) -> list[Hit]:
     return [_supplier_hit(s) for s in found[:2]]
 
 
+def _po_hit(order: Any) -> Hit:
+    when = to_ist(order.sent_at or order.created_at).date()
+    # Never the order's value: purchase costs need costs.view.
+    return Hit(
+        "purchase_order",
+        order.pk,
+        order.number,
+        order.supplier.name,
+        date=when,
+        status=order.status,
+    )
+
+
+def _purchase_orders(user: User, text: str, limit: int) -> list[Hit]:
+    from apps.purchasing.models import PurchaseOrder
+
+    condition = Q(number__icontains=text) | Q(supplier__name__icontains=text)
+    found = _first_exact(PurchaseOrder.objects.filter(condition), text).select_related("supplier")
+    return [_po_hit(o) for o in found.order_by("exact", "-created_at")[:limit]]
+
+
+def _purchase_order_exact(user: User, text: str) -> list[Hit]:
+    from apps.purchasing.models import PurchaseOrder
+
+    match = PO_NUMBER.fullmatch(text)
+    if not match:
+        return []
+    year, number = match.groups()
+    found = PurchaseOrder.objects.filter(
+        number__iregex=_number_pattern(f"PO-{year}-", number)
+    ).select_related("supplier")
+    return [_po_hit(o) for o in found[:2]]
+
+
 SOURCES: tuple[Source, ...] = (
     Source("product", "products.view", _products, _product_exact),
     Source("shop", "retailers.view", _shops, _shop_exact),
@@ -382,5 +417,12 @@ SOURCES: tuple[Source, ...] = (
     Source("adjustment", "stock.adjust", _adjustments, _adjustment_exact, numbers_only=True),
     Source("staff", "staff.manage", _staff),
     Source("supplier", "purchasing.view", _suppliers, _supplier_exact, feature="purchasing"),
+    Source(
+        "purchase_order",
+        "purchasing.view",
+        _purchase_orders,
+        _purchase_order_exact,
+        feature="purchasing",
+    ),
 )
 TYPES = tuple(source.type for source in SOURCES)

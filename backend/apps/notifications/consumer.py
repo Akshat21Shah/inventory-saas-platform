@@ -67,6 +67,7 @@ HANDLED_EVENTS: tuple[str, ...] = (
     "payment.handed_over",
     "refund.recorded",
     "refund.reversed",
+    "purchase_order.sent",
 )
 SKIP = Notification.SkipReason
 
@@ -127,11 +128,12 @@ def handle(event_id: UUID) -> int:
 
 @dataclass
 class Target:
-    user: User
+    user: User | None  # None for a supplier
     retailer: Retailer | None  # set for shop logins
     channels: set[str]
     compulsory: bool
     external: bool = True  # False: a shop's second login gets in-app only
+    supplier: Any = None  # a supplier has no login: email only (ADR-053)
 
 
 def _staff(filter_: Q) -> list[User]:
@@ -181,15 +183,25 @@ def _people(rule: EffectiveRule, ctx: contexts.EventContext) -> list[tuple[User,
 def targets(code: str, ctx: contexts.EventContext) -> list[Target]:
     """Everyone the enabled rules name, once each; a person named by several rules gets the
     union of their channels (compulsory if any rule is)."""
-    found: dict[UUID, Target] = {}
+    found: dict[Any, Target] = {}
     for rule in effective_rules(code):
         if not rule.enabled or not rule.channels:
             continue
+        if rule.recipient == Recipient.SUPPLIER:
+            supplier = ctx.extra.get("supplier")
+            if supplier is not None:
+                target = found.setdefault(
+                    ("supplier", supplier.pk), Target(None, None, set(), False, True, supplier)
+                )
+                target.channels |= set(rule.channels) & {Channel.EMAIL}
+                target.compulsory = target.compulsory or rule.compulsory
+            continue
         for user, external in _people(rule, ctx):
-            target = found.get(user.pk)
-            if target is None:
+            person = found.get(user.pk)
+            if person is None:
                 shop = ctx.retailer if rule.recipient == Recipient.SHOP else None
-                target = found[user.pk] = Target(user, shop, set(), False, external)
+                person = found[user.pk] = Target(user, shop, set(), False, external)
+            target = person
             target.channels |= set(rule.channels)
             if rule.recipient == Recipient.SHOP:  # e.g. an announcement also sent by WhatsApp
                 target.channels |= set(ctx.extra.get("add_channels", ()))
@@ -203,10 +215,15 @@ def targets(code: str, ctx: contexts.EventContext) -> list[Target]:
 def _address(target: Target, channel: str) -> str:
     if channel == Channel.IN_APP:
         return ""
+    if target.supplier is not None:
+        return str(target.supplier.email or "") if channel == Channel.EMAIL else ""
     if target.retailer is not None:
         shop = target.retailer
         return shop.email if channel == Channel.EMAIL else shop.mobile
-    return (target.user.email if channel == Channel.EMAIL else target.user.phone) or ""
+    user = target.user
+    if user is None:
+        return ""
+    return (user.email if channel == Channel.EMAIL else user.phone) or ""
 
 
 def _skip_reason(
@@ -228,7 +245,11 @@ def _skip_reason(
         return SKIP.NO_WHATSAPP_OPT_IN  # compulsory events too: consent comes first
     if not address:
         return SKIP.NO_ADDRESS
-    if not target.compulsory and (target.user.pk, channel) in turned_off:
+    if (
+        target.user is not None
+        and not target.compulsory
+        and (target.user.pk, channel) in turned_off
+    ):
         return SKIP.TURNED_OFF
     return ""
 
@@ -255,7 +276,9 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
         return 0
     turned_off = set(
         NotificationPreference.objects.filter(
-            event_code=ctx.code, enabled=False, user__in=[t.user for t in people]
+            event_code=ctx.code,
+            enabled=False,
+            user__in=[t.user for t in people if t.user is not None],
         ).values_list("user_id", "channel")
     )
     whatsapp_on = is_feature_enabled("whatsapp", tenant.pk)
@@ -277,12 +300,13 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
 
     for target in people:
         shop = target.retailer is not None
-        path = ctx.shop_path if shop else ctx.staff_path
+        supplier = target.supplier is not None
+        path = ctx.shop_path if shop else "" if supplier else ctx.staff_path
         url = web_url(path or "/", tenant_slug=tenant.slug)
         values = {**ctx.values, "link": url, "document_link": ""}
         locale = (
             (target.retailer.preferred_language if target.retailer else "")
-            or target.user.preferred_language
+            or (target.user.preferred_language if target.user else "")
             or "en"
         )
         for channel in sorted(target.channels):
@@ -297,13 +321,13 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 turned_off=turned_off,
                 paused=paused,
             )
-            audience = Audience.SHOP if shop else Audience.STAFF
+            audience = Audience.SHOP if shop else Audience.SUPPLIER if supplier else Audience.STAFF
             text_locale: str | None = locale
             if channel == Channel.WHATSAPP and not reason:
                 # Only an approved template can be sent (ADR-049 item 12); the mock approves all.
                 text_locale = approval.sendable_locale(ctx.code, locale, audience)
                 reason = "" if text_locale else SKIP.NOT_APPROVED
-            carries_link = shop and channel != Channel.IN_APP and not reason
+            carries_link = (shop or supplier) and channel != Channel.IN_APP and not reason
             values["document_link"] = link_for_shop() if carries_link else ""
             text = render(ctx.code, channel, values, text_locale or locale, audience)
             if text is None:
@@ -319,6 +343,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                     event_id=event_id,
                     event_code=ctx.code,
                     recipient=target.user,
+                    supplier=target.supplier,
                     retailer=ctx.retailer,
                     channel=channel,
                     address=address,

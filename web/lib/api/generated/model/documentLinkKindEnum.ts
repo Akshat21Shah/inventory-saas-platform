@@ -12,6 +12,7 @@
  * * `RECEIPT` - Receipt
  * * `REFUND_VOUCHER` - Refund voucher
  * * `ORDER_CONFIRMATION` - Order Confirmation
+ * * `PURCHASE_ORDER` - Purchase order
  */
 export type DocumentLinkKindEnum = typeof DocumentLinkKindEnum[keyof typeof DocumentLinkKindEnum];
 
@@ -22,4 +23,5 @@ export const DocumentLinkKindEnum = {
   RECEIPT: 'RECEIPT',
   REFUND_VOUCHER: 'REFUND_VOUCHER',
   ORDER_CONFIRMATION: 'ORDER_CONFIRMATION',
+  PURCHASE_ORDER: 'PURCHASE_ORDER',
 } as const;

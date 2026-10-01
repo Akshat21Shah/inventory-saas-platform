@@ -196,6 +196,7 @@ const MANAGE: Record<DocumentLinkKindEnum, string> = {
   ORDER_CONFIRMATION: "orders.manage",
   RECEIPT: "payments.record",
   REFUND_VOUCHER: "payments.record",
+  PURCHASE_ORDER: "purchasing.manage",
 };
 
 /** A document's page: the links sent by WhatsApp or email (opens, expiry), and withdrawing them.

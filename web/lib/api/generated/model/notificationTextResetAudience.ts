@@ -12,4 +12,5 @@ export type NotificationTextResetAudience = typeof NotificationTextResetAudience
 export const NotificationTextResetAudience = {
   SHOP: 'SHOP',
   STAFF: 'STAFF',
+  SUPPLIER: 'SUPPLIER',
 } as const;

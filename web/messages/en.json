@@ -3714,7 +3714,8 @@
       "retailer_welcome": "Welcome message to a new shop",
       "announcement_published": "Announcement",
       "report_ready": "Report ready to download",
-      "report_failed": "Report could not be made"
+      "report_failed": "Report could not be made",
+      "purchase_order_sent": "Purchase order sent to the supplier"
     },
     "shopEvents": {
       "order_placed": "Order received",
@@ -3752,6 +3753,7 @@
       "billing": "Bills",
       "payments": "Payments",
       "reminders": "Reminders",
+      "purchasing": "Purchasing",
       "other": "Other"
     },
     "channels": {
@@ -3776,7 +3778,8 @@
       "COLLECTOR": "The salesman who collected",
       "STAFF_PERMISSION": "Staff who can…",
       "OWNERS": "Owners",
-      "DISPATCHER": "The person who dispatched"
+      "DISPATCHER": "The person who dispatched",
+      "SUPPLIER": "The supplier"
     },
     "skip": {
       "NO_ADDRESS": "No email or mobile number",
@@ -3857,11 +3860,13 @@
       "empty": "No texts for this message",
       "audiences": {
         "SHOP": "To the shop",
-        "STAFF": "To your staff"
+        "STAFF": "To your staff",
+        "SUPPLIER": "To the supplier"
       },
       "audienceHints": {
         "SHOP": "What the shop reads, in its own words: “Your order …”.",
-        "STAFF": "What your staff read, in the office's words: “Ganesh Kirana's order …”."
+        "STAFF": "What your staff read, in the office's words: “Ganesh Kirana's order …”.",
+        "SUPPLIER": "Your email to the supplier, with a link to the purchase order."
       }
     },
     "deliveries": {
@@ -4004,7 +4009,8 @@
       "empty": "No texts for this message",
       "audiences": {
         "SHOP": "To the shop",
-        "STAFF": "To staff"
+        "STAFF": "To staff",
+        "SUPPLIER": "To the supplier"
       },
       "firstBatch": "First submission batch",
       "optional": "Optional, not submitted by default",

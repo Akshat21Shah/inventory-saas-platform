@@ -20,7 +20,7 @@ from apps.platform.gst import gstin_problem
 from apps.platform.models import State
 from apps.platform.validators import normalize_gstin
 from apps.purchasing.models import Supplier, SupplierProduct
-from apps.purchasing.selectors import name_key, unlinked_receipts
+from apps.purchasing.selectors import name_key, open_orders_for, unlinked_receipts
 from common.errors import InvalidFields, NotFound
 from common.sequences import next_value
 
@@ -139,9 +139,13 @@ def update_supplier(supplier_id: UUID, changes: dict[str, Any], *, by: User) -> 
 
 @transaction.atomic
 def delete_supplier(supplier_id: UUID, *, by: User) -> None:
-    """Soft delete: it leaves pick lists and its product links go. Past receipts keep it.
-    9a.5: refused while it has open purchase orders."""
+    """Soft delete: it leaves pick lists and its product links go. Past receipts and orders keep
+    it. Refused while it has draft or open purchase orders."""
     supplier = _supplier(supplier_id, lock=True)
+    if open_orders_for(supplier.pk):
+        raise InvalidFields(
+            {"supplier": ["This supplier has open purchase orders. Cancel or close them first."]}
+        )
     supplier.deleted_at, supplier.is_active = timezone.now(), False
     supplier.save(update_fields=["deleted_at", "is_active", "updated_at"])
     removed, _ = SupplierProduct.objects.filter(supplier=supplier).delete()

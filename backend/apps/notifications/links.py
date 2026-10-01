@@ -50,6 +50,10 @@ SOURCES: dict[str, Source] = {
     K.REFUND_VOUCHER: Source(
         "payments.Refund", "voucher_pdf_key", "voucher_pdf_status", "payments.record"
     ),
+    # The supplier's copy, with costs (ADR-053).
+    K.PURCHASE_ORDER: Source(
+        "purchasing.PurchaseOrder", "pdf_key", "pdf_status", "purchasing.manage"
+    ),
 }
 
 

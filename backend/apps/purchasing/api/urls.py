@@ -15,6 +15,32 @@ urlpatterns = [
         v.SupplierProductsView.as_view(),
         name="supplier-products",
     ),
+    path("purchase-orders/", v.PurchaseOrderListCreateView.as_view(), name="purchase-orders"),
+    path(
+        "purchase-orders/<uuid:order_id>/",
+        v.PurchaseOrderDetailView.as_view(),
+        name="purchase-order",
+    ),
+    path(
+        "purchase-orders/<uuid:order_id>/send/",
+        v.PurchaseOrderSendView.as_view(),
+        name="purchase-order-send",
+    ),
+    path(
+        "purchase-orders/<uuid:order_id>/cancel/",
+        v.PurchaseOrderCancelView.as_view(),
+        name="purchase-order-cancel",
+    ),
+    path(
+        "purchase-orders/<uuid:order_id>/close/",
+        v.PurchaseOrderCloseView.as_view(),
+        name="purchase-order-close",
+    ),
+    path(
+        "purchase-orders/<uuid:order_id>/pdf/",
+        v.PurchaseOrderPdfView.as_view(),
+        name="purchase-order-pdf",
+    ),
     path(
         "products/<uuid:product_id>/suppliers/",
         v.ProductSuppliersView.as_view(),

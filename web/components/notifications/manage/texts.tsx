@@ -29,7 +29,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { eventKey, NotificationsNav } from "./nav";
 
 const LOCALES: NotificationTextsLocale[] = ["en", "hi", "mr"];
-const AUDIENCES = ["SHOP", "STAFF"] as const;
+const AUDIENCES = ["SHOP", "STAFF", "SUPPLIER"] as const;
 
 function TextEditor({
   event,

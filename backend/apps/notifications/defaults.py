@@ -14,6 +14,11 @@ def _has_audience(template_model: Any) -> bool:
     return any(field.name == "audience" for field in template_model._meta.get_fields())
 
 
+def _audiences(template_model: Any) -> set[str]:
+    """The audiences the (historical) model knows: the supplier's texts wait for 0014."""
+    return {value for value, _ in template_model._meta.get_field("audience").choices or ()}
+
+
 def _fields(code: str, audience: str, channel: str) -> dict[str, Any]:
     text = DEFAULT_TEXTS[code][audience][channel]
     fields: dict[str, Any] = {"subject": text.subject, "body": text.body, "is_active": True}
@@ -32,8 +37,11 @@ def refresh_platform_templates(template_model: Any, codes: list[str]) -> None:
     shipped with the code, before any super admin could edit them)."""
     if not _has_audience(template_model):
         return
+    known = _audiences(template_model)
     for code in codes:
         for audience, texts in DEFAULT_TEXTS[code].items():
+            if audience not in known:
+                continue
             for channel in texts:
                 template_model.objects.update_or_create(
                     event_code=code,
@@ -49,8 +57,11 @@ def sync_platform_templates(template_model: Any) -> int:
     if not _has_audience(template_model):
         return 0
     created = 0
+    known = _audiences(template_model)
     for code, audiences in DEFAULT_TEXTS.items():
         for audience, texts in audiences.items():
+            if audience not in known:
+                continue
             for channel in texts:
                 _, made = template_model.objects.get_or_create(
                     event_code=code,

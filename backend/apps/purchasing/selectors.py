@@ -12,8 +12,10 @@ from django.contrib.postgres.search import TrigramWordSimilarity
 from django.db.models import Count, Q, QuerySet
 
 from apps.inventory.models import StockInward
-from apps.purchasing.models import Supplier, SupplierProduct
-from common.dates import to_ist
+from apps.purchasing.models import PurchaseOrder, Supplier, SupplierProduct
+from common.dates import to_ist, today_ist
+
+OPEN_STATUSES = (PurchaseOrder.Status.SENT, PurchaseOrder.Status.PARTLY_RECEIVED)
 
 
 def suppliers(*, search: str = "", active: bool | None = None) -> QuerySet[Supplier]:
@@ -112,3 +114,49 @@ def product_exists(product_id: UUID) -> bool:
     from apps.catalog.models import Product
 
     return Product.objects.filter(pk=product_id, deleted_at__isnull=True).exists()
+
+
+# --- Purchase orders ------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class OrderFilters:
+    status: str = ""
+    supplier_id: UUID | None = None
+    late: bool = False  # sent or partly received, expected before today
+    search: str = ""
+
+
+def purchase_orders(f: OrderFilters | None = None) -> QuerySet[PurchaseOrder]:
+    f = f or OrderFilters()
+    qs = PurchaseOrder.objects.select_related("supplier").annotate(
+        line_count=Count("lines", distinct=True)
+    )
+    if f.status:
+        qs = qs.filter(status=f.status)
+    if f.supplier_id:
+        qs = qs.filter(supplier_id=f.supplier_id)
+    if f.late:
+        qs = qs.filter(status__in=OPEN_STATUSES, expected_date__lt=today_ist())
+    term = " ".join(f.search.split())[:100]
+    if term:
+        qs = qs.filter(Q(number__icontains=term) | Q(supplier__name__icontains=term))
+    found: QuerySet[PurchaseOrder] = qs
+    return found
+
+
+def purchase_order(order_id: UUID) -> PurchaseOrder | None:
+    found: PurchaseOrder | None = (
+        purchase_orders()
+        .prefetch_related("lines")
+        .select_related("sent_by")
+        .filter(pk=order_id)
+        .first()
+    )
+    return found
+
+
+def open_orders_for(supplier_id: UUID) -> int:
+    return PurchaseOrder.objects.filter(
+        supplier_id=supplier_id, status__in=(PurchaseOrder.Status.DRAFT, *OPEN_STATUSES)
+    ).count()

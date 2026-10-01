@@ -68,7 +68,7 @@ class DeliveryFilters:
 
 def deliveries(filters: DeliveryFilters) -> QuerySet[Notification]:
     """The delivery log: every row with its outcome (in-app rows too, as the record)."""
-    rows = Notification.objects.select_related("recipient", "retailer")
+    rows = Notification.objects.select_related("recipient", "retailer", "supplier")
     if filters.status:
         rows = rows.filter(status=filters.status)
     if filters.channel:

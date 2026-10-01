@@ -20,6 +20,8 @@ VAR = re.compile(r"{{\s*(\w+)\s*}}")
 
 
 def _audience(recipient: str) -> str:
+    if recipient == "SUPPLIER":
+        return Audience.SUPPLIER
     return Audience.SHOP if recipient == "SHOP" else Audience.STAFF
 
 
@@ -42,8 +44,15 @@ def test_every_event_has_texts_in_the_words_of_everyone_it_can_reach():
     for code, event in EVENTS.items():
         assert set(DEFAULT_TEXTS[code]) == set(event.audiences), code
         for audience in event.audiences:
-            # A system message ("Report ready") never goes by WhatsApp (ADR-050).
-            expected = {"IN_APP", "EMAIL"} if event.system else {"IN_APP", "EMAIL", "WHATSAPP"}
+            # A system message ("Report ready") never goes by WhatsApp (ADR-050); a supplier gets
+            # email only (ADR-053).
+            expected = (
+                {"EMAIL"}
+                if audience == Audience.SUPPLIER
+                else {"IN_APP", "EMAIL"}
+                if event.system
+                else {"IN_APP", "EMAIL", "WHATSAPP"}
+            )
             assert expected <= set(DEFAULT_TEXTS[code][audience]), (
                 code,
                 audience,
@@ -71,7 +80,7 @@ def test_every_text_uses_only_the_events_variables():
     for code, audiences in DEFAULT_TEXTS.items():
         allowed = set(EVENTS[code].variables)
         for audience, texts in audiences.items():
-            assert "IN_APP" in texts, (code, audience)
+            assert audience == Audience.SUPPLIER or "IN_APP" in texts, (code, audience)
             for channel, text in texts.items():
                 used = set(VAR.findall(text.subject)) | set(VAR.findall(text.body))
                 assert used <= allowed, (code, audience, channel, used - allowed)
@@ -170,3 +179,14 @@ def test_staff_rely_on_in_app_and_email_and_whatsapp_goes_in_one_first_batch():
     for rule in DEFAULT_RULES:  # every WhatsApp the defaults send is in the first batch
         if "WHATSAPP" in rule.channels:
             assert in_first_submission(rule.event, _audience(rule.recipient)), rule
+
+
+def test_the_supplier_gets_the_purchase_order_by_email_only():
+    event = EVENTS["purchase_order.sent"]
+    assert (event.audiences, event.feature, event.document) == (
+        (Audience.SUPPLIER,),
+        "purchasing",
+        "PURCHASE_ORDER",
+    )
+    assert set(DEFAULT_TEXTS["purchase_order.sent"][Audience.SUPPLIER]) == {"EMAIL"}
+    assert RECIPIENT_CHANNELS["SUPPLIER"] == ("EMAIL",)

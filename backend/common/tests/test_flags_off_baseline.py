@@ -107,6 +107,7 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.shop-invoices.results.status": "ISSUED",
     # Phase 9a (ADR-053): no supplier on goods receipts while purchasing is off.
     "db.inventory.StockInward.supplier_id": None,
+    "db.notifications.Notification.supplier_id": None,  # messages go to people, not suppliers
     "api.receipt.supplier_id": None,
     "api.receipts.results.supplier_id": None,
 }

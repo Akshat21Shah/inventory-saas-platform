@@ -31,6 +31,7 @@ class Event:
     document: str = ""  # DocumentLink.Kind the message links, if any
     shop_facing: bool = True  # the shop can be a recipient
     staff_facing: bool = True  # staff can be recipients (not: the welcome, announcements)
+    supplier_facing: bool = False  # the supplier, by email (purchase orders, ADR-053)
     feature: str = ""  # an optional module's flag: the event is hidden while it is off
     # A personal system message ("Report ready"): fixed rules, never on the rules, texts or
     # preferences screens (ADR-050).
@@ -43,6 +44,7 @@ class Event:
             for audience, reached in (
                 (Audience.SHOP, self.shop_facing),
                 (Audience.STAFF, self.staff_facing),
+                (Audience.SUPPLIER, self.supplier_facing),
             )
             if reached
         )
@@ -105,6 +107,11 @@ EVENTS: dict[str, Event] = {
               variables=("distributor", "shop", "shipment", "vehicle", "invoice_number", "error",
                          "link"),
               shop_facing=False, feature="ewaybill"),
+        Event("purchase_order.sent", "Purchase order sent to the supplier", "purchasing",
+              variables=("distributor", "supplier", "po_number", "revision", "expected_date",
+                         "document_link"),
+              document=DocumentLink.Kind.PURCHASE_ORDER, shop_facing=False, staff_facing=False,
+              supplier_facing=True, feature="purchasing"),
         Event("report.ready", "Report ready to download", "other",
               variables=("report", "rows", "days", "link"), shop_facing=False, system=True),
         Event("report.failed", "Report could not be made", "other",
@@ -206,6 +213,7 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     # Phase 7 backend checkpoint, change 4: at once, whatever the hour (urgent).
     Rule("ewaybill.failed", ST, (IN, EM), "compliance.manage"),
     Rule("ewaybill.failed", Recipient.DISPATCHER, (IN, EM)),
+    Rule("purchase_order.sent", Recipient.SUPPLIER, (EM,)),  # ADR-053: email only
     Rule("report.ready", Recipient.REQUESTER, (IN,)),  # ADR-050: in-app only
     Rule("report.failed", Recipient.REQUESTER, (IN,)),
     Rule("payment.received", S, (IN, WA, EM)),
@@ -235,11 +243,15 @@ RECIPIENT_CHANNELS: dict[str, tuple[str, ...]] = {
     Recipient.OWNERS: (IN, WA, EM),
     Recipient.DISPATCHER: (IN, WA, EM),
     Recipient.REQUESTER: (IN,),
+    Recipient.SUPPLIER: (EM,),
 }
 # Recipients of system messages only: never offered on the rules screen.
 SYSTEM_RECIPIENTS = frozenset({Recipient.REQUESTER})
 # Recipients that exist only for some events (and only while their module is on).
-ONLY_FOR: dict[str, tuple[str, str]] = {Recipient.DISPATCHER: ("ewaybill.failed", "ewaybill")}
+ONLY_FOR: dict[str, tuple[str, str]] = {
+    Recipient.DISPATCHER: ("ewaybill.failed", "ewaybill"),
+    Recipient.SUPPLIER: ("purchase_order.sent", "purchasing"),
+}
 
 
 @dataclass(frozen=True)
@@ -597,11 +609,23 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
     ),
 }  # fmt: skip
 
-# event -> audience -> channel -> text. A shop login gets the shop's words, staff the office's.
+# The distributor writing to a supplier (email only, ADR-053).
+SUPPLIER_TEXTS: dict[str, dict[str, Text]] = {
+    "purchase_order.sent": {
+        EM: Text("Purchase order {{ po_number }}{{ revision }} from {{ distributor }}", "Dear {{ supplier }},\n\nPlease find our purchase order {{ po_number }}{{ revision }}. We expect delivery by {{ expected_date }}.\n\nPurchase order: {{ document_link }}\n\nRegards,\n{{ distributor }}"),
+    },
+}  # fmt: skip
+
+# event -> audience -> channel -> text. A shop login gets the shop's words, staff the office's,
+# a supplier the distributor's letter.
 DEFAULT_TEXTS: dict[str, dict[str, dict[str, Text]]] = {
     code: {
         audience: texts[code]
-        for audience, texts in ((Audience.SHOP, SHOP_TEXTS), (Audience.STAFF, STAFF_TEXTS))
+        for audience, texts in (
+            (Audience.SHOP, SHOP_TEXTS),
+            (Audience.STAFF, STAFF_TEXTS),
+            (Audience.SUPPLIER, SUPPLIER_TEXTS),
+        )
         if code in texts
     }
     for code in EVENTS

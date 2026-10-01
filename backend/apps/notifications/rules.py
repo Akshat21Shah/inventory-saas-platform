@@ -129,12 +129,28 @@ def _check(
             errors.append("Only 'Staff who can…' takes a permission.")
         only = ONLY_FOR.get(rule.recipient)
         if only is not None and only[0] != event_code:
-            errors.append("This recipient is only for failed e-way bills.")
+            errors.append(
+                "This recipient is only for purchase orders."
+                if rule.recipient == Recipient.SUPPLIER
+                else "This recipient is only for failed e-way bills."
+            )
+            continue
+        supplier = rule.recipient == Recipient.SUPPLIER
         if rule.recipient == Recipient.SHOP and not event.shop_facing:
             errors.append("This message is for staff only.")
-        if rule.recipient != Recipient.SHOP and not event.staff_facing:
-            errors.append("This message is for shops only.")
-        audience = Audience.SHOP if rule.recipient == Recipient.SHOP else Audience.STAFF
+        if rule.recipient != Recipient.SHOP and not supplier and not event.staff_facing:
+            errors.append(
+                "This message is for the supplier only."
+                if event.supplier_facing
+                else "This message is for shops only."
+            )
+        audience = (
+            Audience.SHOP
+            if rule.recipient == Recipient.SHOP
+            else Audience.SUPPLIER
+            if supplier
+            else Audience.STAFF
+        )
         texts = DEFAULT_TEXTS.get(event_code, {}).get(audience, {})
         if rule.compulsory and rule.recipient != Recipient.SHOP:
             errors.append("Only the shop's messages can be compulsory.")

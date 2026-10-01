@@ -1,0 +1,86 @@
+{% load documents %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Purchase order {{ doc.number }}</title>
+  {% include "billing/_style.html" %}
+</head>
+<body>
+<section class="page">
+  <header class="top">
+    {% include "billing/_seller.html" %}
+    <div class="title">
+      <h2>Purchase order</h2>
+      {% if doc.status == "DRAFT" %}<p class="note-strong">Draft – not sent</p>{% endif %}
+      {% if doc.status == "CANCELLED" %}<p class="note-strong">Cancelled</p>{% endif %}
+      {% if doc.status == "CLOSED" %}<p class="note-strong">Closed: nothing more is due</p>{% endif %}
+      {% if doc.revision > 1 %}<p class="note-strong">Revised ({{ doc.revision }})</p>{% endif %}
+      {% if not prices %}<p class="muted">Copy without prices</p>{% endif %}
+    </div>
+  </header>
+
+  <table class="meta">
+    <tr>
+      <td class="k">PO no.</td><td><b>{{ doc.number }}</b></td>
+      <td class="k">Date</td><td>{{ doc.sent_at|default:doc.created_at|day }}</td>
+    </tr>
+    <tr>
+      <td class="k">Deliver by</td><td>{% if doc.expected_date %}{{ doc.expected_date|day }}{% else %}—{% endif %}</td>
+      <td class="k">Prices</td><td>Before GST</td>
+    </tr>
+  </table>
+
+  <div class="parties">
+    <div>
+      <h3>Supplier</h3>
+      <p><b>{{ supplier.name }}</b></p>
+      {% if supplier.address %}<p>{{ supplier.address }}</p>{% endif %}
+      {% if supplier.gstin %}<p><b>GSTIN</b> {{ supplier.gstin }}</p>{% endif %}
+      {% if supplier.contact_name or supplier.phone %}<p>{{ supplier.contact_name }}{% if supplier.contact_name and supplier.phone %} · {% endif %}{{ supplier.phone }}</p>{% endif %}
+      {% if supplier.email %}<p>{{ supplier.email }}</p>{% endif %}
+    </div>
+    <div>
+      <h3>Deliver to</h3>
+      <p><b>{{ seller.trade_name|default:seller.legal_name }}</b></p>
+      <p>{{ seller.address }}</p>
+      <p>{{ seller.state }} ({{ seller.state_code }})</p>
+    </div>
+  </div>
+
+  <table class="lines">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th class="n">Quantity</th>
+        {% if prices %}<th class="n">Rate (₹)</th><th class="n">GST</th><th class="n">Amount (₹)</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <td>{{ line.product_name }}<br><span class="muted">{{ line.product_code }}{% if line.supplier_code %} · your code {{ line.supplier_code }}{% endif %}</span></td>
+        <td class="n">{{ line.entered_qty|qty }} {% if line.entered_unit == "PACK" %}packs ({{ line.quantity|qty }} {{ line.unit_code }}){% else %}{{ line.unit_code }}{% endif %}{% if line.qty_cancelled %}<br><span class="muted">{{ line.qty_cancelled|qty }} cancelled</span>{% endif %}</td>
+        {% if prices %}
+        <td class="n">{% if line.unit_cost is not None %}{{ line.unit_cost|amount }}{% else %}—{% endif %}</td>
+        <td class="n">{{ line.gst_rate|rate }}</td>
+        <td class="n">{% if line.line_total is not None %}{{ line.line_total|amount }}{% else %}—{% endif %}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if prices %}
+  <table class="totals">
+    <tr><td>Value before GST</td><td class="n">{{ doc.subtotal|rupees }}</td></tr>
+    <tr><td>GST (estimate)</td><td class="n">{{ doc.estimated_tax|rupees }}</td></tr>
+  </table>
+  <p class="muted" style="margin-top:6pt">Tax is charged on your invoice; this estimate is for information only.</p>
+  {% endif %}
+
+  {% if doc.notes %}<p style="margin-top:8pt"><b>Notes:</b> {{ doc.notes|linebreaksbr }}</p>{% endif %}
+
+  <div class="bottom"><div></div><div class="sign"><p>For <b>{{ seller.legal_name }}</b></p></div></div>
+</section>
+</body>
+</html>
