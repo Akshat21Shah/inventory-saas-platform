@@ -82,6 +82,18 @@ def test_seed_is_idempotent(settings):
         assert ProductStats.objects.exists() and ReorderSuggestion.objects.exists()
     with tenant_context(patel.id):
         assert not Supplier.objects.exists() and not ProductStats.objects.exists()
+    # Phase 9b: shop activity for both; free-goods schemes for Sharma only.
+    from apps.insights.models import Segment, ShopActivity, ShopContact
+    from apps.pricing.models import FreeGoodsScheme
+
+    assert effective_features(sharma.id)["free_goods"]
+    assert not effective_features(patel.id)["free_goods"]
+    with tenant_context(sharma.id):
+        assert FreeGoodsScheme.objects.count() == 3
+        assert ShopActivity.objects.count() == 20 and ShopContact.objects.count() == 1
+        assert ShopActivity.objects.filter(segment=Segment.NEVER_ORDERED).exists()
+    with tenant_context(patel.id):
+        assert not FreeGoodsScheme.objects.exists() and ShopActivity.objects.exists()
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):
