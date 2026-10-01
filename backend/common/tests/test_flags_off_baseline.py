@@ -123,6 +123,16 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.shop-order.lines.free_of_line": None,
     "api.shop-order.lines.scheme_name": "",
     "api.shop-home.last_order.items.free_offer": None,
+    "db.billing.InvoiceLine.is_free": False,
+    "db.billing.InvoiceLine.scheme_name": "",
+    "db.billing.OrderConfirmation.content.lines.free": False,
+    "db.billing.OrderConfirmation.content.lines.scheme": "",
+    "api.invoice.lines.is_free": False,
+    "api.invoice.lines.scheme_name": "",
+    "api.shop-invoice.lines.is_free": False,
+    "api.shop-invoice.lines.scheme_name": "",
+    "api.credit-note.lines.is_free": False,
+    "api.credit-note.lines.scheme_name": "",
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,

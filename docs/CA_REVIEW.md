@@ -424,11 +424,13 @@ How the platform shows it today:
   taxable value of 0 and no GST.
 - If the shop returns some of the packets, staff may take free packets back too, at ₹0 (stock comes
   back; nothing is charged).
+- Free packets sent later on their own (out of stock at first) get their own ₹0 invoice; free
+  packets alone coming back, or not supplied after invoicing, get a ₹0 credit note.
 - Stock and the margin report count the free packets at their cost.
 
 We understand CBIC Circular 92/11/2019-GST to treat "buy one get one free" offers as one supply
 for the price charged, with input tax credit not reversed; please confirm or correct (questions
-41–45).
+41–46).
 
 ---
 
@@ -483,3 +485,4 @@ Please answer yes or no, with a note where the answer is no.
 | 43 | Input tax credit: may the distributor keep the input tax credit on goods given free under such a scheme (no reversal)? | | |
 | 44 | E-invoices and GSTR-1: should the free goods go in the IRN as their own ₹0 item, or in the bought item's free-quantity field; and do they count in the HSN summary's quantities? | | |
 | 45 | Returns: when a shop returns goods bought under a scheme, must the free goods given with them be returned or charged, or may the distributor let the shop keep them? | | |
+| 46 | When the free goods are sent later on their own (the bought goods went earlier, the free ones were out of stock), the platform issues a ₹0 tax invoice for them, and a ₹0 credit note when free goods alone come back or are not supplied. Is a ₹0 tax invoice right here, or should it be a delivery challan? | | |

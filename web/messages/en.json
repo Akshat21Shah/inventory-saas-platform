@@ -4587,6 +4587,7 @@
           "category": "Category",
           "brand": "Brand",
           "qty": "Quantity",
+          "free_qty": "Of which free",
           "taxable": "Taxable value",
           "tax": "GST",
           "total": "Total",

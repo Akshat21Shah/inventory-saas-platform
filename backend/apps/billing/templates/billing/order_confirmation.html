@@ -42,7 +42,7 @@
     <tbody>
       {% for line in doc.lines %}
       <tr>
-        <td>{{ line.name }}<br><span class="muted">{{ line.code }}{% if line.later != "0.000" %} · {{ line.later|qty }} to follow when stock arrives{% endif %}</span></td>
+        <td>{{ line.name }}{% if line.free %} <b>Free{% if line.scheme %} ({{ line.scheme }}){% endif %}</b>{% endif %}<br><span class="muted">{{ line.code }}{% if line.later != "0.000" %} · {{ line.later|qty }} to follow when stock arrives{% endif %}</span></td>
         <td class="c">{{ line.hsn }}</td>
         <td class="n">{{ line.quantity|qty }} {{ line.unit }}</td>
         <td class="n">{{ line.unit_price|amount }}</td>

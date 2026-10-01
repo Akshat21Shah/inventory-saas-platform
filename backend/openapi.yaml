@@ -13086,6 +13086,10 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        is_free:
+          type: boolean
+        scheme_name:
+          type: string
         quantity:
           type: string
           format: decimal
@@ -13127,10 +13131,12 @@ components:
       - hsn_code
       - igst_amount
       - invoice_line_id
+      - is_free
       - line_no
       - line_total
       - product_code
       - quantity
+      - scheme_name
       - sgst_amount
       - taxable_value
       - unit_code
@@ -16590,6 +16596,11 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           description: Already credited by credit notes.
+        is_free:
+          type: boolean
+          description: Free goods under a scheme (₹0, no GST).
+        scheme_name:
+          type: string
       required:
       - cess_amount
       - cess_rate
@@ -16604,6 +16615,7 @@ components:
       - id
       - igst_amount
       - igst_rate
+      - is_free
       - line_no
       - line_total
       - order_rate
@@ -16611,6 +16623,7 @@ components:
       - product_id
       - quantity
       - rate_differs_from_order
+      - scheme_name
       - sgst_amount
       - sgst_rate
       - taxable_value

@@ -225,6 +225,9 @@ class InvoiceLine(TenantScopedModel):
     # The product's cost price (per base unit, before GST) when issued: margins (ADR-050). Null
     # on earlier lines or without a cost price: margin then uses today's cost, "estimated".
     unit_cost = UnitCostField(null=True, blank=True)
+    # Free goods under a scheme (ADR-056 item 10): ₹0, no GST, printed "Free (<scheme>)".
+    is_free = models.BooleanField(default=False)
+    scheme_name = models.CharField(max_length=120, blank=True, default="")
 
     class Meta:
         constraints = [

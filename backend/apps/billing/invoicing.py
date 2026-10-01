@@ -262,7 +262,10 @@ def issue_invoice_for_fulfilment(
         round_to_rupee=bool(snapshot["invoicing.round_to_rupee"]),
         round_off_method=RoundOffMethod(snapshot["invoicing.round_off_method"]),
     )
-    differs = [p.rate != Decimal(p.line.gst_rate) for p in planned]
+    # A free line carries no GST, so a rate change on it changes nothing (ADR-056 item 10).
+    differs = [
+        p.rate != Decimal(p.line.gst_rate) and p.line.free_of_line_id is None for p in planned
+    ]
     tenant = Tenant.objects.select_related("state").get(pk=tenant_id)
     series, number = numbering.next_number(DocumentType.INVOICE, invoice_date)  # L6
     invoice: Invoice = Invoice.objects.create(
@@ -326,21 +329,24 @@ def issue_invoice_for_fulfilment(
                 order_rate=p.line.gst_rate,
                 rate_differs_from_order=differ,
                 unit_cost=p.unit_cost,
+                is_free=p.line.free_of_line_id is not None,
+                scheme_name=p.line.scheme_name,
             )
             for index, (p, tax, differ) in enumerate(zip(planned, taxes, differs, strict=True), 1)
         ]
     )
     for p in planned:
         OrderLine.objects.filter(pk=p.line.pk).update(qty_invoiced=F("qty_invoiced") + p.quantity)
-    ledger.post(
-        account,
-        EntryType.INVOICE,
-        debit=invoice.grand_total,
-        entry_date=invoice_date,
-        ref=ledger.Reference("INVOICE", invoice.pk, number),
-        narration=f"Invoice for order {order.number}",
-        by=by,
-    )
+    if invoice.grand_total > 0:  # only free goods in it (ADR-056): nothing is owed
+        ledger.post(
+            account,
+            EntryType.INVOICE,
+            debit=invoice.grand_total,
+            entry_date=invoice_date,
+            ref=ledger.Reference("INVOICE", invoice.pk, number),
+            narration=f"Invoice for order {order.number}",
+            by=by,
+        )
     allocation.settle(account, by=by)  # advances and unused credit, oldest money first
     invoice.refresh_from_db()
     from apps.compliance.einvoice import on_issued
