@@ -45,6 +45,7 @@ SAMPLE: dict[str, str] = {
     "items": "Tata Salt 1 kg 2 short",
     "shipment": "ORD-2026-000123/1",
     "vehicle": " by vehicle MH12AB1234",
+    "delivery_code": " Delivery code: 4821.",
     "transporter": "Shree Transport",
     "lr_number": "LR-5521",
     "product": "Tata Salt 1 kg",

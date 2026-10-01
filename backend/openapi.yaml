@@ -1988,6 +1988,11 @@ paths:
         required: true
       tags:
       - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverRequest'
       security:
       - jwtAuth: []
       responses:
@@ -8982,6 +8987,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/ShopOrder'
           description: ''
+  /api/v1/shop/fulfilments/{fulfilment_id}/received/:
+    post:
+      operationId: shop_fulfilment_received
+      description: The shop got the shipment (ADR-057 item 1).
+      parameters:
+      - in: path
+        name: fulfilment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopOrder'
+          description: ''
   /api/v1/shop/home/:
     get:
       operationId: shop_home
@@ -13383,6 +13410,30 @@ components:
       - repeat_shops
       - top_products
       - top_shops
+    DeliverRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          default: ''
+          maxLength: 4
+        reason:
+          type: string
+          default: ''
+          description: Why it was delivered without the shop's delivery code.
+          maxLength: 300
+    DeliveredViaEnum:
+      enum:
+      - STAFF
+      - CODE
+      - NO_CODE
+      - SHOP
+      type: string
+      description: |-
+        * `STAFF` - Marked by staff
+        * `CODE` - With the delivery code
+        * `NO_CODE` - Without the delivery code
+        * `SHOP` - Confirmed by the shop
     DeliveryAddress:
       type: object
       properties:
@@ -15183,6 +15234,18 @@ components:
         cancelled_reason:
           type: string
           readOnly: true
+        needs_delivery_code:
+          type: boolean
+          readOnly: true
+          description: The shop's delivery code (never shown to staff) is needed to
+            deliver it.
+        delivered_via:
+          allOf:
+          - $ref: '#/components/schemas/DeliveredViaEnum'
+          readOnly: true
+        delivery_note:
+          type: string
+          readOnly: true
         lines:
           type: array
           items:
@@ -15192,12 +15255,15 @@ components:
       - cancelled_reason
       - created_at
       - delivered_at
+      - delivered_via
+      - delivery_note
       - dispatched_at
       - distance_km
       - id
       - kind
       - lines
       - lr_number
+      - needs_delivery_code
       - number
       - packed_at
       - status
@@ -15258,6 +15324,18 @@ components:
         cancelled_reason:
           type: string
           readOnly: true
+        needs_delivery_code:
+          type: boolean
+          readOnly: true
+          description: The shop's delivery code (never shown to staff) is needed to
+            deliver it.
+        delivered_via:
+          allOf:
+          - $ref: '#/components/schemas/DeliveredViaEnum'
+          readOnly: true
+        delivery_note:
+          type: string
+          readOnly: true
         lines:
           type: array
           items:
@@ -15282,12 +15360,15 @@ components:
       - cancelled_reason
       - created_at
       - delivered_at
+      - delivered_via
+      - delivery_note
       - dispatched_at
       - distance_km
       - id
       - kind
       - lines
       - lr_number
+      - needs_delivery_code
       - number
       - order
       - order_number
@@ -25019,6 +25100,110 @@ components:
       required:
       - available
       - limit
+    ShopFulfilment:
+      type: object
+      description: |-
+        A shipment as the shop sees it: its delivery code while on its way, and whether it may
+        mark it received (ADR-057).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentKindEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfilmentStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        packed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        dispatched_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        vehicle_number:
+          type: string
+          readOnly: true
+        transporter_name:
+          type: string
+          readOnly: true
+        lr_number:
+          type: string
+          readOnly: true
+        distance_km:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 'For its e-way bill: the distance given at dispatch, or before
+            that the shop address''s (null when unknown).'
+        cancelled_reason:
+          type: string
+          readOnly: true
+        needs_delivery_code:
+          type: boolean
+          readOnly: true
+          description: The shop's delivery code (never shown to staff) is needed to
+            deliver it.
+        delivered_via:
+          allOf:
+          - $ref: '#/components/schemas/DeliveredViaEnum'
+          readOnly: true
+        delivery_note:
+          type: string
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/FulfilmentLine'
+          readOnly: true
+        delivery_code:
+          type: string
+          readOnly: true
+          description: Give it to the delivery person (only while the shipment is
+            on its way).
+        can_confirm:
+          type: boolean
+          readOnly: true
+          description: The shop may mark it received.
+      required:
+      - can_confirm
+      - cancelled_reason
+      - created_at
+      - delivered_at
+      - delivered_via
+      - delivery_code
+      - delivery_note
+      - dispatched_at
+      - distance_km
+      - id
+      - kind
+      - lines
+      - lr_number
+      - needs_delivery_code
+      - number
+      - packed_at
+      - status
+      - transporter_name
+      - vehicle_number
     ShopHistory:
       type: object
       description: 'The shop''s timeline: what happened and when, not which staff
@@ -25361,7 +25546,7 @@ components:
         fulfilments:
           type: array
           items:
-            $ref: '#/components/schemas/Fulfilment'
+            $ref: '#/components/schemas/ShopFulfilment'
           readOnly: true
         invoices:
           type: array

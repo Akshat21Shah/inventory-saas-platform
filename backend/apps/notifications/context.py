@@ -116,6 +116,14 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
             values["vehicle"] = f" by vehicle {number}" if number else ""
             values["transporter"] = shipment.transporter_name
             values["lr_number"] = shipment.lr_number
+            # ADR-057: the shop's delivery code, only while the shipment is on its way; only the
+            # shop's texts use it.
+            on_its_way = shipment.status == Fulfilment.Status.DISPATCHED
+            values["delivery_code"] = (
+                f" Delivery code: {shipment.delivery_code}."
+                if shipment.delivery_code and on_its_way
+                else ""
+            )
     if "product_id" in p or "product" in p:
         product = Product.objects.filter(pk=p["product_id"]).first() if "product_id" in p else None
         values["product"] = product.name if product else name(p.get("product", ""))

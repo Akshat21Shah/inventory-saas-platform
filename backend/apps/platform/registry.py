@@ -267,6 +267,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             allowed=("REDUCE_ONLY", "FULL_EDIT"), snapshot_on=_ORDER),
     _tenant("orders.staff_can_place_on_behalf", Group.ORDERS, SettingType.BOOL, True,
             "Allow your staff (for example salesmen) to place orders for retailers."),
+    # ADR-057: delivery confirmed by the shop, and an optional delivery code.
+    _tenant("orders.shop_confirms_delivery", Group.ORDERS, SettingType.BOOL, True,
+            "Let shops mark a dispatched shipment as received in their app."),
+    _tenant("orders.delivery_code", Group.ORDERS, SettingType.BOOL, False,
+            "Give each shipment a 4-digit code at dispatch. The shop gives it to the delivery "
+            "person, who enters it to mark the shipment delivered."),
     _tenant("orders.sales_visibility", Group.ORDERS, SettingType.ENUM, "ALL",
             "Which orders and retailers sales staff can see.",
             allowed=("ALL", "ASSIGNED_RETAILERS")),

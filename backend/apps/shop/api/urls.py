@@ -33,6 +33,11 @@ urlpatterns = [
         name="shop-order-line-cancel-backorder",
     ),
     path(
+        "fulfilments/<uuid:fulfilment_id>/received/",
+        o.ShopReceivedView.as_view(),
+        name="shop-fulfilment-received",
+    ),
+    path(
         "fulfilment-lines/<uuid:line_id>/cancel-repriced/",
         o.ShopCancelRepricedView.as_view(),
         name="shop-fulfilment-line-cancel-repriced",

@@ -1399,6 +1399,88 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getShopFulfilmentLineCancelRepricedMutationOptions(options), queryClient);
     }
+    export type shopFulfilmentReceivedResponse200 = {
+  data: ShopOrder
+  status: 200
+}
+
+export type shopFulfilmentReceivedResponseSuccess = (shopFulfilmentReceivedResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopFulfilmentReceivedResponse = (shopFulfilmentReceivedResponseSuccess)
+
+export const getShopFulfilmentReceivedUrl = (fulfilmentId: string,) => {
+
+
+
+
+  return `/api/v1/shop/fulfilments/${fulfilmentId}/received/`
+}
+
+/**
+ * The shop got the shipment (ADR-057 item 1).
+ */
+export const shopFulfilmentReceived = async (fulfilmentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopFulfilmentReceivedResponse> => {
+
+  return apiFetch<shopFulfilmentReceivedResponse>(getShopFulfilmentReceivedUrl(fulfilmentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopFulfilmentReceivedMutationKey = () => ['shopFulfilmentReceived'] as const;
+
+export const getShopFulfilmentReceivedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopFulfilmentReceived>>, TError,ShopFulfilmentReceivedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopFulfilmentReceived>>, TError,ShopFulfilmentReceivedMutationVariables, TContext> => {
+
+const mutationKey = getShopFulfilmentReceivedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopFulfilmentReceived>>, ShopFulfilmentReceivedMutationVariables> = (props) => {
+          const {fulfilmentId} = props ?? {};
+
+          return  shopFulfilmentReceived(fulfilmentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopFulfilmentReceivedMutationResult = NonNullable<Awaited<ReturnType<typeof shopFulfilmentReceived>>>
+
+    export type ShopFulfilmentReceivedMutationError = unknown
+    export type ShopFulfilmentReceivedMutationVariables = {fulfilmentId: string}
+
+    export const useShopFulfilmentReceived = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopFulfilmentReceived>>, TError,ShopFulfilmentReceivedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopFulfilmentReceived>>,
+        TError,
+        ShopFulfilmentReceivedMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopFulfilmentReceivedMutationOptions(options), queryClient);
+    }
     export type shopHomeResponse200 = {
   data: ShopHome
   status: 200

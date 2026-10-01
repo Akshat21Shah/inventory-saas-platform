@@ -10,7 +10,11 @@ import type { FulfilmentKindEnum } from './fulfilmentKindEnum';
 import type { FulfilmentLine } from './fulfilmentLine';
 import type { FulfilmentStatusEnum } from './fulfilmentStatusEnum';
 
-export interface Fulfilment {
+/**
+ * A shipment as the shop sees it: its delivery code while on its way, and whether it may
+ * mark it received (ADR-057).
+ */
+export interface ShopFulfilment {
   readonly id: string;
   readonly number: string;
   readonly kind: FulfilmentKindEnum;
@@ -36,4 +40,8 @@ export interface Fulfilment {
   readonly delivered_via: DeliveredViaEnum;
   readonly delivery_note: string;
   readonly lines: readonly FulfilmentLine[];
+  /** Give it to the delivery person (only while the shipment is on its way). */
+  readonly delivery_code: string;
+  /** The shop may mark it received. */
+  readonly can_confirm: boolean;
 }

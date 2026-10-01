@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from apps.accounts.models import User
 from apps.catalog.models import Product
 from apps.ledger import selectors as ledger_selectors
-from apps.orders import backorders, credit, selectors, transitions
+from apps.orders import backorders, credit, fulfilment, selectors, transitions
 from apps.orders import cart as carts
 from apps.orders.api.serializers import PlaceOrderSerializer
 from apps.orders.models import Order
@@ -162,6 +162,22 @@ class ShopCancelBackorderView(ShopView):
         retailer = _retailer(request)
         line = backorders.cancel_backorder(line_id, by=_user(request), retailer_id=retailer.pk)
         return _order(request, line.order_id)
+
+
+class ShopReceivedView(ShopView):
+    @extend_schema(
+        operation_id="shop_fulfilment_received",
+        tags=TAGS,
+        request=None,
+        responses=s.ShopOrderSerializer,
+    )
+    def post(self, request: Request, fulfilment_id: UUID) -> Response:
+        """The shop got the shipment (ADR-057 item 1)."""
+        retailer = _retailer(request)
+        shipment = fulfilment.shop_confirm_delivery(
+            fulfilment_id, by=_user(request), retailer_id=retailer.pk
+        )
+        return _order(request, shipment.order_id)
 
 
 class ShopCancelRepricedView(ShopView):
