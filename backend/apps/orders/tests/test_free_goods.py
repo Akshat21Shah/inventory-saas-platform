@@ -200,6 +200,21 @@ def test_with_backorders_off_short_free_goods_are_cut_and_the_shop_is_told(world
     check_order_invariants(t)
 
 
+def test_reducing_the_cart_to_what_is_there_leaves_free_lines_alone(world):
+    t = world["t"]
+    settings(t, backorders__enabled=False)
+    exact = make_product(t, "P-5", base_price=D("10"))
+    add_stock(t, exact, "10")  # all for the bought line; none left for the free unit
+    scheme(t, exact, exact)
+    client = shop_client(t, world["shop"])
+    client.put(f"{SHOP}/cart/lines/{exact.pk}/", {"quantity": "10"}, format="json")
+    cart = client.post(f"{SHOP}/cart/reduce-to-available/").json()
+    assert [(x["quantity"], x["is_free"], x["ready_qty"]) for x in cart["lines"]] == [
+        ("10.000", False, "10.000"),
+        ("1.000", True, "0.000"),
+    ]
+
+
 def test_a_smaller_bought_line_keeps_only_the_free_goods_it_earns(world):
     t, owner = world["t"], world["owner"]
     scheme(t, world["p1"], world["p1"])

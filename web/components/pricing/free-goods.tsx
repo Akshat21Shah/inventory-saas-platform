@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,8 @@ import {
   freeGoodsSchemesCreate,
   freeGoodsSchemesDelete,
   freeGoodsSchemesUpdate,
+  getFreeGoodsSchemesListQueryKey,
+  getFreeGoodsSchemesRetrieveQueryKey,
   useFreeGoodsSchemesList,
   useFreeGoodsSchemesRetrieve,
 } from "@/lib/api/generated/endpoints/pricing/pricing";
@@ -237,6 +240,7 @@ function SchemeForm({ scheme }: { scheme?: FreeGoodsScheme }) {
   const tc = useTranslations("common");
   const errors = useErrorText();
   const router = useRouter();
+  const client = useQueryClient();
   const { can } = useAuth();
   const manage = can("pricing.manage");
   const priceLists = usePriceListOptions();
@@ -287,6 +291,12 @@ function SchemeForm({ scheme }: { scheme?: FreeGoodsScheme }) {
     try {
       if (scheme) await freeGoodsSchemesUpdate(scheme.id, body);
       else await freeGoodsSchemesCreate(body);
+      await client.invalidateQueries({ queryKey: getFreeGoodsSchemesListQueryKey() });
+      if (scheme) {
+        await client.invalidateQueries({
+          queryKey: getFreeGoodsSchemesRetrieveQueryKey(scheme.id),
+        });
+      }
       toast.success(t("saved"));
       router.push("/manage/pricing/free-goods");
     } catch (err) {
@@ -461,6 +471,7 @@ function EditScheme({ schemeId }: { schemeId: string }) {
   const t = useTranslations("pricing.freeGoods");
   const errors = useErrorText();
   const router = useRouter();
+  const client = useQueryClient();
   const { can } = useAuth();
   const query = useFreeGoodsSchemesRetrieve(schemeId);
   if (query.isLoading) return <PageSkeleton />;
@@ -489,6 +500,7 @@ function EditScheme({ schemeId }: { schemeId: string }) {
               onConfirm={async () => {
                 try {
                   await freeGoodsSchemesDelete(scheme.id);
+                  await client.invalidateQueries({ queryKey: getFreeGoodsSchemesListQueryKey() });
                   router.replace("/manage/pricing/free-goods");
                 } catch (err) {
                   toast.error(errors.message(err));
