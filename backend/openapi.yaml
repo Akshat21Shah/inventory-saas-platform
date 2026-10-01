@@ -6444,6 +6444,155 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/reorder-suggestions/:
+    get:
+      operationId: reorder_suggestions_list
+      parameters:
+      - in: query
+        name: basis
+        schema:
+          enum:
+          - DEMAND
+          - LOW_HISTORY
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `DEMAND` - Daily demand
+          * `LOW_HISTORY` - Little or no sales history
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: supplier
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReorderSuggestionList'
+          description: ''
+  /api/v1/reorder-suggestions/{suggestion_id}/:
+    get:
+      operationId: reorder_suggestions_get
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReorderSuggestion'
+          description: ''
+    patch:
+      operationId: reorder_suggestions_update
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - planning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSuggestionChangeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReorderSuggestion'
+          description: ''
+  /api/v1/reorder-suggestions/apply-reorder-levels/:
+    post:
+      operationId: reorder_suggestions_apply_levels
+      description: Use the reorder points as the products' reorder levels (audited;
+        never automatic).
+      tags:
+      - planning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionIdsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelsApplied'
+          description: ''
+  /api/v1/reorder-suggestions/create-orders/:
+    post:
+      operationId: reorder_suggestions_create_orders
+      description: Draft purchase orders from suggestions, one per preferred supplier
+        (purchasing on).
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - planning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionIdsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreatedOrder'
+          description: ''
   /api/v1/report-runs/:
     get:
       operationId: report_runs_list
@@ -12434,6 +12583,23 @@ components:
       required:
       - amount
       - count
+    CreatedOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        supplier_name:
+          type: string
+        line_count:
+          type: integer
+      required:
+      - id
+      - line_count
+      - number
+      - supplier_name
     Credit:
       type: object
       properties:
@@ -12845,16 +13011,26 @@ components:
           allOf:
           - $ref: '#/components/schemas/LowStockCounts'
           nullable: true
+        to_reorder:
+          type: integer
+          nullable: true
+          description: Open reorder suggestions (stock planning).
+        late_purchase_orders:
+          type: integer
+          nullable: true
+          description: Sent or partly received, expected before today (purchasing).
       required:
       - backorders_to_confirm
       - failed_ewaybills
       - failed_irns
       - handover
+      - late_purchase_orders
       - low_stock
       - new_orders
       - on_hold
       - overdue
       - to_pack
+      - to_reorder
     DashboardToday:
       type: object
       properties:
@@ -16103,6 +16279,16 @@ components:
       required:
       - changed
       - warnings
+    LeadSourceEnum:
+      enum:
+      - PRODUCT_SUPPLIER
+      - SUPPLIER
+      - DEFAULT
+      type: string
+      description: |-
+        * `PRODUCT_SUPPLIER` - The supplier's time for this product
+        * `SUPPLIER` - The supplier's usual time
+        * `DEFAULT` - Your usual delivery time
     LedgerAdjustment:
       type: object
       properties:
@@ -16211,6 +16397,31 @@ components:
         * `PAYMENT` - PAYMENT
         * `ADJUSTMENT` - ADJUSTMENT
         * `REFUND` - REFUND
+    LevelsApplied:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
+    LineOnOrder:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+          description: The earliest.
+        late:
+          type: boolean
+      required:
+      - expected_date
+      - late
+      - quantity
     LineQuantityRequest:
       type: object
       properties:
@@ -18137,6 +18348,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Refund'
+    PaginatedReorderSuggestionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReorderSuggestion'
     PaginatedReportRowList:
       type: object
       required:
@@ -18979,6 +19209,21 @@ components:
           type: object
           additionalProperties:
             nullable: true
+    PatchedSuggestionChangeRequest:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        dismiss:
+          type: boolean
+          default: false
+        until:
+          type: string
+          format: date
+          nullable: true
     PatchedSupplierWriteRequest:
       type: object
       description: Validation of shapes only; the service checks GSTINs, phone numbers
@@ -22321,6 +22566,160 @@ components:
           nullable: true
       required:
       - pause
+    ReorderSuggestion:
+      type: object
+      description: |-
+        The figures behind a suggestion, for the app to explain it in plain words. The supplier is
+        named only to staff who can see purchasing (``context["suppliers"]``); no money.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        supplier_name:
+          type: string
+          nullable: true
+          readOnly: true
+        basis:
+          allOf:
+          - $ref: '#/components/schemas/ReorderSuggestionBasisEnum'
+          readOnly: true
+        computed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        demand_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        demand_days:
+          type: integer
+          readOnly: true
+        per_day:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_order:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        waiting:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        lead_days:
+          type: integer
+          readOnly: true
+        lead_source:
+          allOf:
+          - $ref: '#/components/schemas/LeadSourceEnum'
+          readOnly: true
+        safety_days:
+          type: integer
+          readOnly: true
+        cover_days:
+          type: integer
+          readOnly: true
+        reorder_point:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        suggested_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        to_order:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        days_left:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+      required:
+      - available
+      - basis
+      - computed_at
+      - cover_days
+      - days_left
+      - demand_days
+      - demand_qty
+      - id
+      - lead_days
+      - lead_source
+      - on_order
+      - pack_size
+      - per_day
+      - product_code
+      - product_id
+      - product_name
+      - quantity
+      - reorder_level
+      - reorder_point
+      - safety_days
+      - suggested_qty
+      - supplier_id
+      - supplier_name
+      - to_order
+      - unit_code
+      - waiting
+    ReorderSuggestionBasisEnum:
+      enum:
+      - DEMAND
+      - LOW_HISTORY
+      type: string
+      description: |-
+        * `DEMAND` - Daily demand
+        * `LOW_HISTORY` - Little or no sales history
     RepeatResult:
       type: object
       properties:
@@ -22391,12 +22790,14 @@ components:
       - stock
       - money
       - gst
+      - purchasing
       type: string
       description: |-
         * `sales` - sales
         * `stock` - stock
         * `money` - money
         * `gst` - gst
+        * `purchasing` - purchasing
     ReportPage:
       type: object
       properties:
@@ -24659,8 +25060,9 @@ components:
       - password
     StaffOrder:
       type: object
-      description: The distributor's view adds the credit approval (not shown to the
-        shop).
+      description: |-
+        The distributor's view adds the credit approval (not shown to the shop) and what is on
+        order for waiting lines.
       properties:
         id:
           type: string
@@ -24766,7 +25168,7 @@ components:
         lines:
           type: array
           items:
-            $ref: '#/components/schemas/OrderLine'
+            $ref: '#/components/schemas/StaffOrderLine'
           readOnly: true
         fulfilments:
           type: array
@@ -24825,6 +25227,124 @@ components:
       - status
       - tax_total
       - taxable_total
+    StaffOrderLine:
+      type: object
+      description: |-
+        Staff also see, for a waiting line, how much of the product is on order and when it is
+        expected (purchasing on; never the supplier or the price; not shown to shops yet).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        line_no:
+          type: integer
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_pending:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_allocated:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_cancelled:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_dispatched:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_delivered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        ready_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Held for the shop, not yet sent.
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        on_order:
+          allOf:
+          - $ref: '#/components/schemas/LineOnOrder'
+          nullable: true
+          readOnly: true
+      required:
+      - discount_per_unit
+      - gst_rate
+      - id
+      - line_no
+      - line_total
+      - on_order
+      - product
+      - product_code
+      - product_name
+      - qty_allocated
+      - qty_backordered
+      - qty_cancelled
+      - qty_delivered
+      - qty_dispatched
+      - qty_ordered
+      - qty_pending
+      - qty_reserved
+      - ready_qty
+      - unit_code
+      - unit_price
     StaffPaymentRow:
       type: object
       description: 'The office''s list: also whether an online payment waits for review
@@ -25352,6 +25872,18 @@ components:
       - plan
       - starts_at
       - status
+    SuggestionIdsRequest:
+      type: object
+      properties:
+        suggestion_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 500
+          minItems: 1
+      required:
+      - suggestion_ids
     Summary:
       type: object
       properties:

@@ -1,6 +1,9 @@
+from typing import Any
+
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.planning.models import AbcClass, MovementClass, ProductStats
+from apps.planning.models import AbcClass, MovementClass, ProductStats, ReorderSuggestion
 
 
 class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
@@ -29,3 +32,93 @@ class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
 
 class PlanningRefreshSerializer(serializers.Serializer[object]):
     status = serializers.ChoiceField(choices=["QUEUED"])
+
+
+class SuggestionFilterSerializer(serializers.Serializer[object]):
+    supplier = serializers.UUIDField(required=False, allow_null=True, default=None)
+    basis = serializers.ChoiceField(
+        choices=ReorderSuggestion.Basis.choices, required=False, allow_blank=True, default=""
+    )
+    search = serializers.CharField(required=False, allow_blank=True, default="", max_length=100)
+
+
+class ReorderSuggestionSerializer(serializers.ModelSerializer[ReorderSuggestion]):
+    """The figures behind a suggestion, for the app to explain it in plain words. The supplier is
+    named only to staff who can see purchasing (``context["suppliers"]``); no money."""
+
+    product_id = serializers.UUIDField(read_only=True)
+    product_code = serializers.CharField(source="product.code", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    unit_code = serializers.CharField(source="product.unit.code", read_only=True)
+    supplier_id = serializers.UUIDField(read_only=True, allow_null=True)
+    supplier_name = serializers.SerializerMethodField()
+    to_order = serializers.DecimalField(max_digits=14, decimal_places=3, read_only=True)
+
+    class Meta:
+        model = ReorderSuggestion
+        fields = [
+            "id",
+            "product_id",
+            "product_code",
+            "product_name",
+            "unit_code",
+            "supplier_id",
+            "supplier_name",
+            "basis",
+            "computed_at",
+            "demand_qty",
+            "demand_days",
+            "per_day",
+            "available",
+            "on_order",
+            "waiting",
+            "reorder_level",
+            "lead_days",
+            "lead_source",
+            "safety_days",
+            "cover_days",
+            "reorder_point",
+            "pack_size",
+            "suggested_qty",
+            "quantity",
+            "to_order",
+            "days_left",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_supplier_name(self, row: ReorderSuggestion) -> str | None:
+        if not self.context.get("suppliers") or row.supplier is None:
+            return None
+        return row.supplier.name
+
+    def to_representation(self, instance: ReorderSuggestion) -> dict[str, Any]:
+        data = super().to_representation(instance)
+        if not self.context.get("suppliers"):
+            data["supplier_id"] = None
+        return data
+
+
+class SuggestionChangeSerializer(serializers.Serializer[object]):
+    quantity = serializers.DecimalField(
+        max_digits=14, decimal_places=3, required=False, allow_null=True
+    )
+    dismiss = serializers.BooleanField(required=False, default=False)
+    until = serializers.DateField(required=False, allow_null=True, default=None)
+
+
+class SuggestionIdsSerializer(serializers.Serializer[object]):
+    suggestion_ids = serializers.ListField(
+        child=serializers.UUIDField(), min_length=1, max_length=500
+    )
+
+
+class CreatedOrderSerializer(serializers.Serializer[object]):
+    id = serializers.UUIDField()
+    number = serializers.CharField()
+    supplier_name = serializers.CharField()
+    line_count = serializers.IntegerField()
+
+
+class LevelsAppliedSerializer(serializers.Serializer[object]):
+    changed = serializers.IntegerField()

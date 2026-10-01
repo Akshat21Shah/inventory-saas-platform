@@ -9,13 +9,14 @@ import type { BackorderStateEnum } from './backorderStateEnum';
 import type { Fulfilment } from './fulfilment';
 import type { History } from './history';
 import type { OrderInvoice } from './orderInvoice';
-import type { OrderLine } from './orderLine';
 import type { OrderStatusEnum } from './orderStatusEnum';
 import type { PlacedViaEnum } from './placedViaEnum';
 import type { StaffOrderHoldReason } from './staffOrderHoldReason';
+import type { StaffOrderLine } from './staffOrderLine';
 
 /**
- * The distributor's view adds the credit approval (not shown to the shop).
+ * The distributor's view adds the credit approval (not shown to the shop) and what is on
+ * order for waiting lines.
  */
 export interface StaffOrder {
   readonly id: string;
@@ -57,7 +58,7 @@ export interface StaffOrder {
   readonly cancellation_reason: string;
   /** Products still to be delivered ("N items to follow"). */
   readonly items_to_follow: number;
-  readonly lines: readonly OrderLine[];
+  readonly lines: readonly StaffOrderLine[];
   readonly fulfilments: readonly Fulfilment[];
   readonly invoices: readonly OrderInvoice[];
   /** An Order Confirmation PDF exists (made at acceptance when the setting is on). */

@@ -117,7 +117,8 @@ def order(world: dict[str, Any]) -> dict[str, Any]:
 
 def on_hand(world: dict[str, Any], product: Any) -> D:
     with tenant_context(world["t"].pk):
-        return StockLevel.objects.get(product=product).quantity_on_hand
+        found: D = StockLevel.objects.get(product=product).quantity_on_hand
+        return found
 
 
 @covers("purchase-order-receive")

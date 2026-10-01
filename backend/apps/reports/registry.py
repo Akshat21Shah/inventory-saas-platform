@@ -41,6 +41,7 @@ class Group(StrEnum):
     STOCK = "stock"
     MONEY = "money"
     GST = "gst"
+    PURCHASING = "purchasing"  # ADR-053
 
 
 GROUP_CHOICES = tuple((g.value, g.value) for g in Group)  # the API's ReportGroupEnum
@@ -54,6 +55,7 @@ class Column:
     cost: bool = False  # needs costs.view: left out of rows, totals and exports otherwise
     total: bool = False  # has a figure in the totals row
     width: int = 14  # Excel column width
+    feature: str = ""  # an optional module's flag: the column is left out while it is off
 
 
 @dataclass(frozen=True)
@@ -126,6 +128,7 @@ class Report:
     sheets: Callable[[Context], list[Sheet]] | None = None  # multi-sheet export
     # Extra checks on the filters, e.g. "a whole month or quarter": field -> messages.
     check: Callable[[dict[str, Any]], dict[str, list[str]]] | None = None
+    feature: str = ""  # an optional module's flag: the report doesn't exist while it is off
 
 
 REGISTRY: dict[str, Report] = {}

@@ -19,6 +19,7 @@ from apps.accounts.models import User
 from apps.orders import backorders, fulfilment, selectors, transitions
 from apps.orders.api import serializers as s
 from apps.orders.models import BackorderAllocation, Fulfilment, Order, OrderStatus
+from apps.platform.selectors import is_feature_enabled
 from common.errors import InvalidFields, NotFound
 from common.idempotency import idempotent
 from common.permissions import HasPermission
@@ -81,7 +82,13 @@ def _detail(request: Request, order_id: UUID, status: int = 200) -> Response:
     order = selectors.order_detail(order_id, user=_user(request))
     if order is None:
         raise NotFound()
-    return Response(s.StaffOrderSerializer(order).data, status=status)
+    context: dict[str, Any] = {}
+    waiting = [line.product_id for line in order.lines.all() if line.qty_backordered > 0]
+    if waiting and is_feature_enabled("purchasing"):
+        from apps.purchasing.selectors import on_order
+
+        context["on_order"] = on_order(waiting)
+    return Response(s.StaffOrderSerializer(order, context=context).data, status=status)
 
 
 # --- Orders --------------------------------------------------------------------------------------

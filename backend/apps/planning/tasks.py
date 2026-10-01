@@ -7,13 +7,15 @@ from common.task_base import TenantTask
 
 @shared_task(name="planning.refresh_for_tenant", base=TenantTask)
 def refresh_for_tenant(*, tenant_id: str) -> int:
-    """One distributor's product stats, when stock planning is on for it."""
-    from apps.planning import services
+    """One distributor's product stats and reorder suggestions, when stock planning is on for
+    it. Returns how many suggestions are open."""
+    from apps.planning import services, suggestions
     from apps.platform.selectors import is_feature_enabled
 
     if not is_feature_enabled("stock_planning"):
         return 0
-    return services.refresh_stats()
+    services.refresh_stats()
+    return suggestions.refresh_suggestions()
 
 
 @shared_task(name="planning.refresh_all")

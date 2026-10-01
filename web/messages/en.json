@@ -4304,7 +4304,8 @@
       "sales": "Sales",
       "stock": "Stock",
       "money": "Money",
-      "gst": "GST"
+      "gst": "GST",
+      "purchasing": "Purchasing"
     },
     "viewer": {
       "back": "All reports",
@@ -4364,7 +4365,22 @@
           "oldest": "Oldest order",
           "available": "Available now",
           "proposed": "Proposed to send",
+          "on_order": "On order",
+          "expected": "Expected",
           "value": "Value waiting"
+        }
+      },
+      "purchases_by_supplier": {
+        "title": "Purchases by supplier",
+        "description": "What you ordered and received from each supplier, and what is late.",
+        "columns": {
+          "supplier": "Supplier",
+          "orders_sent": "Orders sent",
+          "receipts": "Goods receipts",
+          "lines": "Lines received",
+          "value": "Value received",
+          "open_orders": "Open orders",
+          "late_orders": "Late orders"
         }
       },
       "collections": {

@@ -22,7 +22,7 @@ class OrderLineSerializer(serializers.ModelSerializer[OrderLine]):
 
     class Meta:
         model = OrderLine
-        fields = (
+        fields: tuple[str, ...] = (
             "id",
             "line_no",
             "product",
@@ -43,7 +43,7 @@ class OrderLineSerializer(serializers.ModelSerializer[OrderLine]):
             "ready_qty",
             "line_total",
         )
-        read_only_fields = fields
+        read_only_fields: tuple[str, ...] = fields
 
     @extend_schema_field(qty())
     def get_ready_qty(self, line: OrderLine) -> str:
@@ -214,8 +214,35 @@ class OrderSerializer(serializers.ModelSerializer[Order]):
         read_only_fields: tuple[str, ...] = fields
 
 
+class LineOnOrderSerializer(serializers.Serializer[Any]):
+    quantity = qty()
+    expected_date = serializers.DateField(allow_null=True, help_text="The earliest.")
+    late = serializers.BooleanField()
+
+
+class StaffOrderLineSerializer(OrderLineSerializer):
+    """Staff also see, for a waiting line, how much of the product is on order and when it is
+    expected (purchasing on; never the supplier or the price; not shown to shops yet)."""
+
+    on_order = serializers.SerializerMethodField()
+
+    class Meta(OrderLineSerializer.Meta):
+        fields = (*OrderLineSerializer.Meta.fields, "on_order")
+        read_only_fields = fields
+
+    @extend_schema_field(LineOnOrderSerializer(allow_null=True))
+    def get_on_order(self, line: OrderLine) -> dict[str, Any] | None:
+        found = (self.context.get("on_order") or {}).get(line.product_id)
+        if found is None or line.qty_backordered <= 0:
+            return None
+        return dict(LineOnOrderSerializer(found).data)
+
+
 class StaffOrderSerializer(OrderSerializer):
-    """The distributor's view adds the credit approval (not shown to the shop)."""
+    """The distributor's view adds the credit approval (not shown to the shop) and what is on
+    order for waiting lines."""
+
+    lines = StaffOrderLineSerializer(many=True, read_only=True)
 
     class Meta(OrderSerializer.Meta):
         fields = (*OrderSerializer.Meta.fields, "credit_approved_value")

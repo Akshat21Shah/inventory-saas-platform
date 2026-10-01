@@ -25,8 +25,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CreatedOrder,
+  LevelsApplied,
+  PaginatedReorderSuggestionList,
+  PatchedSuggestionChangeRequest,
   PlanningRefresh,
-  ProductStats
+  ProductStats,
+  ReorderSuggestion,
+  ReorderSuggestionsListParams,
+  SuggestionIdsRequest
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -247,3 +254,508 @@ export function useProductStats<TData = Awaited<ReturnType<typeof productStats>>
 
 
 
+export type reorderSuggestionsListResponse200 = {
+  data: PaginatedReorderSuggestionList
+  status: 200
+}
+
+export type reorderSuggestionsListResponseSuccess = (reorderSuggestionsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type reorderSuggestionsListResponse = (reorderSuggestionsListResponseSuccess)
+
+export const getReorderSuggestionsListUrl = (params?: ReorderSuggestionsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reorder-suggestions/?${stringifiedParams}` : `/api/v1/reorder-suggestions/`
+}
+
+export const reorderSuggestionsList = async (params?: ReorderSuggestionsListParams, options?: Parameters<typeof apiFetch>[1]): Promise<reorderSuggestionsListResponse> => {
+
+  return apiFetch<reorderSuggestionsListResponse>(getReorderSuggestionsListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReorderSuggestionsListQueryKey = (params?: ReorderSuggestionsListParams,) => {
+    return [
+    `/api/v1/reorder-suggestions/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReorderSuggestionsListQueryOptions = <TData = Awaited<ReturnType<typeof reorderSuggestionsList>>, TError = unknown>(params?: ReorderSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReorderSuggestionsListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reorderSuggestionsList>>> = ({ signal }) => reorderSuggestionsList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReorderSuggestionsListQueryResult = NonNullable<Awaited<ReturnType<typeof reorderSuggestionsList>>>
+export type ReorderSuggestionsListQueryError = unknown
+
+
+export function useReorderSuggestionsList<TData = Awaited<ReturnType<typeof reorderSuggestionsList>>, TError = unknown>(
+ params: undefined |  ReorderSuggestionsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reorderSuggestionsList>>,
+          TError,
+          Awaited<ReturnType<typeof reorderSuggestionsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReorderSuggestionsList<TData = Awaited<ReturnType<typeof reorderSuggestionsList>>, TError = unknown>(
+ params?: ReorderSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reorderSuggestionsList>>,
+          TError,
+          Awaited<ReturnType<typeof reorderSuggestionsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReorderSuggestionsList<TData = Awaited<ReturnType<typeof reorderSuggestionsList>>, TError = unknown>(
+ params?: ReorderSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useReorderSuggestionsList<TData = Awaited<ReturnType<typeof reorderSuggestionsList>>, TError = unknown>(
+ params?: ReorderSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReorderSuggestionsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type reorderSuggestionsGetResponse200 = {
+  data: ReorderSuggestion
+  status: 200
+}
+
+export type reorderSuggestionsGetResponseSuccess = (reorderSuggestionsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type reorderSuggestionsGetResponse = (reorderSuggestionsGetResponseSuccess)
+
+export const getReorderSuggestionsGetUrl = (suggestionId: string,) => {
+
+
+
+
+  return `/api/v1/reorder-suggestions/${suggestionId}/`
+}
+
+export const reorderSuggestionsGet = async (suggestionId: string, options?: Parameters<typeof apiFetch>[1]): Promise<reorderSuggestionsGetResponse> => {
+
+  return apiFetch<reorderSuggestionsGetResponse>(getReorderSuggestionsGetUrl(suggestionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReorderSuggestionsGetQueryKey = (suggestionId: string,) => {
+    return [
+    `/api/v1/reorder-suggestions/${suggestionId}/`
+    ] as const;
+    }
+
+
+export const getReorderSuggestionsGetQueryOptions = <TData = Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError = unknown>(suggestionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReorderSuggestionsGetQueryKey(suggestionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reorderSuggestionsGet>>> = ({ signal }) => reorderSuggestionsGet(suggestionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: suggestionId !== null && suggestionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReorderSuggestionsGetQueryResult = NonNullable<Awaited<ReturnType<typeof reorderSuggestionsGet>>>
+export type ReorderSuggestionsGetQueryError = unknown
+
+
+export function useReorderSuggestionsGet<TData = Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError = unknown>(
+ suggestionId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reorderSuggestionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof reorderSuggestionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReorderSuggestionsGet<TData = Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError = unknown>(
+ suggestionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reorderSuggestionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof reorderSuggestionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReorderSuggestionsGet<TData = Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError = unknown>(
+ suggestionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useReorderSuggestionsGet<TData = Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError = unknown>(
+ suggestionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reorderSuggestionsGet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReorderSuggestionsGetQueryOptions(suggestionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type reorderSuggestionsUpdateResponse200 = {
+  data: ReorderSuggestion
+  status: 200
+}
+
+export type reorderSuggestionsUpdateResponseSuccess = (reorderSuggestionsUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type reorderSuggestionsUpdateResponse = (reorderSuggestionsUpdateResponseSuccess)
+
+export const getReorderSuggestionsUpdateUrl = (suggestionId: string,) => {
+
+
+
+
+  return `/api/v1/reorder-suggestions/${suggestionId}/`
+}
+
+export const reorderSuggestionsUpdate = async (suggestionId: string,
+    patchedSuggestionChangeRequest?: PatchedSuggestionChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<reorderSuggestionsUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<reorderSuggestionsUpdateResponse>(getReorderSuggestionsUpdateUrl(suggestionId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(patchedSuggestionChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getReorderSuggestionsUpdateMutationKey = () => ['reorderSuggestionsUpdate'] as const;
+
+export const getReorderSuggestionsUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsUpdate>>, TError,ReorderSuggestionsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsUpdate>>, TError,ReorderSuggestionsUpdateMutationVariables, TContext> => {
+
+const mutationKey = getReorderSuggestionsUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderSuggestionsUpdate>>, ReorderSuggestionsUpdateMutationVariables> = (props) => {
+          const {suggestionId,data} = props ?? {};
+
+          return  reorderSuggestionsUpdate(suggestionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderSuggestionsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof reorderSuggestionsUpdate>>>
+    export type ReorderSuggestionsUpdateMutationBody = PatchedSuggestionChangeRequest | undefined
+    export type ReorderSuggestionsUpdateMutationError = unknown
+    export type ReorderSuggestionsUpdateMutationVariables = {suggestionId: string;data?: PatchedSuggestionChangeRequest}
+
+    export const useReorderSuggestionsUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsUpdate>>, TError,ReorderSuggestionsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reorderSuggestionsUpdate>>,
+        TError,
+        ReorderSuggestionsUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReorderSuggestionsUpdateMutationOptions(options), queryClient);
+    }
+    export type reorderSuggestionsApplyLevelsResponse200 = {
+  data: LevelsApplied
+  status: 200
+}
+
+export type reorderSuggestionsApplyLevelsResponseSuccess = (reorderSuggestionsApplyLevelsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type reorderSuggestionsApplyLevelsResponse = (reorderSuggestionsApplyLevelsResponseSuccess)
+
+export const getReorderSuggestionsApplyLevelsUrl = () => {
+
+
+
+
+  return `/api/v1/reorder-suggestions/apply-reorder-levels/`
+}
+
+/**
+ * Use the reorder points as the products' reorder levels (audited; never automatic).
+ */
+export const reorderSuggestionsApplyLevels = async (suggestionIdsRequest: SuggestionIdsRequest, options?: Parameters<typeof apiFetch>[1]): Promise<reorderSuggestionsApplyLevelsResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<reorderSuggestionsApplyLevelsResponse>(getReorderSuggestionsApplyLevelsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(suggestionIdsRequest)
+  }
+);}
+
+
+
+
+
+export const getReorderSuggestionsApplyLevelsMutationKey = () => ['reorderSuggestionsApplyLevels'] as const;
+
+export const getReorderSuggestionsApplyLevelsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsApplyLevels>>, TError,ReorderSuggestionsApplyLevelsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsApplyLevels>>, TError,ReorderSuggestionsApplyLevelsMutationVariables, TContext> => {
+
+const mutationKey = getReorderSuggestionsApplyLevelsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderSuggestionsApplyLevels>>, ReorderSuggestionsApplyLevelsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  reorderSuggestionsApplyLevels(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderSuggestionsApplyLevelsMutationResult = NonNullable<Awaited<ReturnType<typeof reorderSuggestionsApplyLevels>>>
+    export type ReorderSuggestionsApplyLevelsMutationBody = SuggestionIdsRequest
+    export type ReorderSuggestionsApplyLevelsMutationError = unknown
+    export type ReorderSuggestionsApplyLevelsMutationVariables = {data: SuggestionIdsRequest}
+
+    export const useReorderSuggestionsApplyLevels = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsApplyLevels>>, TError,ReorderSuggestionsApplyLevelsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reorderSuggestionsApplyLevels>>,
+        TError,
+        ReorderSuggestionsApplyLevelsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReorderSuggestionsApplyLevelsMutationOptions(options), queryClient);
+    }
+    export type reorderSuggestionsCreateOrdersResponse201 = {
+  data: CreatedOrder[]
+  status: 201
+}
+
+export type reorderSuggestionsCreateOrdersResponseSuccess = (reorderSuggestionsCreateOrdersResponse201) & {
+  headers: Headers;
+};
+;
+
+export type reorderSuggestionsCreateOrdersResponse = (reorderSuggestionsCreateOrdersResponseSuccess)
+
+export const getReorderSuggestionsCreateOrdersUrl = () => {
+
+
+
+
+  return `/api/v1/reorder-suggestions/create-orders/`
+}
+
+/**
+ * Draft purchase orders from suggestions, one per preferred supplier (purchasing on).
+ */
+export const reorderSuggestionsCreateOrders = async (suggestionIdsRequest: SuggestionIdsRequest, options?: Parameters<typeof apiFetch>[1]): Promise<reorderSuggestionsCreateOrdersResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<reorderSuggestionsCreateOrdersResponse>(getReorderSuggestionsCreateOrdersUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(suggestionIdsRequest)
+  }
+);}
+
+
+
+
+
+export const getReorderSuggestionsCreateOrdersMutationKey = () => ['reorderSuggestionsCreateOrders'] as const;
+
+export const getReorderSuggestionsCreateOrdersMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsCreateOrders>>, TError,ReorderSuggestionsCreateOrdersMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsCreateOrders>>, TError,ReorderSuggestionsCreateOrdersMutationVariables, TContext> => {
+
+const mutationKey = getReorderSuggestionsCreateOrdersMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderSuggestionsCreateOrders>>, ReorderSuggestionsCreateOrdersMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  reorderSuggestionsCreateOrders(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderSuggestionsCreateOrdersMutationResult = NonNullable<Awaited<ReturnType<typeof reorderSuggestionsCreateOrders>>>
+    export type ReorderSuggestionsCreateOrdersMutationBody = SuggestionIdsRequest
+    export type ReorderSuggestionsCreateOrdersMutationError = unknown
+    export type ReorderSuggestionsCreateOrdersMutationVariables = {data: SuggestionIdsRequest}
+
+    export const useReorderSuggestionsCreateOrders = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderSuggestionsCreateOrders>>, TError,ReorderSuggestionsCreateOrdersMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reorderSuggestionsCreateOrders>>,
+        TError,
+        ReorderSuggestionsCreateOrdersMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReorderSuggestionsCreateOrdersMutationOptions(options), queryClient);
+    }

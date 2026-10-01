@@ -27,6 +27,8 @@ const owner = (overrides: Partial<Body> = {}): Body => ({
     handover: { count: 1, amount: "50.00" },
     overdue: { shops: 2, amount: "1600.00" },
     low_stock: { low: 4, out: 1 },
+    to_reorder: null,
+    late_purchase_orders: null,
   },
   today: { orders_received: { count: 3, amount: "420.00" }, billed: "105.00" },
   trends: {
