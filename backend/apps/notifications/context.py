@@ -223,6 +223,45 @@ def _credit_note(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventCo
     return _with_shop(ctx, note.retailer)
 
 
+def _return_request(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
+    from apps.billing.models import ReturnRequest
+
+    request = (
+        ReturnRequest.objects.select_related("retailer", "invoice", "credit_note")
+        .prefetch_related("lines__invoice_line")
+        .filter(pk=event.payload["return_request_id"])
+        .first()
+    )
+    if request is None:
+        return None
+    reason = request.get_reason_display()
+    if request.note:
+        reason = f"{reason}: {request.note}"
+    note = request.credit_note
+    values = {
+        **base,
+        "number": request.number,
+        "invoice_number": request.invoice.number,
+        "items": listing(
+            [
+                f"{qty(line.quantity)} {line.invoice_line.description}"
+                for line in request.lines.all()
+            ]
+        ),
+        "reason": reason,
+        "credit_note_number": note.number if note else "",
+        "total": rupees(note.grand_total) if note else "",
+        "decision": request.decision_note,
+    }
+    ctx = EventContext(
+        code,
+        values,
+        shop_path=f"/shop/invoices/{request.invoice_id}",
+        staff_path=f"/manage/invoices/returns/{request.pk}",
+    )
+    return _with_shop(ctx, request.retailer)
+
+
 def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
     from apps.payments.models import Payment
 
@@ -400,6 +439,7 @@ BUILDERS = {
     "refund": _refund,
     "stock": _stock_alert,
     "purchase_order": _purchase_order,
+    "return": _return_request,
 }
 
 

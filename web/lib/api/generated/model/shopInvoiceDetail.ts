@@ -15,13 +15,15 @@ import type { InvoiceTriggerEnum } from './invoiceTriggerEnum';
 import type { OrderRef } from './orderRef';
 import type { PdfStatusEnum } from './pdfStatusEnum';
 import type { Place } from './place';
+import type { ReturnableLine } from './returnableLine';
+import type { ReturnRequest } from './returnRequest';
 import type { ShopRef } from './shopRef';
 import type { SupplyTypeEnum } from './supplyTypeEnum';
 import type { Totals } from './totals';
 
 /**
  * The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
- * on the bill and its PDF).
+ * on the bill and its PDF), and what it may still ask to return (ADR-057).
  */
 export interface ShopInvoiceDetail {
   readonly id: string;
@@ -70,4 +72,7 @@ export interface ShopInvoiceDetail {
   ack_no: string;
   /** @nullable */
   ack_date: string | null;
+  readonly return_requests: readonly ReturnRequest[];
+  readonly can_request_return: boolean;
+  readonly returnable: readonly ReturnableLine[];
 }

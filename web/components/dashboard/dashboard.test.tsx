@@ -30,6 +30,7 @@ const owner = (overrides: Partial<Body> = {}): Body => ({
     to_reorder: null,
     late_purchase_orders: null,
     win_back: null,
+    return_requests: null,
   },
   today: { orders_received: { count: 3, amount: "420.00" }, billed: "105.00" },
   trends: {

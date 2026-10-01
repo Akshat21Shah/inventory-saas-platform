@@ -15,6 +15,7 @@ from apps.billing.models import (
     Invoice,
     PaymentStatus,
     PdfStatus,
+    ReturnRequest,
 )
 from apps.compliance.api.serializers import EInvoiceSummarySerializer, EWayBillSummarySerializer
 from apps.pricing.api.serializers import ShopRefSerializer, money, qty
@@ -185,6 +186,71 @@ class PlaceSerializer(serializers.Serializer[Any]):
     name = serializers.CharField()
 
 
+class ReturnRequestLineSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    invoice_line_id = serializers.UUIDField()
+    description = serializers.CharField(source="invoice_line.description")
+    product_code = serializers.CharField(source="invoice_line.product_code")
+    unit_code = serializers.CharField(source="invoice_line.unit_code")
+    is_free = serializers.BooleanField(source="invoice_line.is_free")
+    invoiced_quantity = qty(source="invoice_line.quantity")
+    quantity = qty(help_text="What the shop asked to return.")
+    approved_quantity = qty(allow_null=True, help_text="What was credited, once approved.")
+    disposition = serializers.ChoiceField(
+        choices=CreditNoteLine.Disposition.choices, allow_blank=True
+    )
+
+
+class ReturnRequestSerializer(serializers.Serializer[Any]):
+    """A shop's return request (ADR-057 item 3)."""
+
+    id = serializers.UUIDField()
+    number = serializers.CharField()
+    status = serializers.ChoiceField(choices=ReturnRequest.Status.choices)
+    reason = serializers.ChoiceField(choices=CreditNote.ReturnReason.choices)
+    note = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    decided_at = serializers.DateTimeField(allow_null=True)
+    decision_note = serializers.CharField(help_text="Why it was rejected.")
+    retailer = ShopRefSerializer()
+    invoice = DocumentRefSerializer()
+    credit_note = DocumentRefSerializer(allow_null=True)
+    lines = ReturnRequestLineSerializer(many=True, source="lines.all")
+
+
+class ReturnDecisionLineSerializer(serializers.Serializer[Any]):
+    line = serializers.UUIDField(help_text="The request line.")
+    quantity = qty(min_value=0)
+    disposition = serializers.ChoiceField(
+        choices=CreditNoteLine.Disposition.choices, required=False, allow_blank=True, default=""
+    )
+
+
+class ReturnApproveSerializer(serializers.Serializer[Any]):
+    lines = ReturnDecisionLineSerializer(many=True)
+
+
+class ReturnRejectSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(max_length=300)
+
+
+class ReturnAskedLineSerializer(serializers.Serializer[Any]):
+    invoice_line = serializers.UUIDField()
+    quantity = qty(min_value=0)
+
+
+class ReturnRequestCreateSerializer(serializers.Serializer[Any]):
+    invoice = serializers.UUIDField()
+    reason = serializers.ChoiceField(choices=CreditNote.ReturnReason.choices)
+    note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    lines = ReturnAskedLineSerializer(many=True)
+
+
+class ReturnableLineSerializer(serializers.Serializer[Any]):
+    invoice_line_id = serializers.UUIDField()
+    quantity = qty(help_text="What the shop may still ask to return.")
+
+
 class InvoiceDetailSerializer(InvoiceRowSerializer):
     seller = serializers.JSONField()
     buyer = serializers.JSONField()
@@ -203,6 +269,14 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
     ack_date = serializers.DateTimeField(allow_null=True)
     einvoice = serializers.SerializerMethodField()
     ewaybill = serializers.SerializerMethodField()
+    return_requests = serializers.SerializerMethodField()
+
+    @extend_schema_field(ReturnRequestSerializer(many=True))
+    def get_return_requests(self, obj: Invoice) -> list[Any]:
+        requests = obj.return_requests.select_related(
+            "retailer", "invoice", "credit_note"
+        ).prefetch_related("lines__invoice_line")
+        return list(ReturnRequestSerializer(requests, many=True).data)
 
     @extend_schema_field(EInvoiceSummarySerializer(allow_null=True))
     def get_einvoice(self, obj: Invoice) -> dict[str, Any] | None:
@@ -238,16 +312,37 @@ class InvoiceDetailSerializer(InvoiceRowSerializer):
             "ack_date",
             "einvoice",
             "ewaybill",
+            "return_requests",
         ]
 
 
 class ShopInvoiceDetailSerializer(InvoiceDetailSerializer):
     """The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
-    on the bill and its PDF)."""
+    on the bill and its PDF), and what it may still ask to return (ADR-057)."""
+
+    can_request_return = serializers.SerializerMethodField()
+    returnable = serializers.SerializerMethodField()
+
+    def get_can_request_return(self, obj: Invoice) -> bool:
+        from apps.billing import returns
+
+        return returns.can_request(obj)
+
+    @extend_schema_field(ReturnableLineSerializer(many=True))
+    def get_returnable(self, obj: Invoice) -> list[dict[str, Any]]:
+        from apps.billing import returns
+
+        left = returns.returnable(list(obj.lines.all()))
+        return [
+            {"invoice_line_id": line_id, "quantity": f"{quantity:.3f}"}
+            for line_id, quantity in left.items()
+        ]
 
     class Meta(InvoiceDetailSerializer.Meta):
         fields = [
-            f for f in InvoiceDetailSerializer.Meta.fields if f not in ("einvoice", "ewaybill")
+            *(f for f in InvoiceDetailSerializer.Meta.fields if f not in ("einvoice", "ewaybill")),
+            "can_request_return",
+            "returnable",
         ]
 
 

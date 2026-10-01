@@ -97,6 +97,15 @@ EVENTS: dict[str, Event] = {
               variables=("distributor", "shop", "invoice_number", "total", "due_date",
                          "order_number", "document_link", "link"),
               document=DocumentLink.Kind.INVOICE),
+        # ADR-057 item 3: shop return requests.
+        Event("return.requested", "A shop asked to return goods", "billing",
+              variables=("distributor", "shop", "number", "invoice_number", "items", "reason",
+                         "link"), shop_facing=False),
+        Event("return.approved", "Return approved", "billing",
+              variables=("distributor", "shop", "number", "invoice_number",
+                         "credit_note_number", "total", "link")),
+        Event("return.rejected", "Return not accepted", "billing",
+              variables=("distributor", "shop", "number", "invoice_number", "decision", "link")),
         Event("credit_note.issued", "Credit note issued", "billing",
               variables=("distributor", "shop", "credit_note_number", "total", "invoice_number",
                          "reason", "document_link", "link"),
@@ -219,6 +228,9 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("stock.alert_opened", ST, (IN,), "stock.inward"),
     Rule("invoice.issued", S, (IN, WA, EM), compulsory=True),
     Rule("credit_note.issued", S, (IN, WA, EM), compulsory=True),
+    Rule("return.requested", ST, (IN,), "invoices.manage"),
+    Rule("return.approved", S, (IN,)),
+    Rule("return.rejected", S, (IN,)),
     Rule("invoice.cancelled", S, (IN, EM)),  # Phase 7 backend checkpoint, change 3
     Rule("einvoice.failed", ST, (IN, EM), "compliance.manage"),
     # Phase 7 backend checkpoint, change 4: at once, whatever the hour (urgent).
@@ -369,6 +381,16 @@ SHOP_TEXTS: dict[str, dict[str, Text]] = {
         EM: Text("Bill {{ invoice_number }} cancelled", "Your bill {{ invoice_number }} from {{ distributor }} was cancelled. {{ note }}\n\nSee it here: {{ link }}"),
         WA: Text("", f"{D}: your bill {{{{ invoice_number }}}} was cancelled. {{{{ note }}}}", ("distributor", "invoice_number", "note")),
     },
+    "return.approved": {
+        IN: Text("Return {{ number }} approved", "Your return from bill {{ invoice_number }} was approved: credit note {{ credit_note_number }} for {{ total }}."),
+        EM: Text("Return {{ number }} approved", "{{ distributor }} approved your return from bill {{ invoice_number }}: credit note {{ credit_note_number }} for {{ total }}.\n\n{{ link }}"),
+        WA: Text("", f"{D}: your return {{{{ number }}}} was approved: credit note {{{{ credit_note_number }}}} for {{{{ total }}}}.", ("distributor", "number", "credit_note_number", "total")),
+    },
+    "return.rejected": {
+        IN: Text("Return {{ number }} not accepted", "Your return from bill {{ invoice_number }} wasn't accepted: {{ decision }}"),
+        EM: Text("Return {{ number }} not accepted", "{{ distributor }} didn't accept your return from bill {{ invoice_number }}: {{ decision }}\n\n{{ link }}"),
+        WA: Text("", f"{D}: your return {{{{ number }}}} wasn't accepted: {{{{ decision }}}}", ("distributor", "number", "decision")),
+    },
     "credit_note.issued": {
         IN: Text("Credit note {{ credit_note_number }}: {{ total }}", "You were credited {{ total }} against bill {{ invoice_number }} ({{ reason }})."),
         EM: Text("Credit note {{ credit_note_number }} from {{ distributor }}", "You were credited {{ total }} against bill {{ invoice_number }} ({{ reason }}).\n\nDownload it: {{ document_link }}"),
@@ -473,6 +495,11 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
         IN: Text("Waiting items held for {{ shop }}", "{{ quantity }} {{ product }} for {{ order_number }} was not allocated: {{ shop }} is blocked."),
         EM: Text("Waiting items held for {{ shop }}", "{{ quantity }} {{ product }} for {{ order_number }} was not allocated: {{ shop }} is blocked.\n\n{{ link }}"),
         WA: Text("", f"{D}: {{{{ product }}}} for {{{{ order_number }}}} held: {{{{ shop }}}} is blocked.", ("distributor", "product", "order_number", "shop")),
+    },
+    "return.requested": {
+        IN: Text("{{ shop }} wants to return goods", "{{ shop }} asked to return {{ items }} from bill {{ invoice_number }} ({{ reason }}). Request {{ number }}."),
+        EM: Text("{{ shop }} wants to return goods", "{{ shop }} asked to return {{ items }} from bill {{ invoice_number }} ({{ reason }}). Request {{ number }}.\n\n{{ link }}"),
+        WA: Text("", f"{D}: {{{{ shop }}}} asked to return goods from bill {{{{ invoice_number }}}} (request {{{{ number }}}}).", ("distributor", "shop", "invoice_number", "number")),
     },
     "backorder.cancelled_by_shop": {
         IN: Text("{{ shop }} cancelled waiting items", "{{ shop }} cancelled {{ quantity }} {{ product }} on {{ order_number }}."),
@@ -584,6 +611,16 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
         "Bill {{ invoice_number }} for {{ shop }}",
         "Bill {{ invoice_number }} for {{ shop }}'s order {{ order_number }}: {{ total }}, due {{ due_date }}.",
         "{{ distributor }}: bill {{ invoice_number }} for {{ shop }}: {{ total }}, due {{ due_date }}.",
+    ),
+    "return.approved": _pair(
+        "Return {{ number }} approved",
+        "{{ shop }}'s return {{ number }} from bill {{ invoice_number }} was approved: credit note {{ credit_note_number }} for {{ total }}.",
+        "{{ distributor }}: {{ shop }}'s return {{ number }} was approved.",
+    ),
+    "return.rejected": _pair(
+        "Return {{ number }} not accepted",
+        "{{ shop }}'s return {{ number }} from bill {{ invoice_number }} wasn't accepted: {{ decision }}",
+        "{{ distributor }}: {{ shop }}'s return {{ number }} wasn't accepted.",
     ),
     "credit_note.issued": _pair(
         "Credit note {{ credit_note_number }} for {{ shop }}",

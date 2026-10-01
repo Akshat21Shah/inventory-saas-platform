@@ -247,6 +247,13 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("invoicing.default_payment_terms_days", Group.INVOICING, SettingType.INT, 30,
             "Default credit days for new retailers (each retailer can differ).",
             min_value=0, max_value=365),
+    # ADR-057 item 3: shops ask for returns from their app; staff approve each one.
+    _tenant("returns.shop_requests", Group.INVOICING, SettingType.BOOL, True,
+            "Let shops ask for returns from their app. You approve each one, which issues the "
+            "credit note."),
+    _tenant("returns.request_days", Group.INVOICING, SettingType.INT, 30,
+            "How many days after a bill a shop can ask to return goods from it.",
+            min_value=1, max_value=365, depends_on=DependsOn("returns.shop_requests", True)),
     # --- Tenant: Orders -------------------------------------------------------------------------
     _tenant("orders.acceptance_mode", Group.ORDERS, SettingType.ENUM, "MANUAL",
             "Accept new orders yourself, or automatically when they pass all checks.",

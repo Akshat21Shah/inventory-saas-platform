@@ -8195,6 +8195,128 @@ paths:
                 items:
                   $ref: '#/components/schemas/Salesperson'
           description: ''
+  /api/v1/return-requests/:
+    get:
+      operationId: return_requests_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Request, bill or shop name
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - APPROVED
+          - CANCELLED
+          - REJECTED
+          - REQUESTED
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReturnRequestList'
+          description: ''
+  /api/v1/return-requests/{request_id}/:
+    get:
+      operationId: return_requests_retrieve
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+  /api/v1/return-requests/{request_id}/approve/:
+    post:
+      operationId: return_requests_approve
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnApproveRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+  /api/v1/return-requests/{request_id}/reject/:
+    post:
+      operationId: return_requests_reject
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnRejectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
   /api/v1/roles/:
     get:
       operationId: roles_list
@@ -9630,6 +9752,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShopProductDetail'
+          description: ''
+  /api/v1/shop/return-requests/:
+    get:
+      operationId: shop_return_requests_list
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReturnRequestList'
+          description: ''
+    post:
+      operationId: shop_return_requests_create
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnRequestCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+  /api/v1/shop/return-requests/{request_id}/cancel/:
+    post:
+      operationId: shop_return_requests_cancel
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
           description: ''
   /api/v1/shop/whatsapp-consent/:
     get:
@@ -13342,6 +13527,10 @@ components:
           nullable: true
           description: 'Shops to win back (ADR-056): slowing, stopped or never ordered,
             not contacted lately.'
+        return_requests:
+          type: integer
+          nullable: true
+          description: Return requests from shops waiting for a decision (ADR-057).
       required:
       - backorders_to_confirm
       - failed_ewaybills
@@ -13352,6 +13541,7 @@ components:
       - new_orders
       - on_hold
       - overdue
+      - return_requests
       - to_pack
       - to_reorder
       - win_back
@@ -16555,6 +16745,11 @@ components:
           - $ref: '#/components/schemas/EWayBillSummary'
           nullable: true
           readOnly: true
+        return_requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnRequest'
+          readOnly: true
       required:
       - ack_date
       - ack_no
@@ -16583,6 +16778,7 @@ components:
       - pdf_status
       - place_of_supply
       - retailer
+      - return_requests
       - seller
       - status
       - supply_type
@@ -19046,6 +19242,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RetailerPrice'
+    PaginatedReturnRequestList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnRequest'
     PaginatedShopActivityList:
       type: object
       required:
@@ -24167,6 +24382,47 @@ components:
       required:
       - mobile
       - shop_name
+    ReturnApproveRequest:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnDecisionLineRequest'
+      required:
+      - lines
+    ReturnAskedLineRequest:
+      type: object
+      properties:
+        invoice_line:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - invoice_line
+      - quantity
+    ReturnDecisionLineRequest:
+      type: object
+      properties:
+        line:
+          type: string
+          format: uuid
+          description: The request line.
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        disposition:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/DispositionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - line
+      - quantity
     ReturnReasonEnum:
       enum:
       - DAMAGED
@@ -24181,6 +24437,158 @@ components:
         * `WRONG_ITEM` - Wrong item
         * `EXCESS_SUPPLY` - Excess supply
         * `OTHER` - Other
+    ReturnRejectRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - reason
+    ReturnRequest:
+      type: object
+      description: A shop's return request (ADR-057 item 3).
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        status:
+          $ref: '#/components/schemas/ReturnStatusEnum'
+        reason:
+          $ref: '#/components/schemas/ReturnReasonEnum'
+        note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        decision_note:
+          type: string
+          description: Why it was rejected.
+        retailer:
+          $ref: '#/components/schemas/ShopRef'
+        invoice:
+          $ref: '#/components/schemas/DocumentRef'
+        credit_note:
+          allOf:
+          - $ref: '#/components/schemas/DocumentRef'
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnRequestLine'
+      required:
+      - created_at
+      - credit_note
+      - decided_at
+      - decision_note
+      - id
+      - invoice
+      - lines
+      - note
+      - number
+      - reason
+      - retailer
+      - status
+    ReturnRequestCreateRequest:
+      type: object
+      properties:
+        invoice:
+          type: string
+          format: uuid
+        reason:
+          $ref: '#/components/schemas/ReturnReasonEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnAskedLineRequest'
+      required:
+      - invoice
+      - lines
+      - reason
+    ReturnRequestLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoice_line_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        product_code:
+          type: string
+        unit_code:
+          type: string
+        is_free:
+          type: boolean
+        invoiced_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: What the shop asked to return.
+        approved_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          description: What was credited, once approved.
+        disposition:
+          oneOf:
+          - $ref: '#/components/schemas/DispositionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - approved_quantity
+      - description
+      - disposition
+      - id
+      - invoice_line_id
+      - invoiced_quantity
+      - is_free
+      - product_code
+      - quantity
+      - unit_code
+    ReturnStatusEnum:
+      enum:
+      - REQUESTED
+      - APPROVED
+      - REJECTED
+      - CANCELLED
+      type: string
+      description: |-
+        * `REQUESTED` - Waiting for a decision
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `CANCELLED` - Cancelled by the shop
+    ReturnableLine:
+      type: object
+      properties:
+        invoice_line_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: What the shop may still ask to return.
+      required:
+      - invoice_line_id
+      - quantity
     ReviewRequest:
       type: object
       properties:
@@ -25288,7 +25696,7 @@ components:
       type: object
       description: |-
         The shop's view: the same bill without the office's e-invoice workings (the IRN itself is
-        on the bill and its PDF).
+        on the bill and its PDF), and what it may still ask to return (ADR-057).
       properties:
         id:
           type: string
@@ -25383,6 +25791,19 @@ components:
           type: string
           format: date-time
           nullable: true
+        return_requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnRequest'
+          readOnly: true
+        can_request_return:
+          type: boolean
+          readOnly: true
+        returnable:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnableLine'
+          readOnly: true
       required:
       - ack_date
       - ack_no
@@ -25392,6 +25813,7 @@ components:
       - applied
       - balance_due
       - buyer
+      - can_request_return
       - credit_notes
       - days_overdue
       - due_date
@@ -25409,6 +25831,8 @@ components:
       - pdf_status
       - place_of_supply
       - retailer
+      - return_requests
+      - returnable
       - seller
       - status
       - supply_type

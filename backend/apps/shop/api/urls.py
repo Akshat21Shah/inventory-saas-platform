@@ -48,6 +48,12 @@ urlpatterns = [
         name="shop-order-confirmation",
     ),
     path("invoices/", b.ShopInvoicesView.as_view(), name="shop-invoices"),
+    path("return-requests/", b.ShopReturnRequestsView.as_view(), name="shop-return-requests"),
+    path(
+        "return-requests/<uuid:request_id>/cancel/",
+        b.ShopReturnRequestCancelView.as_view(),
+        name="shop-return-request-cancel",
+    ),
     path("invoices/<uuid:invoice_id>/", b.ShopInvoiceDetailView.as_view(), name="shop-invoice"),
     path(
         "invoices/<uuid:invoice_id>/pdf/", b.ShopInvoicePdfView.as_view(), name="shop-invoice-pdf"

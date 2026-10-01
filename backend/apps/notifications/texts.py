@@ -43,6 +43,8 @@ SAMPLE: dict[str, str] = {
     "reason": "Out of stock",
     "changes": "Tata Salt 1 kg 10→8",
     "items": "Tata Salt 1 kg 2 short",
+    "number": "RR-2026-000012",
+    "decision": "These were bought more than 30 days ago.",
     "shipment": "ORD-2026-000123/1",
     "vehicle": " by vehicle MH12AB1234",
     "delivery_code": " Delivery code: 4821.",

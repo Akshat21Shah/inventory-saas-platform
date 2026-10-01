@@ -90,6 +90,7 @@ def attention_lines(user: User) -> list[str]:
     add(a["failed_irns"], "IRN failed", "IRNs failed")
     add(a["failed_ewaybills"], "e-way bill failed", "e-way bills failed")
     add(a["win_back"], "shop to win back", "shops to win back")
+    add(a["return_requests"], "return request to decide", "return requests to decide")
     return lines
 
 

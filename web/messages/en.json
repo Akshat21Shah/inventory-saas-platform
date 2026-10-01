@@ -796,6 +796,16 @@
         "label": "After a contact, leave the list for (days)",
         "description": "After someone contacts a shop, it leaves the win-back list for this many days."
       }
+    },
+    "returns": {
+      "shop_requests": {
+        "label": "Shops ask for returns in the app",
+        "description": "Let shops ask for returns from their app. You approve each one, which issues the credit note."
+      },
+      "request_days": {
+        "label": "Days to ask for a return",
+        "description": "How many days after a bill a shop can ask to return goods from it."
+      }
     }
   },
   "settingsForm": {
@@ -3868,7 +3878,10 @@
       "report_failed": "Report could not be made",
       "purchase_order_sent": "Purchase order sent to the supplier",
       "purchase_order_cancelled": "Purchase order cancelled (to the supplier)",
-      "summary_daily": "Daily summary"
+      "summary_daily": "Daily summary",
+      "return_requested": "A shop asked to return goods",
+      "return_approved": "Return approved",
+      "return_rejected": "Return not accepted"
     },
     "shopEvents": {
       "order_placed": "Order received",
@@ -3897,7 +3910,9 @@
       "refund_reversed": "Refund corrected",
       "payment_reminder": "Payment reminders",
       "retailer_welcome": "Welcome message",
-      "announcement_published": "Announcements from your distributor"
+      "announcement_published": "Announcements from your distributor",
+      "return_approved": "Return approved",
+      "return_rejected": "Return not accepted"
     },
     "groups": {
       "orders": "Orders",
