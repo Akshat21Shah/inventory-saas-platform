@@ -142,6 +142,7 @@ SIZES = ["50g", "100g", "200g", "250g", "500g", "1kg", "5kg", "100ml", "500ml", 
 
 
 @pytest.mark.django_db(transaction=True)
+@pytest.mark.perf
 def test_search_answers_within_200ms_on_20000_products(make_tenant):
     tenant, other = make_tenant(slug="perf-a"), make_tenant(slug="perf-b")
     rng = random.Random(42)

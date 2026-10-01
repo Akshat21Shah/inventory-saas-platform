@@ -44,6 +44,7 @@ dev = [
     "pre-commit>=4.2",
     "hypothesis>=6.130",
     "types-openpyxl>=3.1.5.20260827",
+    "pytest-xdist>=3.6",
 ]
 
 [tool.uv]
@@ -91,4 +92,5 @@ python_files = ["test_*.py"]
 addopts = "-ra --strict-markers"
 markers = [
     "concurrency: tests that use real concurrent DB transactions (transaction=True)",
+    "perf: timing targets; CI runs them on their own, not beside parallel workers",
 ]

@@ -1,0 +1,21 @@
+# CI's full-stack runs (ADR-055), layered over docker-compose.yml:
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml up -d
+# The images are built beforehand with Docker layer caching (inventory-backend:ci, the dev target;
+# inventory-web:ci, the production target), and the web app runs its production build, which
+# serves every page at once: the dev server compiles each page on its first visit.
+x-backend-image: &backend-image
+  image: inventory-backend:ci
+  build: !reset null
+  pull_policy: never
+
+services:
+  migrate: *backend-image
+  backend: *backend-image
+  worker: *backend-image
+  reports-worker: *backend-image
+  beat: *backend-image
+  web:
+    image: inventory-web:ci
+    build: !reset null
+    pull_policy: never
+    volumes: !reset []
