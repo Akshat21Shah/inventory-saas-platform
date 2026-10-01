@@ -128,6 +128,56 @@ describe("GlobalSearch", () => {
     expect(await screen.findByText(/Nothing found for “e-way”/)).toBeInTheDocument();
   });
 
+  it("finds pages by the words distributors use", async () => {
+    permissions = [
+      "invoices.view",
+      "ledger.view",
+      "pricing.view",
+      "products.view",
+      "stock.view",
+      "stock.adjust",
+    ];
+    features = ["stock_planning"];
+    mockApi({ "/api/v1/search/": () => [200, results({ jump: null, groups: [] })] });
+    open();
+    await userEvent.click(screen.getByRole("button", { name: /Search…/ }));
+    const input = screen.getByRole("combobox");
+    const names = () => screen.queryAllByRole("option").map((option) => option.textContent);
+    const searchFor = async (text: string, check: (found: (string | null)[]) => void) => {
+      await userEvent.clear(input);
+      await userEvent.type(input, text);
+      await waitFor(() => check(names())); // after the typing pause
+    };
+    await searchFor("GST rates", (found) =>
+      expect(found).toEqual(expect.arrayContaining(["Products", "Tax settings"])),
+    );
+    await searchFor("dues", (found) => expect(found[0]).toBe("Receivables"));
+    await searchFor("outstanding", (found) => expect(found[0]).toBe("Receivables"));
+    await searchFor("bills", (found) => expect(found[0]).toBe("Invoices"));
+    // "rates" is a price list's own word, before the GST rates of products.
+    await searchFor("rates", (found) => {
+      expect(found).toContain("Products");
+      expect(found.indexOf("Price lists")).toBeLessThan(found.indexOf("Products"));
+      expect(found.indexOf("Price lists")).toBeGreaterThanOrEqual(0);
+    });
+    await searchFor("stock count", (found) => expect(found[0]).toBe("Stock adjustments"));
+    await searchFor("reorder", (found) => expect(found[0]).toBe("Reorder suggestions"));
+    await userEvent.click(screen.getAllByRole("option")[0]!);
+    expect(router.push).toHaveBeenCalledWith("/manage/stock/reorder");
+  });
+
+  it("finds the GST rates page for the super admin, by name or as tax rates", async () => {
+    permissions = ["platform.settings.manage"];
+    mockApi({
+      "/api/v1/platform/search/": () => [200, { query: "", jump: null, groups: [] }],
+    });
+    open("platform");
+    await userEvent.click(screen.getByRole("button", { name: /Search…/ }));
+    await userEvent.type(screen.getByRole("combobox"), "hsn");
+    await userEvent.click(await screen.findByRole("option", { name: "GST rates" }));
+    expect(router.push).toHaveBeenCalledWith("/platform/tax-rates");
+  });
+
   it("shows recent searches before anything is typed", async () => {
     window.localStorage.setItem("search.recent.u1", JSON.stringify(["ganesh", "INV/26-27/7"]));
     mockApi({ "/api/v1/search/": () => [200, results({ jump: null, groups: [] })] });

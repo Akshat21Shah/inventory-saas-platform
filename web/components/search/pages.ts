@@ -1,7 +1,8 @@
 /**
  * Pages and settings global search finds by name (ADR-053): matched here, in the browser, from
- * their translated names; records come from the server. Only what the person may open is
- * offered (the server still guards every page).
+ * their translated names and extra search words (`search.keywords.<key>`, the words distributors
+ * use: "dues", "bills", "GST rates"…); records come from the server. Only what the person may
+ * open is offered (the server still guards every page).
  */
 
 export interface Destination {
@@ -140,6 +141,26 @@ export const STAFF_PAGES: Destination[] = [
     href: "/manage/settings/notifications/announcements",
     permission: "notifications.manage",
   },
+  // Each settings group as a page, so "tax settings" or "GST" finds it.
+  { key: "taxSettings", href: "/manage/settings/policies/tax" },
+  { key: "invoicingSettings", href: "/manage/settings/policies/invoicing" },
+  { key: "orderSettings", href: "/manage/settings/policies/orders" },
+  { key: "pricingSettings", href: "/manage/settings/policies/pricing" },
+  { key: "retailerSettings", href: "/manage/settings/policies/retailers" },
+  { key: "stockSettings", href: "/manage/settings/policies/stock" },
+  { key: "creditSettings", href: "/manage/settings/policies/credit_payments" },
+  { key: "reportSettings", href: "/manage/settings/policies/reports" },
+  {
+    key: "planningSettings",
+    href: "/manage/settings/policies/planning",
+    feature: "stock_planning",
+  },
+  {
+    key: "purchasingSettings",
+    href: "/manage/settings/policies/purchasing",
+    feature: "purchasing",
+  },
+  { key: "securitySettings", href: "/manage/settings/policies/security" },
 ];
 
 export const PLATFORM_PAGES: Destination[] = [
@@ -200,4 +221,20 @@ export function matches(name: string, query: string): boolean {
     .split(" ")
     .filter(Boolean)
     .every((typed) => words.some((word) => word.startsWith(typed)));
+}
+
+/**
+ * How well a page answers what was typed, best first: its name (4), one of its search words
+ * exactly as typed (3: "rates" is a price list's word, before "GST rates" of products), every
+ * typed word in one search word (2), or across them (1). 0: not a match. `keywords` is the
+ * comma-separated `search.keywords.<key>` message.
+ */
+export function rank(name: string, keywords: string, query: string): number {
+  if (matches(name, query)) return 4;
+  const phrases = keywords.split(",").map(fold).filter(Boolean);
+  if (!phrases.length) return 0;
+  const typed = fold(query);
+  if (phrases.includes(typed)) return 3;
+  if (phrases.some((phrase) => matches(phrase, typed))) return 2;
+  return matches(phrases.join(" "), typed) ? 1 : 0;
 }

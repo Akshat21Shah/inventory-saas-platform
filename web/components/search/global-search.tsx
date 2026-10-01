@@ -52,7 +52,14 @@ import { recentSearches, rememberSearch } from "@/lib/recent-searches";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";
 
-import { PLATFORM_PAGES, SETTING_PAGES, STAFF_PAGES, matches, type Destination } from "./pages";
+import {
+  PLATFORM_PAGES,
+  SETTING_PAGES,
+  STAFF_PAGES,
+  matches,
+  rank,
+  type Destination,
+} from "./pages";
 
 export type SearchScope = "staff" | "platform";
 
@@ -251,9 +258,16 @@ function SearchDialog({ scope, onClose }: { scope: SearchScope; onClose: () => v
     const list = scope === "staff" ? STAFF_PAGES : PLATFORM_PAGES;
     return list
       .filter(allowed)
-      .map((d) => ({ id: `page-${d.key}`, kind: "page", title: t(`pages.${d.key}`), href: d.href }))
-      .filter((o) => matches(o.title, query))
-      .slice(0, PAGE_LIMIT);
+      .map((d) => {
+        const title = t(`pages.${d.key}`);
+        const words = t.has(`keywords.${d.key}`) ? t(`keywords.${d.key}`) : "";
+        const option: Option = { id: `page-${d.key}`, kind: "page", title, href: d.href };
+        return { option, score: rank(title, words, query) };
+      })
+      .filter((found) => found.score > 0)
+      .sort((a, b) => b.score - a.score) // stable: the menu's order among equals
+      .slice(0, PAGE_LIMIT)
+      .map((found) => found.option);
   }, [allowed, query, ready, scope, t]);
 
   const settings = useMemo((): Option[] => {
