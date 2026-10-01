@@ -849,6 +849,9 @@
         "ended": "Support session ended",
         "expired": "Support session expired",
         "write": "Change made in a support session"
+      },
+      "platform": {
+        "users_searched": "Searched for people across businesses"
       }
     },
     "title": "Audit log",

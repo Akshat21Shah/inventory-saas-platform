@@ -15,6 +15,7 @@ export * from './public/public';
 export * from './receivables/receivables';
 export * from './reports/reports';
 export * from './retailers/retailers';
+export * from './search/search';
 export * from './settings/settings';
 export * from './shop/shop';
 export * from './staff/staff';

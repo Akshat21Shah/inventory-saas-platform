@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.compliance",
     "apps.reports",
+    "apps.search",
     "apps.dataio",
     "apps.shop",
 ]
@@ -223,6 +224,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "ENUM_NAME_OVERRIDES": {
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
+        "SearchHitTypeEnum": "apps.search.api.serializers.HIT_TYPES",
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",
         "ImportModeEnum": "apps.dataio.models.ImportJob.Mode",

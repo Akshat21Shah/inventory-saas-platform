@@ -4206,6 +4206,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/Plan'
           description: ''
+  /api/v1/platform/search/:
+    get:
+      operationId: platform_search
+      description: Distributors by name, legal name, GSTIN or web address.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: What was typed (2 to 100 characters).
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+          description: ''
+  /api/v1/platform/search/users/:
+    get:
+      operationId: platform_search_users
+      description: People across every distributor by name, email or mobile. Every
+        search is audited.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: What was typed (2 to 100 characters).
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserHit'
+          description: ''
   /api/v1/platform/settings/registry/:
     get:
       operationId: platform_settings_registry
@@ -7421,6 +7468,30 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/search/:
+    get:
+      operationId: search
+      description: |-
+        Records matching the typed text, grouped by kind, within what the person's role may see
+        (ADR-053). Never carries cost data.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: What was typed (2 to 100 characters).
+        required: true
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
           description: ''
   /api/v1/settings/bank-details/:
     get:
@@ -21666,6 +21737,82 @@ components:
         * `PRODUCT` - One product
         * `CATEGORY` - A category (and its sub-categories)
         * `BRAND` - A brand
+    SearchGroup:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SearchHitTypeEnum'
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+        more:
+          type: boolean
+          description: 'More matches than shown: offer the full list.'
+      required:
+      - hits
+      - more
+      - type
+    SearchHit:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SearchHitTypeEnum'
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          description: The record's number or name; empty for a draft.
+        detail:
+          type: string
+          description: The shop, supplier, code or owner it belongs to.
+        date:
+          type: string
+          format: date
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          type: string
+          description: The record's status code, worded by the app.
+      required:
+      - amount
+      - date
+      - detail
+      - id
+      - status
+      - title
+      - type
+    SearchHitTypeEnum:
+      enum:
+      - product
+      - shop
+      - order
+      - invoice
+      - credit_note
+      - payment
+      - refund
+      - goods_receipt
+      - adjustment
+      - staff
+      - tenant
+      type: string
+      description: |-
+        * `product` - product
+        * `shop` - shop
+        * `order` - order
+        * `invoice` - invoice
+        * `credit_note` - credit_note
+        * `payment` - payment
+        * `refund` - refund
+        * `goods_receipt` - goods_receipt
+        * `adjustment` - adjustment
+        * `staff` - staff
+        * `tenant` - tenant
     SearchResult:
       type: object
       description: Type-ahead row (PLAN §3.5). Stock availability joins in Phase 3.
@@ -21711,6 +21858,25 @@ components:
       - name
       - thumbnail_url
       - unit
+    SearchResults:
+      type: object
+      properties:
+        query:
+          type: string
+          description: What was searched, tidied.
+        jump:
+          allOf:
+          - $ref: '#/components/schemas/SearchHit'
+          nullable: true
+          description: The one record a typed number, GSTIN, mobile or barcode names.
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchGroup'
+      required:
+      - groups
+      - jump
+      - query
     SessionPerson:
       type: object
       properties:
@@ -24415,6 +24581,48 @@ components:
       - target_id
       - target_number
       - target_type
+    UserHit:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/UserHitKindEnum'
+        id:
+          type: string
+          format: uuid
+          description: The staff membership or the shop's login.
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        tenant_id:
+          type: string
+          format: uuid
+        tenant_name:
+          type: string
+        shop_name:
+          type: string
+        is_active:
+          type: boolean
+      required:
+      - email
+      - id
+      - is_active
+      - kind
+      - name
+      - phone
+      - shop_name
+      - tenant_id
+      - tenant_name
+    UserHitKindEnum:
+      enum:
+      - STAFF
+      - SHOP
+      type: string
+      description: |-
+        * `STAFF` - STAFF
+        * `SHOP` - SHOP
     UserTypeEnum:
       enum:
       - PLATFORM
