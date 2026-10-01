@@ -25,6 +25,7 @@ A multi-tenant inventory and B2B ordering platform. Our company (Super Admin) ow
 5. **Ask, don't guess, on business rules.** If the spec is ambiguous about money, tax, stock or permissions, stop and ask. For purely technical choices, choose the simplest robust option and document it.
 6. **Verify before claiming done.** Run migrations, the test suite, linters and type checks. Never say "done" with failing tests or unrun code.
 7. **Never fabricate** external API details (GST/GSP, WhatsApp, payment gateways). Implement behind an adapter interface with a mock/sandbox implementation and leave a clearly marked TODO with what must be verified against official docs.
+8. **Push in batches; CI minutes are budgeted (ADR-055).** The repository is private and must stay private (GitHub Pro, 3,000 Actions minutes a month, counted per job and rounded up). Commit as often as useful, but push at checkpoints and at the end of a piece of work, not after every commit. Every push runs the quick checks once; the full suites (Playwright, full-stack acceptance, responsive check, production images) run in CI only when a PR is marked ready for review, on `main`, and by hand. So run `make e2e-stack` and `make e2e-responsive` locally before pushing UI or flow changes, as before. Never commit a secret: the pre-commit hook (`make setup`) and CI scan for them; `make secrets-scan` checks the whole history.
 
 ## 4. Non-negotiable engineering rules
 
@@ -151,6 +152,7 @@ make e2e         # Playwright (desktop + 360px)
 make e2e-stack   # acceptance E2E (Phases 1-9a) against the running stack (needs make up + make seed)
 make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
+make secrets-scan # gitleaks over the whole git history, every branch (the pre-commit hook checks each commit)
 make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale

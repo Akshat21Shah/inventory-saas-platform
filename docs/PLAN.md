@@ -1624,8 +1624,8 @@ Each sub-phase is its own branch and PR, mergeable on its own; 9d and 9e (AI) ma
 | 9a.12 | FE: reorder suggestions, product stats, dashboard tiles, settings, on-order displays | L |
 | 9a.13 | E2E, responsive, flags-off proof — **final review** | M |
 
-#### 9a+ — Staging (AWS Mumbai), so a pilot distributor can try the real product on HTTPS
-Infrastructure as code (managed Postgres, Redis, S3, containers, the wildcard certificate, load-balancer health checks per ADR-052); a CI deployment from `main` to staging; sandbox providers only (mock GSP, Razorpay test mode, SES sandbox or a Mailpit equivalent, mock WhatsApp and SMS) with a test-environment banner on every page; a pilot-ready seed (one clean distributor, ready for imports); a short runbook (deploy, roll back, restore a backup, logs and Sentry). If the AWS account or domain isn't ready, everything is prepared with a precise list of what to create and which values to provide, without blocking 9b. **CI speed-up** (product owner, 9a backend checkpoint): a run takes about 40 minutes; measure where the time goes, then run jobs in parallel, cache dependencies and Docker layers, split the end-to-end suites into parallel shards and run the full-stack suite only where it adds value; target under 15 minutes for a normal push without dropping any check, with the before and after times recorded. Planned in detail when 9a is merged.
+#### 9a+ — withdrawn (product owner, 2026-10-02; ADR-055)
+Every feature is built before anything goes to staging or production, so the staging environment moves to Phase 10 (task 10.6, design and cost notes in §10.6 below). Demos before launch use LAN mode (`make lan`) or a temporary tunnel from the owner's Mac. The CI part was done at once, re-planned for a private repository on GitHub Pro (3,000 Actions minutes a month; ADR-055).
 
 #### 9b — Sales growth
 Re-engagement insights (dormant shops, declining order frequency); daily morning summary for owners (email or WhatsApp, a distributor setting); free-goods schemes ("buy X get Y", GST treatment to the CA without blocking).
@@ -1650,10 +1650,36 @@ Multi-warehouse and stock transfers; batches and expiry (earlier if a pilot need
 | 10.3 | Load tests (k6/Locust) on ordering + search; fix bottlenecks | L |
 | 10.4 | Security review (deps, permission matrix vs code, isolation coverage report, OWASP, headers/CSP) | L |
 | 10.5 | Backup/restore drill + `docs/RUNBOOKS.md` | M |
-| 10.6 | AWS Mumbai production deployment (IaC, zero-downtime, secrets manager) | L |
+| 10.6 | AWS Mumbai staging, then production (IaC, CI deploy from `main`, zero-downtime, secrets, sandbox providers and a test banner on staging, a pilot-ready seed, runbook); design and cost notes in §10.6 below (planned 2026-10-01 as 9a+, moved here 2026-10-02) | L |
 | 10.7 | Subscription enforcement switch-on verification | M |
 | 10.8 | Platform Support role: read-only access across distributors and impersonation with approval (spec §2; ADR-053) | M |
 | 10.9 | With the CA review: the Tally export (ADR-050 item 15) and the GSTR-1 JSON for the portal | M each |
+
+#### §10.6 Staging and production on AWS Mumbai — design and cost notes (from the 9a+ plan, 2026-10-01)
+Re-checked and approved by the owner before anything is created in AWS; prices then re-read from the AWS price list.
+
+**Design (staging first; production the same with sizes and Multi-AZ to decide):**
+
+| Part | Choice |
+|---|---|
+| Containers | ECS Fargate on ARM (Graviton; 44% cheaper than x86 in Mumbai): web, backend, worker, reports worker, beat. Memory limits per task (Node heap capped below the container's), Celery workers recycled (`--max-tasks-per-child`, `--max-memory-per-child`), failed or unhealthy tasks replaced automatically, a deploy that doesn't settle rolls back by itself (ECS deployment circuit breaker). |
+| Database | RDS PostgreSQL 16, db.t4g.small, Single-AZ for staging, 7-day backups with point-in-time restore. Migrations as a one-off task under the schema-owner role. **Verify first:** whether the RDS master user may create the BYPASSRLS role `app_platform`; if not, design the alternative before going on. |
+| Redis | ElastiCache Valkey (Redis-compatible), cache.t4g.micro. |
+| Files | S3: private documents through presigned links, a public prefix for product photos. |
+| Entry | One Application Load Balancer to the web containers only (they already forward `/api`, `/ws`, `/health` to the backend over a private address, as in dev); health checks per ADR-052; the web gets its own `/healthz`. `TRUSTED_PROXIES` = the VPC range (pre-production item 3). |
+| HTTPS | ACM wildcard for `*.staging.<domain>` and `staging.<domain>` (DNS-validated in Route 53); shops on `{slug}.staging.<domain>`, super admin on `admin.staging.<domain>`. |
+| Secrets | SSM Parameter Store SecureString (free); nothing in the repository. |
+| Observability | CloudWatch Logs (30 days), Sentry with environment `staging` / `production`. |
+| IaC and deploy | Terraform (`infra/terraform/`, state in S3); GitHub Actions deploys `main` after CI passes: ARM images built on ARM runners → ECR → migrate → update services → wait until stable → smoke test; rollback = redeploy an earlier image. GitHub assumes a short-lived AWS role (OIDC) trusted only for `main` of this repository; no stored AWS keys. |
+| Network | Staging: containers in public subnets with security groups that only admit the load balancer (no NAT gateway, about $40 a month saved). Production: decide (private subnets + NAT or endpoints). |
+
+**Staging safety:** with `ENVIRONMENT=staging` the app refuses to start with any real provider (mock GSP, mock WhatsApp and SMS, Razorpay test keys only — `PAYMENTS_ALLOW_LIVE=false`, SES sandbox) and never honours a fixed sign-in code; a test-environment banner on every page; proposed: "[Test]" in email subjects and "Test environment – not a valid tax document" on PDFs; emails to unverified addresses skipped with a clear reason (SES sandbox); a staging-only "Test messages" page so the super admin can relay shop sign-in codes (mock SMS). Dev-only commands (demo seed, E2E helpers) refuse to run. A `seed_pilot` command: the super admin and one clean distributor (no demo data), ready for imports. Runbook: deploy, roll back, restore a backup, logs, Sentry, rotate secrets, costs, shut down.
+
+**Estimated staging cost** (on-demand Mumbai list prices read from the AWS price list, Sept 2026; 730 hours a month): Fargate ARM (web, backend, worker at 0.5 vCPU / 1 GB; reports worker 0.25 / 1 GB; beat 0.25 / 0.5 GB) ≈ $43; RDS db.t4g.small + 20 GB gp3 ≈ $33; Valkey cache.t4g.micro ≈ $12; load balancer ≈ $23; 7 public IPv4 addresses at $0.005/hour ≈ $26; logs, S3, ECR, Route 53, SES ≈ $5. **Total ≈ $142 a month; ≈ $168 with 18% GST** when billed in India. Leaner (db.t4g.micro, smaller worker) ≈ $125. Left out: Multi-AZ RDS (+$31), NAT gateway (~$40), CloudFront.
+
+**The owner provides:** an AWS account (recommended: AWS Organizations with a member account per environment), MFA on root; IAM Identity Center with an admin user and an `aws configure sso` profile on the Mac (Terraform runs with that session; every plan shown before apply); a monthly budget with alerts (suggested $200: 50 / 80 / 100% actual, 100% forecast) and billing access for IAM; the product domain and NS records delegating `staging.<domain>` to Route 53; the SES test addresses (each verified); Sentry DSNs (projects backend and web); the Razorpay test webhook; the pilot distributor's details; the super admin's email and an authenticator app.
+
+**Open decisions for Phase 10:** how pilot shops get sign-in codes on staging (the super admin's "Test messages" page, or also the distributor owner for their own shops); skipping emails to unverified addresses; test markers on PDFs and emails; whether pilot data moves to production or production starts fresh; standard or lean sizes; one account or Organizations.
 
 ### Phase 11 — Android app
 | # | Task | Size |
@@ -2060,4 +2086,4 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.
-- Production domain — **before staging**.
+- Production domain — **before Phase 10's staging environment** (§10.6).
