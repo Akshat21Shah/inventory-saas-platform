@@ -232,6 +232,17 @@ Legend:
 | **StockAdjustmentLine** (tenant) | `adjustment` FK, `line_no`, `product` FK, `mode` (ADD, REMOVE, COUNTED), `entered_qty` Qty (the counted quantity for COUNTED), `quantity_change` Qty (signed, ≠ 0), `on_hand_before` Qty | check `quantity_change <> 0`; a COUNTED line with no difference is dropped (reported); immutable |
 | **StockAlert** (tenant) | `product` FK, `warehouse` FK, `alert_type` (LOW_STOCK, OUT_OF_STOCK, BACKORDER_DEMAND), `status` (OPEN, RESOLVED), `opened_at`, `resolved_at`, `value_at_open` Qty | **partial unique `(t, product, warehouse, alert_type) where status='OPEN'`** (dedupe); index `(t, status, alert_type)` |
 
+### 2.7a `purchasing`, `planning` (Phase 9a, ADR-053; flags `purchasing`, `stock_planning`)
+| Model | Fields | Constraints / indexes |
+|---|---|---|
+| **purchasing.Supplier** (tenant) | `code` (S-0001), `name`, `gstin` null, `state` FK null, `contact_name`, `phone`, `email`, `address_line1`, `address_line2`, `city`, `pincode`, `payment_terms_days`, `lead_time_days` null (null = ⚙ `planning.default_lead_days`), `notes`, `is_active`, `deleted_at` | unique `(t, code)`; partial unique `(t, gstin)` where set and not deleted; trigram index on `name` (search) |
+| **purchasing.SupplierProduct** (tenant) | `supplier` FK, `product` FK, `is_preferred`, `supplier_code`, `lead_time_days` null (null = the supplier's), `pack_size` Qty null (order quantities round up to it), `last_unit_cost` UnitCost null (from posted receipts) | unique `(supplier, product)`; partial unique `(t, product) where is_preferred` |
+| **purchasing.PurchaseOrder** (tenant) | `number` (PO-2026-00001, sequence `PO` per year), `supplier` FK, `status` (DRAFT, SENT, PARTLY_RECEIVED, RECEIVED, CLOSED, CANCELLED), `warehouse` FK, `expected_date` null, `notes`, `supplier_snapshot` jsonb (when sent), `revision` int (re-sent after a change), `sent_at`, `sent_by`, `closed_at`, `closed_reason`, `subtotal` Money (before GST), `estimated_tax` Money (information only) | unique `(t, number)`; index `(t, status, created_at)`, `(t, supplier, created_at)`, partial `(t, expected_date) where status in (SENT, PARTLY_RECEIVED)` |
+| **purchasing.PurchaseOrderLine** (tenant) | `order` FK, `line_no`, `product` FK, `product_code`, `product_name`, `unit_code` (snapshot), `entered_unit` (BASE, PACK), `entered_qty` Qty, `quantity` Qty (base unit), `unit_cost` UnitCost null (per base unit, before GST), `gst_rate`, `qty_received` Qty, `qty_cancelled` Qty | checks `quantity>0`, `qty_received>=0`, `0<=qty_cancelled<=quantity`; due = max(quantity − received − cancelled, 0); received may exceed quantity (over-receipt) |
+| inventory changes | `StockInward.supplier` FK null and `purchase_order` FK null; `StockInwardLine.purchase_order_line` FK null | posting a receipt with lines from a purchase order updates `qty_received` and the order's status in the same transaction |
+| **planning.ProductStats** (tenant) | `product` one-to-one, `computed_at`, `demand_days`, `demand_qty` Qty, `per_day` Qty, `sold_value` Money (over ⚙ `reports.movement_days`), `abc_class` (A, B, C, null), `movement_class` (FAST, SLOW, DEAD, NEW, null), `last_sale_at` null, `days_of_stock` decimal null | index `(t, abc_class)`, `(t, movement_class)`; rebuilt nightly and on demand |
+| **planning.ReorderSuggestion** (tenant) | `product` FK, `supplier` FK null, `status` (OPEN, ORDERED, DISMISSED, RESOLVED), `computed_at`, `basis` (DEMAND, LOW_HISTORY), `demand_qty`, `demand_days`, `per_day`, `available`, `on_order`, `waiting`, `lead_days`, `lead_source` (PRODUCT_SUPPLIER, SUPPLIER, DEFAULT), `safety_days`, `cover_days`, `reorder_point`, `pack_size` null, `suggested_qty`, `quantity` null (changed by staff), `days_left` null, `purchase_order_line` FK null, `dismissed_by`, `dismissed_at`, `dismissed_until` null | partial unique `(t, product) where status = 'OPEN'`; index `(t, status)` |
+
 ### 2.8 `orders`
 | Model | Fields | Constraints / indexes |
 |---|---|---|
@@ -309,7 +320,7 @@ Phase 8 (ADR-050): **InvoiceLine** gains `unit_cost` UnitCost null (the product'
 | **reports.ReportRun** (tenant; Phase 8, ADR-050) | `report_code`, `params` jsonb (validated filters), `format` (XLSX, PDF), `status` (QUEUED, RUNNING, READY, FAILED, EXPIRED), `file_key`, `row_count`, `requested_by` FK, `scope` jsonb (own shops only, cost columns allowed: fixed at request time), `started_at`, `finished_at`, `error`, `expires_at` (⚙ platform `platform.report_link_days`) | `(t, requested_by, created_at desc)`; RLS; the file is deleted when it expires |
 | **reports summary tables** (Phase 8, only if `make perf` shows the need; **not needed** at 50,000 orders, measured 2026-09-30) | e.g. `DailySalesSummary` (`date`, `product`, `retailer`, `salesperson` null, `qty`, `taxable`, `tax`, `total`), maintained in the same transaction as invoices and credit notes and rebuildable by a command | unique `(t, date, product, retailer)`; each one documented with the measurement that justified it |
 | **audit.AuditLog** (append-only) | `tenant` FK null, `actor` FK null, `actor_type` (PLATFORM, STAFF, RETAILER, SYSTEM), `impersonator` FK null, `impersonation_session` FK null, `action` (e.g. `pricing.price_changed`), `target_type`, `target_id`, `target_repr`, `changes` jsonb (`{field: [before, after]}`), `metadata` jsonb, `ip` inet, `user_agent`, `request_id` | `(tenant, created_at desc)`, `(tenant, target_type, target_id)`, `(actor, created_at)`, BRIN `created_at` |
-| **ai.*** (Phase 9) | `ProductEmbedding` (product unique, `model`, `embedding` vector, `text_hash`), `AIUsage` (user, feature, provider, model, tokens in/out, cost), `ReorderSuggestion` (product, suggested_qty, reasoning jsonb, status), `ProductClassification` (product, abc_class, movement_class, computed_at), `Forecast` (product, period, qty, method) | all tenant-scoped, `(t, …)` indexes |
+| **ai.*** (Phase 9d/9e; `Forecast` after launch) | `ProductEmbedding` (product unique, `model`, `embedding` vector, `text_hash`), `AIUsage` (user, feature, provider, model, tokens in/out, cost), `Forecast` (product, period, qty, method). Reorder suggestions and classes moved to `planning` (9a, §2.7a) | all tenant-scoped, `(t, …)` indexes |
 
 ### 2.15 ER diagrams (Mermaid)
 
@@ -445,6 +456,8 @@ erDiagram
 | `reports.financial` | ✔ | ✔ | | | ✔ |
 | `notifications.manage` (rules, templates, delivery log, announcements) | ✔ | ✔ | | | |
 | `dashboard.view` | ✔ | ✔ | ✔ | ✔ | ✔ (content filtered by other perms) |
+| `purchasing.view` (suppliers, purchase orders, reorder suggestions; ADR-053) | ✔ | ✔ | | ✔ | ✔ |
+| `purchasing.manage` (suppliers, create / send / close purchase orders, confirm over-receipt) | ✔ | ✔ | | | |
 
 Inventory specifics (ADR-041, ADR-042): reorder levels can be changed with `products.manage` **or** `stock.adjust`; cost fields (cost price, receipt costs, movement values) need `costs.view`; setting costs and "complete costs" need `costs.manage`; the valuation report needs `costs.view` **and** (`reports.stock` **or** `reports.financial`) (ADR-043).
 
@@ -726,7 +739,30 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `reports/{code}/export` | POST | same | Excel (or PDF where offered): small exports answer at once with the file link; larger ones (over ⚙ `platform.report_async_rows`) and every GST workbook return a queued `ReportRun` |
 | `report-runs`, `report-runs/{id}` | GET | the requester | "My exports": status, rows, a fresh signed download link while not expired |
 | `platform/dashboard` | GET | `platform.dashboard.view` | active distributors, orders per day (count, value incl. GST), failed messages and compliance errors per distributor, usage against plans (audited `platform_db` path) |
-| `ai/*` | — | Phase 9 | assistant chat, reorder suggestions, semantic search (flag `ai`) |
+| `ai/*` | — | Phase 9d/9e | assistant and semantic search (flag `ai`) |
+
+### 3.12 Search, purchasing and planning (Phase 9a, ADR-053)
+| Endpoint | Method | Permission | Purpose |
+|---|---|---|---|
+| `search?q=` | GET | any staff | global search: a document number, GSTIN or 10-digit mobile → `jump` to the match; otherwise ranked results grouped by type, each type only with its view permission, shops and their documents within the sales-visibility rule, never cost data. Pages and settings are matched in the browser |
+| `platform/search?q=` | GET | platform staff | distributors by name, legal name, GSTIN, web address (audited platform alias) |
+| `platform/search/users?q=` | GET | `platform.tenants.manage` | users across distributors (audited) |
+| `suppliers`, `/{id}` | GET; POST, PATCH, DELETE | `purchasing.view`; `purchasing.manage` | flag `purchasing`; soft delete; audited |
+| `suppliers/import` | POST (dataio, kind SUPPLIERS) | `purchasing.manage` | Excel import with dry run |
+| `suppliers/from-receipts` | GET, POST | `purchasing.manage` | the one-time list of past receipts' supplier names; confirmed rows become suppliers and link their receipts |
+| `products/{id}/suppliers` | GET, PUT | `purchasing.view`; `purchasing.manage` | a product's suppliers, preferred, codes, lead times, packs |
+| `products/bulk` (action `set_supplier`) | POST | `purchasing.manage` | set the preferred supplier for many products |
+| `purchase-orders`, `/{id}` | GET; POST, PATCH, DELETE | `purchasing.view`; `purchasing.manage` | list (filters: status, supplier, late); edit until something is received; prices only with `costs.view` |
+| `purchase-orders/{id}/send` | POST 🔑 | `purchasing.manage` | SENT (or revised), the PDF, email to the supplier, a share link |
+| `purchase-orders/{id}/pdf` | GET | `purchasing.view` | the PDF (prices only with `costs.view`) |
+| `purchase-orders/{id}/receive` | POST | `stock.inward` | a goods-receipt draft with what is still due and the order's costs |
+| `purchase-orders/{id}/close`, `/cancel` | POST | `purchasing.manage` | close the rest (reason) / cancel before anything is received (audited) |
+| `stock/inwards/{id}/post` (+ `confirm_over_receipt`) | POST 🔑 | `stock.inward`; over ⚙ tolerance also `purchasing.manage` | over-receipt above the tolerance needs confirmation (audited) |
+| `products/{id}/on-order` | GET | `orders.view` or `stock.view` | quantity on order and expected dates, no supplier or price |
+| `planning/stats/refresh` | POST | `purchasing.manage` | recompute stats and suggestions now (once per few minutes) |
+| `reorder-suggestions`, `/{id}` | GET; PATCH | `purchasing.view` or `stock.view`; `purchasing.manage` | open suggestions with their figures; change the quantity, dismiss |
+| `reorder-suggestions/create-orders` | POST 🔑 | `purchasing.manage` | draft purchase orders grouped by preferred supplier |
+| `reorder-suggestions/apply-reorder-levels` | POST | `products.manage` or `stock.adjust` | use the reorder point as the reorder level (audited) |
 
 ---
 
@@ -1317,6 +1353,10 @@ Shared building blocks (`components/shared`):
 | `/manage/orders/[id]` | OrderHeader + StatusBadge, AcceptRejectBar, ModifyLinesTable, LinesTable (ordered/reserved/backordered/dispatched), FulfilmentCards, InvoicesList, Timeline, CreditHoldPanel |
 | `/manage/fulfilments`, `/manage/fulfilments/[id]` | PickPackQueue; PackingForm (qty packed), DispatchDialog (vehicle, transporter, LR), PackingSlipPrint |
 | `/manage/backorders` | BackorderByProductTable (demand, available, oldest), ProposalsPanel |
+| (every page) | Global search bar: Ctrl/Cmd+K on laptops, a search icon opening a full-screen search on phones (ADR-053) |
+| `/manage/suppliers`, `/manage/suppliers/[id]` | SuppliersTable, SupplierEditor, SupplierProducts, import, 'Suppliers from past receipts' |
+| `/manage/purchase-orders`, `/manage/purchase-orders/[id]` | PurchaseOrderTabs (Draft, Sent, Partly received, Closed), PurchaseOrderEditor, Send, Receive, Close |
+| `/manage/stock/reorder` | ReorderSuggestions (explanations, quantity, dismiss, use as reorder level, create purchase orders) |
 | `/manage/backorders/[productId]` | WaitingLinesTable (FIFO, credit-hold badges), AllocateDialog (auto / manual qty per line) |
 | `/manage/products` | DataTable (image, code, name, category, price, GST, stock), BulkActions, Import/Export buttons |
 | `/manage/products/new`, `/manage/products/[id]` | ProductForm (sections: basics, tax (current rate + **TaxRateSchedule** history/scheduled changes, HSN rate hint), pricing, ordering rules, images uploader, barcodes), StockSummaryCard, PriceHistory (audit) |
@@ -1563,17 +1603,43 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 8.13 | FE: super admin dashboard | M |
 | 8.14 | E2E, responsive, documented perf run — **final review** | M |
 
-### Phase 9 — Smart inventory & AI (flag `ai` and others)
+### Phase 9 — split into sub-phases (ADR-053, 2026-10-01)
+Each sub-phase is its own branch and PR, mergeable on its own; 9d and 9e (AI) may move after launch if time is short, and free-goods schemes may move on pilot feedback.
+
+#### 9a — Global search, stock planning and purchasing (flags `purchasing`, `stock_planning`; search is core) — §10.2k
 | # | Task | Size |
 |---|---|---|
-| 9.1 | `ai` app: provider abstraction, per-tenant usage tracking & limits, graceful degradation | M |
-| 9.2 | Reorder suggestions (velocity, lead time, safety stock) with explanations | M |
-| 9.3 | ABC + fast/slow/dead classification jobs | M |
-| 9.4 | Semantic search (pgvector, Hinglish/typo tolerance, fallback) | L |
-| 9.5 | Distributor data assistant (tool calling over safe, tenant-scoped read functions) | L |
-| 9.6 | Dormant/declining retailer insights | S |
-| 9.7 | FE for all of the above | L |
-| 9.8 | Optional modules (batches/expiry, multi-warehouse, suppliers/POs) — each planned and approved separately | L each |
+| 9a.1 | Docs: ADR-053, PLAN (§2.7a, §3.12, settings, tasks, backlog), SPEC 1.9 | S |
+| 9a.2 | Global search backend: one endpoint, smart matching, permissions, platform search (audited) | M |
+| 9a.3 | Product stats: nightly job, ABC and movement classes, daily demand, days of stock; settings | M |
+| 9a.4 | Suppliers: model, API, import, product links, bulk "set supplier", suppliers from past receipts | M |
+| 9a.5 | Purchase orders: model, numbering, editing rules, PDF, email to the supplier, share link | L |
+| 9a.6 | Receiving against purchase orders, over-receipt tolerance, close and cancel, on-order quantities | M |
+| 9a.7 | Reorder suggestions, explanations, dismiss, reorder levels, create purchase orders; dashboard tiles; reports | L |
+| 9a.8 | Volume data for suppliers and purchase orders; speed run incl. global search — **backend checkpoint** | M |
+| 9a.9 | FE: global search bar (laptop and phone) | M |
+| 9a.10 | FE: suppliers | M |
+| 9a.11 | FE: purchase orders and receiving | L |
+| 9a.12 | FE: reorder suggestions, product stats, dashboard tiles, settings, on-order displays | L |
+| 9a.13 | E2E, responsive, flags-off proof — **final review** | M |
+
+#### 9a+ — Staging (AWS Mumbai), so a pilot distributor can try the real product on HTTPS
+Infrastructure as code (managed Postgres, Redis, S3, containers, the wildcard certificate, load-balancer health checks per ADR-052); a CI deployment from `main` to staging; sandbox providers only (mock GSP, Razorpay test mode, SES sandbox or a Mailpit equivalent, mock WhatsApp and SMS) with a test-environment banner on every page; a pilot-ready seed (one clean distributor, ready for imports); a short runbook (deploy, roll back, restore a backup, logs and Sentry). If the AWS account or domain isn't ready, everything is prepared with a precise list of what to create and which values to provide, without blocking 9b. Planned in detail when 9a is merged.
+
+#### 9b — Sales growth
+Re-engagement insights (dormant shops, declining order frequency); daily morning summary for owners (email or WhatsApp, a distributor setting); free-goods schemes ("buy X get Y", GST treatment to the CA without blocking).
+
+#### 9c — Shop self-service and money
+The shop confirms delivery; a one-time delivery code (proof of delivery); shop return requests (approval issues the return credit note); cheque bounce charge (a setting).
+
+#### 9d — AI foundation and semantic search (flag `ai`)
+`apps/ai`: provider abstraction, per-tenant usage tracking and limits, graceful degradation; semantic product search (pgvector; Hindi/English mix and typos; falls back to today's search).
+
+#### 9e — Distributor data assistant (flag `ai`)
+Tool calling over fixed, read-only, tenant-scoped query functions that respect every permission (`costs.view`, sales visibility), never model-written SQL; every question and the tools it called are logged; an evaluation set of realistic questions with answers checked against the reports, run in CI against a recorded or mocked model.
+
+#### After launch (ADR-053)
+Multi-warehouse and stock transfers; batches and expiry (earlier if a pilot needs expiry tracking); manufacturing (bills of materials); demand forecasting; supplier-bill photo → goods-receipt draft; convenience fee on online payments; the distributor's own WhatsApp number and templates; saved filters and scheduled email reports.
 
 ### Phase 10 — Hardening & launch
 | # | Task | Size |
@@ -1585,6 +1651,8 @@ Sizes (agent implementation + your review): **S** ≤ ½ day, **M** 1–2 days, 
 | 10.5 | Backup/restore drill + `docs/RUNBOOKS.md` | M |
 | 10.6 | AWS Mumbai production deployment (IaC, zero-downtime, secrets manager) | L |
 | 10.7 | Subscription enforcement switch-on verification | M |
+| 10.8 | Platform Support role: read-only access across distributors and impersonation with approval (spec §2; ADR-053) | M |
+| 10.9 | With the CA review: the Tally export (ADR-050 item 15) and the GSTR-1 JSON for the portal | M each |
 
 ### Phase 11 — Android app
 | # | Task | Size |
@@ -1603,18 +1671,23 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 
 | Item | Notes |
 |---|---|
-| Free-goods schemes ("buy X get Y free") | Until then, a discount rule, special price or price-list price that brings a net price to zero hides the product from those shops (ADR-034). Saving one shows the `FREE_GOODS` warning (ADR-036). |
-| Manufacturing / production | Raw materials, recipes (bill of materials), production entries that consume raw materials and produce finished goods, with cost roll-up into the finished goods' cost price. Builds on own brand and cost price (ADR-039). |
-| Shop confirms delivery | The shop marks a shipment received in the app (ADR-044 item 5). |
-| Proof of delivery code | A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
-| Shop return requests | The shop asks for a return from the app; staff approve it, which issues the return credit note (ADR-046 item 5). |
-| Convenience fee on online payments | Optional tenant setting: the shop pays a fee on top when paying online, subject to the gateway's and legal rules (ADR-049, Phase 7 plan answer 5). |
-| Distributor's own WhatsApp templates | When a distributor connects its own WhatsApp number (`WhatsAppSender`), it manages its own approved templates instead of the platform's (ADR-048, checkpoint decision 2). |
-| Accounting export for Tally | Designed in ADR-050 item 15: Sales, Credit Note and Receipt vouchers as accounting entries (no stock items) in TallyPrime's XML import format, optional party-ledger masters, a ledger-name mapping page, "beta" until a real import succeeds. Built once someone (the CA) can test an import in TallyPrime; the format is matched to a sample voucher exported from their TallyPrime. |
-| Saved filters and scheduled email reports | Phase 8 remembers each person's last filters in the browser only (ADR-050). |
-| Daily morning summary for owners | Yesterday's orders received, billed sales, collections and newly overdue bills, by email or WhatsApp; a distributor setting (product owner, 2026-09-30). |
-| GSTR-1 JSON for the portal | The GST summary's upload file for the GST portal, after CA review (ADR-050 item 9). |
-| Cheque bounce charge | Optional tenant setting (on/off, amount): a bounced cheque debits the charge to the shop's ledger with its own document (ADR-048, checkpoint decision 4). |
+| Free-goods schemes ("buy X get Y free") | **Scheduled: 9b.** Until then, a discount rule, special price or price-list price that brings a net price to zero hides the product from those shops (ADR-034). Saving one shows the `FREE_GOODS` warning (ADR-036). |
+| Manufacturing / production | **After launch.** Raw materials, recipes (bill of materials), production entries that consume raw materials and produce finished goods, with cost roll-up into the finished goods' cost price. Builds on own brand and cost price (ADR-039). |
+| Shop confirms delivery | **Scheduled: 9c.** The shop marks a shipment received in the app (ADR-044 item 5). |
+| Proof of delivery code | **Scheduled: 9c.** A one-time code the shop gives the delivery person, entered to mark the shipment delivered (ADR-044 item 5). |
+| Shop return requests | **Scheduled: 9c.** The shop asks for a return from the app; staff approve it, which issues the return credit note (ADR-046 item 5). |
+| Convenience fee on online payments | **After launch** (needs a legal check). Optional tenant setting: the shop pays a fee on top when paying online, subject to the gateway's and legal rules (ADR-049, Phase 7 plan answer 5). |
+| Distributor's own WhatsApp templates | **After launch**, with the distributor's own WhatsApp number. When a distributor connects its own WhatsApp number (`WhatsAppSender`), it manages its own approved templates instead of the platform's (ADR-048, checkpoint decision 2). |
+| Accounting export for Tally | **Phase 10, with the CA review (10.9).** Designed in ADR-050 item 15: Sales, Credit Note and Receipt vouchers as accounting entries (no stock items) in TallyPrime's XML import format, optional party-ledger masters, a ledger-name mapping page, "beta" until a real import succeeds. Built once someone (the CA) can test an import in TallyPrime; the format is matched to a sample voucher exported from their TallyPrime. |
+| Saved filters and scheduled email reports | **After launch.** Phase 8 remembers each person's last filters in the browser only (ADR-050). |
+| Daily morning summary for owners | **Scheduled: 9b.** Yesterday's orders received, billed sales, collections and newly overdue bills, by email or WhatsApp; a distributor setting (product owner, 2026-09-30). |
+| GSTR-1 JSON for the portal | **Phase 10, with the CA review (10.9).** The GST summary's upload file for the GST portal, after CA review (ADR-050 item 9). |
+| Cheque bounce charge | **Scheduled: 9c.** Optional tenant setting (on/off, amount): a bounced cheque debits the charge to the shop's ledger with its own document (ADR-048, checkpoint decision 4). |
+| Expected dates shown to shops | A shop sees when a backordered product is expected (from open purchase orders). Staff see it from 9a (ADR-053). |
+| Supplier payments and balances | What the distributor owes each supplier (accounts payable); 9a's purchase orders are not accounting documents (ADR-053). |
+| Returns to suppliers | Goods sent back to a supplier with a document (debit note); until then a stock adjustment. |
+| Freight and landed cost | Freight and other charges spread over a goods receipt's cost. |
+| Purchase orders on WhatsApp | Sending purchase orders from the platform WhatsApp number; 9a emails them and gives a share link (ADR-053). |
 
 ---
 
@@ -1699,6 +1772,13 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Retailers | `retailers.show_own_brand_badge` | bool | `false` | — | — | Show an "own brand" badge on own-brand products in the shop (ADR-039). |
 | Reports | `reports.movement_days` | int | `90` | 7–365 | — | The period for fast, slow and dead stock (ADR-050). |
 | Reports | `reports.fast_share_percent` | int | `20` | 5–50 | — | The share of products that sold, ranked from the top, counted as fast-moving (ADR-050). |
+| Stock planning | `planning.demand_days` | int | `30` | 7–180 | — | How many days of orders give each product's daily demand (ADR-053). |
+| Stock planning | `planning.safety_days` | int | `7` | 0–90 | — | Extra stock to keep, in days of demand. |
+| Stock planning | `planning.cover_days` | int | `14` | 1–180 | — | How many days a purchase order should last after it arrives. |
+| Stock planning | `planning.default_lead_days` | int | `7` | 0–180 | — | How long suppliers take to deliver, unless set for the supplier or the product. |
+| Stock planning | `planning.abc_a_percent` | int | `80` | 50–95 | — | A products: those making this share of sales value. |
+| Stock planning | `planning.abc_b_percent` | int | `95` | 60–99 | — | A and B products together make this share; the rest are C. |
+| Purchasing | `purchasing.over_receipt_tolerance_percent` | int | `10` | 0–100 | — | How much more than ordered can be received without a manager's confirmation. |
 
 Later phases add keys through the same registry (e.g. notification channels in Phase 6; e-invoice/e-way bill and gateway options in Phase 7). Feature flags stay a separate mechanism (`FeatureFlag`/`TenantFeature`), because they gate whole modules.
 
@@ -1956,6 +2036,26 @@ Backend checkpoint changes (2026-09-30, ADR-049): cancellation refusals say what
 | 13 | Saved filters, scheduled reports | Out of scope; backlog, with a daily morning summary for owners |
 
 No CA is engaged until all features are built (product owner, 2026-09-30): work never waits on CA answers; every question and to-verify item goes to `docs/CA_REVIEW.md` and the pre-production checklist.
+
+### 10.2k Phase 9 split and Phase 9a plan decisions (2026-10-01, ADR-053)
+| # | Question | Answer |
+|---|---|---|
+| — | Split | 9a (with global search), 9a+ staging, 9b, 9c, 9d, 9e; Platform Support role and the Tally / GSTR-1 JSON files in Phase 10; the after-launch list. Each sub-phase independently mergeable |
+| 1 | Demand basis | Quantity ordered (shop cancellations and rejected orders left out) |
+| 2 | Defaults | 30-day demand window, 7 days' safety stock, 14 days' cover, 7-day default lead time; all settings |
+| 3 | Little or no history | Only when shops are waiting or stock is at or below the reorder level; up to that level plus what is waiting |
+| 4 | ABC | By sales value over `reports.movement_days`: A 80%, B to 95%, C the rest; none if nothing sold |
+| 5 | Products and suppliers | Several suppliers per product, one preferred; lead time, pack and code per pair |
+| 6 | Prices and GST | Cost before GST with GST estimated for information; no purchase accounting in 9a |
+| 7 | Who sees prices | `costs.view` only; receiving against a purchase order uses its costs |
+| 8 | Over-receipt | Accepted with a warning up to `purchasing.over_receipt_tolerance_percent` (10%); above it a `purchasing.manage` user confirms (audited) |
+| 9 | Sending | Email with the PDF (editable text, logged, retried) and a share link for WhatsApp from staff phones |
+| 10 | Changing a sent order | Editable and re-sent (revised) until something is received; then close the rest or cancel |
+| 11 | Past receipts' supplier names | A one-time list staff review and confirm |
+| 12 | Flags | `purchasing` and `stock_planning`; `ai` only for 9d/9e; global search always on |
+| 13 | Permissions | `purchasing.view` (owner, manager, warehouse, accounts), `purchasing.manage` (owner, manager); quantity on order and expected dates for anyone with `orders.view` or `stock.view`, without supplier or prices. Backlog: expected dates to shops |
+| 14 | Reorder levels | Never changed automatically; "use as reorder level" per product or in bulk (audited) |
+| — | Global search | First feature commit; distributor and super admin scopes; smart matching of numbers, GSTINs and mobiles; permissions, sales visibility and isolation; p95 < 200 ms at 40,000 orders; keyboard and recent searches; ready for "Ask the assistant" |
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.
