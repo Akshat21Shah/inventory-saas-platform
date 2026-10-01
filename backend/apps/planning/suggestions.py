@@ -8,20 +8,19 @@
 - Little or no history (nothing ordered in the demand period): only when shops are waiting or
   stock is at or below the product's own reorder level, ordering up to that level plus what is
   waiting.
-- Quantities round up to the preferred supplier's pack, else to whole units where the unit is
-  counted in whole numbers.
+- Reorder points and quantities round up: whole numbers for units that can't be split, 2 decimals
+  otherwise; a quantity then goes up to the preferred supplier's pack (``quantities``).
 - Staff change the quantity, dismiss for a while, put suggestions on purchase orders (grouped by
   preferred supplier) or use the reorder point as the product's reorder level (never automatic).
 """
 
 from __future__ import annotations
 
-import math
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
-from decimal import ROUND_HALF_UP, ROUND_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 from uuid import UUID
 
@@ -34,6 +33,7 @@ from apps.catalog.selectors import ProductFilters
 from apps.catalog.selectors import product_list as catalog_products
 from apps.inventory import selectors as stock
 from apps.planning.models import ProductStats, ReorderSuggestion
+from apps.planning.quantities import up, up_to_pack
 from apps.platform.selectors import get_setting, is_feature_enabled
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
@@ -75,14 +75,6 @@ def _leads(default_days: int) -> dict[UUID, _Lead]:
     return out
 
 
-def round_up(quantity: Decimal, pack: Decimal | None, whole: bool) -> Decimal:
-    if pack:
-        return (Decimal(math.ceil(quantity / pack)) * pack).quantize(QTY)
-    if whole:
-        return Decimal(math.ceil(quantity)).quantize(QTY)
-    return quantity.quantize(QTY, ROUND_UP)
-
-
 def refresh_suggestions(*, today: date | None = None) -> int:
     """Work out the active distributor's open suggestions (after the stats); returns how many
     are open."""
@@ -122,8 +114,9 @@ def refresh_suggestions(*, today: date | None = None) -> int:
         available, waiting = row["available"], row["backordered"]
         ordered = on_order[pk].quantity if pk in on_order else ZERO
         position = available + ordered - waiting
+        whole = not row["unit__allows_decimal"]
         safety = d * safety_days
-        point = (d * lead.days + safety).quantize(QTY, ROUND_HALF_UP)
+        point = up(d * lead.days + safety, whole)
         level = row["reorder_level"] or ZERO
         if d > 0:
             basis = ReorderSuggestion.Basis.DEMAND
@@ -152,7 +145,7 @@ def refresh_suggestions(*, today: date | None = None) -> int:
             "cover_days": cover_days,
             "reorder_point": point,
             "pack_size": lead.pack,
-            "suggested_qty": round_up(quantity, lead.pack, not row["unit__allows_decimal"]),
+            "suggested_qty": up_to_pack(quantity, lead.pack, whole),
             "days_left": (max(available, ZERO) / d).quantize(TENTH, ROUND_HALF_UP)
             if d > 0
             else None,
@@ -199,6 +192,9 @@ def change_quantity(
     suggestion = _open(suggestion_id)
     if quantity is not None and (quantity <= 0 or quantity != quantity.quantize(QTY)):
         raise InvalidFields({"quantity": ["Enter a quantity above 0, with at most 3 decimals."]})
+    unit = suggestion.product.unit
+    if quantity is not None and not unit.allows_decimal and quantity != quantity.to_integral():
+        raise InvalidFields({"quantity": [f"{unit.code} is counted in whole numbers."]})
     suggestion.quantity = quantity
     suggestion.save(update_fields=["quantity", "updated_at"])
     return suggestion
@@ -280,9 +276,7 @@ def apply_reorder_levels(ids: Sequence[UUID], *, by: User) -> int:
 
     changed = 0
     for row in _chosen(ids):
-        level = row.reorder_point
-        if not row.product.unit.allows_decimal:
-            level = Decimal(math.ceil(level)).quantize(QTY)
+        level = up(row.reorder_point, not row.product.unit.allows_decimal)
         if level <= 0 or level == row.product.reorder_level:
             continue
         set_reorder_level(row.product_id, level, by=by)

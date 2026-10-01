@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from apps.accounts.tests.factories import make_staff_in
 from apps.audit.models import AuditLog
-from apps.catalog.models import Product
+from apps.catalog.models import Product, Unit
 from apps.compliance.tests.conftest import switch_on
 from apps.inventory.tests.helpers import make_product
 from apps.orders.tests.helpers import add_stock, client_for, make_shop, place, shop_client
@@ -132,6 +132,49 @@ def test_the_formula_with_demand_and_with_little_history(world):
         D("6.000"),
         None,
     )
+
+
+def test_whole_units_round_up_and_split_units_to_two_decimals(world):
+    """Final review: no "reorder at 0.938 PCS"; demand told per week or month below 1 a day."""
+    with tenant_context(world["t"].pk):
+        kg = Unit.objects.get(code="KG")
+    slow = make_product(world["t"], "SLOW", name="Slow Salt")
+    rice = make_product(world["t"], "RICE", name="Loose Rice", unit=kg)
+    add_stock(world["t"], rice, "1.5")
+    with tenant_context(world["t"].pk):
+        for product, demand in ((slow, "2"), (rice, "10")):
+            ProductStats.objects.create(
+                product=product,
+                computed_at=timezone.now(),
+                demand_days=30,
+                demand_qty=D(demand),
+                per_day=(D(demand) / 30).quantize(D("0.001")),
+                movement_days=90,
+            )
+    found = refresh(world)
+    # PCS, d = 0.067, the usual 7 days' delivery and 7 days' safety: point 0.938 → 1; order
+    # 0.067 x 21 + 0.469 = 1.876 → 2.
+    assert (found["SLOW"].reorder_point, found["SLOW"].suggested_qty) == (D("1"), D("2"))
+    # KG, d = 0.333, 1.5 available: point 4.662 → 4.67; order 6.993 + 2.331 - 1.5 = 7.824 → 7.83.
+    assert (found["RICE"].reorder_point, found["RICE"].suggested_qty) == (D("4.67"), D("7.83"))
+    listed = {
+        row["product_code"]: row
+        for row in world["owner"].get(f"{API}/reorder-suggestions/").json()["results"]
+    }
+    assert listed["SLOW"]["demand_rate"] == {"quantity": "2.00", "period": "MONTH"}
+    assert listed["RICE"]["demand_rate"] == {"quantity": "2.33", "period": "WEEK"}
+    assert listed["TEA"]["demand_rate"] == {"quantity": "4.00", "period": "DAY"}
+    stats = world["owner"].get(f"{API}/products/{slow.pk}/stats/").json()
+    assert stats["demand_rate"] == {"quantity": "2.00", "period": "MONTH"}
+    # A quantity of a unit that can't be split is a whole number.
+    url = f"{API}/reorder-suggestions/{found['SLOW'].pk}/"
+    refused = world["owner"].patch(url, {"quantity": "2.5"}, format="json")
+    assert refused.status_code == 400
+    assert refused.json()["error"]["details"]["fields"]["quantity"] == [
+        "PCS is counted in whole numbers."
+    ]
+    rice_url = f"{API}/reorder-suggestions/{found['RICE'].pk}/"
+    assert world["owner"].patch(rice_url, {"quantity": "8.25"}, format="json").status_code == 200
 
 
 def test_what_is_on_order_counts(world, run):

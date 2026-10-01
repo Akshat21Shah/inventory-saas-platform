@@ -3,13 +3,23 @@
 import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/components/auth/auth-provider";
-import { DateText, QtyText } from "@/components/shared/money-text";
+import { DateText } from "@/components/shared/money-text";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductStats } from "@/lib/api/generated/endpoints/planning/planning";
 import { useProductOnOrder } from "@/lib/api/generated/endpoints/purchasing/purchasing";
+import type { DemandRate } from "@/lib/api/generated/model";
 import { formatQty } from "@/lib/format";
+
+/** "about 2 PCS a month": the server's rate (per day from 1 a day, else per week or month). */
+export function useDemandRate() {
+  const t = useTranslations("planning.rate");
+  return (rate: DemandRate, unit: string) =>
+    Number(rate.quantity) === 0
+      ? t("lessThanOne", { unit })
+      : t("about", { qty: formatQty(rate.quantity, 2), unit, period: rate.period });
+}
 
 /**
  * What is on order for a product and when (purchasing on; for anyone who sees orders or stock,
@@ -47,6 +57,7 @@ export function ProductPlanningCard({ productId, unit }: { productId: string; un
   const planning = feature("stock_planning") && (can("purchasing.view") || can("stock.view"));
   const purchasing = feature("purchasing") && (can("orders.view") || can("stock.view"));
   const stats = useProductStats(productId, { query: { enabled: planning } });
+  const rate = useDemandRate();
   if (!planning && !purchasing) return null;
   const figures = stats.data?.status === 200 ? stats.data.data : null;
   return (
@@ -64,8 +75,8 @@ export function ProductPlanningCard({ productId, unit }: { productId: string; un
           <p className="text-muted-foreground">{t("notYet")}</p>
         ) : (
           <>
-            <Fact label={t("perDay")}>
-              <QtyText value={figures.per_day} unit={unit} />
+            <Fact label={t("ordered")}>
+              {Number(figures.demand_qty) > 0 ? rate(figures.demand_rate, unit) : t("noDemand")}
             </Fact>
             <p className="text-muted-foreground text-xs">
               {t("demandNote", { days: figures.demand_days })}

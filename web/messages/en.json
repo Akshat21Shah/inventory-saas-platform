@@ -5267,7 +5267,7 @@
       "title": "Stock planning",
       "failed": "The figures couldn't be loaded.",
       "notYet": "Not worked out yet: they're worked out every night.",
-      "perDay": "Ordered per day",
+      "ordered": "Shops order",
       "demandNote": "Over the last {days} days.",
       "daysOfStock": "Stock lasts",
       "days": "{count, plural, one {# day} other {# days}}",
@@ -5292,7 +5292,7 @@
       "worked": "Worked out"
     },
     "why": {
-      "demand": "Shops ordered {demand} {unit} in the last {days} days ({perDay} a day).",
+      "demand": "Shops ordered {demand} {unit} in the last {days} days ({rate}).",
       "lowHistory": "Little sales history, so this goes by the reorder level and any shops waiting.",
       "position": "{available} {unit} available{hasWaiting, select, true {, {waiting} waiting for shops} other {}}{hasOnOrder, select, true {, {onOrder} on order} other {}}.",
       "point": "Reorder at {point} {unit}: {lead} days to arrive ({source}) plus {safety} days of safety stock.",
@@ -5350,6 +5350,10 @@
       "emptyBody": "Every product has enough stock for now.",
       "noMatchTitle": "No suggestions match",
       "noMatchBody": "Try another product or clear the filters."
+    },
+    "rate": {
+      "about": "about {qty} {unit} {period, select, DAY {a day} WEEK {a week} other {a month}}",
+      "lessThanOne": "less than 1 {unit} a month"
     }
   }
 }

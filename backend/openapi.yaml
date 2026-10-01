@@ -13295,6 +13295,21 @@ components:
       - recipient_name
       - shop_name
       - title
+    DemandRate:
+      type: object
+      description: |-
+        What shops order, as "about {quantity} a {period}": per day from 1 a day, else per week,
+        else per month. 0 a month: less than 1 a month (units that can't be split).
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        period:
+          $ref: '#/components/schemas/RatePeriodEnum'
+      required:
+      - period
+      - quantity
     DependsOn:
       type: object
       properties:
@@ -20814,6 +20829,10 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           readOnly: true
+        demand_rate:
+          allOf:
+          - $ref: '#/components/schemas/DemandRate'
+          readOnly: true
         movement_days:
           type: integer
           readOnly: true
@@ -20850,6 +20869,7 @@ components:
       - days_of_stock
       - demand_days
       - demand_qty
+      - demand_rate
       - last_sale_date
       - movement_class
       - movement_days
@@ -21674,6 +21694,16 @@ components:
       - old_rate
       - product
       - product_id
+    RatePeriodEnum:
+      enum:
+      - DAY
+      - WEEK
+      - MONTH
+      type: string
+      description: |-
+        * `DAY` - A day
+        * `WEEK` - A week
+        * `MONTH` - A month
     ReallocateRequest:
       type: object
       properties:
@@ -22656,6 +22686,10 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           readOnly: true
+        demand_rate:
+          allOf:
+          - $ref: '#/components/schemas/DemandRate'
+          readOnly: true
         available:
           type: string
           format: decimal
@@ -22730,6 +22764,7 @@ components:
       - days_left
       - demand_days
       - demand_qty
+      - demand_rate
       - id
       - lead_days
       - lead_source

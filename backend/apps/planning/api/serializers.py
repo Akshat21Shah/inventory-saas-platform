@@ -4,6 +4,20 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.planning.models import AbcClass, MovementClass, ProductStats, ReorderSuggestion
+from apps.planning.quantities import RatePeriod, demand_rate
+
+
+class DemandRateSerializer(serializers.Serializer[object]):
+    """What shops order, as "about {quantity} a {period}": per day from 1 a day, else per week,
+    else per month. 0 a month: less than 1 a month (units that can't be split)."""
+
+    quantity = serializers.DecimalField(max_digits=14, decimal_places=2)
+    period = serializers.ChoiceField(choices=RatePeriod.choices)
+
+
+def _rate(demand_qty: Any, demand_days: int, product: Any) -> dict[str, Any]:
+    quantity, period = demand_rate(demand_qty, demand_days, not product.unit.allows_decimal)
+    return dict(DemandRateSerializer({"quantity": quantity, "period": period}).data)
 
 
 class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
@@ -12,6 +26,7 @@ class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
 
     abc_class = serializers.ChoiceField(choices=AbcClass.choices, allow_null=True)
     movement_class = serializers.ChoiceField(choices=MovementClass.choices, allow_null=True)
+    demand_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductStats
@@ -20,6 +35,7 @@ class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
             "demand_days",
             "demand_qty",
             "per_day",
+            "demand_rate",
             "movement_days",
             "abc_class",
             "movement_class",
@@ -28,6 +44,10 @@ class ProductStatsSerializer(serializers.ModelSerializer[ProductStats]):
             "days_of_stock",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(DemandRateSerializer)
+    def get_demand_rate(self, stats: ProductStats) -> dict[str, Any]:
+        return _rate(stats.demand_qty, stats.demand_days, stats.product)
 
 
 class PlanningRefreshSerializer(serializers.Serializer[object]):
@@ -53,6 +73,7 @@ class ReorderSuggestionSerializer(serializers.ModelSerializer[ReorderSuggestion]
     supplier_id = serializers.UUIDField(read_only=True, allow_null=True)
     supplier_name = serializers.SerializerMethodField()
     to_order = serializers.DecimalField(max_digits=14, decimal_places=3, read_only=True)
+    demand_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = ReorderSuggestion
@@ -69,6 +90,7 @@ class ReorderSuggestionSerializer(serializers.ModelSerializer[ReorderSuggestion]
             "demand_qty",
             "demand_days",
             "per_day",
+            "demand_rate",
             "available",
             "on_order",
             "waiting",
@@ -85,6 +107,10 @@ class ReorderSuggestionSerializer(serializers.ModelSerializer[ReorderSuggestion]
             "days_left",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(DemandRateSerializer)
+    def get_demand_rate(self, row: ReorderSuggestion) -> dict[str, Any]:
+        return _rate(row.demand_qty, row.demand_days, row.product)
 
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_supplier_name(self, row: ReorderSuggestion) -> str | None:

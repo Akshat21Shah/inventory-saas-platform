@@ -231,6 +231,7 @@ SPECTACULAR_SETTINGS = {
         "SearchHitTypeEnum": "apps.search.api.serializers.HIT_TYPES",
         "AbcClassEnum": "apps.planning.models.AbcClass",
         "MovementClassEnum": "apps.planning.models.MovementClass",
+        "RatePeriodEnum": "apps.planning.quantities.RatePeriod",
         "PurchaseOrderStatusEnum": "apps.purchasing.models.PurchaseOrder.Status",
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",

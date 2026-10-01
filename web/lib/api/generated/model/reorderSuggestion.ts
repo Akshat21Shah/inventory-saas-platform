@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { DemandRate } from './demandRate';
 import type { LeadSourceEnum } from './leadSourceEnum';
 import type { ReorderSuggestionBasisEnum } from './reorderSuggestionBasisEnum';
 
@@ -29,6 +30,7 @@ export interface ReorderSuggestion {
   readonly demand_days: number;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   readonly per_day: string;
+  readonly demand_rate: DemandRate;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   readonly available: string;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */

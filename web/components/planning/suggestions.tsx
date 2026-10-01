@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { FilterSelect } from "@/components/catalog/controls";
+import { useDemandRate } from "@/components/planning/product-planning";
 import { useSupplierOptions } from "@/components/purchasing/options";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -43,11 +44,13 @@ import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
 
 const ALL = "all";
-const q = (value: string | null | undefined) => formatQty(value ?? "0");
+// Whole numbers come whole from the server; units that can be split show at most 2 decimals.
+const q = (value: string | null | undefined) => formatQty(value ?? "0", 2);
 
 /** The server's figures in plain words (ADR-053 item 8): why this product, and why this much. */
 export function Explanation({ row }: { row: ReorderSuggestion }) {
   const t = useTranslations("planning.why");
+  const rate = useDemandRate();
   const unit = row.unit_code;
   const parts: string[] = [];
   if (row.basis === "DEMAND") {
@@ -55,7 +58,7 @@ export function Explanation({ row }: { row: ReorderSuggestion }) {
       t("demand", {
         demand: q(row.demand_qty),
         days: row.demand_days,
-        perDay: q(row.per_day),
+        rate: rate(row.demand_rate, unit),
         unit,
       }),
     );

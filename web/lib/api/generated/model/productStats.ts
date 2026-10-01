@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AbcClassEnum } from './abcClassEnum';
+import type { DemandRate } from './demandRate';
 import type { MovementClassEnum } from './movementClassEnum';
 import type { NullEnum } from './nullEnum';
 
@@ -20,6 +21,7 @@ export interface ProductStats {
   readonly demand_qty: string;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   readonly per_day: string;
+  readonly demand_rate: DemandRate;
   readonly movement_days: number;
   abc_class: AbcClassEnum | NullEnum | null;
   movement_class: MovementClassEnum | NullEnum | null;

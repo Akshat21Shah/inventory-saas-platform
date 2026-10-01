@@ -49,6 +49,7 @@ const suggestion = (extra: Partial<ReorderSuggestion> = {}): ReorderSuggestion =
   demand_qty: "60.000",
   demand_days: 30,
   per_day: "2.000",
+  demand_rate: { quantity: "2.00", period: "DAY" },
   available: "4.000",
   on_order: "12.000",
   waiting: "3.000",
@@ -91,7 +92,7 @@ describe("SuggestionsPage", () => {
     const tea = (await screen.findByText("Tata Tea Gold")).closest("tr")!;
     expect(
       within(tea).getByText(
-        "Shops ordered 60 PCS in the last 30 days (2 a day). 4 PCS available, 3 waiting for " +
+        "Shops ordered 60 PCS in the last 30 days (about 2 PCS a day). 4 PCS available, 3 waiting for " +
           "shops, 12 on order. Reorder at 24 PCS: 5 days to arrive (the supplier's time for " +
           "this product) plus 7 days of safety stock. This order covers 14 days after it " +
           "arrives. Rounded up to packs of 12 PCS.",
@@ -112,6 +113,49 @@ describe("SuggestionsPage", () => {
     ).toBeInTheDocument();
     expect(within(biscuits).getByText("At reorder level")).toBeInTheDocument();
     expect(within(biscuits).getByText("No preferred supplier")).toBeInTheDocument();
+  });
+
+  it("tells slow demand per week or month, and less than 1 a month", async () => {
+    mockApi({
+      "/api/v1/suppliers/": () => page([]),
+      "/api/v1/reorder-suggestions/": () =>
+        page([
+          suggestion({
+            demand_qty: "2.000",
+            per_day: "0.067",
+            demand_rate: { quantity: "2.00", period: "MONTH" },
+          }),
+          suggestion({
+            id: "g2",
+            product_name: "Loose Rice",
+            unit_code: "KG",
+            demand_qty: "10.000",
+            per_day: "0.333",
+            demand_rate: { quantity: "2.33", period: "WEEK" },
+            available: "1.500",
+            reorder_point: "4.670",
+          }),
+          suggestion({
+            id: "g3",
+            product_name: "Rare Spice",
+            demand_qty: "1.000",
+            demand_days: 180,
+            demand_rate: { quantity: "0.00", period: "MONTH" },
+          }),
+        ]),
+    });
+    renderWithIntl(<SuggestionsPage />);
+    expect(
+      await screen.findByText(/^Shops ordered 2 PCS in the last 30 days \(about 2 PCS a month\)\./),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /^Shops ordered 10 KG in the last 30 days \(about 2.33 KG a week\)\. 1.5 KG available.*Reorder at 4.67 KG/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/in the last 180 days \(less than 1 PCS a month\)/),
+    ).toBeInTheDocument();
   });
 
   it("changes the quantity to order and dismisses a suggestion", async () => {
@@ -219,6 +263,7 @@ const stats = (extra: Partial<ProductStats> = {}): ProductStats => ({
   demand_days: 30,
   demand_qty: "60.000",
   per_day: "2.000",
+  demand_rate: { quantity: "2.00", period: "DAY" },
   movement_days: 90,
   abc_class: "A",
   movement_class: "FAST",
@@ -239,6 +284,7 @@ describe("ProductPlanningCard", () => {
     });
     renderWithIntl(<ProductPlanningCard productId="p1" unit="PCS" />);
     expect(await screen.findByText("A: your top sellers")).toBeInTheDocument();
+    expect(screen.getByText("about 2 PCS a day")).toBeInTheDocument();
     expect(screen.getByText("4.5 days")).toBeInTheDocument();
     expect(screen.getByText("Fast")).toBeInTheDocument();
     expect(screen.getByText("Over the last 30 days.")).toBeInTheDocument();

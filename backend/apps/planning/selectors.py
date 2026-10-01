@@ -15,7 +15,9 @@ def product_exists(product_id: UUID) -> bool:
 
 
 def stats_for(product_id: UUID) -> ProductStats | None:
-    stats: ProductStats | None = ProductStats.objects.filter(product_id=product_id).first()
+    stats: ProductStats | None = (
+        ProductStats.objects.select_related("product__unit").filter(product_id=product_id).first()
+    )
     return stats
 
 
