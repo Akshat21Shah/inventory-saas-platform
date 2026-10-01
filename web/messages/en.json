@@ -3730,7 +3730,8 @@
       "announcement_published": "Announcement",
       "report_ready": "Report ready to download",
       "report_failed": "Report could not be made",
-      "purchase_order_sent": "Purchase order sent to the supplier"
+      "purchase_order_sent": "Purchase order sent to the supplier",
+      "purchase_order_cancelled": "Purchase order cancelled (to the supplier)"
     },
     "shopEvents": {
       "order_placed": "Order received",

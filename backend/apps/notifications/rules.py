@@ -128,7 +128,7 @@ def _check(
         if rule.recipient != Recipient.STAFF_PERMISSION and rule.permission:
             errors.append("Only 'Staff who can…' takes a permission.")
         only = ONLY_FOR.get(rule.recipient)
-        if only is not None and only[0] != event_code:
+        if only is not None and event_code not in only[0]:
             errors.append(
                 "This recipient is only for purchase orders."
                 if rule.recipient == Recipient.SUPPLIER

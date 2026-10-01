@@ -498,3 +498,33 @@ def test_purchasing_switched_off(world, run):
             "MODULE_NOT_ENABLED",
         )
     assert world["owner"].get(f"{API}/search/", {"q": order["number"]}).json()["jump"] is None
+
+
+def test_cancelling_a_sent_order_emails_the_supplier_unless_staff_told_them(world, run):
+    owner = world["owner"]
+    first = _create(world, run)
+    _send(world, run, first["id"])
+    mail.outbox.clear()
+    reason = {"reason": "Ordered elsewhere"}
+    run(owner.post, f"{API}/purchase-orders/{first['id']}/cancel/", reason, format="json")
+    [email] = mail.outbox
+    assert email.to == ["orders@hindustan.example.com"]
+    assert email.subject == f"Purchase order PO-{YEAR}-00001 cancelled by Alpha"
+    assert "Ordered elsewhere" in str(email.body) and "/public/documents/" in str(email.body)
+
+    second = _create(world, run)
+    _send(world, run, second["id"])
+    mail.outbox.clear()
+    told = {"reason": "Told them on the phone", "notify_supplier": False}
+    run(owner.post, f"{API}/purchase-orders/{second['id']}/cancel/", told, format="json")
+    draft = _create(world, run)
+    run(owner.post, f"{API}/purchase-orders/{draft['id']}/cancel/", {}, format="json")
+    assert mail.outbox == []  # staff told them; a draft was never sent
+    with tenant_context(world["t"].pk):
+        emailed = [
+            entry.metadata["supplier_emailed"]
+            for entry in AuditLog.objects.filter(action="purchasing.po_cancelled").order_by(
+                "created_at"
+            )
+        ]
+    assert emailed == [True, False, False]

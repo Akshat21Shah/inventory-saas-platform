@@ -518,6 +518,7 @@ export * from './productTaxRate';
 export * from './productWriteRequest';
 export * from './publicBranding';
 export * from './publicStatesListParams';
+export * from './purchaseOrderCancelRequest';
 export * from './purchaseOrderDetail';
 export * from './purchaseOrderInputRequest';
 export * from './purchaseOrderLine';

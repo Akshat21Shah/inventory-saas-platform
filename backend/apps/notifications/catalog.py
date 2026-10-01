@@ -112,6 +112,11 @@ EVENTS: dict[str, Event] = {
                          "document_link"),
               document=DocumentLink.Kind.PURCHASE_ORDER, shop_facing=False, staff_facing=False,
               supplier_facing=True, feature="purchasing"),
+        Event("purchase_order.cancelled", "Purchase order cancelled (to the supplier)",
+              "purchasing", variables=("distributor", "supplier", "po_number", "reason",
+                                       "document_link"),
+              document=DocumentLink.Kind.PURCHASE_ORDER, shop_facing=False, staff_facing=False,
+              supplier_facing=True, feature="purchasing"),
         Event("report.ready", "Report ready to download", "other",
               variables=("report", "rows", "days", "link"), shop_facing=False, system=True),
         Event("report.failed", "Report could not be made", "other",
@@ -214,6 +219,7 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("ewaybill.failed", ST, (IN, EM), "compliance.manage"),
     Rule("ewaybill.failed", Recipient.DISPATCHER, (IN, EM)),
     Rule("purchase_order.sent", Recipient.SUPPLIER, (EM,)),  # ADR-053: email only
+    Rule("purchase_order.cancelled", Recipient.SUPPLIER, (EM,)),
     Rule("report.ready", Recipient.REQUESTER, (IN,)),  # ADR-050: in-app only
     Rule("report.failed", Recipient.REQUESTER, (IN,)),
     Rule("payment.received", S, (IN, WA, EM)),
@@ -248,9 +254,9 @@ RECIPIENT_CHANNELS: dict[str, tuple[str, ...]] = {
 # Recipients of system messages only: never offered on the rules screen.
 SYSTEM_RECIPIENTS = frozenset({Recipient.REQUESTER})
 # Recipients that exist only for some events (and only while their module is on).
-ONLY_FOR: dict[str, tuple[str, str]] = {
-    Recipient.DISPATCHER: ("ewaybill.failed", "ewaybill"),
-    Recipient.SUPPLIER: ("purchase_order.sent", "purchasing"),
+ONLY_FOR: dict[str, tuple[tuple[str, ...], str]] = {
+    Recipient.DISPATCHER: (("ewaybill.failed",), "ewaybill"),
+    Recipient.SUPPLIER: (("purchase_order.sent", "purchase_order.cancelled"), "purchasing"),
 }
 
 
@@ -613,6 +619,9 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
 SUPPLIER_TEXTS: dict[str, dict[str, Text]] = {
     "purchase_order.sent": {
         EM: Text("Purchase order {{ po_number }}{{ revision }} from {{ distributor }}", "Dear {{ supplier }},\n\nPlease find our purchase order {{ po_number }}{{ revision }}. We expect delivery by {{ expected_date }}.\n\nPurchase order: {{ document_link }}\n\nRegards,\n{{ distributor }}"),
+    },
+    "purchase_order.cancelled": {
+        EM: Text("Purchase order {{ po_number }} cancelled by {{ distributor }}", "Dear {{ supplier }},\n\nPlease cancel our purchase order {{ po_number }}: {{ reason }}. Nothing more should be sent against it.\n\nThe cancelled order: {{ document_link }}\n\nRegards,\n{{ distributor }}"),
     },
 }  # fmt: skip
 

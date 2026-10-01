@@ -329,7 +329,8 @@ def _ewaybill(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventConte
 
 
 def _purchase_order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
-    """The supplier's email (ADR-053): it goes to the supplier's address, never to a person."""
+    """The supplier's emails (ADR-053): sent and cancelled orders go to the supplier's address,
+    never to a person."""
     from apps.purchasing.models import PurchaseOrder
 
     order = (
@@ -346,6 +347,7 @@ def _purchase_order(event: OutboxEvent, code: str, base: dict[str, Any]) -> Even
         "po_number": order.number,
         "revision": f" (revised {revision})" if revision > 1 else "",
         "expected_date": day(order.expected_date) if order.expected_date else "—",
+        "reason": event.payload.get("reason") or order.closed_reason,
     }
     return EventContext(
         code,

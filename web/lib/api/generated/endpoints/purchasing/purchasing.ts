@@ -36,6 +36,7 @@ import type {
   PatchedSupplierWriteRequest,
   PreferredChanged,
   ProductSuppliersRequest,
+  PurchaseOrderCancelRequest,
   PurchaseOrderDetail,
   PurchaseOrderInputRequest,
   PurchaseOrderReasonRequest,
@@ -897,7 +898,7 @@ export const getPurchaseOrdersCancelUrl = (orderId: string,) => {
 }
 
 export const purchaseOrdersCancel = async (orderId: string,
-    purchaseOrderReasonRequest?: PurchaseOrderReasonRequest, options?: Parameters<typeof apiFetch>[1]): Promise<purchaseOrdersCancelResponse> => {
+    purchaseOrderCancelRequest?: PurchaseOrderCancelRequest, options?: Parameters<typeof apiFetch>[1]): Promise<purchaseOrdersCancelResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -918,7 +919,7 @@ return apiFetch<purchaseOrdersCancelResponse>(getPurchaseOrdersCancelUrl(orderId
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(purchaseOrderReasonRequest)
+    body: JSON.stringify(purchaseOrderCancelRequest)
   }
 );}
 
@@ -956,9 +957,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PurchaseOrdersCancelMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseOrdersCancel>>>
-    export type PurchaseOrdersCancelMutationBody = PurchaseOrderReasonRequest | undefined
+    export type PurchaseOrdersCancelMutationBody = PurchaseOrderCancelRequest | undefined
     export type PurchaseOrdersCancelMutationError = unknown
-    export type PurchaseOrdersCancelMutationVariables = {orderId: string;data?: PurchaseOrderReasonRequest}
+    export type PurchaseOrdersCancelMutationVariables = {orderId: string;data?: PurchaseOrderCancelRequest}
 
     export const usePurchaseOrdersCancel = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrdersCancel>>, TError,PurchaseOrdersCancelMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}

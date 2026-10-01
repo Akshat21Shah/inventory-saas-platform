@@ -351,15 +351,20 @@ class PurchaseOrderCancelView(PurchasingView):
     required_permissions = {"POST": MANAGE}
 
     @extend_schema(
-        request=s.PurchaseOrderReasonSerializer,
+        request=s.PurchaseOrderCancelSerializer,
         responses=s.PurchaseOrderDetailSerializer,
         operation_id="purchase_orders_cancel",
         tags=["purchasing"],
     )
     def post(self, request: Request, order_id: UUID) -> Response:
-        data = s.PurchaseOrderReasonSerializer(data=request.data)
+        data = s.PurchaseOrderCancelSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        orders.cancel_order(order_id, reason=data.validated_data["reason"], by=_user(request))
+        orders.cancel_order(
+            order_id,
+            reason=data.validated_data["reason"],
+            by=_user(request),
+            notify_supplier=data.validated_data["notify_supplier"],
+        )
         return _order_response(request, order_id)
 
 

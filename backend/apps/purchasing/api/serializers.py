@@ -370,6 +370,13 @@ class PurchaseOrderReasonSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
 
 
+class PurchaseOrderCancelSerializer(PurchaseOrderReasonSerializer):
+    notify_supplier = serializers.BooleanField(
+        default=True,
+        help_text="Email the supplier that a sent order is cancelled (false: staff told them).",
+    )
+
+
 class OnOrderLineSerializer(serializers.Serializer[Any]):
     quantity = serializers.DecimalField(max_digits=14, decimal_places=3)
     expected_date = serializers.DateField(allow_null=True)

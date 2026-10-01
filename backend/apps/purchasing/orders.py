@@ -401,9 +401,12 @@ def _cancel_due(order: PurchaseOrder) -> None:
 
 
 @transaction.atomic
-def cancel_order(order_id: UUID, *, reason: str, by: User) -> PurchaseOrder:
-    """Before anything is received. A sent order needs a reason (the supplier is told by
-    staff; 9a sends nothing for a cancellation)."""
+def cancel_order(
+    order_id: UUID, *, reason: str, by: User, notify_supplier: bool = True
+) -> PurchaseOrder:
+    """Before anything is received. A sent order needs a reason, and the supplier is emailed
+    (``purchase_order.cancelled``, an editable text) unless staff say they have told them
+    already. A draft was never sent: nobody is told."""
     order = lock(order_id)
     if order.status not in (S.DRAFT, S.SENT) or not _nothing_received(order):
         raise NotEditable(
@@ -412,17 +415,30 @@ def cancel_order(order_id: UUID, *, reason: str, by: User) -> PurchaseOrder:
     if order.status == S.SENT and not reason.strip():
         raise InvalidFields({"reason": ["Say why the order is cancelled."]})
     _no_open_receipt(order)
+    was_sent = order.status == S.SENT
     _cancel_due(order)
     order.status = S.CANCELLED
     order.closed_at, order.closed_by, order.closed_reason = timezone.now(), by, reason.strip()[:300]
     order.save()
+    told = was_sent and notify_supplier
     audit.record(
         "purchasing.po_cancelled",
         target=order,
         target_repr=order.number,
-        metadata={"reason": order.closed_reason},
+        metadata={"reason": order.closed_reason, "supplier_emailed": told},
     )
     _print_again(order)
+    if told:
+        emit(
+            "purchase_order.cancelled",
+            aggregate_type="purchase_order",
+            aggregate_id=order.pk,
+            payload={
+                "purchase_order_id": str(order.pk),
+                "supplier_id": str(order.supplier_id),
+                "reason": order.closed_reason,
+            },
+        )
     return order
 
 
