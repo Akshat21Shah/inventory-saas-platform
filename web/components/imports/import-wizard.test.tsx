@@ -8,7 +8,7 @@ import { renderWithIntl } from "@/tests/render";
 
 import { ImportJobPage, ImportStartPage } from "./import-wizard";
 
-const auth = { me: { id: "u1" }, can: () => true };
+const auth = { me: { id: "u1" }, can: () => true, feature: () => false };
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
 let search = new URLSearchParams("kind=PRODUCTS");

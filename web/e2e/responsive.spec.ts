@@ -43,6 +43,9 @@ interface Ids {
   shop_invoice: string | null;
   ewaybill_invoice: string | null;
   shop_checkout: string | null;
+  supplier: string | null;
+  purchase_order: string | null;
+  draft_purchase_order: string | null;
 }
 
 function pages(ids: Ids) {
@@ -109,6 +112,11 @@ function pages(ids: Ids) {
     "/manage/stock/adjustments",
     "/manage/stock/adjustments/new",
     ...(ids.adjustment ? [`/manage/stock/adjustments/${ids.adjustment}`] : []),
+    // Purchasing (ADR-053; Sharma has it on).
+    "/manage/purchasing/suppliers",
+    "/manage/purchasing/suppliers/new",
+    ...(ids.supplier ? [`/manage/purchasing/suppliers/${ids.supplier}`] : []),
+    "/manage/purchasing/suppliers/from-receipts",
     "/manage/reports",
     "/manage/reports/low-stock",
     "/manage/reports/stock-valuation",

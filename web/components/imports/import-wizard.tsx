@@ -68,6 +68,7 @@ const KINDS: ImportKindEnum[] = [
   "PRICE_LIST_ITEMS",
   "DISCOUNT_RULES",
   "OPENING_STOCK",
+  "SUPPLIERS",
 ];
 // Records (products, shops, prices) are added or updated; stock is added to or set to a count
 // (ADR-042). The server refuses a mode the kind doesn't offer.
@@ -85,6 +86,8 @@ const PERMISSION: Record<ImportKindEnum, string> = {
   OPENING_BALANCES: "ledger.adjust",
   SUPPLIERS: "purchasing.manage",
 };
+/** Kinds of an optional module, offered only while it is on (the server refuses them too). */
+const FEATURE: Partial<Record<ImportKindEnum, string>> = { SUPPLIERS: "purchasing" };
 const LIST_PAGE: Record<ImportKindEnum, string> = {
   PRODUCTS: "/manage/products",
   RETAILERS: "/manage/retailers",
@@ -94,7 +97,6 @@ const LIST_PAGE: Record<ImportKindEnum, string> = {
   OPENING_STOCK: "/manage/stock",
   // TODO(phase-5 frontend): the receivables page once it exists.
   OPENING_BALANCES: "/manage/retailers",
-  // TODO(9a.10): offered in KINDS (while purchasing is on) with the suppliers screens.
   SUPPLIERS: "/manage/purchasing/suppliers",
 };
 const BUSY = new Set(["VALIDATING", "COMMITTING"]);
@@ -160,8 +162,9 @@ export function ImportStartPage() {
   const errors = useErrorText();
   const router = useRouter();
   const params = useSearchParams();
-  const { can } = useAuth();
-  const allowed = KINDS.filter((k) => can(PERMISSION[k]));
+  const { can, feature } = useAuth();
+  const shown = KINDS.filter((k) => !FEATURE[k] || feature(FEATURE[k]));
+  const allowed = shown.filter((k) => can(PERMISSION[k]));
   const requested = params.get("kind") as ImportKindEnum | null;
   const [kind, setKind] = useState<ImportKindEnum | "">(
     requested && allowed.includes(requested) ? requested : allowed.length === 1 ? allowed[0]! : "",
@@ -200,7 +203,7 @@ export function ImportStartPage() {
       <div className="max-w-2xl space-y-8">
         <Step number={1} title={t("whatTitle")}>
           <div className="grid gap-3 sm:grid-cols-2">
-            {KINDS.map((k) => (
+            {shown.map((k) => (
               <Choice
                 key={k}
                 name="kind"

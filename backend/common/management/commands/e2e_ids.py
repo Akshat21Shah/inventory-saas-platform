@@ -18,6 +18,7 @@ from apps.orders.models import Fulfilment, Order, OrderLine
 from apps.payments.models import Payment, PaymentIntent, Refund
 from apps.platform.models import Tenant
 from apps.pricing.models import DiscountRule, PriceList
+from apps.purchasing.models import PurchaseOrder, Supplier
 from apps.retailers.models import Retailer
 from common.tenancy import tenant_transaction
 
@@ -76,6 +77,10 @@ class Command(BaseCommand):
                 "ewaybill_invoice": _first(
                     Invoice.objects.filter(pk__in=EWayBill.objects.values("invoice_id"))
                 ),
+                # Phase 9a: a supplier and purchase orders (Sharma has purchasing on).
+                "supplier": _first(Supplier.objects.all()),
+                "purchase_order": _first(PurchaseOrder.objects.filter(status="SENT")),
+                "draft_purchase_order": _first(PurchaseOrder.objects.filter(status="DRAFT")),
                 "shop_checkout": _first(
                     PaymentIntent.objects.filter(retailer__mobile="+919876500001")
                 ),

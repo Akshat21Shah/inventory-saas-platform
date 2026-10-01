@@ -18,7 +18,12 @@ const permissions = new Set([
   "costs.view",
   "costs.manage",
 ]);
-const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
+const features = new Set<string>();
+const auth = {
+  me: { id: "u1" },
+  can: (p: string) => permissions.has(p),
+  feature: (code: string) => features.has(code),
+};
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/manage" }));
@@ -149,6 +154,37 @@ describe("ProductsPage", () => {
         value: null,
       }),
     );
+  });
+
+  it("makes one supplier the preferred one for the selected products (purchasing on)", async () => {
+    features.add("purchasing");
+    permissions.add("purchasing.manage");
+    const calls = mockApi({
+      ...masters,
+      "/api/v1/products/": () => [
+        200,
+        { next: null, previous: null, results: [row("PG-100", "Parle-G 100g"), row("A", "Atta")] },
+      ],
+      "/api/v1/suppliers/": () => [
+        200,
+        { next: null, previous: null, results: [{ id: "s1", name: "Hindustan Traders" }] },
+      ],
+      "POST /api/v1/suppliers/s1/products/": () => [200, { changed: 2 }],
+    });
+    renderWithIntl(<ProductsPage />);
+    await userEvent.click(
+      await screen.findByRole("checkbox", { name: "Select all products on this page" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Set preferred supplier" }));
+    await userEvent.click(screen.getByRole("combobox", { name: "Supplier" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Hindustan Traders" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.path === "/api/v1/suppliers/s1/products/")?.body).toEqual({
+        product_ids: ["id-PG-100", "id-A"],
+      }),
+    );
+    features.delete("purchasing");
   });
 
   it("hides changes from people who can only view", async () => {

@@ -318,7 +318,14 @@
      - Super admin: distributors by name, GSTIN or web address, the platform's pages, and "Find people named … across distributors" as an explicit choice, because each such search is audited.
      - Loading, nothing found, too short and "search isn't working, try again" states. The list leaves a place for 9e's "Ask the assistant" row.
      - Tests: 6 component tests (Ctrl+K, the jump on Enter and the recent search; arrows and "See all"; pages and settings by permission and module; recent searches; the failure state; people only when asked). The responsive sweep opens the search with results for staff and the super admin at every width.
-  10. Frontend: suppliers
+  10. Frontend: suppliers — **done** (`web/components/purchasing/`):
+     - "Purchasing" in the navigation, only while the module is on and with `purchasing.view` (navigation items can now name a permission and a module); the section says so if someone opens it with the module off.
+     - Suppliers list (name, code, GSTIN, contact, delivery days or "your usual time", products, status; search with `?q=` from global search, a status filter; cards on phones), export to Excel or CSV, import (the `SUPPLIERS` kind is offered on the import page only while purchasing is on), add.
+     - A supplier's page: the details form (GSTIN with the state from it, contact, email for purchase orders, delivery and payment days, active, address) and "What they supply" (preferred, pack, last cost with `costs.view`; 20 a page); delete says why it can't when orders are open.
+     - "Suppliers from past receipts": each typed name with its receipts and last date; a same-name supplier is offered, everything else waits for a choice ("Decide later" by default, so one tap never makes suppliers from typos), then Confirm.
+     - Product page: a Suppliers panel (codes, delivery days, packs, last cost) and an editor (add, remove, choose the preferred one). Products list: "Set preferred supplier" for the selected products.
+     - Demo data: `make seed` switches purchasing and stock planning on for Sharma (Patel keeps them off) and adds three suppliers (one without an email), preferred suppliers for every product, purchase orders sent, late, partly received and a draft, and the stats and suggestions; `e2e_ids` gives a supplier and purchase orders.
+     - Tests: 6 component tests (list and search, permission to add, adding with the server's field errors, a supplier with its products and the delete refusal, the receipts review, the product's suppliers editor), the products bulk action, the seed (modules for Sharma only, orders in every state). The responsive sweep covers the four supplier screens.
   11. Frontend: purchase orders and receiving
   12. Frontend: reorder suggestions, product stats, dashboard tiles, settings, on-order displays
   13. E2E, responsive, flags-off proof — **final review**

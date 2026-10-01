@@ -310,3 +310,120 @@ def _lines(
         )
     order.subtotal, order.estimated_tax = subtotal, tax
     return rows
+
+
+# --- The demo distributor (``make seed``) --------------------------------------------------------
+
+DEMO_WITH_PURCHASING = ("sharma",)  # Patel Traders keeps both modules off
+
+
+def seed_demo_purchasing(tenant: Tenant, owner: User) -> bool:
+    """Sharma Distributors: both modules on, three suppliers (one without an email), every
+    product with a preferred supplier, purchase orders in each state (draft, sent, late, partly
+    received) and the stats and suggestions, all through the services. Idempotent; returns
+    whether the modules are on for this tenant."""
+
+    from apps.inventory import receipts
+    from apps.purchasing import orders, receiving, services
+
+    if tenant.slug not in DEMO_WITH_PURCHASING:
+        return False
+    _modules_on(tenant)
+    if Supplier.objects.exists():
+        return True
+    suppliers = [
+        services.create_supplier(data, by=owner)
+        for data in (
+            {
+                "name": "Hindustan Consumer Supplies",
+                "contact_name": "Ravi Mehta",
+                "phone": "9822012345",
+                "email": "orders@hindustan-demo.example.com",
+                "city": "Pune",
+                "lead_time_days": 5,
+                "payment_terms_days": 30,
+            },
+            {
+                "name": "Parle Agro Agencies",
+                "contact_name": "Sunita Rao",
+                "phone": "9822054321",
+                "email": "po@parle-demo.example.com",
+                "city": "Mumbai",
+                "lead_time_days": 3,
+                "payment_terms_days": 15,
+            },
+            {"name": "Local Wholesale Mart", "phone": "02024561234", "city": "Pune"},
+        )
+    ]
+    products = list(Product.objects.filter(deleted_at__isnull=True).order_by("code"))
+    third = max(1, len(products) // 3)
+    for supplier, chunk in zip(
+        suppliers,
+        (products[:third], products[third : 2 * third], products[2 * third :]),
+        strict=True,
+    ):
+        if chunk:
+            services.set_preferred_supplier(supplier.pk, [p.pk for p in chunk], by=owner)
+
+    def pick(offset: int, count: int) -> list[Product]:
+        """``count`` products from ``offset`` on, wrapping round (few products with photos)."""
+        found = {
+            products[(offset + i) % len(products)].pk: products[(offset + i) % len(products)]
+            for i in range(count)
+        }
+        return list(found.values())
+
+    def make(supplier: Supplier, picked: list[Product], *, send: bool) -> PurchaseOrder:
+        order = orders.create_order(
+            orders.OrderInput(
+                supplier_id=supplier.pk,
+                lines=[
+                    orders.OrderLineInput(
+                        p.pk,
+                        Decimal("24"),
+                        entered_cost=(p.base_price * Decimal("0.8")).quantize(Decimal("0.01")),
+                    )
+                    for p in picked
+                ],
+                notes="Please deliver before noon.",
+            ),
+            by=owner,
+        )
+        if send:
+            orders.send_order(order.pk, by=owner)
+        return order
+
+    if not products:
+        return True
+    first, second, third_supplier = suppliers
+    make(first, pick(0, 4), send=True)  # sent, on its way
+    late = make(second, pick(third, 3), send=True)
+    PurchaseOrder.objects.filter(pk=late.pk).update(
+        expected_date=today_ist() - timedelta(days=2)  # late (demo only)
+    )
+    partly = make(first, pick(4, 3), send=True)
+    draft = receiving.receive_order(partly.pk, by=owner)
+    first_line = draft.lines.order_by("line_no").first()
+    if first_line is not None:  # half of the first line arrived, the rest is still due
+        receipts.update_draft(
+            draft.pk,
+            receipts.ReceiptInput(
+                lines=[
+                    receipts.LineInput(
+                        first_line.product_id,
+                        (first_line.entered_qty / 2).quantize(Decimal("1")),
+                        entered_unit=first_line.entered_unit,
+                        entered_cost=first_line.entered_cost,
+                        id=first_line.pk,
+                    )
+                ],
+                bill_number="HCS-1182",
+                bill_date=today_ist(),
+            ),
+            by=owner,
+        )
+        receipts.post(draft.pk, by=owner)
+    make(third_supplier, pick(2 * third, 2), send=False)  # a draft
+    planning.refresh_stats()
+    suggestions.refresh_suggestions()
+    return True

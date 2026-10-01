@@ -15,6 +15,10 @@ export interface NavItem {
   href: string;
   labelKey: string; // key under "nav"
   icon: LucideIcon;
+  /** Shown only with this permission (cosmetic: the server guards every page). */
+  permission?: string;
+  /** Shown only while this optional module is on. */
+  feature?: string;
 }
 
 function isActive(pathname: string, href: string, rootHref: string) {

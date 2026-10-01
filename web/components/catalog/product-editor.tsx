@@ -36,6 +36,8 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney, formatQty } from "@/lib/format";
 import { useDebounced } from "@/lib/use-debounced";
 
+import { ProductSuppliersPanel } from "@/components/purchasing/product-suppliers";
+
 import { BarcodesPanel, ImagesPanel, TaxRatesPanel } from "./product-panels";
 import {
   percent,
@@ -520,7 +522,7 @@ export function EditProductPage({ productId }: { productId: string }) {
   const t = useTranslations("catalog.product");
   const errors = useErrorText();
   const router = useRouter();
-  const { can } = useAuth();
+  const { can, feature } = useAuth();
   const query = useCatalogProductsRetrieve(productId);
   if (query.isLoading) return <PageSkeleton />;
   if (query.error || !query.data) {
@@ -565,6 +567,9 @@ export function EditProductPage({ productId }: { productId: string }) {
           <TaxRatesPanel product={product} onChanged={() => void query.refetch()} />
           <ImagesPanel productId={product.id} />
           <BarcodesPanel product={product} onChanged={() => void query.refetch()} />
+          {feature("purchasing") && can("purchasing.view") ? (
+            <ProductSuppliersPanel productId={product.id} />
+          ) : null}
         </div>
       </div>
     </>
