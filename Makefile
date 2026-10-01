@@ -8,7 +8,7 @@ PY := .venv/bin
 OWNER_DB_URL := postgres://app_owner:app_owner@localhost:5432/inventory
 
 .DEFAULT_GOAL := help
-.PHONY: help setup up down logs ps migrate makemigrations seed seed-volume perf perf-exports shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost webhook-tunnel \
+.PHONY: help setup secrets-scan up down logs ps migrate makemigrations seed seed-volume perf perf-exports shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost webhook-tunnel \
         e2e lint lint-backend lint-frontend fmt api-client db-up check-schema
 
 help: ## Show this help
@@ -21,6 +21,11 @@ setup: .env ## Install local toolchains (backend venv via uv, web node_modules)
 	test -x $(BACKEND_VENV)/bin/uv || (python3 -m venv $(BACKEND_VENV) && $(BACKEND_VENV)/bin/pip install -q uv)
 	cd backend && $(PY)/uv sync --frozen
 	cd web && npm ci
+	cd backend && $(PY)/uv run pre-commit install  # hooks incl. the secrets scan (ADR-055)
+
+secrets-scan: ## Scan the whole git history (every branch) for secrets with gitleaks (ADR-055)
+	docker run --rm -v "$(CURDIR)":/repo:ro zricethezav/gitleaks:v8.30.1 git /repo \
+		--log-opts="--all" --config /repo/.gitleaks.toml --redact --no-banner
 
 up: .env ## Start the full stack (postgres, redis, mailpit, s3, backend, worker, beat, web)
 	$(COMPOSE) up -d --build

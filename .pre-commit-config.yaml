@@ -18,6 +18,13 @@ repos:
         files: ^backend/
   - repo: local
     hooks:
+      # Secrets scan of the staged changes (ADR-055); `make secrets-scan` checks the whole history.
+      - id: gitleaks
+        name: secrets scan (gitleaks)
+        entry: infra/gitleaks-staged.sh
+        language: script
+        pass_filenames: false
+        always_run: true
       - id: web-lint
         name: web eslint + prettier
         entry: bash -c 'cd web && npx eslint --max-warnings=0 && npx prettier --check .'

@@ -39,3 +39,5 @@ celerybeat-schedule*
 .claude/settings.local.json
 # make lan / make localhost (infra/dev-domain.sh): dev-only domain overlay
 infra/dev-domain.env
+# Local test sign-ins: never committed.
+TEST_ACCOUNTS.md
