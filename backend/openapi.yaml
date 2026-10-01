@@ -1422,6 +1422,7 @@ paths:
           - CREDIT_NOTE
           - INVOICE
           - ORDER_CONFIRMATION
+          - PURCHASE_ORDER
           - RECEIPT
           - REFUND_VOUCHER
         required: true
@@ -2584,6 +2585,7 @@ paths:
           enum:
           - SHOP
           - STAFF
+          - SUPPLIER
       - in: path
         name: channel
         schema:
@@ -3554,6 +3556,22 @@ paths:
                 items:
                   $ref: '#/components/schemas/Permission'
           description: ''
+  /api/v1/planning/stats/refresh/:
+    post:
+      operationId: planning_stats_refresh
+      description: Work the figures out again now, in the background; once every five
+        minutes.
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanningRefresh'
+          description: ''
   /api/v1/platform/audit-logs/:
     get:
       operationId: platform_audit_logs
@@ -4205,6 +4223,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Plan'
+          description: ''
+  /api/v1/platform/search/:
+    get:
+      operationId: platform_search
+      description: Distributors by name, legal name, GSTIN or web address.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: What was typed (2 to 100 characters).
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+          description: ''
+  /api/v1/platform/search/users/:
+    get:
+      operationId: platform_search_users
+      description: People across every distributor by name, email or mobile. Every
+        search is audited.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: What was typed (2 to 100 characters).
+        required: true
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserHit'
           description: ''
   /api/v1/platform/settings/registry/:
     get:
@@ -5397,6 +5462,112 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/products/{product_id}/on-order/:
+    get:
+      operationId: product_on_order
+      description: |-
+        How much of a product is on order and when it is expected: for anyone who sees orders or
+        stock (sales staff too), without suppliers or prices.
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnOrder'
+          description: ''
+  /api/v1/products/{product_id}/stats/:
+    get:
+      operationId: product_stats
+      description: A product's demand, days of stock and classes, as last worked out
+        (ADR-053 item 3).
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductStats'
+          description: ''
+        '204':
+          description: Not worked out yet
+  /api/v1/products/{product_id}/suppliers/:
+    get:
+      operationId: product_suppliers_list
+      description: |-
+        Who a product is bought from: codes, delivery times, packs and the last cost (with
+        ``costs.view``).
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplierProduct'
+          description: ''
+    put:
+      operationId: product_suppliers_set
+      description: |-
+        Who a product is bought from: codes, delivery times, packs and the last cost (with
+        ``costs.view``).
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductSuppliersRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplierProduct'
+          description: ''
   /api/v1/products/{product_id}/tax-rates/:
     get:
       operationId: catalog_product_tax_rates_list
@@ -5729,6 +5900,285 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicBranding'
           description: ''
+  /api/v1/purchase-orders/:
+    get:
+      operationId: purchase_orders_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: late
+        schema:
+          type: boolean
+          default: false
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - DRAFT
+          - SENT
+          - PARTLY_RECEIVED
+          - RECEIVED
+          - CLOSED
+          - CANCELLED
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `DRAFT` - Draft
+          * `SENT` - Sent
+          * `PARTLY_RECEIVED` - Partly received
+          * `RECEIVED` - Received
+          * `CLOSED` - Closed
+          * `CANCELLED` - Cancelled
+      - in: query
+        name: supplier
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseOrderListList'
+          description: ''
+    post:
+      operationId: purchase_orders_create
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderDetail'
+          description: ''
+  /api/v1/purchase-orders/{order_id}/:
+    get:
+      operationId: purchase_orders_get
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderDetail'
+          description: ''
+    patch:
+      operationId: purchase_orders_update
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseOrderInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderDetail'
+          description: ''
+    delete:
+      operationId: purchase_orders_delete
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/purchase-orders/{order_id}/cancel/:
+    post:
+      operationId: purchase_orders_cancel
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderCancelRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderDetail'
+          description: ''
+  /api/v1/purchase-orders/{order_id}/close/:
+    post:
+      operationId: purchase_orders_close
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderReasonRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderDetail'
+          description: ''
+  /api/v1/purchase-orders/{order_id}/pdf/:
+    get:
+      operationId: purchase_orders_pdf
+      description: |-
+        A short link to the PDF: the supplier's copy with costs for staff who can see costs, else
+        the copy without prices; 202 while it is being printed.
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/purchase-orders/{order_id}/receive/:
+    post:
+      operationId: purchase_orders_receive
+      description: |-
+        A goods-receipt draft with what is still due and the order's costs (the open draft, if one
+        is being entered already).
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetail'
+          description: ''
+  /api/v1/purchase-orders/{order_id}/send/:
+    post:
+      operationId: purchase_orders_send
+      description: 'Send to the supplier: its copy by email (when it has an address)
+        and a link to share.'
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResult'
+          description: ''
   /api/v1/receivables/:
     get:
       operationId: receivables_list
@@ -5993,6 +6443,169 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
+          description: ''
+  /api/v1/reorder-suggestions/:
+    get:
+      operationId: reorder_suggestions_list
+      parameters:
+      - in: query
+        name: basis
+        schema:
+          enum:
+          - DEMAND
+          - LOW_HISTORY
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `DEMAND` - Daily demand
+          * `LOW_HISTORY` - Little or no sales history
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - OPEN
+          - NOT_SELLING
+          type: string
+          default: OPEN
+          minLength: 1
+        description: |-
+          OPEN: to order; NOT_SELLING: below the reorder level but not selling.
+
+          * `OPEN` - OPEN
+          * `NOT_SELLING` - NOT_SELLING
+      - in: query
+        name: supplier
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReorderSuggestionList'
+          description: ''
+  /api/v1/reorder-suggestions/{suggestion_id}/:
+    get:
+      operationId: reorder_suggestions_get
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - planning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReorderSuggestion'
+          description: ''
+    patch:
+      operationId: reorder_suggestions_update
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - planning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSuggestionChangeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReorderSuggestion'
+          description: ''
+  /api/v1/reorder-suggestions/apply-reorder-levels/:
+    post:
+      operationId: reorder_suggestions_apply_levels
+      description: Use the reorder points as the products' reorder levels (audited;
+        never automatic).
+      tags:
+      - planning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionIdsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelsApplied'
+          description: ''
+  /api/v1/reorder-suggestions/create-orders/:
+    post:
+      operationId: reorder_suggestions_create_orders
+      description: Draft purchase orders from suggestions, one per preferred supplier
+        (purchasing on).
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      tags:
+      - planning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionIdsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreatedOrder'
           description: ''
   /api/v1/report-runs/:
     get:
@@ -7421,6 +8034,30 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/search/:
+    get:
+      operationId: search
+      description: |-
+        Records matching the typed text, grouped by kind, within what the person's role may see
+        (ADR-053). Never carries cost data.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: What was typed (2 to 100 characters).
+        required: true
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
           description: ''
   /api/v1/settings/bank-details/:
     get:
@@ -9405,6 +10042,11 @@ paths:
         required: true
       tags:
       - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptPostRequest'
       security:
       - jwtAuth: []
       responses:
@@ -9535,6 +10177,257 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Summary'
+          description: ''
+  /api/v1/suppliers/:
+    get:
+      operationId: suppliers_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+          nullable: true
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplierListList'
+          description: ''
+    post:
+      operationId: suppliers_create
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierDetail'
+          description: ''
+  /api/v1/suppliers/{supplier_id}/:
+    get:
+      operationId: suppliers_get
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierDetail'
+          description: ''
+    patch:
+      operationId: suppliers_update
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSupplierWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierDetail'
+          description: ''
+    delete:
+      operationId: suppliers_delete
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/suppliers/{supplier_id}/products/:
+    get:
+      operationId: supplier_products_list
+      description: |-
+        What a supplier supplies; POST makes it the preferred supplier for the products given
+        (the products list's bulk action).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplierProductList'
+          description: ''
+    post:
+      operationId: supplier_products_set_preferred
+      description: |-
+        What a supplier supplies; POST makes it the preferred supplier for the products given
+        (the products list's bulk action).
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPreferredRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferredChanged'
+          description: ''
+  /api/v1/suppliers/export/:
+    get:
+      operationId: suppliers_export
+      description: Same columns as the import template, so a file can go out, be edited
+        and come back.
+      parameters:
+      - in: query
+        name: file_type
+        schema:
+          enum:
+          - xlsx
+          - csv
+          type: string
+          default: xlsx
+          minLength: 1
+        description: |-
+          * `xlsx` - xlsx
+          * `csv` - csv
+      tags:
+      - imports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Spreadsheet download
+  /api/v1/suppliers/from-receipts/:
+    get:
+      operationId: suppliers_from_receipts
+      description: The one-time review of supplier names typed on past goods receipts.
+      tags:
+      - purchasing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReceiptSupplierName'
+          description: ''
+    post:
+      operationId: suppliers_from_receipts_confirm
+      description: The one-time review of supplier names typed on past goods receipts.
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmReceiptSuppliersRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmResult'
           description: ''
   /api/v1/tax/upcoming-rate-changes/:
     get:
@@ -9744,6 +10637,32 @@ paths:
           description: Unknown webhook address
 components:
   schemas:
+    AbcClassEnum:
+      enum:
+      - A
+      - B
+      - C
+      type: string
+      description: |-
+        * `A` - A
+        * `B` - B
+        * `C` - C
+    ActionsEnum:
+      enum:
+      - edit
+      - send
+      - delete
+      - receive
+      - cancel
+      - close
+      type: string
+      description: |-
+        * `edit` - edit
+        * `send` - send
+        * `delete` - delete
+        * `receive` - receive
+        * `cancel` - cancel
+        * `close` - close
     AdditionRequest:
       type: object
       properties:
@@ -11502,6 +12421,25 @@ components:
           minItems: 1
       required:
       - allocations
+    ConfirmReceiptSuppliersRequest:
+      type: object
+      properties:
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptSupplierChoiceRequest'
+      required:
+      - choices
+    ConfirmResult:
+      type: object
+      properties:
+        suppliers_created:
+          type: integer
+        receipts_linked:
+          type: integer
+      required:
+      - receipts_linked
+      - suppliers_created
     ConnectionStatusEnum:
       enum:
       - UNVERIFIED
@@ -11659,6 +12597,23 @@ components:
       required:
       - amount
       - count
+    CreatedOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        supplier_name:
+          type: string
+        line_count:
+          type: integer
+      required:
+      - id
+      - line_count
+      - number
+      - supplier_name
     Credit:
       type: object
       properties:
@@ -12070,16 +13025,26 @@ components:
           allOf:
           - $ref: '#/components/schemas/LowStockCounts'
           nullable: true
+        to_reorder:
+          type: integer
+          nullable: true
+          description: Open reorder suggestions (stock planning).
+        late_purchase_orders:
+          type: integer
+          nullable: true
+          description: Sent or partly received, expected before today (purchasing).
       required:
       - backorders_to_confirm
       - failed_ewaybills
       - failed_irns
       - handover
+      - late_purchase_orders
       - low_stock
       - new_orders
       - on_hold
       - overdue
       - to_pack
+      - to_reorder
     DashboardToday:
       type: object
       properties:
@@ -12344,6 +13309,21 @@ components:
       - recipient_name
       - shop_name
       - title
+    DemandRate:
+      type: object
+      description: |-
+        What shops order, as "about {quantity} a {period}": per day from 1 a day, else per week,
+        else per month. 0 a month: less than 1 a month (units that can't be split).
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        period:
+          $ref: '#/components/schemas/RatePeriodEnum'
+      required:
+      - period
+      - quantity
     DependsOn:
       type: object
       properties:
@@ -12596,6 +13576,7 @@ components:
       - RECEIPT
       - REFUND_VOUCHER
       - ORDER_CONFIRMATION
+      - PURCHASE_ORDER
       type: string
       description: |-
         * `INVOICE` - Invoice
@@ -12603,6 +13584,7 @@ components:
         * `RECEIPT` - Receipt
         * `REFUND_VOUCHER` - Refund voucher
         * `ORDER_CONFIRMATION` - Order Confirmation
+        * `PURCHASE_ORDER` - Purchase order
     DocumentLinkRow:
       type: object
       properties:
@@ -14743,6 +15725,7 @@ components:
       - DISCOUNT_RULES
       - OPENING_STOCK
       - OPENING_BALANCES
+      - SUPPLIERS
       type: string
       description: |-
         * `PRODUCTS` - Products
@@ -14752,6 +15735,7 @@ components:
         * `DISCOUNT_RULES` - Discount rules
         * `OPENING_STOCK` - Opening stock
         * `OPENING_BALANCES` - Opening balances
+        * `SUPPLIERS` - Suppliers
     ImportModeEnum:
       enum:
       - ADD_ONLY
@@ -15324,6 +16308,16 @@ components:
       required:
       - changed
       - warnings
+    LeadSourceEnum:
+      enum:
+      - PRODUCT_SUPPLIER
+      - SUPPLIER
+      - DEFAULT
+      type: string
+      description: |-
+        * `PRODUCT_SUPPLIER` - The supplier's time for this product
+        * `SUPPLIER` - The supplier's usual time
+        * `DEFAULT` - Your usual delivery time
     LedgerAdjustment:
       type: object
       properties:
@@ -15432,6 +16426,31 @@ components:
         * `PAYMENT` - PAYMENT
         * `ADJUSTMENT` - ADJUSTMENT
         * `REFUND` - REFUND
+    LevelsApplied:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
+    LineOnOrder:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+          description: The earliest.
+        late:
+          type: boolean
+      required:
+      - expected_date
+      - late
+      - quantity
     LineQuantityRequest:
       type: object
       properties:
@@ -15445,6 +16464,31 @@ components:
       required:
       - line
       - quantity
+    LinkRequest:
+      type: object
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+        is_preferred:
+          type: boolean
+          default: false
+        supplier_code:
+          type: string
+          default: ''
+          maxLength: 40
+        lead_time_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+      required:
+      - supplier_id
     LoginResponse:
       type: object
       description: One shape for every sign-in step; ``status`` says what the client
@@ -16082,6 +17126,18 @@ components:
       - reserved_after
       - unit_cost
       - value
+    MovementClassEnum:
+      enum:
+      - FAST
+      - SLOW
+      - DEAD
+      - NEW
+      type: string
+      description: |-
+        * `FAST` - Fast
+        * `SLOW` - Slow
+        * `DEAD` - Dead
+        * `NEW` - New
     MovementReferenceTypeEnum:
       enum:
       - INWARD
@@ -16128,10 +17184,12 @@ components:
       enum:
       - SHOP
       - STAFF
+      - SUPPLIER
       type: string
       description: |-
         * `SHOP` - The shop
         * `STAFF` - Staff
+        * `SUPPLIER` - The supplier
     NotificationChannelEnum:
       enum:
       - IN_APP
@@ -16153,6 +17211,7 @@ components:
       - OWNERS
       - DISPATCHER
       - REQUESTER
+      - SUPPLIER
       type: string
       description: |-
         * `SHOP` - The shop
@@ -16162,6 +17221,7 @@ components:
         * `OWNERS` - Owners
         * `DISPATCHER` - The person who dispatched
         * `REQUESTER` - The person who asked
+        * `SUPPLIER` - The supplier
     NotificationSkipReasonEnum:
       enum:
       - NO_ADDRESS
@@ -16205,6 +17265,48 @@ components:
     NullEnum:
       enum:
       - null
+    OnOrder:
+      type: object
+      description: 'Quantities and dates only: no supplier, no price (ADR-053 item
+        7).'
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+          description: The earliest.
+        late:
+          type: boolean
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OnOrderLine'
+      required:
+      - expected_date
+      - late
+      - orders
+      - quantity
+    OnOrderLine:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+        late:
+          type: boolean
+      required:
+      - expected_date
+      - late
+      - quantity
     OnboardingRequest:
       type: object
       properties:
@@ -16442,6 +17544,52 @@ components:
       - ready_qty
       - unit_code
       - unit_price
+    OrderLineInputRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        product_id:
+          type: string
+          format: uuid
+        entered_unit:
+          allOf:
+          - $ref: '#/components/schemas/EnteredUnitEnum'
+          default: BASE
+        entered_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        entered_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          nullable: true
+      required:
+      - entered_qty
+      - product_id
+    OrderReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+          nullable: true
+        status:
+          type: string
+        posted_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - number
+      - posted_at
+      - status
     OrderRef:
       type: object
       properties:
@@ -17172,6 +18320,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProductList'
+    PaginatedPurchaseOrderListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderList'
     PaginatedReceiptList:
       type: object
       required:
@@ -17210,6 +18377,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Refund'
+    PaginatedReorderSuggestionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReorderSuggestion'
     PaginatedReportRowList:
       type: object
       required:
@@ -17362,6 +18548,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StockRow'
+    PaginatedSupplierListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierList'
+    PaginatedSupplierProductList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierProduct'
     PaginatedTenantListList:
       type: object
       required:
@@ -17899,12 +19123,34 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedPurchaseOrderInputRequest:
+      type: object
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          default: ''
+          maxLength: 2000
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLineInputRequest'
     PatchedReceiptInputRequest:
       type: object
       properties:
         supplier_name:
           type: string
           maxLength: 200
+        supplier_id:
+          type: string
+          format: uuid
+          nullable: true
         supplier_ref:
           type: string
           maxLength: 60
@@ -17992,6 +19238,73 @@ components:
           type: object
           additionalProperties:
             nullable: true
+    PatchedSuggestionChangeRequest:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        dismiss:
+          type: boolean
+          default: false
+        until:
+          type: string
+          format: date
+          nullable: true
+    PatchedSupplierWriteRequest:
+      type: object
+      description: Validation of shapes only; the service checks GSTINs, phone numbers
+        and the rest.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          nullable: true
+          maxLength: 20
+        state_code:
+          type: string
+          nullable: true
+          maxLength: 2
+        contact_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          maxLength: 254
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        pincode:
+          type: string
+          maxLength: 6
+        payment_terms_days:
+          type: integer
+          maximum: 365
+          minimum: 0
+        lead_time_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+        is_active:
+          type: boolean
     PatchedTaxRateUpdateRequest:
       type: object
       properties:
@@ -18649,6 +19962,18 @@ components:
       - shops
       - staff
       - tenant_id
+    PlanningRefresh:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/PlanningRefreshStatusEnum'
+      required:
+      - status
+    PlanningRefreshStatusEnum:
+      enum:
+      - QUEUED
+      type: string
+      description: '* `QUEUED` - QUEUED'
     PlatformFailure:
       type: object
       properties:
@@ -18914,6 +20239,13 @@ components:
       - event
       - group
       - label
+    PreferredChanged:
+      type: object
+      properties:
+        changed:
+          type: integer
+      required:
+      - changed
     PreferredLanguageEnum:
       enum:
       - en
@@ -19488,6 +20820,87 @@ components:
       - code
       - id
       - name
+    ProductStats:
+      type: object
+      description: |-
+        A product's demand and classes. No money: the classes come from sales value, which sales
+        staff limited to their own shops may not see.
+      properties:
+        computed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        demand_days:
+          type: integer
+          readOnly: true
+        demand_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        per_day:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        demand_rate:
+          allOf:
+          - $ref: '#/components/schemas/DemandRate'
+          readOnly: true
+        movement_days:
+          type: integer
+          readOnly: true
+        abc_class:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AbcClassEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        movement_class:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MovementClassEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        last_sale_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        days_of_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        not_selling:
+          type: boolean
+          readOnly: true
+      required:
+      - abc_class
+      - available
+      - computed_at
+      - days_of_stock
+      - demand_days
+      - demand_qty
+      - demand_rate
+      - last_sale_date
+      - movement_class
+      - movement_days
+      - not_selling
+      - per_day
+    ProductSuppliersRequest:
+      type: object
+      properties:
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkRequest'
+      required:
+      - links
     ProductTaxRate:
       type: object
       properties:
@@ -19681,6 +21094,367 @@ components:
       - logo_url
       - primary_color
       - slug
+    PurchaseOrderCancelRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 300
+        notify_supplier:
+          type: boolean
+          default: true
+          description: 'Email the supplier that a sent order is cancelled (false:
+            staff told them).'
+    PurchaseOrderDetail:
+      type: object
+      description: Money only with ``costs.view`` (``context["costs"]``).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PurchaseOrderStatusEnum'
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_name:
+          type: string
+          readOnly: true
+        expected_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        is_late:
+          type: boolean
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: Before GST; null without costs.view.
+        revision:
+          type: integer
+          readOnly: true
+        changed_since_sent:
+          type: boolean
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        estimated_tax:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: For information only; null without costs.view.
+        supplier_snapshot:
+          readOnly: true
+        send_to_email:
+          type: string
+          readOnly: true
+          description: 'Where sending emails it: the supplier''s email now (each send
+            copies the supplier''s current details); empty when it has none.'
+        sent_by:
+          type: string
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_reason:
+          type: string
+          readOnly: true
+        pdf_status:
+          allOf:
+          - $ref: '#/components/schemas/PdfStatusEnum'
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderLine'
+          readOnly: true
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderReceipt'
+          readOnly: true
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionsEnum'
+          readOnly: true
+      required:
+      - actions
+      - changed_since_sent
+      - closed_at
+      - closed_reason
+      - created_at
+      - estimated_tax
+      - expected_date
+      - id
+      - is_late
+      - line_count
+      - lines
+      - notes
+      - number
+      - pdf_status
+      - receipts
+      - revision
+      - send_to_email
+      - sent_at
+      - sent_by
+      - status
+      - subtotal
+      - supplier_id
+      - supplier_name
+      - supplier_snapshot
+    PurchaseOrderInputRequest:
+      type: object
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          default: ''
+          maxLength: 2000
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLineInputRequest'
+      required:
+      - lines
+      - supplier_id
+    PurchaseOrderLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        line_no:
+          type: integer
+          readOnly: true
+        product_id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        supplier_code:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        pack_unit_code:
+          type: string
+          readOnly: true
+          nullable: true
+          description: The product's pack (for changing a line between units and packs).
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        entered_unit:
+          allOf:
+          - $ref: '#/components/schemas/EnteredUnitEnum'
+          readOnly: true
+        entered_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        entered_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          nullable: true
+          readOnly: true
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        qty_received:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_cancelled:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+      required:
+      - due
+      - entered_cost
+      - entered_qty
+      - entered_unit
+      - gst_rate
+      - id
+      - line_no
+      - line_total
+      - pack_size
+      - pack_unit_code
+      - product_code
+      - product_id
+      - product_name
+      - qty_cancelled
+      - qty_received
+      - quantity
+      - supplier_code
+      - unit_code
+      - unit_cost
+    PurchaseOrderList:
+      type: object
+      description: Money only with ``costs.view`` (``context["costs"]``).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PurchaseOrderStatusEnum'
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_name:
+          type: string
+          readOnly: true
+        expected_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        is_late:
+          type: boolean
+          readOnly: true
+        line_count:
+          type: integer
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: Before GST; null without costs.view.
+        revision:
+          type: integer
+          readOnly: true
+        changed_since_sent:
+          type: boolean
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - changed_since_sent
+      - created_at
+      - expected_date
+      - id
+      - is_late
+      - line_count
+      - number
+      - revision
+      - sent_at
+      - status
+      - subtotal
+      - supplier_id
+      - supplier_name
+    PurchaseOrderReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 300
+    PurchaseOrderStatusEnum:
+      enum:
+      - DRAFT
+      - SENT
+      - PARTLY_RECEIVED
+      - RECEIVED
+      - CLOSED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `SENT` - Sent
+        * `PARTLY_RECEIVED` - Partly received
+        * `RECEIVED` - Received
+        * `CLOSED` - Closed
+        * `CANCELLED` - Cancelled
     QuantityRequest:
       type: object
       description: Set a cart line's quantity (0 removes it).
@@ -19938,6 +21712,16 @@ components:
       - old_rate
       - product
       - product_id
+    RatePeriodEnum:
+      enum:
+      - DAY
+      - WEEK
+      - MONTH
+      type: string
+      description: |-
+        * `DAY` - A day
+        * `WEEK` - A week
+        * `MONTH` - A month
     ReallocateRequest:
       type: object
       properties:
@@ -20008,6 +21792,20 @@ components:
         supplier_name:
           type: string
           readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        purchase_order_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        purchase_order_number:
+          type: string
+          readOnly: true
+          nullable: true
         supplier_ref:
           type: string
           readOnly: true
@@ -20061,7 +21859,10 @@ components:
       - number
       - posted_at
       - posted_by
+      - purchase_order_id
+      - purchase_order_number
       - status
+      - supplier_id
       - supplier_name
       - supplier_ref
       - total_cost
@@ -20071,6 +21872,10 @@ components:
         supplier_name:
           type: string
           maxLength: 200
+        supplier_id:
+          type: string
+          format: uuid
+          nullable: true
         supplier_ref:
           type: string
           maxLength: 60
@@ -20112,6 +21917,20 @@ components:
         supplier_name:
           type: string
           readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        purchase_order_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        purchase_order_number:
+          type: string
+          readOnly: true
+          nullable: true
         supplier_ref:
           type: string
           readOnly: true
@@ -20171,7 +21990,10 @@ components:
       - number
       - posted_at
       - posted_by
+      - purchase_order_id
+      - purchase_order_number
       - status
+      - supplier_id
       - supplier_name
       - supplier_ref
       - total_cost
@@ -20227,6 +22049,23 @@ components:
           oneOf:
           - $ref: '#/components/schemas/CostStatusEnum'
           - $ref: '#/components/schemas/NullEnum'
+        purchase_order_line_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          readOnly: true
+        received_before:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          readOnly: true
       required:
       - cost_status
       - entered_cost
@@ -20235,8 +22074,11 @@ components:
       - id
       - line_cost
       - line_no
+      - ordered
       - product
+      - purchase_order_line_id
       - quantity
+      - received_before
       - unit_cost
     ReceiptLineInputRequest:
       type: object
@@ -20264,6 +22106,13 @@ components:
       required:
       - entered_qty
       - product_id
+    ReceiptPostRequest:
+      type: object
+      properties:
+        confirm_over_receipt:
+          type: boolean
+          default: false
+          description: Receive more than ordered beyond the tolerance (needs purchasing.manage).
     ReceiptStatusEnum:
       enum:
       - DRAFT
@@ -20272,6 +22121,46 @@ components:
       description: |-
         * `DRAFT` - Draft
         * `POSTED` - Posted
+    ReceiptSupplierChoiceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        supplier_id:
+          type: string
+          format: uuid
+          nullable: true
+        new:
+          type: boolean
+          default: false
+          description: Make a new supplier with this name.
+      required:
+      - name
+    ReceiptSupplierName:
+      type: object
+      properties:
+        name:
+          type: string
+        receipts:
+          type: integer
+        last_date:
+          type: string
+          format: date
+          nullable: true
+        match_id:
+          type: string
+          format: uuid
+          nullable: true
+        match_name:
+          type: string
+      required:
+      - last_date
+      - match_id
+      - match_name
+      - name
+      - receipts
     ReceivableRow:
       type: object
       properties:
@@ -20762,6 +22651,195 @@ components:
           nullable: true
       required:
       - pause
+    ReorderSuggestion:
+      type: object
+      description: |-
+        The figures behind a suggestion, for the app to explain it in plain words. The supplier is
+        named only to staff who can see purchasing (``context["suppliers"]``); no money.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReorderSuggestionStatusEnum'
+          readOnly: true
+        product_id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        supplier_name:
+          type: string
+          nullable: true
+          readOnly: true
+        basis:
+          allOf:
+          - $ref: '#/components/schemas/ReorderSuggestionBasisEnum'
+          readOnly: true
+        computed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        demand_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        demand_days:
+          type: integer
+          readOnly: true
+        per_day:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        demand_rate:
+          allOf:
+          - $ref: '#/components/schemas/DemandRate'
+          readOnly: true
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        on_order:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        waiting:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        lead_days:
+          type: integer
+          readOnly: true
+        lead_source:
+          allOf:
+          - $ref: '#/components/schemas/LeadSourceEnum'
+          readOnly: true
+        safety_days:
+          type: integer
+          readOnly: true
+        cover_days:
+          type: integer
+          readOnly: true
+        reorder_point:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        suggested_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        to_order:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        packs:
+          type: integer
+          nullable: true
+          readOnly: true
+        days_left:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        last_sale_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+      required:
+      - available
+      - basis
+      - computed_at
+      - cover_days
+      - days_left
+      - demand_days
+      - demand_qty
+      - demand_rate
+      - id
+      - last_sale_date
+      - lead_days
+      - lead_source
+      - on_order
+      - pack_size
+      - packs
+      - per_day
+      - product_code
+      - product_id
+      - product_name
+      - quantity
+      - reorder_level
+      - reorder_point
+      - safety_days
+      - status
+      - suggested_qty
+      - supplier_id
+      - supplier_name
+      - to_order
+      - unit_code
+      - waiting
+    ReorderSuggestionBasisEnum:
+      enum:
+      - DEMAND
+      - LOW_HISTORY
+      type: string
+      description: |-
+        * `DEMAND` - Daily demand
+        * `LOW_HISTORY` - Little or no sales history
+    ReorderSuggestionStatusEnum:
+      enum:
+      - OPEN
+      - ORDERED
+      - DISMISSED
+      - RESOLVED
+      - NOT_SELLING
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `ORDERED` - Ordered
+        * `DISMISSED` - Dismissed
+        * `RESOLVED` - No longer needed
+        * `NOT_SELLING` - Below its reorder level, not selling
     RepeatResult:
       type: object
       properties:
@@ -20832,12 +22910,14 @@ components:
       - stock
       - money
       - gst
+      - purchasing
       type: string
       description: |-
         * `sales` - sales
         * `stock` - stock
         * `money` - money
         * `gst` - gst
+        * `purchasing` - purchasing
     ReportPage:
       type: object
       properties:
@@ -21666,6 +23746,86 @@ components:
         * `PRODUCT` - One product
         * `CATEGORY` - A category (and its sub-categories)
         * `BRAND` - A brand
+    SearchGroup:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SearchHitTypeEnum'
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+        more:
+          type: boolean
+          description: 'More matches than shown: offer the full list.'
+      required:
+      - hits
+      - more
+      - type
+    SearchHit:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SearchHitTypeEnum'
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          description: The record's number or name; empty for a draft.
+        detail:
+          type: string
+          description: The shop, supplier, code or owner it belongs to.
+        date:
+          type: string
+          format: date
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          type: string
+          description: The record's status code, worded by the app.
+      required:
+      - amount
+      - date
+      - detail
+      - id
+      - status
+      - title
+      - type
+    SearchHitTypeEnum:
+      enum:
+      - product
+      - shop
+      - order
+      - invoice
+      - credit_note
+      - payment
+      - refund
+      - goods_receipt
+      - adjustment
+      - staff
+      - supplier
+      - purchase_order
+      - tenant
+      type: string
+      description: |-
+        * `product` - product
+        * `shop` - shop
+        * `order` - order
+        * `invoice` - invoice
+        * `credit_note` - credit_note
+        * `payment` - payment
+        * `refund` - refund
+        * `goods_receipt` - goods_receipt
+        * `adjustment` - adjustment
+        * `staff` - staff
+        * `supplier` - supplier
+        * `purchase_order` - purchase_order
+        * `tenant` - tenant
     SearchResult:
       type: object
       description: Type-ahead row (PLAN §3.5). Stock availability joins in Phase 3.
@@ -21711,6 +23871,40 @@ components:
       - name
       - thumbnail_url
       - unit
+    SearchResults:
+      type: object
+      properties:
+        query:
+          type: string
+          description: What was searched, tidied.
+        jump:
+          allOf:
+          - $ref: '#/components/schemas/SearchHit'
+          nullable: true
+          description: The one record a typed number, GSTIN, mobile or barcode names.
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchGroup'
+      required:
+      - groups
+      - jump
+      - query
+    SendResult:
+      type: object
+      properties:
+        order:
+          $ref: '#/components/schemas/PurchaseOrderDetail'
+        share_link:
+          type: string
+          description: A link to the supplier's copy, to share.
+        emailed:
+          type: boolean
+          description: 'False: the supplier has no email address.'
+      required:
+      - emailed
+      - order
+      - share_link
     SessionPerson:
       type: object
       properties:
@@ -21745,6 +23939,18 @@ components:
       - id
       - name
       - slug
+    SetPreferredRequest:
+      type: object
+      properties:
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+          minItems: 1
+      required:
+      - product_ids
     Setting:
       type: object
       description: A registry definition with the current value; the settings UI is
@@ -22974,8 +25180,9 @@ components:
       - password
     StaffOrder:
       type: object
-      description: The distributor's view adds the credit approval (not shown to the
-        shop).
+      description: |-
+        The distributor's view adds the credit approval (not shown to the shop) and what is on
+        order for waiting lines.
       properties:
         id:
           type: string
@@ -23081,7 +25288,7 @@ components:
         lines:
           type: array
           items:
-            $ref: '#/components/schemas/OrderLine'
+            $ref: '#/components/schemas/StaffOrderLine'
           readOnly: true
         fulfilments:
           type: array
@@ -23140,6 +25347,124 @@ components:
       - status
       - tax_total
       - taxable_total
+    StaffOrderLine:
+      type: object
+      description: |-
+        Staff also see, for a waiting line, how much of the product is on order and when it is
+        expected (purchasing on; never the supplier or the price; not shown to shops yet).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        line_no:
+          type: integer
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_pending:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_backordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_allocated:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_cancelled:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_dispatched:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        qty_delivered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        ready_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Held for the shop, not yet sent.
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        on_order:
+          allOf:
+          - $ref: '#/components/schemas/LineOnOrder'
+          nullable: true
+          readOnly: true
+      required:
+      - discount_per_unit
+      - gst_rate
+      - id
+      - line_no
+      - line_total
+      - on_order
+      - product
+      - product_code
+      - product_name
+      - qty_allocated
+      - qty_backordered
+      - qty_cancelled
+      - qty_delivered
+      - qty_dispatched
+      - qty_ordered
+      - qty_pending
+      - qty_reserved
+      - ready_qty
+      - unit_code
+      - unit_price
     StaffPaymentRow:
       type: object
       description: 'The office''s list: also whether an online payment waits for review
@@ -23667,6 +25992,18 @@ components:
       - plan
       - starts_at
       - status
+    SuggestionIdsRequest:
+      type: object
+      properties:
+        suggestion_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 500
+          minItems: 1
+      required:
+      - suggestion_ids
     Summary:
       type: object
       properties:
@@ -23680,6 +26017,272 @@ components:
       required:
       - alerts
       - receipts_awaiting_cost
+    SupplierDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        state_code:
+          type: string
+          readOnly: true
+          nullable: true
+        contact_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        lead_time_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        product_count:
+          type: integer
+          readOnly: true
+        state_name:
+          type: string
+          readOnly: true
+          nullable: true
+        address_line1:
+          type: string
+          readOnly: true
+        address_line2:
+          type: string
+          readOnly: true
+        pincode:
+          type: string
+          readOnly: true
+        payment_terms_days:
+          type: integer
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_line1
+      - address_line2
+      - city
+      - code
+      - contact_name
+      - created_at
+      - email
+      - gstin
+      - id
+      - is_active
+      - lead_time_days
+      - name
+      - notes
+      - payment_terms_days
+      - phone
+      - pincode
+      - product_count
+      - state_code
+      - state_name
+      - updated_at
+    SupplierList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        gstin:
+          type: string
+          readOnly: true
+          nullable: true
+        state_code:
+          type: string
+          readOnly: true
+          nullable: true
+        contact_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        lead_time_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        product_count:
+          type: integer
+          readOnly: true
+      required:
+      - city
+      - code
+      - contact_name
+      - email
+      - gstin
+      - id
+      - is_active
+      - lead_time_days
+      - name
+      - phone
+      - product_count
+      - state_code
+    SupplierProduct:
+      type: object
+      description: '``last_unit_cost`` is left out without ``costs.view`` (``context["costs"]``).'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_code_number:
+          type: string
+          readOnly: true
+        supplier_name:
+          type: string
+          readOnly: true
+        product_id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        is_preferred:
+          type: boolean
+          readOnly: true
+        supplier_code:
+          type: string
+          readOnly: true
+        lead_time_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        pack_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        last_unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+      required:
+      - id
+      - is_preferred
+      - last_unit_cost
+      - lead_time_days
+      - pack_size
+      - product_code
+      - product_id
+      - product_name
+      - supplier_code
+      - supplier_code_number
+      - supplier_id
+      - supplier_name
+    SupplierWriteRequest:
+      type: object
+      description: Validation of shapes only; the service checks GSTINs, phone numbers
+        and the rest.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        gstin:
+          type: string
+          nullable: true
+          maxLength: 20
+        state_code:
+          type: string
+          nullable: true
+          maxLength: 2
+        contact_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          maxLength: 254
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        pincode:
+          type: string
+          maxLength: 6
+        payment_terms_days:
+          type: integer
+          maximum: 365
+          minimum: 0
+        lead_time_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+        is_active:
+          type: boolean
+      required:
+      - name
     SupplyTypeEnum:
       enum:
       - INTRA
@@ -24029,6 +26632,7 @@ components:
 
             * `SHOP` - The shop
             * `STAFF` - Staff
+            * `SUPPLIER` - The supplier
         channel:
           $ref: '#/components/schemas/NotificationChannelEnum'
         subject:
@@ -24415,6 +27019,48 @@ components:
       - target_id
       - target_number
       - target_type
+    UserHit:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/UserHitKindEnum'
+        id:
+          type: string
+          format: uuid
+          description: The staff membership or the shop's login.
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        tenant_id:
+          type: string
+          format: uuid
+        tenant_name:
+          type: string
+        shop_name:
+          type: string
+        is_active:
+          type: boolean
+      required:
+      - email
+      - id
+      - is_active
+      - kind
+      - name
+      - phone
+      - shop_name
+      - tenant_id
+      - tenant_name
+    UserHitKindEnum:
+      enum:
+      - STAFF
+      - SHOP
+      type: string
+      description: |-
+        * `STAFF` - STAFF
+        * `SHOP` - SHOP
     UserTypeEnum:
       enum:
       - PLATFORM

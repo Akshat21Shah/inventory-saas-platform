@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { ProductPlanningCard } from "@/components/planning/product-planning";
 import { ErrorState } from "@/components/shared/error-state";
 import { DateText, MoneyText, QtyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
@@ -153,6 +154,7 @@ export function StockDetailPage({ productId }: { productId: string }) {
           <MovementsTable productId={product.id} withProduct={false} emptyText={t("noMovements")} />
         </section>
         <div className="space-y-6">
+          <ProductPlanningCard productId={product.id} unit={unit} />
           <ReorderLevel
             key={product.reorder_level}
             product={product}

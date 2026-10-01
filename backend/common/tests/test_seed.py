@@ -67,6 +67,21 @@ def test_seed_is_idempotent(settings):
         assert not RetailerAddress.objects.filter(distance_km__isnull=True).exists()
     with tenant_context(patel.id):
         assert not GstCredential.objects.exists() and not GatewayConfig.objects.exists()
+    # Phase 9a: purchasing and stock planning for Sharma only, with orders in every state.
+    from apps.planning.models import ProductStats, ReorderSuggestion
+    from apps.purchasing.models import PurchaseOrder, Supplier, SupplierProduct
+
+    nine = ("purchasing", "stock_planning")
+    assert all(effective_features(sharma.id)[code] for code in nine)
+    assert not any(effective_features(patel.id)[code] for code in nine)
+    with tenant_context(sharma.id):
+        assert Supplier.objects.count() == 3
+        assert not SupplierProduct.objects.filter(is_preferred=True).count() < 1
+        statuses = sorted(PurchaseOrder.objects.values_list("status", flat=True))
+        assert statuses == ["DRAFT", "PARTLY_RECEIVED", "SENT", "SENT"]
+        assert ProductStats.objects.exists() and ReorderSuggestion.objects.exists()
+    with tenant_context(patel.id):
+        assert not Supplier.objects.exists() and not ProductStats.objects.exists()
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):
@@ -175,7 +190,11 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "shop_invoice",
         "ewaybill_invoice",
         "shop_checkout",
+        "supplier",
+        "purchase_order",
+        "draft_purchase_order",
     }
+    assert ids["supplier"] and ids["purchase_order"] and ids["draft_purchase_order"]  # 9a
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]
     assert ids["invoice"] and ids["credit_note"] and ids["payment"] and ids["refund"]  # billing
@@ -194,8 +213,10 @@ def test_seed_adds_demo_stock_once(settings):
     sharma = Tenant.objects.get(slug="sharma")
     with tenant_context(sharma.id):
         assert StockAdjustment.objects.count() == 3  # opening stock, shelf count, damage
-        # Two demo receipts, and the demo orders' receipt that serves a waiting backorder.
-        assert StockInward.objects.filter(status="POSTED").count() == 3
+        # Two demo receipts, the demo orders' receipt that serves a waiting backorder, and one
+        # received against a demo purchase order (Phase 9a).
+        assert StockInward.objects.filter(status="POSTED").count() == 4
+        assert StockInward.objects.filter(purchase_order__isnull=False).count() == 1
         assert StockInward.objects.filter(status="DRAFT").count() == 1
         assert StockInward.objects.filter(cost_pending_lines__gt=0).count() == 2
         assert StockLevel.objects.filter(quantity_on_hand=0).exists()

@@ -21,6 +21,7 @@ export function FormSelect({
   id,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
+  "aria-label": label,
   value,
   onValueChange,
   options,
@@ -30,6 +31,8 @@ export function FormSelect({
   id?: string;
   "aria-describedby"?: string;
   "aria-invalid"?: boolean;
+  /** When there is no visible label (e.g. a choice in a list row). */
+  "aria-label"?: string;
   value: string;
   onValueChange: (value: string) => void;
   options: SelectOption[];
@@ -42,6 +45,7 @@ export function FormSelect({
         id={id}
         aria-describedby={describedBy}
         aria-invalid={invalid}
+        aria-label={label}
         className="min-h-10 w-full"
       >
         <SelectValue placeholder={placeholder} />

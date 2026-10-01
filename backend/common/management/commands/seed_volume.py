@@ -1,5 +1,6 @@
 """Speed-check data (ADR-050 item 13): three test distributors with 40,000, 5,000 and 5,000 orders
-over a year (``common.demo_volume``), checked with ``reconcile()`` before it commits.
+over a year (``common.demo_volume``), checked with ``reconcile()`` before it commits, then their
+suppliers, purchase orders and reorder suggestions (``common.demo_purchasing``, ADR-053).
 
 Refuses to run unless DEBUG is on. A distributor that already has orders is left alone. Staff sign
 in as owner@vol-a.example.com (and manager@, warehouse@, accounts@, sales1@ …) with the demo staff
@@ -15,6 +16,7 @@ from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
 
 from apps.platform.models import Tenant
+from common.demo_purchasing import seed_purchasing
 from common.demo_volume import TENANTS, reconcile, seed_tenant
 from common.tenancy import tenant_context
 
@@ -51,15 +53,34 @@ class Command(BaseCommand):
                 result = seed_tenant(spec, days=options["days"], progress=self.stdout.write)
                 if result is None:
                     self.stdout.write(f"{spec.slug} already has orders: left alone")
-                    continue
-                with tenant_context(Tenant.objects.get(slug=spec.slug).pk):
-                    problems = reconcile()
-                if problems:  # raising rolls the distributor back
-                    raise CommandError(f"{spec.slug} does not reconcile: " + "; ".join(problems))
-            self.stdout.write(
-                f"{spec.slug}: {result.orders} orders, {result.invoices} invoices, "
-                f"{result.credit_notes} credit notes, {result.payments} payments, "
-                f"{result.ledger_entries} ledger entries, {result.movements} stock movements; "
-                f"reconciled in {time.monotonic() - started:.0f} s"
-            )
+                else:
+                    with tenant_context(Tenant.objects.get(slug=spec.slug).pk):
+                        problems = reconcile()
+                    if problems:  # raising rolls the distributor back
+                        raise CommandError(
+                            f"{spec.slug} does not reconcile: " + "; ".join(problems)
+                        )
+                    self.stdout.write(
+                        f"{spec.slug}: {result.orders} orders, {result.invoices} invoices, "
+                        f"{result.credit_notes} credit notes, {result.payments} payments, "
+                        f"{result.ledger_entries} ledger entries, "
+                        f"{result.movements} stock movements; "
+                        f"reconciled in {time.monotonic() - started:.0f} s"
+                    )
+            self._purchasing(spec.slug)
         self.stdout.write(self.style.SUCCESS("seed_volume complete"))
+
+    def _purchasing(self, slug: str) -> None:
+        """Purchasing and stock planning (ADR-053), also for a distributor seeded before."""
+        started = time.monotonic()
+        with transaction.atomic():
+            added = seed_purchasing(Tenant.objects.get(slug=slug))
+        if added is None:
+            self.stdout.write(f"{slug} already has suppliers: purchasing left alone")
+            return
+        self.stdout.write(
+            f"{slug}: {added.suppliers} suppliers, {added.links} product links, "
+            f"{added.orders} purchase orders ({added.order_lines} lines), "
+            f"{added.receipts_linked} receipts linked, {added.suggestions} reorder suggestions "
+            f"in {time.monotonic() - started:.0f} s"
+        )

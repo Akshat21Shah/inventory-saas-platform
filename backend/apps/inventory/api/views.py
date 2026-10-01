@@ -315,6 +315,7 @@ class AlertListView(Guarded, generics.ListAPIView[StockAlert]):
 def _receipt_input(data: dict[str, Any]) -> receipts.ReceiptInput:
     return receipts.ReceiptInput(
         supplier_name=data.get("supplier_name", ""),
+        supplier_id=data.get("supplier_id"),
         supplier_ref=data.get("supplier_ref", ""),
         bill_number=data.get("bill_number", ""),
         bill_date=data.get("bill_date"),
@@ -422,13 +423,19 @@ class ReceiptPostView(Guarded):
     @extend_schema(
         operation_id="stock_receipts_post",
         tags=["inventory"],
-        request=None,
+        request=s.ReceiptPostSerializer,
         responses=s.ReceiptDetailSerializer,
         parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, True)],
     )
     @idempotent("stock.receipts.post")
     def post(self, request: Request, inward_id: UUID) -> Response:
-        receipts.post(inward_id, by=_user(request))
+        data = s.ReceiptPostSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        receipts.post(
+            inward_id,
+            by=_user(request),
+            confirm_over_receipt=data.validated_data["confirm_over_receipt"],
+        )
         return _receipt_response(request, inward_id)
 
 

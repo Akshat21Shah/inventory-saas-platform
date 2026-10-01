@@ -69,6 +69,10 @@ SAMPLE: dict[str, str] = {
     "products": "Tata Salt 1 kg, Aashirvaad Atta 5 kg",
     "title": "Diwali delivery timings",
     "message": "Orders placed after 2 PM will be delivered the next day.",
+    "supplier": "Hindustan Traders",
+    "po_number": "PO-2026-00012",
+    "revision": " (revised 2)",
+    "expected_date": "08-10-2026",
 }
 
 
@@ -85,7 +89,7 @@ class TextInput:
     locale: str
     subject: str
     body: str
-    audience: str = Audience.SHOP  # the shop's words or the office's
+    audience: str = Audience.SHOP  # the shop's words, the office's or the supplier's letter
 
 
 def _check(data: TextInput, *, platform: bool) -> None:
@@ -95,7 +99,9 @@ def _check(data: TextInput, *, platform: bool) -> None:
         raise NotFound()
     if data.audience not in event.audiences:
         errors["audience"] = [
-            "This message only goes to staff."
+            "This message only goes to the supplier."
+            if event.supplier_facing
+            else "This message only goes to staff."
             if data.audience == Audience.SHOP
             else "This message only goes to shops."
         ]

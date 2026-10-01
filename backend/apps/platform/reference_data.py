@@ -81,7 +81,17 @@ FEATURE_FLAGS = [
     ("whatsapp", "WhatsApp messages", "Send order and payment messages to retailers on WhatsApp."),
     ("batches", "Batches and expiry", "Track stock by batch number and expiry date."),
     ("multi_warehouse", "Multiple warehouses", "Keep stock in more than one warehouse."),
-    ("ai", "Smart inventory and AI", "Reorder suggestions, demand forecasts and smart search."),
+    (
+        "purchasing",
+        "Purchasing",
+        "Suppliers, purchase orders and receiving against them.",
+    ),
+    (
+        "stock_planning",
+        "Stock planning",
+        "Product demand and classes (ABC, fast and slow), and reorder suggestions.",
+    ),
+    ("ai", "AI features", "Smart search and the data assistant."),
 ]
 
 

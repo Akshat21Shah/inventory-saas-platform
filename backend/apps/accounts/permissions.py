@@ -39,6 +39,12 @@ TENANT_PERMISSIONS: tuple[PermissionDef, ...] = (
     PermissionDef("stock.view", "View stock levels and movements"),
     PermissionDef("stock.inward", "Record stock received"),
     PermissionDef("stock.adjust", "Adjust stock with a reason"),
+    # ADR-053: suppliers, purchase orders, reorder suggestions.
+    PermissionDef("purchasing.view", "View suppliers, purchase orders and reorder suggestions"),
+    PermissionDef(
+        "purchasing.manage",
+        "Manage suppliers and purchase orders, confirm over-receipts, refresh stock planning",
+    ),
     PermissionDef("orders.view", "View orders"),
     PermissionDef("orders.manage", "Accept, reject, modify and cancel orders"),
     PermissionDef("orders.create_on_behalf", "Place orders for retailers"),
@@ -99,13 +105,13 @@ _SALES = frozenset({
 })
 _WAREHOUSE = frozenset({
     "products.view", "stock.view", "stock.inward", "stock.adjust", "orders.view", "orders.fulfil",
-    "orders.allocate_backorder", "reports.stock", "dashboard.view",
+    "orders.allocate_backorder", "reports.stock", "dashboard.view", "purchasing.view",
 })
 _ACCOUNTS = frozenset({
     "products.view", "pricing.view", "costs.view", "retailers.view", "credit.manage", "stock.view",
     "orders.view", "invoices.view", "invoices.manage", "compliance.manage", "payments.view",
     "ledger.view", "payments.record", "payments.reverse", "ledger.adjust", "reports.sales",
-    "reports.financial", "dashboard.view",
+    "reports.financial", "dashboard.view", "purchasing.view",
 })
 # fmt: on
 _OWNER_ONLY = {"settings.manage", "branding.manage", "staff.manage", "audit.view"}

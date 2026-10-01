@@ -31,6 +31,10 @@ import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { useDebounced } from "@/lib/use-debounced";
+import { useListSearch } from "@/lib/list-search";
+
+import { useSupplierOptions } from "@/components/purchasing/options";
+import { supplierProductsSetPreferred } from "@/lib/api/generated/endpoints/purchasing/purchasing";
 
 import { FilterSelect, PickDialog } from "./controls";
 import { percent, useBrandOptions, useCategoryOptions } from "./options";
@@ -39,13 +43,13 @@ const ALL = "all";
 
 export function ProductsPage() {
   const t = useTranslations("catalog.products");
-  const { can } = useAuth();
+  const { can, feature } = useAuth();
   const errors = useErrorText();
   const manage = can("products.manage");
   const categories = useCategoryOptions();
   const brands = useBrandOptions();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useListSearch();
   const [category, setCategory] = useState(ALL);
   const [brand, setBrand] = useState(ALL);
   const [status, setStatus] = useState(ALL);
@@ -73,6 +77,19 @@ export function ProductsPage() {
       cursor.reset();
       setSelected(new Set());
     };
+  }
+
+  // Purchasing (ADR-053): make one supplier the preferred one for the selected products.
+  const purchasing = feature("purchasing") && can("purchasing.manage");
+  const suppliers = useSupplierOptions(purchasing);
+  async function setSupplier(supplierId: string) {
+    try {
+      const result = await supplierProductsSetPreferred(supplierId, { product_ids: [...selected] });
+      toast.success(t("supplierSet", { count: result.data.changed }));
+      setSelected(new Set());
+    } catch (err) {
+      toast.error(errors.message(err));
+    }
   }
 
   async function bulk(action: BulkActionEnum, value?: string) {
@@ -275,6 +292,15 @@ export function ProductsPage() {
                       options={brands}
                       onPick={(value) => bulk("set_brand", value)}
                     />
+                    {purchasing ? (
+                      <PickDialog
+                        trigger={t("setSupplier")}
+                        title={t("setSupplierTitle", { count: selected.size })}
+                        label={t("supplier")}
+                        options={suppliers}
+                        onPick={setSupplier}
+                      />
+                    ) : null}
                   </>
                 ),
               }

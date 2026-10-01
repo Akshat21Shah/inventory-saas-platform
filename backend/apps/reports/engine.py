@@ -34,8 +34,14 @@ MAX_PAGE_SIZE = 200
 DEFAULT_PAGE_SIZE = 50
 
 
+def module_on(feature: str) -> bool:
+    from apps.platform.selectors import is_feature_enabled
+
+    return not feature or is_feature_enabled(feature)
+
+
 def may_open(user: User, report: Report) -> bool:
-    return user_has_permission(user, report.permission)
+    return module_on(report.feature) and user_has_permission(user, report.permission)
 
 
 def available(user: User) -> list[Report]:
@@ -70,7 +76,7 @@ def scope_for(user: User, report: Report) -> Scope:
 
 
 def columns(report: Report, scope: Scope) -> tuple[Column, ...]:
-    return tuple(c for c in report.columns if scope.costs or not c.cost)
+    return tuple(c for c in report.columns if (scope.costs or not c.cost) and module_on(c.feature))
 
 
 # --- Filters ------------------------------------------------------------------------------------
@@ -184,6 +190,7 @@ LINKS = (
     "order_id",
     "payment_id",
     "user_id",
+    "supplier_id",  # ADR-053
 )
 
 

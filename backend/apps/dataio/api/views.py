@@ -19,7 +19,8 @@ from apps.accounts.models import User
 from apps.dataio import services
 from apps.dataio.api import serializers as s
 from apps.dataio.models import ImportJob
-from common.errors import NotFound
+from common.error_codes import ErrorCode
+from common.errors import DomainError, NotFound
 from common.pagination import DefaultCursorPagination
 from common.permissions import IsTenantStaff
 from common.storage import get_storage
@@ -32,15 +33,32 @@ def _user(request: Request) -> User:
     return user
 
 
+def _module_on(kind: Any) -> bool:
+    """Kinds of an optional module (e.g. suppliers, flag ``purchasing``) only while it is on."""
+    from apps.platform.selectors import is_feature_enabled
+
+    feature = getattr(kind, "feature", "")
+    return not feature or is_feature_enabled(feature)
+
+
 def _require(request: Request, kind_code: str) -> None:
-    if not _user(request).has_permission_code(services.kind_for(kind_code).permission):
+    kind = services.kind_for(kind_code)
+    if not _user(request).has_permission_code(kind.permission):
         raise PermissionDenied()
+    if not _module_on(kind):
+        raise DomainError(
+            "This module isn't switched on for your business.",
+            code=ErrorCode.MODULE_NOT_ENABLED,
+            status_code=403,
+        )
 
 
 def _allowed_kinds(request: Request) -> list[str]:
     user = _user(request)
     return [
-        code for code, kind in services.KINDS.items() if user.has_permission_code(kind.permission)
+        code
+        for code, kind in services.KINDS.items()
+        if user.has_permission_code(kind.permission) and _module_on(kind)
     ]
 
 
@@ -154,6 +172,12 @@ class ExportView(ImportView):
         params.is_valid(raise_exception=True)
         fmt = params.validated_data["file_type"]
         kind = services.kind_for(self.kind_code)
+        if not _module_on(kind):
+            raise DomainError(
+                "This module isn't switched on for your business.",
+                code=ErrorCode.MODULE_NOT_ENABLED,
+                status_code=403,
+            )
         data, content_type = services.build_export(kind, fmt, _user(request))
         return _download(data, content_type, f"{self.kind_code.lower()}.{fmt}")
 
@@ -188,3 +212,8 @@ class StockCountExportView(ExportView):
 
     kind_code = "OPENING_STOCK"
     view_permission = "stock.adjust"
+
+
+class SupplierExportView(ExportView):
+    kind_code = "SUPPLIERS"
+    view_permission = "purchasing.view"

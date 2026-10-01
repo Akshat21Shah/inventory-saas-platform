@@ -22,6 +22,7 @@ from apps.dataio.kinds.pricing import DiscountRulesKind, PriceListItemsKind, Spe
 from apps.dataio.kinds.products import ProductsKind
 from apps.dataio.kinds.retailers import RetailersKind
 from apps.dataio.kinds.stock import OpeningStockKind
+from apps.dataio.kinds.suppliers import SuppliersKind
 from apps.dataio.models import ImportJob
 from apps.dataio.parsing import FileProblem, read_sheet, synonyms_for
 from common.error_codes import ErrorCode
@@ -40,6 +41,7 @@ KINDS: dict[str, Kind] = {
     "DISCOUNT_RULES": DiscountRulesKind(),
     "OPENING_STOCK": OpeningStockKind(),
     "OPENING_BALANCES": OpeningBalancesKind(),
+    "SUPPLIERS": SuppliersKind(),
 }
 RECORD_MODES = ("ADD_ONLY", "ADD_OR_UPDATE")
 

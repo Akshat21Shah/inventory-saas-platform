@@ -10,6 +10,8 @@ import type { ReceiptLineInputRequest } from './receiptLineInputRequest';
 export interface PatchedReceiptInputRequest {
   /** @maxLength 200 */
   supplier_name?: string;
+  /** @nullable */
+  supplier_id?: string | null;
   /** @maxLength 60 */
   supplier_ref?: string;
   /** @maxLength 60 */

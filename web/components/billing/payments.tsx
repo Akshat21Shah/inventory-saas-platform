@@ -68,6 +68,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney } from "@/lib/format";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
+import { useListSearch } from "@/lib/list-search";
 
 import { PaymentsNav } from "./billing-nav";
 import { DocumentButton } from "./document-button";
@@ -200,7 +201,7 @@ export function PaymentsPage() {
   const { can, feature } = useAuth();
   const online = feature("payments");
   const cursor = useCursor();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useListSearch();
   const [mode, setMode] = useState<string>(ALL);
   const [toReview, setToReview] = useState(false);
   const [status, setStatus] = useState<string>(ALL);
@@ -1017,32 +1018,34 @@ export function HandoverPage() {
     <>
       <PageHeader title={t("title")} description={t("description")} />
       <PaymentsNav />
-      <section className="mb-6 space-y-2" aria-labelledby="per-salesman">
-        <h2 id="per-salesman" className="font-semibold">
-          {t("perSalesman")}
-        </h2>
-        {report.isLoading ? (
-          <CardSkeleton />
-        ) : report.error ? (
-          <ErrorState error={report.error} onRetry={() => void report.refetch()} />
-        ) : rows.length === 0 ? (
-          <EmptyState title={t("nothing")} description={t("nothingBody")} />
-        ) : (
-          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {rows.map((row) => (
-              <li key={row.salesman_id} className="rounded-xl border p-4 text-sm">
-                <p className="font-medium">{row.salesman_name}</p>
-                <p className="text-lg font-semibold">
-                  <MoneyText value={row.amount} />
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {t("count", { count: row.count })} · {t("oldest")} <DateText value={row.oldest} />
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Nothing with any salesman: the list below says so once. */}
+      {report.isSuccess && rows.length === 0 ? null : (
+        <section className="mb-6 space-y-2" aria-labelledby="per-salesman">
+          <h2 id="per-salesman" className="font-semibold">
+            {t("perSalesman")}
+          </h2>
+          {report.isLoading ? (
+            <CardSkeleton />
+          ) : report.error ? (
+            <ErrorState error={report.error} onRetry={() => void report.refetch()} />
+          ) : (
+            <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {rows.map((row) => (
+                <li key={row.salesman_id} className="rounded-xl border p-4 text-sm">
+                  <p className="font-medium">{row.salesman_name}</p>
+                  <p className="text-lg font-semibold">
+                    <MoneyText value={row.amount} />
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {t("count", { count: row.count })} · {t("oldest")}{" "}
+                    <DateText value={row.oldest} />
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       <DataTable
         columns={paymentColumns(paymentsT, modes).filter((c) => c.id !== "credit")}
         data={page?.results ?? []}

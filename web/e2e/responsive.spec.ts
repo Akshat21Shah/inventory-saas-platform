@@ -43,6 +43,9 @@ interface Ids {
   shop_invoice: string | null;
   ewaybill_invoice: string | null;
   shop_checkout: string | null;
+  supplier: string | null;
+  purchase_order: string | null;
+  draft_purchase_order: string | null;
 }
 
 function pages(ids: Ids) {
@@ -102,6 +105,7 @@ function pages(ids: Ids) {
     `/manage/stock/${ids.product}`,
     "/manage/stock/movements",
     "/manage/stock/alerts",
+    "/manage/stock/reorder",
     "/manage/stock/inwards",
     "/manage/stock/inwards/new",
     ...(ids.receipt ? [`/manage/stock/inwards/${ids.receipt}`] : []),
@@ -109,6 +113,20 @@ function pages(ids: Ids) {
     "/manage/stock/adjustments",
     "/manage/stock/adjustments/new",
     ...(ids.adjustment ? [`/manage/stock/adjustments/${ids.adjustment}`] : []),
+    // Purchasing (ADR-053; Sharma has it on).
+    "/manage/purchasing/orders",
+    "/manage/purchasing/orders/new",
+    ...(ids.purchase_order ? [`/manage/purchasing/orders/${ids.purchase_order}`] : []),
+    ...(ids.draft_purchase_order
+      ? [
+          `/manage/purchasing/orders/${ids.draft_purchase_order}`,
+          `/manage/purchasing/orders/${ids.draft_purchase_order}/edit`,
+        ]
+      : []),
+    "/manage/purchasing/suppliers",
+    "/manage/purchasing/suppliers/new",
+    ...(ids.supplier ? [`/manage/purchasing/suppliers/${ids.supplier}`] : []),
+    "/manage/purchasing/suppliers/from-receipts",
     "/manage/reports",
     "/manage/reports/low-stock",
     "/manage/reports/stock-valuation",
@@ -132,6 +150,7 @@ function pages(ids: Ids) {
       "collections",
       "salesperson_collections",
       "gst_summary",
+      "purchases_by_supplier",
     ].map((code) => `/manage/reports/${code}`),
     "/manage/settings/business",
     "/manage/settings/branding",
@@ -140,6 +159,8 @@ function pages(ids: Ids) {
     "/manage/settings/policies/retailers",
     "/manage/settings/policies/stock",
     "/manage/settings/policies/reports",
+    "/manage/settings/policies/planning",
+    "/manage/settings/policies/purchasing",
     "/manage/settings/features",
     "/manage/settings/staff",
     "/manage/settings/roles",
@@ -324,6 +345,21 @@ async function sweep(page: Page, base: string, all: string[], width: number, are
   return found;
 }
 
+/** Global search (ADR-053), open with results: full screen on phones, a dialog elsewhere. */
+async function searchOpen(page: Page, base: string, width: number, area: string, text: string) {
+  if (!wanted("search")) return [];
+  await page.goto(`${base}${area === "platform" ? "/platform" : "/manage"}`);
+  await page.waitForLoadState("networkidle").catch(() => undefined);
+  await page.keyboard.press("Control+K");
+  await page.getByRole("combobox", { name: "Search" }).fill(text);
+  await page.getByRole("option").first().waitFor();
+  await page.waitForTimeout(300);
+  const problems = await page.evaluate(findProblems, width < 768);
+  await page.screenshot({ path: join(SHOTS, String(width), `${area}_search.png`) });
+  await page.keyboard.press("Escape");
+  return problems.map((p) => `${width}px ${area} search: ${p.kind}: ${p.what}`);
+}
+
 async function staffPage(browser: Browser, width: number) {
   resetLimits({ emails: ["owner@sharma.example.com"] });
   const context = await browser.newContext({ viewport: { width, height: 900 } });
@@ -366,12 +402,14 @@ for (const width of WIDTHS) {
 
     const s = await staffPage(browser, width);
     problems.push(...(await sweep(s.page, origin("sharma"), staff, width, "staff")));
+    problems.push(...(await searchOpen(s.page, origin("sharma"), width, "staff", "ganesh")));
     await s.context.close();
 
     const adminContext = await browser.newContext({ viewport: { width, height: 900 } });
     const admin = await adminContext.newPage();
     await signInAsSuperAdmin(admin);
     problems.push(...(await sweep(admin, origin("admin"), platform, width, "platform")));
+    problems.push(...(await searchOpen(admin, origin("admin"), width, "platform", "sharma")));
     await adminContext.close();
 
     const r = await shopPage(browser, width);

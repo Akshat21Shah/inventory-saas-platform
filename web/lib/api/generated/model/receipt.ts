@@ -13,6 +13,12 @@ export interface Receipt {
   readonly number: string | null;
   readonly status: ReceiptStatusEnum;
   readonly supplier_name: string;
+  /** @nullable */
+  readonly supplier_id: string | null;
+  /** @nullable */
+  readonly purchase_order_id: string | null;
+  /** @nullable */
+  readonly purchase_order_number: string | null;
   readonly supplier_ref: string;
   readonly bill_number: string;
   /** @nullable */

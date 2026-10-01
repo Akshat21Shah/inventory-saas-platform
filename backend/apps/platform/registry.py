@@ -33,6 +33,8 @@ class Group(StrEnum):
     NOTIFICATIONS = "notifications"
     COMPLIANCE = "compliance"
     REPORTS = "reports"
+    PLANNING = "planning"
+    PURCHASING = "purchasing"
 
 
 class SettingType(StrEnum):
@@ -140,6 +142,16 @@ def _to_python(defn: SettingDef, value: Any) -> Any:
             )
         return value
     raise AssertionError(f"unhandled setting type {defn.type}")
+
+
+# Settings that must rise in this order: (lower, higher, the message).
+ASCENDING: tuple[tuple[str, str, str], ...] = (
+    (
+        "planning.abc_a_percent",
+        "planning.abc_b_percent",
+        "The class B share must be higher than the class A share.",
+    ),
+)
 
 
 def _check_range(defn: SettingDef, value: int | Decimal) -> None:
@@ -330,6 +342,30 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("reports.fast_share_percent", Group.REPORTS, SettingType.INT, 20,
             "The share of products that sold, from the top, counted as fast-moving.",
             min_value=5, max_value=50),
+    # --- Tenant: Stock planning (ADR-053; shown while the module is on) --------------------------
+    _tenant("planning.demand_days", Group.PLANNING, SettingType.INT, 30,
+            "Daily demand is the quantity ordered over this many days.",
+            min_value=7, max_value=180, features=("stock_planning",)),
+    _tenant("planning.safety_days", Group.PLANNING, SettingType.INT, 7,
+            "Safety stock, in days of demand, kept for late deliveries and busy weeks.",
+            min_value=0, max_value=60, features=("stock_planning",)),
+    _tenant("planning.cover_days", Group.PLANNING, SettingType.INT, 14,
+            "A suggested order covers this many days of demand after it arrives.",
+            min_value=1, max_value=120, features=("stock_planning",)),
+    _tenant("planning.default_lead_days", Group.PLANNING, SettingType.INT, 7,
+            "Days from ordering to receiving, when the supplier doesn't say.",
+            min_value=1, max_value=90, features=("stock_planning",)),
+    _tenant("planning.abc_a_percent", Group.PLANNING, SettingType.INT, 80,
+            "Class A: the top products making this share of sales value.",
+            min_value=50, max_value=95, features=("stock_planning",)),
+    _tenant("planning.abc_b_percent", Group.PLANNING, SettingType.INT, 95,
+            "Class B: the next products, up to this share of sales value; the rest are C.",
+            min_value=60, max_value=99, features=("stock_planning",)),
+    # --- Tenant: Purchasing (ADR-053; shown while the module is on) -----------------------------
+    _tenant("purchasing.over_receipt_tolerance_percent", Group.PURCHASING, SettingType.INT, 10,
+            "Receiving more than ordered is accepted up to this share over the order; beyond it, "
+            "someone who manages purchasing must confirm.",
+            min_value=0, max_value=100, features=("purchasing",)),
     # --- Tenant: Security (ADR-030) -------------------------------------------------------------
     _tenant("security.require_staff_2fa", Group.SECURITY, SettingType.BOOL, False,
             "Require every staff member to set up two-step verification (an authenticator app) "

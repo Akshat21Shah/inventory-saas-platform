@@ -31,4 +31,14 @@ export interface DashboardAction {
   /** Overdue receivables. */
   overdue: ShopsAmount | null;
   low_stock: LowStockCounts | null;
+  /**
+     * Open reorder suggestions (stock planning).
+     * @nullable
+     */
+  to_reorder: number | null;
+  /**
+     * Sent or partly received, expected before today (purchasing).
+     * @nullable
+     */
+  late_purchase_orders: number | null;
 }

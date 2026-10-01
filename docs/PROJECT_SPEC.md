@@ -1,8 +1,9 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.8. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.9. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.9 (2026-10-01)** — Phase 9 split into 9a–9e with staging after 9a and an after-launch list; Phase 9a plan (ADR-053): global search (core, always on), nightly product stats with ABC and movement classes, suppliers and purchase orders (flag `purchasing`), receiving against purchase orders with an over-receipt tolerance, reorder suggestions that explain themselves (flag `stock_planning`), quantity on order visible to staff; Platform Support role and the Tally / GSTR-1 JSON files in Phase 10.
 - **1.8 (2026-09-30)** — Phase 8 plan (ADR-050): one report framework with permissions and own-shop scope built in; "Orders received" and "Billed" on the dashboard; the salesperson recorded on each order and the cost on each invoice line (margins); fast / slow / dead / new stock; the GST summary workbook for a month or a quarter; background exports with a "Report ready" message; the Tally export designed and on the backlog.
 - **1.7 (2026-09-29)** — Phase 7 plan (ADR-049): turnover band setting; IRNs for B2B invoices and their credit notes only; IRN cancellation re-issues a corrected invoice (default) or takes the goods back; e-way bill thresholds between states and within the state, distance per shop address; one active online checkout per bill; WhatsApp template approval status.
 - **1.6 (2026-09-29)** — Phase 6 plan (ADR-048): WhatsApp opt-in consent, compulsory events, secure document links, quiet hours, payment-reminder cadence and pauses, handover reminders, GST rate-change warning job, per-tenant WhatsApp sender, WhatsApp cost estimate.
@@ -51,7 +52,7 @@ A SaaS platform owned by our company. Distributors/dealers subscribe to run thei
 
 ### Platform level
 - **Super Admin**: full access to everything, all tenants, platform settings, plans, feature flags, impersonation (audited).
-- **Platform Support** (later): read-only cross-tenant access + impersonation with approval.
+- **Platform Support** (Phase 10): read-only cross-tenant access + impersonation with approval.
 
 ### Distributor level
 | Permission area | Owner/Admin | Manager | Sales | Warehouse | Accounts |
@@ -219,7 +220,8 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
 - Availability label shown to retailers: `In stock`, `Low stock` (optional), `Available on backorder`, `Out of stock`. Exact quantity only if tenant setting allows. A tenant setting hides out-of-stock products instead (default: shown).
 - Reports: low stock (with a count of active products that have no reorder level, linking to them), and stock valuation (quantity × cost price, category and brand totals; products without a cost price marked and excluded from totals), with Excel export.
 - Fast entry on phones and tablets: product search, typed or scanner (USB/Bluetooth) barcodes, and the phone camera where the browser supports it.
-- Later (feature-flagged): batches & expiry, stock transfers, purchase orders & suppliers.
+- Purchasing (flag `purchasing`, Phase 9a, ADR-053): suppliers (with an Excel import), several suppliers per product with one preferred, purchase orders (draft, sent, partly received, received, closed, cancelled) emailed to the supplier as a PDF with a share link, prices before GST with GST estimated for information. Receiving against a purchase order fills in a goods receipt with what is still due and the order's costs; more than ordered is accepted up to a tolerance (setting, 10%), above it only with a manager's confirmation. Staff who see orders or stock see a product's quantity on order and expected date, without supplier or price.
+- Later (after launch, feature-flagged): batches & expiry, multi-warehouse and stock transfers.
 
 ### 5.8 Cart & orders
 **Cart** (server-side, per retailer): add/update/remove lines; server returns resolved prices, tax estimate, availability and backorder split per line, totals, credit status.
@@ -332,8 +334,8 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - **Super admin dashboard**: see 5.1.
 
 ### 5.15 Smart inventory & AI (later phases, feature-flagged)
-- Reorder suggestions from sales velocity (moving average), lead time and safety stock.
-- ABC analysis; fast/slow/dead stock classification.
+- Reorder suggestions from daily demand (quantity ordered over a set window), lead time and safety stock, each explained in plain words ("sold 120 in 30 days, 9 days of stock left, supplier takes 7 days"); staff change, dismiss or turn them into purchase orders, and can use the reorder point as the reorder level. No AI needed (flag `stock_planning`, Phase 9a).
+- ABC analysis; fast/slow/dead/new stock classification, kept per product by a nightly job (Phase 9a).
 - Demand forecasting (seasonality-aware) — may be a separate Python service if models grow heavy.
 - Natural-language / semantic product search for retailers (pgvector embeddings), tolerant of spelling and Hindi/English mix.
 - Distributor assistant: ask questions of their own data ("which retailers haven't ordered in 30 days?") using an LLM with tool calls over safe, tenant-scoped read-only query functions (never raw SQL from the model).
@@ -346,6 +348,11 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 
 ---
 
+
+### 5.17 Global search (Phase 9a, ADR-053; always on)
+- One search bar in the distributor panel and the super admin area: Ctrl/Cmd+K on laptops, a search icon opening a full-screen search on phones. Results as you type, grouped by type, keyboard navigation, and recent searches.
+- Distributor: products (name, code, barcode), shops (name, owner, mobile, GSTIN), orders, invoices, credit notes, receipts, payments (reference, cheque number), refunds, goods receipts, adjustments, staff, suppliers and purchase orders, and pages and settings by name. Super admin: distributors (name, legal name, GSTIN, web address), platform pages and settings; users across distributors only through the audited path.
+- A document number, GSTIN or 10-digit mobile goes straight to its match. Every result respects the user's permissions and the sales-visibility rule; results never show costs.
 ## 6. Data model outline (starting point, refine in Phase 0 plan)
 
 Platform: `Tenant`, `TenantProfile`, `TenantSetting` (overrides of the settings registry), `PlatformSetting`, `TenantBranding`, `Plan`, `Subscription`, `FeatureFlag`, `TenantFeature`, `TaxRate`, `CessType`, `HsnRateHint`
@@ -462,12 +469,18 @@ GSP adapter with e-invoice (IRN, QR on PDF, cancel) and e-way bill; payment gate
 Distributor action dashboard, full report set with export, super admin platform dashboard, GST summary reports.
 **Accept when:** reports on seeded data of 50k orders load within targets (heavy ones async with download link).
 
-### Phase 9 — Smart inventory & AI
-Reorder suggestions, ABC and movement classification, semantic search, distributor data assistant, re-engagement insights, (optional) batches/expiry, multi-warehouse, suppliers & purchase orders.
-**Accept when:** features are flag-gated, tenant-scoped, usage-tracked, and degrade gracefully if the AI provider is down.
+### Phase 9 — Smart inventory, purchasing & AI (split, ADR-053)
+- **9a** — global search; product stats (ABC, movement classes); suppliers and purchase orders; reorder suggestions.
+- **9a+** — staging on AWS Mumbai for a pilot distributor (sandbox providers, test banner, pilot-ready seed, runbook).
+- **9b** — re-engagement insights, daily owner summary, free-goods schemes.
+- **9c** — delivery confirmation and code, shop return requests, cheque bounce charge.
+- **9d** — AI foundation (provider abstraction, usage and limits) and semantic search.
+- **9e** — distributor data assistant (tool calling over safe read-only functions, logged, with an evaluation set in CI).
+- **After launch:** multi-warehouse and transfers, batches and expiry, manufacturing, demand forecasting, supplier-bill photo reading, convenience fee, own WhatsApp number and templates, saved filters and scheduled reports.
+**Accept when:** each sub-phase is flag-gated where optional, tenant-scoped and independently mergeable; AI features are usage-tracked and degrade gracefully if the provider is down.
 
 ### Phase 10 — Hardening & launch
-Hindi/Marathi translations, accessibility pass, performance/load testing, security review (dependency audit, permission review, pen-test checklist), backup-restore drill, runbooks, production deployment, subscription enforcement ready to switch on.
+Hindi/Marathi translations, accessibility pass, performance/load testing, security review (dependency audit, permission review, pen-test checklist), backup-restore drill, runbooks, production deployment, subscription enforcement ready to switch on, the Platform Support role, and (with the CA review) the Tally export and the GSTR-1 JSON.
 
 ### Phase 11 — Android app
 Expo app for retailers (and later distributor staff) using the generated API client: OTP login, catalog, cart, orders, invoices, payments, push notifications (FCM), tenant branding applied at runtime from the server. Single app on Play Store; branded builds per tenant as a future option.

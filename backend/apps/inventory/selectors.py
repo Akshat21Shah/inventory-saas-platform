@@ -176,7 +176,7 @@ def movements(filters: MovementFilters | None = None) -> QuerySet[StockMovement]
 
 def receipts(*, status: str = "", awaiting_cost: bool = False) -> QuerySet[StockInward]:
     qs: QuerySet[StockInward] = StockInward.objects.select_related(
-        "posted_by", "created_by"
+        "posted_by", "created_by", "purchase_order"
     ).annotate(line_count=Count("lines"))
     if status:
         qs = qs.filter(status=status)
@@ -188,7 +188,9 @@ def receipts(*, status: str = "", awaiting_cost: bool = False) -> QuerySet[Stock
 def receipt(inward_id: UUID) -> StockInward | None:
     found: StockInward | None = (
         receipts()
-        .prefetch_related("lines__product__unit", "lines__product__pack_unit")
+        .prefetch_related(
+            "lines__product__unit", "lines__product__pack_unit", "lines__purchase_order_line"
+        )
         .filter(pk=inward_id)
         .first()
     )

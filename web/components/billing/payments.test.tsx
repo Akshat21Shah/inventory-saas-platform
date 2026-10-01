@@ -226,6 +226,20 @@ describe("Collections to hand over", () => {
   });
 });
 
+describe("Collections to hand over, when there are none", () => {
+  it("says so once", async () => {
+    permissions.add("payments.record");
+    mockApi({
+      "/api/v1/reports/collections-pending-handover/": () => [200, []],
+      "/api/v1/payments/": () => [200, { next: null, previous: null, results: [] }],
+    });
+    renderWithIntl(<HandoverPage />);
+    expect(await screen.findByText("Nothing to hand over")).toBeVisible();
+    await waitFor(() => expect(screen.getAllByText("Nothing to hand over")).toHaveLength(1));
+    expect(screen.queryByRole("heading", { name: "With each salesman" })).toBeNull();
+  });
+});
+
 describe("Receivables", () => {
   it("switches the ageing between days since the bill and days past due", async () => {
     permissions.add("ledger.view");

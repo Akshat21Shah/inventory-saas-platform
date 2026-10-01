@@ -9,6 +9,7 @@
 /**
  * * `SHOP` - The shop
  * * `STAFF` - Staff
+ * * `SUPPLIER` - The supplier
  */
 export type NotificationAudienceEnum = typeof NotificationAudienceEnum[keyof typeof NotificationAudienceEnum];
 
@@ -16,4 +17,5 @@ export type NotificationAudienceEnum = typeof NotificationAudienceEnum[keyof typ
 export const NotificationAudienceEnum = {
   SHOP: 'SHOP',
   STAFF: 'STAFF',
+  SUPPLIER: 'SUPPLIER',
 } as const;

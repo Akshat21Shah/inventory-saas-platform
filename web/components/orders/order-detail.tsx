@@ -597,6 +597,21 @@ export function StaffOrderPage({ orderId }: { orderId: string }) {
                       <MoneyText value={line.line_total} className="font-medium" />
                     </div>
                     <LineBreakdown line={line} />
+                    {line.on_order ? (
+                      <p className="text-xs">
+                        {t("onOrder", {
+                          qty: formatQty(line.on_order.quantity),
+                          unit: line.unit_code,
+                        })}
+                        {line.on_order.expected_date ? (
+                          <>
+                            {" "}
+                            {t("expectedOn")} <DateText value={line.on_order.expected_date} />
+                          </>
+                        ) : null}
+                        {line.on_order.late ? ` · ${t("late")}` : ""}
+                      </p>
+                    ) : null}
                     {waiting && line.qty_backordered !== ZERO && can("orders.manage") ? (
                       <ConfirmDialog
                         trigger={

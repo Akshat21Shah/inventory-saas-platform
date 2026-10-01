@@ -99,3 +99,35 @@ def test_the_export_check_makes_each_export_as_the_worker_does(year, capsys):
         assert measured["rows"] > 0 and measured["file_mb"] > 0 and measured["peak_mb"] > 0
     with tenant_context(year[0].pk):
         assert not ReportRun.objects.exists()  # a measurement leaves nothing behind
+
+
+def test_purchasing_and_planning_on_the_volume_data(year, capsys):
+    """ADR-053 (9a.8): suppliers, product links, received and open purchase orders, past
+    receipts linked, stats and reorder suggestions; then the 9a speed check runs on it."""
+    from apps.inventory.models import StockInward
+    from apps.planning.models import ProductStats
+    from apps.purchasing.models import PurchaseOrder, Supplier, SupplierProduct
+    from common.demo_purchasing import seed_purchasing
+
+    tenant, _result = year
+    added = seed_purchasing(tenant)
+    assert added is not None and added.suppliers == 8
+    with tenant_context(tenant.pk):
+        products = SupplierProduct.objects.filter(is_preferred=True).count()
+        assert products == ProductStats.objects.count() == 60  # every product
+        assert Supplier.objects.count() == 8
+        statuses = set(PurchaseOrder.objects.values_list("status", flat=True))
+        assert {"RECEIVED", "SENT", "PARTLY_RECEIVED", "DRAFT"} <= statuses
+        posted = StockInward.objects.filter(status="POSTED")
+        assert posted.filter(supplier__isnull=True).count() == 0 < posted.count()
+    assert seed_purchasing(tenant) is None  # a second run adds nothing
+    owner = client_for(tenant, User.objects.get(email="owner@vol-t.example.com"))
+    action = owner.get("/api/v1/dashboard/").json()["action"]
+    assert action["to_reorder"] == added.suggestions and action["late_purchase_orders"] is not None
+    call_command(
+        "perf_search", "--tenant", "vol-t", "--runs", "2", "--target-ms", "60000",
+        "--search-target-ms", "60000",
+    )  # fmt: skip
+    out = capsys.readouterr().out
+    assert "search (owner): order unpadded" in out and "jump order 1" in out
+    assert "reorder suggestions" in out and "every p95 is under its target" in out

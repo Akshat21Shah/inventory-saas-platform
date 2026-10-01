@@ -155,7 +155,8 @@
     "impersonations": "Support sessions",
     "needsAttention": "need attention",
     "itemCount": "{count, plural, one {# item} other {# items}} in the cart",
-    "platformMessages": "Messages"
+    "platformMessages": "Messages",
+    "purchasing": "Purchasing"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -240,6 +241,7 @@
     "IDEMPOTENCY_KEY_REUSED": "This request was already sent with different details. Please start again.",
     "INVALID_STATE_TRANSITION": "This can't be done at the current stage.",
     "MODULE_NOT_ENABLED": "This module isn't switched on for your business. Ask us to switch it on.",
+    "OVER_RECEIPT": "More is being received than was ordered. Someone who manages purchasing must confirm it.",
     "INVALID_CREDENTIALS": "The email or password is incorrect. After several failed attempts, sign-in is paused for a few minutes.",
     "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
     "TENANT_UNAVAILABLE": "This account is currently unavailable. Please contact your distributor.",
@@ -722,6 +724,38 @@
         "label": "Fast-moving share (%)",
         "description": "The share of products that sold, counted from the top, that is called fast-moving."
       }
+    },
+    "planning": {
+      "demand_days": {
+        "label": "Demand period (days)",
+        "description": "Daily demand is what shops ordered over this many days."
+      },
+      "safety_days": {
+        "label": "Safety stock (days)",
+        "description": "Extra stock, in days of demand, kept for late deliveries and busy weeks."
+      },
+      "cover_days": {
+        "label": "Order to cover (days)",
+        "description": "A suggested order covers this many days of demand after it arrives."
+      },
+      "default_lead_days": {
+        "label": "Usual delivery time (days)",
+        "description": "Days from ordering to receiving, when the supplier's own time isn't set."
+      },
+      "abc_a_percent": {
+        "label": "Class A share (%)",
+        "description": "Class A: your top products that together make this share of sales value."
+      },
+      "abc_b_percent": {
+        "label": "Class B share (%)",
+        "description": "Class B: the next products, up to this share of sales value. The rest are class C."
+      }
+    },
+    "purchasing": {
+      "over_receipt_tolerance_percent": {
+        "label": "Receiving more than ordered (%)",
+        "description": "Up to this share over the order is accepted. Beyond it, someone who manages purchasing must confirm."
+      }
     }
   },
   "settingsForm": {
@@ -736,7 +770,9 @@
       "pricing": "Pricing",
       "notifications": "Notifications",
       "compliance": "E-invoices & e-way bills",
-      "reports": "Reports"
+      "reports": "Reports",
+      "planning": "Stock planning",
+      "purchasing": "Purchasing"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -849,6 +885,24 @@
         "ended": "Support session ended",
         "expired": "Support session expired",
         "write": "Change made in a support session"
+      },
+      "platform": {
+        "users_searched": "Searched for people across businesses"
+      },
+      "purchasing": {
+        "supplier_created": "Added a supplier",
+        "supplier_changed": "Changed a supplier",
+        "supplier_deleted": "Deleted a supplier",
+        "product_suppliers_changed": "Changed who a product is bought from",
+        "preferred_supplier_set": "Set the preferred supplier for products",
+        "receipt_suppliers_confirmed": "Linked past goods receipts to suppliers",
+        "po_created": "Created a purchase order",
+        "po_changed": "Changed a purchase order",
+        "po_deleted": "Deleted a draft purchase order",
+        "po_sent": "Sent a purchase order",
+        "po_cancelled": "Cancelled a purchase order",
+        "po_closed": "Closed a purchase order",
+        "over_receipt_confirmed": "Confirmed receiving more than ordered"
       }
     },
     "title": "Audit log",
@@ -873,6 +927,7 @@
       "impersonationsession": "Support session",
       "platformsetting": "Platform settings",
       "retailer": "Shop",
+      "supplier": "Supplier",
       "other": "Record"
     }
   },
@@ -1230,7 +1285,9 @@
         "pricing": "Pricing",
         "retailers": "Shops",
         "notifications": "Quiet hours & reminders",
-        "reports": "Reports"
+        "reports": "Reports",
+        "planning": "Stock planning",
+        "purchasing": "Purchasing"
       },
       "features": "Modules",
       "staff": "Staff",
@@ -1250,7 +1307,9 @@
       "pricing": "How discounts combine and whether they apply on top of shop special prices.",
       "retailers": "What shops on hold can do and what shops see in the app.",
       "notifications": "Quiet hours, reminders and how long bill links work.",
-      "reports": "How the reports sort products into fast, slow, dead and new stock."
+      "reports": "How the reports sort products into fast, slow, dead and new stock.",
+      "planning": "How demand, safety stock and reorder suggestions are worked out.",
+      "purchasing": "Receiving against purchase orders."
     },
     "unknownGroup": "This settings page does not exist.",
     "noSettings": "Nothing to set here yet",
@@ -1396,6 +1455,7 @@
       "retailers": "Shops",
       "credit": "Credit",
       "stock": "Stock",
+      "purchasing": "Purchasing",
       "orders": "Orders",
       "invoices": "Invoices",
       "compliance": "GST compliance",
@@ -1477,7 +1537,11 @@
       "ownBrandFilter": "Own brand",
       "allBrandTypes": "Own and traded brands",
       "ownBrandOnly": "Own brand only",
-      "tradedOnly": "Traded brands only"
+      "tradedOnly": "Traded brands only",
+      "setSupplier": "Set preferred supplier",
+      "setSupplierTitle": "{count, plural, one {Preferred supplier for # product} other {Preferred supplier for # products}}",
+      "supplier": "Supplier",
+      "supplierSet": "{count, plural, =0 {Already the preferred supplier} one {Preferred supplier set for # product} other {Preferred supplier set for # products}}"
     },
     "product": {
       "back": "All products",
@@ -1634,7 +1698,8 @@
       "PRICE_LIST_ITEMS": "Price-list prices",
       "DISCOUNT_RULES": "Discounts",
       "OPENING_STOCK": "Opening stock",
-      "OPENING_BALANCES": "Opening balances"
+      "OPENING_BALANCES": "Opening balances",
+      "SUPPLIERS": "Suppliers"
     },
     "kindHint": {
       "PRODUCTS": "Codes, names, prices, GST, categories and brands.",
@@ -1643,7 +1708,8 @@
       "PRICE_LIST_ITEMS": "Prices on your price lists, by list name and product code.",
       "DISCOUNT_RULES": "Discounts by product, brand or category, for all shops, a price list or one shop; one row per quantity slab.",
       "OPENING_STOCK": "How much of each product you have, by product code; optionally its cost. The whole file becomes one stock adjustment.",
-      "OPENING_BALANCES": "What each shop owed you (or had paid in advance) when you started, by shop mobile or code. One per shop."
+      "OPENING_BALANCES": "What each shop owed you (or had paid in advance) when you started, by shop mobile or code. One per shop.",
+      "SUPPLIERS": "The firms you buy from: name, GSTIN, contact, phone, email and delivery days. Matched by GSTIN, or by name."
     },
     "template": "Download the {kind} template",
     "modeTitle": "What should happen to rows that already exist?",
@@ -1680,7 +1746,8 @@
       "PRICE_LIST_ITEMS": "Go to price lists",
       "DISCOUNT_RULES": "Go to discounts",
       "OPENING_STOCK": "Go to stock",
-      "OPENING_BALANCES": "Go to shops"
+      "OPENING_BALANCES": "Go to shops",
+      "SUPPLIERS": "Go to suppliers"
     },
     "counts": {
       "new": "New",
@@ -2446,7 +2513,8 @@
       "movements": "Movements",
       "lowStock": "Low stock",
       "valuation": "Stock value",
-      "settings": "Settings"
+      "settings": "Settings",
+      "reorder": "Reorder suggestions"
     },
     "movementTypes": {
       "INWARD": "Goods received",
@@ -2644,7 +2712,21 @@
       "completeHelp": "Enter the cost from the supplier's bill, before GST. Quantities don't change.",
       "saveCosts": "{count, plural, =0 {Save costs} one {Save # cost} other {Save # costs}}",
       "costsSaved": "{count, plural, one {# cost saved} other {# costs saved}}",
-      "billDetails": "Supplier and bill"
+      "billDetails": "Supplier and bill",
+      "supplierFromList": "Supplier",
+      "supplierTyped": "Not in my list (type the name)",
+      "fromOrderBody": "Check what arrived against the order and change the quantities; costs come from the order.",
+      "againstOrder": "Against purchase order",
+      "orderedHint": "Ordered {ordered} {unit}, {received} received before",
+      "over": {
+        "title": "More than ordered",
+        "body": "Up to {percent}% over the order is accepted. This goes beyond it:",
+        "line": "{code}: ordered {ordered}, {before} received before, {receiving} now",
+        "canConfirm": "If the supplier really sent this much, receive it anyway.",
+        "askManager": "Change the quantities, or ask someone who manages purchasing to post this receipt.",
+        "change": "Change the quantities",
+        "confirm": "Receive anyway"
+      }
     },
     "reasons": {
       "COUNT_CORRECTION": "Stock count",
@@ -2907,7 +2989,10 @@
       },
       "documents": "Invoices and documents",
       "confirmation": "Order Confirmation",
-      "onHoldOverdue": "This shop has overdue bills, so the order waits for someone who manages credit."
+      "onHoldOverdue": "This shop has overdue bills, so the order waits for someone who manages credit.",
+      "onOrder": "On order: {qty} {unit}",
+      "expectedOn": "expected",
+      "late": "late"
     },
     "shipment": {
       "backorder": "backorder",
@@ -3671,7 +3756,9 @@
       "retailer_welcome": "Welcome message to a new shop",
       "announcement_published": "Announcement",
       "report_ready": "Report ready to download",
-      "report_failed": "Report could not be made"
+      "report_failed": "Report could not be made",
+      "purchase_order_sent": "Purchase order sent to the supplier",
+      "purchase_order_cancelled": "Purchase order cancelled (to the supplier)"
     },
     "shopEvents": {
       "order_placed": "Order received",
@@ -3709,6 +3796,7 @@
       "billing": "Bills",
       "payments": "Payments",
       "reminders": "Reminders",
+      "purchasing": "Purchasing",
       "other": "Other"
     },
     "channels": {
@@ -3733,7 +3821,8 @@
       "COLLECTOR": "The salesman who collected",
       "STAFF_PERMISSION": "Staff who can…",
       "OWNERS": "Owners",
-      "DISPATCHER": "The person who dispatched"
+      "DISPATCHER": "The person who dispatched",
+      "SUPPLIER": "The supplier"
     },
     "skip": {
       "NO_ADDRESS": "No email or mobile number",
@@ -3814,11 +3903,13 @@
       "empty": "No texts for this message",
       "audiences": {
         "SHOP": "To the shop",
-        "STAFF": "To your staff"
+        "STAFF": "To your staff",
+        "SUPPLIER": "To the supplier"
       },
       "audienceHints": {
         "SHOP": "What the shop reads, in its own words: “Your order …”.",
-        "STAFF": "What your staff read, in the office's words: “Ganesh Kirana's order …”."
+        "STAFF": "What your staff read, in the office's words: “Ganesh Kirana's order …”.",
+        "SUPPLIER": "Your email to the supplier, with a link to the purchase order."
       }
     },
     "deliveries": {
@@ -3961,7 +4052,8 @@
       "empty": "No texts for this message",
       "audiences": {
         "SHOP": "To the shop",
-        "STAFF": "To staff"
+        "STAFF": "To staff",
+        "SUPPLIER": "To the supplier"
       },
       "firstBatch": "First submission batch",
       "optional": "Optional, not submitted by default",
@@ -4240,7 +4332,8 @@
       "sales": "Sales",
       "stock": "Stock",
       "money": "Money",
-      "gst": "GST"
+      "gst": "GST",
+      "purchasing": "Purchasing"
     },
     "viewer": {
       "back": "All reports",
@@ -4300,7 +4393,22 @@
           "oldest": "Oldest order",
           "available": "Available now",
           "proposed": "Proposed to send",
+          "on_order": "On order",
+          "expected": "Expected",
           "value": "Value waiting"
+        }
+      },
+      "purchases_by_supplier": {
+        "title": "Purchases by supplier",
+        "description": "What you ordered and received from each supplier, and what is late.",
+        "columns": {
+          "supplier": "Supplier",
+          "orders_sent": "Orders sent",
+          "receipts": "Goods receipts",
+          "lines": "Lines received",
+          "value": "Value received",
+          "open_orders": "Open orders",
+          "late_orders": "Late orders"
         }
       },
       "collections": {
@@ -4671,7 +4779,10 @@
       "overdueBody": "{count, plural, one {# shop} other {# shops}}",
       "lowStock": "Low or out of stock",
       "lowStockBody": "{out, plural, =0 {none out of stock} one {# out of stock} other {# out of stock}}",
-      "clear": "All clear"
+      "clear": "All clear",
+      "toReorder": "Products to reorder",
+      "latePurchaseOrders": "Purchase orders late",
+      "latePurchaseOrdersBody": "Expected before today"
     },
     "today": {
       "title": "Today so far",
@@ -4699,5 +4810,578 @@
   },
   "usageStatus": {
     "NEAR_LIMIT": "Near a limit"
+  },
+  "search": {
+    "placeholder": "Search…",
+    "shortcut": "{mac, select, true {⌘ K} other {Ctrl K}}",
+    "open": "Search",
+    "title": "Search",
+    "description": "Find orders, bills, shops, products and more, or go to a page or setting.",
+    "label": "Search",
+    "hint": "Order or bill number, shop, mobile, GSTIN, product, page…",
+    "platformHint": "Distributor name, GSTIN, web address, page…",
+    "close": "Close",
+    "start": "Type a number, a name, a mobile or a GSTIN.",
+    "typeMore": "Type at least 2 letters or numbers.",
+    "failed": "Search isn't working right now.",
+    "retry": "Try again",
+    "results": "Results",
+    "searching": "Searching…",
+    "nothing": "Nothing found for “{text}”. Check the spelling, or type a number in full.",
+    "keys": "↑ ↓ to move · Enter to open · Esc to close",
+    "recent": "Recent searches",
+    "bestMatch": "Best match",
+    "draft": "Draft",
+    "seeAll": "See all {kind}",
+    "types": {
+      "product": "Products",
+      "shop": "Shops",
+      "order": "Orders",
+      "invoice": "Invoices",
+      "credit_note": "Credit notes",
+      "payment": "Payments",
+      "refund": "Refunds",
+      "goods_receipt": "Goods receipts",
+      "adjustment": "Stock adjustments",
+      "staff": "Staff",
+      "supplier": "Suppliers",
+      "purchase_order": "Purchase orders",
+      "tenant": "Distributors",
+      "page": "Pages",
+      "setting": "Settings",
+      "people": "People"
+    },
+    "status": {
+      "INACTIVE": "Inactive",
+      "BLOCKED": "Blocked",
+      "DRAFT": "Draft",
+      "CANCELLED": "Cancelled",
+      "REVERSED": "Reversed",
+      "BOUNCED": "Bounced",
+      "REJECTED": "Rejected"
+    },
+    "people": {
+      "find": "Find people named “{text}” across distributors",
+      "audited": "Each search is recorded in the audit log"
+    },
+    "pages": {
+      "dashboard": "Dashboard",
+      "orders": "Orders",
+      "newOrder": "Place an order for a shop",
+      "shipments": "Shipments",
+      "backorders": "Backorders",
+      "products": "Products",
+      "newProduct": "Add a product",
+      "categories": "Categories",
+      "brands": "Brands",
+      "units": "Units",
+      "retailers": "Shops",
+      "newRetailer": "Add a shop",
+      "priceLists": "Price lists",
+      "discounts": "Discounts",
+      "specialPrices": "Special prices",
+      "stock": "Stock",
+      "goodsReceipts": "Goods receipts",
+      "newGoodsReceipt": "Receive stock",
+      "adjustments": "Stock adjustments",
+      "stockAlerts": "Stock alerts",
+      "movements": "Stock movements",
+      "invoices": "Invoices",
+      "creditNotes": "Credit notes",
+      "einvoices": "E-invoices",
+      "ewaybills": "E-way bills",
+      "payments": "Payments",
+      "newPayment": "Record a payment",
+      "refunds": "Refunds",
+      "handover": "Collections handover",
+      "receivables": "Receivables",
+      "reports": "Reports",
+      "myExports": "My exports",
+      "imports": "Import from Excel",
+      "messages": "Messages",
+      "account": "My account",
+      "audit": "Audit log",
+      "businessDetails": "Business details",
+      "branding": "Branding",
+      "staff": "Staff",
+      "roles": "Roles",
+      "modules": "Modules",
+      "onlinePayments": "Online payments",
+      "messageRules": "Who gets which message",
+      "messageTexts": "Message texts",
+      "deliveryLog": "Delivery log",
+      "announcements": "Announcements",
+      "platformDashboard": "Dashboard",
+      "distributors": "Distributors",
+      "newDistributor": "Add a distributor",
+      "plans": "Plans",
+      "featureFlags": "Feature flags",
+      "taxRates": "GST rates",
+      "platformSettings": "Platform settings",
+      "platformAudit": "Audit log",
+      "supportSessions": "Support sessions",
+      "failedMessages": "Failed messages",
+      "suppliers": "Suppliers",
+      "newSupplier": "Add a supplier",
+      "suppliersFromReceipts": "Suppliers from past goods receipts",
+      "purchaseOrders": "Purchase orders",
+      "newPurchaseOrder": "New purchase order",
+      "reorderSuggestions": "Reorder suggestions",
+      "taxSettings": "Tax settings",
+      "invoicingSettings": "Invoice settings",
+      "orderSettings": "Order settings",
+      "pricingSettings": "Pricing settings",
+      "retailerSettings": "Shop settings",
+      "stockSettings": "Stock settings",
+      "creditSettings": "Credit and payment settings",
+      "reportSettings": "Report settings",
+      "planningSettings": "Stock planning settings",
+      "purchasingSettings": "Purchasing settings",
+      "securitySettings": "Security settings"
+    },
+    "keywords": {
+      "dashboard": "home, today, summary, overview",
+      "orders": "sales orders, bookings, indent",
+      "newOrder": "book an order, take an order, booking",
+      "shipments": "dispatch, delivery, challan, packing",
+      "backorders": "pending items, shortage, waiting items",
+      "products": "items, SKU, catalogue, catalog, GST rates, tax rates, HSN, MRP, barcode",
+      "categories": "groups, item groups",
+      "units": "UOM, unit of measure",
+      "retailers": "customers, parties, party, clients, outlets",
+      "newRetailer": "new customer, add a party",
+      "priceLists": "rates, rate list, rate card, price list",
+      "discounts": "offers, schemes",
+      "specialPrices": "party rates, customer rates, net rates",
+      "stock": "inventory, stock register, godown, closing stock",
+      "goodsReceipts": "GRN, inward, purchase bills, purchases",
+      "newGoodsReceipt": "GRN, inward",
+      "adjustments": "stock count, physical count, stock take, damage, wastage, write off",
+      "stockAlerts": "low stock, out of stock, reorder level",
+      "movements": "stock ledger, stock history, item ledger",
+      "reorderSuggestions": "reorder, what to buy, replenish, purchase planning",
+      "invoices": "bills, billing, sales bills, tax invoices, GST bills",
+      "creditNotes": "returns, sales returns",
+      "payments": "collections, money received, cheques, UPI",
+      "newPayment": "receive a payment, collection",
+      "refunds": "money back, refund vouchers",
+      "handover": "cash handover, salesman cash",
+      "receivables": "dues, outstanding, party ledger, ledger, statement, overdue, ageing",
+      "reports": "MIS, analysis, sales report, GSTR",
+      "imports": "Excel upload, bulk upload, CSV",
+      "messages": "notifications, inbox",
+      "businessDetails": "company, GSTIN, address, letterhead, profile",
+      "branding": "logo, colours, colors, theme",
+      "staff": "users, employees, team, salesmen",
+      "roles": "permissions, access rights",
+      "modules": "features, add-ons",
+      "onlinePayments": "Razorpay, payment gateway, UPI",
+      "messageRules": "WhatsApp, SMS, email",
+      "messageTexts": "WhatsApp, SMS, email, templates",
+      "purchaseOrders": "PO, purchase, orders to suppliers",
+      "suppliers": "vendors, companies, principals, manufacturers",
+      "einvoices": "IRN",
+      "ewaybills": "EWB",
+      "taxSettings": "GST, GST rates, tax, HSN, prices include GST, rounding",
+      "invoicingSettings": "bill numbering, invoice numbers, bill settings",
+      "orderSettings": "minimum order, order rules",
+      "creditSettings": "credit limit, dues, overdue, payment terms",
+      "securitySettings": "password, two-factor, OTP, login",
+      "planningSettings": "safety stock, lead time, delivery time, ABC",
+      "purchasingSettings": "over receipt, tolerance",
+      "distributors": "tenants, dealers, clients",
+      "plans": "subscriptions",
+      "featureFlags": "modules, features",
+      "taxRates": "GST, HSN, tax rates"
+    }
+  },
+  "purchasing": {
+    "nav": {
+      "label": "Purchasing sections",
+      "suppliers": "Suppliers",
+      "orders": "Purchase orders",
+      "suggestions": "Reorder suggestions",
+      "offTitle": "Purchasing isn't switched on",
+      "offBody": "Ask the platform team to switch on purchasing for your business."
+    },
+    "suppliers": {
+      "title": "Suppliers",
+      "description": "The firms you buy from: contacts, delivery days and what each supplies.",
+      "back": "All suppliers",
+      "search": "Search suppliers",
+      "searchPlaceholder": "Name, code, GSTIN or contact",
+      "name": "Supplier",
+      "contact": "Contact",
+      "city": "City",
+      "delivery": "Delivery",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "usualDays": "Your usual time",
+      "products": "Products",
+      "status": "Status",
+      "anyStatus": "Any status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "export": "Export",
+      "exportExcel": "Excel (.xlsx)",
+      "exportCsv": "CSV",
+      "import": "Import",
+      "add": "Add supplier",
+      "addFirst": "Add your first supplier",
+      "fromReceipts": "From past receipts",
+      "emptyTitle": "No suppliers yet",
+      "emptyBody": "Add the firms you buy from, import them from Excel, or make them from the names on your past goods receipts.",
+      "noMatchTitle": "No suppliers match",
+      "noMatchBody": "Try another name or clear the filters."
+    },
+    "supplierForm": {
+      "newTitle": "Add a supplier",
+      "newDescription": "Purchase orders are emailed to the supplier's address.",
+      "supplier": "Supplier",
+      "name": "Name",
+      "gstin": "GSTIN",
+      "gstinHint": "Leave empty for an unregistered supplier. The state comes from it.",
+      "state": "State",
+      "stateHint": "Needed when there's no GSTIN, for the GST estimate.",
+      "noState": "Not set",
+      "contactName": "Contact person",
+      "phone": "Phone",
+      "email": "Email",
+      "emailHint": "Purchase orders are sent here.",
+      "buying": "Buying",
+      "leadTime": "Delivery days",
+      "leadTimeHint": "Days from ordering to receiving. Empty: your usual delivery time.",
+      "terms": "Payment days",
+      "active": "Active",
+      "activeHint": "Inactive suppliers can't get new purchase orders.",
+      "notes": "Notes",
+      "address": "Address",
+      "line1": "Address",
+      "line2": "Address line 2",
+      "city": "City",
+      "pincode": "PIN code",
+      "cancel": "Cancel",
+      "create": "Add supplier",
+      "save": "Save changes",
+      "created": "Supplier added",
+      "saved": "Supplier saved",
+      "delete": "Delete",
+      "deleteTitle": "Delete {name}?",
+      "deleteBody": "It goes from the lists and from every product it supplied. Past goods receipts and purchase orders keep it.",
+      "deleted": "Supplier deleted"
+    },
+    "supplierProducts": {
+      "title": "What they supply",
+      "product": "Product",
+      "theirCode": "their code {code}",
+      "preferred": "Preferred",
+      "pack": "Pack",
+      "lastCost": "Last cost",
+      "emptyTitle": "No products yet",
+      "emptyBody": "Link products on a product's page, or select products in the list and choose “Set preferred supplier”."
+    },
+    "productSuppliers": {
+      "title": "Suppliers",
+      "none": "No supplier yet.",
+      "failed": "The suppliers couldn't be loaded.",
+      "retry": "Try again",
+      "preferred": "Preferred",
+      "theirCode": "their code {code}",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "packOf": "pack of",
+      "lastCost": "Last cost",
+      "edit": "Edit",
+      "editTitle": "Who this product is bought from",
+      "editBody": "The preferred supplier is used for reorder suggestions and new purchase orders.",
+      "supplier": "Supplier",
+      "chooseSupplier": "Choose a supplier",
+      "supplierCode": "Their product code",
+      "deliveryDays": "Delivery days",
+      "supplierUsual": "The supplier's usual",
+      "packSize": "Pack size",
+      "add": "Add a supplier",
+      "remove": "Remove this supplier",
+      "firstPreferred": "The first supplier will be the preferred one.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saved": "Suppliers saved"
+    },
+    "fromReceipts": {
+      "title": "Suppliers from past goods receipts",
+      "description": "The supplier names typed on your past goods receipts. Choose what each one is, and the receipts are linked to it.",
+      "back": "All suppliers",
+      "names": "Supplier names on receipts",
+      "receipts": "{count, plural, one {# goods receipt} other {# goods receipts}}",
+      "last": "last on",
+      "sameName": "Same name as your supplier {name}",
+      "choiceFor": "What is {name}?",
+      "later": "Decide later",
+      "createNew": "Make it a new supplier",
+      "linkTo": "It is {name}",
+      "confirm": "{count, plural, =0 {Nothing chosen} one {Confirm # name} other {Confirm # names}}",
+      "done": "{created, plural, =0 {} one {# supplier added, } other {# suppliers added, }}{linked, plural, one {# receipt linked} other {# receipts linked}}",
+      "emptyTitle": "Nothing to review",
+      "emptyBody": "Every goods receipt with a supplier name is linked to a supplier."
+    },
+    "orders": {
+      "title": "Purchase orders",
+      "description": "What you ordered from suppliers, what has arrived and what is late.",
+      "search": "Search purchase orders",
+      "searchPlaceholder": "PO number or supplier",
+      "number": "Order",
+      "status": "Status",
+      "expected": "Expected",
+      "late": "Late",
+      "lines": "Lines",
+      "value": "Value (before GST)",
+      "sent": "Sent",
+      "notSent": "Not sent yet",
+      "changedSinceSent": "Changed since sent",
+      "new": "New purchase order",
+      "anyStatus": "Any status",
+      "statuses": {
+        "DRAFT": "Draft",
+        "SENT": "Sent",
+        "PARTLY_RECEIVED": "Partly received",
+        "RECEIVED": "Received",
+        "CLOSED": "Closed",
+        "CANCELLED": "Cancelled"
+      },
+      "supplier": "Supplier",
+      "anySupplier": "Any supplier",
+      "arrival": "Arrival",
+      "anyArrival": "Any",
+      "onlyLate": "Late only",
+      "emptyTitle": "No purchase orders yet",
+      "emptyBody": "Create one here, or from the reorder suggestions.",
+      "noMatchTitle": "No purchase orders match",
+      "noMatchBody": "Try another number or clear the filters."
+    },
+    "editor": {
+      "allOrders": "All purchase orders",
+      "newTitle": "New purchase order",
+      "newBody": "Choose the supplier and add products. It is saved as a draft until you send it.",
+      "editTitle": "Change {number}",
+      "sentNote": "This order was sent: after saving, send it again so the supplier gets the revised copy.",
+      "supplier": "Supplier",
+      "chooseSupplier": "Choose a supplier",
+      "expected": "Expected by",
+      "expectedHint": "Empty: today plus the supplier's delivery days.",
+      "notes": "Notes for the supplier",
+      "notesHint": "Printed on the order.",
+      "linesTitle": "{count, plural, =0 {Products} one {# product} other {# products}}",
+      "emptyLines": "Scan or search for the products to order.",
+      "noLines": "Add at least one product.",
+      "already": "{name} is already on this order.",
+      "noCostNote": "Costs come from the supplier's last price, or the product's cost price.",
+      "qtyLabel": "Quantity",
+      "costLabel": "Cost, before GST",
+      "qtyFor": "Quantity of {name} in {unit}",
+      "costFor": "Cost of one {unit} of {name}, before GST",
+      "usualCost": "Usual cost",
+      "remove": "Remove {name}",
+      "cancel": "Cancel",
+      "create": "Save draft",
+      "save": "Save changes",
+      "created": "Purchase order saved as a draft",
+      "saved": "Purchase order saved",
+      "fix": "Some lines need attention."
+    },
+    "order": {
+      "product": "Product",
+      "theirCode": "their code {code}",
+      "ordered": "Ordered",
+      "received": "Received",
+      "due": "Still due",
+      "cancelledQty": "cancelled",
+      "rate": "Rate (before GST)",
+      "amount": "Amount",
+      "lines": "Lines",
+      "noLines": "No lines",
+      "summary": "Summary",
+      "status": "Status",
+      "revision": "Revised ({n})",
+      "supplier": "Supplier",
+      "expected": "Expected",
+      "sent": "Sent",
+      "subtotal": "Value before GST",
+      "estimatedTax": "GST (estimate)",
+      "taxNote": "The supplier's invoice has the actual tax; this estimate is for information.",
+      "reason": "Reason",
+      "notes": "Notes",
+      "receipts": "Goods receipts",
+      "receiptDraft": "Being entered",
+      "pdf": "PDF",
+      "pdfNoPrices": "PDF (without prices)",
+      "pdfPreparing": "The PDF is being prepared. Try again in a moment.",
+      "edit": "Edit",
+      "receive": "Receive goods",
+      "send": "Send to supplier",
+      "sendAgain": "Send again",
+      "sendTitle": "Send {number} to the supplier?",
+      "sendRevisedTitle": "Send the revised {number}?",
+      "sendBodyEmail": "It is emailed to {email}, and you get a link to share on WhatsApp.",
+      "sendBody": "You get a link to the order to share with the supplier (WhatsApp or another way).",
+      "emailed": "Sent, and emailed to the supplier",
+      "sentNoEmail": "Sent. The supplier has no email: share the link.",
+      "emailedShare": "Emailed to the supplier. You can also share the link:",
+      "noEmailShare": "The supplier has no email address. Share the link with them:",
+      "shareText": "Purchase order {number}: {link}",
+      "whatsapp": "Share on WhatsApp",
+      "copyLink": "Copy link",
+      "copied": "Link copied",
+      "copyFailed": "The link couldn't be copied",
+      "dismiss": "Done",
+      "cancel": "Cancel order",
+      "cancelTitle": "Cancel {number}?",
+      "cancelBodySent": "Nothing more will be received against it. Say why.",
+      "cancelBodyDraft": "The draft is kept as cancelled.",
+      "emailSupplier": "Email the supplier that it's cancelled (untick if you've told them)",
+      "keep": "Keep the order",
+      "cancelOrder": "Cancel order",
+      "cancelled": "Purchase order cancelled",
+      "cancelledEmailed": "Purchase order cancelled, and the supplier emailed",
+      "close": "Close the rest",
+      "closeTitle": "Close {number}?",
+      "closeBody": "What hasn't arrived won't come: it is cancelled, and the order is closed.",
+      "closed": "Purchase order closed",
+      "delete": "Delete draft",
+      "deleteTitle": "Delete the draft {number}?",
+      "deleted": "Draft deleted"
+    }
+  },
+  "purchaseOrderStatus": {
+    "DRAFT": "Draft",
+    "SENT": "Sent",
+    "PARTLY_RECEIVED": "Partly received",
+    "RECEIVED": "Received",
+    "CLOSED": "Closed",
+    "CANCELLED": "Cancelled"
+  },
+  "planning": {
+    "onOrder": {
+      "line": "On order: {qty} {unit}",
+      "expected": "expected",
+      "late": "Late"
+    },
+    "stats": {
+      "title": "Stock planning",
+      "failed": "The figures couldn't be loaded.",
+      "notYet": "Not worked out yet: they're worked out every night.",
+      "ordered": "Shops order",
+      "demandNote": "Over the last {days} days.",
+      "daysOfStock": "Stock lasts",
+      "noDemand": "Not ordered lately",
+      "abc": "Sales class",
+      "abcClasses": {
+        "A": "A: your top sellers",
+        "B": "B: steady sellers",
+        "C": "C: small sellers"
+      },
+      "noSales": "No sales lately",
+      "movement": "Movement",
+      "movementClasses": {
+        "FAST": "Fast",
+        "SLOW": "Slow",
+        "DEAD": "Not selling",
+        "NEW": "New"
+      },
+      "noMovement": "—",
+      "lastSold": "Last sold",
+      "never": "Not yet",
+      "worked": "Worked out"
+    },
+    "why": {
+      "demand": "Shops ordered {demand} {unit} in the last {days} days ({rate}).",
+      "lowHistory": "Little sales history, so this goes by the reorder level and any shops waiting.",
+      "position": "{available} {unit} available{hasWaiting, select, true {, {waiting} waiting for shops} other {}}{hasOnOrder, select, true {, {onOrder} on order} other {}}.",
+      "point": "Reorder at {point} {unit}: {lead} days to arrive ({source}) plus {safety} days of safety stock.",
+      "cover": "This order covers {cover} days after it arrives{hasWaiting, select, true { and the {waiting} {unit} shops are waiting for} other {}}.",
+      "upToLevel": "It brings stock up to the reorder level of {level} {unit}{hasWaiting, select, true {, plus the {waiting} {unit} shops are waiting for} other {}}.",
+      "pack": "Rounded up to packs of {pack} {unit}.",
+      "lead": {
+        "PRODUCT_SUPPLIER": "the supplier's time for this product",
+        "SUPPLIER": "the supplier's usual time",
+        "DEFAULT": "your usual delivery time"
+      },
+      "noRecentOrders": "No shop ordered this in the last {days} days, so this goes by the reorder level and any shops waiting.",
+      "waitingOnly": "It covers the {waiting} {unit} shops are waiting for."
+    },
+    "suggestions": {
+      "title": "Reorder suggestions",
+      "description": "What to order before it runs out, worked out every night from what shops order.",
+      "offTitle": "Stock planning isn't switched on",
+      "offBody": "Ask the platform team to switch on stock planning for your business.",
+      "search": "Search suggestions",
+      "searchPlaceholder": "Product name or code",
+      "product": "Product and why",
+      "daysLeft": "Stock lasts",
+      "shopsWaiting": "Shops waiting",
+      "atLevel": "At reorder level",
+      "supplier": "Supplier",
+      "noSupplier": "No preferred supplier",
+      "toOrder": "To order",
+      "quantityFor": "Quantity of {name} to order, in {unit}",
+      "suggested": "suggested {qty}",
+      "actions": "Actions",
+      "dismiss": "Dismiss",
+      "dismissTitle": "Dismiss the suggestion for {name}?",
+      "dismissBody": "It won't be suggested again until the date you choose (a week if you leave it empty).",
+      "until": "Until",
+      "keep": "Keep it",
+      "dismissed": "Suggestion dismissed",
+      "refresh": "Work out again now",
+      "refreshing": "Working out the figures again. They'll be here in a minute.",
+      "refreshTooSoon": "They're already being worked out. Try again in a few minutes.",
+      "basis": "Based on",
+      "anyBasis": "Anything",
+      "bases": {
+        "DEMAND": "Daily demand",
+        "LOW_HISTORY": "Little sales history"
+      },
+      "anySupplier": "Any supplier",
+      "selectPage": "Select all suggestions on this page",
+      "selectRow": "Select {name}",
+      "bulkLabel": "Selected suggestions",
+      "createOrders": "Create purchase orders",
+      "ordersCreated": "{count, plural, one {Draft purchase order {numbers} created} other {# draft purchase orders created: {numbers}}}",
+      "useAsLevels": "Use as reorder levels",
+      "levelsApplied": "{count, plural, =0 {The reorder levels were already set} one {Reorder level set for # product} other {Reorder levels set for # products}}",
+      "emptyTitle": "Nothing to reorder",
+      "emptyBody": "Every product has enough stock for now.",
+      "noMatchTitle": "No suggestions match",
+      "noMatchBody": "Try another product or clear the filters.",
+      "why": "Why this much",
+      "show": "Show",
+      "shows": {
+        "OPEN": "To order",
+        "NOT_SELLING": "Below reorder level, not selling"
+      },
+      "apartFigures": "{available} {unit} available · reorder level {level} {unit}",
+      "changeLevel": "Change the reorder level",
+      "apartEmptyTitle": "Nothing here",
+      "apartEmptyBody": "No product is below its reorder level without selling."
+    },
+    "rate": {
+      "about": "about {qty} {unit} {period, select, DAY {a day} WEEK {a week} other {a month}}",
+      "lessThanOne": "less than 1 {unit} a month"
+    },
+    "notSelling": {
+      "note": "Below its reorder level but not selling. Consider lowering the reorder level."
+    },
+    "stock": {
+      "out": "Out of stock",
+      "lessThanDay": "Less than a day",
+      "days": "{count, plural, one {About # day} other {About # days}}"
+    },
+    "headline": {
+      "order": "Order {qty} {unit}",
+      "orderPacks": "Order {qty} {unit} ({packs, plural, one {# pack} other {# packs}} of {pack})",
+      "line": "{action} · {urgency}",
+      "outOfStock": "out of stock",
+      "lessThanDay": "less than a day of stock left",
+      "daysLeft": "{count, plural, one {about # day} other {about # days}} of stock left",
+      "atLevel": "at its reorder level",
+      "waiting": "{qty} {unit} waiting"
+    }
   }
 }

@@ -15,6 +15,7 @@ export interface Text {
      *
      * * `SHOP` - The shop
      * * `STAFF` - Staff
+     * * `SUPPLIER` - The supplier
      */
   audience: NotificationAudienceEnum;
   channel: NotificationChannelEnum;

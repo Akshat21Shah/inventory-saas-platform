@@ -56,6 +56,8 @@ def action(user: User) -> dict[str, Any]:
             "handover",
             "overdue",
             "low_stock",
+            "to_reorder",
+            "late_purchase_orders",
         )
     )
     if has("orders.view"):
@@ -89,6 +91,17 @@ def action(user: User) -> dict[str, Any]:
             "low": stock.low_stock().count(),
             "out": stock.stock_list(stock.StockFilters(status=stock.StockStatus.OUT)).count(),
         }
+    # ADR-053: products to reorder (stock planning) and purchase orders late (purchasing).
+    if (has("purchasing.view") or has("stock.view")) and is_feature_enabled(
+        "stock_planning", tenant
+    ):
+        from apps.planning.selectors import open_suggestion_count
+
+        out["to_reorder"] = open_suggestion_count()
+    if has("purchasing.view") and is_feature_enabled("purchasing", tenant):
+        from apps.purchasing.selectors import OrderFilters, purchase_orders
+
+        out["late_purchase_orders"] = purchase_orders(OrderFilters(late=True)).count()
     return out
 
 

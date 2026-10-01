@@ -52,8 +52,9 @@ seed: ## Load demo data (super admin, 2 tenants: staff, 20 shops, 200 products, 
 seed-volume: ## Speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 5,000 / 5,000 orders over a year
 	$(COMPOSE) exec backend python manage.py seed_volume
 
-perf: ## Dashboard + every report's first page over the last whole month, p95 < 300 ms (after make seed-volume)
+perf: ## Dashboard + every report's first page over the last whole month (p95 < 300 ms), global search (p95 < 200 ms) and the purchasing pages (after make seed-volume)
 	$(COMPOSE) exec backend python manage.py perf_reports --last-month
+	$(COMPOSE) exec backend python manage.py perf_search
 
 perf-exports: ## The heaviest background exports: time and memory (after make seed-volume)
 	$(COMPOSE) exec backend python manage.py perf_exports
@@ -73,7 +74,7 @@ e2e: ## Playwright (starts the web dev server if not running)
 	cd web && npx playwright test
 
 e2e-stack: ## Acceptance E2E against the running stack (after make up + make seed)
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts
 
 lan: ## Open the dev stack to phones on your Wi-Fi via <lan-ip>.nip.io (undo: make localhost)
 	infra/dev-domain.sh lan

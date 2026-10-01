@@ -8,7 +8,15 @@ from uuid import UUID
 
 from django.db.models import Exists, OuterRef, Prefetch, Q, QuerySet
 
-from apps.catalog.models import Brand, Category, Product, ProductImage, ProductTaxRate, Unit
+from apps.catalog.models import (
+    Brand,
+    Category,
+    Product,
+    ProductBarcode,
+    ProductImage,
+    ProductTaxRate,
+    Unit,
+)
 from apps.platform.models import HsnRateHint
 from apps.platform.selectors import get_platform_setting
 from common.dates import today_ist
@@ -116,6 +124,19 @@ def product_list(filters: ProductFilters | None = None) -> QuerySet[Product]:
             ),
         )
     )
+
+
+EXACT_LIMIT = 5
+
+
+def exact_matches(qs: QuerySet[Product], text: str) -> list[Product]:
+    """The listed products whose code, or one of whose barcodes, is exactly ``text``: the product
+    list shows them first, as global search does (the rest stays in name order)."""
+    text = text.strip()
+    if not text:
+        return []
+    barcode = ProductBarcode.objects.filter(product=OuterRef("pk"), barcode=text)
+    return list(qs.filter(Q(code__iexact=text) | Exists(barcode))[:EXACT_LIMIT])
 
 
 def product(product_id: UUID) -> Product | None:

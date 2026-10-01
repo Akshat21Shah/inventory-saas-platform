@@ -52,6 +52,7 @@ import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { fromMilli, toMilli } from "@/lib/qty";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";
+import { useListSearch } from "@/lib/list-search";
 
 import { BillingNav } from "./billing-nav";
 import { DocumentButton } from "./document-button";
@@ -76,7 +77,7 @@ export function CreditNotesPage() {
   const kinds = useTranslations("billing.creditNoteKinds");
   const { can } = useAuth();
   const cursor = useCursor();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useListSearch();
   const [kind, setKind] = useState<string>(ALL);
   const [source, setSource] = useState<string>(ALL);
   const term = useDebounced(search.trim(), 300);

@@ -35,4 +35,16 @@ export interface ReceiptLine {
      */
   readonly line_cost: string | null;
   readonly cost_status: CostStatusEnum | NullEnum | null;
+  /** @nullable */
+  readonly purchase_order_line_id: string | null;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,11}(?:\.\d{0,3})?$
+     */
+  readonly ordered: string | null;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,11}(?:\.\d{0,3})?$
+     */
+  readonly received_before: string | null;
 }

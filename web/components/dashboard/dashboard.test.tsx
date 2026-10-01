@@ -27,6 +27,8 @@ const owner = (overrides: Partial<Body> = {}): Body => ({
     handover: { count: 1, amount: "50.00" },
     overdue: { shops: 2, amount: "1600.00" },
     low_stock: { low: 4, out: 1 },
+    to_reorder: null,
+    late_purchase_orders: null,
   },
   today: { orders_received: { count: 3, amount: "420.00" }, billed: "105.00" },
   trends: {
@@ -65,8 +67,10 @@ describe("DistributorDashboard", () => {
     expect(within(action).getByRole("link", { name: "Low or out of stock: 5" })).toHaveTextContent(
       "1 out of stock",
     );
-    // Modules off: no IRN or e-way bill tiles.
+    // Modules off: no IRN, e-way bill, reorder or purchase order tiles.
     expect(within(action).queryByText("IRNs failed")).not.toBeInTheDocument();
+    expect(within(action).queryByText("Products to reorder")).not.toBeInTheDocument();
+    expect(within(action).queryByText("Purchase orders late")).not.toBeInTheDocument();
 
     const today = screen.getByRole("region", { name: "Today so far" });
     expect(within(today).getByText("₹420.00")).toBeInTheDocument();
@@ -86,6 +90,22 @@ describe("DistributorDashboard", () => {
     );
     expect(within(trends).getByText("No sales this month yet.")).toBeInTheDocument();
     expect(within(trends).getByText("2 new shops")).toBeInTheDocument();
+  });
+
+  it("shows reorder and late purchase order tiles while their modules are on", async () => {
+    const planning = owner({
+      action: { ...owner().action, to_reorder: 6, late_purchase_orders: 2 },
+    });
+    mockApi({ "/api/v1/dashboard/": () => [200, planning] });
+    renderWithIntl(<DistributorDashboard />);
+    const action = await screen.findByRole("region", { name: "Needs action" });
+    expect(within(action).getByRole("link", { name: "Products to reorder: 6" })).toHaveAttribute(
+      "href",
+      "/manage/stock/reorder",
+    );
+    const late = within(action).getByRole("link", { name: "Purchase orders late: 2" });
+    expect(late).toHaveAttribute("href", "/manage/purchasing/orders?late=1");
+    expect(within(late).getByText("Expected before today")).toBeInTheDocument();
   });
 
   it("shows only what the role may see", async () => {

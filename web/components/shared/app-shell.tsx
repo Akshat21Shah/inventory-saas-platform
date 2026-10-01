@@ -15,6 +15,10 @@ export interface NavItem {
   href: string;
   labelKey: string; // key under "nav"
   icon: LucideIcon;
+  /** Shown only with this permission (cosmetic: the server guards every page). */
+  permission?: string;
+  /** Shown only while this optional module is on. */
+  feature?: string;
 }
 
 function isActive(pathname: string, href: string, rootHref: string) {
@@ -90,10 +94,16 @@ export function SidebarShell({
   account,
   badges,
   headerActions,
+  search,
+  searchIcon,
 }: {
   title: string;
   items: NavItem[];
   children: ReactNode;
+  /** Global search: a field above the navigation on laptops… */
+  search?: ReactNode;
+  /** …and an icon in the header on phones. */
+  searchIcon?: ReactNode;
   /** Counts shown next to nav items, by label key (e.g. open stock alerts). */
   badges?: Partial<Record<string, number>>;
   /** Next to the title (e.g. the notification bell): sidebar top on laptops, header on phones. */
@@ -115,6 +125,7 @@ export function SidebarShell({
             <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
             {headerActions}
           </div>
+          {search ? <div className="px-3 pt-1">{search}</div> : null}
           <nav aria-label={t("nav.mainNavigation")} className="flex-1 px-3 py-2">
             <NavLinks items={items} rootHref={rootHref} badges={badges} />
           </nav>
@@ -141,6 +152,7 @@ export function SidebarShell({
               </SheetContent>
             </Sheet>
             <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
+            {searchIcon}
             {headerActions}
             {account ? <div className="max-w-[50%] min-w-0">{account}</div> : null}
           </header>

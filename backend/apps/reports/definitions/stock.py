@@ -25,7 +25,7 @@ from apps.orders.models import (
     OrderLine,
     OrderStatusHistory,
 )
-from apps.platform.selectors import get_setting
+from apps.platform.selectors import get_setting, is_feature_enabled
 from apps.reports.definitions.sales import INVOICE, grouped
 from apps.reports.registry import (
     PERIOD,
@@ -558,6 +558,11 @@ def _demand(ctx: Context) -> list[dict[str, Any]]:
         .order_by()
     )
     found = {r["product_id"]: r for r in waiting}
+    on_order: dict[Any, Any] = {}
+    if is_feature_enabled("purchasing"):  # ADR-053: what is coming, and when
+        from apps.purchasing.selectors import on_order as purchasing_on_order
+
+        on_order = purchasing_on_order(list(found))
     stocked: Any = stock.with_stock(catalog_products(ProductFilters()).filter(pk__in=found))
     products = {
         p["id"]: p
@@ -577,6 +582,8 @@ def _demand(ctx: Context) -> list[dict[str, Any]]:
                 "oldest": to_ist(r["oldest"]).date() if r["oldest"] else None,
                 "available": p.get("available", ZERO),
                 "proposed": proposed.get(pk, ZERO),
+                "on_order": on_order[pk].quantity if pk in on_order else ZERO,
+                "expected": on_order[pk].expected_date if pk in on_order else None,
                 "value": r["value"],
             }
         )
@@ -601,6 +608,8 @@ register(
             Column("oldest", "Oldest order", Kind.DATE, width=12),
             Column("available", "Available now", Kind.QTY),
             Column("proposed", "Proposed to send", Kind.QTY),
+            Column("on_order", "On order", Kind.QTY, feature="purchasing"),
+            Column("expected", "Expected", Kind.DATE, width=12, feature="purchasing"),
             Column("value", "Value waiting", Kind.MONEY, total=True),
         ),
         filters=(CATEGORY, BRAND),

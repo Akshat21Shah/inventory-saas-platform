@@ -328,6 +328,36 @@ def _ewaybill(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventConte
     )
 
 
+def _purchase_order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
+    """The supplier's emails (ADR-053): sent and cancelled orders go to the supplier's address,
+    never to a person."""
+    from apps.purchasing.models import PurchaseOrder
+
+    order = (
+        PurchaseOrder.objects.select_related("supplier")
+        .filter(pk=event.payload["purchase_order_id"])
+        .first()
+    )
+    if order is None:
+        return None
+    revision = int(event.payload.get("revision") or order.revision)
+    values = {
+        **base,
+        "supplier": order.supplier.name,
+        "po_number": order.number,
+        "revision": f" (revised {revision})" if revision > 1 else "",
+        "expected_date": day(order.expected_date) if order.expected_date else "—",
+        "reason": event.payload.get("reason") or order.closed_reason,
+    }
+    return EventContext(
+        code,
+        values,
+        staff_path=f"/manage/purchasing/orders/{order.pk}",
+        document=("PURCHASE_ORDER", order.pk),
+        extra={"supplier": order.supplier},
+    )
+
+
 def _report(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
     from apps.platform.selectors import get_platform_setting
     from apps.reports.models import ReportRun
@@ -361,6 +391,7 @@ BUILDERS = {
     "payment": _payment,
     "refund": _refund,
     "stock": _stock_alert,
+    "purchase_order": _purchase_order,
 }
 
 

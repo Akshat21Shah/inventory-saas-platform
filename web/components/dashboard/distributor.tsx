@@ -2,15 +2,16 @@
 
 import {
   AlertTriangle,
+  Boxes,
   ClipboardList,
   FileWarning,
   Info,
   PackageCheck,
   PackageSearch,
   ShieldAlert,
+  ShoppingCart,
   Truck,
   Wallet,
-  Boxes,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -174,6 +175,27 @@ function useTiles(action: DashboardAction): Tile[] {
           value: action.low_stock.low + action.low_stock.out,
           detail: t("lowStockBody", { out: action.low_stock.out }),
           icon: Boxes,
+        },
+    // ADR-053: stock planning and purchasing, while their modules are on.
+    action.to_reorder === null
+      ? null
+      : {
+          key: "reorder",
+          href: "/manage/stock/reorder",
+          label: t("toReorder"),
+          value: action.to_reorder,
+          icon: ShoppingCart,
+        },
+    action.late_purchase_orders === null
+      ? null
+      : {
+          key: "latePurchaseOrders",
+          href: "/manage/purchasing/orders?late=1",
+          label: t("latePurchaseOrders"),
+          value: action.late_purchase_orders,
+          detail: t("latePurchaseOrdersBody"),
+          icon: Truck,
+          urgent: true,
         },
   ];
   return tiles.filter((tile): tile is Tile => tile !== null);

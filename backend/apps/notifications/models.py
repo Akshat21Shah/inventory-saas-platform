@@ -27,6 +27,7 @@ class Recipient(models.TextChoices):
     OWNERS = "OWNERS", "Owners"
     DISPATCHER = "DISPATCHER", "The person who dispatched"  # failed e-way bills (Phase 7)
     REQUESTER = "REQUESTER", "The person who asked"  # "Report ready" (Phase 8; system only)
+    SUPPLIER = "SUPPLIER", "The supplier"  # purchase orders, email only (ADR-053)
 
 
 class Audience(models.TextChoices):
@@ -35,6 +36,7 @@ class Audience(models.TextChoices):
 
     SHOP = "SHOP", "The shop"
     STAFF = "STAFF", "Staff"
+    SUPPLIER = "SUPPLIER", "The supplier"  # ADR-053: the distributor writing to a supplier
 
 
 class WhatsAppCategory(models.TextChoices):
@@ -55,7 +57,7 @@ class ApprovalStatus(models.TextChoices):
 
 class _TemplateFields(models.Model):
     event_code = models.CharField(max_length=40)
-    audience = models.CharField(max_length=5, choices=Audience.choices, default=Audience.SHOP)
+    audience = models.CharField(max_length=8, choices=Audience.choices, default=Audience.SHOP)
     channel = models.CharField(max_length=8, choices=Channel.choices)
     locale = models.CharField(max_length=5, default="en")
     subject = models.CharField(
@@ -156,7 +158,13 @@ class Notification(TenantScopedModel):
 
     event_id = models.UUIDField()  # the OutboxEvent
     event_code = models.CharField(max_length=40)
-    recipient = models.ForeignKey(USER, on_delete=models.CASCADE, related_name="+")
+    # A person (staff or a shop login), or a supplier, who has no login (email only, ADR-053).
+    recipient = models.ForeignKey(
+        USER, on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    supplier = models.ForeignKey(
+        "purchasing.Supplier", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
     retailer = models.ForeignKey(
         "retailers.Retailer", on_delete=models.CASCADE, null=True, blank=True, related_name="+"
     )
@@ -182,7 +190,16 @@ class Notification(TenantScopedModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["event_id", "recipient", "channel"], name="uniq_notification_delivery"
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["event_id", "supplier", "channel"],
+                condition=models.Q(supplier__isnull=False),
+                name="uniq_notification_supplier",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(recipient__isnull=False) | models.Q(supplier__isnull=False),
+                name="notification_has_recipient",
+            ),
         ]
         indexes = [
             models.Index(
@@ -239,6 +256,7 @@ class DocumentLink(TenantScopedModel):
         RECEIPT = "RECEIPT", "Receipt"
         REFUND_VOUCHER = "REFUND_VOUCHER", "Refund voucher"
         ORDER_CONFIRMATION = "ORDER_CONFIRMATION", "Order Confirmation"
+        PURCHASE_ORDER = "PURCHASE_ORDER", "Purchase order"
 
     token_hash = models.CharField(max_length=64, unique=True)
     kind = models.CharField(max_length=18, choices=Kind.choices)

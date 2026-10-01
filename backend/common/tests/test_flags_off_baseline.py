@@ -105,6 +105,18 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.invoices.results.status": "ISSUED",
     "api.shop-invoice.status": "ISSUED",
     "api.shop-invoices.results.status": "ISSUED",
+    # Phase 9a (ADR-053): no supplier on goods receipts while purchasing is off.
+    "db.inventory.StockInward.supplier_id": None,
+    "db.notifications.Notification.supplier_id": None,  # messages go to people, not suppliers
+    "api.order.lines.on_order": None,  # nothing on order while purchasing is off
+    "api.receipt.supplier_id": None,
+    "api.receipts.results.supplier_id": None,
+    # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
+    # link that was already there.
+    "db.notifications.Notification.data.attach": True,
+    "db.notifications.Notification.data.attachment": lambda v: (
+        set(v) == {"file"} and v["file"].endswith(".pdf")
+    ),
 }
 
 # Lists that may gain items since the snapshot, each new item checked by a rule (removed before
@@ -112,6 +124,21 @@ ALLOWED_NEW: dict[str, Any] = {
 ALLOWED_NEW_ITEMS: dict[str, Any] = {
     # Phase 8 (ADR-050): the fast / slow / dead stock settings, at their defaults.
     "api.settings-registry": lambda item: item.get("group") == "reports" and item["is_default"],
+    # Phase 9a (ADR-053): the purchasing permissions and the new modules, switched off.
+    "api.notification-rules.permissions": lambda item: item["code"].startswith("purchasing."),
+    "api.settings-features": lambda item: (
+        item["code"] in ("stock_planning", "purchasing") and item["enabled"] is False
+    ),
+}
+
+# Wording changed since the snapshot: (path, old value) -> new value.
+REWORDED: dict[tuple[str, Any], Any] = {
+    # Phase 9a (ADR-053): the ai module now covers only smart search and the assistant.
+    ("api.settings-features.name", "Smart inventory and AI"): "AI features",
+    (
+        "api.settings-features.description",
+        "Reorder suggestions, demand forecasts and smart search.",
+    ): "Smart search and the data assistant.",
 }
 
 # Random by design: stored as "<random>".
@@ -439,7 +466,7 @@ def _compare(before: Any, now: Any, path: str, diffs: list[str]) -> None:
             diffs.append(f"{path}: {len(before)} items before, {len(now)} now")
         for i, (b, n) in enumerate(zip(before, now, strict=False)):
             _compare(b, n, f"{path}[{i}]", diffs)
-    elif before != now:
+    elif before != now and REWORDED.get((_pattern(path), before), _MISSING) != now:
         diffs.append(f"{path}: {before!r} -> {now!r}")
 
 

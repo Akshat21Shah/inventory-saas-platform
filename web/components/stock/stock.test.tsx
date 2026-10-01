@@ -12,7 +12,8 @@ import { StockDetailPage } from "./stock-detail";
 import { StockPage } from "./stock-page";
 
 const permissions = new Set(["stock.view", "stock.inward", "stock.adjust", "costs.view"]);
-const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p) };
+// Stock planning and purchasing off: their card is tested in components/planning.
+const auth = { me: { id: "u1" }, can: (p: string) => permissions.has(p), feature: () => false };
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 const params = { value: new URLSearchParams() };
 vi.mock("next/navigation", () => ({

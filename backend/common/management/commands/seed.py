@@ -29,6 +29,7 @@ from apps.retailers.services import create_retailer
 from common.demo import seed_catalog
 from common.demo_billing import seed_billing
 from common.demo_compliance import seed_compliance
+from common.demo_purchasing import seed_demo_purchasing
 from common.tenancy import tenant_context
 
 STAFF_ROLES = ("OWNER", "MANAGER", "SALES", "WAREHOUSE", "ACCOUNTS")
@@ -139,6 +140,7 @@ class Command(BaseCommand):
                 paid = seed_billing(tenant, owner)
                 opted_in = seed_notifications(tenant, owner)
                 modules = seed_compliance(tenant)
+                purchasing = seed_demo_purchasing(tenant, owner)
             self.stdout.write(
                 f"{'created' if created else 'updated'} tenant {tenant.slug}: "
                 f"+{summary.products} products, +{summary.images} photos, "
@@ -148,6 +150,7 @@ class Command(BaseCommand):
                 + (f", +{paid} payments" if paid else "")
                 + f", {opted_in} shops on WhatsApp"
                 + (", e-invoices, e-way bills and online payments on (mock)" if modules else "")
+                + (", purchasing and stock planning on" if purchasing else "")
             )
         self.stdout.write(self.style.SUCCESS("seed complete"))
 

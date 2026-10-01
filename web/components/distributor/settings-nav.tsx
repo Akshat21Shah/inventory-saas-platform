@@ -17,9 +17,17 @@ export const POLICY_GROUPS = [
   "stock",
   "credit_payments",
   "reports",
+  "planning",
+  "purchasing",
   "notifications",
   "security",
 ] as const;
+
+/** Groups of an optional module: shown only while it is on (ADR-053). */
+const GROUP_FEATURES: Partial<Record<(typeof POLICY_GROUPS)[number], string>> = {
+  planning: "stock_planning",
+  purchasing: "purchasing",
+};
 
 interface Section {
   href: string;
@@ -38,10 +46,14 @@ const SECTIONS: Section[] = [
   { href: "/manage/settings/business", labelKey: "business" },
   { href: "/manage/settings/branding", labelKey: "branding" },
   // The notifications group opens from Settings → Messages (its "Quiet hours & reminders" tab).
-  ...POLICY_GROUPS.filter((group) => group !== "notifications").map((group) => ({
-    href: `/manage/settings/policies/${group}`,
-    labelKey: `policies.${group}`,
-  })),
+  ...POLICY_GROUPS.filter((group) => group !== "notifications").map((group): Section => {
+    const needs = GROUP_FEATURES[group];
+    return {
+      href: `/manage/settings/policies/${group}`,
+      labelKey: `policies.${group}`,
+      ...(needs ? { features: [needs] } : {}),
+    };
+  }),
   { href: "/manage/settings/features", labelKey: "features" },
   {
     href: "/manage/settings/compliance",

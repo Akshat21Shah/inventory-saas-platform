@@ -66,6 +66,14 @@ def set_tenant_settings(values: Mapping[str, Any], *, user: User | None) -> dict
     tenant_id = require_tenant_id()
     validated = _validate(values, Scope.TENANT)
     current = selectors.tenant_settings(tenant_id, fresh=True)
+    after = {**current, **{key: new for key, (_, new) in validated.items()}}
+    disordered = {
+        (high if high in validated else low): [message]
+        for low, high, message in registry.ASCENDING
+        if after[high] <= after[low]
+    }
+    if disordered:
+        raise SettingsInvalid(details={"fields": disordered})
     for key, (defn, new) in validated.items():
         old = current[key]
         if old == new:

@@ -2,7 +2,7 @@
 
 - ``django`` (dev and test): Django's email backend, which is Mailpit in dev (nothing leaves the
   machine) and the in-memory outbox in tests.
-- ``ses``: Amazon SES (API v2) with boto3.
+- ``ses``: Amazon SES (API v2) with boto3; a message with an attachment goes as raw MIME.
   TODO(verify): the sending identity (the platform domain with DKIM/SPF), the account leaving the
   SES sandbox, the configuration set and bounce/complaint handling must be checked against the
   official SES documentation before production (PROGRESS pre-production item 9).
@@ -10,7 +10,7 @@
 
 from dataclasses import dataclass
 from email.utils import formataddr, make_msgid, parseaddr
-from typing import Protocol
+from typing import Any, Protocol
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -20,12 +20,34 @@ from apps.notifications.adapters.base import DeliveryError, PermanentDeliveryErr
 
 
 @dataclass(frozen=True)
+class Attachment:
+    filename: str
+    content: bytes
+    mimetype: str = "application/pdf"
+
+
+@dataclass(frozen=True)
 class Email:
     to: str
     subject: str
     body: str
     from_name: str  # the distributor: "Sharma Distributors <no-reply@platform>"
     reply_to: str = ""  # the distributor's own address
+    attachments: tuple[Attachment, ...] = ()
+
+
+def django_message(email: Email, message_id: str) -> DjangoEmail:
+    message = DjangoEmail(
+        subject=email.subject,
+        body=email.body,
+        from_email=sender_address(email.from_name),
+        to=[email.to],
+        reply_to=[email.reply_to] if email.reply_to else None,
+        headers={"Message-ID": message_id},
+    )
+    for item in email.attachments:
+        message.attach(item.filename, item.content, item.mimetype)
+    return message
 
 
 def sender_address(from_name: str) -> str:
@@ -44,14 +66,7 @@ class DjangoEmailSender:
 
     def send(self, email: Email) -> SendResult:
         message_id = make_msgid(domain="notifications.local")
-        message = DjangoEmail(
-            subject=email.subject,
-            body=email.body,
-            from_email=sender_address(email.from_name),
-            to=[email.to],
-            reply_to=[email.reply_to] if email.reply_to else None,
-            headers={"Message-ID": message_id},
-        )
+        message = django_message(email, message_id)
         try:
             message.send(fail_silently=False)
         except OSError as exc:  # SMTP down: try again later
@@ -72,18 +87,24 @@ class SesEmailSender:
     def send(self, email: Email) -> SendResult:
         from botocore.exceptions import BotoCoreError, ClientError
 
-        request = {
+        request: dict[str, Any] = {
             "FromEmailAddress": sender_address(email.from_name),
             "Destination": {"ToAddresses": [email.to]},
-            "Content": {
+        }
+        if email.attachments:
+            # TODO(verify): Content.Raw (the whole MIME message, Reply-To in its headers) against
+            # the SES v2 SendEmail reference, and SES's message size limit.
+            raw = django_message(email, make_msgid(domain="notifications.local")).message()
+            request["Content"] = {"Raw": {"Data": raw.as_bytes()}}
+        else:
+            request["Content"] = {
                 "Simple": {
                     "Subject": {"Data": email.subject, "Charset": "UTF-8"},
                     "Body": {"Text": {"Data": email.body, "Charset": "UTF-8"}},
                 }
-            },
-        }
-        if email.reply_to:
-            request["ReplyToAddresses"] = [email.reply_to]
+            }
+            if email.reply_to:
+                request["ReplyToAddresses"] = [email.reply_to]
         if settings.SES_CONFIGURATION_SET:
             request["ConfigurationSetName"] = settings.SES_CONFIGURATION_SET
         try:

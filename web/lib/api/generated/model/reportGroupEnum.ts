@@ -11,6 +11,7 @@
  * * `stock` - stock
  * * `money` - money
  * * `gst` - gst
+ * * `purchasing` - purchasing
  */
 export type ReportGroupEnum = typeof ReportGroupEnum[keyof typeof ReportGroupEnum];
 
@@ -20,4 +21,5 @@ export const ReportGroupEnum = {
   stock: 'stock',
   money: 'money',
   gst: 'gst',
+  purchasing: 'purchasing',
 } as const;

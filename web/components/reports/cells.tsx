@@ -13,6 +13,7 @@ const LINKS: [string, (id: string) => string][] = [
   ["payment_id", (id) => `/manage/payments/${id}`],
   ["product_id", (id) => `/manage/products/${id}`],
   ["retailer_id", (id) => `/manage/retailers/${id}`],
+  ["supplier_id", (id) => `/manage/purchasing/suppliers/${id}`],
 ];
 
 export function rowHref(row: ReportRow): string | null {

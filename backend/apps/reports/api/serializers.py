@@ -120,6 +120,12 @@ class DashboardActionSerializer(serializers.Serializer[Any]):
     handover = CountAmountSerializer(allow_null=True, help_text="Collections not handed over.")
     overdue = ShopsAmountSerializer(allow_null=True, help_text="Overdue receivables.")
     low_stock = LowStockCountsSerializer(allow_null=True)
+    to_reorder = serializers.IntegerField(
+        allow_null=True, help_text="Open reorder suggestions (stock planning)."
+    )
+    late_purchase_orders = serializers.IntegerField(
+        allow_null=True, help_text="Sent or partly received, expected before today (purchasing)."
+    )
 
 
 class DashboardTodaySerializer(serializers.Serializer[Any]):

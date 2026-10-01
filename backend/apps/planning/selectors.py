@@ -1,0 +1,65 @@
+"""Stock planning reads."""
+
+from decimal import Decimal
+from uuid import UUID
+
+from django.db.models import Q, QuerySet, Value
+from django.db.models.functions import Coalesce
+
+from apps.catalog.models import Product
+from apps.planning.models import ProductStats, ReorderSuggestion
+
+
+def product_exists(product_id: UUID) -> bool:
+    return Product.objects.filter(pk=product_id, deleted_at__isnull=True).exists()
+
+
+def stats_for(product_id: UUID) -> ProductStats | None:
+    stats: ProductStats | None = (
+        ProductStats.objects.select_related("product__unit").filter(product_id=product_id).first()
+    )
+    return stats
+
+
+def open_suggestions(
+    *,
+    supplier_id: UUID | None = None,
+    basis: str = "",
+    search: str = "",
+    status: str = ReorderSuggestion.Status.OPEN,
+) -> QuerySet[ReorderSuggestion]:
+    """To order (OPEN), or kept apart: below the reorder level but not selling (NOT_SELLING)."""
+    qs = (
+        ReorderSuggestion.objects.filter(status=status)
+        .select_related("product", "product__unit", "supplier")
+        .annotate(urgency=Coalesce("days_left", Value(Decimal("-1"))))
+    )
+    if supplier_id:
+        qs = qs.filter(supplier_id=supplier_id)
+    if basis:
+        qs = qs.filter(basis=basis)
+    term = " ".join(search.split())[:100]
+    if term:
+        qs = qs.filter(Q(product__name__icontains=term) | Q(product__code__iexact=term))
+    found: QuerySet[ReorderSuggestion] = qs
+    return found
+
+
+def suggestion(suggestion_id: UUID) -> ReorderSuggestion | None:
+    found: ReorderSuggestion | None = (
+        ReorderSuggestion.objects.select_related("product", "product__unit", "supplier")
+        .filter(pk=suggestion_id)
+        .first()
+    )
+    return found
+
+
+def not_selling(product_id: UUID) -> bool:
+    """Below its reorder level but not selling (no suggestion; the level may be too high)."""
+    return ReorderSuggestion.objects.filter(
+        product_id=product_id, status=ReorderSuggestion.Status.NOT_SELLING
+    ).exists()
+
+
+def open_suggestion_count() -> int:
+    return ReorderSuggestion.objects.filter(status=ReorderSuggestion.Status.OPEN).count()
