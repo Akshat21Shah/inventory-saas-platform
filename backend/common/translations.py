@@ -94,7 +94,9 @@ def extract() -> dict[tuple[str, str], Message]:
             plural = _text(node.args[plural_at]) if plural_at is not None else ""
             message = Message(msgid, plural or "", context or "")
             message = found.setdefault(message.key, message)
-            message.where.add(f"{path.relative_to(BACKEND)}:{node.lineno}")
+            # The file only, no line number: a catalog changes when messages do, not when
+            # unrelated code above them moves.
+            message.where.add(str(path.relative_to(BACKEND)))
     return found
 
 
