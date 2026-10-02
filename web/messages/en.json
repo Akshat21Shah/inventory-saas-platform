@@ -3616,7 +3616,8 @@
         "reviewNoteHint": "Optional: what you checked or did (for example, the shop paid the rest in cash).",
         "needsReview": "This online payment needs a look: {reason}",
         "gatewayPayment": "Gateway payment ID",
-        "reviewedAt": "Reviewed"
+        "reviewedAt": "Reviewed",
+        "bounceCharge": "Cheque bounce charge"
       },
       "needsReviewOnly": "Needs review only"
     },
