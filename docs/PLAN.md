@@ -741,7 +741,9 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `platform/dashboard` | GET | `platform.dashboard.view` | active distributors, orders per day (count, value incl. GST), failed messages and compliance errors per distributor, usage against plans (audited `platform_db` path) |
 | `settings/ai-usage` | GET | any staff | this month's AI units against the monthly limit, in total and by feature (ADR-058) |
 | `platform/ai-usage` | GET | `platform.dashboard.view` | each distributor's AI use this month, the heaviest first (audited platform alias) |
-| `ai/*` | — | Phase 9e | the data assistant (flag `ai`); semantic search runs inside `shop/products?search=` |
+| `assistant/questions` | GET, POST | staff who can open one of the assistant's reports | POST `{question}` → 202 with the question (`PENDING`), answered in the background; GET: the person's own questions, newest first (ADR-059). Flag `ai`; 30 per person per hour (`ASSISTANT_RATE_LIMITED`) |
+| `assistant/questions/{id}` | GET | the person who asked | the question with its status, answer and the figures each tool returned |
+| `assistant/tools` | GET | as above | the tools this person may use and suggested questions |
 
 ### 3.12 Search, purchasing and planning (Phase 9a, ADR-053)
 | Endpoint | Method | Permission | Purpose |
@@ -1666,8 +1668,18 @@ Every feature is built before anything goes to staging or production, so the sta
 | 9d.6 | FE: AI usage (super admin; the distributor's features page) | S |
 | 9d.7 | E2E, responsive, flags-off proof — **final review** | S |
 
-#### 9e — Distributor data assistant (flag `ai`)
+#### 9e — Distributor data assistant (ADR-059; flag `ai`) — §10.2o
 Tool calling over fixed, read-only, tenant-scoped query functions that respect every permission (`costs.view`, sales visibility), never model-written SQL; every question and the tools it called are logged; an evaluation set of realistic questions with answers checked against the reports, run in CI against a recorded or mocked model.
+
+| # | Task | Size |
+|---|---|---|
+| 9e.1 | Docs: ADR-059, PLAN, SPEC 1.13, pre-production item 40 | S |
+| 9e.2 | Tools over the report engine (permissions, own shops, costs), with periods and validation | M |
+| 9e.3 | The chat-with-tools interface: the scripted mock and the Anthropic Messages adapter (TODO verify) | M |
+| 9e.4 | Questions: `AssistantQuestion`, the background answer loop, limits, rate limit, API | M |
+| 9e.5 | The evaluation set (CI, mock) and `ai_eval`; demo data — **backend checkpoint** | S |
+| 9e.6 | FE: the Assistant page (suggestions, answer with its figures, own history), menu entry | M |
+| 9e.7 | E2E, responsive, flags-off proof — **final review** | S |
 
 #### After launch (ADR-053)
 Multi-warehouse and stock transfers; batches and expiry (earlier if a pilot needs expiry tracking); manufacturing (bills of materials); demand forecasting; supplier-bill photo → goods-receipt draft; convenience fee on online payments; the distributor's own WhatsApp number and templates; saved filters and scheduled email reports.
@@ -2141,6 +2153,15 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | 2 | Cap **[assumed]** | 2,000,000 units per distributor per month (platform setting); over it, or on failure, AI steps aside |
 | 3 | Search **[assumed]** | Keyword matches first, then nearest by meaning above 35% similarity, up to the page size; shop search only |
 | 4 | Infrastructure **[assumed]** | pgvector: dev image from `postgres:16-alpine`, CI `pgvector/pgvector:pg16`; RDS creates the extension before migrating (item 39) |
+
+### 10.2o Phase 9e decisions (2026-10-02, ADR-059; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | What the assistant can look at | Eleven read-only tools, each a report run with the person's own permissions (own shops for sales staff, costs only with `costs.view`) |
+| 2 | Who may ask **[assumed]** | Staff who can open at least one of those reports, with the `ai` module on |
+| 3 | Model **[assumed]** | Anthropic Messages API with tool use, `claude-sonnet-5`; a scripted mock until item 40 is verified |
+| 4 | What is sent **[assumed]** | The question and the tools' rows (names, codes, amounts); no phone numbers, emails, GSTINs or addresses |
+| 5 | Limits **[assumed]** | The monthly AI units cap; 30 questions per person per hour; 30 s per provider call; at most 4 tool rounds |
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.

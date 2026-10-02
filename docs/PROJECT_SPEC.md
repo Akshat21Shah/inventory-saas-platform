@@ -3,6 +3,7 @@
 Version 1.10. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.13 (2026-10-02)** — Phase 9e (ADR-059): the distributor's data assistant — questions answered by a model calling read-only tools that are the existing reports run with the asker's permissions; answered in the background; every question logged; monthly cap and hourly limit; an evaluation set in CI.
 - **1.12 (2026-10-02)** — Phase 9d (ADR-058): `apps/ai` with provider interfaces and a local mock, usage records and a monthly cap per distributor, graceful fallback; semantic product search for shops (pgvector), after the keyword matches; flag `ai`.
 - **1.11 (2026-10-02)** — Phase 9c (ADR-057): the shop confirms delivery in its app; an optional one-time delivery code as proof of delivery; shops ask for returns from the app and staff approve them into return credit notes; an optional cheque bounce charge debited to the shop.
 - **1.10 (2026-10-02)** — Phase 9b (ADR-056): shop activity with segments (new, active, slowing, dormant, never ordered), win-back actions and a contacts log; a daily summary for owners by app, email or WhatsApp; free-goods schemes ("buy N get M free", flag `free_goods`) applied by the server, with ₹0 free lines on orders and invoices. Staging and production infrastructure moved to Phase 10; the repository is private (ADR-055).
