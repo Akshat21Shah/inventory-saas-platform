@@ -159,7 +159,7 @@ jobs:
           - suite: acceptance-2
             specs: e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/selfservice-acceptance.spec.ts
           - suite: acceptance-3
-            specs: e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts e2e/growth-acceptance.spec.ts
+            specs: e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts e2e/growth-acceptance.spec.ts e2e/ai-acceptance.spec.ts
           - suite: responsive-360
             width: 360px
           - suite: responsive-768
