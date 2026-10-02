@@ -3,7 +3,8 @@ owner and for a salesperson limited to their own shops, the super admin's search
 purchasing and stock planning pages (p95 < 300 ms), timed through the whole API in-process as in
 ``perf_reports``. ``make perf``, after ``make seed-volume``. Phase 9b (ADR-056, 9b.6) adds the shop
 activity pages, the free-goods schemes and a 40-line cart with schemes (made for the run and
-removed after); Phase 9c (ADR-057) the return requests and a bill with its requests.
+removed after); Phase 9c (ADR-057) the return requests and a bill with its requests; Phase 9d
+(ADR-058) a shop's search with near matches by meaning (a misspelt name) and the AI usage pages.
 
 The searches use the distributor's own records (a product, a shop and its mobile and GSTIN, an
 order, an invoice, a receipt, a goods receipt and a purchase order, with and without their
@@ -23,7 +24,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import User
 from apps.accounts.tokens import issue_tokens
 from apps.billing.models import Invoice
-from apps.catalog.models import Product
+from apps.catalog.models import Category, Product
 from apps.inventory.models import StockInward
 from apps.orders.models import Cart, CartLine, Order
 from apps.payments.models import Payment
@@ -176,12 +177,45 @@ class Command(BaseCommand):
         ]
         if is_feature_enabled("free_goods", tenant.pk):  # seed_volume switches it on
             pages.append(("free-goods schemes", f"{API}/free-goods-schemes/"))
+        if is_feature_enabled("ai", tenant.pk):  # seed_volume switches it on for vol-a
+            pages.append(("AI use this month", f"{API}/settings/ai-usage/"))  # found: blank
         for name, url in pages:
             measure(name, client, url, target, count)
+        if is_feature_enabled("ai", tenant.pk):
+            self._measure_ai(tenant, product, shop, measure, target)
         self._measure_cart(tenant, owner, shop, measure, client, target)
         if slow:
             raise CommandError("over the target: " + ", ".join(slow))
         self.stdout.write(self.style.SUCCESS("every p95 is under its target"))
+
+    def _measure_ai(
+        self,
+        tenant: Tenant,
+        product: Product,
+        shop: Retailer,
+        measure: Callable[..., None],
+        target: float,
+    ) -> None:
+        """A shop's search, right and misspelt (keyword matches, then near matches by meaning),
+        and the super admin's AI use per distributor."""
+        login = User.objects.filter(tenant=tenant, phone=shop.mobile).first()
+        if login is None:
+            raise CommandError(f"{shop.shop_name} has no sign-in")
+        client = self._client(login, tenant)
+        word = max(product.name.split(), key=len)
+        with tenant_transaction(tenant.pk):
+            category = Category.objects.filter(pk=product.category_id).first()
+        kind = category.name.split()[-1] if category else word
+        # A letter left out of each longer word, as a hurried shop types: "tiger biscits".
+        slip = " ".join(w[:3] + w[4:] if len(w) > 5 else w for w in (word.lower(), kind.lower()))
+        for name, text in (("shop search", word), ("shop search: a spelling slip", slip)):
+            url = f"{API}/shop/products/?{urlencode({'search': text})}"
+            measure(name, client, url, target, lambda body: str(len(body["results"])))
+        admin = User.objects.filter(user_type=User.UserType.PLATFORM, is_active=True).first()
+        if admin is not None:
+            admin_client = self._client(admin, None)
+            url = f"{API}/platform/ai-usage/"
+            measure("platform: AI use", admin_client, url, target, lambda body: str(len(body)))
 
     def _measure_cart(
         self,

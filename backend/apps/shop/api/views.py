@@ -111,12 +111,11 @@ class ShopProductsView(ShopView):
             category_id=query.validated_data["category"],
             brand_id=query.validated_data["brand"],
         )
-        qs = selectors.shop_products(retailer, filters)
         paginator = ByName()
         if filters.search.strip():
-            page = list(qs[: selectors.SEARCH_LIMIT])
-            rows = self._rows(retailer, page)
+            rows = self._rows(retailer, selectors.shop_search(retailer, filters))
             return Response({"next": None, "previous": None, "results": rows})
+        qs = selectors.shop_products(retailer, filters)
         page = paginator.paginate_queryset(qs, request, view=self) or []
         return paginator.get_paginated_response(self._rows(retailer, page))
 

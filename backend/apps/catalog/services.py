@@ -72,6 +72,14 @@ class Warning:
     details: dict[str, Any] = field(default_factory=dict)
 
 
+def _queue_embeddings() -> None:
+    """Products changed: their meaning for search is remade in the background (ADR-058; only
+    with the ``ai`` module on)."""
+    from apps.ai.services import queue_embeddings
+
+    queue_embeddings()
+
+
 # --- Categories ---------------------------------------------------------------------------------
 
 
@@ -542,6 +550,7 @@ def create_product(
         target_repr=f"{product.code} {product.name}",
         changes=audit.diff({}, {**_snapshot(product), "gst_rate": gst_rate}),
     )
+    _queue_embeddings()
     return product, price_warnings(product, gst_rate)
 
 
@@ -586,6 +595,7 @@ def update_product(
             for level in levels.values():
                 inventory_alerts.evaluate(level, product.reorder_level)
     rate = selectors.tax_rate_on(product.pk)
+    _queue_embeddings()
     return product, price_warnings(product, rate.gst_rate if rate else None)
 
 
@@ -692,6 +702,7 @@ def bulk_update(
             "product_ids": [str(p.pk) for p in products][:200],
         },
     )
+    _queue_embeddings()
     return changed
 
 

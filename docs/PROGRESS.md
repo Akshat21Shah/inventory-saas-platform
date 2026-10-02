@@ -266,9 +266,9 @@
 - **Phase 9d — AI foundation and semantic search** — **in progress** (branch `phase-9d` on top of `phase-9c`; ADR-058, PLAN §10.2n, SPEC 1.12; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-058, PLAN 9d tasks and §10.2n, SPEC 1.12, pre-production items 38–39 — **done**
   2. Infrastructure: pgvector in dev (an image built from `postgres:16-alpine` with pgvector 0.8.0, same data volume) and CI (`pgvector/pgvector:pg16`); the init script creates the extension; `common/vectors.py`: a vector field, cosine distance and HNSW index (no new package) — **done**
-  3. `apps/ai`: providers, usage, cap, settings
-  4. Product embeddings and semantic search
-  5. Usage views, demo and volume data, speed check — backend checkpoint
+  3. `apps/ai`: the embedding provider interface and a local mock (hashed words and character trigrams, 256 dimensions; the real provider a marked TODO, item 38); `AiUsage` for every call (never the text); the monthly cap ⚙ `platform.ai_monthly_units` (2,000,000), the timeout ⚙ `platform.ai_timeout_seconds` (5) and the search closeness ⚙ `platform.ai_search_min_similarity_percent` (35%), all platform settings in a new AI group; failures and the cap make AI step aside — **done**
+  4. Product embeddings (`ProductEmbedding`, HNSW cosine index, RLS) made in the background after product changes (one queued refresh per distributor within 30 s) and nightly at 02:15 IST, remade only when the text changes; the shop's search adds the nearest products by meaning after the keyword matches, among the same visible products, up to 40. Both searches now rank on the bare query and load the 40 products after (the details' joins made the planner slow: shop search p95 152 → 39 ms on vol-a) — **done**
+  5. Usage: `settings/ai-usage` (this month's units against the limit, by feature) and `platform/ai-usage` (each distributor, the heaviest first, on the audited platform alias); demo: AI on for Sharma with its products' meanings; volume: AI on for vol-a with 60,000 searches this month; speed check (vol-a): shop search p95 39 ms, with a spelling slip 45 ms, the usage pages 15 and 11 ms — backend checkpoint **done**
   6. FE: AI usage
   7. E2E, responsive, flags-off proof — final review
 - **Phase 9c — Shop self-service and money** — **done, PR open** (branch `phase-9c` on top of `phase-9b`; ADR-057, PLAN §10.2m, SPEC 1.11; built without stopping, assumptions marked for review). Commits in order:

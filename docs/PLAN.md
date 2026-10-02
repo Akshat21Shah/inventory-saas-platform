@@ -739,7 +739,9 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `reports/{code}/export` | POST | same | Excel (or PDF where offered): small exports answer at once with the file link; larger ones (over ⚙ `platform.report_async_rows`) and every GST workbook return a queued `ReportRun` |
 | `report-runs`, `report-runs/{id}` | GET | the requester | "My exports": status, rows, a fresh signed download link while not expired |
 | `platform/dashboard` | GET | `platform.dashboard.view` | active distributors, orders per day (count, value incl. GST), failed messages and compliance errors per distributor, usage against plans (audited `platform_db` path) |
-| `ai/*` | — | Phase 9d/9e | assistant and semantic search (flag `ai`) |
+| `settings/ai-usage` | GET | any staff | this month's AI units against the monthly limit, in total and by feature (ADR-058) |
+| `platform/ai-usage` | GET | `platform.dashboard.view` | each distributor's AI use this month, the heaviest first (audited platform alias) |
+| `ai/*` | — | Phase 9e | the data assistant (flag `ai`); semantic search runs inside `shop/products?search=` |
 
 ### 3.12 Search, purchasing and planning (Phase 9a, ADR-053)
 | Endpoint | Method | Permission | Purpose |
