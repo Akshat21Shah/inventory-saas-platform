@@ -109,6 +109,12 @@ export const STAFF_PAGES: Destination[] = [
   },
   { key: "receivables", href: "/manage/receivables", permission: "ledger.view" },
   { key: "reports", href: "/manage/reports" },
+  {
+    key: "assistant",
+    href: "/manage/assistant",
+    permission: ["reports.sales", "reports.sales_own", "reports.stock", "reports.financial"],
+    feature: "ai",
+  },
   { key: "myExports", href: "/manage/reports/exports" },
   {
     key: "imports",

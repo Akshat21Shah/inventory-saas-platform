@@ -156,7 +156,8 @@
     "needsAttention": "need attention",
     "itemCount": "{count, plural, one {# item} other {# items}} in the cart",
     "platformMessages": "Messages",
-    "purchasing": "Purchasing"
+    "purchasing": "Purchasing",
+    "assistant": "Assistant"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -277,7 +278,9 @@
     "PAYMENT_GATEWAY_NOT_READY": "Online payments aren't set up yet. Try again later or pay another way.",
     "PAYMENT_GATEWAY_UNAVAILABLE": "Payment service is busy, please try again in a minute.",
     "WRONG_DELIVERY_CODE": "That isn't the shop's delivery code. Check it with the shop.",
-    "DELIVERY_CODE_LOCKED": "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code and say why."
+    "DELIVERY_CODE_LOCKED": "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code and say why.",
+    "ASSISTANT_RATE_LIMITED": "You've asked a lot of questions in the last hour. Try again a little later.",
+    "ASSISTANT_NOT_AVAILABLE": "There are no figures the assistant may show you."
   },
   "designSystem": {
     "title": "Design system",
@@ -657,6 +660,10 @@
       "ai_search_min_similarity_percent": {
         "label": "Closeness for shop search (%)",
         "description": "How close in meaning a product must be to what a shop typed to be shown after the products that match the words."
+      },
+      "ai_assistant_timeout_seconds": {
+        "label": "Wait for the assistant's AI provider (seconds)",
+        "description": "How long the data assistant waits for the AI provider on each step before giving up on the question."
       }
     },
     "retailers": {
@@ -5231,7 +5238,8 @@
       "reportSettings": "Report settings",
       "planningSettings": "Stock planning settings",
       "purchasingSettings": "Purchasing settings",
-      "securitySettings": "Security settings"
+      "securitySettings": "Security settings",
+      "assistant": "Assistant"
     },
     "keywords": {
       "dashboard": "home, today, summary, overview",
@@ -5289,7 +5297,8 @@
       "taxRates": "GST, HSN, tax rates",
       "shopActivity": "win back, stopped ordering, inactive shops, dormant, slowing, not ordering, lost customers",
       "freeGoods": "schemes, offers, buy one get one, bonus, free items, scheme",
-      "returnRequests": "returns, goods back, sales return, return request"
+      "returnRequests": "returns, goods back, sales return, return request",
+      "assistant": "ask, question, AI, help, chat"
     }
   },
   "purchasing": {
@@ -5778,5 +5787,36 @@
     "APPROVED": "Approved",
     "REJECTED": "Not accepted",
     "CANCELLED": "Withdrawn"
+  },
+  "assistant": {
+    "title": "Assistant",
+    "body": "Ask about your sales, shops, stock and dues. Answers come from your reports: only your business's figures, and only those you may see.",
+    "label": "Your question",
+    "placeholder": "For example: Which shops haven't ordered in 30 days?",
+    "ask": "Ask",
+    "try": "Try one of these:",
+    "suggestions": {
+      "notOrdering": "Which shops haven't ordered in 30 days?",
+      "topProducts": "What are our top 10 products this month?",
+      "salesMonth": "How much did we sell this month?",
+      "lowStock": "Which products are running low?",
+      "dues": "Who owes us the most money?",
+      "collections": "How much did we collect this week?",
+      "backorders": "What are shops waiting for on backorder?"
+    },
+    "history": "Your questions",
+    "noQuestions": "No questions yet",
+    "noQuestionsBody": "Ask one above, or tap a suggestion.",
+    "thinking": "Looking at your figures…",
+    "failed": "I couldn't answer that just now. Try again in a minute.",
+    "limited": "This month's AI allowance is used up. The assistant will be back next month.",
+    "openReport": "Open the report",
+    "ownShops": "Only your shops.",
+    "noRows": "Nothing to show.",
+    "showing": "Showing {shown} of {count}. Open the report for all of them.",
+    "period": "{from} to {to}",
+    "askedAt": "Asked {when}",
+    "nothingTitle": "Nothing to ask about",
+    "nothingBody": "The assistant answers from reports, and your role has none of them. Ask the owner if you need it."
   }
 }

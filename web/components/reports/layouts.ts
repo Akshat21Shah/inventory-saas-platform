@@ -24,6 +24,7 @@ const LAYOUTS: Record<string, { title: string; primary: string[] }> = {
   fulfilment_rate: { title: "period", primary: ["orders", "in_full_pct", "delivered_pct"] },
   receivables_ageing: { title: "name", primary: ["owed", "net", "oldest_due"] },
   collections: { title: "shop", primary: ["amount", "payment_date", "mode", "status"] },
+  shop_activity: { title: "name", primary: ["segment", "last_order", "days_since"] },
   salesperson_collections: { title: "name", primary: ["total", "with_salesman", "oldest_pending"] },
   gst_summary: { title: "section", primary: ["documents", "taxable", "tax"] },
 };

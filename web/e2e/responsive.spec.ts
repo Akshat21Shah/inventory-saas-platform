@@ -160,6 +160,7 @@ function pages(ids: Ids) {
       "gst_summary",
       "purchases_by_supplier",
     ].map((code) => `/manage/reports/${code}`),
+    "/manage/assistant",
     "/manage/settings/business",
     "/manage/settings/branding",
     "/manage/settings/policies/tax",

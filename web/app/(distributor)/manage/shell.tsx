@@ -10,6 +10,7 @@ import {
   PackageSearch,
   Percent,
   Settings,
+  Sparkles,
   Truck,
   Users,
   Wallet,
@@ -49,6 +50,7 @@ const ITEMS: NavItem[] = [
   { href: "/manage/invoices", labelKey: "invoices", icon: FileText },
   { href: "/manage/payments", labelKey: "payments", icon: Wallet },
   { href: "/manage/reports", labelKey: "reports", icon: ChartColumn },
+  { href: "/manage/assistant", labelKey: "assistant", icon: Sparkles, feature: "ai" },
   { href: "/manage/settings/business", labelKey: "settings", icon: Settings },
 ];
 
