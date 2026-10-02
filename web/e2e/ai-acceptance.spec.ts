@@ -4,11 +4,13 @@ import { signInAsSuperAdmin } from "./support/flows";
 import { FULL_STACK, OTP_CODE, origin, resetLimits } from "./support/stack";
 
 /**
- * Phase 9d acceptance (ADR-058) on the seeded demo business (Sharma Distributors has the AI module
- * on, with the local mock provider):
+ * Phase 9d and 9e acceptance (ADR-058, ADR-059) on the seeded demo business (Sharma Distributors
+ * has the AI module on, with the local mock providers):
  * - a shop's misspelt search ("biscuts") finds biscuits by meaning, where words alone find none;
  * - the owner sees this month's AI use on the Modules page;
- * - the super admin sees Sharma's AI use on the dashboard.
+ * - the super admin sees Sharma's AI use on the dashboard;
+ * - the owner asks the data assistant a question and gets an answer with the report rows behind
+ *   it (answered in the background by the worker).
  * Similarity, limits and fallbacks are the server's (backend tests prove them). Needs the full
  * stack (E2E_FULL_STACK=1).
  */
@@ -62,4 +64,32 @@ test("the owner and the super admin see this month's AI use", async ({ browser, 
   await signInAsSuperAdmin(page);
   const section = page.getByRole("region", { name: "AI use this month" });
   await expect(section.getByRole("link", { name: "Sharma Distributors" }).first()).toBeVisible();
+});
+
+test("the owner asks the assistant and sees the figures behind the answer", async ({ browser }) => {
+  const email = "owner@sharma.example.com";
+  resetLimits({ emails: [email] });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto(`${SHARMA}/login`);
+  await page.getByLabel(/email address/i).fill(email);
+  await page.getByLabel(/^password/i).fill("staff-dev-password");
+  await page.getByRole("button", { name: /^sign in$/i }).click();
+  await page.waitForURL(`${SHARMA}/manage`);
+  await page.getByRole("link", { name: "Assistant" }).first().click();
+  await page.waitForURL(`${SHARMA}/manage/assistant`);
+  await page.getByLabel("Your question", { exact: true }).fill("Who owes us the most money?");
+  await page.getByRole("button", { name: "Ask" }).click();
+  const newest = page.getByRole("region", { name: "Your questions" }).getByRole("listitem").first();
+  await expect(newest.getByText("Who owes us the most money?")).toBeVisible();
+  // Answered in the background (the scripted mock in dev and CI), with the report's rows under it.
+  await expect(newest.getByText(/owe ₹[\d,]+\.\d\d in all|No shop owes anything/)).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(newest.getByRole("region", { name: "Receivables ageing" })).toBeVisible();
+  await expect(newest.getByRole("link", { name: "Open the report" })).toHaveAttribute(
+    "href",
+    /\/manage\/reports\/receivables_ageing/,
+  );
+  await context.close();
 });
