@@ -66,8 +66,8 @@ def test_registry_covers_plan_catalogue():
     # + 6 notifications settings (ADR-048) + turnover band, automatic IRNs, e-way bill
     # thresholds and automatic e-way bills (ADR-049) + the fast/slow/dead period and share (ADR-050)
     # + 6 stock planning settings and the over-receipt tolerance (ADR-053)
-    # + activity, summary (ADR-056), delivery, returns (057), the shops' language (060)
-    assert len(TENANT_KEYS) == 69
+    # + activity, summary (ADR-056), delivery, returns (057), the shops' and documents' language
+    assert len(TENANT_KEYS) == 70
     # PLAN §9.2 (3) + 7 login/OTP limits (ADR-030) + reset limit + 3 WhatsApp prices (ADR-048)
     # + 2 e-invoicing thresholds, the IRN reporting limit and cancellation window, the e-way
     # bill cancellation window (ADR-049) + the export row limit, link days and the B2C large

@@ -89,6 +89,9 @@ class _TaxDocument(TenantScopedModel):
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     seller = models.JSONField(default=dict)  # legal/trade name, GSTIN, address, state (snapshot)
     buyer = models.JSONField(default=dict)  # name, GSTIN, billing and shipping address, state
+    # The language its labels are printed in besides English, fixed at issue (ADR-060): "en"
+    # prints English only. A reprint is identical.
+    document_language = models.CharField(max_length=5, default="en")
     place_of_supply = models.ForeignKey(
         "platform.State", on_delete=models.PROTECT, related_name="+"
     )
@@ -307,9 +310,9 @@ class CreditNoteLine(TenantScopedModel):
     """Append-only. ``quantity`` 0 for value-only credits."""
 
     class Disposition(models.TextChoices):
-        RETURN_TO_STOCK = "RETURN_TO_STOCK", "Return to stock"
-        DAMAGED = "DAMAGED", "Received damaged"
-        NOT_RETURNED = "NOT_RETURNED", "Not physically returned"
+        RETURN_TO_STOCK = "RETURN_TO_STOCK", gettext_lazy("Return to stock")
+        DAMAGED = "DAMAGED", gettext_lazy("Received damaged")
+        NOT_RETURNED = "NOT_RETURNED", gettext_lazy("Not physically returned")
 
     credit_note = models.ForeignKey(CreditNote, on_delete=models.PROTECT, related_name="lines")
     line_no = models.PositiveSmallIntegerField()

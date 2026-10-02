@@ -20,6 +20,7 @@ from django.db.models import F
 
 from apps.accounts.models import User
 from apps.billing import numbering
+from apps.billing.labels import language_for
 from apps.billing.models import DocumentStatus, DocumentType, Invoice, InvoiceLine
 from apps.billing.tax import (
     ComponentRounding,
@@ -275,6 +276,7 @@ def issue_invoice_for_fulfilment(
         retailer_id=order.retailer_id,
         seller=seller_snapshot(tenant),
         buyer=buyer,
+        document_language=language_for(order.retailer),
         place_of_supply_id=place,
         supply_type=supply_value,
         prices_include_tax=inclusive,

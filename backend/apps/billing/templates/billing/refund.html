@@ -1,5 +1,5 @@
 {% load documents %}<!doctype html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
   <title>Refund voucher {{ doc.number }}</title>
@@ -10,44 +10,44 @@
   <header class="top">
     {% include "billing/_seller.html" %}
     <div class="title">
-      <h2>Refund voucher</h2>
-      {% if doc.status == "REVERSED" %}<p class="copy">Reversed</p>{% endif %}
+      <h2>{% t "Refund voucher" %}</h2>
+      {% if doc.status == "REVERSED" %}<p class="copy">{% t "Reversed" %}</p>{% endif %}
     </div>
   </header>
 
   <table class="meta">
-    <tr><td class="k">Voucher no.</td><td><b>{{ doc.number }}</b></td><td class="k">Date</td><td>{{ doc.refund_date|day }}</td></tr>
+    <tr><td class="k">{% t "Voucher no." %}</td><td><b>{{ doc.number }}</b></td><td class="k">{% t "Date" %}</td><td>{{ doc.refund_date|day }}</td></tr>
     <tr>
-      <td class="k">Paid to</td><td><b>{{ shop.shop_name }}</b> <span class="muted">({{ shop.code }})</span></td>
-      <td class="k">Mode</td><td>{{ doc.get_mode_display }}</td>
+      <td class="k">{% t "Paid to" %}</td><td><b>{{ shop.shop_name }}</b> <span class="muted">({{ shop.code }})</span></td>
+      <td class="k">{% t "Mode" %}</td><td>{% tl doc.get_mode_display %}</td>
     </tr>
-    {% if doc.reference_no %}<tr><td class="k">Reference</td><td colspan="3">{{ doc.reference_no }}</td></tr>{% endif %}
+    {% if doc.reference_no %}<tr><td class="k">{% t "Reference" %}</td><td colspan="3">{{ doc.reference_no }}</td></tr>{% endif %}
   </table>
 
   <table class="totals" style="width:60%; margin-left:0">
-    <tr class="grand"><td>Amount paid back</td><td class="n">{{ doc.amount|rupees }}</td></tr>
+    <tr class="grand"><td>{% t "Amount paid back" %}</td><td class="n">{{ doc.amount|rupees }}</td></tr>
   </table>
-  <p class="words"><b>In words:</b> {{ words }}</p>
+  <p class="words"><b>{% t "In words:" %}</b> {{ words }}</p>
 
-  <p style="margin-top:4pt">Paid from the shop's credit balance:</p>
+  <p style="margin-top:4pt">{% t "Paid from the shop's credit balance:" %}</p>
   <table class="summary" style="width:60%">
-    <thead><tr><th>Credit from</th><th class="n">Amount (₹)</th></tr></thead>
+    <thead><tr><th>{% t "Credit from" %}</th><th class="n">{% t "Amount (₹)" %}</th></tr></thead>
     <tbody>
       {% for number, value in sources %}<tr><td>{{ number }}</td><td class="n">{{ value|amount }}</td></tr>{% endfor %}
     </tbody>
   </table>
   {% if doc.notes %}<p class="muted" style="margin-top:4pt">{{ doc.notes }}</p>{% endif %}
   {% if doc.status == "REVERSED" %}
-    <p class="flag">Reversed on {{ doc.reversed_at|date:"d-m-Y" }}: {{ doc.reversal_reason }}. The amount is back in the shop's credit balance.</p>
+    <p class="flag">{% t "Reversed on %(date)s: %(reason)s. The amount is back in the shop's credit balance." date=doc.reversed_at|date:"d-m-Y" reason=doc.reversal_reason %}</p>
   {% endif %}
 
   <div class="bottom">
-    <div><p>Received by</p><div class="sign"><div class="space"></div></div><p class="muted">Name and signature of the shop</p></div>
+    <div><p>{% t "Received by" %}</p><div class="sign"><div class="space"></div></div><p class="muted">{% t "Name and signature of the shop" %}</p></div>
     <div class="sign">
-      <p>For <b>{{ seller.legal_name }}</b></p>
+      <p>{% t "For %(name)s" name=seller.legal_name bold="name" %}</p>
       <div class="space"></div>
       <p>{{ seller.signatory|default:"" }}</p>
-      <p class="muted">Authorised signatory</p>
+      <p class="muted">{% t "Authorised signatory" %}</p>
     </div>
   </div>
 </section>

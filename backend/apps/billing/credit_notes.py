@@ -28,6 +28,7 @@ from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.billing import numbering
 from apps.billing.invoicing import rounding_snapshot
+from apps.billing.labels import language_for
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentType, Invoice, InvoiceLine
 from apps.billing.tax import (
     ComponentRounding,
@@ -161,6 +162,7 @@ def _issue(
         retailer_id=invoice.retailer_id,
         seller=invoice.seller,
         buyer=invoice.buyer,
+        document_language=language_for(invoice.retailer),  # a new document: today's (ADR-060)
         place_of_supply_id=invoice.place_of_supply_id,
         supply_type=invoice.supply_type,
         prices_include_tax=invoice.prices_include_tax,

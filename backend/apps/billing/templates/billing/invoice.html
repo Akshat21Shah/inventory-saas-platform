@@ -1,5 +1,5 @@
 {% load documents %}<!doctype html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
   <title>Tax invoice {{ doc.number }}</title>
@@ -11,30 +11,30 @@
   <header class="top">
     {% include "billing/_seller.html" %}
     <div class="title">
-      <h2>Tax invoice</h2>
-      <p class="copy">{{ copy }}</p>
+      <h2>{% t "Tax invoice" %}</h2>
+      <p class="copy">{% t copy %}</p>
     </div>
   </header>
   {% if doc.status == "CANCELLED" %}
-    <p class="flag">Cancelled: this invoice's IRN was cancelled.{% if reissued %} It is replaced by invoice {{ reissued }}.{% endif %}</p>
+    <p class="flag">{% t "Cancelled: this invoice's IRN was cancelled." %}{% if reissued %} {% t "It is replaced by invoice %(number)s." number=reissued %}{% endif %}</p>
   {% endif %}
 
   <table class="meta">
     <tr>
-      <td class="k">Invoice no.</td><td><b>{{ doc.number }}</b></td>
-      <td class="k">Place of supply</td><td>{{ place }}</td>
+      <td class="k">{% t "Invoice no." %}</td><td><b>{{ doc.number }}</b></td>
+      <td class="k">{% t "Place of supply" %}</td><td>{{ place }}</td>
     </tr>
     <tr>
-      <td class="k">Invoice date</td><td>{{ doc.invoice_date|day }}</td>
-      <td class="k">Supply</td><td>{% if intra %}Within the state (CGST + SGST){% else %}Between states (IGST){% endif %}</td>
+      <td class="k">{% t "Invoice date" %}</td><td>{{ doc.invoice_date|day }}</td>
+      <td class="k">{% t "Supply" %}</td><td>{% if intra %}{% t "Within the state (CGST + SGST)" %}{% else %}{% t "Between states (IGST)" %}{% endif %}</td>
     </tr>
     <tr>
-      <td class="k">Due date</td><td>{{ doc.due_date|day }}</td>
-      <td class="k">Reverse charge</td><td>{% if doc.reverse_charge %}Yes{% else %}No{% endif %}</td>
+      <td class="k">{% t "Due date" %}</td><td>{{ doc.due_date|day }}</td>
+      <td class="k">{% t "Reverse charge" %}</td><td>{% if doc.reverse_charge %}{% t "Yes" %}{% else %}{% t "No" %}{% endif %}</td>
     </tr>
     <tr>
-      <td class="k">Order</td><td>{{ order_number }}</td>
-      <td class="k">Prices</td><td>{% if doc.prices_include_tax %}Including GST{% else %}Excluding GST{% endif %}</td>
+      <td class="k">{% t "Order" %}</td><td>{{ order_number }}</td>
+      <td class="k">{% t "Prices" %}</td><td>{% if doc.prices_include_tax %}{% t "Including GST" %}{% else %}{% t "Excluding GST" %}{% endif %}</td>
     </tr>
   </table>
 
@@ -44,27 +44,27 @@
     <thead>
       <tr>
         <th class="c">#</th>
-        <th>Description</th>
+        <th>{% t "Description" %}</th>
         <th class="c">HSN</th>
-        <th class="n">Qty</th>
-        <th class="n">Rate (₹)</th>
-        {% if has_discount %}<th class="n">Gross (₹)</th><th class="n">Discount (₹)</th>{% endif %}
-        <th class="n">Taxable (₹)</th>
+        <th class="n">{% t "Qty" %}</th>
+        <th class="n">{% t "Rate (₹)" %}</th>
+        {% if has_discount %}<th class="n">{% t "Gross (₹)" %}</th><th class="n">{% t "Discount (₹)" %}</th>{% endif %}
+        <th class="n">{% t "Taxable (₹)" %}</th>
         {% if intra %}
           <th class="n">CGST</th>
           <th class="n">SGST</th>
         {% else %}
           <th class="n">IGST</th>
         {% endif %}
-        {% if has_cess %}<th class="n">Cess</th>{% endif %}
-        <th class="n">Amount (₹)</th>
+        {% if has_cess %}<th class="n">{% t "Cess" %}</th>{% endif %}
+        <th class="n">{% t "Amount (₹)" %}</th>
       </tr>
     </thead>
     <tbody>
       {% for line in lines %}
       <tr>
         <td class="c">{{ line.line_no }}</td>
-        <td>{{ line.description }}{% if line.is_free %} <b>Free{% if line.scheme_name %} ({{ line.scheme_name }}){% endif %}</b>{% endif %}<br><span class="muted">{{ line.product_code }}</span></td>
+        <td>{{ line.description }}{% if line.is_free %} <b>{% t "Free" %}{% if line.scheme_name %} ({{ line.scheme_name }}){% endif %}</b>{% endif %}<br><span class="muted">{{ line.product_code }}</span></td>
         <td class="c">{{ line.hsn_code }}</td>
         <td class="n">{{ line.quantity|qty }} {{ line.unit_code }}</td>
         <td class="n">{{ line.unit_price|amount }}</td>
@@ -84,28 +84,28 @@
   </table>
 
   <table class="totals">
-    <tr><td>Taxable value</td><td class="n">{{ doc.taxable_total|rupees }}</td></tr>
+    <tr><td>{% t "Taxable value" %}</td><td class="n">{{ doc.taxable_total|rupees }}</td></tr>
     {% if intra %}
       <tr><td>CGST</td><td class="n">{{ doc.cgst_total|rupees }}</td></tr>
       <tr><td>SGST</td><td class="n">{{ doc.sgst_total|rupees }}</td></tr>
     {% else %}
       <tr><td>IGST</td><td class="n">{{ doc.igst_total|rupees }}</td></tr>
     {% endif %}
-    {% if doc.cess_total %}<tr><td>Cess</td><td class="n">{{ doc.cess_total|rupees }}</td></tr>{% endif %}
-    {% if doc.round_off %}<tr><td>Round off</td><td class="n">{{ doc.round_off|rupees }}</td></tr>{% endif %}
-    <tr class="grand"><td>Invoice total</td><td class="n">{{ doc.grand_total|rupees }}</td></tr>
+    {% if doc.cess_total %}<tr><td>{% t "Cess" %}</td><td class="n">{{ doc.cess_total|rupees }}</td></tr>{% endif %}
+    {% if doc.round_off %}<tr><td>{% t "Round off" %}</td><td class="n">{{ doc.round_off|rupees }}</td></tr>{% endif %}
+    <tr class="grand"><td>{% t "Invoice total" %}</td><td class="n">{{ doc.grand_total|rupees }}</td></tr>
   </table>
-  <p class="words"><b>In words:</b> {{ doc.amount_in_words }}</p>
+  <p class="words"><b>{% t "In words:" %}</b> {{ doc.amount_in_words }}</p>
 
   <table class="summary">
     <thead>
       <tr>
         <th>HSN</th>
-        <th class="n">GST rate</th>
-        <th class="n">Taxable (₹)</th>
+        <th class="n">{% t "GST rate" %}</th>
+        <th class="n">{% t "Taxable (₹)" %}</th>
         {% if intra %}<th class="n">CGST (₹)</th><th class="n">SGST (₹)</th>{% else %}<th class="n">IGST (₹)</th>{% endif %}
-        {% if has_cess %}<th class="n">Cess (₹)</th>{% endif %}
-        <th class="n">Total tax (₹)</th>
+        {% if has_cess %}<th class="n">{% t "Cess (₹)" %}</th>{% endif %}
+        <th class="n">{% t "Total tax (₹)" %}</th>
       </tr>
     </thead>
     <tbody>
@@ -123,11 +123,11 @@
   </table>
 
   {% if doc.rate_differs_from_order %}
-    <p class="flag">The GST rate on some items changed after the order was placed; this invoice uses the rate in force on the invoice date.</p>
+    <p class="flag">{% t "The GST rate on some items changed after the order was placed; this invoice uses the rate in force on the invoice date." %}</p>
   {% endif %}
 
   {% if ewb %}
-    <p><b>E-way bill no.</b> {{ ewb.ewb_number }} · <b>Date</b> {{ ewb.ewb_date|date:"d-m-Y H:i" }}{% if ewb.valid_until %} · <b>Valid until</b> {{ ewb.valid_until|date:"d-m-Y H:i" }}{% endif %}{% if ewb.vehicle_number %} · <b>Vehicle</b> {{ ewb.vehicle_number }}{% endif %}</p>
+    <p><b>{% t "E-way bill no." %}</b> {{ ewb.ewb_number }} · <b>{% t "Date" %}</b> {{ ewb.ewb_date|date:"d-m-Y H:i" }}{% if ewb.valid_until %} · <b>{% t "Valid until" %}</b> {{ ewb.valid_until|date:"d-m-Y H:i" }}{% endif %}{% if ewb.vehicle_number %} · <b>{% t "Vehicle" %}</b> {{ ewb.vehicle_number }}{% endif %}</p>
   {% endif %}
 
   {% if doc.irn %}
@@ -135,7 +135,7 @@
     {% if qr %}<img src="{{ qr }}" alt="e-invoice QR code">{% endif %}
     <div>
       <p><b>IRN</b> {{ doc.irn }}</p>
-      <p><b>Ack. no.</b> {{ doc.ack_no }} · <b>Ack. date</b> {{ doc.ack_date|date:"d-m-Y H:i" }}</p>
+      <p><b>{% t "Ack. no." %}</b> {{ doc.ack_no }} · <b>{% t "Ack. date" %}</b> {{ doc.ack_date|date:"d-m-Y H:i" }}</p>
     </div>
   </div>
   {% endif %}

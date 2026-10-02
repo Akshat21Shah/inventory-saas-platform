@@ -31,6 +31,7 @@ from django.utils.translation import gettext_lazy
 from apps.accounts.models import User
 from apps.audit import services as audit
 from apps.billing import numbering
+from apps.billing.labels import language_for
 from apps.billing.models import CreditNote, DocumentType, Invoice
 from apps.ledger import allocation
 from apps.ledger import services as ledger
@@ -224,6 +225,7 @@ def _record(data: PaymentInput, *, by: User | None, collected: bool) -> Payment:
     payment: Payment = Payment.objects.create(
         number=number,
         retailer=retailer,
+        document_language=language_for(retailer),  # the receipt's (ADR-060)
         amount=data.amount,
         mode=data.mode,
         status=Payment.Status.RECEIVED if credit_now else Payment.Status.PENDING_CLEARANCE,
@@ -279,6 +281,7 @@ def record_online_payment(data: OnlinePaymentInput, *, by: User | None) -> Payme
     payment: Payment = Payment.objects.create(
         number=number,
         retailer=retailer,
+        document_language=language_for(retailer),  # the receipt's (ADR-060)
         amount=data.amount,
         mode=Payment.Mode.ONLINE,
         status=Payment.Status.RECEIVED,
@@ -678,6 +681,7 @@ def record_refund(data: RefundInput, *, by: User | None) -> Refund:
         refund: Refund = Refund.objects.create(
             number=number,
             retailer=retailer,
+            document_language=language_for(retailer),
             amount=data.amount,
             mode=data.mode,
             refund_date=data.refund_date,

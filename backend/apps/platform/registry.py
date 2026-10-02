@@ -257,6 +257,11 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "How the invoice total is rounded to the rupee.",
             allowed=("NEAREST", "UP", "DOWN"), snapshot_on=_ESTIMATE_AND_DOCS,
             depends_on=DependsOn("invoicing.round_to_rupee", equals=True)),
+    _tenant("documents.language", Group.INVOICING, SettingType.ENUM, "SHOP",
+            "Shop documents (bills, credit notes, receipts, refund vouchers, Order Confirmations) "
+            "show their labels in English and the shop's language, or in English only. Names "
+            "and amounts are printed as entered either way.",
+            allowed=("SHOP", "ENGLISH")),
     _tenant("invoicing.default_payment_terms_days", Group.INVOICING, SettingType.INT, 30,
             "Default credit days for new retailers (each retailer can differ).",
             min_value=0, max_value=365),

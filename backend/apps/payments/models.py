@@ -40,6 +40,7 @@ class Payment(TenantScopedModel):
         NOT_NEEDED = "NOT_NEEDED", "Nothing to hand over"  # reversed as entered in error
 
     number = models.CharField(max_length=16)  # receipt number, RCT/26-27/000001
+    document_language = models.CharField(max_length=5, default="en")  # the receipt's (ADR-060)
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     amount = MoneyField()
     mode = models.CharField(max_length=13, choices=Mode.choices)
@@ -144,6 +145,7 @@ class Refund(TenantScopedModel):
         ISSUED = "ISSUED", "Paid back"
         REVERSED = "REVERSED", "Reversed"  # entered in error: the shop's credit is restored
 
+    document_language = models.CharField(max_length=5, default="en")  # the voucher's (ADR-060)
     number = models.CharField(max_length=16)
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     amount = MoneyField()

@@ -164,8 +164,14 @@ ALLOWED_NEW: dict[str, Any] = {
     "db.payments.Payment.bounce_charge_id": None,
     "api.payment.bounce_charge": None,
     "api.shop-payment.bounce_charge": None,
-    # Phase 11a (ADR-060): the language the shop sees (English: no other language is on).
+    # Phase 11a (ADR-060): the language the shop sees (English: no other language is on), and
+    # the language each shop document is printed in, fixed at issue (English, as before).
     "api.retailer.language": "en",
+    "db.billing.Invoice.document_language": "en",
+    "db.billing.CreditNote.document_language": "en",
+    "db.billing.OrderConfirmation.content.language": "en",
+    "db.payments.Payment.document_language": "en",
+    "db.payments.Refund.document_language": "en",
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -187,7 +193,7 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
             or item["key"] in ("orders.shop_confirms_delivery", "orders.delivery_code")
             or item["key"].startswith("returns.")
             or item["key"] == "payments.cheque_bounce_charge"
-            or item["key"] == "retailers.default_language"  # Phase 11a (ADR-060)
+            or item["key"] in ("retailers.default_language", "documents.language")  # Phase 11a
         )
         and item["is_default"]
     ),
@@ -215,6 +221,23 @@ REWORDED: dict[tuple[str, Any], Any] = {
         "Reorder suggestions, demand forecasts and smart search.",
     ): "Smart search and the data assistant.",
 }
+
+# Printing changes since the snapshot that have nothing to do with the Phase 7 flags: the
+# snapshot's text -> today's, applied to the snapshot before comparing.
+REPRINTED: tuple[tuple[str, str], ...] = (
+    # Phase 11a (ADR-060): a Devanagari font after Noto Sans, and the style of a label's
+    # translation (none is printed here: the shop's documents are in English).
+    (
+        'body { font-family: "Noto Sans", "DejaVu Sans"',
+        'body { font-family: "Noto Sans", "Noto Sans Devanagari", "DejaVu Sans"',
+    ),
+    (
+        ".irn img { width: 80pt; height: 80pt; }\n",
+        ".irn img { width: 80pt; height: 80pt; }\n"
+        ".tr { font-weight: normal; }\n"
+        "h2 .tr { text-transform: none; }\n",
+    ),
+)
 
 # Random by design: stored as "<random>".
 VOLATILE = {
@@ -604,6 +627,9 @@ def test_the_app_behaves_as_before_phase_7_with_its_flags_off(django_capture_on_
     _compare(before["api"], current["api"], "api", diffs)
     _compare(before["messages"], current["messages"], "messages", diffs)
     for name, html in docs.items():
-        if (BASELINE / f"{name}.html").read_text() != html + "\n":
+        printed = (BASELINE / f"{name}.html").read_text()
+        for then, now in REPRINTED:
+            printed = printed.replace(then, now)
+        if printed != html + "\n":
             diffs.append(f"document {name}: printed differently")
     assert not diffs, "With the Phase 7 flags off:\n" + "\n".join(diffs[:60])
