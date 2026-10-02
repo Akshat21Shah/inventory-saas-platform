@@ -95,11 +95,11 @@ test("with delivery codes, staff deliver with the shop's code", async ({ browser
 
 test("a shop asks to return an item; staff approve it into a credit note", async ({ browser }) => {
   const ids = JSON.parse(manage(["e2e_ids"]).trim().split("\n").pop()!) as {
-    shop_invoice: string;
+    returnable_shop_invoice: string;
   };
   const retailer = await shop(browser);
   const shopPage = retailer.page;
-  await shopPage.goto(`${SHARMA}/shop/invoices/${ids.shop_invoice}`);
+  await shopPage.goto(`${SHARMA}/shop/invoices/${ids.returnable_shop_invoice}`);
   await shopPage.getByRole("button", { name: "Return items" }).click();
   const dialog = shopPage.getByRole("dialog");
   await dialog.getByRole("textbox").first().fill("1");

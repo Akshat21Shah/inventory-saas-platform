@@ -23,6 +23,21 @@ from apps.retailers.models import Retailer
 from common.tenancy import tenant_transaction
 
 
+def _returnable_shop_invoice() -> str | None:
+    from apps.billing import returns
+
+    bills = (
+        Invoice.objects.filter(retailer__mobile="+919876500001", status="ISSUED")
+        .prefetch_related("lines")
+        .order_by("-invoice_date", "-created_at")[:30]
+    )
+    for bill in bills:
+        left = returns.returnable(list(bill.lines.all()))
+        if returns.can_request(bill) and any(quantity > 0 for quantity in left.values()):
+            return str(bill.pk)
+    return None
+
+
 def _first(qs: Any) -> str | None:
     pk = qs.order_by("created_at").values_list("pk", flat=True).first()
     return str(pk) if pk else None
@@ -73,6 +88,9 @@ class Command(BaseCommand):
                 "payment": _first(Payment.objects.filter(handover_status="WITH_SALESMAN")),
                 "refund": _first(Refund.objects.all()),
                 "shop_invoice": _first(Invoice.objects.filter(retailer__mobile="+919876500001")),
+                # Phase 9c: the shop's newest bill it may still ask to return something from
+                # (each run of the return E2E uses a unit up).
+                "returnable_shop_invoice": _returnable_shop_invoice(),
                 # Phase 7: an invoice with an e-way bill (Sharma has the modules on).
                 "ewaybill_invoice": _first(
                     Invoice.objects.filter(pk__in=EWayBill.objects.values("invoice_id"))
