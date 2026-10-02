@@ -205,6 +205,7 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "payment",
         "refund",
         "shop_invoice",
+        "returnable_shop_invoice",
         "ewaybill_invoice",
         "shop_checkout",
         "supplier",
@@ -216,6 +217,7 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
     assert ids["supplier"] and ids["purchase_order"] and ids["draft_purchase_order"]  # 9a
     assert ids["free_goods_scheme"]  # 9b
     assert ids["return_request"]  # 9c
+    assert ids["returnable_shop_invoice"]  # 9c: a bill the shop can still return from
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]
     assert ids["invoice"] and ids["credit_note"] and ids["payment"] and ids["refund"]  # billing
