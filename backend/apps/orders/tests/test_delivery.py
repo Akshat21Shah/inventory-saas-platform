@@ -156,6 +156,28 @@ def test_the_api_takes_the_code_and_names_the_error(world):
     assert world["b"].post(url, {"code": shipment.delivery_code}, format="json").status_code == 404
 
 
+def test_wrong_codes_through_the_api_are_kept_and_lock_the_code(world):
+    """The refusal must not roll back the counted try (the request runs in one transaction), or
+    the lock after five wrong codes would never come through the app."""
+    settings(world["t"], orders__delivery_code=True)
+    shipment = dispatched(world)
+    wrong = "0000" if shipment.delivery_code != "0000" else "1111"
+    url = f"{API}/fulfilments/{shipment.pk}/deliver/"
+    refused = world["staff"].post(url, {"code": wrong}, format="json")
+    assert refused.status_code == 422
+    with tenant_context(world["t"].pk):
+        shipment.refresh_from_db()
+        assert shipment.delivery_code_failures == 1
+    for _ in range(4):
+        world["staff"].post(url, {"code": wrong}, format="json")
+    locked = world["staff"].post(url, {"code": shipment.delivery_code}, format="json")
+    assert (locked.status_code, locked.json()["error"]["code"]) == (429, "DELIVERY_CODE_LOCKED")
+    with tenant_context(world["t"].pk):
+        shipment.refresh_from_db()
+        assert shipment.status == "DISPATCHED"
+        assert shipment.delivery_code_locked_until is not None
+
+
 def test_without_codes_staff_deliver_as_before(world):
     shipment = dispatched(world)
     assert shipment.delivery_code == ""

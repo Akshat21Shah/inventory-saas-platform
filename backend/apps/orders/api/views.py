@@ -21,6 +21,7 @@ from apps.orders.api import serializers as s
 from apps.orders.models import BackorderAllocation, Fulfilment, Order, OrderStatus
 from apps.platform.selectors import is_feature_enabled
 from common.errors import InvalidFields, NotFound
+from common.exceptions import error_body
 from common.idempotency import idempotent
 from common.permissions import HasPermission
 
@@ -417,12 +418,21 @@ class DeliverView(Guarded):
         data = s.DeliverSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         _visible_shipment(request, fulfilment_id)
-        fulfilment.deliver(
-            fulfilment_id,
-            by=_user(request),
-            code=data.validated_data["code"],
-            reason=data.validated_data["reason"],
-        )
+        try:
+            fulfilment.deliver(
+                fulfilment_id,
+                by=_user(request),
+                code=data.validated_data["code"],
+                reason=data.validated_data["reason"],
+            )
+        except (fulfilment.WrongDeliveryCode, fulfilment.DeliveryCodeLocked) as exc:
+            # Answered here, not by the exception handler: that rolls the request's transaction
+            # back, and with it the wrong try deliver() counted (five lock the code, ADR-057).
+            return Response(
+                error_body(exc.code, exc.message, exc.details),
+                status=exc.status_code,
+                headers=exc.headers,
+            )
         return _shipment(request, fulfilment_id)
 
 
