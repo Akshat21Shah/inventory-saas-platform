@@ -612,7 +612,7 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
                     <li key={request.id} className="flex flex-wrap justify-between gap-2 p-3">
                       <Link
                         href={`/manage/invoices/returns/${request.id}`}
-                        className="font-medium hover:underline"
+                        className="font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
                       >
                         {request.number}
                       </Link>
