@@ -138,3 +138,22 @@ def test_the_request_speaks_the_language_the_web_asks_for(tenant_a):
     assert english.status_code == hindi.status_code == 400
     assert english.json() != hindi.json() or english.headers.get("Content-Language") == "en"
     assert hindi.headers.get("Content-Language") == "hi"
+
+
+def test_the_shop_page_says_which_language_the_shop_sees(tenant_a):
+    owner = client_for(tenant_a, make_staff_in(tenant_a, "OWNER"))
+    shop = make_shop(tenant_a, "9876500183")
+    url = f"{API}/retailers/{shop.pk}/"
+    body = owner.get(url).json()
+    assert (body["preferred_language"], body["language"]) == ("", "en")
+    # Saved ahead of the review: the shop sees English until Hindi is on for this distributor.
+    saved = owner.patch(url, {"preferred_language": "hi"}, format="json").json()
+    assert (saved["preferred_language"], saved["language"]) == ("hi", "en")
+    platform(**{"platform.language_test_tenants": tenant_a.slug})
+    assert owner.get(url).json()["language"] == "hi"
+    cleared = owner.patch(url, {"preferred_language": ""}, format="json").json()
+    assert (cleared["preferred_language"], cleared["language"]) == ("", "en")
+    settings(tenant_a, retailers__default_language="mr")
+    assert owner.get(url).json()["language"] == "mr"
+    refused = owner.patch(url, {"preferred_language": "xx"}, format="json")
+    assert refused.status_code == 400

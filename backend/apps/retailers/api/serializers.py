@@ -3,7 +3,7 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.retailers.models import Retailer, RetailerAddress
-from common.languages import validate_code
+from common.languages import shop_language, validate_code
 
 
 class PersonRefSerializer(serializers.Serializer[Any]):
@@ -98,6 +98,9 @@ class RetailerDetailSerializer(serializers.ModelSerializer[Retailer]):
     salesperson = PersonRefSerializer(allow_null=True, read_only=True)
     price_list = PriceListRefSerializer(allow_null=True, read_only=True)
     addresses = AddressSerializer(many=True, read_only=True)
+    language = serializers.SerializerMethodField(
+        help_text="The language the shop sees: its own, else your usual one for shops (ADR-060)."
+    )
 
     class Meta:
         model = Retailer
@@ -120,12 +123,16 @@ class RetailerDetailSerializer(serializers.ModelSerializer[Retailer]):
             "notes",
             "tags",
             "preferred_language",
+            "language",
             "welcome_sent_at",
             "addresses",
             "created_at",
             "updated_at",
         )
         read_only_fields = fields
+
+    def get_language(self, retailer: Retailer) -> str:
+        return shop_language(retailer)
 
 
 class RetailerWriteSerializer(serializers.Serializer[Any]):

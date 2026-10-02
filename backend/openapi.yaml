@@ -24627,6 +24627,11 @@ components:
         preferred_language:
           type: string
           readOnly: true
+        language:
+          type: string
+          readOnly: true
+          description: 'The language the shop sees: its own, else your usual one for
+            shops (ADR-060).'
         welcome_sent_at:
           type: string
           format: date-time
@@ -24654,6 +24659,7 @@ components:
       - email
       - gstin
       - id
+      - language
       - mobile
       - notes
       - owner_name

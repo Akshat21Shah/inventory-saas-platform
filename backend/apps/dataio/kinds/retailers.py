@@ -18,7 +18,15 @@ from apps.platform.validators import normalize_gstin
 from apps.pricing.models import PriceList
 from apps.retailers import services
 from apps.retailers.models import Retailer, RetailerAddress
+from common.languages import all_languages
 from common.phone import normalize_indian_mobile
+
+
+def _language_names() -> str:
+    """The language names for people, e.g. "English, Hindi or Marathi" (common/languages.json)."""
+    names = [language.name for language in all_languages()]
+    return f"{', '.join(names[:-1])} or {names[-1]}" if len(names) > 1 else names[0]
+
 
 C = Column
 COLUMNS: tuple[Column, ...] = (
@@ -108,7 +116,14 @@ COLUMNS: tuple[Column, ...] = (
         "30",
     ),
     C("tags", "Tags", ("group", "category"), False, "Separated by commas.", "wholesale"),
-    C("preferred_language", "Language", ("lang",), False, "English, Hindi or Marathi.", "Marathi"),
+    C(
+        "preferred_language",
+        "Language",
+        ("lang",),
+        False,
+        f"{_language_names()}. Empty: your usual language for shops.",
+        "Marathi",
+    ),
     C("notes", "Notes", ("remarks", "comment"), False, "", ""),
     C(
         "whatsapp_opt_in",
@@ -288,7 +303,7 @@ class RetailersKind:
         if v.get("preferred_language"):
             language = _languages().get(v["preferred_language"].strip().lower())
             if language is None:
-                plan.error(LABEL["preferred_language"], "Write English, Hindi or Marathi.")
+                plan.error(LABEL["preferred_language"], f"Write {_language_names()}.")
             else:
                 out["preferred_language"] = language
         if v.get("whatsapp_opt_in"):
@@ -440,8 +455,6 @@ class RetailersKind:
             .prefetch_related("addresses")
             .order_by("code")
         )
-        from common.languages import all_languages
-
         names = {language.code: language.name for language in all_languages()}
         for r in retailers:
             billing = next(
