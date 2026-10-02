@@ -2736,7 +2736,6 @@
       "expired": "This payment wasn't finished in time.",
       "startAgain": "Start again",
       "waiting": "Waiting for the bank to confirm. This page updates by itself.",
-      "lastError": "The last try didn't go through: {error}",
       "safe": "You pay on the payment company's secure page. We never see your card or bank details."
     },
     "free": {
@@ -3942,7 +3941,6 @@
           "webhook_secret": "The secret you type when you add the webhook below."
         },
         "savedHint": "Saved: {value}. Leave blank to keep it.",
-        "lastError": "The gateway said: {error}",
         "verifiedAt": "Working since",
         "checking": "Checking the keys with the gateway…",
         "save": "Save",
@@ -4483,7 +4481,6 @@
       },
       "savedHint": "Saved: {value}. Leave blank to keep it.",
       "notSaved": "Not saved yet.",
-      "lastError": "The provider said: {error}",
       "verifiedAt": "Checked",
       "checking": "Checking with the provider…",
       "save": "Save",
@@ -4500,10 +4497,8 @@
       "ackNo": "Ack. no.",
       "ackDate": "Ack. date",
       "waiting": "Waiting to be sent to the GST portal.",
-      "retrying": "The portal didn't answer ({error}). Trying again at <at></at>.",
       "sending": "Sent to the GST portal. This page updates when it answers.",
       "cancelling": "Cancelling the IRN on the GST portal…",
-      "failed": "The GST portal refused it: {error}",
       "reportBy": "Must get its IRN by <day></day> (the reporting limit for your turnover).",
       "pastReportBy": "The reporting limit (<day></day>) has passed. The portal may refuse it: check with your CA.",
       "cancelRefused": "Cancelling the IRN was refused: {error}",
@@ -4560,12 +4555,9 @@
       "validUntil": "Valid until",
       "km": "{km} km",
       "waiting": "Waiting to be sent to the e-way bill portal.",
-      "retrying": "The portal didn't answer ({error}). Trying again at <at></at>.",
       "sending": "Sent to the e-way bill portal. This page updates when it answers.",
-      "failed": "The e-way bill portal refused it: {error}",
       "cancelling": "Cancelling the e-way bill on the portal…",
       "changing": "Sending the new vehicle to the portal…",
-      "updateRefused": "The last change was refused: {error}",
       "cancelled": "Cancelled on <at></at>.",
       "make": "Make e-way bill",
       "tryAgain": "Try again",
@@ -4662,6 +4654,23 @@
       "irnWaiting": "IRNs waiting",
       "irnNearLimit": "IRNs near the reporting limit",
       "ewbWaiting": "E-way bills waiting"
+    },
+    "provider": {
+      "einvoice": "The GST portal refused this bill:",
+      "ewaybill": "The e-way bill portal refused this e-way bill:",
+      "update": "The e-way bill portal refused the last change:",
+      "login": "The GST provider refused the login:",
+      "codes": {
+        "CREDENTIALS_NOT_READY": "The GST provider login isn't saved or isn't working. Check it in Settings, then try again.",
+        "NUMBER_USED": "This bill number was used for an IRN that has been cancelled, so it can't be used again.",
+        "INVOICE_CANCELLED": "The bill was cancelled, so this e-way bill won't be made.",
+        "AUTH_FAILED": "The GST provider refused the login:",
+        "INVALID_GSTIN": "The GST portal says the shop's GSTIN isn't valid or active:",
+        "DUPLICATE": "The GST portal already has an IRN for this bill number:",
+        "PORTAL_DOWN": "The GST portal isn't available right now:",
+        "TIMEOUT": "The GST provider didn't answer in time:",
+        "CANCEL_NOT_ALLOWED": "The GST portal won't cancel it:"
+      }
     }
   },
   "approvalStatus": {
@@ -5904,5 +5913,12 @@
   "aiModels": {
     "claude-sonnet-5-5": "Claude Sonnet 5.5",
     "claude-haiku-4-5-20251001": "Claude Haiku 4.5"
+  },
+  "providerMessages": {
+    "payment": "The last try didn't go through. The payment service said:",
+    "gatewayKeys": "The payment gateway refused these keys:",
+    "paymentService": "The payment service said:",
+    "sending": "The sending service said:",
+    "portalRetrying": "The portal didn't answer. Trying again at <at></at>."
   }
 }

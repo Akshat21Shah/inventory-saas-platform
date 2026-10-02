@@ -27,6 +27,8 @@ import {
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useDebounced } from "@/lib/use-debounced";
+import { ProviderMessage } from "@/components/shared/provider-message";
+import { useGstFailure } from "./provider-line";
 
 const ALL = "all";
 
@@ -34,17 +36,24 @@ const ALL = "all";
 function StatusCell({
   status,
   labels,
+  code,
   error,
 }: {
   status: string;
   labels: "einvoiceStatus" | "ewaybillStatus";
+  code: string;
   error: string;
 }) {
+  const gst = useGstFailure();
   return (
     <span className="space-y-1">
       <StatusBadge status={status} labels={labels} />
-      {status === "FAILED" && error ? (
-        <span className="text-destructive block max-w-72 text-xs">{error}</span>
+      {status === "FAILED" ? (
+        <ProviderMessage
+          {...gst(labels === "einvoiceStatus" ? "einvoice" : "ewaybill", code, error)}
+          compact
+          className="text-destructive max-w-72 text-xs"
+        />
       ) : null}
     </span>
   );
@@ -102,6 +111,7 @@ function EInvoicesList() {
         <StatusCell
           status={row.original.status}
           labels="einvoiceStatus"
+          code={row.original.error_code}
           error={row.original.error_message}
         />
       ),
@@ -257,6 +267,7 @@ function EWayBillsList() {
         <StatusCell
           status={row.original.status}
           labels="ewaybillStatus"
+          code={row.original.error_code}
           error={row.original.error_message}
         />
       ),

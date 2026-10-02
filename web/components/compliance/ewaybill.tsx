@@ -34,6 +34,8 @@ import {
   type EWayBillSummary,
 } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { ProviderMessage } from "@/components/shared/provider-message";
+import { useGstFailure } from "./provider-line";
 
 /** Whether an e-way bill is on its way (the page follows it until it lands). */
 export function ewaybillMoving(summary: EWayBillSummary | null | undefined): boolean {
@@ -394,6 +396,8 @@ export function EWayBillPanel({
   onChanged: () => void;
 }) {
   const t = useTranslations("compliance.ewaybill");
+  const tp = useTranslations("providerMessages");
+  const gst = useGstFailure();
   const { can, feature } = useAuth();
   if (!summary && !(feature("ewaybill") && !cancelled)) return null;
   const manage = can("compliance.manage");
@@ -446,10 +450,12 @@ export function EWayBillPanel({
           ) : null}
           {summary.status === "PENDING" && summary.next_retry_at ? (
             <p className="text-sm">
-              {t.rich("retrying", {
-                error: summary.error_message,
-                at: () => <DateText value={summary.next_retry_at ?? ""} withTime />,
-              })}
+              <ProviderMessage
+                line={tp.rich("portalRetrying", {
+                  at: () => <DateText value={summary.next_retry_at ?? ""} withTime />,
+                })}
+                message={summary.error_message}
+              />
             </p>
           ) : null}
           {summary.status === "SUBMITTED" ? (
@@ -459,7 +465,7 @@ export function EWayBillPanel({
           ) : null}
           {summary.status === "FAILED" ? (
             <p role="alert" className="bg-destructive/10 rounded-lg p-3 text-sm">
-              {t("failed", { error: summary.error_message })}
+              <ProviderMessage {...gst("ewaybill", summary.error_code, summary.error_message)} />
               <span className="mt-1 block">{t("failedHint")}</span>
             </p>
           ) : null}
@@ -470,7 +476,9 @@ export function EWayBillPanel({
           ) : null}
           {summary.last_update_error && !summary.pending_update ? (
             <p role="alert" className="bg-destructive/10 rounded-lg p-3 text-sm">
-              {t("updateRefused", { error: summary.last_update_error })}
+              <ProviderMessage
+                {...gst("update", summary.last_update_error_code, summary.last_update_error)}
+              />
             </p>
           ) : null}
           {summary.status === "CANCELLED" && summary.cancelled_at ? (

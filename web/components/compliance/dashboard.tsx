@@ -12,11 +12,14 @@ import {
   useEwaybillsCounts,
   useEwaybillsList,
 } from "@/lib/api/generated/endpoints/compliance/compliance";
+import { ProviderMessage } from "@/components/shared/provider-message";
+import { useGstFailure } from "./provider-line";
 
 /** Failed e-way bills (backend checkpoint change 4): shown at the top of the dashboard until
  * each is fixed, naming the shipment, vehicle and the portal's reason, with a link to retry. */
 export function FailedEWayBillsAlert() {
   const t = useTranslations("compliance.dashboard");
+  const gst = useGstFailure();
   const { can, feature } = useAuth();
   const on = feature("ewaybill") && can("compliance.manage");
   const failed = useEwaybillsList(
@@ -53,7 +56,11 @@ export function FailedEWayBillsAlert() {
                   ? t("vehicle", { vehicle: row.vehicle_number })
                   : t("noVehicle")}
               </span>
-              <span className="text-destructive block">{row.error_message}</span>
+              <ProviderMessage
+                {...gst("ewaybill", row.error_code, row.error_message)}
+                compact
+                className="text-destructive"
+              />
             </span>
             <Button asChild className="min-h-10">
               <Link href={`/manage/invoices/${row.invoice_id}#ewaybill`}>{t("fix")}</Link>

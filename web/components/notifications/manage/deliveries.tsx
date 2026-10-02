@@ -41,6 +41,7 @@ import { useDebounced } from "@/lib/use-debounced";
 import { useErrorText } from "@/lib/api/use-error-text";
 
 import { eventKey, NotificationsNav } from "./nav";
+import { ProviderMessage } from "@/components/shared/provider-message";
 
 const ALL = "all";
 const STATUSES = ["FAILED", "PENDING", "SENDING", "SENT", "SKIPPED"] as const;
@@ -156,6 +157,7 @@ function DeliveryDialog({ id, onClose }: { id: string; onClose: () => void }) {
 export function DeliveriesPage() {
   const t = useTranslations("notifyAdmin");
   const n = useTranslations("notifications");
+  const tp = useTranslations("providerMessages");
   const cursor = useCursor();
   const [status, setStatus] = useState<string>(ALL);
   const [channel, setChannel] = useState<string>(ALL);
@@ -213,9 +215,12 @@ export function DeliveriesPage() {
             </span>
           ) : null}
           {row.original.status === "FAILED" && row.original.last_error ? (
-            <span className="text-destructive block text-xs break-words">
-              {row.original.last_error}
-            </span>
+            <ProviderMessage
+              line={tp("sending")}
+              message={row.original.last_error}
+              compact
+              className="text-destructive text-xs"
+            />
           ) : null}
         </span>
       ),

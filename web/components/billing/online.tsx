@@ -41,6 +41,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { useDebounced } from "@/lib/use-debounced";
 
 import { PaymentsNav } from "./billing-nav";
+import { ProviderMessage } from "@/components/shared/provider-message";
 
 const SECRETS = ["key_id", "key_secret", "webhook_secret"] as const;
 const ALL = "all";
@@ -88,6 +89,7 @@ function WebhookCard({ settings }: { settings: GatewaySettings }) {
  * only by their last characters, checked by the server; live keys only where allowed. */
 function GatewayForm({ saved }: { saved: GatewaySettings }) {
   const t = useTranslations("billing.online.settings");
+  const tp = useTranslations("providerMessages");
   const client = useQueryClient();
   const { message, fields } = useErrorText();
   const [provider, setProvider] = useState<GatewayProviderEnum>(saved.provider);
@@ -187,7 +189,7 @@ function GatewayForm({ saved }: { saved: GatewaySettings }) {
           </div>
           {saved.status === "FAILED" && saved.last_error ? (
             <p role="alert" className="bg-destructive/10 rounded-lg p-3 text-sm">
-              {t("lastError", { error: saved.last_error })}
+              <ProviderMessage line={tp("gatewayKeys")} message={saved.last_error} />
             </p>
           ) : null}
           {saved.status === "VERIFIED" && saved.verified_at ? (
@@ -255,6 +257,7 @@ export function GatewaySettingsPage() {
 /** Payments → Online checkouts: every "Pay" a shop started, and what the gateway said. */
 export function CheckoutsPage() {
   const t = useTranslations("billing.online.checkouts");
+  const tp = useTranslations("providerMessages");
   const statuses = useTranslations("checkoutStatus");
   const { feature } = useAuth();
   const on = feature("payments");
@@ -308,9 +311,12 @@ export function CheckoutsPage() {
         <span className="space-y-1">
           <StatusBadge status={row.original.status} labels="checkoutStatus" />
           {row.original.last_error ? (
-            <span className="text-destructive block max-w-72 text-xs">
-              {row.original.last_error}
-            </span>
+            <ProviderMessage
+              line={tp("paymentService")}
+              message={row.original.last_error}
+              compact
+              className="text-destructive max-w-72 text-xs"
+            />
           ) : null}
         </span>
       ),

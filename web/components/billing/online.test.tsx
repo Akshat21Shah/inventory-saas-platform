@@ -86,7 +86,8 @@ describe("Online payments settings", () => {
       ],
     });
     renderWithIntl(<GatewaySettingsPage />);
-    expect(await screen.findByText("The gateway said: Authentication failed")).toBeVisible();
+    expect(await screen.findByText("The payment gateway refused these keys:")).toBeVisible();
+    expect(screen.getByText("Authentication failed")).toHaveAttribute("lang", "en");
     expect(screen.getByText("Not working")).toBeVisible();
   });
 });

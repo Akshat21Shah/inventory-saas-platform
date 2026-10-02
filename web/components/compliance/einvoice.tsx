@@ -32,6 +32,8 @@ import {
 import type { EInvoiceSummary, IrnCancelReasonEnum } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
+import { ProviderMessage } from "@/components/shared/provider-message";
+import { useGstFailure } from "./provider-line";
 
 const REASONS: IrnCancelReasonEnum[] = [
   "DATA_ENTRY_MISTAKE",
@@ -248,6 +250,8 @@ export function EInvoicePanel({
   onChanged: () => void;
 }) {
   const t = useTranslations("compliance.einvoice");
+  const tp = useTranslations("providerMessages");
+  const gst = useGstFailure();
   const { can, feature } = useAuth();
   const { message } = useErrorText();
   const [busy, setBusy] = useState(false);
@@ -309,10 +313,12 @@ export function EInvoicePanel({
           ) : null}
           {summary.status === "PENDING" && summary.next_retry_at ? (
             <p className="text-sm">
-              {t.rich("retrying", {
-                error: summary.error_message,
-                at: () => <DateText value={summary.next_retry_at ?? ""} withTime />,
-              })}
+              <ProviderMessage
+                line={tp.rich("portalRetrying", {
+                  at: () => <DateText value={summary.next_retry_at ?? ""} withTime />,
+                })}
+                message={summary.error_message}
+              />
             </p>
           ) : null}
           {IN_TRANSIT.has(summary.status) ? (
@@ -322,7 +328,7 @@ export function EInvoicePanel({
           ) : null}
           {summary.status === "FAILED" ? (
             <p role="alert" className="bg-destructive/10 rounded-lg p-3 text-sm">
-              {t("failed", { error: summary.error_message })}
+              <ProviderMessage {...gst("einvoice", summary.error_code, summary.error_message)} />
               <span className="mt-1 block">{t("failedHint")}</span>
             </p>
           ) : null}

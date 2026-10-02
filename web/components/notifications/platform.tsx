@@ -39,6 +39,7 @@ import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 
 import { eventKey } from "./manage/nav";
+import { ProviderMessage } from "@/components/shared/provider-message";
 
 function PlatformNav() {
   const t = useTranslations("platformMessages.nav");
@@ -361,6 +362,7 @@ export function PlatformTextsPage() {
 export function PlatformFailuresPage() {
   const t = useTranslations("platformMessages.failures");
   const n = useTranslations("notifications");
+  const tp = useTranslations("providerMessages");
   const client = useQueryClient();
   const { message } = useErrorText();
   const cursor = useCursor();
@@ -385,9 +387,12 @@ export function PlatformFailuresPage() {
       id: "error",
       header: t("error"),
       cell: ({ row }) => (
-        <span className="text-destructive block max-w-56 text-xs break-words whitespace-normal">
-          {row.original.last_error}
-        </span>
+        <ProviderMessage
+          line={tp("sending")}
+          message={row.original.last_error}
+          compact
+          className="text-destructive max-w-56 text-xs whitespace-normal"
+        />
       ),
     },
     {
