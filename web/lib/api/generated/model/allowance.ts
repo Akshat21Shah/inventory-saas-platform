@@ -6,19 +6,14 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface TenantAiUsage {
-  tenant_id: string;
-  name: string;
+export interface Allowance {
+  /** About this many assistant questions a month… */
+  questions: number;
+  /** …or about this many shop searches. */
+  searches: number;
   /**
-     * Estimated cost this month, in ₹.
+     * At most about this much a month (all spent on questions), in ₹.
      * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
      */
   cost: string;
-  questions: number;
-  searches: number;
-  /** This month (in and out). */
-  units: number;
-  calls: number;
-  failed: number;
-  near_limit: boolean;
 }

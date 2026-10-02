@@ -68,6 +68,7 @@ class AssistantQuestion(TenantScopedModel):
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
     answer = models.TextField(blank=True, default="")
     tools = models.JSONField(default=list, blank=True)
+    model = models.CharField(max_length=60, blank=True, default="")  # what answered it
     units_in = models.PositiveIntegerField(default=0)
     units_out = models.PositiveIntegerField(default=0)
     rounds = models.PositiveSmallIntegerField(default=0)

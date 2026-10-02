@@ -55,6 +55,7 @@ import type {
   PatchedTenantUpdateRequest,
   Plan,
   PlanRequest,
+  PlatformAiUsage,
   PlatformAuditLogsParams,
   PlatformCessTypesListParams,
   PlatformFailure,
@@ -81,7 +82,6 @@ import type {
   TaxRate,
   TaxRateRequest,
   TemplateApprovalInputRequest,
-  TenantAiUsage,
   TenantDetail,
   TextPreview,
   TextPreviewInputRequest,
@@ -113,7 +113,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 export type platformAiUsageResponse200 = {
-  data: TenantAiUsage[]
+  data: PlatformAiUsage
   status: 200
 }
 
@@ -133,7 +133,8 @@ export const getPlatformAiUsageUrl = () => {
 }
 
 /**
- * Each distributor's AI use this month, the heaviest first (ADR-058).
+ * Each distributor's AI use this month, the dearest first, and what the monthly cap comes
+ * to in questions, searches and rupees (ADR-058, ADR-059 item 8).
  */
 export const platformAiUsage = async ( options?: Parameters<typeof apiFetch>[1]): Promise<platformAiUsageResponse> => {
 

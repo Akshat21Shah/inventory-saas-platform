@@ -3815,7 +3815,9 @@ paths:
   /api/v1/platform/ai-usage/:
     get:
       operationId: platform_ai_usage
-      description: Each distributor's AI use this month, the heaviest first (ADR-058).
+      description: |-
+        Each distributor's AI use this month, the dearest first, and what the monthly cap comes
+        to in questions, searches and rupees (ADR-058, ADR-059 item 8).
       tags:
       - platform
       security:
@@ -3825,9 +3827,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TenantAiUsage'
+                $ref: '#/components/schemas/PlatformAiUsage'
           description: ''
   /api/v1/platform/audit-logs/:
     get:
@@ -8491,7 +8491,9 @@ paths:
   /api/v1/settings/ai-usage/:
     get:
       operationId: settings_ai_usage
-      description: This business's AI use this month against its monthly limit (ADR-058).
+      description: |-
+        This business's AI use this month in estimated rupees, questions and searches, against
+        its monthly allowance (ADR-058, ADR-059 item 8).
       tags:
       - settings
       security:
@@ -11856,6 +11858,25 @@ components:
         * `RELEASE` - Stock released
         * `RETURN` - Goods returned
         * `MANUAL` - Manual
+    Allowance:
+      type: object
+      properties:
+        questions:
+          type: integer
+          description: About this many assistant questions a month…
+        searches:
+          type: integer
+          description: …or about this many shop searches.
+        cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: At most about this much a month (all spent on questions), in
+            ₹.
+      required:
+      - cost
+      - questions
+      - searches
     Announcement:
       type: object
       properties:
@@ -15367,6 +15388,11 @@ components:
       properties:
         feature:
           $ref: '#/components/schemas/AiFeatureEnum'
+        cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Estimated, in ₹.
         units:
           type: integer
         calls:
@@ -15375,6 +15401,7 @@ components:
           type: integer
       required:
       - calls
+      - cost
       - failed
       - feature
       - units
@@ -18250,9 +18277,28 @@ components:
           type: string
           format: date
           description: The first day of this month (India time).
+        model:
+          type: string
+          description: The assistant's model the estimates are priced at.
+        cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Estimated cost this month, in ₹.
+        questions:
+          type: integer
+          description: Questions asked of the assistant this month.
+        searches:
+          type: integer
+          description: Shop searches that used AI this month.
+        allowance:
+          allOf:
+          - $ref: '#/components/schemas/Allowance'
+          nullable: true
+          description: 'Null: no monthly limit.'
         units:
           type: integer
-          description: Units used this month (in and out).
+          description: The provider's units used this month (in and out).
         limit:
           type: integer
           nullable: true
@@ -18269,12 +18315,17 @@ components:
           items:
             $ref: '#/components/schemas/FeatureUsage'
       required:
+      - allowance
       - by_feature
       - calls
+      - cost
       - enabled
       - failed
       - limit
+      - model
       - near_limit
+      - questions
+      - searches
       - since
       - units
     NotificationAudienceEnum:
@@ -21214,6 +21265,31 @@ components:
       - QUEUED
       type: string
       description: '* `QUEUED` - QUEUED'
+    PlatformAiUsage:
+      type: object
+      properties:
+        model:
+          type: string
+          description: The assistant's model the estimates are priced at.
+        limit:
+          type: integer
+          nullable: true
+          description: Units a month per distributor.
+        allowance:
+          allOf:
+          - $ref: '#/components/schemas/Allowance'
+          nullable: true
+          description: 'Null: no monthly limit.'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantAiUsage'
+          description: The dearest first.
+      required:
+      - allowance
+      - limit
+      - model
+      - rows
     PlatformFailure:
       type: object
       properties:
@@ -28260,6 +28336,15 @@ components:
           format: uuid
         name:
           type: string
+        cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          description: Estimated cost this month, in ₹.
+        questions:
+          type: integer
+        searches:
+          type: integer
         units:
           type: integer
           description: This month (in and out).
@@ -28267,18 +28352,16 @@ components:
           type: integer
         failed:
           type: integer
-        limit:
-          type: integer
-          nullable: true
-          description: 'Null: no limit.'
         near_limit:
           type: boolean
       required:
       - calls
+      - cost
       - failed
-      - limit
       - name
       - near_limit
+      - questions
+      - searches
       - tenant_id
       - units
     TenantChoice:

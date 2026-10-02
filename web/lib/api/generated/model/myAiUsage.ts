@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { Allowance } from './allowance';
 import type { FeatureUsage } from './featureUsage';
 
 export interface MyAiUsage {
@@ -12,7 +13,20 @@ export interface MyAiUsage {
   enabled: boolean;
   /** The first day of this month (India time). */
   since: string;
-  /** Units used this month (in and out). */
+  /** The assistant's model the estimates are priced at. */
+  model: string;
+  /**
+     * Estimated cost this month, in ₹.
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  cost: string;
+  /** Questions asked of the assistant this month. */
+  questions: number;
+  /** Shop searches that used AI this month. */
+  searches: number;
+  /** Null: no monthly limit. */
+  allowance: Allowance | null;
+  /** The provider's units used this month (in and out). */
   units: number;
   /**
      * Units a month; null: no limit.

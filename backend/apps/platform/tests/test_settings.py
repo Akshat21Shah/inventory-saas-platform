@@ -71,8 +71,8 @@ def test_registry_covers_plan_catalogue():
     # + 2 e-invoicing thresholds, the IRN reporting limit and cancellation window, the e-way
     # bill cancellation window (ADR-049) + the export row limit, link days and the B2C large
     # threshold (ADR-050) + the AI limit, timeout and search closeness (ADR-058) + the
-    # assistant's timeout (ADR-059)
-    assert len(PLATFORM_KEYS) == 26
+    # assistant's timeout (ADR-059) + its model, five prices and three typical sizes (owner review)
+    assert len(PLATFORM_KEYS) == 35
     assert "security.require_staff_2fa" in TENANT_KEYS
     assert registry.REGISTRY["retailers.blocked_can_sign_in"].default is True
     assert registry.REGISTRY["pricing.discounts_on_special_prices"].default is True

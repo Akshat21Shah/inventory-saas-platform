@@ -199,7 +199,8 @@ export const getSettingsAiUsageUrl = () => {
 }
 
 /**
- * This business's AI use this month against its monthly limit (ADR-058).
+ * This business's AI use this month in estimated rupees, questions and searches, against
+ * its monthly allowance (ADR-058, ADR-059 item 8).
  */
 export const settingsAiUsage = async ( options?: Parameters<typeof apiFetch>[1]): Promise<settingsAiUsageResponse> => {
 

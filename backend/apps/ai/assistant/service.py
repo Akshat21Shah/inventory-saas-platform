@@ -51,18 +51,21 @@ class AssistantUnavailable(DomainError):
     default_message = "There are no figures the assistant may show you."
 
 
-def chat_provider() -> ChatProvider:
-    """The configured provider (``AI_ASSISTANT_PROVIDER``; ``mock`` unless set)."""
+def assistant_model() -> str:
+    """⚙ ``platform.ai_assistant_model`` (the super admin chooses; ADR-059 item 8)."""
+    return str(get_platform_setting("platform.ai_assistant_model"))
+
+
+def chat_provider(model: str | None = None) -> ChatProvider:
+    """The configured provider (``AI_ASSISTANT_PROVIDER``; ``mock`` unless set) with ``model``
+    (default: the platform setting)."""
     name = getattr(settings, "AI_ASSISTANT_PROVIDER", "mock")
     if name == "mock":
         return ScriptedChat()
     if name == "anthropic":
         from apps.ai.adapters.anthropic import AnthropicChat
 
-        return AnthropicChat(
-            getattr(settings, "ANTHROPIC_API_KEY", ""),
-            getattr(settings, "AI_ASSISTANT_MODEL", "claude-sonnet-5"),
-        )
+        return AnthropicChat(getattr(settings, "ANTHROPIC_API_KEY", ""), model or assistant_model())
     raise AiProviderError(f"assistant provider {name!r} isn't set up")
 
 
@@ -163,8 +166,9 @@ def _finish(asked: AssistantQuestion, status: str, *, answer: str = "", error: s
     asked.save()
 
 
-def answer(question_id: UUID) -> AssistantQuestion:
-    """Answer a waiting question in the active distributor (the Celery task's work)."""
+def answer(question_id: UUID, *, model: str | None = None) -> AssistantQuestion:
+    """Answer a waiting question in the active distributor (the Celery task's work; ``model``
+    overrides the platform setting, for the evaluation run)."""
     tenant_id = require_tenant_id()
     asked: AssistantQuestion = AssistantQuestion.objects.select_related("user").get(pk=question_id)
     if asked.status != AssistantQuestion.Status.PENDING:
@@ -178,7 +182,7 @@ def answer(question_id: UUID) -> AssistantQuestion:
     system = system_prompt(Tenant.objects.get(pk=tenant_id))
     timeout = float(get_platform_setting("platform.ai_assistant_timeout_seconds") or 30)
     try:
-        provider = chat_provider()
+        provider = chat_provider(model)
     except AiProviderError as exc:
         _finish(asked, AssistantQuestion.Status.FAILED, error=str(exc))
         return asked
@@ -196,6 +200,7 @@ def answer(question_id: UUID) -> AssistantQuestion:
             return asked
         asked.units_in += turn.units_in
         asked.units_out += turn.units_out
+        asked.model = turn.model[:60]
         asked.rounds += 1
         if not turn.tool_calls:
             asked.tools = calls

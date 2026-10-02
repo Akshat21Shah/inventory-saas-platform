@@ -305,3 +305,20 @@ def test_a_salesperson_asking_for_margins_is_told_they_are_not_shown(
     body = ask(owner, question, django_capture_on_commit_callbacks)
     assert not body["answer"].startswith("Costs and margins")
     assert "margin" in {c["key"] for c in body["tools"][0]["figures"]["columns"]}
+
+
+def test_the_model_is_a_platform_setting_and_each_answer_records_what_answered(
+    world, django_capture_on_commit_callbacks
+):
+    from django.test import override_settings
+
+    set_platform_settings({"platform.ai_assistant_model": "claude-haiku-4-5-20251001"}, user=None)
+    cache.clear()
+    with override_settings(AI_ASSISTANT_PROVIDER="anthropic", ANTHROPIC_API_KEY="test-key"):
+        assert service.chat_provider().model == "claude-haiku-4-5-20251001"  # type: ignore[attr-defined]
+        assert service.chat_provider("claude-sonnet-5-5").model == "claude-sonnet-5-5"  # type: ignore[attr-defined]
+    body = ask(
+        client_for(world["t"], world["owner"]), "Sales today", django_capture_on_commit_callbacks
+    )
+    with tenant_context(world["t"].pk):
+        assert AssistantQuestion.objects.get(pk=body["id"]).model == "mock-scripted-1"

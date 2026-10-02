@@ -112,6 +112,10 @@ class Outcome:
     question: str
     answer: str = ""
     problems: list[str] = field(default_factory=list)
+    model: str = ""  # what answered it
+    units_in: int = 0
+    units_out: int = 0
+    seconds: float = 0.0
 
     @property
     def ok(self) -> bool:
@@ -142,11 +146,21 @@ def check(case: Case, asked: AssistantQuestion, user: User) -> list[str]:
     return problems
 
 
-def run_case(case: Case, user: User, *, product: str = "") -> Outcome:
-    """Ask ``case`` as ``user`` (in the active distributor) and check the answer."""
+def run_case(case: Case, user: User, *, product: str = "", model: str | None = None) -> Outcome:
+    """Ask ``case`` as ``user`` (in the active distributor), with ``model`` instead of the
+    platform setting when given, and check the answer."""
     from apps.ai.assistant import service
 
     question = case.question.format(product=product)
     asked = AssistantQuestion.objects.create(user=user, question=question)
-    asked = service.answer(asked.pk)
-    return Outcome(case, question, asked.answer, check(case, asked, user))
+    asked = service.answer(asked.pk, model=model)
+    return Outcome(
+        case,
+        question,
+        asked.answer,
+        check(case, asked, user),
+        model=asked.model,
+        units_in=asked.units_in,
+        units_out=asked.units_out,
+        seconds=asked.duration_ms / 1000,
+    )

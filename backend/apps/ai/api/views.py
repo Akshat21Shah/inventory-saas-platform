@@ -9,7 +9,8 @@ from common.permissions import HasPermission, StaffReadsOrHasPermission
 
 
 class MyAiUsageView(APIView):
-    """This business's AI use this month against its monthly limit (ADR-058)."""
+    """This business's AI use this month in estimated rupees, questions and searches, against
+    its monthly allowance (ADR-058, ADR-059 item 8)."""
 
     permission_classes = [StaffReadsOrHasPermission]
     required_permission = "settings.manage"
@@ -22,7 +23,8 @@ class MyAiUsageView(APIView):
 
 
 class PlatformAiUsageView(APIView):
-    """Each distributor's AI use this month, the heaviest first (ADR-058)."""
+    """Each distributor's AI use this month, the dearest first, and what the monthly cap comes
+    to in questions, searches and rupees (ADR-058, ADR-059 item 8)."""
 
     permission_classes = [HasPermission]
     required_permission = "platform.dashboard.view"
@@ -30,7 +32,7 @@ class PlatformAiUsageView(APIView):
     @extend_schema(
         operation_id="platform_ai_usage",
         tags=["platform"],
-        responses=s.TenantAiUsageSerializer(many=True),
+        responses=s.PlatformAiUsageSerializer,
     )
     def get(self, request: Request) -> Response:
-        return Response(s.TenantAiUsageSerializer(selectors.usage_by_tenant(), many=True).data)
+        return Response(s.PlatformAiUsageSerializer(selectors.platform_usage()).data)

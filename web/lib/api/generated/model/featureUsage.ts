@@ -9,6 +9,11 @@ import type { AiFeatureEnum } from './aiFeatureEnum';
 
 export interface FeatureUsage {
   feature: AiFeatureEnum;
+  /**
+     * Estimated, in ₹.
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  cost: string;
   units: number;
   calls: number;
   failed: number;

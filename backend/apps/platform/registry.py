@@ -416,6 +416,41 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               "How long the data assistant waits for the AI provider on each step before "
               "giving up on the question (ADR-059).",
               min_value=5, max_value=120),
+    # Owner review (ADR-059 item 8): the assistant's model, and the prices and typical sizes that
+    # turn units into rupees, questions and searches. Prices are placeholders until checked with
+    # the providers (pre-production items 38 and 40); the cap itself stays in units.
+    _platform("platform.ai_assistant_model", Group.AI, SettingType.ENUM, "claude-sonnet-5-5",
+              "The model the data assistant uses. Check its name and price with the provider "
+              "before the assistant is switched on (pre-production item 40).",
+              allowed=("claude-sonnet-5-5", "claude-haiku-4-5-20251001")),
+    _platform("platform.ai_sonnet_price_in", Group.AI, SettingType.MONEY, Decimal("265.00"),
+              "Claude Sonnet 5.5: rupees per million units sent to it (the question, the "
+              "instructions and the figures).",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_sonnet_price_out", Group.AI, SettingType.MONEY, Decimal("1325.00"),
+              "Claude Sonnet 5.5: rupees per million units it writes back.",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_haiku_price_in", Group.AI, SettingType.MONEY, Decimal("88.00"),
+              "Claude Haiku 4.5: rupees per million units sent to it.",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_haiku_price_out", Group.AI, SettingType.MONEY, Decimal("440.00"),
+              "Claude Haiku 4.5: rupees per million units it writes back.",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_embeddings_price", Group.AI, SettingType.MONEY, Decimal("2.00"),
+              "Product search: rupees per million units sent to the embedding provider (₹0 when "
+              "the model runs in our own containers).",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_question_units_in", Group.AI, SettingType.INT, 5_700,
+              "A typical assistant question: units sent to the model, over all its steps. Used "
+              "to show the cap and usage as questions and rupees; set it from the evaluation "
+              "run (pre-production item 40).",
+              min_value=100, max_value=500_000),
+    _platform("platform.ai_question_units_out", Group.AI, SettingType.INT, 300,
+              "A typical assistant question: units the model writes back.",
+              min_value=10, max_value=100_000),
+    _platform("platform.ai_search_units", Group.AI, SettingType.INT, 20,
+              "A typical shop search: units sent to the embedding provider.",
+              min_value=1, max_value=10_000),
     _platform("platform.ai_search_min_similarity_percent", Group.AI, SettingType.INT, 35,
               "How close in meaning a product must be to what a shop typed to be shown after the "
               "keyword matches.",

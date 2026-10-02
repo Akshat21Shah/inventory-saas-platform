@@ -664,6 +664,46 @@
       "ai_assistant_timeout_seconds": {
         "label": "Wait for the assistant's AI provider (seconds)",
         "description": "How long the data assistant waits for the AI provider on each step before giving up on the question."
+      },
+      "ai_assistant_model": {
+        "label": "Assistant's model",
+        "description": "The model the data assistant uses. Check its name and price with the provider before the assistant is switched on.",
+        "options": {
+          "claude-sonnet-5-5": "Claude Sonnet 5.5",
+          "claude-haiku-4-5-20251001": "Claude Haiku 4.5"
+        }
+      },
+      "ai_sonnet_price_in": {
+        "label": "Claude Sonnet 5.5: ₹ per million units in",
+        "description": "Rupees per million units sent to the model (the question, the instructions and the figures)."
+      },
+      "ai_sonnet_price_out": {
+        "label": "Claude Sonnet 5.5: ₹ per million units out",
+        "description": "Rupees per million units the model writes back."
+      },
+      "ai_haiku_price_in": {
+        "label": "Claude Haiku 4.5: ₹ per million units in",
+        "description": "Rupees per million units sent to the model."
+      },
+      "ai_haiku_price_out": {
+        "label": "Claude Haiku 4.5: ₹ per million units out",
+        "description": "Rupees per million units the model writes back."
+      },
+      "ai_embeddings_price": {
+        "label": "Product search: ₹ per million units",
+        "description": "Rupees per million units sent to the embedding provider (₹0 when the model runs in our own containers)."
+      },
+      "ai_question_units_in": {
+        "label": "Typical question: units in",
+        "description": "Units a typical assistant question sends to the model over all its steps. Used to show the cap and usage as questions and rupees."
+      },
+      "ai_question_units_out": {
+        "label": "Typical question: units out",
+        "description": "Units the model writes back for a typical question."
+      },
+      "ai_search_units": {
+        "label": "Typical shop search: units",
+        "description": "Units a typical shop search sends to the embedding provider."
       }
     },
     "retailers": {
@@ -1061,14 +1101,18 @@
       },
       "ai": {
         "title": "AI use this month",
-        "body": "Units each distributor used this month, the heaviest first.",
+        "body": "Each distributor's estimated cost, assistant questions and shop searches, the dearest first.",
+        "allowance": "Each distributor may use about {questions} assistant questions or {searches} shop searches a month, at most about {cost} (priced at {model}; prices are platform settings).",
+        "noLimit": "No monthly limit per distributor (priced at {model}).",
         "name": "Distributor",
-        "units": "Units",
-        "calls": "Requests",
+        "cost": "Estimated cost",
+        "costOfLimit": "{cost} of {limit}",
+        "questions": "Questions",
+        "searches": "Searches",
         "failed": "Failed",
         "near": "Limit",
-        "empty": "No AI use this month.",
-        "ofLimit": "{used} of {limit}"
+        "units": "Units",
+        "empty": "No AI use this month."
       }
     },
     "tenants": {
@@ -1480,10 +1524,15 @@
       "turnedOff": "Module switched off.",
       "aiUsage": {
         "title": "AI use this month",
-        "body": "Since {since}. AI steps aside for the rest of the month when the limit is reached; the app keeps working without it.",
-        "units": "{units} units",
-        "ofLimit": "{units} of {limit} units",
+        "body": "Since {since}. Estimated at today's prices for {model}; the AI provider counts in its own units. When the monthly allowance is used up, AI steps aside until next month and the app keeps working without it.",
+        "costOfLimit": "{cost} of about {limit}",
         "noLimit": "No monthly limit",
+        "used": "Used this month",
+        "usedQuestions": "{count, plural, one {# question to the assistant} other {# questions to the assistant}}",
+        "usedSearches": "{count, plural, one {# shop search} other {# shop searches}}",
+        "allowance": "Monthly allowance",
+        "allowanceQuestions": "about {count} assistant questions",
+        "allowanceSearches": "or about {count} shop searches",
         "calls": "{calls, plural, one {# request} other {# requests}}",
         "failed": "{failed, plural, one {# failed} other {# failed}}",
         "none": "Nothing used yet this month.",
@@ -5818,5 +5867,9 @@
     "askedAt": "Asked {when}",
     "nothingTitle": "Nothing to ask about",
     "nothingBody": "The assistant answers from reports, and your role has none of them. Ask the owner if you need it."
+  },
+  "aiModels": {
+    "claude-sonnet-5-5": "Claude Sonnet 5.5",
+    "claude-haiku-4-5-20251001": "Claude Haiku 4.5"
   }
 }

@@ -57,13 +57,18 @@ test("the owner and the super admin see this month's AI use", async ({ browser, 
   await owner.waitForURL(`${SHARMA}/manage`);
   await owner.goto(`${SHARMA}/manage/settings/features`);
   const usage = owner.getByRole("region", { name: "AI use this month" });
-  await expect(usage.getByText(/ of [\d,]+ units$/)).toBeVisible();
+  // In rupees, questions and searches against the allowance (ADR-059 item 8), not units.
+  await expect(usage.getByText(/^₹[\d,]+\.\d\d of about ₹[\d,]+\.\d\d$/)).toBeVisible();
+  await expect(usage.getByText(/^about [\d,]+ assistant questions$/)).toBeVisible();
   await expect(usage.getByText("Shop search: what shops typed")).toBeVisible();
   await context.close();
 
   await signInAsSuperAdmin(page);
   const section = page.getByRole("region", { name: "AI use this month" });
   await expect(section.getByRole("link", { name: "Sharma Distributors" }).first()).toBeVisible();
+  await expect(
+    section.getByText(/^Each distributor may use about [\d,]+ assistant questions/),
+  ).toBeVisible();
 });
 
 test("the owner asks the assistant and sees the figures behind the answer", async ({ browser }) => {

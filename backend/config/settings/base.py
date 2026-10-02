@@ -206,9 +206,9 @@ CELERY_BEAT_SCHEDULE = {
 # ADR-058: which embedding provider apps.ai uses; only the local mock exists until a real one is
 # chosen and verified (pre-production item 38).
 AI_EMBEDDINGS_PROVIDER = env("AI_EMBEDDINGS_PROVIDER", default="mock")
-# The data assistant (ADR-059): mock unless "anthropic" (after pre-production item 40).
+# The data assistant (ADR-059): mock unless "anthropic" (after pre-production item 40). The
+# model is a platform setting (platform.ai_assistant_model), chosen by the super admin.
 AI_ASSISTANT_PROVIDER = env("AI_ASSISTANT_PROVIDER", default="mock")
-AI_ASSISTANT_MODEL = env("AI_ASSISTANT_MODEL", default="claude-sonnet-5")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 
 CHANNEL_LAYERS = {

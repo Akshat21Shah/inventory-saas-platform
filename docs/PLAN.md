@@ -739,8 +739,8 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `reports/{code}/export` | POST | same | Excel (or PDF where offered): small exports answer at once with the file link; larger ones (over ⚙ `platform.report_async_rows`) and every GST workbook return a queued `ReportRun` |
 | `report-runs`, `report-runs/{id}` | GET | the requester | "My exports": status, rows, a fresh signed download link while not expired |
 | `platform/dashboard` | GET | `platform.dashboard.view` | active distributors, orders per day (count, value incl. GST), failed messages and compliance errors per distributor, usage against plans (audited `platform_db` path) |
-| `settings/ai-usage` | GET | any staff | this month's AI units against the monthly limit, in total and by feature (ADR-058) |
-| `platform/ai-usage` | GET | `platform.dashboard.view` | each distributor's AI use this month, the heaviest first (audited platform alias) |
+| `settings/ai-usage` | GET | any staff | this month's AI use as estimated rupees, assistant questions and shop searches, in total and by feature, against the monthly allowance (about N questions or M searches, at most ₹X); units kept alongside (ADR-058, ADR-059 item 8) |
+| `platform/ai-usage` | GET | `platform.dashboard.view` | each distributor's AI use this month in estimated rupees, questions and searches, the dearest first, and what the cap comes to (audited platform alias) |
 | `assistant/questions` | GET, POST | staff who can open one of the assistant's reports | POST `{question}` → 202 with the question (`PENDING`), answered in the background; GET: the person's own questions, newest first (ADR-059). Flag `ai`; 30 per person per hour (`ASSISTANT_RATE_LIMITED`) |
 | `assistant/questions/{id}` | GET | the person who asked | the question with its status, answer and the figures each tool returned |
 | `assistant/tools` | GET | as above | the tools this person may use and suggested questions |
@@ -2150,18 +2150,18 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | # | Question | Answer |
 |---|---|---|
 | 1 | Provider **[assumed]** | Interfaces with a local mock; the real embedding provider chosen and verified before launch (pre-production item 38) |
-| 2 | Cap **[assumed]** | 2,000,000 units per distributor per month (platform setting); over it, or on failure, AI steps aside |
-| 3 | Search **[assumed]** | Keyword matches first, then nearest by meaning above 35% similarity, up to the page size; shop search only |
+| 2 | Cap **[assumed]** | 2,000,000 units per distributor per month (platform setting); over it, or on failure, AI steps aside. Shown as estimated rupees, questions and searches (owner review, ADR-059 item 8) |
+| 3 | Search **approved as a starting point (2026-10-02)** | Keyword matches first, then nearest by meaning above 35% similarity, up to the page size; shop search only |
 | 4 | Infrastructure **[assumed]** | pgvector: dev image from `postgres:16-alpine`, CI `pgvector/pgvector:pg16`; RDS creates the extension before migrating (item 39) |
 
 ### 10.2o Phase 9e decisions (2026-10-02, ADR-059; built without stopping, **[assumed]** items for the owner to review)
 | # | Question | Answer |
 |---|---|---|
 | 1 | What the assistant can look at | Eleven read-only tools, each a report run with the person's own permissions (own shops for sales staff, costs only with `costs.view`) |
-| 2 | Who may ask **[assumed]** | Staff who can open at least one of those reports, with the `ai` module on |
-| 3 | Model **[assumed]** | Anthropic Messages API with tool use, `claude-sonnet-5`; a scripted mock until item 40 is verified |
-| 4 | What is sent **[assumed]** | The question and the tools' rows (names, codes, amounts); no phone numbers, emails, GSTINs or addresses |
-| 5 | Limits **[assumed]** | The monthly AI units cap; 30 questions per person per hour; 30 s per provider call; at most 4 tool rounds |
+| 2 | Who may ask **approved as a starting point (2026-10-02)** | Staff who can open at least one of those reports, with the `ai` module on |
+| 3 | Model **owner (2026-10-02)** | Anthropic Messages API with tool use; the model is a super admin setting, `claude-sonnet-5-5` by default, `claude-haiku-4-5-20251001` the option; both evaluated (accuracy, cost per question) in item 40; a scripted mock until then |
+| 4 | What is sent **[assumed]** | The question and the tools' rows (names, codes, amounts); no phone numbers, emails, GSTINs or addresses. In the Privacy Policy and the DPA, with the provider's data terms reviewed (item 41) |
+| 5 | Limits **30 an hour approved as a starting point (2026-10-02)** | The monthly AI units cap; 30 questions per person per hour; 30 s per provider call; at most 4 tool rounds |
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.
