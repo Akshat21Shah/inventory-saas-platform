@@ -23,7 +23,7 @@ jobs:
         working-directory: backend
     services:
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16  # pgvector (ADR-058)
         env:
           POSTGRES_DB: inventory
           POSTGRES_USER: postgres

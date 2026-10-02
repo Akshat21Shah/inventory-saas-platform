@@ -265,7 +265,7 @@
 - **Phase 9 split** (product owner, 2026-10-01; ADR-053, PLAN §8 Phase 9 and §10.2k, SPEC 1.9): 9a global search, stock planning and purchasing; ~~9a+ staging~~ (moved to Phase 10, 2026-10-02, ADR-055); 9b sales growth; 9c shop self-service and money; 9d AI foundation and semantic search; 9e data assistant. Phase 10 also gets the Platform Support role and, with the CA review, the Tally export and GSTR-1 JSON. After launch: multi-warehouse and transfers, batches and expiry, manufacturing, demand forecasting, supplier-bill photo reading, convenience fee, own WhatsApp number and templates, saved filters and scheduled reports. Each sub-phase is its own branch and PR; 9d/9e and free-goods schemes may move after launch.
 - **Phase 9d — AI foundation and semantic search** — **in progress** (branch `phase-9d` on top of `phase-9c`; ADR-058, PLAN §10.2n, SPEC 1.12; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-058, PLAN 9d tasks and §10.2n, SPEC 1.12, pre-production items 38–39 — **done**
-  2. Infrastructure: pgvector, the vector field
+  2. Infrastructure: pgvector in dev (an image built from `postgres:16-alpine` with pgvector 0.8.0, same data volume) and CI (`pgvector/pgvector:pg16`); the init script creates the extension; `common/vectors.py`: a vector field, cosine distance and HNSW index (no new package) — **done**
   3. `apps/ai`: providers, usage, cap, settings
   4. Product embeddings and semantic search
   5. Usage views, demo and volume data, speed check — backend checkpoint
