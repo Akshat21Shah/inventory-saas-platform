@@ -22,6 +22,7 @@ import { PageSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FreeLineLabel } from "@/components/shop/free-goods";
 import {
   getInvoicesRetrieveQueryKey,
   invoicesPdf,
@@ -534,7 +535,8 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
                     <div className="flex flex-wrap justify-between gap-2">
                       <span className="min-w-0">
                         <span className="block font-medium">{line.description}</span>
-                        <span className="text-muted-foreground text-xs">
+                        {line.is_free ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                        <span className="text-muted-foreground block text-xs">
                           {t("lineMeta", {
                             code: line.product_code,
                             hsn: line.hsn_code,
@@ -595,6 +597,26 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
                         </span>
                       </span>
                       <MoneyText value={note.grand_total} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            {invoice.return_requests.length ? (
+              <section className="space-y-2" aria-labelledby="invoice-returns">
+                <h2 id="invoice-returns" className="font-semibold">
+                  {t("returnRequests")}
+                </h2>
+                <ul className="divide-y rounded-xl border text-sm">
+                  {invoice.return_requests.map((request) => (
+                    <li key={request.id} className="flex flex-wrap justify-between gap-2 p-3">
+                      <Link
+                        href={`/manage/invoices/returns/${request.id}`}
+                        className="font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
+                      >
+                        {request.number}
+                      </Link>
+                      <StatusBadge status={request.status} labels="returnRequestStatus" />
                     </li>
                   ))}
                 </ul>

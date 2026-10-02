@@ -1,7 +1,10 @@
 """The Phase 9a speed check (ADR-053, 9a.8): global search (p95 < 200 ms at 40,000 orders) for an
 owner and for a salesperson limited to their own shops, the super admin's search, and the new
 purchasing and stock planning pages (p95 < 300 ms), timed through the whole API in-process as in
-``perf_reports``. ``make perf``, after ``make seed-volume``.
+``perf_reports``. ``make perf``, after ``make seed-volume``. Phase 9b (ADR-056, 9b.6) adds the shop
+activity pages, the free-goods schemes and a 40-line cart with schemes (made for the run and
+removed after); Phase 9c (ADR-057) the return requests and a bill with its requests; Phase 9d
+(ADR-058) a shop's search with near matches by meaning (a misspelt name) and the AI usage pages.
 
 The searches use the distributor's own records (a product, a shop and its mobile and GSTIN, an
 order, an invoice, a receipt, a goods receipt and a purchase order, with and without their
@@ -21,11 +24,13 @@ from rest_framework.test import APIClient
 from apps.accounts.models import User
 from apps.accounts.tokens import issue_tokens
 from apps.billing.models import Invoice
-from apps.catalog.models import Product
+from apps.catalog.models import Category, Product
 from apps.inventory.models import StockInward
-from apps.orders.models import Order
+from apps.orders.models import Cart, CartLine, Order
 from apps.payments.models import Payment
 from apps.platform.models import Tenant
+from apps.platform.selectors import is_feature_enabled
+from apps.pricing.models import FreeGoodsScheme
 from apps.purchasing.models import PurchaseOrder, Supplier
 from apps.retailers.models import Retailer
 from common.tenancy import tenant_transaction
@@ -160,9 +165,96 @@ class Command(BaseCommand):
             ("product suppliers", f"{API}/products/{product.pk}/suppliers/"),
             ("suppliers from receipts", f"{API}/suppliers/from-receipts/"),
             ("dashboard (with tiles)", f"{API}/dashboard/"),
+            ("shop activity", f"{API}/shop-activity/"),
+            ("shop activity: win back", f"{API}/shop-activity/?win_back=true"),
+            ("shop activity: slowing", f"{API}/shop-activity/?segment=SLOWING"),
+            ("a shop's activity", f"{API}/retailers/{shop.pk}/activity/"),
         ]
+        pages += [
+            ("return requests", f"{API}/return-requests/"),
+            ("return requests: waiting", f"{API}/return-requests/?status=REQUESTED"),
+            ("a bill (with its returns)", f"{API}/invoices/{invoice.pk}/"),
+        ]
+        if is_feature_enabled("free_goods", tenant.pk):  # seed_volume switches it on
+            pages.append(("free-goods schemes", f"{API}/free-goods-schemes/"))
+        if is_feature_enabled("ai", tenant.pk):  # seed_volume switches it on for vol-a
+            pages.append(("AI use this month", f"{API}/settings/ai-usage/"))  # found: blank
         for name, url in pages:
             measure(name, client, url, target, count)
+        if is_feature_enabled("ai", tenant.pk):
+            self._measure_ai(tenant, product, shop, measure, target)
+        self._measure_cart(tenant, owner, shop, measure, client, target)
         if slow:
             raise CommandError("over the target: " + ", ".join(slow))
         self.stdout.write(self.style.SUCCESS("every p95 is under its target"))
+
+    def _measure_ai(
+        self,
+        tenant: Tenant,
+        product: Product,
+        shop: Retailer,
+        measure: Callable[..., None],
+        target: float,
+    ) -> None:
+        """A shop's search, right and misspelt (keyword matches, then near matches by meaning),
+        and the super admin's AI use per distributor."""
+        login = User.objects.filter(tenant=tenant, phone=shop.mobile).first()
+        if login is None:
+            raise CommandError(f"{shop.shop_name} has no sign-in")
+        client = self._client(login, tenant)
+        word = max(product.name.split(), key=len)
+        with tenant_transaction(tenant.pk):
+            category = Category.objects.filter(pk=product.category_id).first()
+        kind = category.name.split()[-1] if category else word
+        # A letter left out of each longer word, as a hurried shop types: "tiger biscits".
+        slip = " ".join(w[:3] + w[4:] if len(w) > 5 else w for w in (word.lower(), kind.lower()))
+        for name, text in (("shop search", word), ("shop search: a spelling slip", slip)):
+            url = f"{API}/shop/products/?{urlencode({'search': text})}"
+            measure(name, client, url, target, lambda body: str(len(body["results"])))
+        admin = User.objects.filter(user_type=User.UserType.PLATFORM, is_active=True).first()
+        if admin is not None:
+            admin_client = self._client(admin, None)
+            url = f"{API}/platform/ai-usage/"
+            measure("platform: AI use", admin_client, url, target, lambda body: str(len(body)))
+
+    def _measure_cart(
+        self,
+        tenant: Tenant,
+        owner: User,
+        shop: Retailer,
+        measure: Callable[..., None],
+        client: APIClient,
+        target: float,
+    ) -> None:
+        """A staff member's 40-line cart for a shop, half of it on free-goods schemes: the quote
+        with its free lines. The cart is made for the run and removed after."""
+        from decimal import Decimal
+
+        with tenant_transaction(tenant.pk):
+            on_scheme = list(
+                FreeGoodsScheme.objects.values_list("buy_product_id", flat=True).order_by()[:20]
+            )
+            others = list(
+                Product.objects.exclude(pk__in=on_scheme)
+                .order_by("code")
+                .values_list("pk", flat=True)[: 40 - len(on_scheme)]
+            )
+            cart, _ = Cart.objects.get_or_create(retailer=shop, user=owner)
+            CartLine.objects.filter(cart=cart).delete()
+            CartLine.objects.bulk_create(
+                [
+                    CartLine(tenant_id=tenant.pk, cart=cart, product_id=pk, quantity=Decimal("24"))
+                    for pk in [*on_scheme, *others]
+                ]
+            )
+
+        def lines(body: Any) -> str:
+            free = sum(1 for line in body["lines"] if line["is_free"])
+            return f"{len(body['lines'])} lines, {free} free"
+
+        try:
+            url = f"{API}/retailers/{shop.pk}/cart/"
+            measure("cart: 40 lines with schemes", client, url, target, lines)
+        finally:
+            with tenant_transaction(tenant.pk):
+                Cart.objects.filter(pk=cart.pk).delete()

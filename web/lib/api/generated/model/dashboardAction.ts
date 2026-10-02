@@ -41,4 +41,14 @@ export interface DashboardAction {
      * @nullable
      */
   late_purchase_orders: number | null;
+  /**
+     * Shops to win back (ADR-056): slowing, stopped or never ordered, not contacted lately.
+     * @nullable
+     */
+  win_back: number | null;
+  /**
+     * Return requests from shops waiting for a decision (ADR-057).
+     * @nullable
+     */
+  return_requests: number | null;
 }

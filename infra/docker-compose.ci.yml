@@ -9,6 +9,10 @@ x-backend-image: &backend-image
   pull_policy: never
 
 services:
+  # pgvector (ADR-058): the official image, as CI's databases start empty.
+  postgres:
+    image: pgvector/pgvector:pg16
+    build: !reset null
   migrate: *backend-image
   backend: *backend-image
   worker: *backend-image

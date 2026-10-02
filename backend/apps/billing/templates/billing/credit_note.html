@@ -56,7 +56,7 @@
       {% with il=line.invoice_line %}
       <tr>
         <td class="c">{{ line.line_no }}</td>
-        <td>{{ il.description }}<br><span class="muted">{{ il.product_code }}{% if doc.kind == "RETURN" %} · {{ line.get_disposition_display }}{% endif %}</span></td>
+        <td>{{ il.description }}{% if il.is_free %} <b>Free{% if il.scheme_name %} ({{ il.scheme_name }}){% endif %}</b>{% endif %}<br><span class="muted">{{ il.product_code }}{% if doc.kind == "RETURN" %} · {{ line.get_disposition_display }}{% endif %}</span></td>
         <td class="c">{{ il.hsn_code }}</td>
         <td class="n">{% if line.quantity %}{{ line.quantity|qty }} {{ il.unit_code }}{% else %}-{% endif %}</td>
         <td class="n">{{ line.taxable_value|amount }}</td>

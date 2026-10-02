@@ -96,6 +96,7 @@ const bill = (over: Partial<EWayBillSummary> = {}): EWayBillSummary => ({
 });
 
 const invoice = (over: Partial<InvoiceDetail> = {}): InvoiceDetail => ({
+  return_requests: [],
   id: "i1",
   number: "INV/26-27/000001",
   invoice_date: "2026-09-30",

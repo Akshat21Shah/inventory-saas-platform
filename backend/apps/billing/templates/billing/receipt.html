@@ -46,6 +46,7 @@
   {% endif %}
   {% if doc.unapplied_amount %}<p style="margin-top:4pt">Kept as credit for future bills: {{ doc.unapplied_amount|rupees }}</p>{% endif %}
 
+  {% if doc.status == "BOUNCED" and doc.bounce_charge %}<p class="flag">Cheque bounce charge of {{ doc.bounce_charge.amount|rupees }} added to the account on {{ doc.bounce_charge.adjustment_date|day }}.</p>{% endif %}
   {% if subject_to_clearance %}<p class="flag">Subject to the cheque being cleared by the bank.</p>{% endif %}
   {% if doc.notes %}<p class="muted" style="margin-top:4pt">{{ doc.notes }}</p>{% endif %}
 

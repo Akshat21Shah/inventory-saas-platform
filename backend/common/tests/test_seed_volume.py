@@ -59,7 +59,7 @@ def test_the_dashboard_and_every_report_open_on_it(year):
     owner = client_for(tenant, User.objects.get(email="owner@vol-t.example.com"))
     assert owner.get("/api/v1/dashboard/").status_code == 200
     codes = [r["code"] for r in owner.get("/api/v1/reports/").json()]
-    assert len(codes) == 19
+    assert len(codes) == 20  # + shop activity (ADR-056)
     pages = {}
     for code in codes:
         response = owner.get(f"/api/v1/reports/{code}/")
@@ -131,3 +131,32 @@ def test_purchasing_and_planning_on_the_volume_data(year, capsys):
     out = capsys.readouterr().out
     assert "search (owner): order unpadded" in out and "jump order 1" in out
     assert "reorder suggestions" in out and "every p95 is under its target" in out
+
+
+def test_free_goods_and_shop_activity_on_the_volume_data(year):
+    """ADR-056 (9b.6): a scheme per 25 products and every shop's activity; a second run adds
+    nothing."""
+    from apps.insights.models import ShopActivity
+    from apps.pricing.models import FreeGoodsScheme
+    from common.demo_growth import seed_volume_growth
+
+    tenant, _result = year
+    added = seed_volume_growth(tenant)
+    assert added is not None and added.schemes == 3  # 60 products
+    with tenant_context(tenant.pk):
+        assert FreeGoodsScheme.objects.count() == 3
+        assert ShopActivity.objects.count() == added.shops > 0
+    assert seed_volume_growth(tenant) is None
+
+
+def test_return_requests_on_the_volume_data(year):
+    """ADR-057 (9c.5): requests on the year's bills, a third waiting; numbering continues."""
+    from apps.billing.models import ReturnRequest
+    from common.demo_selfservice import seed_volume_returns
+
+    tenant, _result = year
+    added = seed_volume_returns(tenant, count=30)
+    assert added == 30
+    with tenant_context(tenant.pk):
+        assert ReturnRequest.objects.filter(status="REQUESTED").count() == 10
+    assert seed_volume_returns(tenant, count=30) is None

@@ -91,6 +91,11 @@ FEATURE_FLAGS = [
         "Stock planning",
         "Product demand and classes (ABC, fast and slow), and reorder suggestions.",
     ),
+    (
+        "free_goods",
+        "Free goods",
+        "Buy-X-get-Y schemes: free units added to orders and shown on invoices.",
+    ),
     ("ai", "AI features", "Smart search and the data assistant."),
 ]
 

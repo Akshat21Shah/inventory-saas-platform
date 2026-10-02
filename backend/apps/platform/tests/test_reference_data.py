@@ -45,6 +45,7 @@ def test_feature_flags_seeded_off_and_not_tenant_toggleable():
         "multi_warehouse",
         "purchasing",  # ADR-053
         "stock_planning",
+        "free_goods",  # ADR-056
         "ai",
     }
     assert not FeatureFlag.objects.filter(default_enabled=True).exists()

@@ -23,6 +23,7 @@ import { CardSkeleton, PageSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FreeLineLabel } from "./free-goods";
 import {
   shopCreditNotesPdf,
   shopInvoicesPdf,
@@ -40,6 +41,7 @@ import { formatDate, formatMoney, formatQty } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import { PayAccountCard, PayBillButton } from "./pay";
+import { BillReturns, ReturnItemsButton } from "./returns";
 
 function Pager({ pager }: { pager: ReturnType<ReturnType<typeof useCursor>["pagination"]> }) {
   const t = useTranslations("shop.money");
@@ -334,7 +336,8 @@ export function ShopBillPage({ invoiceId }: { invoiceId: string }) {
             <li key={line.id} className="flex justify-between gap-3 p-3 text-sm">
               <span className="min-w-0">
                 <span className="block font-medium">{line.description}</span>
-                <span className="text-muted-foreground">
+                {line.is_free ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                <span className="text-muted-foreground block">
                   {formatQty(line.quantity)} {line.unit_code} ×{" "}
                   <MoneyText value={line.unit_price} />
                   {line.credited_quantity !== "0.000"
@@ -346,7 +349,9 @@ export function ShopBillPage({ invoiceId }: { invoiceId: string }) {
             </li>
           ))}
         </ul>
+        <ReturnItemsButton bill={bill} />
       </section>
+      <BillReturns bill={bill} />
       <dl className="space-y-1 rounded-xl border p-4 text-sm">
         <div className="flex justify-between">
           <dt>{t("total")}</dt>

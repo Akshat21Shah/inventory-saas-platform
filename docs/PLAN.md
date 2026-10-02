@@ -739,7 +739,11 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `reports/{code}/export` | POST | same | Excel (or PDF where offered): small exports answer at once with the file link; larger ones (over ⚙ `platform.report_async_rows`) and every GST workbook return a queued `ReportRun` |
 | `report-runs`, `report-runs/{id}` | GET | the requester | "My exports": status, rows, a fresh signed download link while not expired |
 | `platform/dashboard` | GET | `platform.dashboard.view` | active distributors, orders per day (count, value incl. GST), failed messages and compliance errors per distributor, usage against plans (audited `platform_db` path) |
-| `ai/*` | — | Phase 9d/9e | assistant and semantic search (flag `ai`) |
+| `settings/ai-usage` | GET | any staff | this month's AI use as estimated rupees, assistant questions and shop searches, in total and by feature, against the monthly allowance (about N questions or M searches, at most ₹X); units kept alongside (ADR-058, ADR-059 item 8) |
+| `platform/ai-usage` | GET | `platform.dashboard.view` | each distributor's AI use this month in estimated rupees, questions and searches, the dearest first, and what the cap comes to (audited platform alias) |
+| `assistant/questions` | GET, POST | staff who can open one of the assistant's reports | POST `{question}` → 202 with the question (`PENDING`), answered in the background; GET: the person's own questions, newest first (ADR-059). Flag `ai`; 30 per person per hour (`ASSISTANT_RATE_LIMITED`) |
+| `assistant/questions/{id}` | GET | the person who asked | the question with its status, answer and the figures each tool returned |
+| `assistant/tools` | GET | as above | the tools this person may use and suggested questions |
 
 ### 3.12 Search, purchasing and planning (Phase 9a, ADR-053)
 | Endpoint | Method | Permission | Purpose |
@@ -1627,17 +1631,55 @@ Each sub-phase is its own branch and PR, mergeable on its own; 9d and 9e (AI) ma
 #### 9a+ — withdrawn (product owner, 2026-10-02; ADR-055)
 Every feature is built before anything goes to staging or production, so the staging environment moves to Phase 10 (task 10.6, design and cost notes in §10.6 below). Demos before launch use LAN mode (`make lan`) or a temporary tunnel from the owner's Mac. The CI part was done at once, re-planned for a private repository on GitHub Pro (3,000 Actions minutes a month; ADR-055).
 
-#### 9b — Sales growth
-Re-engagement insights (dormant shops, declining order frequency); daily morning summary for owners (email or WhatsApp, a distributor setting); free-goods schemes ("buy X get Y", GST treatment to the CA without blocking).
+#### 9b — Sales growth (ADR-056; free goods behind the flag `free_goods`) — §10.2l
+| # | Task | Size |
+|---|---|---|
+| 9b.1 | Docs: ADR-056, PLAN, SPEC 1.10, CA_REVIEW §15a and questions 41–45 | S |
+| 9b.2 | Shop activity: nightly figures and segments, contacts log, API, dashboard tile, report, settings | M |
+| 9b.3 | Daily summary: the `summary.daily` notification per recipient and permission, the morning job, settings | M |
+| 9b.4 | Free-goods schemes: model, API, audit; applied in the quote (cart, checkout, staff orders, changes); free order lines; stock and short supply | L |
+| 9b.5 | Free goods on invoices, PDFs, e-invoices and returns; reports (free quantity, margin) | M |
+| 9b.6 | Demo data, volume data and a speed check — **backend checkpoint** | S |
+| 9b.7 | FE: shop activity screens, the shop's activity card and contacts, dashboard tile | M |
+| 9b.8 | FE: schemes (Pricing → Free goods), badges and hints in the shop app, free lines everywhere | L |
+| 9b.9 | E2E, responsive, flags-off proof — **final review** | M |
 
-#### 9c — Shop self-service and money
-The shop confirms delivery; a one-time delivery code (proof of delivery); shop return requests (approval issues the return credit note); cheque bounce charge (a setting).
+#### 9c — Shop self-service and money (ADR-057; core, with settings) — §10.2m
+| # | Task | Size |
+|---|---|---|
+| 9c.1 | Docs: ADR-057, PLAN, SPEC 1.11, CA_REVIEW question 47 | S |
+| 9c.2 | Delivery: the shop confirms in its app; delivery codes (made at dispatch, sent with the dispatch message, entered by the delivery person, wrong-code lock; delivered without the code with a reason); settings | M |
+| 9c.3 | Return requests: model, the shop's API (ask, cancel), staff approve (issues the return credit note) or reject, messages, dashboard tile, settings | L |
+| 9c.4 | Cheque bounce charge: setting, the ledger debit on bounce, the message, the receipt and statement | S |
+| 9c.5 | Demo data and a speed check — **backend checkpoint** | S |
+| 9c.6 | FE: the shop's "Received" and delivery code; staff delivery with the code | M |
+| 9c.7 | FE: return requests (shop: ask and follow; staff: list, approve, reject; dashboard tile) | L |
+| 9c.8 | FE: the bounce charge setting and where it shows | S |
+| 9c.9 | E2E, responsive, flags-off proof — **final review** | M |
 
-#### 9d — AI foundation and semantic search (flag `ai`)
-`apps/ai`: provider abstraction, per-tenant usage tracking and limits, graceful degradation; semantic product search (pgvector; Hindi/English mix and typos; falls back to today's search).
+#### 9d — AI foundation and semantic search (ADR-058; flag `ai`) — §10.2n
+| # | Task | Size |
+|---|---|---|
+| 9d.1 | Docs: ADR-058, PLAN, SPEC 1.12, pre-production items 38–39 | S |
+| 9d.2 | Infrastructure: pgvector in dev (alpine image with pgvector) and CI; the vector field, distance and index | S |
+| 9d.3 | `apps/ai`: provider interfaces, the mock, usage records, the monthly cap and timeouts, settings | M |
+| 9d.4 | Product embeddings (background and nightly) and semantic search in the shop's search, with the fallback | M |
+| 9d.5 | Usage for the super admin and the distributor; demo and volume data; speed check — **backend checkpoint** | S |
+| 9d.6 | FE: AI usage (super admin; the distributor's features page) | S |
+| 9d.7 | E2E, responsive, flags-off proof — **final review** | S |
 
-#### 9e — Distributor data assistant (flag `ai`)
+#### 9e — Distributor data assistant (ADR-059; flag `ai`) — §10.2o
 Tool calling over fixed, read-only, tenant-scoped query functions that respect every permission (`costs.view`, sales visibility), never model-written SQL; every question and the tools it called are logged; an evaluation set of realistic questions with answers checked against the reports, run in CI against a recorded or mocked model.
+
+| # | Task | Size |
+|---|---|---|
+| 9e.1 | Docs: ADR-059, PLAN, SPEC 1.13, pre-production item 40 | S |
+| 9e.2 | Tools over the report engine (permissions, own shops, costs), with periods and validation | M |
+| 9e.3 | The chat-with-tools interface: the scripted mock and the Anthropic Messages adapter (TODO verify) | M |
+| 9e.4 | Questions: `AssistantQuestion`, the background answer loop, limits, rate limit, API | M |
+| 9e.5 | The evaluation set (CI, mock) and `ai_eval`; demo data — **backend checkpoint** | S |
+| 9e.6 | FE: the Assistant page (suggestions, answer with its figures, own history), menu entry | M |
+| 9e.7 | E2E, responsive, flags-off proof — **final review** | S |
 
 #### After launch (ADR-053)
 Multi-warehouse and stock transfers; batches and expiry (earlier if a pilot needs expiry tracking); manufacturing (bills of materials); demand forecasting; supplier-bill photo → goods-receipt draft; convenience fee on online payments; the distributor's own WhatsApp number and templates; saved filters and scheduled email reports.
@@ -2083,6 +2125,43 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | 13 | Permissions | `purchasing.view` (owner, manager, warehouse, accounts), `purchasing.manage` (owner, manager); quantity on order and expected dates for anyone with `orders.view` or `stock.view`, without supplier or prices. Backlog: expected dates to shops |
 | 14 | Reorder levels | Never changed automatically; "use as reorder level" per product or in bulk (audited) |
 | — | Global search | First feature commit; distributor and super admin scopes; smart matching of numbers, GSTINs and mobiles; permissions, sales visibility and isolation; p95 < 200 ms at 40,000 orders; keyboard and recent searches; ready for "Ask the assistant" |
+
+### 10.2l Phase 9b decisions (2026-10-02, ADR-056; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Shop activity | Nightly + on demand; first/last order, orders and value over 90 days vs the 90 before, usual gap (median of the last 10 gaps), days since |
+| 2 | Segments **[assumed]** | New 30 days; dormant 45 days; slowing at 150% of the usual gap (≥ 7 days) or half the orders of the 90 days before; never ordered after 14 days; settings in Shop settings |
+| 3 | Win back | Slowing, dormant, never ordered; not contacted in 14 days; call / WhatsApp from the staff phone / place an order / log a contact; no automatic messages |
+| 4 | Who sees **[assumed]** | `retailers.view` within sales visibility; values with a sales-report permission |
+| 5 | Daily summary **[assumed]** | Owners, in-app + email, 08:00 IST every day (Sundays optional off); per recipient and permission; quiet days still send |
+| 6 | Schemes | Buy N get M (same or another product), repeat or once, cap, audience like discount rules, dates; best scheme per product; flag `free_goods` |
+| 7 | Stock **[assumed]** | Free lines reserve and backorder like any line; capped to stock when backorders are off; shrink with the bought line |
+| 8 | Tax **[assumed, CA 41–45]** | Free line at ₹0, no GST, HSN and quantity shown; returns may take free units back at ₹0 |
+
+### 10.2m Phase 9c decisions (2026-10-02, ADR-057; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Shop confirms delivery **[assumed default on]** | One tap per dispatched shipment, same effect as staff marking it delivered; no partial confirmation (returns cover problems) |
+| 2 | Delivery code **[assumed default off]** | 4 digits per shipment at dispatch; shown to the shop and sent with the dispatch message; 5 wrong tries lock it for 15 minutes; staff may deliver without it with a reason (audited) |
+| 3 | Return requests **[assumed]** | On by default, within 30 days of the invoice; reasons as for credit notes; staff approve (choose what happened to the goods, may lower quantities) or reject with a reason; approval issues the credit note |
+| 4 | Bounce charge **[assumed, CA 47]** | ₹0 (off) by default; a non-GST debit adjustment on bounce, due at once, on the statement and the bounced receipt; removed with a manual credit if needed |
+
+### 10.2n Phase 9d decisions (2026-10-02, ADR-058; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Provider **[assumed]** | Interfaces with a local mock; the real embedding provider chosen and verified before launch (pre-production item 38) |
+| 2 | Cap **[assumed]** | 2,000,000 units per distributor per month (platform setting); over it, or on failure, AI steps aside. Shown as estimated rupees, questions and searches (owner review, ADR-059 item 8) |
+| 3 | Search **approved as a starting point (2026-10-02)** | Keyword matches first, then nearest by meaning above 35% similarity, up to the page size; shop search only |
+| 4 | Infrastructure **[assumed]** | pgvector: dev image from `postgres:16-alpine`, CI `pgvector/pgvector:pg16`; RDS creates the extension before migrating (item 39) |
+
+### 10.2o Phase 9e decisions (2026-10-02, ADR-059; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | What the assistant can look at | Eleven read-only tools, each a report run with the person's own permissions (own shops for sales staff, costs only with `costs.view`) |
+| 2 | Who may ask **approved as a starting point (2026-10-02)** | Staff who can open at least one of those reports, with the `ai` module on |
+| 3 | Model **owner (2026-10-02)** | Anthropic Messages API with tool use; the model is a super admin setting, `claude-sonnet-5-5` by default, `claude-haiku-4-5-20251001` the option; both evaluated (accuracy, cost per question) in item 40; a scripted mock until then |
+| 4 | What is sent **[assumed]** | The question and the tools' rows (names, codes, amounts); no phone numbers, emails, GSTINs or addresses. In the Privacy Policy and the DPA, with the provider's data terms reviewed (item 41) |
+| 5 | Limits **30 an hour approved as a starting point (2026-10-02)** | The monthly AI units cap; 30 questions per person per hour; 30 s per provider call; at most 4 tool rounds |
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.

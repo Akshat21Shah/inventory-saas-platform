@@ -35,6 +35,7 @@ class Group(StrEnum):
     REPORTS = "reports"
     PLANNING = "planning"
     PURCHASING = "purchasing"
+    AI = "ai"  # ADR-058: platform-wide AI limits
 
 
 class SettingType(StrEnum):
@@ -247,6 +248,13 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("invoicing.default_payment_terms_days", Group.INVOICING, SettingType.INT, 30,
             "Default credit days for new retailers (each retailer can differ).",
             min_value=0, max_value=365),
+    # ADR-057 item 3: shops ask for returns from their app; staff approve each one.
+    _tenant("returns.shop_requests", Group.INVOICING, SettingType.BOOL, True,
+            "Let shops ask for returns from their app. You approve each one, which issues the "
+            "credit note."),
+    _tenant("returns.request_days", Group.INVOICING, SettingType.INT, 30,
+            "How many days after a bill a shop can ask to return goods from it.",
+            min_value=1, max_value=365, depends_on=DependsOn("returns.shop_requests", True)),
     # --- Tenant: Orders -------------------------------------------------------------------------
     _tenant("orders.acceptance_mode", Group.ORDERS, SettingType.ENUM, "MANUAL",
             "Accept new orders yourself, or automatically when they pass all checks.",
@@ -267,6 +275,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             allowed=("REDUCE_ONLY", "FULL_EDIT"), snapshot_on=_ORDER),
     _tenant("orders.staff_can_place_on_behalf", Group.ORDERS, SettingType.BOOL, True,
             "Allow your staff (for example salesmen) to place orders for retailers."),
+    # ADR-057: delivery confirmed by the shop, and an optional delivery code.
+    _tenant("orders.shop_confirms_delivery", Group.ORDERS, SettingType.BOOL, True,
+            "Let shops mark a dispatched shipment as received in their app."),
+    _tenant("orders.delivery_code", Group.ORDERS, SettingType.BOOL, False,
+            "Give each shipment a 4-digit code at dispatch. The shop gives it to the delivery "
+            "person, who enters it to mark the shipment delivered."),
     _tenant("orders.sales_visibility", Group.ORDERS, SettingType.ENUM, "ALL",
             "Which orders and retailers sales staff can see.",
             allowed=("ALL", "ASSIGNED_RETAILERS")),
@@ -316,6 +330,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    # ADR-057 item 4: an optional charge when a shop's cheque bounces (no GST; CA question 47).
+    _tenant("payments.cheque_bounce_charge", Group.CREDIT_PAYMENTS, SettingType.MONEY,
+            Decimal("0"),
+            "Charge a shop this amount when its cheque bounces; ₹0 charges nothing. It is added "
+            "to the shop's account, due at once, without GST.",
+            min_value=Decimal("0"), max_value=Decimal("100000")),
     _tenant("payments.sales_can_collect", Group.CREDIT_PAYMENTS, SettingType.BOOL, True,
             "Let sales staff record payments they collect from their shops (tracked until handed "
             "over)."),
@@ -336,6 +356,19 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Turn off to stop them signing in."),
     _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
             "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
+    # Shop activity and win-back (ADR-056): how shops are grouped.
+    _tenant("insights.new_days", Group.RETAILERS, SettingType.INT, 30,
+            "A shop counts as new for this many days after its first order.",
+            min_value=7, max_value=120),
+    _tenant("insights.dormant_days", Group.RETAILERS, SettingType.INT, 45,
+            "A shop that hasn't ordered for this many days has stopped ordering.",
+            min_value=14, max_value=365),
+    _tenant("insights.slowing_percent", Group.RETAILERS, SettingType.INT, 150,
+            "A shop is slowing down when it hasn't ordered for this share of its usual gap "
+            "between orders (150% of 10 days: 15 days).", min_value=110, max_value=400),
+    _tenant("insights.contact_snooze_days", Group.RETAILERS, SettingType.INT, 14,
+            "After someone contacts a shop, it leaves the win-back list for this many days.",
+            min_value=1, max_value=90),
     # --- Tenant: Reports (ADR-050) -------------------------------------------------------------
     _tenant("reports.movement_days", Group.REPORTS, SettingType.INT, 90,
             "The period for fast, slow and dead stock, in days.", min_value=7, max_value=365),
@@ -371,6 +404,57 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Require every staff member to set up two-step verification (an authenticator app) "
             "before they can sign in."),
     # --- Platform -------------------------------------------------------------------------------
+    # ADR-058: AI features' cap, timeout and how near a meaning must be for search.
+    _platform("platform.ai_monthly_units", Group.AI, SettingType.INT, 2_000_000,
+              "Most AI units (tokens or characters, as the provider counts) a distributor may use "
+              "in a calendar month; over it, AI features step aside. 0: no cap.",
+              min_value=0, max_value=1_000_000_000),
+    _platform("platform.ai_timeout_seconds", Group.AI, SettingType.INT, 5,
+              "How long the app waits for the AI provider before working without it.",
+              min_value=1, max_value=60),
+    _platform("platform.ai_assistant_timeout_seconds", Group.AI, SettingType.INT, 30,
+              "How long the data assistant waits for the AI provider on each step before "
+              "giving up on the question (ADR-059).",
+              min_value=5, max_value=120),
+    # Owner review (ADR-059 item 8): the assistant's model, and the prices and typical sizes that
+    # turn units into rupees, questions and searches. Prices are placeholders until checked with
+    # the providers (pre-production items 38 and 40); the cap itself stays in units.
+    _platform("platform.ai_assistant_model", Group.AI, SettingType.ENUM, "claude-sonnet-5-5",
+              "The model the data assistant uses. Check its name and price with the provider "
+              "before the assistant is switched on (pre-production item 40).",
+              allowed=("claude-sonnet-5-5", "claude-haiku-4-5-20251001")),
+    _platform("platform.ai_sonnet_price_in", Group.AI, SettingType.MONEY, Decimal("265.00"),
+              "Claude Sonnet 5.5: rupees per million units sent to it (the question, the "
+              "instructions and the figures).",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_sonnet_price_out", Group.AI, SettingType.MONEY, Decimal("1325.00"),
+              "Claude Sonnet 5.5: rupees per million units it writes back.",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_haiku_price_in", Group.AI, SettingType.MONEY, Decimal("88.00"),
+              "Claude Haiku 4.5: rupees per million units sent to it.",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_haiku_price_out", Group.AI, SettingType.MONEY, Decimal("440.00"),
+              "Claude Haiku 4.5: rupees per million units it writes back.",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_embeddings_price", Group.AI, SettingType.MONEY, Decimal("2.00"),
+              "Product search: rupees per million units sent to the embedding provider (₹0 when "
+              "the model runs in our own containers).",
+              min_value=Decimal("0"), max_value=Decimal("100000")),
+    _platform("platform.ai_question_units_in", Group.AI, SettingType.INT, 5_700,
+              "A typical assistant question: units sent to the model, over all its steps. Used "
+              "to show the cap and usage as questions and rupees; set it from the evaluation "
+              "run (pre-production item 40).",
+              min_value=100, max_value=500_000),
+    _platform("platform.ai_question_units_out", Group.AI, SettingType.INT, 300,
+              "A typical assistant question: units the model writes back.",
+              min_value=10, max_value=100_000),
+    _platform("platform.ai_search_units", Group.AI, SettingType.INT, 20,
+              "A typical shop search: units sent to the embedding provider.",
+              min_value=1, max_value=10_000),
+    _platform("platform.ai_search_min_similarity_percent", Group.AI, SettingType.INT, 35,
+              "How close in meaning a product must be to what a shop typed to be shown after the "
+              "keyword matches.",
+              min_value=1, max_value=99),
     _platform("platform.hsn_rate_hints_enabled", Group.TAX, SettingType.BOOL, True,
               "Suggest GST rates from the HSN hint table on product forms and imports."),
     _platform("platform.default_invoice_prefix", Group.INVOICING, SettingType.STRING, "INV",
@@ -411,6 +495,14 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("notifications.document_link_days", Group.NOTIFICATIONS, SettingType.INT, 30,
             "How many days a bill or receipt link sent by WhatsApp or email keeps working.",
             min_value=1, max_value=365),
+    # The daily summary (ADR-056).
+    _tenant("notifications.daily_summary_enabled", Group.NOTIFICATIONS, SettingType.BOOL, True,
+            "Send a summary each morning: yesterday's orders, billing and collections, and what "
+            "needs action. Who gets it, and how, is set under Who gets which message."),
+    _tenant("notifications.daily_summary_time", Group.NOTIFICATIONS, SettingType.STRING, "08:00",
+            "When the daily summary goes out (Indian time).", pattern=r"([01]\d|2[0-3]):[0-5]\d"),
+    _tenant("notifications.daily_summary_skip_sunday", Group.NOTIFICATIONS, SettingType.BOOL,
+            False, "Don't send the daily summary on Sundays."),
     _tenant("notifications.payment_reminder_days", Group.NOTIFICATIONS, SettingType.STRING,
             "-2,3,7,15,30",
             "Days to remind shops of their bills: a minus number is days before the due date, the "

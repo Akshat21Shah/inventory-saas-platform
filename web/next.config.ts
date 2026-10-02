@@ -24,6 +24,16 @@ const nextConfig: NextConfig = {
   // Django API paths end with "/" — never strip it on /api/* rewrites. Page URLs are normalised to
   // no trailing slash in proxy.ts instead.
   skipTrailingSlashRedirect: true,
+  // A section's bare address opens its first tab. Redirected here, before anything renders: a page
+  // that calls redirect() during a client-side navigation trips React's development-only
+  // performance track ("'Page' cannot have a negative time stamp").
+  async redirects() {
+    return [
+      { source: "/manage/purchasing", destination: "/manage/purchasing/orders", permanent: false },
+      { source: "/manage/pricing", destination: "/manage/pricing/price-lists", permanent: false },
+      { source: "/manage/settings", destination: "/manage/settings/business", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       // Order matters: keep the trailing slash Django expects (":path*" alone drops it).

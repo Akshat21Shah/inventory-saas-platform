@@ -28,9 +28,17 @@ export const STAFF_PAGES: Destination[] = [
   { key: "units", href: "/manage/products/units", permission: "products.view" },
   { key: "retailers", href: "/manage/retailers", permission: "retailers.view" },
   { key: "newRetailer", href: "/manage/retailers/new", permission: "retailers.manage" },
+  { key: "shopActivity", href: "/manage/retailers/activity", permission: "retailers.view" },
+  { key: "returnRequests", href: "/manage/invoices/returns", permission: "invoices.view" },
   { key: "priceLists", href: "/manage/pricing/price-lists", permission: "pricing.view" },
   { key: "discounts", href: "/manage/pricing/discounts", permission: "pricing.view" },
   { key: "specialPrices", href: "/manage/pricing/special-prices", permission: "pricing.view" },
+  {
+    key: "freeGoods",
+    href: "/manage/pricing/free-goods",
+    permission: "pricing.view",
+    feature: "free_goods",
+  },
   { key: "stock", href: "/manage/stock", permission: "stock.view" },
   {
     key: "purchaseOrders",
@@ -101,6 +109,12 @@ export const STAFF_PAGES: Destination[] = [
   },
   { key: "receivables", href: "/manage/receivables", permission: "ledger.view" },
   { key: "reports", href: "/manage/reports" },
+  {
+    key: "assistant",
+    href: "/manage/assistant",
+    permission: ["reports.sales", "reports.sales_own", "reports.stock", "reports.financial"],
+    feature: "ai",
+  },
   { key: "myExports", href: "/manage/reports/exports" },
   {
     key: "imports",
@@ -200,6 +214,7 @@ export const SETTING_PAGES: Record<string, { href: string; feature?: string }> =
   receivables: { href: "/manage/settings/policies/credit_payments" },
   pricing: { href: "/manage/settings/policies/pricing" },
   retailers: { href: "/manage/settings/policies/retailers" },
+  insights: { href: "/manage/settings/policies/retailers" },
   reports: { href: "/manage/settings/policies/reports" },
   security: { href: "/manage/settings/policies/security" },
   notifications: { href: "/manage/settings/policies/notifications" },

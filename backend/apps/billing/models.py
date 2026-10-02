@@ -225,6 +225,9 @@ class InvoiceLine(TenantScopedModel):
     # The product's cost price (per base unit, before GST) when issued: margins (ADR-050). Null
     # on earlier lines or without a cost price: margin then uses today's cost, "estimated".
     unit_cost = UnitCostField(null=True, blank=True)
+    # Free goods under a scheme (ADR-056 item 10): ₹0, no GST, printed "Free (<scheme>)".
+    is_free = models.BooleanField(default=False)
+    scheme_name = models.CharField(max_length=120, blank=True, default="")
 
     class Meta:
         constraints = [
@@ -356,3 +359,75 @@ class OrderConfirmation(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"confirmation {self.order_id}"
+
+
+class ReturnRequest(TenantScopedModel):
+    """A shop asks to return goods from one invoice (ADR-057 item 3). Staff with
+    ``invoices.manage`` approve it, which issues the return credit note, or reject it."""
+
+    class Status(models.TextChoices):
+        REQUESTED = "REQUESTED", "Waiting for a decision"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+        CANCELLED = "CANCELLED", "Cancelled by the shop"
+
+    number = models.CharField(max_length=24)  # RR-2026-000012
+    retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name="return_requests")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.REQUESTED)
+    reason = models.CharField(max_length=14, choices=CreditNote.ReturnReason.choices)
+    note = models.CharField(max_length=500, blank=True, default="")
+    requested_by = models.ForeignKey(USER, on_delete=models.PROTECT, related_name="+")
+    decided_by = models.ForeignKey(
+        USER, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.CharField(max_length=300, blank=True, default="")  # why rejected
+    credit_note = models.ForeignKey(
+        CreditNote, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uniq_return_request_number"),
+            models.CheckConstraint(
+                condition=~Q(status="APPROVED") | Q(credit_note__isnull=False),
+                name="return_request_approved_has_note",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["tenant", "status", "created_at"], name="return_request_status_idx"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return self.number
+
+
+class ReturnRequestLine(TenantScopedModel):
+    request = models.ForeignKey(ReturnRequest, on_delete=models.CASCADE, related_name="lines")
+    invoice_line = models.ForeignKey(InvoiceLine, on_delete=models.PROTECT, related_name="+")
+    quantity = QtyField()  # what the shop asked to return
+    approved_quantity = QtyField(null=True, blank=True)  # what staff credited
+    disposition = models.CharField(
+        max_length=16, choices=CreditNoteLine.Disposition.choices, blank=True, default=""
+    )
+
+    class Meta:
+        ordering = ["invoice_line__line_no"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["request", "invoice_line"], name="uniq_return_request_line"
+            ),
+            models.CheckConstraint(condition=Q(quantity__gt=0), name="return_request_qty_pos"),
+            models.CheckConstraint(
+                condition=Q(approved_quantity__isnull=True)
+                | (Q(approved_quantity__gte=0) & Q(approved_quantity__lte=F("quantity"))),
+                name="return_request_approved_within_asked",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.request_id}:{self.invoice_line_id} x {self.quantity}"

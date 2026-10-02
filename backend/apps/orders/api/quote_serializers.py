@@ -12,7 +12,7 @@ from apps.catalog.api.serializers import first_ready_thumb
 from apps.inventory.availability import LABELS
 from apps.orders.models import Order
 from apps.orders.quote import Quote, QuoteLine
-from apps.pricing.api.serializers import money, qty
+from apps.pricing.api.serializers import SchemeTermsSerializer, money, qty
 
 
 class QuantitySerializer(serializers.Serializer[Any]):
@@ -54,6 +54,12 @@ class QuoteStockSerializer(serializers.Serializer[Any]):
     quantity = qty(allow_null=True)
 
 
+class FreeOfferSerializer(serializers.Serializer[Any]):
+    scheme = SchemeTermsSerializer()
+    add_qty = qty(help_text="Buy this many more ...")
+    free_qty = qty(help_text="... to get this many more free.")
+
+
 class QuoteLineSerializer(serializers.Serializer[Any]):
     product_id = serializers.UUIDField()
     product = QuoteProductSerializer(allow_null=True)
@@ -66,6 +72,28 @@ class QuoteLineSerializer(serializers.Serializer[Any]):
     later_qty = qty(help_text="Goes on backorder (or is dropped when backorders are off).")
     stock = QuoteStockSerializer(allow_null=True)
     problems = ProblemSerializer(many=True)
+    is_free = serializers.BooleanField(help_text="Earned under a free-goods scheme (₹0).")
+    free_of_product_id = serializers.SerializerMethodField(
+        help_text="A free line: the product bought to earn it."
+    )
+    scheme = SchemeTermsSerializer(
+        allow_null=True,
+        help_text="A free line's scheme, or the scheme a bought line earns free goods under.",
+    )
+    offer = serializers.SerializerMethodField(
+        help_text='A bought line: "add 2 more to get 1 free" (none when nothing more is earned).'
+    )
+
+    @extend_schema_field(serializers.UUIDField(allow_null=True))
+    def get_free_of_product_id(self, line: QuoteLine) -> str | None:
+        return None if line.free_of is None else str(line.free_of.product_id)
+
+    @extend_schema_field(FreeOfferSerializer(allow_null=True))
+    def get_offer(self, line: QuoteLine) -> dict[str, Any] | None:
+        if line.offer is None:
+            return None
+        terms, more, free = line.offer
+        return dict(FreeOfferSerializer({"scheme": terms, "add_qty": more, "free_qty": free}).data)
 
     @extend_schema_field(money(allow_null=True))
     def get_unit_price(self, line: QuoteLine) -> str | None:

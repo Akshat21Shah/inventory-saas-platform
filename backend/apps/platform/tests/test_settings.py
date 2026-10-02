@@ -66,12 +66,13 @@ def test_registry_covers_plan_catalogue():
     # + 6 notifications settings (ADR-048) + turnover band, automatic IRNs, e-way bill
     # thresholds and automatic e-way bills (ADR-049) + the fast/slow/dead period and share (ADR-050)
     # + 6 stock planning settings and the over-receipt tolerance (ADR-053)
-    assert len(TENANT_KEYS) == 56
+    assert len(TENANT_KEYS) == 68  # + activity, summary (ADR-056), delivery, returns (057)
     # PLAN §9.2 (3) + 7 login/OTP limits (ADR-030) + reset limit + 3 WhatsApp prices (ADR-048)
     # + 2 e-invoicing thresholds, the IRN reporting limit and cancellation window, the e-way
     # bill cancellation window (ADR-049) + the export row limit, link days and the B2C large
-    # threshold (ADR-050)
-    assert len(PLATFORM_KEYS) == 22
+    # threshold (ADR-050) + the AI limit, timeout and search closeness (ADR-058) + the
+    # assistant's timeout (ADR-059) + its model, five prices and three typical sizes (owner review)
+    assert len(PLATFORM_KEYS) == 35
     assert "security.require_staff_2fa" in TENANT_KEYS
     assert registry.REGISTRY["retailers.blocked_can_sign_in"].default is True
     assert registry.REGISTRY["pricing.discounts_on_special_prices"].default is True

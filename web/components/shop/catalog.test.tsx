@@ -65,6 +65,7 @@ const product = (id: string, name: string, extra: Partial<ShopProduct> = {}): Sh
     gst_rate: "18.000",
     prices_include_gst: false,
   },
+  free_offer: null,
   ...extra,
 });
 
@@ -154,6 +155,35 @@ describe("Product page", () => {
     mockApi({});
     renderShop(<ProductPage productId="gone" />);
     await waitFor(() => expect(screen.getByText("This product isn't available")).toBeVisible());
+  });
+});
+
+describe("Free goods", () => {
+  const offer = {
+    scheme_id: "s1",
+    name: "Diwali",
+    buy_qty: "10.000",
+    free_qty: "1.000",
+    repeat: true,
+    max_free_qty: "3.000",
+    same_product: false,
+    free_product_name: "Tea 100g",
+    free_unit: "PCS",
+  };
+
+  it("shows the offer on the product's page", async () => {
+    const detail: ShopProductDetail = {
+      ...product("p1", "Parle-G", { free_offer: offer }),
+      description: "",
+      images: [],
+      slab_hints: [],
+    };
+    mockApi({ "/api/v1/shop/products/p1/": () => [200, detail] });
+    renderShop(<ProductPage productId="p1" />);
+    expect(
+      await screen.findByRole("heading", { name: "Buy 10, get 1 Tea 100g free" }),
+    ).toBeVisible();
+    expect(screen.getByText("For every 10 you buy. Up to 3 free on one order.")).toBeVisible();
   });
 });
 

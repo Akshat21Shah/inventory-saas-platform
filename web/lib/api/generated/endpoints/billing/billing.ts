@@ -33,7 +33,12 @@ import type {
   InvoicesListParams,
   InvoicesPdfParams,
   PaginatedCreditNoteRowList,
-  PaginatedInvoiceRowList
+  PaginatedInvoiceRowList,
+  PaginatedReturnRequestList,
+  ReturnApproveRequest,
+  ReturnRejectRequest,
+  ReturnRequest,
+  ReturnRequestsListParams
 } from '../../model';
 
 import { apiFetch } from '../../../fetcher';
@@ -983,4 +988,411 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getInvoicesRegeneratePdfMutationOptions(options), queryClient);
+    }
+    export type returnRequestsListResponse200 = {
+  data: PaginatedReturnRequestList
+  status: 200
+}
+
+export type returnRequestsListResponseSuccess = (returnRequestsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type returnRequestsListResponse = (returnRequestsListResponseSuccess)
+
+export const getReturnRequestsListUrl = (params?: ReturnRequestsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/return-requests/?${stringifiedParams}` : `/api/v1/return-requests/`
+}
+
+export const returnRequestsList = async (params?: ReturnRequestsListParams, options?: Parameters<typeof apiFetch>[1]): Promise<returnRequestsListResponse> => {
+
+  return apiFetch<returnRequestsListResponse>(getReturnRequestsListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReturnRequestsListQueryKey = (params?: ReturnRequestsListParams,) => {
+    return [
+    `/api/v1/return-requests/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReturnRequestsListQueryOptions = <TData = Awaited<ReturnType<typeof returnRequestsList>>, TError = unknown>(params?: ReturnRequestsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReturnRequestsListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof returnRequestsList>>> = ({ signal }) => returnRequestsList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof returnRequestsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReturnRequestsListQueryResult = NonNullable<Awaited<ReturnType<typeof returnRequestsList>>>
+export type ReturnRequestsListQueryError = unknown
+
+
+export function useReturnRequestsList<TData = Awaited<ReturnType<typeof returnRequestsList>>, TError = unknown>(
+ params: undefined |  ReturnRequestsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof returnRequestsList>>,
+          TError,
+          Awaited<ReturnType<typeof returnRequestsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReturnRequestsList<TData = Awaited<ReturnType<typeof returnRequestsList>>, TError = unknown>(
+ params?: ReturnRequestsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof returnRequestsList>>,
+          TError,
+          Awaited<ReturnType<typeof returnRequestsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReturnRequestsList<TData = Awaited<ReturnType<typeof returnRequestsList>>, TError = unknown>(
+ params?: ReturnRequestsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useReturnRequestsList<TData = Awaited<ReturnType<typeof returnRequestsList>>, TError = unknown>(
+ params?: ReturnRequestsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReturnRequestsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type returnRequestsRetrieveResponse200 = {
+  data: ReturnRequest
+  status: 200
+}
+
+export type returnRequestsRetrieveResponseSuccess = (returnRequestsRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type returnRequestsRetrieveResponse = (returnRequestsRetrieveResponseSuccess)
+
+export const getReturnRequestsRetrieveUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/v1/return-requests/${requestId}/`
+}
+
+export const returnRequestsRetrieve = async (requestId: string, options?: Parameters<typeof apiFetch>[1]): Promise<returnRequestsRetrieveResponse> => {
+
+  return apiFetch<returnRequestsRetrieveResponse>(getReturnRequestsRetrieveUrl(requestId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReturnRequestsRetrieveQueryKey = (requestId: string,) => {
+    return [
+    `/api/v1/return-requests/${requestId}/`
+    ] as const;
+    }
+
+
+export const getReturnRequestsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError = unknown>(requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReturnRequestsRetrieveQueryKey(requestId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof returnRequestsRetrieve>>> = ({ signal }) => returnRequestsRetrieve(requestId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: requestId !== null && requestId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReturnRequestsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof returnRequestsRetrieve>>>
+export type ReturnRequestsRetrieveQueryError = unknown
+
+
+export function useReturnRequestsRetrieve<TData = Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError = unknown>(
+ requestId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof returnRequestsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof returnRequestsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReturnRequestsRetrieve<TData = Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError = unknown>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof returnRequestsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof returnRequestsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReturnRequestsRetrieve<TData = Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError = unknown>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useReturnRequestsRetrieve<TData = Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError = unknown>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof returnRequestsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReturnRequestsRetrieveQueryOptions(requestId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type returnRequestsApproveResponse200 = {
+  data: ReturnRequest
+  status: 200
+}
+
+export type returnRequestsApproveResponseSuccess = (returnRequestsApproveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type returnRequestsApproveResponse = (returnRequestsApproveResponseSuccess)
+
+export const getReturnRequestsApproveUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/v1/return-requests/${requestId}/approve/`
+}
+
+export const returnRequestsApprove = async (requestId: string,
+    returnApproveRequest: ReturnApproveRequest, options?: Parameters<typeof apiFetch>[1]): Promise<returnRequestsApproveResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<returnRequestsApproveResponse>(getReturnRequestsApproveUrl(requestId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(returnApproveRequest)
+  }
+);}
+
+
+
+
+
+export const getReturnRequestsApproveMutationKey = () => ['returnRequestsApprove'] as const;
+
+export const getReturnRequestsApproveMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRequestsApprove>>, TError,ReturnRequestsApproveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof returnRequestsApprove>>, TError,ReturnRequestsApproveMutationVariables, TContext> => {
+
+const mutationKey = getReturnRequestsApproveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof returnRequestsApprove>>, ReturnRequestsApproveMutationVariables> = (props) => {
+          const {requestId,data} = props ?? {};
+
+          return  returnRequestsApprove(requestId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReturnRequestsApproveMutationResult = NonNullable<Awaited<ReturnType<typeof returnRequestsApprove>>>
+    export type ReturnRequestsApproveMutationBody = ReturnApproveRequest
+    export type ReturnRequestsApproveMutationError = unknown
+    export type ReturnRequestsApproveMutationVariables = {requestId: string;data: ReturnApproveRequest}
+
+    export const useReturnRequestsApprove = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRequestsApprove>>, TError,ReturnRequestsApproveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof returnRequestsApprove>>,
+        TError,
+        ReturnRequestsApproveMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReturnRequestsApproveMutationOptions(options), queryClient);
+    }
+    export type returnRequestsRejectResponse200 = {
+  data: ReturnRequest
+  status: 200
+}
+
+export type returnRequestsRejectResponseSuccess = (returnRequestsRejectResponse200) & {
+  headers: Headers;
+};
+;
+
+export type returnRequestsRejectResponse = (returnRequestsRejectResponseSuccess)
+
+export const getReturnRequestsRejectUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/v1/return-requests/${requestId}/reject/`
+}
+
+export const returnRequestsReject = async (requestId: string,
+    returnRejectRequest: ReturnRejectRequest, options?: Parameters<typeof apiFetch>[1]): Promise<returnRequestsRejectResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<returnRequestsRejectResponse>(getReturnRequestsRejectUrl(requestId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(returnRejectRequest)
+  }
+);}
+
+
+
+
+
+export const getReturnRequestsRejectMutationKey = () => ['returnRequestsReject'] as const;
+
+export const getReturnRequestsRejectMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRequestsReject>>, TError,ReturnRequestsRejectMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof returnRequestsReject>>, TError,ReturnRequestsRejectMutationVariables, TContext> => {
+
+const mutationKey = getReturnRequestsRejectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof returnRequestsReject>>, ReturnRequestsRejectMutationVariables> = (props) => {
+          const {requestId,data} = props ?? {};
+
+          return  returnRequestsReject(requestId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReturnRequestsRejectMutationResult = NonNullable<Awaited<ReturnType<typeof returnRequestsReject>>>
+    export type ReturnRequestsRejectMutationBody = ReturnRejectRequest
+    export type ReturnRequestsRejectMutationError = unknown
+    export type ReturnRequestsRejectMutationVariables = {requestId: string;data: ReturnRejectRequest}
+
+    export const useReturnRequestsReject = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRequestsReject>>, TError,ReturnRequestsRejectMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof returnRequestsReject>>,
+        TError,
+        ReturnRequestsRejectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReturnRequestsRejectMutationOptions(options), queryClient);
     }

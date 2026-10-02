@@ -144,7 +144,10 @@ def _issue(
         round_off_method=RoundOffMethod(snapshot["invoicing.round_off_method"]),
         invoice_left=invoice.grand_total - earlier if exhausts else None,
     )
-    if totals.grand_total <= 0:
+    # Free goods alone (ADR-056 item 10) make a ₹0 credit note: the quantity is corrected,
+    # nothing is owed either way.
+    only_free = bool(parts) and all(p.line.is_free and p.credit.total == 0 for p in parts)
+    if totals.grand_total <= 0 and not only_free:
         raise InvalidFields({"lines": ["There is nothing left to credit on this invoice."]})
     applied = min(totals.grand_total, invoice.balance_due)
     series, number = numbering.next_number(DocumentType.CREDIT_NOTE, note_date)  # L6
@@ -197,19 +200,20 @@ def _issue(
             for index, p in enumerate(parts, 1)
         ]
     )
-    ledger.post(
-        account,
-        EntryType.CREDIT_NOTE,
-        credit=note.grand_total,
-        entry_date=note_date,
-        ref=ledger.Reference("CREDIT_NOTE", note.pk, number),
-        narration=f"Credit note against {invoice.number}",
-        by=by,
-    )
-    ledger.add_unapplied(account, note.grand_total)
-    if applied > 0:
-        allocation.apply(account, note, invoice, applied, automatic=True, by=by)
-    allocation.settle(account, by=by)  # anything beyond the invoice: the shop's next dues
+    if note.grand_total > 0:
+        ledger.post(
+            account,
+            EntryType.CREDIT_NOTE,
+            credit=note.grand_total,
+            entry_date=note_date,
+            ref=ledger.Reference("CREDIT_NOTE", note.pk, number),
+            narration=f"Credit note against {invoice.number}",
+            by=by,
+        )
+        ledger.add_unapplied(account, note.grand_total)
+        if applied > 0:
+            allocation.apply(account, note, invoice, applied, automatic=True, by=by)
+        allocation.settle(account, by=by)  # anything beyond the invoice: the shop's next dues
     from apps.compliance.einvoice import on_issued
 
     on_issued(note)  # the IRN, when e-invoicing is on and the shop has a GSTIN (ADR-049)

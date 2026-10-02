@@ -15,7 +15,14 @@ from apps.catalog import selectors as catalog
 from apps.catalog.models import Product
 from apps.catalog.services import InUse, Warning
 from apps.pricing import free_goods
-from apps.pricing.models import DiscountRule, DiscountSlab, PriceList, PriceListItem, RetailerPrice
+from apps.pricing.models import (
+    DiscountRule,
+    DiscountSlab,
+    FreeGoodsScheme,
+    PriceList,
+    PriceListItem,
+    RetailerPrice,
+)
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
 
@@ -394,6 +401,123 @@ def delete_discount_rule(rule_id: UUID, *, by: User) -> None:
         "pricing.discount_rule_deleted",
         target_type="pricing.discountrule",
         target_id=rule_id,
+        target_repr=name,
+    )
+
+
+# --- Free-goods schemes (ADR-056 item 7) ----------------------------------------------------------
+
+SCHEME_FIELDS = (
+    "name",
+    "buy_product_id",
+    "buy_qty",
+    "free_product_id",
+    "free_qty",
+    "repeat",
+    "max_free_qty",
+    "audience_type",
+    "price_list_id",
+    "retailer_id",
+    "valid_from",
+    "valid_to",
+    "is_active",
+)
+
+
+def _check_scheme_quantities(scheme: FreeGoodsScheme, errors: dict[str, list[str]]) -> None:
+    products = {
+        p.pk: p
+        for p in catalog.products()
+        .filter(pk__in=[scheme.buy_product_id, scheme.free_product_id])
+        .select_related("unit")
+    }
+    checks = (
+        ("buy_product", scheme.buy_product_id, "buy_qty", scheme.buy_qty),
+        ("free_product", scheme.free_product_id, "free_qty", scheme.free_qty),
+        ("free_product", scheme.free_product_id, "max_free_qty", scheme.max_free_qty),
+    )
+    for product_field, product_id, field, value in checks:
+        product = products.get(product_id) if product_id else None
+        if field != "max_free_qty" and product is None:
+            errors.setdefault(product_field, []).append("Choose an existing product.")
+        if value is None:
+            if field != "max_free_qty":
+                errors.setdefault(field, []).append("Enter a quantity above 0.")
+            continue
+        if value <= 0:
+            errors.setdefault(field, []).append("Enter a quantity above 0.")
+        elif product is not None and not product.unit.allows_decimal and value % 1:
+            errors.setdefault(field, []).append(f"Enter whole {product.unit.code}.")
+    if (
+        scheme.max_free_qty is not None
+        and scheme.free_qty
+        and scheme.max_free_qty < scheme.free_qty
+    ):
+        errors.setdefault("max_free_qty", []).append(
+            "The most free on one order can't be less than the free quantity."
+        )
+
+
+@transaction.atomic
+def save_scheme(scheme_id: UUID | None, data: dict[str, Any], *, by: User) -> FreeGoodsScheme:
+    """Create or change a scheme; every change is audited. Orders already placed keep the terms
+    they were given."""
+    if scheme_id is None:
+        scheme = FreeGoodsScheme(created_by=by)
+        before: dict[str, Any] = {}
+    else:
+        found = FreeGoodsScheme.objects.select_for_update().filter(pk=scheme_id).first()
+        if found is None:
+            raise NotFound()
+        scheme = found
+        before = {f: getattr(scheme, f) for f in SCHEME_FIELDS}
+    for key in SCHEME_FIELDS:
+        if key in data:
+            setattr(scheme, key, data[key])
+    scheme.name = " ".join((scheme.name or "").split())
+    errors: dict[str, list[str]] = {}
+    if not scheme.name:
+        errors["name"] = ["Enter a name."]
+    if scheme.audience_type not in DiscountRule.Audience.values:
+        errors["audience_type"] = ["Choose which shops get it."]
+    else:
+        for audience, target in AUDIENCE_TARGET.items():
+            if scheme.audience_type != audience:
+                setattr(scheme, target, None)
+        attr = AUDIENCE_TARGET.get(scheme.audience_type)
+        lists = PriceList.objects.filter(pk=scheme.price_list_id, deleted_at__isnull=True)
+        shops = Retailer.objects.filter(pk=scheme.retailer_id, deleted_at__isnull=True)
+        if attr == "price_list_id" and not lists.exists():
+            errors["price_list"] = ["Choose an existing price list."]
+        elif attr == "retailer_id" and not shops.exists():
+            errors["retailer"] = ["Choose an existing shop."]
+    _check_scheme_quantities(scheme, errors)
+    if scheme.valid_from and scheme.valid_to and scheme.valid_to < scheme.valid_from:
+        errors["valid_to"] = ["The end date must be on or after the start date."]
+    if errors:
+        raise InvalidFields(errors)
+    scheme.save()
+    audit.record(
+        "pricing.scheme_created" if not before else "pricing.scheme_updated",
+        target=scheme,
+        target_repr=scheme.name,
+        changes=audit.diff(before, {f: getattr(scheme, f) for f in SCHEME_FIELDS}),
+    )
+    return scheme
+
+
+@transaction.atomic
+def delete_scheme(scheme_id: UUID, *, by: User) -> None:
+    """Orders keep the scheme's name and terms on their free lines."""
+    scheme = FreeGoodsScheme.objects.filter(pk=scheme_id).first()
+    if scheme is None:
+        raise NotFound()
+    name = scheme.name
+    scheme.delete()
+    audit.record(
+        "pricing.scheme_deleted",
+        target_type="pricing.freegoodsscheme",
+        target_id=scheme_id,
         target_repr=name,
     )
 

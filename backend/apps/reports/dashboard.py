@@ -58,6 +58,8 @@ def action(user: User) -> dict[str, Any]:
             "low_stock",
             "to_reorder",
             "late_purchase_orders",
+            "win_back",
+            "return_requests",
         )
     )
     if has("orders.view"):
@@ -102,11 +104,23 @@ def action(user: User) -> dict[str, Any]:
         from apps.purchasing.selectors import OrderFilters, purchase_orders
 
         out["late_purchase_orders"] = purchase_orders(OrderFilters(late=True)).count()
+    # ADR-056: shops to win back, within the sales-visibility rule.
+    if has("retailers.view"):
+        from apps.insights.selectors import win_back_count
+
+        out["win_back"] = win_back_count(user)
+    # ADR-057: return requests waiting for a decision.
+    if has("invoices.manage"):
+        from apps.billing.selectors import return_requests_for
+
+        out["return_requests"] = return_requests_for(user).filter(status="REQUESTED").count()
     return out
 
 
-def today(user: User) -> dict[str, Any]:
-    day = today_ist()
+def today(user: User, day: date | None = None) -> dict[str, Any]:
+    """Orders received and billed on ``day`` (today unless given: the daily summary asks for
+    yesterday, ADR-056)."""
+    day = day or today_ist()
     out: dict[str, Any] = {"orders_received": None, "billed": None}
     if user.has_permission_code("orders.view"):
         first, last = ist_bounds(day, day)

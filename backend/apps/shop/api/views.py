@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import User
 from apps.inventory.availability import ShopStockRules
 from apps.platform.selectors import get_setting
+from apps.pricing import schemes
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import own_retailer
 from apps.shop import selectors
@@ -26,10 +27,11 @@ from common.errors import NotFound
 from common.permissions import IsRetailer
 
 
-def _context(retailer: Retailer) -> dict[str, Any]:
+def _context(retailer: Retailer, product_ids: list[UUID] | None = None) -> dict[str, Any]:
     return {
         "own_brand_badge": bool(get_setting("retailers.show_own_brand_badge", retailer.tenant_id)),
         "stock": ShopStockRules.for_tenant(retailer.tenant_id),
+        "offers": schemes.headlines(retailer, product_ids) if product_ids else {},
     }
 
 
@@ -109,19 +111,20 @@ class ShopProductsView(ShopView):
             category_id=query.validated_data["category"],
             brand_id=query.validated_data["brand"],
         )
-        qs = selectors.shop_products(retailer, filters)
         paginator = ByName()
         if filters.search.strip():
-            page = list(qs[: selectors.SEARCH_LIMIT])
-            rows = self._rows(retailer, page)
+            rows = self._rows(retailer, selectors.shop_search(retailer, filters))
             return Response({"next": None, "previous": None, "results": rows})
+        qs = selectors.shop_products(retailer, filters)
         page = paginator.paginate_queryset(qs, request, view=self) or []
         return paginator.get_paginated_response(self._rows(retailer, page))
 
     @staticmethod
     def _rows(retailer: Retailer, page: list[Any]) -> list[Any]:
-        rows = [{"product": p, "price": r} for p, r in selectors.priced(retailer, page)]
-        return list(s.ShopProductSerializer(rows, many=True, context=_context(retailer)).data)
+        found = selectors.priced(retailer, page)
+        rows = [{"product": p, "price": r} for p, r in found]
+        context = _context(retailer, [p.pk for p, _ in found])
+        return list(s.ShopProductSerializer(rows, many=True, context=context).data)
 
 
 class ShopProductDetailView(ShopView):
@@ -134,4 +137,5 @@ class ShopProductDetailView(ShopView):
         if found is None:
             raise NotFound()
         row = {"product": found.product, "price": found.price, "slab_hints": found.slab_hints}
-        return Response(s.ShopProductDetailSerializer(row, context=_context(retailer)).data)
+        context = _context(retailer, [found.product.pk])
+        return Response(s.ShopProductDetailSerializer(row, context=context).data)

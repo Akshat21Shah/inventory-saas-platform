@@ -1,9 +1,13 @@
 """Shipments after acceptance (PLAN §4.2, ADR-006/007/044): pack (a short pack's remainder goes
 back to backorder or is cancelled, per the order's snapshot), dispatch (SALE movements; the
 invoice is Phase 5's), deliver, cancel before dispatch, and the order status derived from its
-shipments. Lock order: shop account (L1) → order and shipment (L2) → stock levels (L3)."""
+shipments; the shop confirming delivery and the delivery code (ADR-057). Lock order: shop account
+(L1) → order and shipment (L2) → stock levels (L3)."""
 
+import hmac
+import secrets
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -11,6 +15,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.audit import services as audit
 from apps.inventory import services as stock
 from apps.inventory.models import ReferenceType
 from apps.orders import backorders
@@ -23,12 +28,20 @@ from apps.orders.models import (
     OrderStatus,
 )
 from apps.orders.services import emit, record
-from apps.orders.transitions import InvalidTransition, lock_order, release_quantities
+from apps.orders.transitions import (
+    InvalidTransition,
+    lock_order,
+    rebalance_free_lines,
+    release_quantities,
+)
+from apps.platform.selectors import get_setting
 from common.db import retry_on_deadlock
-from common.errors import InvalidFields, NotFound
+from common.error_codes import ErrorCode
+from common.errors import DomainError, InvalidFields, NotFound
 
 ZERO = Decimal("0")
 F = Fulfilment.Status
+V = Fulfilment.DeliveredVia
 PROGRESS = {F.ALLOCATED: 0, F.PACKED: 1, F.DISPATCHED: 2}
 AS_ORDER_STATUS = {
     F.ALLOCATED: OrderStatus.ACCEPTED,
@@ -162,6 +175,8 @@ def _return_from_shipment(
             line.qty_cancelled += qty
         line.save()
     backorders.after_stock_released([fl.product_id for fl in lines])
+    if not to_backorder:
+        rebalance_free_lines(order, by=by)
 
 
 # --- Pack --------------------------------------------------------------------------------------
@@ -256,6 +271,8 @@ def dispatch(fulfilment_id: UUID, transport: Transport, *, by: User) -> Fulfilme
         shipment.lr_number = transport.lr_number.strip()[:40]
         shipment.distance_km = _distance(shipment, transport.distance_km)
         shipment.status, shipment.dispatched_at = F.DISPATCHED, timezone.now()
+        if get_setting("orders.delivery_code", order.tenant_id):  # ADR-057 item 2
+            shipment.delivery_code = f"{secrets.randbelow(10_000):04d}"
         shipment.save()
         record(
             order,
@@ -290,27 +307,122 @@ def _distance(shipment: Fulfilment, typed: int | None) -> int | None:
     return address.distance_km if address is not None else None
 
 
+class WrongDeliveryCode(DomainError):
+    status_code = 422
+    code = ErrorCode.WRONG_DELIVERY_CODE
+    default_message = "That isn't the shop's delivery code."
+
+
+class DeliveryCodeLocked(DomainError):
+    status_code = 429
+    code = ErrorCode.DELIVERY_CODE_LOCKED
+    default_message = (
+        "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code."
+    )
+
+
+DELIVERY_CODE_TRIES = 5
+DELIVERY_CODE_LOCK = timedelta(minutes=15)
+
+
+def _mark_delivered(order: Order, shipment: Fulfilment, *, by: User, via: str, note: str) -> None:
+    for fl in _shipment_lines(shipment):
+        line = OrderLine.objects.select_for_update().get(pk=fl.order_line_id)
+        line.qty_delivered += fl.qty_packed or ZERO
+        line.save(update_fields=["qty_delivered", "updated_at"])
+    shipment.status, shipment.delivered_at = F.DELIVERED, timezone.now()
+    shipment.delivered_via, shipment.delivery_note = via, note
+    shipment.save(
+        update_fields=["status", "delivered_at", "delivered_via", "delivery_note", "updated_at"]
+    )
+    record(
+        order,
+        OrderEvent.DELIVER,
+        to=next_status(order),
+        by=by,
+        note=note,
+        payload={
+            "shipment": shipment.number,
+            "items_to_follow": items_to_follow(order),
+            "via": via,
+        },
+    )
+    emit("order.delivered", order, shipment=shipment.number)
+    derive_status(order, by=by)
+
+
 @retry_on_deadlock()
-def deliver(fulfilment_id: UUID, *, by: User) -> Fulfilment:
-    """DISPATCHED → DELIVERED (staff with orders.fulfil in v1, ADR-044)."""
+def deliver(fulfilment_id: UUID, *, by: User, code: str = "", reason: str = "") -> Fulfilment:
+    """DISPATCHED → DELIVERED by staff with ``orders.fulfil``. A shipment with a delivery code
+    (ADR-057) needs the code from the shop, or a reason to deliver without it (audited); wrong
+    codes count, and five lock the code for 15 minutes."""
+    code, reason = code.strip(), reason.strip()
+    refused: DomainError | None = None
     with transaction.atomic():
         order, shipment = _lock_shipment(fulfilment_id)
         _require(shipment, F.DISPATCHED)
-        for fl in _shipment_lines(shipment):
-            line = OrderLine.objects.select_for_update().get(pk=fl.order_line_id)
-            line.qty_delivered += fl.qty_packed or ZERO
-            line.save(update_fields=["qty_delivered", "updated_at"])
-        shipment.status, shipment.delivered_at = F.DELIVERED, timezone.now()
-        shipment.save(update_fields=["status", "delivered_at", "updated_at"])
-        record(
-            order,
-            OrderEvent.DELIVER,
-            to=next_status(order),
-            by=by,
-            payload={"shipment": shipment.number, "items_to_follow": items_to_follow(order)},
-        )
-        emit("order.delivered", order, shipment=shipment.number)
-        derive_status(order, by=by)
+        via, note = V.STAFF, ""
+        if shipment.delivery_code and code:
+            now = timezone.now()
+            locked = shipment.delivery_code_locked_until
+            if locked is not None and locked > now:
+                refused = DeliveryCodeLocked()
+            elif not hmac.compare_digest(code, shipment.delivery_code):
+                shipment.delivery_code_failures += 1
+                if shipment.delivery_code_failures >= DELIVERY_CODE_TRIES:
+                    shipment.delivery_code_failures = 0
+                    shipment.delivery_code_locked_until = now + DELIVERY_CODE_LOCK
+                shipment.save(
+                    update_fields=[
+                        "delivery_code_failures",
+                        "delivery_code_locked_until",
+                        "updated_at",
+                    ]
+                )
+                refused = WrongDeliveryCode()  # raised after the count is saved
+            else:
+                via = V.CODE
+        elif shipment.delivery_code:
+            if not reason:
+                raise InvalidFields(
+                    {
+                        "code": [
+                            "Enter the shop's delivery code, or say why it was delivered "
+                            "without it."
+                        ]
+                    }
+                )
+            via, note = V.NO_CODE, reason[:300]
+        if refused is None:
+            _mark_delivered(order, shipment, by=by, via=via, note=note)
+            if via == V.NO_CODE:
+                audit.record(
+                    "orders.delivered_without_code",
+                    target=shipment,
+                    target_repr=shipment.number,
+                    metadata={"order": order.number, "reason": note},
+                )
+    if refused is not None:
+        raise refused
+    return shipment
+
+
+@retry_on_deadlock()
+def shop_confirm_delivery(fulfilment_id: UUID, *, by: User, retailer_id: UUID) -> Fulfilment:
+    """The shop marks a dispatched shipment received in its app (ADR-057 item 1): the same as
+    staff marking it delivered; no delivery code needed (the shop holds it)."""
+    with transaction.atomic():
+        order, shipment = _lock_shipment(fulfilment_id)
+        if order.retailer_id != retailer_id:
+            raise NotFound()
+        if not get_setting("orders.shop_confirms_delivery", order.tenant_id):
+            raise DomainError(
+                "Your distributor marks deliveries.",
+                code=ErrorCode.PERMISSION_DENIED,
+                status_code=403,
+            )
+        _require(shipment, F.DISPATCHED)
+        _mark_delivered(order, shipment, by=by, via=V.SHOP, note="")
     return shipment
 
 
@@ -347,6 +459,8 @@ def take_back(
         line.save()
     shipment.status, shipment.cancelled_reason = F.CANCELLED, reason.strip()[:300]
     shipment.save(update_fields=["status", "cancelled_reason", "updated_at"])
+    if not to_backorder:
+        rebalance_free_lines(order, by=by)
     if order.status == OrderStatus.COMPLETED:  # open again: its shipments decide from here
         order.status, order.closed_at = OrderStatus.ACCEPTED, None
     record(

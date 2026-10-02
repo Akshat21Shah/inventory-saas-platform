@@ -33,6 +33,7 @@ import type {
   Business,
   DocumentSeries,
   FeatureToggleRequest,
+  MyAiUsage,
   PaginatedAuditLogList,
   PatchedBrandingRequest,
   PatchedBusinessRequest,
@@ -166,6 +167,116 @@ export function useAuditLogsList<TData = Awaited<ReturnType<typeof auditLogsList
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAuditLogsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type settingsAiUsageResponse200 = {
+  data: MyAiUsage
+  status: 200
+}
+
+export type settingsAiUsageResponseSuccess = (settingsAiUsageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type settingsAiUsageResponse = (settingsAiUsageResponseSuccess)
+
+export const getSettingsAiUsageUrl = () => {
+
+
+
+
+  return `/api/v1/settings/ai-usage/`
+}
+
+/**
+ * This business's AI use this month in estimated rupees, questions and searches, against
+ * its monthly allowance (ADR-058, ADR-059 item 8).
+ */
+export const settingsAiUsage = async ( options?: Parameters<typeof apiFetch>[1]): Promise<settingsAiUsageResponse> => {
+
+  return apiFetch<settingsAiUsageResponse>(getSettingsAiUsageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSettingsAiUsageQueryKey = () => {
+    return [
+    `/api/v1/settings/ai-usage/`
+    ] as const;
+    }
+
+
+export const getSettingsAiUsageQueryOptions = <TData = Awaited<ReturnType<typeof settingsAiUsage>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsAiUsage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSettingsAiUsageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof settingsAiUsage>>> = ({ signal }) => settingsAiUsage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof settingsAiUsage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SettingsAiUsageQueryResult = NonNullable<Awaited<ReturnType<typeof settingsAiUsage>>>
+export type SettingsAiUsageQueryError = unknown
+
+
+export function useSettingsAiUsage<TData = Awaited<ReturnType<typeof settingsAiUsage>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsAiUsage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof settingsAiUsage>>,
+          TError,
+          Awaited<ReturnType<typeof settingsAiUsage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSettingsAiUsage<TData = Awaited<ReturnType<typeof settingsAiUsage>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsAiUsage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof settingsAiUsage>>,
+          TError,
+          Awaited<ReturnType<typeof settingsAiUsage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSettingsAiUsage<TData = Awaited<ReturnType<typeof settingsAiUsage>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsAiUsage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSettingsAiUsage<TData = Awaited<ReturnType<typeof settingsAiUsage>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsAiUsage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSettingsAiUsageQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

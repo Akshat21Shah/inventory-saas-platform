@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.search",
     "apps.planning",
+    "apps.insights",
+    "apps.ai",
     "apps.purchasing",
     "apps.dataio",
     "apps.shop",
@@ -184,13 +186,30 @@ CELERY_BEAT_SCHEDULE = {
         "task": "notifications.handover_reminders",
         "schedule": crontab(hour=3, minute=30),  # 09:00 IST
     },
+    # The daily summary (ADR-056): each distributor at its own time, checked every 15 minutes.
+    "notifications-daily-summaries": {
+        "task": "notifications.daily_summaries",
+        "schedule": crontab(minute="*/15"),
+    },
     "notifications-payment-reminders": {
         "task": "notifications.payment_reminders",
         "schedule": crontab(hour=4, minute=30),  # 10:00 IST
     },
     # Product stats (ADR-053), after the day's orders: 01:30 IST.
     "planning-refresh": {"task": "planning.refresh_all", "schedule": crontab(hour=20, minute=0)},
+    # 01:45 IST, after the stock stats: shop activity (ADR-056).
+    "insights-refresh": {"task": "insights.refresh_all", "schedule": crontab(hour=20, minute=15)},
+    # 02:15 IST: product embeddings for distributors with AI on (ADR-058).
+    "ai-embeddings": {"task": "ai.embed_all", "schedule": crontab(hour=20, minute=45)},
 }
+
+# ADR-058: which embedding provider apps.ai uses; only the local mock exists until a real one is
+# chosen and verified (pre-production item 38).
+AI_EMBEDDINGS_PROVIDER = env("AI_EMBEDDINGS_PROVIDER", default="mock")
+# The data assistant (ADR-059): mock unless "anthropic" (after pre-production item 40). The
+# model is a platform setting (platform.ai_assistant_model), chosen by the super admin.
+AI_ASSISTANT_PROVIDER = env("AI_ASSISTANT_PROVIDER", default="mock")
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 
 CHANNEL_LAYERS = {
     "default": {
@@ -228,10 +247,15 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "ENUM_NAME_OVERRIDES": {
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
+        "AiFeatureEnum": "apps.ai.models.AiUsage.Feature",
+        "AssistantStatusEnum": "apps.ai.models.AssistantQuestion.Status",
         "SearchHitTypeEnum": "apps.search.api.serializers.HIT_TYPES",
         "AbcClassEnum": "apps.planning.models.AbcClass",
         "MovementClassEnum": "apps.planning.models.MovementClass",
         "RatePeriodEnum": "apps.planning.quantities.RatePeriod",
+        "ShopSegmentEnum": "apps.insights.models.Segment",
+        "ShopContactChannelEnum": "apps.insights.models.ShopContact.Channel",
+        "ShopContactOutcomeEnum": "apps.insights.models.ShopContact.Outcome",
         "PurchaseOrderStatusEnum": "apps.purchasing.models.PurchaseOrder.Status",
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",
@@ -310,6 +334,8 @@ SPECTACULAR_SETTINGS = {
         "CheckoutPurposeEnum": "apps.payments.models.PaymentIntent.Purpose",
         "ReportFormatEnum": "apps.reports.models.ReportRun.Format",
         "ReportGroupEnum": "apps.reports.registry.GROUP_CHOICES",
+        # A report column's kind, also on the assistant's figures (ADR-059).
+        "ColumnKindEnum": ["text", "money", "qty", "int", "date", "percent"],
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

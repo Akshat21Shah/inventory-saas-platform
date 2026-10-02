@@ -9,7 +9,7 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.billing.models import CreditNote, Invoice
+from apps.billing.models import CreditNote, Invoice, ReturnRequest
 from apps.catalog.models import Product
 from apps.compliance.models import EWayBill
 from apps.dataio.models import ImportJob
@@ -17,10 +17,25 @@ from apps.inventory.models import StockAdjustment, StockInward
 from apps.orders.models import Fulfilment, Order, OrderLine
 from apps.payments.models import Payment, PaymentIntent, Refund
 from apps.platform.models import Tenant
-from apps.pricing.models import DiscountRule, PriceList
+from apps.pricing.models import DiscountRule, FreeGoodsScheme, PriceList
 from apps.purchasing.models import PurchaseOrder, Supplier
 from apps.retailers.models import Retailer
 from common.tenancy import tenant_transaction
+
+
+def _returnable_shop_invoice() -> str | None:
+    from apps.billing import returns
+
+    bills = (
+        Invoice.objects.filter(retailer__mobile="+919876500001", status="ISSUED")
+        .prefetch_related("lines")
+        .order_by("-invoice_date", "-created_at")[:30]
+    )
+    for bill in bills:
+        left = returns.returnable(list(bill.lines.all()))
+        if returns.can_request(bill) and any(quantity > 0 for quantity in left.values()):
+            return str(bill.pk)
+    return None
 
 
 def _first(qs: Any) -> str | None:
@@ -73,6 +88,9 @@ class Command(BaseCommand):
                 "payment": _first(Payment.objects.filter(handover_status="WITH_SALESMAN")),
                 "refund": _first(Refund.objects.all()),
                 "shop_invoice": _first(Invoice.objects.filter(retailer__mobile="+919876500001")),
+                # Phase 9c: the shop's newest bill it may still ask to return something from
+                # (each run of the return E2E uses a unit up).
+                "returnable_shop_invoice": _returnable_shop_invoice(),
                 # Phase 7: an invoice with an e-way bill (Sharma has the modules on).
                 "ewaybill_invoice": _first(
                     Invoice.objects.filter(pk__in=EWayBill.objects.values("invoice_id"))
@@ -81,6 +99,10 @@ class Command(BaseCommand):
                 "supplier": _first(Supplier.objects.all()),
                 "purchase_order": _first(PurchaseOrder.objects.filter(status="SENT")),
                 "draft_purchase_order": _first(PurchaseOrder.objects.filter(status="DRAFT")),
+                # Phase 9b: a free-goods scheme (Sharma has free goods on).
+                "free_goods_scheme": _first(FreeGoodsScheme.objects.all()),
+                # Phase 9c: a return request waiting for a decision.
+                "return_request": _first(ReturnRequest.objects.all()),
                 "shop_checkout": _first(
                     PaymentIntent.objects.filter(retailer__mobile="+919876500001")
                 ),

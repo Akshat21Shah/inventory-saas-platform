@@ -69,6 +69,9 @@ HANDLED_EVENTS: tuple[str, ...] = (
     "refund.reversed",
     "purchase_order.sent",
     "purchase_order.cancelled",
+    "return.requested",
+    "return.approved",
+    "return.rejected",
 )
 SKIP = Notification.SkipReason
 
@@ -207,6 +210,9 @@ def targets(code: str, ctx: contexts.EventContext) -> list[Target]:
             if rule.recipient == Recipient.SHOP:  # e.g. an announcement also sent by WhatsApp
                 target.channels |= set(ctx.extra.get("add_channels", ()))
             target.compulsory = target.compulsory or rule.compulsory
+    only = ctx.extra.get("only_user")  # a personal message, e.g. the daily summary (ADR-056)
+    if only is not None:
+        return [t for t in found.values() if t.user is not None and t.user.pk == only]
     return list(found.values())
 
 

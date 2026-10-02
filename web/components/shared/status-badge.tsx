@@ -70,6 +70,13 @@ const TONES: Record<string, StatusTone> = {
   NEAR_LIMIT: "warning",
   PARTLY_RECEIVED: "info",
   CLOSED: "neutral",
+  // A shop's ordering activity (ADR-056).
+  NEW: "info",
+  SLOWING: "warning",
+  DORMANT: "danger",
+  NEVER_ORDERED: "neutral",
+  // A shop's return request (ADR-057).
+  REQUESTED: "warning",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {
@@ -110,7 +117,10 @@ export function StatusBadge({
     | "approvalStatus"
     | "reportRunStatus"
     | "usageStatus"
-    | "purchaseOrderStatus";
+    | "purchaseOrderStatus"
+    | "segmentStatus"
+    | "returnRequestStatus"
+    | "shopReturnStatus";
 }) {
   const t = useTranslations(labels);
   const tone = statusTone(status);

@@ -116,6 +116,14 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
             values["vehicle"] = f" by vehicle {number}" if number else ""
             values["transporter"] = shipment.transporter_name
             values["lr_number"] = shipment.lr_number
+            # ADR-057: the shop's delivery code, only while the shipment is on its way; only the
+            # shop's texts use it.
+            on_its_way = shipment.status == Fulfilment.Status.DISPATCHED
+            values["delivery_code"] = (
+                f" Delivery code: {shipment.delivery_code}."
+                if shipment.delivery_code and on_its_way
+                else ""
+            )
     if "product_id" in p or "product" in p:
         product = Product.objects.filter(pk=p["product_id"]).first() if "product_id" in p else None
         values["product"] = product.name if product else name(p.get("product", ""))
@@ -215,11 +223,52 @@ def _credit_note(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventCo
     return _with_shop(ctx, note.retailer)
 
 
+def _return_request(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
+    from apps.billing.models import ReturnRequest
+
+    request = (
+        ReturnRequest.objects.select_related("retailer", "invoice", "credit_note")
+        .prefetch_related("lines__invoice_line")
+        .filter(pk=event.payload["return_request_id"])
+        .first()
+    )
+    if request is None:
+        return None
+    reason = request.get_reason_display()
+    if request.note:
+        reason = f"{reason}: {request.note}"
+    note = request.credit_note
+    values = {
+        **base,
+        "number": request.number,
+        "invoice_number": request.invoice.number,
+        "items": listing(
+            [
+                f"{qty(line.quantity)} {line.invoice_line.description}"
+                for line in request.lines.all()
+            ]
+        ),
+        "reason": reason,
+        "credit_note_number": note.number if note else "",
+        "total": rupees(note.grand_total) if note else "",
+        "decision": request.decision_note,
+    }
+    ctx = EventContext(
+        code,
+        values,
+        shop_path=f"/shop/invoices/{request.invoice_id}",
+        staff_path=f"/manage/invoices/returns/{request.pk}",
+    )
+    return _with_shop(ctx, request.retailer)
+
+
 def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext | None:
     from apps.payments.models import Payment
 
     payment = (
-        Payment.objects.select_related("retailer").filter(pk=event.payload["payment_id"]).first()
+        Payment.objects.select_related("retailer", "bounce_charge")
+        .filter(pk=event.payload["payment_id"])
+        .first()
     )
     if payment is None:
         return None
@@ -232,6 +281,12 @@ def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         "reason": event.payload.get("reason") or payment.reversal_reason,
         "cheque_date": day(payment.cheque_date or payment.payment_date),
         "balance": balance_text(payment.retailer_id),
+        # ADR-057 item 4: the charge added when the cheque bounced, if any.
+        "bounce_charge": (
+            f" A cheque bounce charge of {rupees(payment.bounce_charge.amount)} was added."
+            if payment.bounce_charge is not None
+            else ""
+        ),
     }
     ctx = EventContext(
         code,
@@ -392,6 +447,7 @@ BUILDERS = {
     "refund": _refund,
     "stock": _stock_alert,
     "purchase_order": _purchase_order,
+    "return": _return_request,
 }
 
 

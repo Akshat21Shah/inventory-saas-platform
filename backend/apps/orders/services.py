@@ -4,7 +4,7 @@ Lock order (PLAN §5.1, a review blocker): shop account (L1) → order (L2) → 
 product order) → backorder lines (L4) → sequences (L6). Services may skip levels, never go back.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -290,16 +290,16 @@ def _place(p: Placement) -> Order:
             details={"expected": str(p.expected_total), "now": str(quote.totals.grand_total)}
         )
 
-    lines = sorted(quote.lines, key=lambda line: line.product_id)
-    levels = stock.lock_levels([line.product_id for line in lines], stock.default_warehouse())
-    plan = _split_under_lock(lines, levels, rules)
-    open_value = sum(
-        (
-            line_value_of(line, reserved + later)
-            for line, (reserved, later, _cancelled) in zip(lines, plan, strict=True)
-        ),
-        ZERO,
+    paid = sorted((x for x in quote.lines if not x.is_free), key=lambda line: line.product_id)
+    levels = stock.lock_levels([line.product_id for line in quote.lines], stock.default_warehouse())
+    plan = plan_lines(
+        paid,
+        free_lines_of(quote.lines),
+        levels,
+        rules,
+        drop_short=rules.insufficient_stock_action != "FAIL",
     )
+    open_value = sum((line_value_of(p.line, p.reserved + p.later) for p in plan), ZERO)
     check = credit.check(retailer, open_value, breach_action=rules.breach_action)
     status = OrderStatus.PLACED
     hold_without_stock = False
@@ -335,10 +335,20 @@ def _place(p: Placement) -> Order:
         **_totals(quote),
     )
     ref_type = ReferenceType.ORDER_LINE
-    for index, (line, (reserved, later, cancelled)) in enumerate(
-        zip(lines, plan, strict=True), start=1
-    ):
-        row = _create_line(order, index, line, reserved, later, cancelled, hold_without_stock)
+    rows: dict[int, OrderLine] = {}
+    for index, planned in enumerate(plan, start=1):
+        line = planned.line
+        row = _create_line(
+            order,
+            index,
+            line,
+            planned.reserved,
+            planned.later,
+            planned.cancelled,
+            hold_without_stock,
+            free_of=rows[id(line.free_of)] if line.free_of is not None else None,
+        )
+        rows[id(line)] = row
         level = levels[line.product_id]
         if row.qty_reserved:
             stock.reserve(
@@ -346,7 +356,7 @@ def _place(p: Placement) -> Order:
             )
         if row.qty_backordered:
             stock.change_backordered(level, row.qty_backordered)
-    if any(cancelled for _, _, cancelled in plan):  # PLACE_AVAILABLE dropped some
+    if any(planned.cancelled for planned in plan):  # PLACE_AVAILABLE dropped some
         recompute_totals(order, list(order.lines.all()))
     record(
         order,
@@ -368,28 +378,70 @@ def line_value_of(line: QuoteLine, quantity: Decimal) -> Decimal:
     return round2(line.tax.line_total * quantity / line.qty)
 
 
-def _split_under_lock(
-    lines: list[QuoteLine], levels: dict[UUID, StockLevel], rules: OrderRules
-) -> list[tuple[Decimal, Decimal, Decimal]]:
-    """Per line, in order: (reserved, backordered, cancelled), with the stock rows locked."""
-    plan: list[tuple[Decimal, Decimal, Decimal]] = []
+@dataclass(frozen=True)
+class Planned:
+    line: QuoteLine
+    reserved: Decimal
+    later: Decimal  # backordered
+    cancelled: Decimal
+
+
+def free_lines_of(lines: list[QuoteLine]) -> dict[int, QuoteLine]:
+    """The quote's free lines by the bought line that earns them (``id()`` of the line)."""
+    return {id(line.free_of): line for line in lines if line.free_of is not None}
+
+
+def plan_lines(
+    paid: list[QuoteLine],
+    free_for: dict[int, QuoteLine],
+    levels: dict[UUID, StockLevel],
+    rules: OrderRules,
+    *,
+    drop_short: bool,
+) -> list[Planned]:
+    """What each line reserves, backorders and cancels, with the stock rows locked. Bought lines
+    first, in the given order; then the free lines they earn on what they keep (ADR-056 item 9),
+    from the stock left. With backorders off a short bought line fails (or, with ``drop_short``,
+    keeps what is there) and a short free line keeps what is there. Returned in display order:
+    each bought line followed by its free line."""
+    used: dict[UUID, Decimal] = {}
+
+    def take(product_id: UUID, quantity: Decimal) -> tuple[Decimal, Decimal]:
+        level = levels[product_id]
+        left = level.quantity_on_hand - level.quantity_reserved - used.get(product_id, ZERO)
+        reserved = min(quantity, max(left, ZERO))
+        used[product_id] = used.get(product_id, ZERO) + reserved
+        return reserved, quantity - reserved
+
     short: list[dict[str, str]] = []
-    for line in lines:
-        level = levels[line.product_id]
-        available = max(level.quantity_on_hand - level.quantity_reserved, ZERO)
-        reserved = min(line.qty, available)
-        later = line.qty - reserved
+    bought: list[Planned] = []
+    for line in paid:
+        reserved, later = take(line.product_id, line.qty)
         cancelled = ZERO
         if later > 0 and not rules.backorders_enabled:
-            if rules.insufficient_stock_action == "FAIL":
-                short.append({"product_id": str(line.product_id), "available": str(reserved)})
-            else:  # PLACE_AVAILABLE: the rest is dropped now, and the shop was told in the cart
+            if drop_short:  # PLACE_AVAILABLE: the rest is dropped now; the shop was told
                 cancelled, later = later, ZERO
-        plan.append((reserved, later, cancelled))
+            else:
+                short.append({"product_id": str(line.product_id), "available": str(reserved)})
+        bought.append(Planned(line, reserved, later, cancelled))
     if short:
         raise NotEnoughStock(details={"lines": short})
-    if all(reserved + later == 0 for reserved, later, _ in plan):
+    if all(p.reserved + p.later == 0 for p in bought):
         raise NotEnoughStock(details={"lines": []})
+    plan: list[Planned] = []
+    for planned in bought:
+        plan.append(planned)
+        free = free_for.get(id(planned.line))
+        if free is None or free.scheme is None:
+            continue
+        quantity = free.scheme.earned(planned.reserved + planned.later)
+        if quantity <= 0:
+            continue
+        reserved, later = take(free.product_id, quantity)
+        cancelled = ZERO
+        if later > 0 and not rules.backorders_enabled:
+            cancelled, later = later, ZERO
+        plan.append(Planned(replace(free, qty=quantity), reserved, later, cancelled))
     return plan
 
 
@@ -414,8 +466,12 @@ def _create_line(
     later: Decimal,
     cancelled: Decimal,
     hold_without_stock: bool,
+    *,
+    free_of: OrderLine | None = None,
 ) -> OrderLine:
+    """``free_of``: for a free line, the order line that earns it (ADR-056 item 8)."""
     product, price, tax = line.product, line.price, line.tax
+    scheme = line.scheme if free_of is not None else None
     assert product is not None and price is not None and tax is not None
     pending = ZERO
     if hold_without_stock:  # nothing touches stock until the hold is approved
@@ -444,6 +500,10 @@ def _create_line(
         taxable_amount=tax.taxable,
         tax_amount=tax.tax,
         line_total=tax.line_total,
+        free_of_line=free_of,
+        scheme_id=scheme.scheme_id if scheme else None,
+        scheme_name=scheme.name if scheme else "",
+        scheme_rule=scheme.rule() if scheme else {},
         created_by=order.created_by,
     )
     OrderLineDiscount.objects.bulk_create(

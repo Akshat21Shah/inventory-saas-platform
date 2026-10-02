@@ -2,6 +2,9 @@
 a product's net price to zero for a shop hides that product from the shop (ADR-034). Saving it is
 allowed, with a warning, because free-goods schemes ("buy X get Y free") aren't supported yet.
 
+With free-goods schemes switched on (ADR-056 item 12) the warning stays (a ₹0 price still hides
+the product) and points to a scheme instead; ``details.schemes`` says which.
+
 "Free" means the net price is zero at some quantity: a special price of 0, a percentage of 100 or
 more, or rupees off per unit at or above the unit price. The rule's highest slab counts. Rules that
 are switched off or have ended can't make anything free. Rules that start later still count.
@@ -18,8 +21,10 @@ from apps.catalog.models import Product
 from apps.catalog.services import Warning
 from apps.platform.selectors import get_setting
 from apps.pricing.models import DiscountRule, PriceList, PriceListItem, RetailerPrice
+from apps.pricing.schemes import enabled as schemes_enabled
 from apps.retailers.models import Retailer
 from common.dates import today_ist
+from common.tenancy import require_tenant_id
 
 FREE_GOODS = "FREE_GOODS"
 
@@ -28,12 +33,20 @@ def _plural(n: int, word: str) -> str:
     return f"{n} {word}" if n == 1 else f"{n} {word}s"
 
 
+def _advice() -> tuple[str, bool]:
+    on = schemes_enabled(require_tenant_id())
+    if on:
+        return "Free products are hidden from shops; use a free-goods scheme instead.", True
+    return "Free-goods schemes are not supported yet.", False
+
+
 def _warning(what: str, products: int, retailers: int) -> Warning:
+    advice, on = _advice()
     return Warning(
         FREE_GOODS,
         f"{what} makes {_plural(products, 'product')} free for {_plural(retailers, 'retailer')}. "
-        "Free-goods schemes are not supported yet.",
-        {"products": products, "retailers": retailers},
+        + advice,
+        {"products": products, "retailers": retailers, "schemes": on},
     )
 
 
@@ -189,9 +202,9 @@ def price_list_warnings(price_list: PriceList, product_ids: list[UUID]) -> list[
 
 def grid_warning(products: int) -> Warning:
     """The discount grid: the shop's discounts that make products free (one shop)."""
+    advice, on = _advice()
     return Warning(
         FREE_GOODS,
-        f"These discounts make {_plural(products, 'product')} free for 1 retailer. "
-        "Free-goods schemes are not supported yet.",
-        {"products": products, "retailers": 1},
+        f"These discounts make {_plural(products, 'product')} free for 1 retailer. " + advice,
+        {"products": products, "retailers": 1, "schemes": on},
     )

@@ -440,7 +440,7 @@ function DueAmounts({
               type="button"
               variant="ghost"
               size="sm"
-              className="min-h-10"
+              className="min-h-10 max-md:min-w-11"
               onClick={() => onChange({ ...values, [due.id]: due.balance_due })}
             >
               {t("all")}
@@ -926,6 +926,13 @@ export function PaymentDetailPage({ paymentId }: { paymentId: string }) {
       : []),
     ...(payment.reversal_reason
       ? ([[t("reversalReason"), payment.reversal_reason]] as [string, ReactNode][])
+      : []),
+    // ADR-057: the charge added to the shop's account when this cheque bounced.
+    ...(payment.bounce_charge
+      ? ([[t("bounceCharge"), <MoneyText key="bc" value={payment.bounce_charge} />]] as [
+          string,
+          ReactNode,
+        ][])
       : []),
   ];
   return (

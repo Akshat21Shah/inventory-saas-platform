@@ -392,7 +392,7 @@ def test_plans_crud_and_default_switch(api, run):
 
 @covers("platform-feature-flags", "platform-feature-flag-detail")
 def test_flag_catalogue_default_change_applies_everywhere(api, run, tenant_a, tenant_b):
-    assert len(api.get(f"{P}/feature-flags/").json()) == 10
+    assert len(api.get(f"{P}/feature-flags/").json()) == 11
     run(
         api.patch,
         f"{P}/feature-flags/batches/",
@@ -503,7 +503,7 @@ def test_hsn_hints_crud_and_import(api, run):
 @covers("platform-settings-registry", "platform-settings-values")
 def test_platform_settings(api, run):
     rows = api.get(f"{P}/settings/registry/").json()
-    assert len(rows) == 22
+    assert len(rows) == 35  # + the AI limits, model and prices (ADR-058, 059)
     row = next(r for r in rows if r["key"] == "platform.login_lockout_minutes")
     assert (row["value"], row["default"], row["is_default"], row["can_edit"]) == (
         15,

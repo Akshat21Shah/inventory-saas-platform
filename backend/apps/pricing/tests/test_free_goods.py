@@ -93,6 +93,7 @@ def test_a_full_percentage_frees_every_priced_shop_product_for_every_shop(tenant
     assert warnings[0].code == "FREE_GOODS" and warnings[0].details == {
         "products": 2,
         "retailers": 3,
+        "schemes": False,
     }
     assert _rule(tenant_a, owner, value=D("99.99")) == []
 
@@ -109,7 +110,7 @@ def test_rupees_off_compares_with_each_shops_own_price(
     # ₹15 off: A (10.00) for r1 and r3; not for r2 (Gold: 16.00); B (20.00) only for r3 (12.00
     # special), and only when discounts apply on top of special prices.
     warnings = _rule(tenant_a, owner, discount_type="FLAT_PER_UNIT", value=D("15"))
-    assert warnings[0].details == {"products": products, "retailers": retailers}
+    assert warnings[0].details == {"products": products, "retailers": retailers, "schemes": False}
 
 
 def test_scope_audience_slabs_and_dates(tenant_a, world, owner):
@@ -127,7 +128,7 @@ def test_scope_audience_slabs_and_dates(tenant_a, world, owner):
     )[0].startswith(one)
     assert _rule(
         tenant_a, owner, value=D("100"), audience_type="PRICE_LIST", price_list_id=world["gold"].pk
-    )[0].details == {"products": 2, "retailers": 1}
+    )[0].details == {"products": 2, "retailers": 1, "schemes": False}
     assert (
         _rule(tenant_a, owner, value=D("100"), scope_type="CATEGORY", category_id=world["food"].pk)[
             0
@@ -194,7 +195,11 @@ def test_the_api_returns_the_warning_and_still_saves(tenant_a, world, owner):
         format="json",
     )
     assert special.status_code == 201
-    assert special.json()["warnings"][0]["details"] == {"products": 1, "retailers": 1}
+    assert special.json()["warnings"][0]["details"] == {
+        "products": 1,
+        "retailers": 1,
+        "schemes": False,
+    }
 
 
 def test_a_zero_list_price_is_free_for_the_lists_shops_without_a_special_price(
@@ -218,7 +223,11 @@ def test_a_zero_list_price_is_free_for_the_lists_shops_without_a_special_price(
         "This price list makes 2 products free for 2 retailers. Free-goods schemes are not "
         "supported yet."
     ]
-    assert warnings[0].details == {"products": 2, "retailers": 2}  # R4 pays 15 for B
+    assert warnings[0].details == {
+        "products": 2,
+        "retailers": 2,
+        "schemes": False,
+    }  # R4 pays 15 for B
     with tenant_context(tenant_a.pk):
         _, none = services.upsert_items(
             world["gold"].pk, [services.ItemInput(world["a"].pk, D("3"))], by=owner

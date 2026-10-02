@@ -207,6 +207,8 @@ describe("Order page", () => {
       ready_qty: "0.000",
       line_total: "525.00",
       on_order: { quantity: "12.000", expected_date: "2026-10-05", late: true },
+      free_of_line: null,
+      scheme_name: "",
     };
     mockApi({
       "/api/v1/orders/o1/": () => [
@@ -356,5 +358,84 @@ describe("Backorders of a product", () => {
       "On order: 24 PCS, expected 05-10-2026",
     );
     expect(screen.queryByText("Late")).toBeNull();
+  });
+});
+
+describe("Delivery with the shop's code (ADR-057)", () => {
+  const shipment = {
+    id: "f1",
+    number: "ORD-2026-000001/1",
+    kind: "INITIAL" as const,
+    status: "DISPATCHED" as const,
+    created_at: "2026-09-27T10:00:00Z",
+    packed_at: "2026-09-27T11:00:00Z",
+    dispatched_at: "2026-09-27T12:00:00Z",
+    delivered_at: null,
+    vehicle_number: "",
+    transporter_name: "",
+    lr_number: "",
+    distance_km: null,
+    cancelled_reason: "",
+    needs_delivery_code: true,
+    delivered_via: "" as const,
+    delivery_note: "",
+    lines: [],
+  };
+
+  it("asks for the code, or a reason to deliver without it", async () => {
+    permissions.add("orders.view").add("orders.fulfil");
+    const calls = mockApi({
+      "/api/v1/orders/o1/": () => [200, order({ status: "DISPATCHED", fulfilments: [shipment] })],
+      "POST /api/v1/fulfilments/f1/deliver/": () => [
+        422,
+        { error: { code: "WRONG_DELIVERY_CODE", message: "", details: {} } },
+      ],
+    });
+    renderWithIntl(<StaffOrderPage orderId="o1" />);
+    expect(
+      await screen.findByText("Needs the shop's delivery code to mark it delivered."),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Mark delivered" }));
+    const dialog = await screen.findByRole("dialog");
+    const deliver = within(dialog).getByRole("button", { name: "Mark delivered" });
+    expect(deliver).toBeDisabled();
+    await userEvent.type(within(dialog).getByLabelText("Shop's delivery code"), "12a34");
+    expect(within(dialog).getByLabelText("Shop's delivery code")).toHaveValue("1234");
+    await userEvent.click(deliver);
+    expect(await within(dialog).findByText(/That isn't the shop's delivery code/)).toBeVisible();
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ code: "1234" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Deliver without the code" }));
+    await userEvent.type(within(dialog).getByLabelText("Why without the code"), "Shop closed");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Mark delivered" }));
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === "POST").at(-1)?.body).toEqual({
+        reason: "Shop closed",
+      }),
+    );
+  });
+
+  it("says how a delivered shipment was confirmed", async () => {
+    permissions.add("orders.view");
+    mockApi({
+      "/api/v1/orders/o1/": () => [
+        200,
+        order({
+          status: "COMPLETED",
+          fulfilments: [
+            {
+              ...shipment,
+              status: "DELIVERED",
+              needs_delivery_code: false,
+              delivered_via: "NO_CODE",
+              delivery_note: "Shop closed",
+            },
+          ],
+        }),
+      ],
+    });
+    renderWithIntl(<StaffOrderPage orderId="o1" />);
+    expect(
+      await screen.findByText("Delivered without the shop's code: Shop closed"),
+    ).toBeInTheDocument();
   });
 });

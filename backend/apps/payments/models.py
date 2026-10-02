@@ -70,6 +70,14 @@ class Payment(TenantScopedModel):
     unapplied_amount = MoneyField(default=0)  # running: credited but not yet matched to invoices
     reversed_at = models.DateTimeField(null=True, blank=True)
     reversal_reason = models.CharField(max_length=300, blank=True, default="")
+    # ADR-057 item 4: the debit charged to the shop when this cheque bounced (if any).
+    bounce_charge = models.ForeignKey(
+        "ledger.LedgerAdjustment",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     receipt_pdf_key = models.CharField(max_length=255, blank=True, default="")
     receipt_pdf_status = models.CharField(max_length=8, default="PENDING")
     # Paid online (Phase 7): the gateway's payment, its checkout, and a flag for staff when the

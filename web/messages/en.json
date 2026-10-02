@@ -156,7 +156,8 @@
     "needsAttention": "need attention",
     "itemCount": "{count, plural, one {# item} other {# items}} in the cart",
     "platformMessages": "Messages",
-    "purchasing": "Purchasing"
+    "purchasing": "Purchasing",
+    "assistant": "Assistant"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -275,7 +276,11 @@
     "REFUND_EXCEEDS_CREDIT": "This is more than the shop's credit balance.",
     "GST_CREDENTIALS_NOT_READY": "Enter your GST provider credentials in Settings and check them first.",
     "PAYMENT_GATEWAY_NOT_READY": "Online payments aren't set up yet. Try again later or pay another way.",
-    "PAYMENT_GATEWAY_UNAVAILABLE": "Payment service is busy, please try again in a minute."
+    "PAYMENT_GATEWAY_UNAVAILABLE": "Payment service is busy, please try again in a minute.",
+    "WRONG_DELIVERY_CODE": "That isn't the shop's delivery code. Check it with the shop.",
+    "DELIVERY_CODE_LOCKED": "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code and say why.",
+    "ASSISTANT_RATE_LIMITED": "You've asked a lot of questions in the last hour. Try again a little later.",
+    "ASSISTANT_NOT_AVAILABLE": "There are no figures the assistant may show you."
   },
   "designSystem": {
     "title": "Design system",
@@ -425,6 +430,14 @@
         "label": "Staff can order for retailers",
         "description": "Allow your staff (for example salesmen) to place orders for retailers."
       },
+      "shop_confirms_delivery": {
+        "label": "Shops confirm delivery",
+        "description": "Let shops mark a dispatched shipment as received in their app."
+      },
+      "delivery_code": {
+        "label": "Delivery code",
+        "description": "Give each shipment a 4-digit code at dispatch. The shop gives it to the delivery person, who enters it to mark the shipment delivered."
+      },
       "sales_visibility": {
         "label": "What sales staff can see",
         "description": "Which orders and retailers sales staff can see.",
@@ -525,6 +538,10 @@
       "sales_can_collect": {
         "label": "Sales staff can collect payments",
         "description": "Let sales staff record payments they collect from their shops (tracked until handed over)."
+      },
+      "cheque_bounce_charge": {
+        "label": "Cheque bounce charge",
+        "description": "Charge a shop this amount when its cheque bounces; ₹0 charges nothing. It is added to the shop's account, due at once, without GST."
       }
     },
     "receivables": {
@@ -631,6 +648,62 @@
       "b2cl_threshold": {
         "label": "B2C large threshold (₹)",
         "description": "Bills to shops without a GSTIN in another state above this value are listed one by one in the GST summary. To be verified."
+      },
+      "ai_monthly_units": {
+        "label": "AI units a month per distributor",
+        "description": "Most AI units (words and characters, as the provider counts them) a distributor may use in a calendar month. Over it, AI features step aside and the app works without them. 0: no limit."
+      },
+      "ai_timeout_seconds": {
+        "label": "Wait for the AI provider (seconds)",
+        "description": "How long the app waits for the AI provider before working without it."
+      },
+      "ai_search_min_similarity_percent": {
+        "label": "Closeness for shop search (%)",
+        "description": "How close in meaning a product must be to what a shop typed to be shown after the products that match the words."
+      },
+      "ai_assistant_timeout_seconds": {
+        "label": "Wait for the assistant's AI provider (seconds)",
+        "description": "How long the data assistant waits for the AI provider on each step before giving up on the question."
+      },
+      "ai_assistant_model": {
+        "label": "Assistant's model",
+        "description": "The model the data assistant uses. Check its name and price with the provider before the assistant is switched on.",
+        "options": {
+          "claude-sonnet-5-5": "Claude Sonnet 5.5",
+          "claude-haiku-4-5-20251001": "Claude Haiku 4.5"
+        }
+      },
+      "ai_sonnet_price_in": {
+        "label": "Claude Sonnet 5.5: ₹ per million units in",
+        "description": "Rupees per million units sent to the model (the question, the instructions and the figures)."
+      },
+      "ai_sonnet_price_out": {
+        "label": "Claude Sonnet 5.5: ₹ per million units out",
+        "description": "Rupees per million units the model writes back."
+      },
+      "ai_haiku_price_in": {
+        "label": "Claude Haiku 4.5: ₹ per million units in",
+        "description": "Rupees per million units sent to the model."
+      },
+      "ai_haiku_price_out": {
+        "label": "Claude Haiku 4.5: ₹ per million units out",
+        "description": "Rupees per million units the model writes back."
+      },
+      "ai_embeddings_price": {
+        "label": "Product search: ₹ per million units",
+        "description": "Rupees per million units sent to the embedding provider (₹0 when the model runs in our own containers)."
+      },
+      "ai_question_units_in": {
+        "label": "Typical question: units in",
+        "description": "Units a typical assistant question sends to the model over all its steps. Used to show the cap and usage as questions and rupees."
+      },
+      "ai_question_units_out": {
+        "label": "Typical question: units out",
+        "description": "Units the model writes back for a typical question."
+      },
+      "ai_search_units": {
+        "label": "Typical shop search: units",
+        "description": "Units a typical shop search sends to the embedding provider."
       }
     },
     "retailers": {
@@ -682,6 +755,18 @@
       "handover_reminder_days": {
         "label": "Handover reminder after (days)",
         "description": "Remind salesmen of collections not handed over after this many days."
+      },
+      "daily_summary_enabled": {
+        "label": "Daily summary",
+        "description": "Send a summary each morning: yesterday's orders, billing and collections, and what needs action. Who gets it, and how, is set under Who gets which message."
+      },
+      "daily_summary_time": {
+        "label": "Daily summary at",
+        "description": "When the daily summary goes out (Indian time)."
+      },
+      "daily_summary_skip_sunday": {
+        "label": "No daily summary on Sundays",
+        "description": "Don't send the daily summary on Sundays."
       }
     },
     "compliance": {
@@ -756,6 +841,34 @@
         "label": "Receiving more than ordered (%)",
         "description": "Up to this share over the order is accepted. Beyond it, someone who manages purchasing must confirm."
       }
+    },
+    "insights": {
+      "new_days": {
+        "label": "A shop is new for (days)",
+        "description": "A shop counts as new for this many days after its first order."
+      },
+      "dormant_days": {
+        "label": "Stopped ordering after (days)",
+        "description": "A shop that hasn't ordered for this many days has stopped ordering."
+      },
+      "slowing_percent": {
+        "label": "Slowing down at (% of its usual gap)",
+        "description": "A shop is slowing down when it hasn't ordered for this share of its usual gap between orders (150% of 10 days: 15 days)."
+      },
+      "contact_snooze_days": {
+        "label": "After a contact, leave the list for (days)",
+        "description": "After someone contacts a shop, it leaves the win-back list for this many days."
+      }
+    },
+    "returns": {
+      "shop_requests": {
+        "label": "Shops ask for returns in the app",
+        "description": "Let shops ask for returns from their app. You approve each one, which issues the credit note."
+      },
+      "request_days": {
+        "label": "Days to ask for a return",
+        "description": "How many days after a bill a shop can ask to return goods from it."
+      }
     }
   },
   "settingsForm": {
@@ -772,7 +885,8 @@
       "compliance": "E-invoices & e-way bills",
       "reports": "Reports",
       "planning": "Stock planning",
-      "purchasing": "Purchasing"
+      "purchasing": "Purchasing",
+      "ai": "AI"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -984,6 +1098,21 @@
         "ofLimit": "{used} of {limit}",
         "empty": "No distributors yet",
         "showAll": "Show all {count}"
+      },
+      "ai": {
+        "title": "AI use this month",
+        "body": "Each distributor's estimated cost, assistant questions and shop searches, the dearest first.",
+        "allowance": "Each distributor may use about {questions} assistant questions or {searches} shop searches a month, at most about {cost} (priced at {model}; prices are platform settings).",
+        "noLimit": "No monthly limit per distributor (priced at {model}).",
+        "name": "Distributor",
+        "cost": "Estimated cost",
+        "costOfLimit": "{cost} of {limit}",
+        "questions": "Questions",
+        "searches": "Searches",
+        "failed": "Failed",
+        "near": "Limit",
+        "units": "Units",
+        "empty": "No AI use this month."
       }
     },
     "tenants": {
@@ -1392,7 +1521,27 @@
       "body": "Optional parts of the app you can switch on or off.",
       "managedByPlatform": "Set by the platform. Contact support to change it.",
       "turnedOn": "Module switched on.",
-      "turnedOff": "Module switched off."
+      "turnedOff": "Module switched off.",
+      "aiUsage": {
+        "title": "AI use this month",
+        "body": "Since {since}. Estimated at today's prices for {model}; the AI provider counts in its own units. When the monthly allowance is used up, AI steps aside until next month and the app keeps working without it.",
+        "costOfLimit": "{cost} of about {limit}",
+        "noLimit": "No monthly limit",
+        "used": "Used this month",
+        "usedQuestions": "{count, plural, one {# question to the assistant} other {# questions to the assistant}}",
+        "usedSearches": "{count, plural, one {# shop search} other {# shop searches}}",
+        "allowance": "Monthly allowance",
+        "allowanceQuestions": "about {count} assistant questions",
+        "allowanceSearches": "or about {count} shop searches",
+        "calls": "{calls, plural, one {# request} other {# requests}}",
+        "failed": "{failed, plural, one {# failed} other {# failed}}",
+        "none": "Nothing used yet this month.",
+        "feature": {
+          "SEARCH_INDEX": "Shop search: reading your products",
+          "SEARCH_QUERY": "Shop search: what shops typed",
+          "ASSISTANT": "Data assistant"
+        }
+      }
     }
   },
   "staff": {
@@ -1481,10 +1630,10 @@
     "warnings": {
       "PRICE_ABOVE_MRP": "The price including GST ({price_with_gst}) is above the MRP ({mrp}). It is saved; check that this is right.",
       "HSN_RATE_DIFFERS": "HSN {hsn_prefix} usually has {suggested_rate}% GST. Check the rate.",
-      "FREE_GOODS": "This rule makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_SPECIAL": "This special price makes this product free for this retailer. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_PRICE_LIST": "This price list makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. Free-goods schemes are not supported yet.",
-      "FREE_GOODS_GRID": "These discounts make {products, plural, one {# product} other {# products}} free for this shop. Free-goods schemes are not supported yet."
+      "FREE_GOODS": "This rule makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}",
+      "FREE_GOODS_SPECIAL": "This special price makes this product free for this retailer. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}",
+      "FREE_GOODS_PRICE_LIST": "This price list makes {products, plural, one {# product} other {# products}} free for {retailers, plural, one {# retailer} other {# retailers}}. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}",
+      "FREE_GOODS_GRID": "These discounts make {products, plural, one {# product} other {# products}} free for this shop. {schemes, select, true {Free products are hidden from shops; use a free-goods offer instead.} other {Free-goods schemes are not supported yet.}}"
     },
     "products": {
       "title": "Products",
@@ -1963,6 +2112,7 @@
       "priceLists": "Price lists",
       "specialPrices": "Special prices",
       "discounts": "Discounts",
+      "freeGoods": "Free goods",
       "settings": "Pricing settings",
       "report": "Shop pricing"
     },
@@ -2206,6 +2356,61 @@
       "emptyTitle": "No shop has its own pricing",
       "emptyBody": "Special prices and shop-only discounts will show up here.",
       "freeNote": "Free products are worked out from today's prices and discounts, including discounts that add up to the whole price."
+    },
+    "freeGoods": {
+      "title": "Free goods",
+      "description": "Buy-X-get-Y offers: the free units are added to orders at ₹0 and shown on invoices.",
+      "add": "Add an offer",
+      "name": "Name",
+      "nameHint": "Shops see it next to the free goods in their cart, orders and invoices.",
+      "product": "When they buy",
+      "offer": "Offer",
+      "repeats": "For every lot bought",
+      "onceALine": "Once on each order",
+      "atMost": "at most {qty} free",
+      "forShops": "For shops",
+      "onList": "On {name}",
+      "allShops": "All shops",
+      "dates": "Dates",
+      "always": "Always",
+      "status": "Status",
+      "search": "Search offers",
+      "searchPlaceholder": "Name or product",
+      "anyStatus": "Any status",
+      "activeOnly": "Active",
+      "inactiveOnly": "Switched off",
+      "emptyTitle": "No offers yet",
+      "emptyBody": "Add one, for example buy 10 packets and get 1 free.",
+      "noMatchTitle": "No offers match",
+      "noMatchBody": "Try another search or status.",
+      "offTitle": "Free goods are switched off",
+      "offBody": "Ask us to switch on free-goods offers for your business.",
+      "theOffer": "The offer",
+      "buyProduct": "Product bought",
+      "buyQty": "Quantity to buy",
+      "sameProduct": "The free goods are the same product",
+      "freeProduct": "Product given free",
+      "freeQty": "Quantity free",
+      "repeat": "For every lot bought",
+      "repeatHint": "On: buy 20, get 2 free. Off: the free goods once on each order, however much is bought.",
+      "maxFree": "Most free on one order",
+      "maxFreeHint": "Optional.",
+      "whoAndWhen": "Who and when",
+      "audiencePriceList": "Shops on a price list",
+      "audienceShop": "One shop",
+      "validFrom": "From",
+      "validTo": "Until",
+      "datesHint": "Optional; both dates count.",
+      "isActive": "Active",
+      "howItWorks": "The free goods are added to the order automatically, from stock like any line. When one product has several offers, the shop gets the one with the most free goods. Orders already placed keep the offer they got.",
+      "saved": "Saved",
+      "save": "Save",
+      "create": "Add the offer",
+      "back": "Free goods",
+      "newTitle": "New offer",
+      "delete": "Delete",
+      "deleteTitle": "Delete {name}?",
+      "deleteBody": "Orders already placed keep their free goods."
     }
   },
   "shop": {
@@ -2323,7 +2528,12 @@
       },
       "onHoldOverdue": "You have overdue bills, so your distributor will approve this order before accepting it.",
       "documents": "Bills and documents",
-      "confirmation": "Order Confirmation"
+      "confirmation": "Order Confirmation",
+      "codeIntro": "When the goods arrive, give this code to the delivery person:",
+      "codeLabel": "Delivery code {code}",
+      "received": "I received it",
+      "receivedTitle": "Did you receive shipment {number}?",
+      "receivedBody": "Tap only when the goods are with you. To return something, open the bill."
     },
     "live": {
       "order_accepted": "Order {number} was accepted.",
@@ -2385,8 +2595,10 @@
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "This order is over your credit limit ({amount} available). Please pay your dues or contact your distributor.",
         "OVERDUE_INVOICES": "You have overdue bills. Please pay them or contact your distributor.",
-        "OTHER": "Something in your cart needs a change."
-      }
+        "OTHER": "Something in your cart needs a change.",
+        "FREE_GOODS_REDUCED": "Only {qty} of the {earned} free can be sent: not enough stock."
+      },
+      "freeQty": "{qty} free"
     },
     "money": {
       "title": "My account",
@@ -2493,6 +2705,39 @@
       "waiting": "Waiting for the bank to confirm. This page updates by itself.",
       "lastError": "The last try didn't go through: {error}",
       "safe": "You pay on the payment company's secure page. We never see your card or bank details."
+    },
+    "free": {
+      "offer": "{same, select, true {Buy {buy}, get {free} free} other {Buy {buy}, get {free} {product} free}}",
+      "every": "For every {buy} you buy.",
+      "once": "Once on each order.",
+      "cap": "Up to {max} free on one order.",
+      "addMore": "Add {qty} more to get {free} free",
+      "badge": "Free",
+      "under": "with {scheme}"
+    },
+    "returns": {
+      "open": "Return items",
+      "title": "Return items",
+      "body": "Choose what you want to return and why. Your distributor checks and confirms it.",
+      "upTo": "up to {qty} {unit}",
+      "reason": "Why",
+      "reasons": {
+        "DAMAGED": "Damaged",
+        "EXPIRED": "Expired",
+        "WRONG_ITEM": "Wrong item",
+        "EXCESS_SUPPLY": "Sent more than ordered",
+        "OTHER": "Other"
+      },
+      "note": "Note",
+      "noteHint": "Optional; needed for Other.",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sent": "Sent. Your distributor will check it.",
+      "heading": "Returns",
+      "why": "Not accepted: {reason}",
+      "credited": "Credit note {number} issued",
+      "withdraw": "Withdraw",
+      "withdrawTitle": "Withdraw return {number}?"
     }
   },
   "filters": {
@@ -2881,7 +3126,12 @@
     "BACKORDER_ALLOCATED": "Waiting items are being sent",
     "BACKORDER_CANCELLED": "Waiting items cancelled",
     "COMPLETE": "Completed",
-    "TAKE_BACK": "Goods taken back"
+    "TAKE_BACK": "Goods taken back",
+    "deliveredVia": {
+      "SHOP": "Confirmed by the shop",
+      "CODE": "With the shop's delivery code",
+      "NO_CODE": "Without the delivery code"
+    }
   },
   "orders": {
     "nav": {
@@ -3020,7 +3270,20 @@
       "priceUp": "Price went up from {before} to {now}",
       "distance": "Distance (km)",
       "distanceHint": "Road distance for the e-way bill; from the shop's address when it has one. A new distance is kept for the shop if it had none.",
-      "km": "{km} km"
+      "km": "{km} km",
+      "needsCode": "Needs the shop's delivery code to mark it delivered.",
+      "deliveredVia": {
+        "STAFF": "Marked delivered by your team",
+        "CODE": "Delivered with the shop's code",
+        "NO_CODE": "Delivered without the shop's code",
+        "SHOP": "Confirmed by the shop"
+      },
+      "code": "Shop's delivery code",
+      "codeBody": "Ask the shop for its 4-digit delivery code.",
+      "withoutCode": "Deliver without the code",
+      "withoutCodeBody": "Say why it was delivered without the shop's code. This is recorded.",
+      "withoutCodeReason": "Why without the code",
+      "useCode": "Use the code"
     },
     "shipments": {
       "title": "Shipments",
@@ -3133,8 +3396,10 @@
         "MIN_ORDER_VALUE_EXCL": "The smallest order is {amount} (before GST).",
         "CREDIT_LIMIT_EXCEEDED": "Over the shop's credit limit ({amount} available).",
         "OVERDUE_INVOICES": "The shop has overdue invoices to pay first.",
-        "OTHER": "Something in the cart needs a change."
-      }
+        "OTHER": "Something in the cart needs a change.",
+        "FREE_GOODS_REDUCED": "Only {qty} of the {earned} free can be sent: not enough stock."
+      },
+      "freeQty": "{qty} free"
     }
   },
   "billing": {
@@ -3155,7 +3420,8 @@
       "paymentSettings": "Credit & payment settings",
       "einvoices": "E-invoices",
       "ewaybills": "E-way bills",
-      "checkouts": "Online checkouts"
+      "checkouts": "Online checkouts",
+      "returns": "Returns"
     },
     "invoices": {
       "title": "Invoices",
@@ -3204,7 +3470,8 @@
       "einvoice": "E-invoice",
       "allEinvoice": "Any e-invoice status",
       "cancelledBanner": "This invoice is cancelled: its IRN was cancelled and it owes nothing.",
-      "reissuedAs": "Re-issued as {number}"
+      "reissuedAs": "Re-issued as {number}",
+      "returnRequests": "Return requests"
     },
     "totals": {
       "taxable": "Taxable value",
@@ -3444,7 +3711,8 @@
         "reviewNoteHint": "Optional: what you checked or did (for example, the shop paid the rest in cash).",
         "needsReview": "This online payment needs a look: {reason}",
         "gatewayPayment": "Gateway payment ID",
-        "reviewedAt": "Reviewed"
+        "reviewedAt": "Reviewed",
+        "bounceCharge": "Cheque bounce charge"
       },
       "needsReviewOnly": "Needs review only"
     },
@@ -3682,6 +3950,49 @@
         "search": "Search",
         "allStatuses": "All statuses"
       }
+    },
+    "returns": {
+      "title": "Return requests",
+      "description": "Shops ask to return goods from their bills. Approving issues the return credit note.",
+      "number": "Request",
+      "shop": "Shop",
+      "bill": "Bill",
+      "items": "Items",
+      "reason": "Reason",
+      "asked": "Asked",
+      "status": "Status",
+      "search": "Search return requests",
+      "searchPlaceholder": "Request, bill or shop",
+      "waiting": "Waiting for you",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled by the shop",
+      "anyStatus": "Any status",
+      "noneWaitingTitle": "Nothing to decide",
+      "noneWaitingBody": "Return requests from shops show here.",
+      "emptyTitle": "No return requests",
+      "emptyBody": "Try another status or search.",
+      "decide": "Decide",
+      "askedOf": "Asked {qty} of {invoiced} {unit}",
+      "approveQty": "Quantity to credit for {name}",
+      "whatHappened": "What happened to {name}",
+      "dispositions": {
+        "RETURN_TO_STOCK": "Return to stock",
+        "DAMAGED": "Received damaged",
+        "NOT_RETURNED": "Not physically returned"
+      },
+      "approve": "Approve",
+      "approveTitle": "Approve {number}?",
+      "approveBody": "A return credit note is issued for these quantities and the shop is told.",
+      "approvedToast": "Approved. The credit note is issued.",
+      "reject": "Reject",
+      "rejectTitle": "Reject {number}?",
+      "rejectBody": "The shop sees your reason.",
+      "rejectReason": "Why",
+      "rejectedToast": "Rejected. The shop is told why.",
+      "back": "Return requests",
+      "creditNote": "Credit note",
+      "askedApproved": "Asked {asked}, credited {approved}"
     }
   },
   "paymentStatus": {
@@ -3758,7 +4069,11 @@
       "report_ready": "Report ready to download",
       "report_failed": "Report could not be made",
       "purchase_order_sent": "Purchase order sent to the supplier",
-      "purchase_order_cancelled": "Purchase order cancelled (to the supplier)"
+      "purchase_order_cancelled": "Purchase order cancelled (to the supplier)",
+      "summary_daily": "Daily summary",
+      "return_requested": "A shop asked to return goods",
+      "return_approved": "Return approved",
+      "return_rejected": "Return not accepted"
     },
     "shopEvents": {
       "order_placed": "Order received",
@@ -3787,7 +4102,9 @@
       "refund_reversed": "Refund corrected",
       "payment_reminder": "Payment reminders",
       "retailer_welcome": "Welcome message",
-      "announcement_published": "Announcements from your distributor"
+      "announcement_published": "Announcements from your distributor",
+      "return_approved": "Return approved",
+      "return_rejected": "Return not accepted"
     },
     "groups": {
       "orders": "Orders",
@@ -4556,6 +4873,7 @@
           "category": "Category",
           "brand": "Brand",
           "qty": "Quantity",
+          "free_qty": "Of which free",
           "taxable": "Taxable value",
           "tax": "GST",
           "total": "Total",
@@ -4685,6 +5003,24 @@
           "cost_price": "Cost price",
           "value": "Stock value"
         }
+      },
+      "shop_activity": {
+        "title": "Shop activity",
+        "description": "Who is ordering less or has stopped: each shop's last order, usual gap and the last 90 days against the 90 before.",
+        "columns": {
+          "code": "Code",
+          "name": "Shop",
+          "salesperson": "Salesperson",
+          "segment": "Segment",
+          "last_order": "Last order",
+          "days_since": "Days since",
+          "usual_gap": "Usual gap (days)",
+          "orders_90": "Orders, last 90 days",
+          "orders_prev_90": "Orders, 90 days before",
+          "value_90": "Value, last 90 days",
+          "value_prev_90": "Value, 90 days before",
+          "last_contact": "Last contacted"
+        }
       }
     },
     "filters": {
@@ -4702,7 +5038,8 @@
       "rank_by": "Rank by",
       "class": "Class",
       "product": "Product",
-      "movement_type": "What happened"
+      "movement_type": "What happened",
+      "segment": "Segment"
     },
     "choices": {
       "group_by": {
@@ -4752,6 +5089,13 @@
         "TRANSFER_OUT": "Transfer out",
         "RESERVE": "Reserved for an order",
         "RELEASE": "Reservation released"
+      },
+      "segment": {
+        "NEW": "New",
+        "ACTIVE": "Active",
+        "SLOWING": "Slowing down",
+        "DORMANT": "Stopped ordering",
+        "NEVER_ORDERED": "Never ordered"
       }
     }
   },
@@ -4782,7 +5126,10 @@
       "clear": "All clear",
       "toReorder": "Products to reorder",
       "latePurchaseOrders": "Purchase orders late",
-      "latePurchaseOrdersBody": "Expected before today"
+      "latePurchaseOrdersBody": "Expected before today",
+      "winBack": "Shops to win back",
+      "winBackBody": "Stopped ordering, slowing or never ordered",
+      "returnRequests": "Return requests to decide"
     },
     "today": {
       "title": "Today so far",
@@ -4877,9 +5224,12 @@
       "units": "Units",
       "retailers": "Shops",
       "newRetailer": "Add a shop",
+      "shopActivity": "Shop activity",
+      "returnRequests": "Return requests",
       "priceLists": "Price lists",
       "discounts": "Discounts",
       "specialPrices": "Special prices",
+      "freeGoods": "Free goods",
       "stock": "Stock",
       "goodsReceipts": "Goods receipts",
       "newGoodsReceipt": "Receive stock",
@@ -4937,7 +5287,8 @@
       "reportSettings": "Report settings",
       "planningSettings": "Stock planning settings",
       "purchasingSettings": "Purchasing settings",
-      "securitySettings": "Security settings"
+      "securitySettings": "Security settings",
+      "assistant": "Assistant"
     },
     "keywords": {
       "dashboard": "home, today, summary, overview",
@@ -4992,7 +5343,11 @@
       "distributors": "tenants, dealers, clients",
       "plans": "subscriptions",
       "featureFlags": "modules, features",
-      "taxRates": "GST, HSN, tax rates"
+      "taxRates": "GST, HSN, tax rates",
+      "shopActivity": "win back, stopped ordering, inactive shops, dormant, slowing, not ordering, lost customers",
+      "freeGoods": "schemes, offers, buy one get one, bonus, free items, scheme",
+      "returnRequests": "returns, goods back, sales return, return request",
+      "assistant": "ask, question, AI, help, chat"
     }
   },
   "purchasing": {
@@ -5383,5 +5738,138 @@
       "atLevel": "at its reorder level",
       "waiting": "{qty} {unit} waiting"
     }
+  },
+  "segmentStatus": {
+    "ACTIVE": "Ordering as usual",
+    "NEW": "New",
+    "SLOWING": "Slowing down",
+    "DORMANT": "Stopped ordering",
+    "NEVER_ORDERED": "Never ordered"
+  },
+  "insights": {
+    "nav": {
+      "label": "Shops",
+      "all": "All shops",
+      "activity": "Shop activity"
+    },
+    "list": {
+      "title": "Shop activity",
+      "description": "Who stopped ordering, who orders less than usual and who never ordered, most urgent first. Worked out every night.",
+      "refresh": "Work it out now",
+      "refreshing": "Working it out. The list updates in a moment.",
+      "computed": "Worked out {when}",
+      "show": "Show",
+      "winBack": "To win back",
+      "everyone": "All shops",
+      "segment": "Activity",
+      "anySegment": "Any activity",
+      "salesperson": "Salesperson",
+      "anySalesperson": "Any salesperson",
+      "search": "Search shops",
+      "searchPlaceholder": "Shop, owner or mobile",
+      "shop": "Shop",
+      "lastOrder": "Last order",
+      "usually": "Usually orders",
+      "orders": "Orders (90 days)",
+      "value": "Value (90 days)",
+      "contact": "Last contact",
+      "actions": "Actions",
+      "never": "Never",
+      "daysAgo": "{days, plural, =0 {today} one {# day ago} other {# days ago}}",
+      "every": "{days, plural, one {every day} other {every # days}}",
+      "ordersWas": "{now} (was {before})",
+      "call": "Call",
+      "callShop": "Call {shop}",
+      "whatsapp": "WhatsApp",
+      "whatsappShop": "WhatsApp {shop}",
+      "order": "Place an order",
+      "message": "Namaste {name}, this is {staff} from {business}. We haven't had an order from {shop} for a while. Is there anything we can help with? You can order on our app any time.",
+      "emptyWinBackTitle": "Nobody to win back",
+      "emptyWinBackBody": "Every shop is ordering as usual, or someone contacted it lately.",
+      "emptyTitle": "No shops yet",
+      "emptyBody": "Add shops to see how often they order.",
+      "noMatchTitle": "No shops match",
+      "noMatchBody": "Try another search or filter.",
+      "salespersonIs": "Salesperson: {name}"
+    },
+    "contact": {
+      "open": "Log a contact",
+      "title": "Log a contact with {shop}",
+      "body": "The shop leaves the win-back list for a while after a contact.",
+      "how": "How",
+      "outcome": "What happened",
+      "note": "Note",
+      "noteHint": "Optional, for example when they will order.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saved": "Saved. {shop} leaves the win-back list for a while.",
+      "channels": {
+        "CALL": "Call",
+        "WHATSAPP": "WhatsApp",
+        "VISIT": "Visit",
+        "OTHER": "Other"
+      },
+      "outcomes": {
+        "REACHED": "Reached",
+        "NO_ANSWER": "No answer",
+        "WILL_ORDER": "Will order",
+        "NOT_INTERESTED": "Not interested",
+        "OTHER": "Other"
+      }
+    },
+    "card": {
+      "title": "Ordering",
+      "notYet": "Worked out tonight.",
+      "contacts": "Contacts",
+      "noContacts": "No contacts logged yet.",
+      "by": "{by} · {when}"
+    }
+  },
+  "returnRequestStatus": {
+    "REQUESTED": "Waiting for you",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled by the shop"
+  },
+  "shopReturnStatus": {
+    "REQUESTED": "Waiting for your distributor",
+    "APPROVED": "Approved",
+    "REJECTED": "Not accepted",
+    "CANCELLED": "Withdrawn"
+  },
+  "assistant": {
+    "title": "Assistant",
+    "body": "Ask about your sales, shops, stock and dues. Answers come from your reports: only your business's figures, and only those you may see.",
+    "label": "Your question",
+    "placeholder": "For example: Which shops haven't ordered in 30 days?",
+    "ask": "Ask",
+    "try": "Try one of these:",
+    "suggestions": {
+      "notOrdering": "Which shops haven't ordered in 30 days?",
+      "topProducts": "What are our top 10 products this month?",
+      "salesMonth": "How much did we sell this month?",
+      "lowStock": "Which products are running low?",
+      "dues": "Who owes us the most money?",
+      "collections": "How much did we collect this week?",
+      "backorders": "What are shops waiting for on backorder?"
+    },
+    "history": "Your questions",
+    "noQuestions": "No questions yet",
+    "noQuestionsBody": "Ask one above, or tap a suggestion.",
+    "thinking": "Looking at your figures…",
+    "failed": "I couldn't answer that just now. Try again in a minute.",
+    "limited": "This month's AI allowance is used up. The assistant will be back next month.",
+    "openReport": "Open the report",
+    "ownShops": "Only your shops.",
+    "noRows": "Nothing to show.",
+    "showing": "Showing {shown} of {count}. Open the report for all of them.",
+    "period": "{from} to {to}",
+    "askedAt": "Asked {when}",
+    "nothingTitle": "Nothing to ask about",
+    "nothingBody": "The assistant answers from reports, and your role has none of them. Ask the owner if you need it."
+  },
+  "aiModels": {
+    "claude-sonnet-5-5": "Claude Sonnet 5.5",
+    "claude-haiku-4-5-20251001": "Claude Haiku 4.5"
   }
 }

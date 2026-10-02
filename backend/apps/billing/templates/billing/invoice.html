@@ -64,7 +64,7 @@
       {% for line in lines %}
       <tr>
         <td class="c">{{ line.line_no }}</td>
-        <td>{{ line.description }}<br><span class="muted">{{ line.product_code }}</span></td>
+        <td>{{ line.description }}{% if line.is_free %} <b>Free{% if line.scheme_name %} ({{ line.scheme_name }}){% endif %}</b>{% endif %}<br><span class="muted">{{ line.product_code }}</span></td>
         <td class="c">{{ line.hsn_code }}</td>
         <td class="n">{{ line.quantity|qty }} {{ line.unit_code }}</td>
         <td class="n">{{ line.unit_price|amount }}</td>

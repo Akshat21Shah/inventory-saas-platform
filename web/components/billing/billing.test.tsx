@@ -54,6 +54,7 @@ const row: InvoiceRow = {
 
 const detail: InvoiceDetail = {
   ...row,
+  return_requests: [],
   rate_differs_from_order: true,
   seller: {},
   buyer: {},
@@ -104,6 +105,8 @@ const detail: InvoiceDetail = {
       order_rate: "12.000",
       rate_differs_from_order: true,
       credited_quantity: "3.000",
+      is_free: false,
+      scheme_name: "",
     },
   ],
   credit_notes: [],

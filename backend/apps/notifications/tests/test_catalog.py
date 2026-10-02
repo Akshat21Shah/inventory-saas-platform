@@ -116,6 +116,7 @@ def test_the_approved_compulsory_and_non_urgent_events():
         "stock.alert_opened",
         "payment.reminder",
         "handover.reminder",
+        "summary.daily",  # ADR-056: at the distributor's time, never inside quiet hours
         "tax.rate_change_upcoming",
         "announcement.published",
     }
@@ -174,7 +175,7 @@ def test_staff_rely_on_in_app_and_email_and_whatsapp_goes_in_one_first_batch():
         if "WHATSAPP" in texts and in_first_submission(code, audience)
     ]
     shop = [name for name in first if not name.endswith("_staff")]
-    assert len(shop) == 26 and len(first) == 27
+    assert len(shop) == 28 and len(first) == 29  # + return approved / rejected (ADR-057)
     assert "b2b_handover_reminder_staff" in first
     for rule in DEFAULT_RULES:  # every WhatsApp the defaults send is in the first batch
         if "WHATSAPP" in rule.channels:

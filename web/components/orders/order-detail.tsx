@@ -42,6 +42,7 @@ import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { fromMilli, toMilli } from "@/lib/qty";
 
 import { DocumentButton } from "@/components/billing/document-button";
+import { FreeLineLabel } from "@/components/shop/free-goods";
 
 import { ActionDialog } from "./action-dialog";
 import { refreshOrders } from "./board";
@@ -152,7 +153,8 @@ function ModifyDialog({ order }: { order: StaffOrder }) {
     >
       <ul className="space-y-3">
         {order.lines
-          .filter((line) => openQty(line) !== "0")
+          // Free lines follow what is bought (ADR-056): they aren't changed on their own.
+          .filter((line) => openQty(line) !== "0" && !line.free_of_line)
           .map((line) => (
             <li key={line.id} className="flex items-center justify-between gap-3">
               <Label htmlFor={`qty-${line.id}`} className="min-w-0 flex-1">
@@ -425,6 +427,66 @@ function CancelShipmentDialog({ orderId, shipment }: { orderId: string; shipment
   );
 }
 
+/** Delivering a shipment that has the shop's delivery code (ADR-057): the code, or a reason to
+ * deliver without it (the server checks the code and records the reason). */
+function DeliverWithCodeDialog({ orderId, shipment }: { orderId: string; shipment: Fulfilment }) {
+  const t = useTranslations("orders.shipment");
+  const apply = useApply(orderId);
+  const [code, setCode] = useState("");
+  const [withoutCode, setWithoutCode] = useState(false);
+  const [reason, setReason] = useState("");
+  return (
+    <ActionDialog
+      trigger={<Button className="min-h-10">{t("deliver")}</Button>}
+      title={t("deliverTitle", { number: shipment.number })}
+      description={withoutCode ? t("withoutCodeBody") : t("codeBody")}
+      confirmLabel={t("deliver")}
+      disabled={withoutCode ? !reason.trim() : code.trim().length !== 4}
+      onSubmit={async () => {
+        await fulfilmentsDeliver(
+          shipment.id,
+          withoutCode ? { reason: reason.trim() } : { code: code.trim() },
+        );
+        apply();
+      }}
+    >
+      {withoutCode ? (
+        <div className="space-y-1.5">
+          <Label htmlFor={`no-code-${shipment.id}`}>{t("withoutCodeReason")}</Label>
+          <Input
+            id={`no-code-${shipment.id}`}
+            value={reason}
+            maxLength={300}
+            onChange={(e) => setReason(e.target.value)}
+            className="min-h-10"
+          />
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <Label htmlFor={`code-${shipment.id}`}>{t("code")}</Label>
+          <Input
+            id={`code-${shipment.id}`}
+            value={code}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={4}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            className="min-h-10 w-32 text-center text-lg tracking-widest"
+          />
+        </div>
+      )}
+      <Button
+        type="button"
+        variant="link"
+        className="h-auto px-0"
+        onClick={() => setWithoutCode((v) => !v)}
+      >
+        {withoutCode ? t("useCode") : t("withoutCode")}
+      </Button>
+    </ActionDialog>
+  );
+}
+
 function ShipmentCard({ order, shipment }: { order: StaffOrder; shipment: Fulfilment }) {
   const t = useTranslations("orders.shipment");
   const { can } = useAuth();
@@ -485,6 +547,15 @@ function ShipmentCard({ order, shipment }: { order: StaffOrder; shipment: Fulfil
       {shipment.cancelled_reason ? (
         <p className="text-muted-foreground text-xs">{shipment.cancelled_reason}</p>
       ) : null}
+      {shipment.status === "DISPATCHED" && shipment.needs_delivery_code ? (
+        <p className="text-muted-foreground text-xs">{t("needsCode")}</p>
+      ) : null}
+      {shipment.status === "DELIVERED" && shipment.delivered_via ? (
+        <p className="text-muted-foreground text-xs">
+          {t(`deliveredVia.${shipment.delivered_via}`)}
+          {shipment.delivery_note ? `: ${shipment.delivery_note}` : ""}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {fulfil && shipment.status === "ALLOCATED" ? (
           <PackDialog orderId={order.id} shipment={shipment} />
@@ -492,13 +563,15 @@ function ShipmentCard({ order, shipment }: { order: StaffOrder; shipment: Fulfil
         {fulfil && shipment.status === "PACKED" ? (
           <DispatchDialog orderId={order.id} shipment={shipment} />
         ) : null}
-        {fulfil && shipment.status === "DISPATCHED" ? (
+        {fulfil && shipment.status === "DISPATCHED" && shipment.needs_delivery_code ? (
+          <DeliverWithCodeDialog orderId={order.id} shipment={shipment} />
+        ) : fulfil && shipment.status === "DISPATCHED" ? (
           <ConfirmDialog
             trigger={<Button className="min-h-10">{t("deliver")}</Button>}
             title={t("deliverTitle", { number: shipment.number })}
             confirmLabel={t("deliver")}
             onConfirm={async () => {
-              await fulfilmentsDeliver(shipment.id);
+              await fulfilmentsDeliver(shipment.id, {});
               apply();
             }}
           />
@@ -589,7 +662,8 @@ export function StaffOrderPage({ orderId }: { orderId: string }) {
                     <div className="flex flex-wrap justify-between gap-2">
                       <span className="min-w-0">
                         <span className="block font-medium">{line.product_name}</span>
-                        <span className="text-muted-foreground text-xs">
+                        {line.free_of_line ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                        <span className="text-muted-foreground block text-xs">
                           {line.product_code} · {formatQty(line.qty_ordered)} {line.unit_code} ×{" "}
                           <MoneyText value={line.unit_price} />
                         </span>

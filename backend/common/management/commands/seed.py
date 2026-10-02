@@ -27,9 +27,12 @@ from apps.platform.validators import gstin_check_char
 from apps.retailers.models import Retailer
 from apps.retailers.services import create_retailer
 from common.demo import seed_catalog
+from common.demo_ai import seed_demo_ai
 from common.demo_billing import seed_billing
 from common.demo_compliance import seed_compliance
+from common.demo_growth import seed_demo_growth
 from common.demo_purchasing import seed_demo_purchasing
+from common.demo_selfservice import seed_demo_returns
 from common.tenancy import tenant_context
 
 STAFF_ROLES = ("OWNER", "MANAGER", "SALES", "WAREHOUSE", "ACCOUNTS")
@@ -141,6 +144,9 @@ class Command(BaseCommand):
                 opted_in = seed_notifications(tenant, owner)
                 modules = seed_compliance(tenant)
                 purchasing = seed_demo_purchasing(tenant, owner)
+                free_goods = seed_demo_growth(tenant, owner)
+                return_waiting = seed_demo_returns(tenant)
+                ai_on = seed_demo_ai(tenant)
             self.stdout.write(
                 f"{'created' if created else 'updated'} tenant {tenant.slug}: "
                 f"+{summary.products} products, +{summary.images} photos, "
@@ -151,6 +157,9 @@ class Command(BaseCommand):
                 + f", {opted_in} shops on WhatsApp"
                 + (", e-invoices, e-way bills and online payments on (mock)" if modules else "")
                 + (", purchasing and stock planning on" if purchasing else "")
+                + (", free-goods schemes on" if free_goods else "")
+                + (", a return request waiting" if return_waiting else "")
+                + (", AI search on (mock)" if ai_on else "")
             )
         self.stdout.write(self.style.SUCCESS("seed complete"))
 

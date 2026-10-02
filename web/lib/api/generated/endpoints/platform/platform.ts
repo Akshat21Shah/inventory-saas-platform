@@ -55,6 +55,7 @@ import type {
   PatchedTenantUpdateRequest,
   Plan,
   PlanRequest,
+  PlatformAiUsage,
   PlatformAuditLogsParams,
   PlatformCessTypesListParams,
   PlatformFailure,
@@ -110,6 +111,116 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export type platformAiUsageResponse200 = {
+  data: PlatformAiUsage
+  status: 200
+}
+
+export type platformAiUsageResponseSuccess = (platformAiUsageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformAiUsageResponse = (platformAiUsageResponseSuccess)
+
+export const getPlatformAiUsageUrl = () => {
+
+
+
+
+  return `/api/v1/platform/ai-usage/`
+}
+
+/**
+ * Each distributor's AI use this month, the dearest first, and what the monthly cap comes
+ * to in questions, searches and rupees (ADR-058, ADR-059 item 8).
+ */
+export const platformAiUsage = async ( options?: Parameters<typeof apiFetch>[1]): Promise<platformAiUsageResponse> => {
+
+  return apiFetch<platformAiUsageResponse>(getPlatformAiUsageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformAiUsageQueryKey = () => {
+    return [
+    `/api/v1/platform/ai-usage/`
+    ] as const;
+    }
+
+
+export const getPlatformAiUsageQueryOptions = <TData = Awaited<ReturnType<typeof platformAiUsage>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAiUsage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformAiUsageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformAiUsage>>> = ({ signal }) => platformAiUsage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformAiUsage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformAiUsageQueryResult = NonNullable<Awaited<ReturnType<typeof platformAiUsage>>>
+export type PlatformAiUsageQueryError = unknown
+
+
+export function usePlatformAiUsage<TData = Awaited<ReturnType<typeof platformAiUsage>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAiUsage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformAiUsage>>,
+          TError,
+          Awaited<ReturnType<typeof platformAiUsage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformAiUsage<TData = Awaited<ReturnType<typeof platformAiUsage>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAiUsage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformAiUsage>>,
+          TError,
+          Awaited<ReturnType<typeof platformAiUsage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformAiUsage<TData = Awaited<ReturnType<typeof platformAiUsage>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAiUsage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformAiUsage<TData = Awaited<ReturnType<typeof platformAiUsage>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformAiUsage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformAiUsageQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 export type platformAuditLogsResponse200 = {
   data: PaginatedAuditLogList

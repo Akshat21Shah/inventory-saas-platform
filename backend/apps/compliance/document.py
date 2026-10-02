@@ -117,6 +117,9 @@ def _invoice_line(line: InvoiceLine) -> dict[str, Any]:
         "product_code": line.product_code,
         "hsn_code": line.hsn_code,
         "is_service": False,
+        # A free line under a scheme (ADR-056 item 10): its own ₹0 item until the portal's
+        # free-quantity field is verified (pre-production item 35).
+        "is_free": line.is_free,
         "quantity": f"{line.quantity:.3f}",
         "unit_code": line.unit_code,  # our unit code; the GST unit code (UQC) is item 6
         "unit_price": _money(line.unit_price),

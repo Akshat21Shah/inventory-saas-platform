@@ -391,6 +391,27 @@ def clear_cheque(payment_id: UUID, *, on: date | None = None, by: User | None) -
         return payment
 
 
+def _bounce_charge(payment: Payment, *, by: User | None) -> LedgerAdjustment | None:
+    """⚙ ``payments.cheque_bounce_charge`` above zero: a debit on the shop's account, due at
+    once, no GST (ADR-057 item 4; CA question 47)."""
+    charge = Decimal(get_setting("payments.cheque_bounce_charge", payment.tenant_id) or 0)
+    if charge <= 0:
+        return None
+    if not Retailer.objects.filter(pk=payment.retailer_id, deleted_at__isnull=True).exists():
+        return None  # a removed shop is not charged; the bounce itself still goes through
+    today = today_ist()
+    cheque = payment.cheque_number or "-"
+    return ledger.post_adjustment(
+        payment.retailer_id,
+        LedgerAdjustment.Kind.DEBIT,
+        charge.quantize(Decimal("0.01")),
+        on=today,
+        due_date=today,
+        narration=f"Cheque bounce charge: cheque {cheque} ({payment.number})",
+        by=by,
+    )
+
+
 @retry_on_deadlock()
 def bounce_cheque(payment_id: UUID, *, reason: str, by: User | None) -> Payment:
     """The cheque bounced: if it was credited, the credit and its allocations are reversed."""
@@ -410,12 +431,25 @@ def bounce_cheque(payment_id: UUID, *, reason: str, by: User | None) -> Payment:
         payment.status = Payment.Status.BOUNCED
         payment.reversed_at = timezone.now()
         payment.reversal_reason = note
-        payment.save(update_fields=["status", "reversed_at", "reversal_reason", "updated_at"])
+        payment.bounce_charge = _bounce_charge(payment, by=by)
+        payment.save(
+            update_fields=[
+                "status",
+                "reversed_at",
+                "reversal_reason",
+                "bounce_charge",
+                "updated_at",
+            ]
+        )
         audit.record(
             "payments.cheque_bounced",
             target=payment,
             target_repr=payment.number,
-            metadata={"amount": str(payment.amount), "reason": note},
+            metadata={
+                "amount": str(payment.amount),
+                "reason": note,
+                **({"charge": str(payment.bounce_charge.amount)} if payment.bounce_charge else {}),
+            },
         )
         _emit("payment.reversed", payment, reason=note)
         return payment
