@@ -28,7 +28,9 @@ x-backend: &backend
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # postgres:16-alpine with pgvector compiled in (ADR-058); the data volume is unchanged.
+    image: inventory-postgres:16-pgvector
+    build: { context: ., dockerfile: postgres.Dockerfile }
     environment:
       POSTGRES_DB: inventory
       POSTGRES_USER: postgres

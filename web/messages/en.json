@@ -645,6 +645,18 @@
       "b2cl_threshold": {
         "label": "B2C large threshold (₹)",
         "description": "Bills to shops without a GSTIN in another state above this value are listed one by one in the GST summary. To be verified."
+      },
+      "ai_monthly_units": {
+        "label": "AI units a month per distributor",
+        "description": "Most AI units (words and characters, as the provider counts them) a distributor may use in a calendar month. Over it, AI features step aside and the app works without them. 0: no limit."
+      },
+      "ai_timeout_seconds": {
+        "label": "Wait for the AI provider (seconds)",
+        "description": "How long the app waits for the AI provider before working without it."
+      },
+      "ai_search_min_similarity_percent": {
+        "label": "Closeness for shop search (%)",
+        "description": "How close in meaning a product must be to what a shop typed to be shown after the products that match the words."
       }
     },
     "retailers": {
@@ -826,7 +838,8 @@
       "compliance": "E-invoices & e-way bills",
       "reports": "Reports",
       "planning": "Stock planning",
-      "purchasing": "Purchasing"
+      "purchasing": "Purchasing",
+      "ai": "AI"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -1038,6 +1051,17 @@
         "ofLimit": "{used} of {limit}",
         "empty": "No distributors yet",
         "showAll": "Show all {count}"
+      },
+      "ai": {
+        "title": "AI use this month",
+        "body": "Units each distributor used this month, the heaviest first.",
+        "name": "Distributor",
+        "units": "Units",
+        "calls": "Requests",
+        "failed": "Failed",
+        "near": "Limit",
+        "empty": "No AI use this month.",
+        "ofLimit": "{used} of {limit}"
       }
     },
     "tenants": {
@@ -1446,7 +1470,22 @@
       "body": "Optional parts of the app you can switch on or off.",
       "managedByPlatform": "Set by the platform. Contact support to change it.",
       "turnedOn": "Module switched on.",
-      "turnedOff": "Module switched off."
+      "turnedOff": "Module switched off.",
+      "aiUsage": {
+        "title": "AI use this month",
+        "body": "Since {since}. AI steps aside for the rest of the month when the limit is reached; the app keeps working without it.",
+        "units": "{units} units",
+        "ofLimit": "{units} of {limit} units",
+        "noLimit": "No monthly limit",
+        "calls": "{calls, plural, one {# request} other {# requests}}",
+        "failed": "{failed, plural, one {# failed} other {# failed}}",
+        "none": "Nothing used yet this month.",
+        "feature": {
+          "SEARCH_INDEX": "Shop search: reading your products",
+          "SEARCH_QUERY": "Shop search: what shops typed",
+          "ASSISTANT": "Data assistant"
+        }
+      }
     }
   },
   "staff": {

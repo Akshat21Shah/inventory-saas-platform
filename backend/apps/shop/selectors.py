@@ -71,17 +71,50 @@ class ShopFilters:
     brand_id: UUID | None = None
 
 
-def shop_products(retailer: Retailer, filters: ShopFilters) -> QuerySet[Product]:
-    """Browse (by name) or search (best match first, top ``SEARCH_LIMIT``)."""
-    qs = visible_products(retailer).select_related("brand", "category", "unit", "pack_unit")
+def _scoped(retailer: Retailer, filters: ShopFilters) -> QuerySet[Product]:
+    qs = visible_products(retailer)
     if filters.category_id:
         qs = qs.filter(category_id__in=catalog.descendant_ids(filters.category_id))
     if filters.brand_id:
         qs = qs.filter(brand_id=filters.brand_id)
-    qs = qs.prefetch_related(_ready_images())
+    return qs
+
+
+def _with_details(qs: QuerySet[Product]) -> QuerySet[Product]:
+    return qs.select_related("brand", "category", "unit", "pack_unit").prefetch_related(
+        _ready_images()
+    )
+
+
+def shop_products(retailer: Retailer, filters: ShopFilters) -> QuerySet[Product]:
+    """Browse (by name) or search (best match first; ``shop_search`` takes the top
+    ``SEARCH_LIMIT``)."""
+    qs = _with_details(_scoped(retailer, filters))
     if filters.search.strip():
         return ranked_queryset(qs, filters.search)
     return qs.order_by("name", "id")
+
+
+def shop_search(retailer: Retailer, filters: ShopFilters) -> list[Product]:
+    """Search: today's best matches first; with the ``ai`` module on, then the products nearest
+    in meaning (ADR-058), among the same visible products, up to ``SEARCH_LIMIT``.
+
+    The matches are ranked on the bare query and loaded with their details after: with the
+    details' joins the planner misjudges the row count and a search is several times slower."""
+    from apps.ai.search import nearest
+
+    scoped = _scoped(retailer, filters)
+    ids = list(ranked_queryset(scoped, filters.search).values_list("pk", flat=True)[:SEARCH_LIMIT])
+    by_id = {p.pk: p for p in _with_details(scoped.filter(pk__in=ids))}
+    found = [by_id[pk] for pk in ids if pk in by_id]
+    if len(found) < SEARCH_LIMIT:
+        found += nearest(
+            _with_details(scoped),
+            filters.search,
+            exclude={p.pk for p in found},
+            limit=SEARCH_LIMIT - len(found),
+        )
+    return found
 
 
 def priced(retailer: Retailer, products: list[Product]) -> list[tuple[Product, PriceResult]]:

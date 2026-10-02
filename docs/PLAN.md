@@ -739,7 +739,9 @@ Platform codes (Super Admin role): `platform.tenants.manage`, `platform.plans.ma
 | `reports/{code}/export` | POST | same | Excel (or PDF where offered): small exports answer at once with the file link; larger ones (over ⚙ `platform.report_async_rows`) and every GST workbook return a queued `ReportRun` |
 | `report-runs`, `report-runs/{id}` | GET | the requester | "My exports": status, rows, a fresh signed download link while not expired |
 | `platform/dashboard` | GET | `platform.dashboard.view` | active distributors, orders per day (count, value incl. GST), failed messages and compliance errors per distributor, usage against plans (audited `platform_db` path) |
-| `ai/*` | — | Phase 9d/9e | assistant and semantic search (flag `ai`) |
+| `settings/ai-usage` | GET | any staff | this month's AI units against the monthly limit, in total and by feature (ADR-058) |
+| `platform/ai-usage` | GET | `platform.dashboard.view` | each distributor's AI use this month, the heaviest first (audited platform alias) |
+| `ai/*` | — | Phase 9e | the data assistant (flag `ai`); semantic search runs inside `shop/products?search=` |
 
 ### 3.12 Search, purchasing and planning (Phase 9a, ADR-053)
 | Endpoint | Method | Permission | Purpose |
@@ -1653,8 +1655,16 @@ Every feature is built before anything goes to staging or production, so the sta
 | 9c.8 | FE: the bounce charge setting and where it shows | S |
 | 9c.9 | E2E, responsive, flags-off proof — **final review** | M |
 
-#### 9d — AI foundation and semantic search (flag `ai`)
-`apps/ai`: provider abstraction, per-tenant usage tracking and limits, graceful degradation; semantic product search (pgvector; Hindi/English mix and typos; falls back to today's search).
+#### 9d — AI foundation and semantic search (ADR-058; flag `ai`) — §10.2n
+| # | Task | Size |
+|---|---|---|
+| 9d.1 | Docs: ADR-058, PLAN, SPEC 1.12, pre-production items 38–39 | S |
+| 9d.2 | Infrastructure: pgvector in dev (alpine image with pgvector) and CI; the vector field, distance and index | S |
+| 9d.3 | `apps/ai`: provider interfaces, the mock, usage records, the monthly cap and timeouts, settings | M |
+| 9d.4 | Product embeddings (background and nightly) and semantic search in the shop's search, with the fallback | M |
+| 9d.5 | Usage for the super admin and the distributor; demo and volume data; speed check — **backend checkpoint** | S |
+| 9d.6 | FE: AI usage (super admin; the distributor's features page) | S |
+| 9d.7 | E2E, responsive, flags-off proof — **final review** | S |
 
 #### 9e — Distributor data assistant (flag `ai`)
 Tool calling over fixed, read-only, tenant-scoped query functions that respect every permission (`costs.view`, sales visibility), never model-written SQL; every question and the tools it called are logged; an evaluation set of realistic questions with answers checked against the reports, run in CI against a recorded or mocked model.
@@ -2123,6 +2133,14 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | 2 | Delivery code **[assumed default off]** | 4 digits per shipment at dispatch; shown to the shop and sent with the dispatch message; 5 wrong tries lock it for 15 minutes; staff may deliver without it with a reason (audited) |
 | 3 | Return requests **[assumed]** | On by default, within 30 days of the invoice; reasons as for credit notes; staff approve (choose what happened to the goods, may lower quantities) or reject with a reason; approval issues the credit note |
 | 4 | Bounce charge **[assumed, CA 47]** | ₹0 (off) by default; a non-GST debit adjustment on bounce, due at once, on the statement and the bounced receipt; removed with a manual credit if needed |
+
+### 10.2n Phase 9d decisions (2026-10-02, ADR-058; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Provider **[assumed]** | Interfaces with a local mock; the real embedding provider chosen and verified before launch (pre-production item 38) |
+| 2 | Cap **[assumed]** | 2,000,000 units per distributor per month (platform setting); over it, or on failure, AI steps aside |
+| 3 | Search **[assumed]** | Keyword matches first, then nearest by meaning above 35% similarity, up to the page size; shop search only |
+| 4 | Infrastructure **[assumed]** | pgvector: dev image from `postgres:16-alpine`, CI `pgvector/pgvector:pg16`; RDS creates the extension before migrating (item 39) |
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.

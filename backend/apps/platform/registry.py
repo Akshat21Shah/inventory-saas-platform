@@ -35,6 +35,7 @@ class Group(StrEnum):
     REPORTS = "reports"
     PLANNING = "planning"
     PURCHASING = "purchasing"
+    AI = "ai"  # ADR-058: platform-wide AI limits
 
 
 class SettingType(StrEnum):
@@ -403,6 +404,18 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Require every staff member to set up two-step verification (an authenticator app) "
             "before they can sign in."),
     # --- Platform -------------------------------------------------------------------------------
+    # ADR-058: AI features' cap, timeout and how near a meaning must be for search.
+    _platform("platform.ai_monthly_units", Group.AI, SettingType.INT, 2_000_000,
+              "Most AI units (tokens or characters, as the provider counts) a distributor may use "
+              "in a calendar month; over it, AI features step aside. 0: no cap.",
+              min_value=0, max_value=1_000_000_000),
+    _platform("platform.ai_timeout_seconds", Group.AI, SettingType.INT, 5,
+              "How long the app waits for the AI provider before working without it.",
+              min_value=1, max_value=60),
+    _platform("platform.ai_search_min_similarity_percent", Group.AI, SettingType.INT, 35,
+              "How close in meaning a product must be to what a shop typed to be shown after the "
+              "keyword matches.",
+              min_value=1, max_value=99),
     _platform("platform.hsn_rate_hints_enabled", Group.TAX, SettingType.BOOL, True,
               "Suggest GST rates from the HSN hint table on product forms and imports."),
     _platform("platform.default_invoice_prefix", Group.INVOICING, SettingType.STRING, "INV",

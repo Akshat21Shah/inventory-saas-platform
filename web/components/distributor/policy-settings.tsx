@@ -1,6 +1,7 @@
 "use client";
 
 import { NotificationsNav } from "@/components/notifications/manage/nav";
+import { AiUsageCard } from "@/components/ai/usage";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -66,6 +67,7 @@ export function FeatureSettings() {
   const query = useSettingsFeatures();
   const [pending, setPending] = useState<string | null>(null);
   const features = query.data?.data ?? [];
+  const aiOn = features.some((feature) => feature.code === "ai" && feature.enabled);
 
   return (
     <>
@@ -108,6 +110,11 @@ export function FeatureSettings() {
           </CardContent>
         </Card>
       )}
+      {aiOn ? (
+        <div className="mt-8">
+          <AiUsageCard />
+        </div>
+      ) : null}
     </>
   );
 }

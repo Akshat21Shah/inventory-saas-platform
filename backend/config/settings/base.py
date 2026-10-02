@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.search",
     "apps.planning",
     "apps.insights",
+    "apps.ai",
     "apps.purchasing",
     "apps.dataio",
     "apps.shop",
@@ -198,7 +199,13 @@ CELERY_BEAT_SCHEDULE = {
     "planning-refresh": {"task": "planning.refresh_all", "schedule": crontab(hour=20, minute=0)},
     # 01:45 IST, after the stock stats: shop activity (ADR-056).
     "insights-refresh": {"task": "insights.refresh_all", "schedule": crontab(hour=20, minute=15)},
+    # 02:15 IST: product embeddings for distributors with AI on (ADR-058).
+    "ai-embeddings": {"task": "ai.embed_all", "schedule": crontab(hour=20, minute=45)},
 }
+
+# ADR-058: which embedding provider apps.ai uses; only the local mock exists until a real one is
+# chosen and verified (pre-production item 38).
+AI_EMBEDDINGS_PROVIDER = env("AI_EMBEDDINGS_PROVIDER", default="mock")
 
 CHANNEL_LAYERS = {
     "default": {
@@ -236,6 +243,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "ENUM_NAME_OVERRIDES": {
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
+        "AiFeatureEnum": "apps.ai.models.AiUsage.Feature",
         "SearchHitTypeEnum": "apps.search.api.serializers.HIT_TYPES",
         "AbcClassEnum": "apps.planning.models.AbcClass",
         "MovementClassEnum": "apps.planning.models.MovementClass",

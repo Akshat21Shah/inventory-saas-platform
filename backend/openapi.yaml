@@ -3711,6 +3711,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlanningRefresh'
           description: ''
+  /api/v1/platform/ai-usage/:
+    get:
+      operationId: platform_ai_usage
+      description: Each distributor's AI use this month, the heaviest first (ADR-058).
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantAiUsage'
+          description: ''
   /api/v1/platform/audit-logs/:
     get:
       operationId: platform_audit_logs
@@ -8370,6 +8387,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/SearchResults'
           description: ''
+  /api/v1/settings/ai-usage/:
+    get:
+      operationId: settings_ai_usage
+      description: This business's AI use this month against its monthly limit (ADR-058).
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyAiUsage'
+          description: ''
   /api/v1/settings/bank-details/:
     get:
       operationId: settings_bank_details
@@ -11521,6 +11553,16 @@ components:
       description: |-
         * `INVOICE_DATE` - INVOICE_DATE
         * `DUE_DATE` - DUE_DATE
+    AiFeatureEnum:
+      enum:
+      - SEARCH_INDEX
+      - SEARCH_QUERY
+      - ASSISTANT
+      type: string
+      description: |-
+        * `SEARCH_INDEX` - Product search: indexing products
+        * `SEARCH_QUERY` - Product search: a shop's search
+        * `ASSISTANT` - Data assistant
     Alert:
       type: object
       properties:
@@ -15140,6 +15182,22 @@ components:
           type: boolean
       required:
       - enabled
+    FeatureUsage:
+      type: object
+      properties:
+        feature:
+          $ref: '#/components/schemas/AiFeatureEnum'
+        units:
+          type: integer
+        calls:
+          type: integer
+        failed:
+          type: integer
+      required:
+      - calls
+      - failed
+      - feature
+      - units
     Filter:
       type: object
       properties:
@@ -17936,6 +17994,43 @@ components:
         * `TRANSFER_OUT` - Transfer out
         * `RESERVE` - Reserved for an order
         * `RELEASE` - Reservation released
+    MyAiUsage:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: The AI module is on for this business.
+        since:
+          type: string
+          format: date
+          description: The first day of this month (India time).
+        units:
+          type: integer
+          description: Units used this month (in and out).
+        limit:
+          type: integer
+          nullable: true
+          description: 'Units a month; null: no limit.'
+        calls:
+          type: integer
+        failed:
+          type: integer
+        near_limit:
+          type: boolean
+          description: At 90% or more of the limit.
+        by_feature:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureUsage'
+      required:
+      - by_feature
+      - calls
+      - enabled
+      - failed
+      - limit
+      - near_limit
+      - since
+      - units
     NotificationAudienceEnum:
       enum:
       - SHOP
@@ -27892,6 +27987,35 @@ components:
         * `SUBMITTED` - Submitted
         * `APPROVED` - Approved
         * `REJECTED` - Rejected
+    TenantAiUsage:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        units:
+          type: integer
+          description: This month (in and out).
+        calls:
+          type: integer
+        failed:
+          type: integer
+        limit:
+          type: integer
+          nullable: true
+          description: 'Null: no limit.'
+        near_limit:
+          type: boolean
+      required:
+      - calls
+      - failed
+      - limit
+      - name
+      - near_limit
+      - tenant_id
+      - units
     TenantChoice:
       type: object
       properties:
