@@ -78,18 +78,22 @@ test("the owner asks the assistant and sees the figures behind the answer", asyn
   await page.waitForURL(`${SHARMA}/manage`);
   await page.getByRole("link", { name: "Assistant" }).first().click();
   await page.waitForURL(`${SHARMA}/manage/assistant`);
-  await page.getByLabel("Your question", { exact: true }).fill("Who owes us the most money?");
+  await page
+    .getByLabel("Your question", { exact: true })
+    .fill("How much did we collect this week?");
   await page.getByRole("button", { name: "Ask" }).click();
   const newest = page.getByRole("region", { name: "Your questions" }).getByRole("listitem").first();
-  await expect(newest.getByText("Who owes us the most money?")).toBeVisible();
+  await expect(newest.getByText("How much did we collect this week?")).toBeVisible();
   // Answered in the background (the scripted mock in dev and CI), with the report's rows under it.
-  await expect(newest.getByText(/owe ₹[\d,]+\.\d\d in all|No shop owes anything/)).toBeVisible({
+  await expect(
+    newest.getByText(/Collected this week: ₹[\d,]+\.\d\d in \d+ payments|No payments received/),
+  ).toBeVisible({
     timeout: 30_000,
   });
-  await expect(newest.getByRole("region", { name: "Receivables ageing" })).toBeVisible();
+  await expect(newest.getByRole("region", { name: "Collections" })).toBeVisible();
   await expect(newest.getByRole("link", { name: "Open the report" })).toHaveAttribute(
     "href",
-    /\/manage\/reports\/receivables_ageing/,
+    /\/manage\/reports\/collections\?date_from=/,
   );
   await context.close();
 });

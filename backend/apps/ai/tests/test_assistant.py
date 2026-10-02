@@ -10,6 +10,7 @@ import pytest
 from django.core.cache import cache
 from django.utils import timezone
 
+from apps.ai.adapters import mock_chat
 from apps.ai.adapters.chat import ChatTurn, ToolCall
 from apps.ai.adapters.mock_chat import ScriptedChat
 from apps.ai.assistant import periods, service
@@ -257,3 +258,16 @@ def test_a_question_stuck_waiting_shows_as_failed(world):
         )
     body = client_for(world["t"], world["owner"]).get(f"{API}/questions/{asked.pk}/").json()
     assert body["status"] == "FAILED"
+
+
+def test_the_mocks_wording_of_amounts():
+    assert mock_chat.rupees("123456.5") == "₹1,23,456.50"
+    assert mock_chat.rupees("-950") == "-₹950.00"
+    rows = [{"name": "Gurukrupa Stores", "net": "950.00"}, {"name": "Ganesh", "net": "-1200.00"}]
+    credit = mock_chat.write("dues", {"rows": rows, "totals": {"net": "-250.00"}}, {})
+    assert credit == (
+        "Owed the most: Gurukrupa Stores ₹950.00. Counting the credit shops hold, the balance "
+        "is ₹250.00 in their favour."
+    )
+    owed = mock_chat.write("dues", {"rows": rows[:1], "totals": {"net": "950.00"}}, {})
+    assert owed.endswith("shops owe ₹950.00 in all.")

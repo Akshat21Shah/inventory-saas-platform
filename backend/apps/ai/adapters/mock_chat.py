@@ -231,10 +231,14 @@ def write(tool: str, figures: dict[str, Any], args: dict[str, Any]) -> str:
         if not owing:
             return f"No shop{mine} owes anything."
         top = ", ".join(f"{r.get('name')} {rupees(r.get('net'))}" for r in owing[:5])
-        return (
-            f"Owed the most{mine}: {top}. Net of credit other shops hold, shops owe "
-            f"{rupees(totals.get('net'))} in all."
-        )
+        net = Decimal(str(totals.get("net") or 0))
+        if net > 0:
+            balance = f"Net of credit other shops hold, shops owe {rupees(net)} in all."
+        else:  # shops hold more credit than is owed
+            balance = (
+                f"Counting the credit shops hold, the balance is {rupees(-net)} in their favour."
+            )
+        return f"Owed the most{mine}: {top}. {balance}"
     if tool == "collections":
         if not rows:
             return f"No payments received {when}{mine}."
