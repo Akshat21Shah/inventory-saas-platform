@@ -147,3 +147,16 @@ def test_free_goods_and_shop_activity_on_the_volume_data(year):
         assert FreeGoodsScheme.objects.count() == 3
         assert ShopActivity.objects.count() == added.shops > 0
     assert seed_volume_growth(tenant) is None
+
+
+def test_return_requests_on_the_volume_data(year):
+    """ADR-057 (9c.5): requests on the year's bills, a third waiting; numbering continues."""
+    from apps.billing.models import ReturnRequest
+    from common.demo_selfservice import seed_volume_returns
+
+    tenant, _result = year
+    added = seed_volume_returns(tenant, count=30)
+    assert added == 30
+    with tenant_context(tenant.pk):
+        assert ReturnRequest.objects.filter(status="REQUESTED").count() == 10
+    assert seed_volume_returns(tenant, count=30) is None

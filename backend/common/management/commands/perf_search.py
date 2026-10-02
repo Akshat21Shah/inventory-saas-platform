@@ -3,7 +3,7 @@ owner and for a salesperson limited to their own shops, the super admin's search
 purchasing and stock planning pages (p95 < 300 ms), timed through the whole API in-process as in
 ``perf_reports``. ``make perf``, after ``make seed-volume``. Phase 9b (ADR-056, 9b.6) adds the shop
 activity pages, the free-goods schemes and a 40-line cart with schemes (made for the run and
-removed after).
+removed after); Phase 9c (ADR-057) the return requests and a bill with its requests.
 
 The searches use the distributor's own records (a product, a shop and its mobile and GSTIN, an
 order, an invoice, a receipt, a goods receipt and a purchase order, with and without their
@@ -168,6 +168,11 @@ class Command(BaseCommand):
             ("shop activity: win back", f"{API}/shop-activity/?win_back=true"),
             ("shop activity: slowing", f"{API}/shop-activity/?segment=SLOWING"),
             ("a shop's activity", f"{API}/retailers/{shop.pk}/activity/"),
+        ]
+        pages += [
+            ("return requests", f"{API}/return-requests/"),
+            ("return requests: waiting", f"{API}/return-requests/?status=REQUESTED"),
+            ("a bill (with its returns)", f"{API}/invoices/{invoice.pk}/"),
         ]
         if is_feature_enabled("free_goods", tenant.pk):  # seed_volume switches it on
             pages.append(("free-goods schemes", f"{API}/free-goods-schemes/"))
