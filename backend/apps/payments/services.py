@@ -397,6 +397,8 @@ def _bounce_charge(payment: Payment, *, by: User | None) -> LedgerAdjustment | N
     charge = Decimal(get_setting("payments.cheque_bounce_charge", payment.tenant_id) or 0)
     if charge <= 0:
         return None
+    if not Retailer.objects.filter(pk=payment.retailer_id, deleted_at__isnull=True).exists():
+        return None  # a removed shop is not charged; the bounce itself still goes through
     today = today_ist()
     cheque = payment.cheque_number or "-"
     return ledger.post_adjustment(
