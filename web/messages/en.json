@@ -2619,6 +2619,30 @@
       "addMore": "Add {qty} more to get {free} free",
       "badge": "Free",
       "under": "with {scheme}"
+    },
+    "returns": {
+      "open": "Return items",
+      "title": "Return items",
+      "body": "Choose what you want to return and why. Your distributor checks and confirms it.",
+      "upTo": "up to {qty} {unit}",
+      "reason": "Why",
+      "reasons": {
+        "DAMAGED": "Damaged",
+        "EXPIRED": "Expired",
+        "WRONG_ITEM": "Wrong item",
+        "EXCESS_SUPPLY": "Sent more than ordered",
+        "OTHER": "Other"
+      },
+      "note": "Note",
+      "noteHint": "Optional; needed for Other.",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sent": "Sent. Your distributor will check it.",
+      "heading": "Returns",
+      "why": "Not accepted: {reason}",
+      "credited": "Credit note {number} issued",
+      "withdraw": "Withdraw",
+      "withdrawTitle": "Withdraw return {number}?"
     }
   },
   "filters": {
@@ -3301,7 +3325,8 @@
       "paymentSettings": "Credit & payment settings",
       "einvoices": "E-invoices",
       "ewaybills": "E-way bills",
-      "checkouts": "Online checkouts"
+      "checkouts": "Online checkouts",
+      "returns": "Returns"
     },
     "invoices": {
       "title": "Invoices",
@@ -3350,7 +3375,8 @@
       "einvoice": "E-invoice",
       "allEinvoice": "Any e-invoice status",
       "cancelledBanner": "This invoice is cancelled: its IRN was cancelled and it owes nothing.",
-      "reissuedAs": "Re-issued as {number}"
+      "reissuedAs": "Re-issued as {number}",
+      "returnRequests": "Return requests"
     },
     "totals": {
       "taxable": "Taxable value",
@@ -3828,6 +3854,49 @@
         "search": "Search",
         "allStatuses": "All statuses"
       }
+    },
+    "returns": {
+      "title": "Return requests",
+      "description": "Shops ask to return goods from their bills. Approving issues the return credit note.",
+      "number": "Request",
+      "shop": "Shop",
+      "bill": "Bill",
+      "items": "Items",
+      "reason": "Reason",
+      "asked": "Asked",
+      "status": "Status",
+      "search": "Search return requests",
+      "searchPlaceholder": "Request, bill or shop",
+      "waiting": "Waiting for you",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled by the shop",
+      "anyStatus": "Any status",
+      "noneWaitingTitle": "Nothing to decide",
+      "noneWaitingBody": "Return requests from shops show here.",
+      "emptyTitle": "No return requests",
+      "emptyBody": "Try another status or search.",
+      "decide": "Decide",
+      "askedOf": "Asked {qty} of {invoiced} {unit}",
+      "approveQty": "Quantity to credit for {name}",
+      "whatHappened": "What happened to {name}",
+      "dispositions": {
+        "RETURN_TO_STOCK": "Return to stock",
+        "DAMAGED": "Received damaged",
+        "NOT_RETURNED": "Not physically returned"
+      },
+      "approve": "Approve",
+      "approveTitle": "Approve {number}?",
+      "approveBody": "A return credit note is issued for these quantities and the shop is told.",
+      "approvedToast": "Approved. The credit note is issued.",
+      "reject": "Reject",
+      "rejectTitle": "Reject {number}?",
+      "rejectBody": "The shop sees your reason.",
+      "rejectReason": "Why",
+      "rejectedToast": "Rejected. The shop is told why.",
+      "back": "Return requests",
+      "creditNote": "Credit note",
+      "askedApproved": "Asked {asked}, credited {approved}"
     }
   },
   "paymentStatus": {
@@ -4963,7 +5032,8 @@
       "latePurchaseOrders": "Purchase orders late",
       "latePurchaseOrdersBody": "Expected before today",
       "winBack": "Shops to win back",
-      "winBackBody": "Stopped ordering, slowing or never ordered"
+      "winBackBody": "Stopped ordering, slowing or never ordered",
+      "returnRequests": "Return requests to decide"
     },
     "today": {
       "title": "Today so far",
@@ -5059,6 +5129,7 @@
       "retailers": "Shops",
       "newRetailer": "Add a shop",
       "shopActivity": "Shop activity",
+      "returnRequests": "Return requests",
       "priceLists": "Price lists",
       "discounts": "Discounts",
       "specialPrices": "Special prices",
@@ -5177,7 +5248,8 @@
       "featureFlags": "modules, features",
       "taxRates": "GST, HSN, tax rates",
       "shopActivity": "win back, stopped ordering, inactive shops, dormant, slowing, not ordering, lost customers",
-      "freeGoods": "schemes, offers, buy one get one, bonus, free items, scheme"
+      "freeGoods": "schemes, offers, buy one get one, bonus, free items, scheme",
+      "returnRequests": "returns, goods back, sales return, return request"
     }
   },
   "purchasing": {
@@ -5654,5 +5726,17 @@
       "noContacts": "No contacts logged yet.",
       "by": "{by} · {when}"
     }
+  },
+  "returnRequestStatus": {
+    "REQUESTED": "Waiting for you",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled by the shop"
+  },
+  "shopReturnStatus": {
+    "REQUESTED": "Waiting for your distributor",
+    "APPROVED": "Approved",
+    "REJECTED": "Not accepted",
+    "CANCELLED": "Withdrawn"
   }
 }

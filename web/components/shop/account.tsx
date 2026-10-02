@@ -41,6 +41,7 @@ import { formatDate, formatMoney, formatQty } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import { PayAccountCard, PayBillButton } from "./pay";
+import { BillReturns, ReturnItemsButton } from "./returns";
 
 function Pager({ pager }: { pager: ReturnType<ReturnType<typeof useCursor>["pagination"]> }) {
   const t = useTranslations("shop.money");
@@ -348,7 +349,9 @@ export function ShopBillPage({ invoiceId }: { invoiceId: string }) {
             </li>
           ))}
         </ul>
+        <ReturnItemsButton bill={bill} />
       </section>
+      <BillReturns bill={bill} />
       <dl className="space-y-1 rounded-xl border p-4 text-sm">
         <div className="flex justify-between">
           <dt>{t("total")}</dt>

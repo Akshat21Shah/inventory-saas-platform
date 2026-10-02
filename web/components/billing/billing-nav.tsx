@@ -18,6 +18,7 @@ export function BillingNav() {
             path === "/manage/invoices" || /^\/manage\/invoices\/[0-9a-f-]{36}$/.test(path),
         },
         { href: "/manage/invoices/credit-notes", label: t("creditNotes"), prefix: true },
+        { href: "/manage/invoices/returns", label: t("returns"), prefix: true },
         {
           href: "/manage/invoices/einvoices",
           label: t("einvoices"),

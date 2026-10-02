@@ -75,6 +75,8 @@ const TONES: Record<string, StatusTone> = {
   SLOWING: "warning",
   DORMANT: "danger",
   NEVER_ORDERED: "neutral",
+  // A shop's return request (ADR-057).
+  REQUESTED: "warning",
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {
@@ -116,7 +118,9 @@ export function StatusBadge({
     | "reportRunStatus"
     | "usageStatus"
     | "purchaseOrderStatus"
-    | "segmentStatus";
+    | "segmentStatus"
+    | "returnRequestStatus"
+    | "shopReturnStatus";
 }) {
   const t = useTranslations(labels);
   const tone = statusTone(status);
