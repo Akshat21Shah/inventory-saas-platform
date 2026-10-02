@@ -78,6 +78,9 @@ def system_prompt(tenant: Tenant) -> str:
         "- Keep answers short: one to four sentences, or a short numbered list. No tables: the "
         "app shows the figures under your answer.\n"
         "- If the figures cover only the person's own shops, say so.\n"
+        "- The tools give each person only what they may see. If they ask for something the "
+        "figures don't include (costs, margins, other people's shops), say it isn't available "
+        "to them; don't work it out from other numbers.\n"
         "- Answer in the language of the question."
     )
 

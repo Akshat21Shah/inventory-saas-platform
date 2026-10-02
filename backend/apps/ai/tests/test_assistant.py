@@ -271,3 +271,37 @@ def test_the_mocks_wording_of_amounts():
     )
     owed = mock_chat.write("dues", {"rows": rows[:1], "totals": {"net": "950.00"}}, {})
     assert owed.endswith("shops owe ₹950.00 in all.")
+
+
+def test_the_mock_offers_only_what_the_person_may_ask_and_says_when_costs_are_withheld(world):
+    with tenant_context(world["t"].pk):
+        sales = {t.name for t in toolbox.tools_for(world["sales"])}
+        warehouse = {t.name for t in toolbox.tools_for(world["warehouse"])}
+    assert "stock" not in mock_chat.can_answer(sales)
+    assert mock_chat.can_answer(warehouse) == (
+        "I can answer questions about low stock, a product's stock and backorders. "
+        "Try “Which products are running low?”"
+    )
+    assert "no figures" in mock_chat.can_answer(set())
+    without = {"columns": {"name": "Product", "total": "Total"}}
+    with_margin = {"columns": {"name": "Product", "margin": "Margin"}}
+    assert mock_chat.costs_note("What is our margin on top products?", without).startswith(
+        "Costs and margins aren't shown to you"
+    )
+    assert mock_chat.costs_note("What is our margin on top products?", with_margin) == ""
+    assert mock_chat.costs_note("Top products this month", without) == ""
+
+
+def test_a_salesperson_asking_for_margins_is_told_they_are_not_shown(
+    world, django_capture_on_commit_callbacks
+):
+    question = "What is our margin on the top products today?"
+    sales = client_for(world["t"], world["sales"])
+    body = ask(sales, question, django_capture_on_commit_callbacks)
+    assert body["answer"].startswith("Costs and margins aren't shown to you")
+    [call] = body["tools"]
+    assert "margin" not in {c["key"] for c in call["figures"]["columns"]}
+    owner = client_for(world["t"], world["owner"])
+    body = ask(owner, question, django_capture_on_commit_callbacks)
+    assert not body["answer"].startswith("Costs and margins")
+    assert "margin" in {c["key"] for c in body["tools"][0]["figures"]["columns"]}

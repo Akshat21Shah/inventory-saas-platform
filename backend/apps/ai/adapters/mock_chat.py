@@ -148,11 +148,51 @@ def plan(question: str, offered: set[str]) -> ToolCall | str:
                 return "Which product? Ask, for example, “How much stock of Maggi 70g do we have?”"
             args["product"] = found.group("name").strip(" ?.")
         return ToolCall(id=f"call_{tool}", name=tool, args=args)
-    return (
-        "I can answer questions about your sales, top products and shops, shops that stopped "
-        "ordering, stock, backorders, dues and collections. Try “Which shops haven't "
-        "ordered in 30 days?”"
+    return can_answer(offered)
+
+
+# What each tool lets the person ask about, in the order the fallback reply lists them.
+TOPICS = (
+    ("sales_summary", "your sales"),
+    ("top_products", "top products"),
+    ("top_shops", "top shops"),
+    ("shops_not_ordering", "shops that stopped ordering"),
+    ("low_stock", "low stock"),
+    ("product_stock", "a product's stock"),
+    ("backorders", "backorders"),
+    ("dues", "dues"),
+    ("collections", "collections"),
+)
+EXAMPLES = (
+    ("shops_not_ordering", "Which shops haven't ordered in 30 days?"),
+    ("low_stock", "Which products are running low?"),
+)
+
+
+def can_answer(offered: set[str]) -> str:
+    """The fallback reply: only the topics this person's tools cover."""
+    topics = [words for tool, words in TOPICS if tool in offered]
+    if not topics:
+        return "There are no figures I can show you. Ask the owner if you need them."
+    listed = topics[0] if len(topics) == 1 else ", ".join(topics[:-1]) + " and " + topics[-1]
+    example = next((text for tool, text in EXAMPLES if tool in offered), None)
+    return f"I can answer questions about {listed}." + (
+        f" Try \u201c{example}\u201d" if example else ""
     )
+
+
+_COSTS = re.compile(r"\b(margins?|profits?|costs?|cost price|purchase price)\b", re.IGNORECASE)
+_COST_COLUMNS = {"margin", "margin_pct", "cost", "cost_price", "value"}
+
+
+def costs_note(question: str, figures: dict[str, Any]) -> str:
+    """When the question asks for costs or margins the figures don't carry (the person may not
+    see them), say so instead of answering around it."""
+    if not _COSTS.search(question):
+        return ""
+    if _COST_COLUMNS & set((figures.get("columns") or {}).keys()):
+        return ""
+    return "Costs and margins aren't shown to you, so these are the sales figures. "
 
 
 def _names(rows: list[dict[str, Any]], key: str = "name", n: int = 5) -> str:
@@ -282,7 +322,9 @@ class ScriptedChat:
                     "error", ""
                 )
             else:
-                reply = write(call.name, json.loads(result.content), call.args)
+                figures = json.loads(result.content)
+                question = next(m.text for m in messages if m.role == "user" and m.text)
+                reply = costs_note(question, figures) + write(call.name, figures, call.args)
             return ChatTurn(reply, (), _units(sent), _units(reply), MODEL)
         step = plan(last.text, {t.name for t in tools})
         if isinstance(step, str):
