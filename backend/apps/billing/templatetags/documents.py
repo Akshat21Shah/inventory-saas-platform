@@ -35,6 +35,15 @@ def amount(value: Any) -> str:
 
 
 @register.filter
+def indian_number(value: Any) -> str:
+    """1234567 -> 12,34,567 (whole numbers: counts)."""
+    if value in (None, ""):
+        return ""
+    number = int(value)
+    return f"{'-' if number < 0 else ''}{_group_indian(str(abs(number)))}"
+
+
+@register.filter
 def rupees(value: Any) -> str:
     text = amount(value)
     if text.startswith("-"):

@@ -27,6 +27,7 @@ from django.db.models import BooleanField, Case, F, Sum, Value, When
 from django.db.models.fields.json import KT, KeyTextTransform
 from django.db.models.lookups import GreaterThan
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
 from apps.catalog.models import Unit
@@ -844,7 +845,7 @@ def summary_notes(ctx: Context) -> list[str]:
 register(
     Report(
         code="gst_summary",
-        title="GST summary (GSTR-1)",
+        title=gettext_lazy("GST summary (GSTR-1)"),
         group=Group.GST,
         description="Sales in the layout of the GSTR-1 Excel template, for your CA.",
         permission=FINANCIAL,

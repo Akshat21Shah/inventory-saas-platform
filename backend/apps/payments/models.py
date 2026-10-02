@@ -5,6 +5,7 @@ through the services."""
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
+from django.utils.translation import gettext_lazy
 
 from common.crypto import EncryptedTextField
 from common.fields import MoneyField
@@ -15,11 +16,11 @@ USER = settings.AUTH_USER_MODEL
 
 class Payment(TenantScopedModel):
     class Mode(models.TextChoices):
-        CASH = "CASH", "Cash"
-        CHEQUE = "CHEQUE", "Cheque"
-        BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
-        UPI = "UPI", "UPI"
-        ONLINE = "ONLINE", "Paid online"  # through the payment gateway only (Phase 7)
+        CASH = "CASH", gettext_lazy("Cash")
+        CHEQUE = "CHEQUE", gettext_lazy("Cheque")
+        BANK_TRANSFER = "BANK_TRANSFER", gettext_lazy("Bank transfer")
+        UPI = "UPI", gettext_lazy("UPI")
+        ONLINE = "ONLINE", gettext_lazy("Paid online")  # through the payment gateway only (Phase 7)
 
     class Status(models.TextChoices):
         RECEIVED = "RECEIVED", "Received"  # credited to the shop
@@ -135,9 +136,9 @@ class Refund(TenantScopedModel):
     full when recorded). Own number series (RFD/26-27/000001) and a refund voucher."""
 
     class Mode(models.TextChoices):
-        CASH = "CASH", "Cash"
-        BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
-        UPI = "UPI", "UPI"
+        CASH = "CASH", gettext_lazy("Cash")
+        BANK_TRANSFER = "BANK_TRANSFER", gettext_lazy("Bank transfer")
+        UPI = "UPI", gettext_lazy("UPI")
 
     class Status(models.TextChoices):
         ISSUED = "ISSUED", "Paid back"

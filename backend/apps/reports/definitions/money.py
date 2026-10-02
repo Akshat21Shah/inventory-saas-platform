@@ -106,7 +106,7 @@ def ageing_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="receivables_ageing",
-        title="Receivables ageing",
+        title=gettext_lazy("Receivables ageing"),
         group=Group.MONEY,
         description="What each shop owes, by how long it has been owed.",
         permission=MONEY_OR_OWN,
@@ -181,7 +181,7 @@ def collection_rows(ctx: Context) -> Mapped:
         values,
         lambda r: {
             **r,
-            "mode": MODE_LABELS.get(r["mode"], r["mode"]),
+            "mode": str(MODE_LABELS.get(r["mode"], r["mode"])),  # labels translate (ADR-060)
             "status": STATUS_LABELS.get(r["status"], r["status"]),
             "handover": HANDOVER_LABELS.get(r["handover_status"], ""),
             "reference": r["cheque_number"] or r["reference_no"],
@@ -203,7 +203,7 @@ def collection_notes(ctx: Context) -> list[str]:
         .annotate(total=Sum("amount"))
         .order_by("mode")
     )
-    parts = [f"{MODE_LABELS.get(r['mode'], r['mode'])} ₹{_money(r['total']):,}" for r in by_mode]
+    parts = [f"{MODE_LABELS.get(r['mode'], r['mode'])!s} ₹{_money(r['total']):,}" for r in by_mode]
     notes = ["Bounced and reversed payments are listed but not added to the total."]
     if parts:
         notes.insert(0, "By mode: " + ", ".join(parts) + ".")
@@ -213,7 +213,7 @@ def collection_notes(ctx: Context) -> list[str]:
 register(
     Report(
         code="collections",
-        title="Collections",
+        title=gettext_lazy("Collections"),
         group=Group.MONEY,
         description="Every payment received in the period, by mode and who collected it.",
         permission=MONEY_OR_OWN,
@@ -319,7 +319,7 @@ def _make(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="salesperson_collections",
-        title="Salesperson collections",
+        title=gettext_lazy("Salesperson collections"),
         group=Group.MONEY,
         description="What each salesperson collected, handed over and still holds.",
         permission=MONEY_OR_OWN,

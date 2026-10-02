@@ -311,7 +311,6 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
         supplier = target.supplier is not None
         path = ctx.shop_path if shop else "" if supplier else ctx.staff_path
         url = web_url(path or "/", tenant_slug=tenant.slug)
-        values = {**ctx.values, "link": url, "document_link": ""}
         # Each recipient's language, only if this distributor may use it (ADR-060): the shop's
         # (or the distributor's default for shops), else the person's, else English.
         if target.retailer is not None:
@@ -339,7 +338,11 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 text_locale = approval.sendable_locale(ctx.code, locale, audience)
                 reason = "" if text_locale else SKIP.NOT_APPROVED
             carries_link = (shop or supplier) and channel != Channel.IN_APP and not reason
-            values["document_link"] = link_for_shop() if carries_link else ""
+            values = {
+                **ctx.values_in(text_locale or locale),
+                "link": url,
+                "document_link": link_for_shop() if carries_link else "",
+            }
             text = render(ctx.code, channel, values, text_locale or locale, audience)
             if text is None:
                 continue

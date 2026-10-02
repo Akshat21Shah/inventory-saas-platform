@@ -133,6 +133,13 @@ class TextSerializer(serializers.Serializer[Any]):
     source = serializers.ChoiceField(  # type: ignore[assignment]
         choices=["tenant", "platform", "catalogue"]
     )
+    locale = serializers.CharField(
+        help_text="The language this text is written in (English when the one asked has none)."
+    )
+    edited_locales = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="The languages in which the distributor has its own text (ADR-060).",
+    )
     editable = serializers.BooleanField()
     variables = serializers.ListField(child=serializers.CharField())
 

@@ -40,7 +40,7 @@ def describe(report: Report, user: User) -> dict[str, Any]:
     scope = engine.scope_for(user, report)
     return {
         "code": report.code,
-        "title": report.title,
+        "title": str(report.title),
         "group": report.group,
         "description": report.description,
         "pdf": report.pdf,

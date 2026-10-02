@@ -11,8 +11,11 @@ Every WhatsApp and SMS text names the distributor first ("{{ distributor }}: …
 platform number sends for every distributor.
 """
 
+import json
 import re
 from dataclasses import dataclass, field
+from functools import cache
+from pathlib import Path
 
 from apps.notifications.models import Audience, Channel, DocumentLink, Recipient, WhatsAppCategory
 
@@ -707,3 +710,42 @@ def whatsapp_template_name(event_code: str, audience: str = Audience.SHOP) -> st
     version ends in "_staff"."""
     name = "b2b_" + event_code.replace(".", "_")
     return f"{name}_staff" if audience == Audience.STAFF else name
+
+
+# --- The same texts in other languages (ADR-060) ------------------------------------------------
+# ``catalog_texts/<code>.json``: event -> audience -> channel -> {subject, body}, for the shop's
+# and the office's words (a supplier's letter stays English: purchase orders, owner). Adding a
+# language is a file; a text missing from it falls back to English.
+
+TEXTS_DIR = Path(__file__).with_name("catalog_texts")
+
+
+@cache
+def texts_in(locale: str) -> dict[str, dict[str, dict[str, Text]]]:
+    """The platform's default texts in ``locale`` (English: the texts above)."""
+    if locale == "en":
+        return DEFAULT_TEXTS
+    path = TEXTS_DIR / f"{locale}.json"
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        event: {
+            audience: {
+                channel: Text(
+                    text.get("subject", ""),
+                    text["body"],
+                    # A WhatsApp template's parameters are its variables in order of first use,
+                    # which differs between languages (word order); each is approved on its own.
+                    tuple(dict.fromkeys(_VAR.findall(text["body"]))) if channel == WA else (),
+                )
+                for channel, text in channels.items()
+            }
+            for audience, channels in audiences.items()
+        }
+        for event, audiences in data.items()
+    }
+
+
+def default_text(event_code: str, audience: str, channel: str, locale: str) -> Text | None:
+    return texts_in(locale).get(event_code, {}).get(audience, {}).get(channel)

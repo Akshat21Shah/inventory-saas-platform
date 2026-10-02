@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from apps.notifications.catalog import DEFAULT_TEXTS
+from apps.notifications.catalog import default_text
 from apps.notifications.models import Audience, NotificationTemplate, PlatformTemplate
 
 VARIABLE = re.compile(r"{{\s*(\w+)\s*}}")
@@ -25,13 +25,16 @@ class Resolved:
     whatsapp_category: str = ""
     variables: tuple[str, ...] = ()
     source: str = "platform"  # tenant, platform, catalogue
+    locale: str = "en"  # the language the text is written in
 
 
 def template_for(
     event_code: str, channel: str, locale: str = "en", audience: str = Audience.SHOP
 ) -> Resolved | None:
-    """The tenant's own text, else the platform's, in the locale and then in English, for the
-    audience (the shop's words or the office's). Never the other audience's words."""
+    """The text to send, for the audience (the shop's words or the office's; never the other
+    audience's). In the person's language: the distributor's own text, else the super admin's,
+    else the standard one; only then the same in English (ADR-060, owner: a language the
+    distributor hasn't edited uses the standard translation, not its English edit)."""
     for loc in dict.fromkeys((locale, "en")):
         for model, source in ((NotificationTemplate, "tenant"), (PlatformTemplate, "platform")):
             row = model.objects.filter(
@@ -50,11 +53,14 @@ def template_for(
                     row.whatsapp_category,
                     tuple(row.variables or ()),
                     source,
+                    loc,
                 )
-    text = DEFAULT_TEXTS.get(event_code, {}).get(audience, {}).get(channel)
-    if text is None:
-        return None
-    return Resolved(text.subject, text.body, variables=text.variables, source="catalogue")
+        text = default_text(event_code, audience, channel, loc)
+        if text is not None:
+            return Resolved(
+                text.subject, text.body, variables=text.variables, source="catalogue", locale=loc
+            )
+    return None
 
 
 def render(
@@ -77,7 +83,7 @@ def render(
         "body": substitute(resolved.body, values),
         "whatsapp": {
             "template": resolved.whatsapp_template_name,
-            "language": resolved.whatsapp_language or locale,
+            "language": resolved.whatsapp_language or resolved.locale,
             "category": resolved.whatsapp_category,
             "parameters": [str(values.get(name, "")) for name in resolved.variables],
         }

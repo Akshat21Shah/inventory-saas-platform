@@ -118,7 +118,7 @@ def request_export(report: Report, ctx: Context, fmt: str, *, by: User) -> Built
         return build(report, ctx, fmt, _who(by))
     run: ReportRun = ReportRun.objects.create(
         report_code=report.code,
-        title=report.title,
+        title=str(report.title),
         params=_stored(ctx.params),
         format=fmt,
         requested_by=by,

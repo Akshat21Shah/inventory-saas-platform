@@ -12,7 +12,9 @@ Texts may use only the event's variables, written ``{{ variable }}``; nothing el
 from dataclasses import dataclass
 from typing import Any
 
+from django.utils import translation
 from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 
 from apps.audit import services as audit
 from apps.notifications import approval
@@ -257,17 +259,45 @@ def save_platform_text(data: TextInput, whatsapp: WhatsAppFields | None = None) 
 
 
 def preview(data: TextInput, distributor: str) -> dict[str, Any]:
-    """What the text looks like with sample values (validated like a save; nothing stored)."""
+    """What the text looks like with sample values (validated like a save; nothing stored). The
+    sample's own words follow the text's language."""
     _check(data, platform=data.channel not in TENANT_CHANNELS)
-    values = {**SAMPLE, "distributor": distributor}
+    with translation.override(data.locale):
+        values = {**SAMPLE, **{k: str(v) for k, v in _sample_phrases().items()}}
+    values["distributor"] = distributor
     return {"subject": substitute(data.subject, values), "body": substitute(data.body, values)}
+
+
+def _sample_phrases() -> dict[str, Any]:
+    """The sample values that are words, in the active language."""
+    return {
+        "hold_reason": _("Over the credit limit"),
+        "reason": _("Out of stock"),
+        "vehicle": _(" by vehicle %(number)s") % {"number": "MH12AB1234"},
+        "delivery_code": _(" Delivery code: %(code)s.") % {"code": "4821"},
+        "price_increased": _(" The price has gone up since the order was placed."),
+        "alert": _("low stock"),
+        "bounce_charge": _(" A cheque bounce charge of %(amount)s was added.")
+        % {"amount": "₹500.00"},
+        "bills": ngettext("%(count)s bill", "%(count)s bills", 3) % {"count": 3},
+        "items": _("%(product)s %(quantity)s short") % {"product": "Tata Salt 1 kg", "quantity": 2},
+    }
 
 
 def texts_for(event_code: str, locale: str = "en") -> list[dict[str, Any]]:
     """Each audience's and channel's text in force for an event (the tenant's, else the
-    platform's), for the templates screen: the shop's words first, then the office's."""
+    platform's), for the templates screen: the shop's words first, then the office's. Each says
+    which language it is written in (English when ``locale`` has none) and in which languages the
+    distributor has its own text, so the editor can warn when only some were changed
+    (ADR-060, owner)."""
     if event_code not in EVENTS:
         raise NotFound()
+    edited: dict[tuple[str, str], list[str]] = {}
+    for audience, channel, loc in NotificationTemplate.objects.filter(
+        event_code=event_code, is_active=True
+    ).values_list("audience", "channel", "locale"):
+        edited.setdefault((audience, channel), []).append(loc)
+    order = list(languages.codes())
     found = []
     for audience in EVENTS[event_code].audiences:
         for channel in Channel.values:
@@ -281,6 +311,11 @@ def texts_for(event_code: str, locale: str = "en") -> list[dict[str, Any]]:
                     "subject": resolved.subject,
                     "body": resolved.body,
                     "source": resolved.source,
+                    "locale": resolved.locale,
+                    "edited_locales": sorted(
+                        edited.get((audience, channel), []),
+                        key=lambda code: order.index(code) if code in order else len(order),
+                    ),
                     "editable": channel in TENANT_CHANNELS,
                     "variables": list(variables_for(event_code, audience)),
                 }

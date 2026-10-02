@@ -138,23 +138,37 @@ def test_the_approved_compulsory_and_non_urgent_events():
 
 @pytest.mark.django_db
 def test_platform_templates_are_seeded_once():
-    from apps.notifications.defaults import sync_platform_templates
+    from apps.notifications.catalog import texts_in
+    from apps.notifications.defaults import languages, sync_platform_templates
 
-    expected = sum(
-        len(texts) for audiences in DEFAULT_TEXTS.values() for texts in audiences.values()
+    expected = sum(  # every text, in every language (ADR-060)
+        len(texts)
+        for locale in languages()
+        for audiences in texts_in(locale).values()
+        for texts in audiences.values()
     )
+    assert languages() == ["en", "hi", "mr"]
     assert PlatformTemplate.objects.count() == expected
     whatsapp = PlatformTemplate.objects.get(
-        event_code="invoice.issued", audience="SHOP", channel="WHATSAPP"
+        event_code="invoice.issued", audience="SHOP", channel="WHATSAPP", locale="en"
     )
     assert (whatsapp.whatsapp_template_name, whatsapp.whatsapp_category) == (
         "b2b_invoice_issued",
         "UTILITY",
     )
     office = PlatformTemplate.objects.get(
-        event_code="invoice.issued", audience="STAFF", channel="WHATSAPP"
+        event_code="invoice.issued", audience="STAFF", channel="WHATSAPP", locale="en"
     )
     assert office.whatsapp_template_name == "b2b_invoice_issued_staff"
+    # The same template name in each language, each approved on its own.
+    marathi = PlatformTemplate.objects.get(
+        event_code="invoice.issued", audience="SHOP", channel="WHATSAPP", locale="mr"
+    )
+    assert (marathi.whatsapp_template_name, marathi.whatsapp_language) == (
+        "b2b_invoice_issued",
+        "mr",
+    )
+    assert marathi.variables[0] == "distributor"
     PlatformTemplate.objects.filter(pk=whatsapp.pk).update(body="edited by the super admin")
     assert sync_platform_templates(PlatformTemplate) == 0  # nothing new; edits kept
     whatsapp.refresh_from_db()

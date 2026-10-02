@@ -28709,6 +28709,15 @@ components:
           type: string
         source:
           $ref: '#/components/schemas/NotificationTextSourceEnum'
+        locale:
+          type: string
+          description: The language this text is written in (English when the one
+            asked has none).
+        edited_locales:
+          type: array
+          items:
+            type: string
+          description: The languages in which the distributor has its own text (ADR-060).
         editable:
           type: boolean
         variables:
@@ -28720,6 +28729,8 @@ components:
       - body
       - channel
       - editable
+      - edited_locales
+      - locale
       - source
       - subject
       - variables

@@ -12,7 +12,7 @@ from typing import Any
 
 from django.db.models import Count, F, Max, Min, Sum
 from django.db.models.functions import Round
-from django.utils.translation import gettext
+from django.utils.translation import gettext, gettext_lazy
 
 from apps.catalog.selectors import ProductFilters, descendant_ids
 from apps.catalog.selectors import product_list as catalog_products
@@ -136,7 +136,7 @@ def summary_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="stock_summary",
-        title="Stock summary",
+        title=gettext_lazy("Stock summary"),
         group=Group.STOCK,
         description="Every product's stock: on hand, held for orders, available and its value.",
         permission=STOCK,
@@ -219,7 +219,7 @@ def valuation_notes(ctx: Context) -> list[str]:
 register(
     Report(
         code="stock_valuation",
-        title="Stock valuation",
+        title=gettext_lazy("Stock valuation"),
         group=Group.STOCK,
         description="Stock on hand valued at cost price.",
         permission=VALUE,
@@ -273,7 +273,7 @@ def low_notes(ctx: Context) -> list[str]:
 register(
     Report(
         code="low_stock",
-        title="Low stock",
+        title=gettext_lazy("Low stock"),
         group=Group.STOCK,
         description="Products at or below their reorder level.",
         permission=STOCK,
@@ -333,7 +333,7 @@ def movement_rows(ctx: Context) -> Mapped:
 register(
     Report(
         code="stock_movements",
-        title="Stock movement history",
+        title=gettext_lazy("Stock movement history"),
         group=Group.STOCK,
         description="Every change to stock: received, dispatched, returned, adjusted.",
         permission=STOCK,
@@ -498,7 +498,7 @@ def movement_class_notes(ctx: Context) -> list[str]:
 register(
     Report(
         code="stock_movement_class",
-        title="Fast, slow and dead stock",
+        title=gettext_lazy("Fast, slow and dead stock"),
         group=Group.STOCK,
         description="Which products sell fast, slowly or not at all (and which are new).",
         permission=STOCK,
@@ -604,7 +604,7 @@ def _demand(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="backorder_demand",
-        title="Backorder demand",
+        title=gettext_lazy("Backorder demand"),
         group=Group.STOCK,
         description="What shops are waiting for, how long, and what could go out now.",
         permission=DEMAND,
@@ -751,7 +751,7 @@ def fulfilment_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="fulfilment_rate",
-        title="Order fulfilment rate",
+        title=gettext_lazy("Order fulfilment rate"),
         group=Group.STOCK,
         description="How much of what shops ordered was delivered, by order date.",
         permission=AnyOf(("reports.sales", "reports.sales_own", STOCK)),

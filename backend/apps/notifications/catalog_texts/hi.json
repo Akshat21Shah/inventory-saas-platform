@@ -1,0 +1,1066 @@
+{
+  "announcement.published": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ message }}\n\n{{ link }}",
+        "subject": "{{ distributor }}: {{ title }}"
+      },
+      "IN_APP": {
+        "body": "{{ message }}",
+        "subject": "{{ title }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ title }}। {{ message }}",
+        "subject": ""
+      }
+    }
+  },
+  "backorder.allocated": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} {{ order_number }} पर आपके इंतज़ार वाले आइटम भेज रहा है (शिपमेंट {{ shipment }})।{{ price_increased }}\n\n{{ link }}",
+        "subject": "{{ order_number }} के बाकी आइटम"
+      },
+      "IN_APP": {
+        "body": "{{ order_number }} पर जिन आइटम का आप इंतज़ार कर रहे थे, वे भेजे जा रहे हैं (शिपमेंट {{ shipment }})।{{ price_increased }}",
+        "subject": "बाकी आइटम रास्ते में"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ order_number }} पर आपके इंतज़ार वाले आइटम भेजे जा रहे हैं।{{ price_increased }} {{ link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ order_number }} पर {{ shop }} जिन आइटम का इंतज़ार कर रही थी, वे भेजे जा रहे हैं (शिपमेंट {{ shipment }})।{{ price_increased }}\n\n{{ link }}",
+        "subject": "{{ shop }} को बाकी आइटम जा रहे हैं"
+      },
+      "IN_APP": {
+        "body": "{{ order_number }} पर {{ shop }} जिन आइटम का इंतज़ार कर रही थी, वे भेजे जा रहे हैं (शिपमेंट {{ shipment }})।{{ price_increased }}",
+        "subject": "{{ shop }} को बाकी आइटम जा रहे हैं"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ order_number }} पर {{ shop }} के इंतज़ार वाले आइटम भेजे जा रहे हैं (शिपमेंट {{ shipment }})।",
+        "subject": ""
+      }
+    }
+  },
+  "backorder.cancelled": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने {{ order_number }} पर आपके इंतज़ार वाले {{ quantity }} {{ product }} रद्द किए।\n\n{{ link }}",
+        "subject": "{{ order_number }} पर बाकी आइटम रद्द"
+      },
+      "IN_APP": {
+        "body": "{{ order_number }} पर आपके इंतज़ार वाले {{ quantity }} {{ product }} रद्द हो गए।",
+        "subject": "बाकी आइटम रद्द"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ order_number }} पर आपके इंतज़ार वाले {{ quantity }} {{ product }} रद्द हो गए।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ order_number }} पर {{ shop }} के इंतज़ार वाले {{ quantity }} {{ product }} रद्द हुए।\n\n{{ link }}",
+        "subject": "{{ shop }} के बाकी आइटम रद्द"
+      },
+      "IN_APP": {
+        "body": "{{ order_number }} पर {{ shop }} के इंतज़ार वाले {{ quantity }} {{ product }} रद्द हुए।",
+        "subject": "{{ shop }} के बाकी आइटम रद्द"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ order_number }} पर {{ shop }} के {{ quantity }} {{ product }} रद्द हुए।",
+        "subject": ""
+      }
+    }
+  },
+  "backorder.cancelled_by_shop": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} ने {{ order_number }} पर {{ quantity }} {{ product }} रद्द किए।\n\n{{ link }}",
+        "subject": "{{ shop }} ने बाकी आइटम रद्द किए"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} ने {{ order_number }} पर {{ quantity }} {{ product }} रद्द किए।",
+        "subject": "{{ shop }} ने बाकी आइटम रद्द किए"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} ने {{ order_number }} पर {{ product }} रद्द किए।",
+        "subject": ""
+      }
+    }
+  },
+  "backorder.proposed": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ quantity }} {{ product }} {{ shop }} ({{ order_number }}) को जा सकते हैं।\n\nपक्का करें: {{ link }}",
+        "subject": "{{ order_number }} के लिए स्टॉक तैयार"
+      },
+      "IN_APP": {
+        "body": "{{ quantity }} {{ product }} {{ shop }} ({{ order_number }}) को जा सकते हैं। पक्का करें।",
+        "subject": "{{ order_number }} के लिए स्टॉक तैयार"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ quantity }} {{ product }} {{ shop }} ({{ order_number }}) के लिए तैयार है।",
+        "subject": ""
+      }
+    }
+  },
+  "backorder.skipped_blocked": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ order_number }} के {{ quantity }} {{ product }} नहीं बाँटे गए: {{ shop }} ब्लॉक है।\n\n{{ link }}",
+        "subject": "{{ shop }} के बाकी आइटम रोके"
+      },
+      "IN_APP": {
+        "body": "{{ order_number }} के {{ quantity }} {{ product }} नहीं बाँटे गए: {{ shop }} ब्लॉक है।",
+        "subject": "{{ shop }} के बाकी आइटम रोके"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ order_number }} के {{ product }} रोके गए: {{ shop }} ब्लॉक है।",
+        "subject": ""
+      }
+    }
+  },
+  "backorder.skipped_credit": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ order_number }} के {{ quantity }} {{ product }} नहीं बाँटे गए: {{ shop }} अपने क्रेडिट से ऊपर है।\n\n{{ link }}",
+        "subject": "{{ shop }} के बाकी आइटम रोके"
+      },
+      "IN_APP": {
+        "body": "{{ order_number }} के {{ quantity }} {{ product }} नहीं बाँटे गए: {{ shop }} अपने क्रेडिट से ऊपर है।",
+        "subject": "{{ shop }} के बाकी आइटम रोके"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ order_number }} के {{ product }} रोके गए: {{ shop }} अपने क्रेडिट से ऊपर है।",
+        "subject": ""
+      }
+    }
+  },
+  "credit_note.issued": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "बिल {{ invoice_number }} के सामने आपको {{ total }} का क्रेडिट मिला ({{ reason }})।\n\nडाउनलोड करें: {{ document_link }}",
+        "subject": "{{ distributor }} से क्रेडिट नोट {{ credit_note_number }}"
+      },
+      "IN_APP": {
+        "body": "बिल {{ invoice_number }} के सामने आपको {{ total }} का क्रेडिट मिला ({{ reason }})।",
+        "subject": "क्रेडिट नोट {{ credit_note_number }}: {{ total }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: बिल {{ invoice_number }} के सामने {{ total }} का क्रेडिट नोट {{ credit_note_number }}। {{ document_link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "बिल {{ invoice_number }} के सामने {{ shop }} को {{ total }} का क्रेडिट मिला ({{ reason }})।\n\n{{ link }}",
+        "subject": "{{ shop }} के लिए क्रेडिट नोट {{ credit_note_number }}"
+      },
+      "IN_APP": {
+        "body": "बिल {{ invoice_number }} के सामने {{ shop }} को {{ total }} का क्रेडिट मिला ({{ reason }})।",
+        "subject": "{{ shop }} के लिए क्रेडिट नोट {{ credit_note_number }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} के लिए क्रेडिट नोट {{ credit_note_number }}: बिल {{ invoice_number }} के सामने {{ total }}।",
+        "subject": ""
+      }
+    }
+  },
+  "einvoice.failed": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "ई-इनवॉइस पोर्टल ने {{ document_number }} ({{ shop }}) के लिए IRN नहीं दिया: {{ error }}\n\nठीक करें और फिर कोशिश करें: {{ link }}",
+        "subject": "IRN असफल: {{ document_number }}"
+      },
+      "IN_APP": {
+        "body": "ई-इनवॉइस पोर्टल ने {{ document_number }} ({{ shop }}) के लिए IRN नहीं दिया: {{ error }}",
+        "subject": "IRN असफल: {{ document_number }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ document_number }} ({{ shop }}) का IRN असफल: {{ error }}",
+        "subject": ""
+      }
+    }
+  },
+  "ewaybill.failed": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "शिपमेंट {{ shipment }} ({{ shop }}, गाड़ी {{ vehicle }}, बिल {{ invoice_number }}) का ई-वे बिल नहीं बना: {{ error }}\n\nठीक करें और फिर कोशिश करें: {{ link }}",
+        "subject": "ई-वे बिल असफल: {{ shipment }}"
+      },
+      "IN_APP": {
+        "body": "शिपमेंट {{ shipment }} ({{ shop }}, गाड़ी {{ vehicle }}, बिल {{ invoice_number }}) का ई-वे बिल नहीं बना: {{ error }}",
+        "subject": "ई-वे बिल असफल: {{ shipment }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shipment }} ({{ shop }}, गाड़ी {{ vehicle }}) का ई-वे बिल असफल: {{ error }}",
+        "subject": ""
+      }
+    }
+  },
+  "handover.reminder": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ salesman }} के पास {{ count }} वसूलियाँ ({{ amount }}) जमा नहीं हुई हैं; सबसे पुरानी {{ oldest }} की है।\n\n{{ link }}",
+        "subject": "वसूली जमा नहीं हुई"
+      },
+      "IN_APP": {
+        "body": "{{ salesman }} के पास {{ count }} वसूलियाँ ({{ amount }}) जमा नहीं हुई हैं; सबसे पुरानी {{ oldest }} की है।",
+        "subject": "{{ amount }} जमा नहीं हुआ"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ count }} वसूलियाँ ({{ amount }}) अभी जमा नहीं हुई हैं; सबसे पुरानी {{ oldest }} की है।",
+        "subject": ""
+      }
+    }
+  },
+  "invoice.cancelled": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} का आपका बिल {{ invoice_number }} रद्द हो गया। {{ note }}\n\nयहाँ देखें: {{ link }}",
+        "subject": "बिल {{ invoice_number }} रद्द"
+      },
+      "IN_APP": {
+        "body": "आपका बिल {{ invoice_number }} रद्द हो गया। {{ note }}",
+        "subject": "बिल {{ invoice_number }} रद्द"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका बिल {{ invoice_number }} रद्द हो गया। {{ note }}",
+        "subject": ""
+      }
+    }
+  },
+  "invoice.issued": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "ऑर्डर {{ order_number }} का आपका टैक्स इनवॉइस {{ invoice_number }} {{ total }} का है, {{ due_date }} तक भुगतान करें।\n\nडाउनलोड करें: {{ document_link }}",
+        "subject": "{{ distributor }} से टैक्स इनवॉइस {{ invoice_number }}"
+      },
+      "IN_APP": {
+        "body": "ऑर्डर {{ order_number }} का आपका बिल {{ invoice_number }} {{ total }} का है, {{ due_date }} तक भुगतान करें।",
+        "subject": "बिल {{ invoice_number }}: {{ total }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} रास्ते में है। बिल {{ invoice_number }}: {{ total }}, {{ due_date }} तक भुगतान करें। {{ document_link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का बिल {{ invoice_number }}: {{ total }}, देय {{ due_date }}।\n\n{{ link }}",
+        "subject": "{{ shop }} का बिल {{ invoice_number }}"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का बिल {{ invoice_number }}: {{ total }}, देय {{ due_date }}।",
+        "subject": "{{ shop }} का बिल {{ invoice_number }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का बिल {{ invoice_number }}: {{ total }}, देय {{ due_date }}।",
+        "subject": ""
+      }
+    }
+  },
+  "order.accepted": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने {{ total }} का आपका ऑर्डर {{ order_number }} स्वीकार किया।\n\nऑर्डर कन्फ़र्मेशन: {{ document_link }}",
+        "subject": "ऑर्डर {{ order_number }} स्वीकार"
+      },
+      "IN_APP": {
+        "body": "{{ total }} का आपका ऑर्डर {{ order_number }} स्वीकार हो गया।",
+        "subject": "ऑर्डर {{ order_number }} स्वीकार"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ total }} का आपका ऑर्डर {{ order_number }} स्वीकार हो गया। ऑर्डर कन्फ़र्मेशन: {{ document_link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) स्वीकार हो गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} स्वीकार"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) स्वीकार हो गया।",
+        "subject": "ऑर्डर {{ order_number }} स्वीकार"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) स्वीकार हो गया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.cancelled": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने आपका ऑर्डर {{ order_number }} रद्द किया: {{ reason }}।",
+        "subject": "ऑर्डर {{ order_number }} रद्द"
+      },
+      "IN_APP": {
+        "body": "आपका ऑर्डर {{ order_number }} रद्द हो गया: {{ reason }}।",
+        "subject": "ऑर्डर {{ order_number }} रद्द"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} रद्द हो गया: {{ reason }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) रद्द हुआ: {{ reason }}।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} रद्द"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) रद्द हुआ: {{ reason }}।",
+        "subject": "ऑर्डर {{ order_number }} रद्द"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का ऑर्डर {{ order_number }} रद्द हुआ: {{ reason }}।",
+        "subject": ""
+      }
+    }
+  },
+  "order.cancelled_by_shop": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} ने ऑर्डर {{ order_number }} ({{ total }}) रद्द किया।\n\n{{ link }}",
+        "subject": "{{ shop }} ने {{ order_number }} रद्द किया"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} ने ऑर्डर {{ order_number }} ({{ total }}) रद्द किया।",
+        "subject": "{{ shop }} ने {{ order_number }} रद्द किया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} ने ऑर्डर {{ order_number }} रद्द किया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.completed": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "ऑर्डर {{ order_number }} का सारा माल डिलीवर हो गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} पूरा"
+      },
+      "IN_APP": {
+        "body": "ऑर्डर {{ order_number }} का सारा माल डिलीवर हो गया।",
+        "subject": "ऑर्डर {{ order_number }} पूरा"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: ऑर्डर {{ order_number }} का सारा माल डिलीवर हो गया।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का सारा माल डिलीवर हो गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} पूरा"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का सारा माल डिलीवर हो गया।",
+        "subject": "ऑर्डर {{ order_number }} पूरा"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} के ऑर्डर {{ order_number }} का सारा माल डिलीवर हो गया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.delivered": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} डिलीवर हो गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} डिलीवर हुआ"
+      },
+      "IN_APP": {
+        "body": "ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} डिलीवर हो गया।",
+        "subject": "ऑर्डर {{ order_number }} डिलीवर हुआ"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} डिलीवर हो गया।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} डिलीवर हो गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} डिलीवर हुआ"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} डिलीवर हो गया।",
+        "subject": "ऑर्डर {{ order_number }} डिलीवर हुआ"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} डिलीवर हो गया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.dispatched": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} भेज दिया।{{ delivery_code }}\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} रास्ते में है"
+      },
+      "IN_APP": {
+        "body": "ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} गोदाम से निकल गया।{{ delivery_code }}",
+        "subject": "ऑर्डर {{ order_number }} रास्ते में है"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} रास्ते में है (शिपमेंट {{ shipment }})।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} गोदाम से निकल गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} भेजा गया"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} गोदाम से निकल गया।",
+        "subject": "ऑर्डर {{ order_number }} भेजा गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} भेजा गया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.dispatched_after_invoice": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} भेज दिया। ट्रांसपोर्टर {{ transporter }}, LR {{ lr_number }}।{{ delivery_code }}\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} रास्ते में है"
+      },
+      "IN_APP": {
+        "body": "ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} गोदाम से निकल गया।{{ delivery_code }}",
+        "subject": "ऑर्डर {{ order_number }} रास्ते में है"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} रास्ते में है (शिपमेंट {{ shipment }}{{ vehicle }})।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} गोदाम से निकल गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} भेजा गया"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }}{{ vehicle }} गोदाम से निकल गया।",
+        "subject": "ऑर्डर {{ order_number }} भेजा गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} के ऑर्डर {{ order_number }} का शिपमेंट {{ shipment }} भेजा गया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.hold_approved": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} के साथ आपका ऑर्डर {{ order_number }} मंज़ूर हो गया।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} मंज़ूर"
+      },
+      "IN_APP": {
+        "body": "आपका ऑर्डर {{ order_number }} मंज़ूर हो गया है और आगे बढ़ाया जाएगा।",
+        "subject": "ऑर्डर {{ order_number }} मंज़ूर"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} मंज़ूर हो गया।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) मंज़ूर हो गया है और आगे बढ़ाया जाएगा।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} मंज़ूर"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) मंज़ूर हो गया है और आगे बढ़ाया जाएगा।",
+        "subject": "ऑर्डर {{ order_number }} मंज़ूर"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का ऑर्डर {{ order_number }} मंज़ूर हो गया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.modified": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने आपका ऑर्डर {{ order_number }} बदला: {{ changes }}। नया कुल {{ total }}।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} बदला गया"
+      },
+      "IN_APP": {
+        "body": "आपका ऑर्डर {{ order_number }} बदला गया: {{ changes }}। नया कुल {{ total }}।",
+        "subject": "ऑर्डर {{ order_number }} बदला गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} बदला गया: {{ changes }}। नया कुल {{ total }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} बदला गया: {{ changes }}। नया कुल {{ total }}।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} बदला गया"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} बदला गया: {{ changes }}। नया कुल {{ total }}।",
+        "subject": "ऑर्डर {{ order_number }} बदला गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का ऑर्डर {{ order_number }} बदला गया: {{ changes }}।",
+        "subject": ""
+      }
+    }
+  },
+  "order.on_hold": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "आपका ऑर्डर {{ order_number }} ({{ total }}) {{ distributor }} की मंज़ूरी की प्रतीक्षा में है: {{ hold_reason }}।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} मंज़ूरी की प्रतीक्षा में"
+      },
+      "IN_APP": {
+        "body": "आपका ऑर्डर {{ order_number }} ({{ total }}) {{ distributor }} की मंज़ूरी की प्रतीक्षा में है: {{ hold_reason }}।",
+        "subject": "ऑर्डर {{ order_number }} मंज़ूरी की प्रतीक्षा में"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} ({{ total }}) मंज़ूरी की प्रतीक्षा में है: {{ hold_reason }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का {{ total }} का ऑर्डर {{ order_number }} होल्ड पर है: {{ hold_reason }}।\n\nदेखें: {{ link }}",
+        "subject": "ऑर्डर {{ order_number }} को क्रेडिट मंज़ूरी चाहिए"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} ({{ total }}) होल्ड पर है: {{ hold_reason }}।",
+        "subject": "ऑर्डर {{ order_number }} मंज़ूरी की प्रतीक्षा में"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: ऑर्डर {{ order_number }} मंज़ूरी की प्रतीक्षा में है ({{ hold_reason }})।",
+        "subject": ""
+      }
+    }
+  },
+  "order.placed": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ total }} का आपका ऑर्डर {{ order_number }} दे दिया गया है। {{ distributor }} जल्द इसकी पुष्टि करेगा।\n\n{{ link }}",
+        "subject": "{{ distributor }} को ऑर्डर {{ order_number }} दिया गया"
+      },
+      "IN_APP": {
+        "body": "{{ total }} का आपका ऑर्डर {{ order_number }} दे दिया गया है। {{ distributor }} जल्द इसकी पुष्टि करेगा।",
+        "subject": "ऑर्डर {{ order_number }} दिया गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ total }} का आपका ऑर्डर {{ order_number }} दे दिया गया है।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} ने {{ total }} का ऑर्डर {{ order_number }} दिया।\n\nखोलें: {{ link }}",
+        "subject": "{{ shop }} से नया ऑर्डर {{ order_number }}"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} ने {{ total }} का ऑर्डर {{ order_number }} दिया।",
+        "subject": "नया ऑर्डर {{ order_number }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} से {{ total }} का नया ऑर्डर {{ order_number }}।",
+        "subject": ""
+      }
+    }
+  },
+  "order.placed_for_shop": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} के {{ placed_by }} ने आपके लिए {{ total }} का ऑर्डर {{ order_number }} दिया।\n\nदेखें: {{ link }}",
+        "subject": "आपके लिए ऑर्डर {{ order_number }} दिया गया"
+      },
+      "IN_APP": {
+        "body": "{{ placed_by }} ने आपकी ओर से {{ total }} का ऑर्डर {{ order_number }} दिया।",
+        "subject": "आपके लिए ऑर्डर {{ order_number }} दिया गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ placed_by }} ने आपके लिए {{ total }} का ऑर्डर {{ order_number }} दिया। देखें: {{ link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ placed_by }} ने {{ shop }} के लिए ऑर्डर {{ order_number }} ({{ total }}) दिया।\n\n{{ link }}",
+        "subject": "{{ shop }} के लिए ऑर्डर {{ order_number }} दिया गया"
+      },
+      "IN_APP": {
+        "body": "{{ placed_by }} ने {{ shop }} के लिए ऑर्डर {{ order_number }} ({{ total }}) दिया।",
+        "subject": "{{ shop }} के लिए ऑर्डर {{ order_number }} दिया गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ placed_by }} ने {{ shop }} के लिए ऑर्डर {{ order_number }} ({{ total }}) दिया।",
+        "subject": ""
+      }
+    }
+  },
+  "order.rejected": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} आपका ऑर्डर {{ order_number }} स्वीकार नहीं कर सका: {{ reason }}।",
+        "subject": "ऑर्डर {{ order_number }} स्वीकार नहीं हुआ"
+      },
+      "IN_APP": {
+        "body": "आपका ऑर्डर {{ order_number }} स्वीकार नहीं हुआ: {{ reason }}।",
+        "subject": "ऑर्डर {{ order_number }} स्वीकार नहीं हुआ"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपका ऑर्डर {{ order_number }} स्वीकार नहीं हुआ: {{ reason }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} अस्वीकार हुआ: {{ reason }}।\n\n{{ link }}",
+        "subject": "ऑर्डर {{ order_number }} अस्वीकार"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} अस्वीकार हुआ: {{ reason }}।",
+        "subject": "ऑर्डर {{ order_number }} अस्वीकार"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का ऑर्डर {{ order_number }} अस्वीकार हुआ: {{ reason }}।",
+        "subject": ""
+      }
+    }
+  },
+  "order.short_supplied": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने {{ order_number }} पर ऑर्डर से कम माल पैक किया: {{ items }}।\n\n{{ link }}",
+        "subject": "{{ order_number }} पर कम माल"
+      },
+      "IN_APP": {
+        "body": "{{ order_number }} पर ऑर्डर से कम माल पैक हुआ: {{ items }}।",
+        "subject": "{{ order_number }} पर कम माल"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ order_number }} पर ऑर्डर से कम माल पैक हुआ: {{ items }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} कम पैक हुआ: {{ items }}।\n\n{{ link }}",
+        "subject": "{{ order_number }} पर कम आपूर्ति"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का ऑर्डर {{ order_number }} कम पैक हुआ: {{ items }}।",
+        "subject": "{{ order_number }} पर कम आपूर्ति"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का ऑर्डर {{ order_number }} कम पैक हुआ: {{ items }}।",
+        "subject": ""
+      }
+    }
+  },
+  "payment.bounced": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ cheque_date }} का {{ amount }} का आपका चेक {{ cheque_number }} बाउंस हो गया ({{ reason }})।{{ bounce_charge }} जिन बिलों का भुगतान इससे हुआ था, वे फिर बकाया हैं। आपका बैलेंस: {{ balance }}।\n\n{{ document_link }}",
+        "subject": "चेक {{ cheque_number }} बाउंस हुआ"
+      },
+      "IN_APP": {
+        "body": "{{ cheque_date }} का {{ amount }} का आपका चेक {{ cheque_number }} बाउंस हो गया ({{ reason }})।{{ bounce_charge }} जिन बिलों का भुगतान इससे हुआ था, वे फिर बकाया हैं। आपका बैलेंस: {{ balance }}।",
+        "subject": "चेक {{ cheque_number }} बाउंस हुआ"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ cheque_date }} का {{ amount }} का आपका चेक {{ cheque_number }} बाउंस हो गया ({{ reason }})। जिन बिलों का भुगतान इससे हुआ था, वे फिर बकाया हैं। आपका बैलेंस: {{ balance }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का {{ cheque_date }} का {{ amount }} का चेक {{ cheque_number }} बाउंस हुआ ({{ reason }})।{{ bounce_charge }} जिन बिलों का भुगतान इससे हुआ था, वे फिर बकाया हैं; बैलेंस {{ balance }}।\n\n{{ link }}",
+        "subject": "{{ shop }} का चेक {{ cheque_number }} बाउंस हुआ"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का {{ cheque_date }} का {{ amount }} का चेक {{ cheque_number }} बाउंस हुआ ({{ reason }})।{{ bounce_charge }} जिन बिलों का भुगतान इससे हुआ था, वे फिर बकाया हैं; बैलेंस {{ balance }}।",
+        "subject": "{{ shop }} का चेक {{ cheque_number }} बाउंस हुआ"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का {{ amount }} का चेक {{ cheque_number }} बाउंस हुआ ({{ reason }})। बैलेंस {{ balance }}।",
+        "subject": ""
+      }
+    }
+  },
+  "payment.cleared": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ amount }} का आपका चेक {{ cheque_number }} क्लियर हो गया।\n\n{{ link }}",
+        "subject": "चेक क्लियर हुआ"
+      },
+      "IN_APP": {
+        "body": "{{ amount }} का आपका चेक {{ cheque_number }} क्लियर हो गया।",
+        "subject": "चेक क्लियर हुआ"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ amount }} का आपका चेक {{ cheque_number }} क्लियर हो गया।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का {{ amount }} का चेक {{ cheque_number }} क्लियर हो गया।\n\n{{ link }}",
+        "subject": "{{ shop }} का चेक क्लियर"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का {{ amount }} का चेक {{ cheque_number }} क्लियर हो गया।",
+        "subject": "{{ shop }} का चेक क्लियर"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का {{ amount }} का चेक {{ cheque_number }} क्लियर हो गया।",
+        "subject": ""
+      }
+    }
+  },
+  "payment.handed_over": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ receipt_number }} ({{ shop }} से {{ amount }}) जमा मार्क हुआ।\n\n{{ link }}",
+        "subject": "वसूली जमा हुई"
+      },
+      "IN_APP": {
+        "body": "{{ receipt_number }} ({{ shop }} से {{ amount }}) जमा मार्क हुआ।",
+        "subject": "वसूली जमा हुई"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ receipt_number }} ({{ shop }} से {{ amount }}) जमा मार्क हुआ।",
+        "subject": ""
+      }
+    }
+  },
+  "payment.received": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ mode }} से {{ amount }} के भुगतान के लिए धन्यवाद।\n\nरसीद: {{ document_link }}",
+        "subject": "{{ distributor }} से रसीद {{ receipt_number }}"
+      },
+      "IN_APP": {
+        "body": "धन्यवाद: {{ mode }} से {{ amount }} (रसीद {{ receipt_number }})।",
+        "subject": "भुगतान मिला: {{ amount }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ amount }} का भुगतान मिला, धन्यवाद। रसीद: {{ document_link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} ने {{ mode }} से {{ amount }} दिए (रसीद {{ receipt_number }})।\n\n{{ link }}",
+        "subject": "{{ shop }} से {{ amount }} मिले"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} ने {{ mode }} से {{ amount }} दिए (रसीद {{ receipt_number }})।",
+        "subject": "{{ shop }} से {{ amount }} मिले"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} ने {{ mode }} से {{ amount }} दिए (रसीद {{ receipt_number }})।",
+        "subject": ""
+      }
+    }
+  },
+  "payment.reminder": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "आपके चुकाने के लिए {{ bills }} हैं, कुल {{ amount }} ({{ due_note }})। कृपया समय पर भुगतान करें।\n\nआपके बिल और खाता विवरण: {{ link }}",
+        "subject": "{{ distributor }} से भुगतान रिमाइंडर"
+      },
+      "IN_APP": {
+        "body": "चुकाने के लिए {{ bills }}, कुल {{ amount }} ({{ due_note }})। कृपया समय पर भुगतान करें।",
+        "subject": "भुगतान रिमाइंडर: {{ amount }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपके चुकाने के लिए {{ bills }} हैं, कुल {{ amount }} ({{ due_note }})। कृपया समय पर भुगतान करें। {{ link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} को याद दिलाया गया: चुकाने के लिए {{ bills }}, कुल {{ amount }} ({{ due_note }})।\n\n{{ link }}",
+        "subject": "{{ shop }} को रिमाइंडर: {{ amount }}"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} को याद दिलाया गया: चुकाने के लिए {{ bills }}, कुल {{ amount }} ({{ due_note }})।",
+        "subject": "{{ shop }} को रिमाइंडर: {{ amount }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} को {{ amount }} चुकाने की याद दिलाई गई ({{ due_note }})।",
+        "subject": ""
+      }
+    }
+  },
+  "payment.reversed": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ amount }} का भुगतान {{ receipt_number }} उलटा गया: {{ reason }}।\n\n{{ link }}",
+        "subject": "भुगतान सुधारा गया"
+      },
+      "IN_APP": {
+        "body": "{{ amount }} का भुगतान {{ receipt_number }} उलटा गया: {{ reason }}।",
+        "subject": "भुगतान सुधारा गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ amount }} का भुगतान {{ receipt_number }} उलटा गया: {{ reason }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} का {{ amount }} का भुगतान {{ receipt_number }} उलटा गया: {{ reason }}।\n\n{{ link }}",
+        "subject": "भुगतान {{ receipt_number }} उलटा"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} का {{ amount }} का भुगतान {{ receipt_number }} उलटा गया: {{ reason }}।",
+        "subject": "भुगतान {{ receipt_number }} उलटा"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} का {{ amount }} का भुगतान {{ receipt_number }} उलटा गया: {{ reason }}।",
+        "subject": ""
+      }
+    }
+  },
+  "refund.recorded": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने आपको {{ mode }} से {{ amount }} लौटाए।\n\nवाउचर: {{ document_link }}",
+        "subject": "रिफ़ंड वाउचर {{ refund_number }}"
+      },
+      "IN_APP": {
+        "body": "{{ distributor }} ने आपको {{ mode }} से {{ amount }} लौटाए (वाउचर {{ refund_number }})।",
+        "subject": "{{ amount }} का रिफ़ंड"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: हमने आपको {{ mode }} से {{ amount }} लौटाए। वाउचर: {{ document_link }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} को {{ mode }} से {{ amount }} लौटाए गए (वाउचर {{ refund_number }})।\n\n{{ link }}",
+        "subject": "{{ shop }} को {{ amount }} का रिफ़ंड"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} को {{ mode }} से {{ amount }} लौटाए गए (वाउचर {{ refund_number }})।",
+        "subject": "{{ shop }} को {{ amount }} का रिफ़ंड"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} को {{ mode }} से {{ amount }} लौटाए गए (वाउचर {{ refund_number }})।",
+        "subject": ""
+      }
+    }
+  },
+  "refund.reversed": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ amount }} का रिफ़ंड {{ refund_number }} उलटा गया: {{ reason }}।\n\n{{ link }}",
+        "subject": "रिफ़ंड सुधारा गया"
+      },
+      "IN_APP": {
+        "body": "{{ amount }} का रिफ़ंड {{ refund_number }} उलटा गया: {{ reason }}। यह आपके क्रेडिट में वापस है।",
+        "subject": "रिफ़ंड सुधारा गया"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ amount }} का रिफ़ंड {{ refund_number }} उलटा गया: {{ reason }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} को {{ amount }} का रिफ़ंड {{ refund_number }} उलटा गया: {{ reason }}।\n\n{{ link }}",
+        "subject": "रिफ़ंड {{ refund_number }} उलटा"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} को {{ amount }} का रिफ़ंड {{ refund_number }} उलटा गया: {{ reason }}।",
+        "subject": "रिफ़ंड {{ refund_number }} उलटा"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} को {{ amount }} का रिफ़ंड {{ refund_number }} उलटा गया: {{ reason }}।",
+        "subject": ""
+      }
+    }
+  },
+  "report.failed": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ report }} नहीं बन सकी: {{ error }}\n\n{{ link }}",
+        "subject": "रिपोर्ट नहीं बनी: {{ report }}"
+      },
+      "IN_APP": {
+        "body": "{{ report }} नहीं बन सकी: {{ error }}",
+        "subject": "रिपोर्ट नहीं बनी: {{ report }}"
+      }
+    }
+  },
+  "report.ready": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ report }} तैयार है ({{ rows }} पंक्तियाँ)। इसे {{ days }} दिनों में डाउनलोड करें।\n\n{{ link }}",
+        "subject": "रिपोर्ट तैयार: {{ report }}"
+      },
+      "IN_APP": {
+        "body": "{{ report }} तैयार है ({{ rows }} पंक्तियाँ)। इसे {{ days }} दिनों में डाउनलोड करें।",
+        "subject": "रिपोर्ट तैयार: {{ report }}"
+      }
+    }
+  },
+  "retailer.welcome": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "स्वागत है, {{ shop }}! अपने फ़ोन से ऑर्डर करें: {{ link }}",
+        "subject": "{{ distributor }} में स्वागत है"
+      },
+      "IN_APP": {
+        "body": "अपने फ़ोन से कभी भी ऑर्डर करें। आपके बिल और भुगतान भी यहीं हैं।",
+        "subject": "{{ distributor }} में स्वागत है"
+      },
+      "SMS": {
+        "body": "{{ distributor }}: स्वागत! ऑर्डर करें: {{ link }}",
+        "subject": ""
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: स्वागत है, {{ shop }}! अपने फ़ोन से ऑर्डर करें: {{ link }}",
+        "subject": ""
+      }
+    }
+  },
+  "return.approved": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने बिल {{ invoice_number }} से आपकी वापसी मंज़ूर की: {{ total }} का क्रेडिट नोट {{ credit_note_number }}।\n\n{{ link }}",
+        "subject": "वापसी {{ number }} मंज़ूर"
+      },
+      "IN_APP": {
+        "body": "बिल {{ invoice_number }} से आपकी वापसी मंज़ूर हो गई: {{ total }} का क्रेडिट नोट {{ credit_note_number }}।",
+        "subject": "वापसी {{ number }} मंज़ूर"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपकी वापसी {{ number }} मंज़ूर हो गई: {{ total }} का क्रेडिट नोट {{ credit_note_number }}।",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "बिल {{ invoice_number }} से {{ shop }} की वापसी {{ number }} मंज़ूर हुई: {{ total }} का क्रेडिट नोट {{ credit_note_number }}।\n\n{{ link }}",
+        "subject": "वापसी {{ number }} मंज़ूर"
+      },
+      "IN_APP": {
+        "body": "बिल {{ invoice_number }} से {{ shop }} की वापसी {{ number }} मंज़ूर हुई: {{ total }} का क्रेडिट नोट {{ credit_note_number }}।",
+        "subject": "वापसी {{ number }} मंज़ूर"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} की वापसी {{ number }} मंज़ूर हुई।",
+        "subject": ""
+      }
+    }
+  },
+  "return.rejected": {
+    "SHOP": {
+      "EMAIL": {
+        "body": "{{ distributor }} ने बिल {{ invoice_number }} से आपकी वापसी स्वीकार नहीं की: {{ decision }}\n\n{{ link }}",
+        "subject": "वापसी {{ number }} स्वीकार नहीं"
+      },
+      "IN_APP": {
+        "body": "बिल {{ invoice_number }} से आपकी वापसी स्वीकार नहीं हुई: {{ decision }}",
+        "subject": "वापसी {{ number }} स्वीकार नहीं"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: आपकी वापसी {{ number }} स्वीकार नहीं हुई: {{ decision }}",
+        "subject": ""
+      }
+    },
+    "STAFF": {
+      "EMAIL": {
+        "body": "बिल {{ invoice_number }} से {{ shop }} की वापसी {{ number }} स्वीकार नहीं हुई: {{ decision }}\n\n{{ link }}",
+        "subject": "वापसी {{ number }} स्वीकार नहीं"
+      },
+      "IN_APP": {
+        "body": "बिल {{ invoice_number }} से {{ shop }} की वापसी {{ number }} स्वीकार नहीं हुई: {{ decision }}",
+        "subject": "वापसी {{ number }} स्वीकार नहीं"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} की वापसी {{ number }} स्वीकार नहीं हुई।",
+        "subject": ""
+      }
+    }
+  },
+  "return.requested": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ shop }} ने बिल {{ invoice_number }} से {{ items }} लौटाने को कहा ({{ reason }})। अनुरोध {{ number }}।\n\n{{ link }}",
+        "subject": "{{ shop }} माल लौटाना चाहती है"
+      },
+      "IN_APP": {
+        "body": "{{ shop }} ने बिल {{ invoice_number }} से {{ items }} लौटाने को कहा ({{ reason }})। अनुरोध {{ number }}।",
+        "subject": "{{ shop }} माल लौटाना चाहती है"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ shop }} ने बिल {{ invoice_number }} से माल लौटाने को कहा (अनुरोध {{ number }})।",
+        "subject": ""
+      }
+    }
+  },
+  "stock.alert_opened": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ product }}: {{ alert }} ({{ quantity }} बचे)।\n\n{{ link }}",
+        "subject": "{{ product }}: {{ alert }}"
+      },
+      "IN_APP": {
+        "body": "{{ product }}: {{ alert }} ({{ quantity }} बचे)।",
+        "subject": "{{ product }}: {{ alert }}"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ product }}: {{ alert }} ({{ quantity }} बचे)।",
+        "subject": ""
+      }
+    }
+  },
+  "summary.daily": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "कल, {{ date }}:\n{{ yesterday_lines }}\n\nअभी करना है:\n{{ attention_lines }}\n\n{{ link }}",
+        "subject": "{{ distributor }}: {{ date }} का सारांश"
+      },
+      "IN_APP": {
+        "body": "कल: {{ yesterday }}। करना है: {{ attention }}।",
+        "subject": "{{ date }} का आपका सारांश"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: कल {{ yesterday }}। करना है: {{ attention }}।",
+        "subject": ""
+      }
+    }
+  },
+  "tax.rate_change_upcoming": {
+    "STAFF": {
+      "EMAIL": {
+        "body": "{{ count }} उत्पादों की GST दर {{ change_date }} को बदलेगी: {{ products }}।\n\n{{ link }}",
+        "subject": "{{ change_date }} को GST बदलेगा"
+      },
+      "IN_APP": {
+        "body": "{{ count }} उत्पादों की GST दर {{ change_date }} को बदलेगी: {{ products }}।",
+        "subject": "{{ change_date }} को GST बदलेगा"
+      },
+      "WHATSAPP": {
+        "body": "{{ distributor }}: {{ count }} उत्पादों की GST दर {{ change_date }} को बदलेगी।",
+        "subject": ""
+      }
+    }
+  }
+}

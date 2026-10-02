@@ -6,6 +6,7 @@ lives in the services; amounts come from ``billing/tax.py``."""
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
+from django.utils.translation import gettext_lazy
 
 from common.fields import MoneyField, QtyField, RateField, UnitCostField
 from common.models import TenantScopedModel
@@ -253,17 +254,17 @@ class CreditNote(_TaxDocument):
     of which ``unapplied_amount`` is not yet used."""
 
     class Kind(models.TextChoices):
-        RETURN = "RETURN", "Return"
-        SHORT_SUPPLY = "SHORT_SUPPLY", "Short supply"
-        CANCELLATION = "CANCELLATION", "Cancellation"
-        PRICE_ADJUSTMENT = "PRICE_ADJUSTMENT", "Price adjustment"
+        RETURN = "RETURN", gettext_lazy("Return")
+        SHORT_SUPPLY = "SHORT_SUPPLY", gettext_lazy("Short supply")
+        CANCELLATION = "CANCELLATION", gettext_lazy("Cancellation")
+        PRICE_ADJUSTMENT = "PRICE_ADJUSTMENT", gettext_lazy("Price adjustment")
 
     class ReturnReason(models.TextChoices):
-        DAMAGED = "DAMAGED", "Damaged"
-        EXPIRED = "EXPIRED", "Expired"
-        WRONG_ITEM = "WRONG_ITEM", "Wrong item"
-        EXCESS_SUPPLY = "EXCESS_SUPPLY", "Excess supply"
-        OTHER = "OTHER", "Other"
+        DAMAGED = "DAMAGED", gettext_lazy("Damaged")
+        EXPIRED = "EXPIRED", gettext_lazy("Expired")
+        WRONG_ITEM = "WRONG_ITEM", gettext_lazy("Wrong item")
+        EXCESS_SUPPLY = "EXCESS_SUPPLY", gettext_lazy("Excess supply")
+        OTHER = "OTHER", gettext_lazy("Other")
 
     note_date = models.DateField()  # IST
     invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name="credit_notes")

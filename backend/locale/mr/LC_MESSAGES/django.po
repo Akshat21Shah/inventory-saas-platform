@@ -8,6 +8,25 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: apps/notifications/context.py apps/notifications/texts.py
+#, python-format
+msgid " A cheque bounce charge of %(amount)s was added."
+msgstr " %(amount)s चे चेक बाउन्स शुल्क जोडले."
+
+#: apps/notifications/context.py apps/notifications/texts.py
+#, python-format
+msgid " by vehicle %(number)s"
+msgstr " (वाहन %(number)s)"
+
+#: apps/notifications/context.py apps/notifications/texts.py
+#, python-format
+msgid " Delivery code: %(code)s."
+msgstr " डिलिव्हरी कोड: %(code)s."
+
+#: apps/notifications/context.py apps/notifications/texts.py
+msgid " The price has gone up since the order was placed."
+msgstr " ऑर्डरनंतर किंमत वाढली आहे."
+
 #: common/framework_messages.py
 msgid "\"{input}\" is not a valid choice."
 msgstr "\"{input}\" हा वैध पर्याय नाही."
@@ -15,6 +34,21 @@ msgstr "\"{input}\" हा वैध पर्याय नाही."
 #: apps/dataio/kinds/pricing.py
 msgid "% or ₹ (rupees off each unit)."
 msgstr "% किंवा ₹ (प्रत्येक युनिटवर रुपयांची सवलत)."
+
+#: apps/notifications/context.py
+#, python-format
+msgid "%(amount)s in credit"
+msgstr "%(amount)s क्रेडिटमध्ये"
+
+#: apps/notifications/jobs.py
+#, python-format
+msgid "%(amount)s overdue since %(date)s"
+msgstr "%(amount)s %(date)s पासून थकले"
+
+#: apps/notifications/context.py
+#, python-format
+msgid "%(amount)s to pay"
+msgstr "%(amount)s भरायचे आहेत"
 
 #: apps/notifications/rules.py
 #, python-format
@@ -51,10 +85,115 @@ msgstr "%(code)s ओळ %(value)s मध्येही आहे."
 msgid "%(code)s is counted in whole numbers."
 msgstr "%(code)s पूर्ण संख्येत मोजले जाते."
 
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s backorder to confirm"
+msgid_plural "%(count)s backorders to confirm"
+msgstr[0] "%(count)s बॅकऑर्डर निश्चित करायची आहे"
+msgstr[1] "%(count)s बॅकऑर्डर निश्चित करायच्या आहेत"
+
+#: apps/notifications/jobs.py apps/notifications/texts.py
+#, python-format
+msgid "%(count)s bill"
+msgid_plural "%(count)s bills"
+msgstr[0] "%(count)s बिल"
+msgstr[1] "%(count)s बिले"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s e-way bill failed"
+msgid_plural "%(count)s e-way bills failed"
+msgstr[0] "%(count)s ई-वे बिल अयशस्वी"
+msgstr[1] "%(count)s ई-वे बिले अयशस्वी"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s IRN failed"
+msgid_plural "%(count)s IRNs failed"
+msgstr[0] "%(count)s IRN अयशस्वी"
+msgstr[1] "%(count)s IRN अयशस्वी"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s new order to accept"
+msgid_plural "%(count)s new orders to accept"
+msgstr[0] "%(count)s नवीन ऑर्डर स्वीकारायची आहे"
+msgstr[1] "%(count)s नवीन ऑर्डर स्वीकारायच्या आहेत"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s new shop"
+msgid_plural "%(count)s new shops"
+msgstr[0] "%(count)s नवीन दुकान"
+msgstr[1] "%(count)s नवीन दुकाने"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s order on credit hold"
+msgid_plural "%(count)s orders on credit hold"
+msgstr[0] "%(count)s ऑर्डर क्रेडिट होल्डवर"
+msgstr[1] "%(count)s ऑर्डर क्रेडिट होल्डवर"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s order received (%(amount)s)"
+msgid_plural "%(count)s orders received (%(amount)s)"
+msgstr[0] "%(count)s ऑर्डर मिळाली (%(amount)s)"
+msgstr[1] "%(count)s ऑर्डर मिळाल्या (%(amount)s)"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s product low or out of stock"
+msgid_plural "%(count)s products low or out of stock"
+msgstr[0] "%(count)s उत्पादन कमी किंवा स्टॉक संपलेले"
+msgstr[1] "%(count)s उत्पादने कमी किंवा स्टॉक संपलेली"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s product to reorder"
+msgid_plural "%(count)s products to reorder"
+msgstr[0] "%(count)s उत्पादन पुन्हा मागवायचे आहे"
+msgstr[1] "%(count)s उत्पादने पुन्हा मागवायची आहेत"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s purchase order late"
+msgid_plural "%(count)s purchase orders late"
+msgstr[0] "%(count)s खरेदी ऑर्डर उशिरा"
+msgstr[1] "%(count)s खरेदी ऑर्डर उशिरा"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s return request to decide"
+msgid_plural "%(count)s return requests to decide"
+msgstr[0] "%(count)s परतावा विनंतीवर निर्णय घ्यायचा आहे"
+msgstr[1] "%(count)s परतावा विनंत्यांवर निर्णय घ्यायचा आहे"
+
 #: apps/dataio/kinds/pricing.py
 #, python-format
 msgid "%(count)s rules are called “%(key)s”. Rename them first so each name is used once."
 msgstr "%(count)s नियमांचे नाव “%(key)s” आहे. आधी त्यांची नावे बदला, म्हणजे प्रत्येक नाव एकदाच वापरले जाईल."
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s shipment to pack"
+msgid_plural "%(count)s shipments to pack"
+msgstr[0] "%(count)s शिपमेंट पॅक करायचे आहे"
+msgstr[1] "%(count)s शिपमेंट पॅक करायची आहेत"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s shop overdue (%(amount)s)"
+msgid_plural "%(count)s shops overdue (%(amount)s)"
+msgstr[0] "%(count)s दुकान थकबाकीत (%(amount)s)"
+msgstr[1] "%(count)s दुकाने थकबाकीत (%(amount)s)"
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "%(count)s shop to win back"
+msgid_plural "%(count)s shops to win back"
+msgstr[0] "%(count)s दुकान परत आणायचे आहे"
+msgstr[1] "%(count)s दुकाने परत आणायची आहेत"
 
 #: apps/dataio/kinds/retailers.py
 #, python-format
@@ -176,6 +315,11 @@ msgstr "%(pincode)s हा 6 अंकी PIN कोड नाही."
 msgid "%(price_list)s isn't one of your price lists."
 msgstr "%(price_list)s तुमच्या किंमत यादींपैकी नाही."
 
+#: apps/notifications/context.py apps/notifications/texts.py
+#, python-format
+msgid "%(product)s %(quantity)s short"
+msgstr "%(product)s %(quantity)s कमी"
+
 #: apps/dataio/kinds/products.py
 #, python-format
 msgid "%(rate)s%% isn't a GST rate in use. Use one of %(allowed)s."
@@ -205,6 +349,11 @@ msgstr "%(shop_name)s ब्लॉक आहे, त्यामुळे त्
 #, python-format
 msgid "%(shops)s shop(s) use this price list. Move them to another list first."
 msgstr "%(shops)s दुकाने ही किंमत यादी वापरतात. आधी त्यांना दुसऱ्या यादीत हलवा."
+
+#: apps/notifications/context.py
+#, python-format
+msgid "%(shown)s and %(more)s more"
+msgstr "%(shown)s आणि आणखी %(more)s"
 
 #: apps/dataio/kinds/pricing.py
 #, python-format
@@ -377,6 +526,10 @@ msgstr "दरातील बदल मागील तारखेपासू
 msgid "A rule called “%(key)s” already exists. To change it, choose “Add new and update existing”."
 msgstr "“%(key)s” नावाचा नियम आधीच आहे. तो बदलण्यासाठी “नवीन जोडा आणि सध्याचे अपडेट करा” निवडा."
 
+#: apps/notifications/jobs.py
+msgid "A salesman"
+msgstr "एक सेल्समन"
+
 #: apps/dataio/kinds/retailers.py
 #, python-format
 msgid "A shop with mobile %(mobile)s already exists. To change it, choose “Add new and update existing”."
@@ -469,6 +622,24 @@ msgstr "काल रात्री (किंवा कोणी विचा�
 msgid "Authentication credentials were not provided."
 msgstr "साइन इनची माहिती दिली नाही."
 
+#: apps/reports/definitions/stock.py
+msgid "Backorder demand"
+msgstr "बॅकऑर्डर मागणी"
+
+#: apps/payments/models.py
+msgid "Bank transfer"
+msgstr "बँक ट्रान्सफर"
+
+#: apps/notifications/context.py
+#, python-format
+msgid "Bill %(number)s replaces it."
+msgstr "बिल %(number)s त्याऐवजी आहे."
+
+#: apps/notifications/summary.py
+#, python-format
+msgid "billed %(amount)s"
+msgstr "बिल केले %(amount)s"
+
 #: apps/dataio/kinds/retailers.py
 msgid "Billing address."
 msgstr "बिलिंग पत्ता."
@@ -476,6 +647,14 @@ msgstr "बिलिंग पत्ता."
 #: apps/dataio/kinds/pricing.py apps/dataio/kinds/products.py apps/dataio/kinds/stock.py
 msgid "Can't be negative."
 msgstr "ऋण (वजा) असू शकत नाही."
+
+#: apps/billing/models.py
+msgid "Cancellation"
+msgstr "रद्दीकरण"
+
+#: apps/payments/models.py
+msgid "Cash"
+msgstr "रोख"
 
 #: apps/catalog/services.py apps/dataio/kinds/products.py
 msgid "Categories can be at most 3 levels deep."
@@ -501,6 +680,10 @@ msgstr "6 वे अक्षर (%(pan)s) PAN धारकाचा प्र�
 #: apps/platform/validators.py
 msgid "Characters 3 to 12 are the PAN: 5 letters, then 4 digits, then 1 letter."
 msgstr "अक्षरे 3 ते 12 म्हणजे PAN: 5 अक्षरे, मग 4 अंक, मग 1 अक्षर."
+
+#: apps/payments/models.py
+msgid "Cheque"
+msgstr "चेक"
 
 #: apps/dataio/services.py
 #, python-format
@@ -790,9 +973,20 @@ msgstr "तुमचेच सक्रिय पुरवठादार नि
 msgid "Choose “Replace” or “Add”."
 msgstr "“बदला” किंवा “जोडा” निवडा."
 
+#: apps/notifications/summary.py
+#, python-format
+msgid "collected %(amount)s (%(count)s payment)"
+msgid_plural "collected %(amount)s (%(count)s payments)"
+msgstr[0] "वसूल केले %(amount)s (%(count)s पेमेंट)"
+msgstr[1] "वसूल केले %(amount)s (%(count)s पेमेंट)"
+
 #: apps/reports/definitions/money.py
 msgid "Collected: payments each salesperson collected themselves in the period. Still with them: not yet handed over, whenever collected. Received from their shops: every payment from the shops now assigned to them, by any means."
 msgstr "वसूल केले: या कालावधीत प्रत्येक सेल्सपर्सनने स्वतः वसूल केलेली पेमेंट्स. अजून त्यांच्याकडे: अजून जमा न केलेली, कधीही वसूल केलेली असली तरी. त्यांच्या दुकानांकडून मिळाले: आता त्यांना दिलेल्या दुकानांकडून आलेले प्रत्येक पेमेंट, कोणत्याही प्रकारे."
+
+#: apps/reports/definitions/money.py
+msgid "Collections"
+msgstr "वसुली"
 
 #: apps/payments/services.py
 msgid "Collections are matched oldest first."
@@ -823,6 +1017,10 @@ msgstr "पुढे जाण्यासाठी वेब पत्त्य
 msgid "Credit notes are shown as minus amounts. Each total includes its round-off."
 msgstr "क्रेडिट नोट वजा रक्कम म्हणून दाखवल्या आहेत. प्रत्येक एकूण रकमेत तिचे राउंड-ऑफ समाविष्ट आहे."
 
+#: apps/billing/models.py
+msgid "Damaged"
+msgstr "खराब"
+
 #: common/framework_messages.py
 msgid "Date has wrong format. Use one of these formats instead: {format}."
 msgstr "तारखेचे स्वरूप चुकीचे आहे. यापैकी एक स्वरूप वापरा: {format}."
@@ -851,6 +1049,11 @@ msgstr "DD-MM-YYYY."
 #, python-format
 msgid "Deleted products can't be received: %(inactive)s."
 msgstr "हटवलेली उत्पादने घेता येत नाहीत: %(inactive)s."
+
+#: apps/notifications/jobs.py
+#, python-format
+msgid "due on %(date)s"
+msgstr "%(date)s रोजी देय"
 
 #: apps/compliance/credentials.py
 msgid "E-invoicing and e-way bills aren't switched on for your business."
@@ -1249,9 +1452,21 @@ msgstr "प्रत्येक व्यवसायात किमान ए
 msgid "Example"
 msgstr "उदाहरण"
 
+#: apps/billing/models.py
+msgid "Excess supply"
+msgstr "जास्त पुरवठा"
+
 #: common/framework_messages.py
 msgid "Expected a list of items but got type \"{input_type}\"."
 msgstr "वस्तूंची यादी अपेक्षित होती, पण \"{input_type}\" मिळाले."
+
+#: apps/billing/models.py
+msgid "Expired"
+msgstr "मुदत संपलेले"
+
+#: apps/reports/definitions/stock.py
+msgid "Fast, slow and dead stock"
+msgstr "जलद, संथ आणि पडून असलेला स्टॉक"
 
 #: apps/dataio/kinds/pricing.py
 msgid "Fill a price list or a shop, not both."
@@ -1297,6 +1512,10 @@ msgstr "या कालावधीत पोस्ट केलेल्या
 #, python-format
 msgid "GST changes need a start date: schedule them under Products → GST rates. The current rate is %(gst_rate)s%%."
 msgstr "GST बदलासाठी सुरुवातीची तारीख हवी: ते उत्पादने → GST दर मध्ये ठरवा. सध्याचा दर %(gst_rate)s%% आहे."
+
+#: apps/reports/definitions/gst.py
+msgid "GST summary (GSTR-1)"
+msgstr "GST सारांश (GSTR-1)"
 
 #: apps/accounts/tasks.py
 #, python-format
@@ -1418,6 +1637,14 @@ msgstr "प्रत्येक पुरवठादार एकदाच ल
 msgid "Live payments aren't allowed here: use test keys."
 msgstr "इथे लाइव्ह पेमेंटला परवानगी नाही: टेस्ट की वापरा."
 
+#: apps/inventory/models.py apps/reports/definitions/stock.py
+msgid "Low stock"
+msgstr "कमी स्टॉक"
+
+#: apps/notifications/texts.py
+msgid "low stock"
+msgstr "कमी स्टॉक"
+
 #: apps/platform/master_services.py
 msgid "Make another plan the default instead."
 msgstr "त्याऐवजी दुसरा प्लॅन डिफॉल्ट करा."
@@ -1425,6 +1652,10 @@ msgstr "त्याऐवजी दुसरा प्लॅन डिफॉल
 #: common/framework_messages.py
 msgid "Malformed request."
 msgstr "विनंती चुकीची आहे."
+
+#: apps/reports/definitions/sales.py
+msgid "Margin: own brand vs traded"
+msgstr "मार्जिन: स्वतःचा ब्रँड विरुद्ध इतर"
 
 #: apps/notifications/preferences.py
 msgid "Messages in the app can't be switched off."
@@ -1517,6 +1748,10 @@ msgstr "बदल नाही"
 msgid "No file was submitted."
 msgstr "कोणतीही फाइल पाठवली नाही."
 
+#: apps/notifications/summary.py
+msgid "No orders"
+msgstr "ऑर्डर नाही"
+
 #: apps/dataio/kinds/pricing.py
 #, python-format
 msgid "No price list is called %(price_list)s."
@@ -1594,6 +1829,10 @@ msgstr "वैध मूल्य नाही."
 msgid "Not found."
 msgstr "सापडले नाही."
 
+#: apps/notifications/context.py
+msgid "not given"
+msgstr "दिलेले नाही"
+
 #: apps/dataio/services.py
 msgid "Notes"
 msgstr "टीपा"
@@ -1609,6 +1848,18 @@ msgstr "या ऑर्डरवर आता काहीही बाकी �
 #: apps/orders/backorders.py
 msgid "Nothing is waiting on this line."
 msgstr "या ओळीवर काहीही प्रलंबित नाही."
+
+#: apps/notifications/context.py
+msgid "nothing to pay"
+msgstr "काहीही भरायचे नाही"
+
+#: apps/notifications/jobs.py
+msgid "nothing to show"
+msgstr "दाखवायला काहीही नाही"
+
+#: apps/notifications/jobs.py
+msgid "nothing waiting"
+msgstr "काहीही प्रलंबित नाही"
 
 #: apps/dataio/parsing.py
 msgid "Old .xls files aren't supported. Save the file as .xlsx or .csv."
@@ -1747,6 +1998,10 @@ msgstr "पर्यायी प्रमाण स्लॅब: सवलत �
 msgid "Optional. Updates the cost price the way your cost setting says."
 msgstr "पर्यायी. तुमच्या खर्च सेटिंगनुसार खरेदी किंमत अपडेट करते."
 
+#: apps/reports/definitions/stock.py
+msgid "Order fulfilment rate"
+msgstr "ऑर्डर पूर्तता दर"
+
 #: apps/orders/api/staff_cart.py
 msgid "Ordering for shops is switched off in your settings."
 msgstr "तुमच्या सेटिंगमध्ये दुकानांसाठी ऑर्डर करणे बंद आहे."
@@ -1755,15 +2010,35 @@ msgstr "तुमच्या सेटिंगमध्ये दुकान�
 msgid "Orders the shop cancelled, and waiting quantities the shop cancelled, are left out. Percentages count orders that are no longer open."
 msgstr "दुकानाने रद्द केलेल्या ऑर्डर आणि रद्द केलेली प्रलंबित प्रमाणे वगळली आहेत. टक्केवारी आता उघड्या नसलेल्या ऑर्डर मोजते."
 
+#: apps/billing/models.py
+msgid "Other"
+msgstr "इतर"
+
+#: apps/inventory/models.py apps/notifications/texts.py
+msgid "Out of stock"
+msgstr "स्टॉक संपला"
+
+#: apps/notifications/texts.py apps/orders/models.py
+msgid "Over the credit limit"
+msgstr "क्रेडिट मर्यादेपेक्षा जास्त"
+
 #: apps/reports/definitions/stock.py
 #, python-format
 msgid "Over the last %(days)s days. Fast: the top %(share)s%% of products that sold, by %(basis)s; slow: the rest that sold; dead: in stock, nothing sold; new: first stocked in this period and not sold yet."
 msgstr "मागील %(days)s दिवसांत. जलद: विकलेल्या उत्पादनांतील वरची %(share)s%%, %(basis)s नुसार; संथ: उरलेली विकलेली; पडून: स्टॉकमध्ये आहेत, काहीही विकले नाही; नवीन: या कालावधीत पहिल्यांदा स्टॉकमध्ये आलेली आणि अजून न विकलेली."
 
+#: apps/orders/models.py
+msgid "Overdue invoices"
+msgstr "थकलेली बिले"
+
 #: apps/orders/fulfilment.py
 #, python-format
 msgid "Pack between 0 and %(quantity)s."
 msgstr "0 ते %(quantity)s दरम्यान पॅक करा."
+
+#: apps/payments/models.py
+msgid "Paid online"
+msgstr "ऑनलाइन भरले"
 
 #: apps/orders/fulfilment.py
 msgid "Part of this order has been dispatched already."
@@ -1773,6 +2048,10 @@ msgstr "या ऑर्डरचा काही भाग आधीच रव�
 msgid "Payment service is busy, please try again in a minute."
 msgstr "पेमेंट सेवा व्यस्त आहे, कृपया एका मिनिटाने पुन्हा प्रयत्न करा."
 
+#: apps/billing/models.py
+msgid "Price adjustment"
+msgstr "किंमत समायोजन"
+
 #: apps/dataio/kinds/products.py
 msgid "Printed MRP (includes GST)."
 msgstr "छापील MRP (GST सह)."
@@ -1780,6 +2059,10 @@ msgstr "छापील MRP (GST सह)."
 #: apps/dataio/kinds/suppliers.py
 msgid "Purchase orders are sent here."
 msgstr "खरेदी ऑर्डर इथे पाठवल्या जातात."
+
+#: apps/reports/definitions/purchasing.py
+msgid "Purchases by supplier"
+msgstr "पुरवठादारानुसार खरेदी"
 
 #: apps/inventory/receipts.py apps/planning/api/views.py
 msgid "Purchasing isn't switched on for your business."
@@ -1794,6 +2077,10 @@ msgstr "प्रमाण वजा असू शकत नाही."
 msgid "Rate is %(exc)s."
 msgstr "दर %(exc)s आहे."
 
+#: apps/reports/definitions/money.py
+msgid "Receivables ageing"
+msgstr "येण्यांचे वय"
+
 #: common/framework_messages.py
 msgid "Request was throttled."
 msgstr "खूप विनंत्या. थोड्या वेळाने प्रयत्न करा."
@@ -1801,6 +2088,10 @@ msgstr "खूप विनंत्या. थोड्या वेळान�
 #: apps/accounts/tasks.py
 msgid "Reset your password"
 msgstr "तुमचा पासवर्ड बदला"
+
+#: apps/billing/models.py
+msgid "Return"
+msgstr "परतावा"
 
 #: apps/billing/returns.py
 #, python-format
@@ -1836,9 +2127,41 @@ msgstr "ओळ %(row)s, कॉलम “%(column)s”: %(message)s"
 msgid "Rows of the rule “%(key)s” must match row %(number)s here."
 msgstr "नियम “%(key)s” च्या ओळी इथे ओळ %(number)s शी जुळल्या पाहिजेत."
 
+#: apps/reports/definitions/sales.py
+msgid "Sales by brand"
+msgstr "ब्रँडनुसार विक्री"
+
+#: apps/reports/definitions/sales.py
+msgid "Sales by category"
+msgstr "श्रेणीनुसार विक्री"
+
+#: apps/reports/definitions/sales.py
+msgid "Sales by invoice"
+msgstr "बिलानुसार विक्री"
+
+#: apps/reports/definitions/sales.py
+msgid "Sales by product"
+msgstr "उत्पादनानुसार विक्री"
+
+#: apps/reports/definitions/sales.py
+msgid "Sales by salesperson"
+msgstr "सेल्सपर्सननुसार विक्री"
+
+#: apps/reports/definitions/sales.py
+msgid "Sales by shop"
+msgstr "दुकानानुसार विक्री"
+
 #: apps/payments/services.py
 msgid "Sales staff can't record collections."
 msgstr "सेल्स कर्मचारी वसुली नोंदवू शकत नाहीत."
+
+#: apps/reports/definitions/sales.py
+msgid "Sales summary"
+msgstr "विक्री सारांश"
+
+#: apps/reports/definitions/money.py
+msgid "Salesperson collections"
+msgstr "सेल्सपर्सनची वसुली"
 
 #: apps/platform/master_services.py
 msgid "Save the file as UTF-8 CSV."
@@ -1910,9 +2233,21 @@ msgstr "एका वेळी जास्तीत जास्त %(max_bulk_
 msgid "Separated by commas."
 msgstr "स्वल्पविरामाने वेगळे."
 
+#: apps/reports/definitions/shops.py
+msgid "Shop activity"
+msgstr "दुकान घडामोडी"
+
 #: apps/dataio/kinds/products.py
 msgid "Shops order in steps of this (default 1)."
 msgstr "दुकाने इतक्याच्या पटीत ऑर्डर करतात (डिफॉल्ट 1)."
+
+#: apps/inventory/models.py
+msgid "Shops waiting"
+msgstr "दुकाने वाट पाहत आहेत"
+
+#: apps/billing/models.py
+msgid "Short supply"
+msgstr "कमी पुरवठा"
 
 #: apps/dataio/kinds/ledger.py
 msgid "Shown on the shop's statement."
@@ -2006,6 +2341,18 @@ msgstr "स्टॉक कमी होतो, म्हणून खर्च 
 #: apps/dataio/kinds/products.py
 msgid "Stock level that should trigger a reorder."
 msgstr "स्टॉकची पातळी जिथे पुन्हा ऑर्डर करायला हवी."
+
+#: apps/reports/definitions/stock.py
+msgid "Stock movement history"
+msgstr "स्टॉक हालचाल इतिहास"
+
+#: apps/reports/definitions/stock.py
+msgid "Stock summary"
+msgstr "स्टॉक सारांश"
+
+#: apps/reports/definitions/stock.py
+msgid "Stock valuation"
+msgstr "स्टॉक मूल्यांकन"
 
 #: apps/orders/transitions.py
 msgid "Tell the shop why the order is rejected."
@@ -2129,6 +2476,10 @@ msgstr "पहिली 2 अक्षरे राज्य कोड आहे
 #, python-format
 msgid "The first 2 digits (%(gstin)s) are not a GST state code."
 msgstr "पहिले 2 अंक (%(gstin)s) GST राज्य कोड नाहीत."
+
+#: apps/notifications/context.py
+msgid "The goods were taken back."
+msgstr "माल परत घेतला."
 
 #: apps/dataio/kinds/products.py
 msgid "The GST % in use today, e.g. 5 or 18."
@@ -2699,6 +3050,10 @@ msgstr "जास्तीत जास्त 3 स्तर, > ने वेग
 msgid "Update"
 msgstr "अपडेट"
 
+#: apps/payments/models.py
+msgid "UPI"
+msgstr "UPI"
+
 #: common/uploads.py
 msgid "Upload a PNG, JPEG or WebP image."
 msgstr "PNG, JPEG किंवा WebP फोटो अपलोड करा."
@@ -2847,6 +3202,10 @@ msgstr "Yes किंवा No लिहा (“%(value)s” नाही)."
 #: apps/dataio/kinds/retailers.py
 msgid "Write Yes or No."
 msgstr "Yes किंवा No लिहा."
+
+#: apps/billing/models.py
+msgid "Wrong item"
+msgstr "चुकीची वस्तू"
 
 #: apps/dataio/services.py
 msgid "Yes"

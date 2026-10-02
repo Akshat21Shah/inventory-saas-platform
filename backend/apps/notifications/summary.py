@@ -6,8 +6,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
 from django.db.models import Count, Sum
+from django.utils.translation import gettext as _
+from django.utils.translation import ngettext, ngettext_lazy
 
 from apps.accounts.models import User
 from apps.billing.templatetags.documents import rupees
@@ -18,10 +21,6 @@ from apps.reports import dashboard
 class Summary:
     yesterday: list[str]
     attention: list[str]
-
-
-def _plural(count: int, one: str, many: str) -> str:
-    return f"{count} {one if count == 1 else many}"
 
 
 def yesterday_lines(user: User, day: date) -> list[str]:
@@ -35,13 +34,17 @@ def yesterday_lines(user: User, day: date) -> list[str]:
     received = figures["orders_received"]
     if received is not None:
         lines.append(
-            "No orders"
+            _("No orders")
             if received["count"] == 0
-            else f"{_plural(received['count'], 'order', 'orders')} received "
-            f"({rupees(received['amount'])})"
+            else ngettext(
+                "%(count)s order received (%(amount)s)",
+                "%(count)s orders received (%(amount)s)",
+                received["count"],
+            )
+            % {"count": received["count"], "amount": rupees(received["amount"])}
         )
     if figures["billed"] is not None:
-        lines.append(f"billed {rupees(figures['billed'])}")
+        lines.append(_("billed %(amount)s") % {"amount": rupees(figures["billed"])})
     if user.has_permission_code("payments.view"):
         paid = (
             payments_for(user)
@@ -51,14 +54,20 @@ def yesterday_lines(user: User, day: date) -> list[str]:
         )
         if paid["count"]:
             lines.append(
-                f"collected {rupees(paid['amount'])} "
-                f"({_plural(paid['count'], 'payment', 'payments')})"
+                ngettext(
+                    "collected %(amount)s (%(count)s payment)",
+                    "collected %(amount)s (%(count)s payments)",
+                    paid["count"],
+                )
+                % {"count": paid["count"], "amount": rupees(paid["amount"])}
             )
     if user.has_permission_code("retailers.view"):
         first, last = ist_bounds(day, day)
         new = retailers_for(user).filter(created_at__gte=first, created_at__lt=last).count()
         if new:
-            lines.append(_plural(new, "new shop", "new shops"))
+            lines.append(
+                ngettext("%(count)s new shop", "%(count)s new shops", new) % {"count": new}
+            )
     return lines
 
 
@@ -66,31 +75,68 @@ def attention_lines(user: User) -> list[str]:
     a = dashboard.action(user)
     lines: list[str] = []
 
-    def add(count: int | None, one: str, many: str) -> None:
+    def add(count: int | None, message: Any) -> None:
+        """``message``: an ``ngettext_lazy`` whose plural form follows "count"."""
         if count:
-            lines.append(_plural(count, one, many))
+            lines.append(message % {"count": count})
 
-    add(a["new_orders"], "new order to accept", "new orders to accept")
-    add(a["on_hold"], "order on credit hold", "orders on credit hold")
-    add(a["backorders_to_confirm"], "backorder to confirm", "backorders to confirm")
-    add(a["to_pack"], "shipment to pack", "shipments to pack")
+    add(
+        a["new_orders"],
+        ngettext_lazy("%(count)s new order to accept", "%(count)s new orders to accept", "count"),
+    )
+    add(
+        a["on_hold"],
+        ngettext_lazy("%(count)s order on credit hold", "%(count)s orders on credit hold", "count"),
+    )
+    add(
+        a["backorders_to_confirm"],
+        ngettext_lazy("%(count)s backorder to confirm", "%(count)s backorders to confirm", "count"),
+    )
+    add(
+        a["to_pack"],
+        ngettext_lazy("%(count)s shipment to pack", "%(count)s shipments to pack", "count"),
+    )
     if a["overdue"] and a["overdue"]["shops"]:
         lines.append(
-            f"{_plural(a['overdue']['shops'], 'shop', 'shops')} overdue "
-            f"({rupees(a['overdue']['amount'])})"
+            ngettext(
+                "%(count)s shop overdue (%(amount)s)",
+                "%(count)s shops overdue (%(amount)s)",
+                a["overdue"]["shops"],
+            )
+            % {"count": a["overdue"]["shops"], "amount": rupees(a["overdue"]["amount"])}
         )
     if a["low_stock"]:
         add(
             a["low_stock"]["low"] + a["low_stock"]["out"],
-            "product low or out of stock",
-            "products low or out of stock",
+            ngettext_lazy(
+                "%(count)s product low or out of stock",
+                "%(count)s products low or out of stock",
+                "count",
+            ),
         )
-    add(a["to_reorder"], "product to reorder", "products to reorder")
-    add(a["late_purchase_orders"], "purchase order late", "purchase orders late")
-    add(a["failed_irns"], "IRN failed", "IRNs failed")
-    add(a["failed_ewaybills"], "e-way bill failed", "e-way bills failed")
-    add(a["win_back"], "shop to win back", "shops to win back")
-    add(a["return_requests"], "return request to decide", "return requests to decide")
+    add(
+        a["to_reorder"],
+        ngettext_lazy("%(count)s product to reorder", "%(count)s products to reorder", "count"),
+    )
+    add(
+        a["late_purchase_orders"],
+        ngettext_lazy("%(count)s purchase order late", "%(count)s purchase orders late", "count"),
+    )
+    add(a["failed_irns"], ngettext_lazy("%(count)s IRN failed", "%(count)s IRNs failed", "count"))
+    add(
+        a["failed_ewaybills"],
+        ngettext_lazy("%(count)s e-way bill failed", "%(count)s e-way bills failed", "count"),
+    )
+    add(
+        a["win_back"],
+        ngettext_lazy("%(count)s shop to win back", "%(count)s shops to win back", "count"),
+    )
+    add(
+        a["return_requests"],
+        ngettext_lazy(
+            "%(count)s return request to decide", "%(count)s return requests to decide", "count"
+        ),
+    )
     return lines
 
 

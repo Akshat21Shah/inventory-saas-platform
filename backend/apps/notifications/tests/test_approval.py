@@ -107,17 +107,10 @@ def test_a_real_provider_sends_only_approved_templates(world):
 @pytest.mark.usefixtures("required")
 @pytest.mark.usefixtures("every_language")
 def test_the_persons_language_when_approved_else_english(world):
-    hindi = PlatformTemplate.objects.create(
-        event_code="order.accepted",
-        audience="SHOP",
-        channel="WHATSAPP",
-        locale="hi",
-        body="{{ distributor }}: आपका ऑर्डर {{ order_number }} स्वीकार हो गया।",
-        whatsapp_template_name="b2b_order_accepted",
-        whatsapp_language="hi",
-        whatsapp_category="UTILITY",
-        variables=["distributor", "order_number"],
+    hindi = PlatformTemplate.objects.get(  # seeded with every language (ADR-060)
+        event_code="order.accepted", audience="SHOP", channel="WHATSAPP", locale="hi"
     )
+    assert (hindi.whatsapp_template_name, hindi.whatsapp_language) == ("b2b_order_accepted", "hi")
     with tenant_context(world["t"].pk):
         Retailer.objects.filter(pk=world["shop"].pk).update(preferred_language="hi")
     mark("APPROVED")

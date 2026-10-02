@@ -379,7 +379,7 @@ def run(user: User, name: str, args: dict[str, Any]) -> Figures:
     return Figures(
         tool=tool.name,
         report=report.code,
-        title=report.title,
+        title=str(report.title),
         date_from=given.get("date_from"),
         date_to=given.get("date_to"),
         columns=[{"key": c.key, "label": c.label, "kind": c.kind.value} for c in columns],

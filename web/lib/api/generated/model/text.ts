@@ -22,6 +22,10 @@ export interface Text {
   subject: string;
   body: string;
   source: NotificationTextSourceEnum;
+  /** The language this text is written in (English when the one asked has none). */
+  locale: string;
+  /** The languages in which the distributor has its own text (ADR-060). */
+  edited_locales: string[];
   editable: boolean;
   variables: string[];
 }
