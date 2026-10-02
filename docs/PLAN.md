@@ -1684,10 +1684,20 @@ Tool calling over fixed, read-only, tenant-scoped query functions that respect e
 #### After launch (ADR-053)
 Multi-warehouse and stock transfers; batches and expiry (earlier if a pilot needs expiry tracking); manufacturing (bills of materials); demand forecasting; supplier-bill photo → goods-receipt draft; convenience fee on online payments; the distributor's own WhatsApp number and templates; saved filters and scheduled email reports.
 
+### Phase order from here (owner, 2026-10-02)
+After Phase 9 (PRs #11–#15 merged), the phases go in this order:
+1. **Phase 11a — Language support** (web, messages, documents).
+2. **Phase 11b — Android app**, built with language support from the start.
+3. **Phase 10 — Hardening & launch.** Not started until 11a and 11b are both merged **and the owner explicitly says to start it.**
+
+Each is planned and approved before work starts, on its own branch and PR (PRs target `main` directly; a stacked PR is retargeted to `main` before it is merged).
+
 ### Phase 10 — Hardening & launch
+Starts only after Phase 11a and 11b are merged and the owner says so (see the order above).
+
 | # | Task | Size |
 |---|---|---|
-| 10.1 | Hindi + Marathi translations, layout checks | M |
+| 10.1 | ~~Hindi + Marathi translations, layout checks~~ — moved to Phase 11a (2026-10-02) | — |
 | 10.2 | Accessibility audit + fixes | M |
 | 10.3 | Load tests (k6/Locust) on ordering + search; fix bottlenecks | L |
 | 10.4 | Security review (deps, permission matrix vs code, isolation coverage report, OWASP, headers/CSP) | L |
@@ -1723,7 +1733,12 @@ Re-checked and approved by the owner before anything is created in AWS; prices t
 
 **Open decisions for Phase 10:** how pilot shops get sign-in codes on staging (the super admin's "Test messages" page, or also the distributor owner for their own shops); skipping emails to unverified addresses; test markers on PDFs and emails; whether pilot data moves to production or production starts fresh; standard or lean sizes; one account or Organizations.
 
-### Phase 11 — Android app
+### Phase 11a — Language support (web, messages, documents)
+First after Phase 9 (owner, 2026-10-02). Scope: the web app (staff, shop and super admin screens), the messages the app sends (email, WhatsApp and SMS texts, in-app notifications) and the documents (invoice, credit note, receipt and other PDFs) in Hindi and Marathi as well as English, with layout checks; takes over task 10.1. The task breakdown is written and approved before work starts.
+
+### Phase 11b — Android app
+Second, after 11a is merged; built with language support from the start (the same message catalogues and the shop's chosen language).
+
 | # | Task | Size |
 |---|---|---|
 | 11.1 | Expo + TS setup, shared generated client + tokens, runtime branding | M |
