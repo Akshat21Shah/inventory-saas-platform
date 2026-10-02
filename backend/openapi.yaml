@@ -15430,9 +15430,17 @@ components:
           description: The shop's delivery code (never shown to staff) is needed to
             deliver it.
         delivered_via:
-          allOf:
-          - $ref: '#/components/schemas/DeliveredViaEnum'
           readOnly: true
+          description: |-
+            How the delivery was confirmed; blank until delivered.
+
+            * `STAFF` - Marked by staff
+            * `CODE` - With the delivery code
+            * `NO_CODE` - Without the delivery code
+            * `SHOP` - Confirmed by the shop
+          oneOf:
+          - $ref: '#/components/schemas/DeliveredViaEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         delivery_note:
           type: string
           readOnly: true
@@ -15520,9 +15528,17 @@ components:
           description: The shop's delivery code (never shown to staff) is needed to
             deliver it.
         delivered_via:
-          allOf:
-          - $ref: '#/components/schemas/DeliveredViaEnum'
           readOnly: true
+          description: |-
+            How the delivery was confirmed; blank until delivered.
+
+            * `STAFF` - Marked by staff
+            * `CODE` - With the delivery code
+            * `NO_CODE` - Without the delivery code
+            * `SHOP` - Confirmed by the shop
+          oneOf:
+          - $ref: '#/components/schemas/DeliveredViaEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         delivery_note:
           type: string
           readOnly: true
@@ -25578,9 +25594,17 @@ components:
           description: The shop's delivery code (never shown to staff) is needed to
             deliver it.
         delivered_via:
-          allOf:
-          - $ref: '#/components/schemas/DeliveredViaEnum'
           readOnly: true
+          description: |-
+            How the delivery was confirmed; blank until delivered.
+
+            * `STAFF` - Marked by staff
+            * `CODE` - With the delivery code
+            * `NO_CODE` - Without the delivery code
+            * `SHOP` - Confirmed by the shop
+          oneOf:
+          - $ref: '#/components/schemas/DeliveredViaEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         delivery_note:
           type: string
           readOnly: true

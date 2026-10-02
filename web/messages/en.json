@@ -2433,7 +2433,12 @@
       },
       "onHoldOverdue": "You have overdue bills, so your distributor will approve this order before accepting it.",
       "documents": "Bills and documents",
-      "confirmation": "Order Confirmation"
+      "confirmation": "Order Confirmation",
+      "codeIntro": "When the goods arrive, give this code to the delivery person:",
+      "codeLabel": "Delivery code {code}",
+      "received": "I received it",
+      "receivedTitle": "Did you receive shipment {number}?",
+      "receivedBody": "Tap only when the goods are with you. To return something, open the bill."
     },
     "live": {
       "order_accepted": "Order {number} was accepted.",
@@ -3002,7 +3007,12 @@
     "BACKORDER_ALLOCATED": "Waiting items are being sent",
     "BACKORDER_CANCELLED": "Waiting items cancelled",
     "COMPLETE": "Completed",
-    "TAKE_BACK": "Goods taken back"
+    "TAKE_BACK": "Goods taken back",
+    "deliveredVia": {
+      "SHOP": "Confirmed by the shop",
+      "CODE": "With the shop's delivery code",
+      "NO_CODE": "Without the delivery code"
+    }
   },
   "orders": {
     "nav": {
@@ -3141,7 +3151,20 @@
       "priceUp": "Price went up from {before} to {now}",
       "distance": "Distance (km)",
       "distanceHint": "Road distance for the e-way bill; from the shop's address when it has one. A new distance is kept for the shop if it had none.",
-      "km": "{km} km"
+      "km": "{km} km",
+      "needsCode": "Needs the shop's delivery code to mark it delivered.",
+      "deliveredVia": {
+        "STAFF": "Marked delivered by your team",
+        "CODE": "Delivered with the shop's code",
+        "NO_CODE": "Delivered without the shop's code",
+        "SHOP": "Confirmed by the shop"
+      },
+      "code": "Shop's delivery code",
+      "codeBody": "Ask the shop for its 4-digit delivery code.",
+      "withoutCode": "Deliver without the code",
+      "withoutCodeBody": "Say why it was delivered without the shop's code. This is recorded.",
+      "withoutCodeReason": "Why without the code",
+      "useCode": "Use the code"
     },
     "shipments": {
       "title": "Shipments",

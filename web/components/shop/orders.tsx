@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CircleCheck, RotateCcw, Truck } from "lucide-react";
+import { ArrowLeft, CircleCheck, PackageCheck, RotateCcw, Truck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -23,6 +23,7 @@ import {
   getShopCartRetrieveQueryKey,
   getShopOrderQueryKey,
   shopFulfilmentLineCancelRepriced,
+  shopFulfilmentReceived,
   shopOrderCancel,
   shopOrderLineCancelBackorder,
   shopOrderRepeat,
@@ -31,8 +32,8 @@ import {
   useShopOrder,
 } from "@/lib/api/generated/endpoints/shop/shop";
 import type {
-  Fulfilment,
   OrderLine,
+  ShopFulfilment,
   ShopOrder,
   ShopOrdersListState,
 } from "@/lib/api/generated/model";
@@ -228,9 +229,10 @@ function OrderDocuments({ order }: { order: ShopOrder }) {
   );
 }
 
-function Shipment({ order, shipment }: { order: ShopOrder; shipment: Fulfilment }) {
+function Shipment({ order, shipment }: { order: ShopOrder; shipment: ShopFulfilment }) {
   const t = useTranslations("shop.orders");
   const refresh = useRefresh(order.id);
+  const onItsWay = shipment.status === "DISPATCHED";
   return (
     <li className="space-y-2 rounded-xl border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -245,6 +247,31 @@ function Shipment({ order, shipment }: { order: ShopOrder; shipment: Fulfilment 
           {t("sentOn")} <DateText value={shipment.dispatched_at} withTime />
           {shipment.vehicle_number ? ` · ${shipment.vehicle_number}` : ""}
         </p>
+      ) : null}
+      {onItsWay && shipment.delivery_code ? (
+        <div className="bg-info/10 rounded-lg p-3 text-sm">
+          <p>{t("codeIntro")}</p>
+          <p
+            className="text-2xl font-semibold tracking-[0.3em] tabular-nums"
+            aria-label={t("codeLabel", { code: shipment.delivery_code.split("").join(" ") })}
+          >
+            {shipment.delivery_code}
+          </p>
+        </div>
+      ) : null}
+      {onItsWay && shipment.can_confirm ? (
+        <ConfirmDialog
+          trigger={
+            <Button className="min-h-11 w-full sm:w-auto">
+              <PackageCheck aria-hidden />
+              {t("received")}
+            </Button>
+          }
+          title={t("receivedTitle", { number: shipment.number })}
+          description={t("receivedBody")}
+          confirmLabel={t("received")}
+          onConfirm={async () => refresh(await shopFulfilmentReceived(shipment.id))}
+        />
       ) : null}
       <ul className="space-y-1 text-sm">
         {shipment.lines.map((line) => (

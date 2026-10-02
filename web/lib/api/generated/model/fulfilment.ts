@@ -5,7 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { DeliveredViaEnum } from './deliveredViaEnum';
+import type { FulfilmentDeliveredVia } from './fulfilmentDeliveredVia';
 import type { FulfilmentKindEnum } from './fulfilmentKindEnum';
 import type { FulfilmentLine } from './fulfilmentLine';
 import type { FulfilmentStatusEnum } from './fulfilmentStatusEnum';
@@ -33,7 +33,15 @@ export interface Fulfilment {
   readonly cancelled_reason: string;
   /** The shop's delivery code (never shown to staff) is needed to deliver it. */
   readonly needs_delivery_code: boolean;
-  readonly delivered_via: DeliveredViaEnum;
+  /**
+     * How the delivery was confirmed; blank until delivered.
+     *
+     * * `STAFF` - Marked by staff
+     * * `CODE` - With the delivery code
+     * * `NO_CODE` - Without the delivery code
+     * * `SHOP` - Confirmed by the shop
+     */
+  readonly delivered_via: typeof FulfilmentDeliveredVia[keyof typeof FulfilmentDeliveredVia];
   readonly delivery_note: string;
   readonly lines: readonly FulfilmentLine[];
 }

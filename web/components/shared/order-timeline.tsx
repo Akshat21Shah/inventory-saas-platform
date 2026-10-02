@@ -34,6 +34,8 @@ export function OrderTimeline({ entries }: { entries: readonly TimelineEntry[] }
         const data = detail(entry);
         const toFollow = typeof data.items_to_follow === "number" ? data.items_to_follow : 0;
         const shipment = typeof data.shipment === "string" ? data.shipment : "";
+        // ADR-057: how a delivery was confirmed (the shop, the code, or without it).
+        const via = entry.event === "DELIVER" && typeof data.via === "string" ? data.via : "";
         return (
           <li key={entry.id} className="relative space-y-1">
             <span
@@ -56,6 +58,9 @@ export function OrderTimeline({ entries }: { entries: readonly TimelineEntry[] }
               <DateText value={entry.created_at} withTime />
               {entry.by ? ` · ${entry.by}` : ""}
             </p>
+            {via && via !== "STAFF" && t.has(`deliveredVia.${via}`) ? (
+              <p className="text-sm">{t(`deliveredVia.${via}`)}</p>
+            ) : null}
             {entry.note ? <p className="text-sm">{entry.note}</p> : null}
           </li>
         );
