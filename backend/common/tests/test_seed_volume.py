@@ -7,6 +7,7 @@ from decimal import Decimal as D
 
 import pytest
 from django.core.management import CommandError, call_command
+from django.db import connection
 from django.db.models import Sum
 
 from apps.accounts.models import User
@@ -33,6 +34,12 @@ SMALL = VolumeTenant(
 def year():
     result = seed_tenant(SMALL, days=120)
     assert result is not None
+    # The test's rows are never committed, so nothing measures them: without statistics the
+    # planner takes each table for a row or two and joins with nested loops that grow with the
+    # cube of the data (sales_by_salesperson ran for minutes). ANALYZE in the same transaction
+    # sees them, and its statistics go when the test rolls back.
+    with connection.cursor() as cursor:
+        cursor.execute("ANALYZE")
     return Tenant.objects.get(slug="vol-t"), result
 
 
