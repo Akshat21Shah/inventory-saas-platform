@@ -69,6 +69,9 @@ HANDLED_EVENTS: tuple[str, ...] = (
     "refund.reversed",
     "purchase_order.sent",
     "purchase_order.cancelled",
+    "return.requested",
+    "return.approved",
+    "return.rejected",
 )
 SKIP = Notification.SkipReason
 

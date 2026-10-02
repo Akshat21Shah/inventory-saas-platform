@@ -410,12 +410,19 @@ class DeliverView(Guarded):
     @extend_schema(
         operation_id="fulfilments_deliver",
         tags=TAGS,
-        request=None,
+        request=s.DeliverSerializer,
         responses=s.FulfilmentDetailSerializer,
     )
     def post(self, request: Request, fulfilment_id: UUID) -> Response:
+        data = s.DeliverSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
         _visible_shipment(request, fulfilment_id)
-        fulfilment.deliver(fulfilment_id, by=_user(request))
+        fulfilment.deliver(
+            fulfilment_id,
+            by=_user(request),
+            code=data.validated_data["code"],
+            reason=data.validated_data["reason"],
+        )
         return _shipment(request, fulfilment_id)
 
 

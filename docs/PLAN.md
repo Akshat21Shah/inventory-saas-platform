@@ -1640,8 +1640,18 @@ Every feature is built before anything goes to staging or production, so the sta
 | 9b.8 | FE: schemes (Pricing → Free goods), badges and hints in the shop app, free lines everywhere | L |
 | 9b.9 | E2E, responsive, flags-off proof — **final review** | M |
 
-#### 9c — Shop self-service and money
-The shop confirms delivery; a one-time delivery code (proof of delivery); shop return requests (approval issues the return credit note); cheque bounce charge (a setting).
+#### 9c — Shop self-service and money (ADR-057; core, with settings) — §10.2m
+| # | Task | Size |
+|---|---|---|
+| 9c.1 | Docs: ADR-057, PLAN, SPEC 1.11, CA_REVIEW question 47 | S |
+| 9c.2 | Delivery: the shop confirms in its app; delivery codes (made at dispatch, sent with the dispatch message, entered by the delivery person, wrong-code lock; delivered without the code with a reason); settings | M |
+| 9c.3 | Return requests: model, the shop's API (ask, cancel), staff approve (issues the return credit note) or reject, messages, dashboard tile, settings | L |
+| 9c.4 | Cheque bounce charge: setting, the ledger debit on bounce, the message, the receipt and statement | S |
+| 9c.5 | Demo data and a speed check — **backend checkpoint** | S |
+| 9c.6 | FE: the shop's "Received" and delivery code; staff delivery with the code | M |
+| 9c.7 | FE: return requests (shop: ask and follow; staff: list, approve, reject; dashboard tile) | L |
+| 9c.8 | FE: the bounce charge setting and where it shows | S |
+| 9c.9 | E2E, responsive, flags-off proof — **final review** | M |
 
 #### 9d — AI foundation and semantic search (flag `ai`)
 `apps/ai`: provider abstraction, per-tenant usage tracking and limits, graceful degradation; semantic product search (pgvector; Hindi/English mix and typos; falls back to today's search).
@@ -2105,6 +2115,14 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | 6 | Schemes | Buy N get M (same or another product), repeat or once, cap, audience like discount rules, dates; best scheme per product; flag `free_goods` |
 | 7 | Stock **[assumed]** | Free lines reserve and backorder like any line; capped to stock when backorders are off; shrink with the bought line |
 | 8 | Tax **[assumed, CA 41–45]** | Free line at ₹0, no GST, HSN and quantity shown; returns may take free units back at ₹0 |
+
+### 10.2m Phase 9c decisions (2026-10-02, ADR-057; built without stopping, **[assumed]** items for the owner to review)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Shop confirms delivery **[assumed default on]** | One tap per dispatched shipment, same effect as staff marking it delivered; no partial confirmation (returns cover problems) |
+| 2 | Delivery code **[assumed default off]** | 4 digits per shipment at dispatch; shown to the shop and sent with the dispatch message; 5 wrong tries lock it for 15 minutes; staff may deliver without it with a reason (audited) |
+| 3 | Return requests **[assumed]** | On by default, within 30 days of the invoice; reasons as for credit notes; staff approve (choose what happened to the goods, may lower quantities) or reject with a reason; approval issues the credit note |
+| 4 | Bounce charge **[assumed, CA 47]** | ₹0 (off) by default; a non-GST debit adjustment on bounce, due at once, on the statement and the bounced receipt; removed with a manual credit if needed |
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.

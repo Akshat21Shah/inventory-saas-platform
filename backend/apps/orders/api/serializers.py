@@ -141,9 +141,36 @@ class FulfilmentSerializer(serializers.ModelSerializer[Fulfilment]):
             "lr_number",
             "distance_km",
             "cancelled_reason",
+            "needs_delivery_code",
+            "delivered_via",
+            "delivery_note",
             "lines",
         )
         read_only_fields: tuple[str, ...] = fields
+
+    needs_delivery_code = serializers.SerializerMethodField(
+        help_text="The shop's delivery code (never shown to staff) is needed to deliver it."
+    )
+    delivered_via = serializers.ChoiceField(
+        choices=Fulfilment.DeliveredVia.choices,
+        allow_blank=True,
+        read_only=True,
+        help_text="How the delivery was confirmed; blank until delivered.",
+    )
+
+    def get_needs_delivery_code(self, obj: Fulfilment) -> bool:
+        return bool(obj.delivery_code) and obj.status == Fulfilment.Status.DISPATCHED
+
+
+class DeliverSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField(max_length=4, required=False, allow_blank=True, default="")
+    reason = serializers.CharField(
+        max_length=300,
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Why it was delivered without the shop's delivery code.",
+    )
 
 
 class OrderInvoiceSerializer(serializers.Serializer[Any]):

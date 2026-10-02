@@ -927,6 +927,13 @@ export function PaymentDetailPage({ paymentId }: { paymentId: string }) {
     ...(payment.reversal_reason
       ? ([[t("reversalReason"), payment.reversal_reason]] as [string, ReactNode][])
       : []),
+    // ADR-057: the charge added to the shop's account when this cheque bounced.
+    ...(payment.bounce_charge
+      ? ([[t("bounceCharge"), <MoneyText key="bc" value={payment.bounce_charge} />]] as [
+          string,
+          ReactNode,
+        ][])
+      : []),
   ];
   return (
     <>

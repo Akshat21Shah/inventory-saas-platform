@@ -192,6 +192,23 @@ describe("A payment", () => {
     }
     expect(screen.queryByRole("button", { name: "Cheque bounced" })).toBeNull(); // payments.reverse
   });
+
+  it("shows the charge added when the cheque bounced (ADR-057)", async () => {
+    mockApi({
+      "/api/v1/payments/p1/": () => [
+        200,
+        {
+          ...payment,
+          status: "BOUNCED",
+          reversal_reason: "Insufficient funds",
+          bounce_charge: "500.00",
+        },
+      ],
+    });
+    renderWithIntl(<PaymentDetailPage paymentId="p1" />);
+    const label = await screen.findByText("Cheque bounce charge");
+    expect(label.parentElement).toHaveTextContent("₹500.00");
+  });
 });
 
 describe("Collections to hand over", () => {

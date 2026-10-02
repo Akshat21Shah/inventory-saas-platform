@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   ShoppingCart,
   Truck,
+  Undo2,
   UserX,
   Wallet,
   type LucideIcon,
@@ -197,6 +198,16 @@ function useTiles(action: DashboardAction): Tile[] {
           detail: t("latePurchaseOrdersBody"),
           icon: Truck,
           urgent: true,
+        },
+    // ADR-057: return requests from shops waiting for a decision.
+    action.return_requests === null || action.return_requests === undefined
+      ? null
+      : {
+          key: "returnRequests",
+          href: "/manage/invoices/returns",
+          label: t("returnRequests"),
+          value: action.return_requests,
+          icon: Undo2,
         },
     // ADR-056: shops that stopped ordering, are slowing or never ordered, not contacted lately.
     action.win_back === null || action.win_back === undefined

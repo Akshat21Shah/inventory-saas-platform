@@ -72,9 +72,10 @@ EVENTS: dict[str, Event] = {
         Event("order.short_supplied", "Less supplied than ordered", "orders",
               variables=(*_ORDER, "items")),
         Event("order.dispatched", "Order dispatched (the invoice goes with it)", "orders",
-              variables=(*_ORDER, "shipment", "vehicle")),
+              variables=(*_ORDER, "shipment", "vehicle", "delivery_code")),
         Event("order.dispatched_after_invoice", "Order dispatched (invoiced earlier)", "orders",
-              variables=(*_ORDER, "shipment", "vehicle", "transporter", "lr_number")),
+              variables=(*_ORDER, "shipment", "vehicle", "transporter", "lr_number",
+                         "delivery_code")),
         Event("order.delivered", "Order delivered", "orders", variables=(*_ORDER, "shipment")),
         Event("order.completed", "Order complete", "orders", variables=_ORDER),
         Event("backorder.proposed", "Arriving stock ready to allocate", "backorders",
@@ -96,6 +97,15 @@ EVENTS: dict[str, Event] = {
               variables=("distributor", "shop", "invoice_number", "total", "due_date",
                          "order_number", "document_link", "link"),
               document=DocumentLink.Kind.INVOICE),
+        # ADR-057 item 3: shop return requests.
+        Event("return.requested", "A shop asked to return goods", "billing",
+              variables=("distributor", "shop", "number", "invoice_number", "items", "reason",
+                         "link"), shop_facing=False),
+        Event("return.approved", "Return approved", "billing",
+              variables=("distributor", "shop", "number", "invoice_number",
+                         "credit_note_number", "total", "link")),
+        Event("return.rejected", "Return not accepted", "billing",
+              variables=("distributor", "shop", "number", "invoice_number", "decision", "link")),
         Event("credit_note.issued", "Credit note issued", "billing",
               variables=("distributor", "shop", "credit_note_number", "total", "invoice_number",
                          "reason", "document_link", "link"),
@@ -133,7 +143,8 @@ EVENTS: dict[str, Event] = {
                          "link")),
         Event("payment.bounced", "Cheque bounced", "payments",
               variables=("distributor", "shop", "receipt_number", "amount", "cheque_number",
-                         "cheque_date", "reason", "balance", "document_link", "link"),
+                         "cheque_date", "reason", "bounce_charge", "balance", "document_link",
+                         "link"),
               document=DocumentLink.Kind.RECEIPT),
         Event("payment.reversed", "Payment reversed (entered in error)", "payments",
               variables=("distributor", "shop", "receipt_number", "amount", "reason", "link")),
@@ -218,6 +229,9 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("stock.alert_opened", ST, (IN,), "stock.inward"),
     Rule("invoice.issued", S, (IN, WA, EM), compulsory=True),
     Rule("credit_note.issued", S, (IN, WA, EM), compulsory=True),
+    Rule("return.requested", ST, (IN,), "invoices.manage"),
+    Rule("return.approved", S, (IN,)),
+    Rule("return.rejected", S, (IN,)),
     Rule("invoice.cancelled", S, (IN, EM)),  # Phase 7 backend checkpoint, change 3
     Rule("einvoice.failed", ST, (IN, EM), "compliance.manage"),
     # Phase 7 backend checkpoint, change 4: at once, whatever the hour (urgent).
@@ -329,13 +343,13 @@ SHOP_TEXTS: dict[str, dict[str, Text]] = {
         WA: Text("", f"{D}: less than ordered was packed on {{{{ order_number }}}}: {{{{ items }}}}.", ("distributor", "order_number", "items")),
     },
     "order.dispatched": {
-        IN: Text("Order {{ order_number }} is on its way", "Shipment {{ shipment }} of order {{ order_number }} left the warehouse{{ vehicle }}."),
-        EM: Text("Order {{ order_number }} is on its way", "{{ distributor }} dispatched shipment {{ shipment }} of order {{ order_number }}{{ vehicle }}.\n\n{{ link }}"),
+        IN: Text("Order {{ order_number }} is on its way", "Shipment {{ shipment }} of order {{ order_number }} left the warehouse{{ vehicle }}.{{ delivery_code }}"),
+        EM: Text("Order {{ order_number }} is on its way", "{{ distributor }} dispatched shipment {{ shipment }} of order {{ order_number }}{{ vehicle }}.{{ delivery_code }}\n\n{{ link }}"),
         WA: Text("", f"{D}: your order {{{{ order_number }}}} is on its way (shipment {{{{ shipment }}}}).", ("distributor", "order_number", "shipment")),
     },
     "order.dispatched_after_invoice": {
-        IN: Text("Order {{ order_number }} is on its way", "Shipment {{ shipment }} of order {{ order_number }} left the warehouse{{ vehicle }}."),
-        EM: Text("Order {{ order_number }} is on its way", "{{ distributor }} dispatched shipment {{ shipment }} of order {{ order_number }}{{ vehicle }}. Transporter {{ transporter }}, LR {{ lr_number }}.\n\n{{ link }}"),
+        IN: Text("Order {{ order_number }} is on its way", "Shipment {{ shipment }} of order {{ order_number }} left the warehouse{{ vehicle }}.{{ delivery_code }}"),
+        EM: Text("Order {{ order_number }} is on its way", "{{ distributor }} dispatched shipment {{ shipment }} of order {{ order_number }}{{ vehicle }}. Transporter {{ transporter }}, LR {{ lr_number }}.{{ delivery_code }}\n\n{{ link }}"),
         WA: Text("", f"{D}: your order {{{{ order_number }}}} is on its way (shipment {{{{ shipment }}}}{{{{ vehicle }}}}).", ("distributor", "order_number", "shipment", "vehicle")),
     },
     "order.delivered": {
@@ -368,6 +382,16 @@ SHOP_TEXTS: dict[str, dict[str, Text]] = {
         EM: Text("Bill {{ invoice_number }} cancelled", "Your bill {{ invoice_number }} from {{ distributor }} was cancelled. {{ note }}\n\nSee it here: {{ link }}"),
         WA: Text("", f"{D}: your bill {{{{ invoice_number }}}} was cancelled. {{{{ note }}}}", ("distributor", "invoice_number", "note")),
     },
+    "return.approved": {
+        IN: Text("Return {{ number }} approved", "Your return from bill {{ invoice_number }} was approved: credit note {{ credit_note_number }} for {{ total }}."),
+        EM: Text("Return {{ number }} approved", "{{ distributor }} approved your return from bill {{ invoice_number }}: credit note {{ credit_note_number }} for {{ total }}.\n\n{{ link }}"),
+        WA: Text("", f"{D}: your return {{{{ number }}}} was approved: credit note {{{{ credit_note_number }}}} for {{{{ total }}}}.", ("distributor", "number", "credit_note_number", "total")),
+    },
+    "return.rejected": {
+        IN: Text("Return {{ number }} not accepted", "Your return from bill {{ invoice_number }} wasn't accepted: {{ decision }}"),
+        EM: Text("Return {{ number }} not accepted", "{{ distributor }} didn't accept your return from bill {{ invoice_number }}: {{ decision }}\n\n{{ link }}"),
+        WA: Text("", f"{D}: your return {{{{ number }}}} wasn't accepted: {{{{ decision }}}}", ("distributor", "number", "decision")),
+    },
     "credit_note.issued": {
         IN: Text("Credit note {{ credit_note_number }}: {{ total }}", "You were credited {{ total }} against bill {{ invoice_number }} ({{ reason }})."),
         EM: Text("Credit note {{ credit_note_number }} from {{ distributor }}", "You were credited {{ total }} against bill {{ invoice_number }} ({{ reason }}).\n\nDownload it: {{ document_link }}"),
@@ -384,8 +408,8 @@ SHOP_TEXTS: dict[str, dict[str, Text]] = {
         WA: Text("", f"{D}: your cheque {{{{ cheque_number }}}} for {{{{ amount }}}} cleared.", ("distributor", "cheque_number", "amount")),
     },
     "payment.bounced": {
-        IN: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}). The bills it paid are due again. Your balance: {{ balance }}."),
-        EM: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}). The bills it paid are due again. Your balance: {{ balance }}.\n\n{{ document_link }}"),
+        IN: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}).{{ bounce_charge }} The bills it paid are due again. Your balance: {{ balance }}."),
+        EM: Text("Cheque {{ cheque_number }} bounced", "Your cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}).{{ bounce_charge }} The bills it paid are due again. Your balance: {{ balance }}.\n\n{{ document_link }}"),
         WA: Text("", f"{D}: your cheque {{{{ cheque_number }}}} dated {{{{ cheque_date }}}} for {{{{ amount }}}} bounced ({{{{ reason }}}}). The bills it paid are due again. Your balance: {{{{ balance }}}}.", ("distributor", "cheque_number", "cheque_date", "amount", "reason", "balance")),
     },
     "payment.reversed": {
@@ -472,6 +496,11 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
         IN: Text("Waiting items held for {{ shop }}", "{{ quantity }} {{ product }} for {{ order_number }} was not allocated: {{ shop }} is blocked."),
         EM: Text("Waiting items held for {{ shop }}", "{{ quantity }} {{ product }} for {{ order_number }} was not allocated: {{ shop }} is blocked.\n\n{{ link }}"),
         WA: Text("", f"{D}: {{{{ product }}}} for {{{{ order_number }}}} held: {{{{ shop }}}} is blocked.", ("distributor", "product", "order_number", "shop")),
+    },
+    "return.requested": {
+        IN: Text("{{ shop }} wants to return goods", "{{ shop }} asked to return {{ items }} from bill {{ invoice_number }} ({{ reason }}). Request {{ number }}."),
+        EM: Text("{{ shop }} wants to return goods", "{{ shop }} asked to return {{ items }} from bill {{ invoice_number }} ({{ reason }}). Request {{ number }}.\n\n{{ link }}"),
+        WA: Text("", f"{D}: {{{{ shop }}}} asked to return goods from bill {{{{ invoice_number }}}} (request {{{{ number }}}}).", ("distributor", "shop", "invoice_number", "number")),
     },
     "backorder.cancelled_by_shop": {
         IN: Text("{{ shop }} cancelled waiting items", "{{ shop }} cancelled {{ quantity }} {{ product }} on {{ order_number }}."),
@@ -584,6 +613,16 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
         "Bill {{ invoice_number }} for {{ shop }}'s order {{ order_number }}: {{ total }}, due {{ due_date }}.",
         "{{ distributor }}: bill {{ invoice_number }} for {{ shop }}: {{ total }}, due {{ due_date }}.",
     ),
+    "return.approved": _pair(
+        "Return {{ number }} approved",
+        "{{ shop }}'s return {{ number }} from bill {{ invoice_number }} was approved: credit note {{ credit_note_number }} for {{ total }}.",
+        "{{ distributor }}: {{ shop }}'s return {{ number }} was approved.",
+    ),
+    "return.rejected": _pair(
+        "Return {{ number }} not accepted",
+        "{{ shop }}'s return {{ number }} from bill {{ invoice_number }} wasn't accepted: {{ decision }}",
+        "{{ distributor }}: {{ shop }}'s return {{ number }} wasn't accepted.",
+    ),
     "credit_note.issued": _pair(
         "Credit note {{ credit_note_number }} for {{ shop }}",
         "{{ shop }} was credited {{ total }} against bill {{ invoice_number }} ({{ reason }}).",
@@ -601,7 +640,7 @@ STAFF_TEXTS: dict[str, dict[str, Text]] = {
     ),
     "payment.bounced": _pair(
         "{{ shop }}'s cheque {{ cheque_number }} bounced",
-        "{{ shop }}'s cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}). The bills it paid are due again; balance {{ balance }}.",
+        "{{ shop }}'s cheque {{ cheque_number }} dated {{ cheque_date }} for {{ amount }} bounced ({{ reason }}).{{ bounce_charge }} The bills it paid are due again; balance {{ balance }}.",
         "{{ distributor }}: {{ shop }}'s cheque {{ cheque_number }} for {{ amount }} bounced ({{ reason }}). Balance {{ balance }}.",
     ),
     "payment.reversed": _pair(

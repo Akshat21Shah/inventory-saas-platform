@@ -94,6 +94,11 @@ def test_seed_is_idempotent(settings):
         assert ShopActivity.objects.filter(segment=Segment.NEVER_ORDERED).exists()
     with tenant_context(patel.id):
         assert not FreeGoodsScheme.objects.exists() and ShopActivity.objects.exists()
+    # Phase 9c: a return request waiting at Sharma.
+    from apps.billing.models import ReturnRequest
+
+    with tenant_context(sharma.id):
+        assert list(ReturnRequest.objects.values_list("status", flat=True)) == ["REQUESTED"]
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):
@@ -206,9 +211,11 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "purchase_order",
         "draft_purchase_order",
         "free_goods_scheme",
+        "return_request",
     }
     assert ids["supplier"] and ids["purchase_order"] and ids["draft_purchase_order"]  # 9a
     assert ids["free_goods_scheme"]  # 9b
+    assert ids["return_request"]  # 9c
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]
     assert ids["invoice"] and ids["credit_note"] and ids["payment"] and ids["refund"]  # billing
@@ -262,3 +269,30 @@ def test_seed_fills_every_order_tab_once(settings):
             assert BackorderAllocation.objects.filter(status="PROPOSED").count() == 1
             assert Order.objects.exclude(retailer_note="").exists()
         check_order_invariants(tenant)
+
+
+def test_e2e_dispatch_sends_a_shipment_with_or_without_a_code(settings, capsys):
+    """The delivery E2E's helper (ADR-057): a shipment on its way to Ganesh Kirana."""
+    import json
+
+    from apps.orders.models import Fulfilment
+
+    settings.DEBUG = True
+    call_command("seed", "--no-photos")
+    capsys.readouterr()
+    call_command("e2e_dispatch")
+    plain = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    call_command("e2e_dispatch", "--with-code")
+    coded = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert plain["code"] == "" and len(coded["code"]) == 4
+    sharma = Tenant.objects.get(slug="sharma")
+    with tenant_context(sharma.id):
+        statuses = set(
+            Fulfilment.objects.filter(pk__in=[plain["shipment"], coded["shipment"]]).values_list(
+                "status", flat=True
+            )
+        )
+        assert statuses == {"DISPATCHED"}
+        from apps.platform.selectors import get_setting
+
+        assert get_setting("orders.delivery_code", sharma.id) is False  # restored

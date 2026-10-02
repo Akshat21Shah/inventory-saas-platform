@@ -17,6 +17,7 @@ import type { InvoiceTriggerEnum } from './invoiceTriggerEnum';
 import type { OrderRef } from './orderRef';
 import type { PdfStatusEnum } from './pdfStatusEnum';
 import type { Place } from './place';
+import type { ReturnRequest } from './returnRequest';
 import type { ShopRef } from './shopRef';
 import type { SupplyTypeEnum } from './supplyTypeEnum';
 import type { Totals } from './totals';
@@ -70,4 +71,5 @@ export interface InvoiceDetail {
   ack_date: string | null;
   readonly einvoice: EInvoiceSummary | null;
   readonly ewaybill: EWayBillSummary | null;
+  readonly return_requests: readonly ReturnRequest[];
 }

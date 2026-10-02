@@ -29,6 +29,7 @@ export const STAFF_PAGES: Destination[] = [
   { key: "retailers", href: "/manage/retailers", permission: "retailers.view" },
   { key: "newRetailer", href: "/manage/retailers/new", permission: "retailers.manage" },
   { key: "shopActivity", href: "/manage/retailers/activity", permission: "retailers.view" },
+  { key: "returnRequests", href: "/manage/invoices/returns", permission: "invoices.view" },
   { key: "priceLists", href: "/manage/pricing/price-lists", permission: "pricing.view" },
   { key: "discounts", href: "/manage/pricing/discounts", permission: "pricing.view" },
   { key: "specialPrices", href: "/manage/pricing/special-prices", permission: "pricing.view" },

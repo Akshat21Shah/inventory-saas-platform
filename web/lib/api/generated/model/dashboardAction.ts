@@ -46,4 +46,9 @@ export interface DashboardAction {
      * @nullable
      */
   win_back: number | null;
+  /**
+     * Return requests from shops waiting for a decision (ADR-057).
+     * @nullable
+     */
+  return_requests: number | null;
 }

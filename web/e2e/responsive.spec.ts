@@ -47,6 +47,7 @@ interface Ids {
   purchase_order: string | null;
   draft_purchase_order: string | null;
   free_goods_scheme: string | null;
+  return_request: string | null;
 }
 
 function pages(ids: Ids) {
@@ -64,6 +65,8 @@ function pages(ids: Ids) {
     "/manage/invoices/credit-notes/new",
     ...(ids.invoice ? [`/manage/invoices/credit-notes/new?invoice=${ids.invoice}`] : []),
     ...(ids.credit_note ? [`/manage/invoices/credit-notes/${ids.credit_note}`] : []),
+    "/manage/invoices/returns",
+    ...(ids.return_request ? [`/manage/invoices/returns/${ids.return_request}`] : []),
     "/manage/invoices/einvoices",
     "/manage/invoices/ewaybills",
     ...(ids.ewaybill_invoice ? [`/manage/invoices/${ids.ewaybill_invoice}`] : []),

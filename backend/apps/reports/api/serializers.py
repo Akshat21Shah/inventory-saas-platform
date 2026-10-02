@@ -131,6 +131,9 @@ class DashboardActionSerializer(serializers.Serializer[Any]):
         help_text="Shops to win back (ADR-056): slowing, stopped or never ordered, not contacted "
         "lately.",
     )
+    return_requests = serializers.IntegerField(
+        allow_null=True, help_text="Return requests from shops waiting for a decision (ADR-057)."
+    )
 
 
 class DashboardTodaySerializer(serializers.Serializer[Any]):

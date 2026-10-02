@@ -275,7 +275,9 @@
     "REFUND_EXCEEDS_CREDIT": "This is more than the shop's credit balance.",
     "GST_CREDENTIALS_NOT_READY": "Enter your GST provider credentials in Settings and check them first.",
     "PAYMENT_GATEWAY_NOT_READY": "Online payments aren't set up yet. Try again later or pay another way.",
-    "PAYMENT_GATEWAY_UNAVAILABLE": "Payment service is busy, please try again in a minute."
+    "PAYMENT_GATEWAY_UNAVAILABLE": "Payment service is busy, please try again in a minute.",
+    "WRONG_DELIVERY_CODE": "That isn't the shop's delivery code. Check it with the shop.",
+    "DELIVERY_CODE_LOCKED": "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code and say why."
   },
   "designSystem": {
     "title": "Design system",
@@ -425,6 +427,14 @@
         "label": "Staff can order for retailers",
         "description": "Allow your staff (for example salesmen) to place orders for retailers."
       },
+      "shop_confirms_delivery": {
+        "label": "Shops confirm delivery",
+        "description": "Let shops mark a dispatched shipment as received in their app."
+      },
+      "delivery_code": {
+        "label": "Delivery code",
+        "description": "Give each shipment a 4-digit code at dispatch. The shop gives it to the delivery person, who enters it to mark the shipment delivered."
+      },
       "sales_visibility": {
         "label": "What sales staff can see",
         "description": "Which orders and retailers sales staff can see.",
@@ -525,6 +535,10 @@
       "sales_can_collect": {
         "label": "Sales staff can collect payments",
         "description": "Let sales staff record payments they collect from their shops (tracked until handed over)."
+      },
+      "cheque_bounce_charge": {
+        "label": "Cheque bounce charge",
+        "description": "Charge a shop this amount when its cheque bounces; ₹0 charges nothing. It is added to the shop's account, due at once, without GST."
       }
     },
     "receivables": {
@@ -785,6 +799,16 @@
       "contact_snooze_days": {
         "label": "After a contact, leave the list for (days)",
         "description": "After someone contacts a shop, it leaves the win-back list for this many days."
+      }
+    },
+    "returns": {
+      "shop_requests": {
+        "label": "Shops ask for returns in the app",
+        "description": "Let shops ask for returns from their app. You approve each one, which issues the credit note."
+      },
+      "request_days": {
+        "label": "Days to ask for a return",
+        "description": "How many days after a bill a shop can ask to return goods from it."
       }
     }
   },
@@ -2409,7 +2433,12 @@
       },
       "onHoldOverdue": "You have overdue bills, so your distributor will approve this order before accepting it.",
       "documents": "Bills and documents",
-      "confirmation": "Order Confirmation"
+      "confirmation": "Order Confirmation",
+      "codeIntro": "When the goods arrive, give this code to the delivery person:",
+      "codeLabel": "Delivery code {code}",
+      "received": "I received it",
+      "receivedTitle": "Did you receive shipment {number}?",
+      "receivedBody": "Tap only when the goods are with you. To return something, open the bill."
     },
     "live": {
       "order_accepted": "Order {number} was accepted.",
@@ -2590,6 +2619,30 @@
       "addMore": "Add {qty} more to get {free} free",
       "badge": "Free",
       "under": "with {scheme}"
+    },
+    "returns": {
+      "open": "Return items",
+      "title": "Return items",
+      "body": "Choose what you want to return and why. Your distributor checks and confirms it.",
+      "upTo": "up to {qty} {unit}",
+      "reason": "Why",
+      "reasons": {
+        "DAMAGED": "Damaged",
+        "EXPIRED": "Expired",
+        "WRONG_ITEM": "Wrong item",
+        "EXCESS_SUPPLY": "Sent more than ordered",
+        "OTHER": "Other"
+      },
+      "note": "Note",
+      "noteHint": "Optional; needed for Other.",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sent": "Sent. Your distributor will check it.",
+      "heading": "Returns",
+      "why": "Not accepted: {reason}",
+      "credited": "Credit note {number} issued",
+      "withdraw": "Withdraw",
+      "withdrawTitle": "Withdraw return {number}?"
     }
   },
   "filters": {
@@ -2978,7 +3031,12 @@
     "BACKORDER_ALLOCATED": "Waiting items are being sent",
     "BACKORDER_CANCELLED": "Waiting items cancelled",
     "COMPLETE": "Completed",
-    "TAKE_BACK": "Goods taken back"
+    "TAKE_BACK": "Goods taken back",
+    "deliveredVia": {
+      "SHOP": "Confirmed by the shop",
+      "CODE": "With the shop's delivery code",
+      "NO_CODE": "Without the delivery code"
+    }
   },
   "orders": {
     "nav": {
@@ -3117,7 +3175,20 @@
       "priceUp": "Price went up from {before} to {now}",
       "distance": "Distance (km)",
       "distanceHint": "Road distance for the e-way bill; from the shop's address when it has one. A new distance is kept for the shop if it had none.",
-      "km": "{km} km"
+      "km": "{km} km",
+      "needsCode": "Needs the shop's delivery code to mark it delivered.",
+      "deliveredVia": {
+        "STAFF": "Marked delivered by your team",
+        "CODE": "Delivered with the shop's code",
+        "NO_CODE": "Delivered without the shop's code",
+        "SHOP": "Confirmed by the shop"
+      },
+      "code": "Shop's delivery code",
+      "codeBody": "Ask the shop for its 4-digit delivery code.",
+      "withoutCode": "Deliver without the code",
+      "withoutCodeBody": "Say why it was delivered without the shop's code. This is recorded.",
+      "withoutCodeReason": "Why without the code",
+      "useCode": "Use the code"
     },
     "shipments": {
       "title": "Shipments",
@@ -3254,7 +3325,8 @@
       "paymentSettings": "Credit & payment settings",
       "einvoices": "E-invoices",
       "ewaybills": "E-way bills",
-      "checkouts": "Online checkouts"
+      "checkouts": "Online checkouts",
+      "returns": "Returns"
     },
     "invoices": {
       "title": "Invoices",
@@ -3303,7 +3375,8 @@
       "einvoice": "E-invoice",
       "allEinvoice": "Any e-invoice status",
       "cancelledBanner": "This invoice is cancelled: its IRN was cancelled and it owes nothing.",
-      "reissuedAs": "Re-issued as {number}"
+      "reissuedAs": "Re-issued as {number}",
+      "returnRequests": "Return requests"
     },
     "totals": {
       "taxable": "Taxable value",
@@ -3543,7 +3616,8 @@
         "reviewNoteHint": "Optional: what you checked or did (for example, the shop paid the rest in cash).",
         "needsReview": "This online payment needs a look: {reason}",
         "gatewayPayment": "Gateway payment ID",
-        "reviewedAt": "Reviewed"
+        "reviewedAt": "Reviewed",
+        "bounceCharge": "Cheque bounce charge"
       },
       "needsReviewOnly": "Needs review only"
     },
@@ -3781,6 +3855,49 @@
         "search": "Search",
         "allStatuses": "All statuses"
       }
+    },
+    "returns": {
+      "title": "Return requests",
+      "description": "Shops ask to return goods from their bills. Approving issues the return credit note.",
+      "number": "Request",
+      "shop": "Shop",
+      "bill": "Bill",
+      "items": "Items",
+      "reason": "Reason",
+      "asked": "Asked",
+      "status": "Status",
+      "search": "Search return requests",
+      "searchPlaceholder": "Request, bill or shop",
+      "waiting": "Waiting for you",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled by the shop",
+      "anyStatus": "Any status",
+      "noneWaitingTitle": "Nothing to decide",
+      "noneWaitingBody": "Return requests from shops show here.",
+      "emptyTitle": "No return requests",
+      "emptyBody": "Try another status or search.",
+      "decide": "Decide",
+      "askedOf": "Asked {qty} of {invoiced} {unit}",
+      "approveQty": "Quantity to credit for {name}",
+      "whatHappened": "What happened to {name}",
+      "dispositions": {
+        "RETURN_TO_STOCK": "Return to stock",
+        "DAMAGED": "Received damaged",
+        "NOT_RETURNED": "Not physically returned"
+      },
+      "approve": "Approve",
+      "approveTitle": "Approve {number}?",
+      "approveBody": "A return credit note is issued for these quantities and the shop is told.",
+      "approvedToast": "Approved. The credit note is issued.",
+      "reject": "Reject",
+      "rejectTitle": "Reject {number}?",
+      "rejectBody": "The shop sees your reason.",
+      "rejectReason": "Why",
+      "rejectedToast": "Rejected. The shop is told why.",
+      "back": "Return requests",
+      "creditNote": "Credit note",
+      "askedApproved": "Asked {asked}, credited {approved}"
     }
   },
   "paymentStatus": {
@@ -3858,7 +3975,10 @@
       "report_failed": "Report could not be made",
       "purchase_order_sent": "Purchase order sent to the supplier",
       "purchase_order_cancelled": "Purchase order cancelled (to the supplier)",
-      "summary_daily": "Daily summary"
+      "summary_daily": "Daily summary",
+      "return_requested": "A shop asked to return goods",
+      "return_approved": "Return approved",
+      "return_rejected": "Return not accepted"
     },
     "shopEvents": {
       "order_placed": "Order received",
@@ -3887,7 +4007,9 @@
       "refund_reversed": "Refund corrected",
       "payment_reminder": "Payment reminders",
       "retailer_welcome": "Welcome message",
-      "announcement_published": "Announcements from your distributor"
+      "announcement_published": "Announcements from your distributor",
+      "return_approved": "Return approved",
+      "return_rejected": "Return not accepted"
     },
     "groups": {
       "orders": "Orders",
@@ -4911,7 +5033,8 @@
       "latePurchaseOrders": "Purchase orders late",
       "latePurchaseOrdersBody": "Expected before today",
       "winBack": "Shops to win back",
-      "winBackBody": "Stopped ordering, slowing or never ordered"
+      "winBackBody": "Stopped ordering, slowing or never ordered",
+      "returnRequests": "Return requests to decide"
     },
     "today": {
       "title": "Today so far",
@@ -5007,6 +5130,7 @@
       "retailers": "Shops",
       "newRetailer": "Add a shop",
       "shopActivity": "Shop activity",
+      "returnRequests": "Return requests",
       "priceLists": "Price lists",
       "discounts": "Discounts",
       "specialPrices": "Special prices",
@@ -5125,7 +5249,8 @@
       "featureFlags": "modules, features",
       "taxRates": "GST, HSN, tax rates",
       "shopActivity": "win back, stopped ordering, inactive shops, dormant, slowing, not ordering, lost customers",
-      "freeGoods": "schemes, offers, buy one get one, bonus, free items, scheme"
+      "freeGoods": "schemes, offers, buy one get one, bonus, free items, scheme",
+      "returnRequests": "returns, goods back, sales return, return request"
     }
   },
   "purchasing": {
@@ -5602,5 +5727,17 @@
       "noContacts": "No contacts logged yet.",
       "by": "{by} · {when}"
     }
+  },
+  "returnRequestStatus": {
+    "REQUESTED": "Waiting for you",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled by the shop"
+  },
+  "shopReturnStatus": {
+    "REQUESTED": "Waiting for your distributor",
+    "APPROVED": "Approved",
+    "REJECTED": "Not accepted",
+    "CANCELLED": "Withdrawn"
   }
 }

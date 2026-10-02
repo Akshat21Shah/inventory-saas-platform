@@ -11,8 +11,9 @@ from apps.catalog.images import variant_urls
 from apps.catalog.models import ProductImage
 from apps.inventory.availability import LABELS, availability
 from apps.orders.api.quote_serializers import QuoteSerializer
-from apps.orders.api.serializers import OrderSerializer
-from apps.orders.models import Order, OrderStatusHistory
+from apps.orders.api.serializers import FulfilmentSerializer, OrderSerializer
+from apps.orders.models import Fulfilment, Order, OrderStatusHistory
+from apps.platform.selectors import get_setting
 from apps.pricing.api.serializers import SchemeTermsSerializer, money, qty
 
 
@@ -164,8 +165,31 @@ class ShopHistorySerializer(serializers.ModelSerializer[OrderStatusHistory]):
         read_only_fields = fields
 
 
+class ShopFulfilmentSerializer(FulfilmentSerializer):
+    """A shipment as the shop sees it: its delivery code while on its way, and whether it may
+    mark it received (ADR-057)."""
+
+    class Meta(FulfilmentSerializer.Meta):
+        fields = (*FulfilmentSerializer.Meta.fields, "delivery_code", "can_confirm")
+        read_only_fields = fields
+
+    delivery_code = serializers.SerializerMethodField(
+        help_text="Give it to the delivery person (only while the shipment is on its way)."
+    )
+    can_confirm = serializers.SerializerMethodField(help_text="The shop may mark it received.")
+
+    def get_delivery_code(self, obj: Fulfilment) -> str:
+        return obj.delivery_code if obj.status == Fulfilment.Status.DISPATCHED else ""
+
+    def get_can_confirm(self, obj: Fulfilment) -> bool:
+        if obj.status != Fulfilment.Status.DISPATCHED:
+            return False
+        return bool(get_setting("orders.shop_confirms_delivery", obj.tenant_id))
+
+
 class ShopOrderSerializer(OrderSerializer):
     history = ShopHistorySerializer(many=True, read_only=True)  # type: ignore[assignment]
+    fulfilments = ShopFulfilmentSerializer(many=True, read_only=True)
 
 
 class ShopLastOrderSerializer(serializers.Serializer[Any]):

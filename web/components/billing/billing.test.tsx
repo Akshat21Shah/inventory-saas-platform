@@ -54,6 +54,7 @@ const row: InvoiceRow = {
 
 const detail: InvoiceDetail = {
   ...row,
+  return_requests: [],
   rate_differs_from_order: true,
   seller: {},
   buyer: {},

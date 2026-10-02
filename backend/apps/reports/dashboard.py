@@ -59,6 +59,7 @@ def action(user: User) -> dict[str, Any]:
             "to_reorder",
             "late_purchase_orders",
             "win_back",
+            "return_requests",
         )
     )
     if has("orders.view"):
@@ -108,6 +109,11 @@ def action(user: User) -> dict[str, Any]:
         from apps.insights.selectors import win_back_count
 
         out["win_back"] = win_back_count(user)
+    # ADR-057: return requests waiting for a decision.
+    if has("invoices.manage"):
+        from apps.billing.selectors import return_requests_for
+
+        out["return_requests"] = return_requests_for(user).filter(status="REQUESTED").count()
     return out
 
 

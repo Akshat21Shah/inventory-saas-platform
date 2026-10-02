@@ -345,6 +345,12 @@ class Fulfilment(TenantScopedModel):
         INITIAL = "INITIAL", "First shipment"
         BACKORDER = "BACKORDER", "Backorder shipment"
 
+    class DeliveredVia(models.TextChoices):
+        STAFF = "STAFF", "Marked by staff"
+        CODE = "CODE", "With the delivery code"
+        NO_CODE = "NO_CODE", "Without the delivery code"
+        SHOP = "SHOP", "Confirmed by the shop"
+
     class Status(models.TextChoices):
         ALLOCATED = "ALLOCATED", "To pack"
         PACKED = "PACKED", "Packed"
@@ -365,6 +371,16 @@ class Fulfilment(TenantScopedModel):
     dispatched_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
     cancelled_reason = models.CharField(max_length=300, blank=True, default="")
+    # Proof of delivery (ADR-057): a 4-digit code made at dispatch while ⚙ orders.delivery_code is
+    # on, shown only to the shop; wrong tries lock it for a while. How the delivery was confirmed,
+    # and why when without the code.
+    delivery_code = models.CharField(max_length=4, blank=True, default="")
+    delivery_code_failures = models.PositiveSmallIntegerField(default=0)
+    delivery_code_locked_until = models.DateTimeField(null=True, blank=True)
+    delivered_via = models.CharField(
+        max_length=8, choices=DeliveredVia.choices, blank=True, default=""
+    )
+    delivery_note = models.CharField(max_length=300, blank=True, default="")
 
     class Meta:
         ordering = ["created_at", "id"]

@@ -28,6 +28,8 @@ class ErrorCode(StrEnum):
     INVALID_STATE_TRANSITION = "INVALID_STATE_TRANSITION"
     MODULE_NOT_ENABLED = "MODULE_NOT_ENABLED"  # an optional module that is switched off
     OVER_RECEIPT = "OVER_RECEIPT"  # more received than ordered, beyond the tolerance (ADR-053)
+    WRONG_DELIVERY_CODE = "WRONG_DELIVERY_CODE"  # not the shipment's delivery code (ADR-057)
+    DELIVERY_CODE_LOCKED = "DELIVERY_CODE_LOCKED"  # too many wrong codes for now (ADR-057)
     # authentication & sessions
     INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
     RATE_LIMITED = "RATE_LIMITED"

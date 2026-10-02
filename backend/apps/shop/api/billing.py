@@ -10,14 +10,17 @@ from rest_framework.pagination import CursorPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.billing import documents
+from apps.accounts.models import User
+from apps.billing import documents, returns
 from apps.billing import selectors as billing
 from apps.billing.api.serializers import (
     DocumentLinkSerializer,
     InvoiceRowSerializer,
+    ReturnRequestCreateSerializer,
+    ReturnRequestSerializer,
     ShopInvoiceDetailSerializer,
 )
-from apps.billing.models import CreditNote, Invoice, OrderConfirmation
+from apps.billing.models import CreditNote, Invoice, OrderConfirmation, ReturnRequest
 from apps.ledger import selectors as ledger
 from apps.ledger.api.serializers import BucketsSerializer, PositionSerializer, StatementSerializer
 from apps.ledger.api.views import statement_for
@@ -200,3 +203,64 @@ class ShopOrderConfirmationView(ShopView):
             raise NotFound()
         body, status = documents.link(confirmation.pdf_key, confirmation.pdf_status)
         return Response(body, status=status)
+
+
+# --- Return requests (ADR-057 item 3) -------------------------------------------------------------
+
+
+class ShopReturnRequestsView(ShopView):
+    pagination_class = Newest
+
+    @extend_schema(
+        operation_id="shop_return_requests_list",
+        tags=TAGS,
+        parameters=[
+            OpenApiParameter("cursor", str, required=False),
+            OpenApiParameter("page_size", int, required=False),
+        ],
+        responses=ReturnRequestSerializer(many=True),
+    )
+    def get(self, request: Request) -> Response:
+        qs = (
+            ReturnRequest.objects.filter(retailer=_retailer(request))
+            .select_related("retailer", "invoice", "credit_note")
+            .prefetch_related("lines__invoice_line")
+        )
+        paginator = Newest()
+        page = paginator.paginate_queryset(qs, request, view=self) or []
+        return paginator.get_paginated_response(ReturnRequestSerializer(page, many=True).data)
+
+    @extend_schema(
+        operation_id="shop_return_requests_create",
+        tags=TAGS,
+        request=ReturnRequestCreateSerializer,
+        responses={201: ReturnRequestSerializer},
+    )
+    def post(self, request: Request) -> Response:
+        data = ReturnRequestCreateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        retailer = _retailer(request)
+        user: User = request.user  # type: ignore[assignment]
+        created = returns.request_return(
+            v["invoice"],
+            [returns.AskedLine(row["invoice_line"], row["quantity"]) for row in v["lines"]],
+            reason=v["reason"],
+            note=v["note"],
+            by=user,
+            retailer_id=retailer.pk,
+        )
+        return Response(ReturnRequestSerializer(created).data, status=201)
+
+
+class ShopReturnRequestCancelView(ShopView):
+    @extend_schema(
+        operation_id="shop_return_requests_cancel",
+        tags=TAGS,
+        request=None,
+        responses=ReturnRequestSerializer,
+    )
+    def post(self, request: Request, request_id: UUID) -> Response:
+        user: User = request.user  # type: ignore[assignment]
+        cancelled = returns.cancel_request(request_id, by=user, retailer_id=_retailer(request).pk)
+        return Response(ReturnRequestSerializer(cancelled).data)

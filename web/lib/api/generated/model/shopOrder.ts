@@ -6,11 +6,11 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { BackorderStateEnum } from './backorderStateEnum';
-import type { Fulfilment } from './fulfilment';
 import type { OrderInvoice } from './orderInvoice';
 import type { OrderLine } from './orderLine';
 import type { OrderStatusEnum } from './orderStatusEnum';
 import type { PlacedViaEnum } from './placedViaEnum';
+import type { ShopFulfilment } from './shopFulfilment';
 import type { ShopHistory } from './shopHistory';
 import type { ShopOrderHoldReason } from './shopOrderHoldReason';
 
@@ -55,7 +55,7 @@ export interface ShopOrder {
   /** Products still to be delivered ("N items to follow"). */
   readonly items_to_follow: number;
   readonly lines: readonly OrderLine[];
-  readonly fulfilments: readonly Fulfilment[];
+  readonly fulfilments: readonly ShopFulfilment[];
   readonly invoices: readonly OrderInvoice[];
   /** An Order Confirmation PDF exists (made at acceptance when the setting is on). */
   readonly has_confirmation: boolean;

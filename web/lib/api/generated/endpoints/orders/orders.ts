@@ -32,6 +32,7 @@ import type {
   BackordersListParams,
   CancelShipmentRequest,
   ConfirmAllocationsRequest,
+  DeliverRequest,
   DispatchRequest,
   DocumentLink,
   FulfilmentDetail,
@@ -1007,14 +1008,29 @@ export const getFulfilmentsDeliverUrl = (fulfilmentId: string,) => {
   return `/api/v1/fulfilments/${fulfilmentId}/deliver/`
 }
 
-export const fulfilmentsDeliver = async (fulfilmentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<fulfilmentsDeliverResponse> => {
+export const fulfilmentsDeliver = async (fulfilmentId: string,
+    deliverRequest?: DeliverRequest, options?: Parameters<typeof apiFetch>[1]): Promise<fulfilmentsDeliverResponse> => {
 
-  return apiFetch<fulfilmentsDeliverResponse>(getFulfilmentsDeliverUrl(fulfilmentId),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<fulfilmentsDeliverResponse>(getFulfilmentsDeliverUrl(fulfilmentId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(deliverRequest)
   }
 );}
 
@@ -1039,9 +1055,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof fulfilmentsDeliver>>, FulfilmentsDeliverMutationVariables> = (props) => {
-          const {fulfilmentId} = props ?? {};
+          const {fulfilmentId,data} = props ?? {};
 
-          return  fulfilmentsDeliver(fulfilmentId,requestOptions)
+          return  fulfilmentsDeliver(fulfilmentId,data,requestOptions)
         }
 
 
@@ -1052,9 +1068,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type FulfilmentsDeliverMutationResult = NonNullable<Awaited<ReturnType<typeof fulfilmentsDeliver>>>
-
+    export type FulfilmentsDeliverMutationBody = DeliverRequest | undefined
     export type FulfilmentsDeliverMutationError = unknown
-    export type FulfilmentsDeliverMutationVariables = {fulfilmentId: string}
+    export type FulfilmentsDeliverMutationVariables = {fulfilmentId: string;data?: DeliverRequest}
 
     export const useFulfilmentsDeliver = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof fulfilmentsDeliver>>, TError,FulfilmentsDeliverMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}

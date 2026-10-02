@@ -149,7 +149,7 @@ make migrate     # run migrations (as the schema-owner DB role)
 make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
-make e2e-stack   # acceptance E2E (Phases 1-9b) against the running stack (needs make up + make seed)
+make e2e-stack   # acceptance E2E (Phases 1-9c) against the running stack (needs make up + make seed)
 make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make secrets-scan # gitleaks over the whole git history, every branch (the pre-commit hook checks each commit)

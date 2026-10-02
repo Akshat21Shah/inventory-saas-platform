@@ -247,6 +247,13 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("invoicing.default_payment_terms_days", Group.INVOICING, SettingType.INT, 30,
             "Default credit days for new retailers (each retailer can differ).",
             min_value=0, max_value=365),
+    # ADR-057 item 3: shops ask for returns from their app; staff approve each one.
+    _tenant("returns.shop_requests", Group.INVOICING, SettingType.BOOL, True,
+            "Let shops ask for returns from their app. You approve each one, which issues the "
+            "credit note."),
+    _tenant("returns.request_days", Group.INVOICING, SettingType.INT, 30,
+            "How many days after a bill a shop can ask to return goods from it.",
+            min_value=1, max_value=365, depends_on=DependsOn("returns.shop_requests", True)),
     # --- Tenant: Orders -------------------------------------------------------------------------
     _tenant("orders.acceptance_mode", Group.ORDERS, SettingType.ENUM, "MANUAL",
             "Accept new orders yourself, or automatically when they pass all checks.",
@@ -267,6 +274,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             allowed=("REDUCE_ONLY", "FULL_EDIT"), snapshot_on=_ORDER),
     _tenant("orders.staff_can_place_on_behalf", Group.ORDERS, SettingType.BOOL, True,
             "Allow your staff (for example salesmen) to place orders for retailers."),
+    # ADR-057: delivery confirmed by the shop, and an optional delivery code.
+    _tenant("orders.shop_confirms_delivery", Group.ORDERS, SettingType.BOOL, True,
+            "Let shops mark a dispatched shipment as received in their app."),
+    _tenant("orders.delivery_code", Group.ORDERS, SettingType.BOOL, False,
+            "Give each shipment a 4-digit code at dispatch. The shop gives it to the delivery "
+            "person, who enters it to mark the shipment delivered."),
     _tenant("orders.sales_visibility", Group.ORDERS, SettingType.ENUM, "ALL",
             "Which orders and retailers sales staff can see.",
             allowed=("ALL", "ASSIGNED_RETAILERS")),
@@ -316,6 +329,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    # ADR-057 item 4: an optional charge when a shop's cheque bounces (no GST; CA question 47).
+    _tenant("payments.cheque_bounce_charge", Group.CREDIT_PAYMENTS, SettingType.MONEY,
+            Decimal("0"),
+            "Charge a shop this amount when its cheque bounces; ₹0 charges nothing. It is added "
+            "to the shop's account, due at once, without GST.",
+            min_value=Decimal("0"), max_value=Decimal("100000")),
     _tenant("payments.sales_can_collect", Group.CREDIT_PAYMENTS, SettingType.BOOL, True,
             "Let sales staff record payments they collect from their shops (tracked until handed "
             "over)."),

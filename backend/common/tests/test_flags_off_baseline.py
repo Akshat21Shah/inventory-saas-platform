@@ -133,6 +133,37 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.shop-invoice.lines.scheme_name": "",
     "api.credit-note.lines.is_free": False,
     "api.credit-note.lines.scheme_name": "",
+    # ADR-057 (core): how a delivery was confirmed (staff in the baseline), no delivery codes
+    # (off by default), and whether the shop may confirm (on by default).
+    "db.orders.Fulfilment.delivery_code": "",
+    "db.orders.Fulfilment.delivery_code_failures": 0,
+    "db.orders.Fulfilment.delivery_code_locked_until": None,
+    "db.orders.Fulfilment.delivered_via": lambda v: v in ("", "STAFF"),
+    "db.orders.Fulfilment.delivery_note": "",
+    "db.orders.OrderStatusHistory.payload.via": "STAFF",
+    "api.fulfilment.delivered_via": lambda v: v in ("", "STAFF"),
+    "api.fulfilment.delivery_note": "",
+    "api.fulfilment.needs_delivery_code": False,
+    "api.order.fulfilments.delivered_via": lambda v: v in ("", "STAFF"),
+    "api.order.fulfilments.delivery_note": "",
+    "api.order.fulfilments.needs_delivery_code": False,
+    "api.order.history.payload.via": "STAFF",
+    "api.shop-order.history.payload.via": "STAFF",
+    "api.shop-order.fulfilments.delivered_via": lambda v: v in ("", "STAFF"),
+    "api.shop-order.fulfilments.delivery_note": "",
+    "api.shop-order.fulfilments.needs_delivery_code": False,
+    "api.shop-order.fulfilments.delivery_code": "",
+    "api.shop-order.fulfilments.can_confirm": lambda v: isinstance(v, bool),
+    # ADR-057 item 3 (core): return requests (none in the baseline data) and what may be asked.
+    "api.invoice.return_requests": [],
+    "api.shop-invoice.return_requests": [],
+    "api.shop-invoice.can_request_return": lambda v: isinstance(v, bool),
+    "api.shop-invoice.returnable": lambda v: isinstance(v, list),
+    "api.dashboard.action.return_requests": lambda v: v is None or v == 0,
+    # ADR-057 item 4: no bounce charge (₹0 by default).
+    "db.payments.Payment.bounce_charge_id": None,
+    "api.payment.bounce_charge": None,
+    "api.shop-payment.bounce_charge": None,
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -146,17 +177,23 @@ ALLOWED_NEW: dict[str, Any] = {
 ALLOWED_NEW_ITEMS: dict[str, Any] = {
     # Phase 8 (ADR-050): the fast / slow / dead stock settings, at their defaults.
     # Phase 9b (ADR-056, core): the shop-activity settings, at their defaults.
+    # Phase 9c (ADR-057, core): the delivery settings, at their defaults.
     "api.settings-registry": lambda item: (
         (
             item.get("group") == "reports"
             or item["key"].startswith(("insights.", "notifications.daily_summary_"))
+            or item["key"] in ("orders.shop_confirms_delivery", "orders.delivery_code")
+            or item["key"].startswith("returns.")
+            or item["key"] == "payments.cheque_bounce_charge"
         )
         and item["is_default"]
     ),
     # Phase 9a (ADR-053): the purchasing permissions and the new modules, switched off.
     "api.notification-rules.permissions": lambda item: item["code"].startswith("purchasing."),
     # Phase 9b (ADR-056, core): the daily summary, to owners in the app and by email.
-    "api.notification-rules.events": lambda item: item["code"] == "summary.daily",
+    "api.notification-rules.events": lambda item: (
+        item["code"] in ("summary.daily", "return.requested", "return.approved", "return.rejected")
+    ),
     "api.settings-features": lambda item: (
         item["code"] in ("stock_planning", "purchasing", "free_goods") and item["enabled"] is False
     ),
@@ -497,6 +534,9 @@ def _compare(before: Any, now: Any, path: str, diffs: list[str]) -> None:
             diffs.append(f"{path}: {len(before)} items before, {len(now)} now")
         for i, (b, n) in enumerate(zip(before, now, strict=False)):
             _compare(b, n, f"{path}[{i}]", diffs)
+    elif isinstance(before, dict | list) or isinstance(now, dict | list):
+        if before != now:  # a value became a list or an object, or the other way round
+            diffs.append(f"{path}: {before!r} -> {now!r}")
     elif before != now and REWORDED.get((_pattern(path), before), _MISSING) != now:
         diffs.append(f"{path}: {before!r} -> {now!r}")
 

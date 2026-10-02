@@ -19,6 +19,22 @@ urlpatterns = [
         v.CreditNoteRegeneratePdfView.as_view(),
         name="credit-note-regenerate-pdf",
     ),
+    path("return-requests/", v.ReturnRequestListView.as_view(), name="return-requests"),
+    path(
+        "return-requests/<uuid:request_id>/",
+        v.ReturnRequestDetailView.as_view(),
+        name="return-request",
+    ),
+    path(
+        "return-requests/<uuid:request_id>/approve/",
+        v.ReturnRequestApproveView.as_view(),
+        name="return-request-approve",
+    ),
+    path(
+        "return-requests/<uuid:request_id>/reject/",
+        v.ReturnRequestRejectView.as_view(),
+        name="return-request-reject",
+    ),
     path("settings/document-series/", v.DocumentSeriesView.as_view(), name="document-series"),
     path(
         "orders/<uuid:order_id>/confirmation/",

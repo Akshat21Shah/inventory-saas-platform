@@ -10,7 +10,7 @@ from uuid import UUID
 from django.db.models import Prefetch, Q, QuerySet, Sum
 
 from apps.accounts.models import User
-from apps.billing.models import CreditNote, CreditNoteLine, Invoice, InvoiceLine
+from apps.billing.models import CreditNote, CreditNoteLine, Invoice, InvoiceLine, ReturnRequest
 from apps.ledger.models import Allocation
 from apps.ledger.selectors import applied_rows, used_for_rows
 from apps.retailers.selectors import sees_own_retailers_only
@@ -158,3 +158,39 @@ def credit_note_detail(
             .order_by("created_at")
         )
     return note
+
+
+# --- Return requests (ADR-057 item 3) -------------------------------------------------------------
+
+
+def return_requests_for(user: User) -> QuerySet[ReturnRequest]:
+    return _visible(
+        ReturnRequest.objects.select_related("retailer", "invoice", "credit_note", "requested_by"),
+        user,
+    )
+
+
+def return_request_list(
+    user: User, *, status: str = "", search: str = ""
+) -> QuerySet[ReturnRequest]:
+    qs = return_requests_for(user)
+    if status:
+        qs = qs.filter(status=status)
+    term = search.strip()
+    if term:
+        qs = qs.filter(
+            Q(number__icontains=term)
+            | Q(invoice__number__icontains=term)
+            | Q(retailer__shop_name__icontains=term)
+        )
+    return qs
+
+
+def return_request_detail(user: User, request_id: UUID) -> ReturnRequest | None:
+    found: ReturnRequest | None = (
+        return_requests_for(user)
+        .prefetch_related("lines__invoice_line")
+        .filter(pk=request_id)
+        .first()
+    )
+    return found

@@ -602,6 +602,26 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
                 </ul>
               </section>
             ) : null}
+            {invoice.return_requests.length ? (
+              <section className="space-y-2" aria-labelledby="invoice-returns">
+                <h2 id="invoice-returns" className="font-semibold">
+                  {t("returnRequests")}
+                </h2>
+                <ul className="divide-y rounded-xl border text-sm">
+                  {invoice.return_requests.map((request) => (
+                    <li key={request.id} className="flex flex-wrap justify-between gap-2 p-3">
+                      <Link
+                        href={`/manage/invoices/returns/${request.id}`}
+                        className="font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
+                      >
+                        {request.number}
+                      </Link>
+                      <StatusBadge status={request.status} labels="returnRequestStatus" />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
             <section className="space-y-2" aria-labelledby="invoice-applied">
               <h2 id="invoice-applied" className="font-semibold">
                 {t("applied")}

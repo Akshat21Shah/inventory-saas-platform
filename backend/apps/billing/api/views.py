@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
-from apps.billing import credit_notes, documents, numbering, selectors
+from apps.billing import credit_notes, documents, numbering, returns, selectors
 from apps.billing.api import serializers as s
 from apps.billing.credit_notes import ReturnLine
 from apps.billing.models import (
@@ -26,6 +26,7 @@ from apps.billing.models import (
     Invoice,
     OrderConfirmation,
     PaymentStatus,
+    ReturnRequest,
 )
 from apps.orders import selectors as order_selectors
 from common.dates import today_ist
@@ -381,3 +382,95 @@ class DocumentSeriesView(APIView):
                 by=_user(request),
             )
         return Response(s.DocumentSeriesSerializer(numbering.overview(today_ist()), many=True).data)
+
+
+# --- Return requests from shops (ADR-057 item 3) -------------------------------------------------
+
+
+def _request(request: Request, request_id: UUID) -> Response:
+    found = selectors.return_request_detail(_user(request), request_id)
+    if found is None:
+        raise NotFound()
+    return Response(s.ReturnRequestSerializer(found).data)
+
+
+class ReturnRequestListView(Guarded, generics.ListAPIView[ReturnRequest]):
+    required_permission = VIEW
+    serializer_class = s.ReturnRequestSerializer
+    pagination_class = Newest
+
+    def get_queryset(self) -> QuerySet[ReturnRequest]:
+        fake = _fake(self, ReturnRequest)
+        if fake is not None:
+            return fake
+        q = self.request.query_params
+        status = q.get("status", "")
+        if status and status not in ReturnRequest.Status.values:
+            raise InvalidFields({"status": ["Not a valid status."]})
+        return selectors.return_request_list(
+            _user(self.request), status=status, search=q.get("search", "")
+        ).prefetch_related("lines__invoice_line")
+
+    @extend_schema(
+        operation_id="return_requests_list",
+        tags=TAGS,
+        parameters=[
+            OpenApiParameter("status", str, enum=list(ReturnRequest.Status.values)),
+            OpenApiParameter("search", str, description="Request, bill or shop name"),
+        ],
+    )
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        return super().get(request, *args, **kwargs)
+
+
+class ReturnRequestDetailView(Guarded):
+    required_permission = VIEW
+
+    @extend_schema(
+        operation_id="return_requests_retrieve", tags=TAGS, responses=s.ReturnRequestSerializer
+    )
+    def get(self, request: Request, request_id: UUID) -> Response:
+        return _request(request, request_id)
+
+
+class ReturnRequestApproveView(Guarded):
+    required_permission = MANAGE
+
+    @extend_schema(
+        operation_id="return_requests_approve",
+        tags=TAGS,
+        request=s.ReturnApproveSerializer,
+        responses=s.ReturnRequestSerializer,
+    )
+    def post(self, request: Request, request_id: UUID) -> Response:
+        data = s.ReturnApproveSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        if selectors.return_request_detail(_user(request), request_id) is None:
+            raise NotFound()
+        returns.approve_request(
+            request_id,
+            [
+                returns.Decision(row["line"], row["quantity"], row["disposition"])
+                for row in data.validated_data["lines"]
+            ],
+            by=_user(request),
+        )
+        return _request(request, request_id)
+
+
+class ReturnRequestRejectView(Guarded):
+    required_permission = MANAGE
+
+    @extend_schema(
+        operation_id="return_requests_reject",
+        tags=TAGS,
+        request=s.ReturnRejectSerializer,
+        responses=s.ReturnRequestSerializer,
+    )
+    def post(self, request: Request, request_id: UUID) -> Response:
+        data = s.ReturnRejectSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        if selectors.return_request_detail(_user(request), request_id) is None:
+            raise NotFound()
+        returns.reject_request(request_id, reason=data.validated_data["reason"], by=_user(request))
+        return _request(request, request_id)
