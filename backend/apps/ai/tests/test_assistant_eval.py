@@ -1,6 +1,6 @@
 """The assistant's evaluation set (ADR-059 item 7) with the scripted mock: each realistic
 question reaches the right tool with the right arguments, and its answer carries the figures the
-same report gives when run directly."""
+same report gives when run directly; Hindi and Marathi questions are answered in their language."""
 
 import pytest
 from django.core.cache import cache
@@ -23,4 +23,4 @@ def test_every_question_of_the_evaluation_set(tenant_a, tenant_b):
         if not o.ok
     ]
     assert not failed, "\n".join(failed)
-    assert len(outcomes) == 16
+    assert len(outcomes) == 24  # 16 in English, 4 in Hindi, 4 in Marathi

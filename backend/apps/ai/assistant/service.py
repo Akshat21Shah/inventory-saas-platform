@@ -87,7 +87,9 @@ def system_prompt(tenant: Tenant) -> str:
         "- The tools give each person only what they may see. If they ask for something the "
         "figures don't include (costs, margins, other people's shops), say it isn't available "
         "to them; don't work it out from other numbers.\n"
-        "- Answer in the language of the question."
+        "- Answer in the language of the question (English, Hindi, Marathi or another). Write "
+        "numbers and amounts with the digits 0-9 in every language, and the names of shops, "
+        "products and people exactly as the figures give them."
     )
 
 
