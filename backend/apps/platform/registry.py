@@ -36,6 +36,7 @@ class Group(StrEnum):
     PLANNING = "planning"
     PURCHASING = "purchasing"
     AI = "ai"  # ADR-058: platform-wide AI limits
+    LANGUAGES = "languages"  # ADR-060: which languages people may choose
 
 
 class SettingType(StrEnum):
@@ -186,6 +187,12 @@ def from_json(defn: SettingDef, stored: Any) -> Any:
 
 _CLOCK = r"([01]\d|2[0-3]):[0-5]\d"  # 24-hour, IST
 _PRICE = r"\d{1,4}(\.\d{1,4})?"  # rupees, up to 4 decimals (WhatsApp prices are paise)
+
+
+def _language_codes() -> tuple[str, ...]:
+    from common.languages import codes
+
+    return codes()
 
 
 def _tenant(
@@ -356,6 +363,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Turn off to stop them signing in."),
     _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
             "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
+    # ADR-060: the language of shops that haven't chosen one (their screens, messages and
+    # documents); the choices are the manifest's languages, so a new language needs no code.
+    _tenant("retailers.default_language", Group.RETAILERS, SettingType.ENUM, "en",
+            "The language your shops see and get their messages and documents in, unless a "
+            "shop chooses its own.",
+            allowed=_language_codes()),
     # Shop activity and win-back (ADR-056): how shops are grouped.
     _tenant("insights.new_days", Group.RETAILERS, SettingType.INT, 30,
             "A shop counts as new for this many days after its first order.",
@@ -455,6 +468,16 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               "How close in meaning a product must be to what a shop typed to be shown after the "
               "keyword matches.",
               min_value=1, max_value=99),
+    # ADR-060 item 12: the languages people may choose. Until a language's native review, it is
+    # only for testing: super admins and the distributors listed below.
+    _platform("platform.languages_enabled", Group.LANGUAGES, SettingType.STRING, "en",
+              "Languages everyone may choose, by code, separated by commas, for example "
+              "\"en,hi\". English is always on.",
+              pattern=r"[a-z]{2,3}(,[a-z]{2,3})*"),
+    _platform("platform.language_test_tenants", Group.LANGUAGES, SettingType.STRING, "",
+              "Distributors (by web address name, separated by commas) whose staff and shops "
+              "may use every language, to test languages that aren't enabled yet.",
+              pattern=r"([a-z0-9-]+(,[a-z0-9-]+)*)?"),
     _platform("platform.hsn_rate_hints_enabled", Group.TAX, SettingType.BOOL, True,
               "Suggest GST rates from the HSN hint table on product forms and imports."),
     _platform("platform.default_invoice_prefix", Group.INVOICING, SettingType.STRING, "INV",

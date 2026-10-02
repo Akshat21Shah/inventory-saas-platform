@@ -6,11 +6,15 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { NotificationAudienceEnum } from './notificationAudienceEnum';
-import type { PreferredLanguageEnum } from './preferredLanguageEnum';
 
 export interface TextInputRequest {
   audience?: NotificationAudienceEnum;
-  locale?: PreferredLanguageEnum;
+  /**
+     * A language code.
+     * @minLength 1
+     * @maxLength 5
+     */
+  locale?: string;
   /** @maxLength 200 */
   subject?: string;
   /**

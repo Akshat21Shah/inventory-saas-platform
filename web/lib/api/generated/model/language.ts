@@ -6,9 +6,10 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type NotificationTextsParams = {
-/**
- * A language code.
- */
-locale?: string;
-};
+export interface Language {
+  code: string;
+  /** In English. */
+  name: string;
+  /** In its own script, for the language switcher. */
+  native: string;
+}

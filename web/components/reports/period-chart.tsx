@@ -14,20 +14,20 @@ import type { ReportRow } from "./cells";
  */
 export function PeriodChart({
   rows,
-  label,
-  value,
+  labelKey,
+  valueKey,
   caption,
 }: {
   rows: ReportRow[];
-  label: string;
-  value: string;
+  labelKey: string;
+  valueKey: string;
   caption: string;
 }) {
   const format = useFormatter();
   const bars = rows.map((row) => ({
-    label: String(row[label] ?? ""),
-    value: Number(row[value] ?? 0),
-    text: String(row[value] ?? "0"),
+    label: String(row[labelKey] ?? ""),
+    value: Number(row[valueKey] ?? 0),
+    text: String(row[valueKey] ?? "0"),
   }));
   return (
     <figure className="m-0 rounded-xl border p-3" aria-hidden>

@@ -185,6 +185,7 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
             or item["key"] in ("orders.shop_confirms_delivery", "orders.delivery_code")
             or item["key"].startswith("returns.")
             or item["key"] == "payments.cheque_bounce_charge"
+            or item["key"] == "retailers.default_language"  # Phase 11a (ADR-060)
         )
         and item["is_default"]
     ),
@@ -201,6 +202,10 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
 
 # Wording changed since the snapshot: (path, old value) -> new value.
 REWORDED: dict[tuple[str, Any], Any] = {
+    # Phase 11a (ADR-060 item 5): a shop saved as English follows the distributor's default
+    # language (English unless changed), which is now blank rather than "en".
+    ("db.retailers.Retailer.preferred_language", "en"): "",
+    ("api.retailer.preferred_language", "en"): "",
     # Phase 9a (ADR-053): the ai module now covers only smart search and the assistant.
     ("api.settings-features.name", "Smart inventory and AI"): "AI features",
     (

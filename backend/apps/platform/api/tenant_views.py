@@ -2,6 +2,7 @@
 public branding a tenant's pre-login pages need (PLAN §3.2)."""
 
 from typing import Any
+from uuid import UUID
 
 from django.http import HttpResponseRedirect
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -387,7 +388,49 @@ class PublicBrandingView(APIView):
         body = public_branding(slug)
         if body is None:
             raise NotFound()
-        return Response(s.PublicBrandingSerializer(body).data)
+        return Response(s.PublicBrandingSerializer({**body, **_sign_in_languages(body)}).data)
+
+
+def _sign_in_languages(branding: dict[str, Any]) -> dict[str, Any]:
+    """What a sign-in page may offer (ADR-060): the languages this distributor's people may
+    choose, and its default for shops. From the settings cache rather than the branding one, so
+    a change shows at once."""
+    from apps.platform.selectors import get_setting
+    from common import languages
+
+    allowed = languages.available(tenant_slug=branding["slug"])
+    default = get_setting("retailers.default_language", UUID(branding["tenant_id"]))
+    return {
+        "languages": [
+            {"code": row.code, "name": row.name, "native": row.native}
+            for row in languages.all_languages()
+            if row.code in allowed
+        ],
+        "default_language": languages.effective(str(default), allowed),
+    }
+
+
+class PublicLanguagesView(APIView):
+    """Every language the app has, and whether it is enabled for everyone (ADR-060). For the
+    super admin's sign-in page, where only super admins sign in (they may use any language)."""
+
+    authentication_classes: list[type] = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses=s.PlatformLanguageSerializer(many=True),
+        operation_id="public_languages",
+        tags=["public"],
+    )
+    def get(self, request: Request) -> Response:
+        from common import languages
+
+        on = set(languages.enabled())
+        rows = [
+            {"code": row.code, "name": row.name, "native": row.native, "enabled": row.code in on}
+            for row in languages.all_languages()
+        ]
+        return Response(s.PlatformLanguageSerializer(rows, many=True).data)
 
 
 class PublicAssetView(APIView):

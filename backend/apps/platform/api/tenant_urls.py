@@ -28,6 +28,7 @@ urlpatterns = [
         name="settings-feature-toggle",
     ),
     path("audit-logs/", v.TenantAuditLogView.as_view(), name="audit-logs"),
+    path("public/languages/", v.PublicLanguagesView.as_view(), name="public-languages"),
     path(
         "public/tenants/<slug:slug>/branding/",
         v.PublicBrandingView.as_view(),

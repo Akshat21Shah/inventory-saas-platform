@@ -20,6 +20,7 @@ from apps.platform.selectors import get_setting
 from apps.platform.validators import normalize_gstin
 from apps.pricing.models import PriceList
 from apps.retailers.models import Retailer, RetailerAddress, RetailerUser
+from common import languages
 from common.errors import InvalidFields, NotFound
 from common.phone import normalize_indian_mobile
 from common.sequences import next_value
@@ -39,7 +40,6 @@ PROFILE_FIELDS = (
     "preferred_language",
 )
 CREDIT_FIELDS = ("credit_limit", "payment_terms_days")
-LANGUAGES = ("en", "hi", "mr")
 ADDRESS_FIELDS = ("label", "line1", "line2", "city", "district", "pincode", "state_id")
 
 
@@ -117,8 +117,11 @@ def _check_profile(retailer: Retailer, errors: dict[str, list[str]]) -> None:
         errors.setdefault("state", []).append("Choose the shop's state.")
     if retailer.salesperson_id and not _is_staff(retailer.salesperson_id):
         errors.setdefault("salesperson", []).append("Choose an active staff member.")
-    if retailer.preferred_language not in LANGUAGES:
-        errors.setdefault("preferred_language", []).append("Choose English, Hindi or Marathi.")
+    if retailer.preferred_language and not languages.is_known(retailer.preferred_language):
+        # Empty: the distributor's default for shops (ADR-060).
+        errors.setdefault("preferred_language", []).append(
+            f"Choose one of: {', '.join(languages.codes())}."
+        )
     if (
         retailer.price_list_id
         and not PriceList.objects.filter(

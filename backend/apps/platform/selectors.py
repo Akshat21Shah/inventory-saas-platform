@@ -110,6 +110,7 @@ def public_branding(slug: str) -> dict[str, Any] | None:
     # Never the specific status (onboarding, suspended, ...): only whether sign-in is open.
     body = {
         "slug": tenant.slug,
+        "tenant_id": str(tenant.pk),  # not shown: for the sign-in languages (ADR-060)
         "available": tenant.status == Tenant.Status.ACTIVE,
         **branding_body(tenant, branding),
     }

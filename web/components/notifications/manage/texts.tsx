@@ -23,23 +23,15 @@ import {
   useNotificationRules,
   useNotificationTexts,
 } from "@/lib/api/generated/endpoints/notifications/notifications";
-import type { NotificationTextsLocale, Text, TextPreview } from "@/lib/api/generated/model";
+import type { Text, TextPreview } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { languages } from "@/lib/i18n/config";
 
 import { eventKey, NotificationsNav } from "./nav";
 
-const LOCALES: NotificationTextsLocale[] = ["en", "hi", "mr"];
 const AUDIENCES = ["SHOP", "STAFF", "SUPPLIER"] as const;
 
-function TextEditor({
-  event,
-  locale,
-  text,
-}: {
-  event: string;
-  locale: NotificationTextsLocale;
-  text: Text;
-}) {
+function TextEditor({ event, locale, text }: { event: string; locale: string; text: Text }) {
   const t = useTranslations("notifyAdmin.texts");
   const n = useTranslations("notifications");
   const client = useQueryClient();
@@ -201,7 +193,7 @@ export function NotificationTextsPage() {
   const n = useTranslations("notifications");
   const events = useNotificationRules().data?.data.events ?? [];
   const [event, setEvent] = useState("order.accepted");
-  const [locale, setLocale] = useState<NotificationTextsLocale>("en");
+  const [locale, setLocale] = useState<string>("en");
   const query = useNotificationTexts(event, { locale });
   const texts = query.data?.data ?? [];
   return (
@@ -226,8 +218,8 @@ export function NotificationTextsPage() {
           <FormSelect
             id="text-locale"
             value={locale}
-            onValueChange={(value) => setLocale(value as NotificationTextsLocale)}
-            options={LOCALES.map((code) => ({ value: code, label: t(`languages.${code}`) }))}
+            onValueChange={setLocale}
+            options={languages.map((l) => ({ value: l.code, label: l.native }))}
           />
         </div>
       </div>

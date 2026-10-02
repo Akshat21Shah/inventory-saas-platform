@@ -161,6 +161,16 @@ class Command(BaseCommand):
                 + (", a return request waiting" if return_waiting else "")
                 + (", AI search on (mock)" if ai_on else "")
             )
+        # ADR-060: Hindi and Marathi stay off for real users until reviewed; the demo's Sharma
+        # Distributors tests them (its staff and shops may choose every language).
+        from apps.platform.selectors import get_platform_setting
+        from apps.platform.services import set_platform_settings
+
+        testers = str(get_platform_setting("platform.language_test_tenants") or "")
+        if "sharma" not in testers.split(","):
+            joined = ",".join(filter(None, [testers, "sharma"]))
+            set_platform_settings({"platform.language_test_tenants": joined}, user=None)
+            self.stdout.write("languages: every language available at sharma for testing")
         self.stdout.write(self.style.SUCCESS("seed complete"))
 
     def _staff(self, tenant: Tenant, password: str) -> None:

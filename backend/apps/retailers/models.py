@@ -42,7 +42,8 @@ class Retailer(SoftDeleteMixin, TenantScopedModel):
     )
     notes = models.TextField(blank=True, default="")
     tags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
-    preferred_language = models.CharField(max_length=5, default="en")
+    # A code from common/languages.json; empty: the distributor's default (ADR-060).
+    preferred_language = models.CharField(max_length=5, blank=True, default="")
     # WhatsApp consent (ADR-048 item 5): no WhatsApp message without opt-in.
     whatsapp_opt_in = models.BooleanField(default=False)
     whatsapp_opt_in_at = models.DateTimeField(null=True, blank=True)

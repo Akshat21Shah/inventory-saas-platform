@@ -105,6 +105,7 @@ def test_a_real_provider_sends_only_approved_templates(world):
 
 
 @pytest.mark.usefixtures("required")
+@pytest.mark.usefixtures("every_language")
 def test_the_persons_language_when_approved_else_english(world):
     hindi = PlatformTemplate.objects.create(
         event_code="order.accepted",

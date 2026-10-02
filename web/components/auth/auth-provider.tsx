@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -18,6 +19,7 @@ import {
 import type { Me } from "@/lib/api/generated/model";
 import { ApiError } from "@/lib/api/errors";
 import { SESSION_ENDED_EVENT } from "@/lib/api/fetcher";
+import { rememberLanguage } from "@/lib/i18n/client";
 import {
   clearAccessToken,
   getAccessToken,
@@ -51,11 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   const [blockedCode, setBlockedCode] = useState<string | null>(null);
   const [signedOut, setSignedOut] = useState(false);
+  const router = useRouter();
 
   const loadMe = useCallback(async (): Promise<Me | null> => {
     try {
       const response = await authMeRetrieve();
       setMe(response.data);
+      // Show the person's language (ADR-060): the server says which one they see.
+      if (rememberLanguage(response.data.language)) router.refresh();
       setBlockedCode(null);
       setStatus("authenticated");
       return response.data;
@@ -66,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("anonymous");
       return null;
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;

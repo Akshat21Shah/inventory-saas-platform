@@ -5,10 +5,13 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
-import type { PreferredLanguageEnum } from './preferredLanguageEnum';
 
 export interface PatchedMeUpdateRequest {
   /** @maxLength 150 */
   full_name?: string;
-  preferred_language?: PreferredLanguageEnum;
+  /**
+     * @minLength 1
+     * @maxLength 5
+     */
+  preferred_language?: string;
 }

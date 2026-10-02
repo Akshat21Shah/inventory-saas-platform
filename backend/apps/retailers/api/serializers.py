@@ -2,8 +2,8 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.accounts.models import LANGUAGE_CHOICES as LANGUAGES
 from apps.retailers.models import Retailer, RetailerAddress
+from common.languages import validate_code
 
 
 class PersonRefSerializer(serializers.Serializer[Any]):
@@ -141,9 +141,17 @@ class RetailerWriteSerializer(serializers.Serializer[Any]):
     tags = serializers.ListField(
         child=serializers.CharField(max_length=40), required=False, default=list
     )
-    preferred_language = serializers.ChoiceField(
-        choices=["en", "hi", "mr"], required=False, default="en"
+    preferred_language = serializers.CharField(
+        max_length=5,
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="A language code; empty: the distributor's default for shops.",
     )
+
+    def validate_preferred_language(self, value: str) -> str:
+        return validate_code(value, allow_blank=True)
+
     billing_address = BillingAddressSerializer(required=False, allow_null=True, default=None)
 
 
@@ -158,7 +166,15 @@ class RetailerUpdateSerializer(serializers.Serializer[Any]):
     price_list = serializers.UUIDField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_blank=True)
     tags = serializers.ListField(child=serializers.CharField(max_length=40), required=False)
-    preferred_language = serializers.ChoiceField(choices=LANGUAGES, required=False)
+    preferred_language = serializers.CharField(
+        max_length=5,
+        required=False,
+        allow_blank=True,
+        help_text="A language code; empty: the distributor's default for shops.",
+    )
+
+    def validate_preferred_language(self, value: str) -> str:
+        return validate_code(value, allow_blank=True)
 
 
 class CreditSerializer(serializers.Serializer[Any]):

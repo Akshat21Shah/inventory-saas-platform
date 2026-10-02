@@ -23,10 +23,10 @@ from apps.notifications.models import (
     WhatsAppCategory,
 )
 from apps.notifications.render import VARIABLE, substitute, template_for
+from common import languages
 from common.errors import InvalidFields, NotFound
 
 TENANT_CHANNELS = (Channel.IN_APP, Channel.EMAIL)
-LOCALES = ("en", "hi", "mr")
 MAX_SUBJECT, MAX_BODY = 200, 2000
 WHATSAPP_MAX_BODY = 1024  # TODO(verify): the provider's template body limit
 SMS_MAX_BODY = 480  # three SMS parts; TODO(verify): the DLT template rules
@@ -112,8 +112,8 @@ def _check(data: TextInput, *, platform: bool) -> None:
     allowed_channels = tuple(Channel) if platform else TENANT_CHANNELS
     if data.channel not in allowed_channels:
         errors["channel"] = ["WhatsApp and SMS texts are set by the platform (approved templates)."]
-    if data.locale not in LOCALES:
-        errors["locale"] = ["Choose English, Hindi or Marathi."]
+    if not languages.is_known(data.locale):
+        errors["locale"] = [f"Choose one of: {', '.join(languages.codes())}."]
     needs_subject = data.channel in TENANT_CHANNELS
     if needs_subject and not data.subject.strip():
         errors["subject"] = ["Enter a title."]

@@ -466,15 +466,33 @@ def purge_expired_login_records(older_than: timedelta = timedelta(days=1)) -> in
 
 
 def update_profile(
-    user: User, *, full_name: str | None = None, preferred_language: str | None = None
+    user: User,
+    *,
+    full_name: str | None = None,
+    preferred_language: str | None = None,
+    allowed_languages: tuple[str, ...] = (),
 ) -> User:
+    """A person's name and language. The language must be one they may choose
+    (``allowed_languages``, ADR-060 item 12); a shop's login also sets its shop's language, which
+    its messages and documents follow."""
     fields = []
     if full_name is not None:
         user.full_name = full_name.strip()
         fields.append("full_name")
     if preferred_language is not None:
+        if preferred_language not in allowed_languages:
+            raise InvalidFields(
+                {"preferred_language": ["This language isn't available. Choose another."]}
+            )
         user.preferred_language = preferred_language
         fields.append("preferred_language")
+        if user.user_type == User.UserType.RETAILER:
+            from apps.retailers.models import RetailerUser
+
+            link = RetailerUser.objects.filter(user=user).select_related("retailer").first()
+            if link is not None:
+                link.retailer.preferred_language = preferred_language
+                link.retailer.save(update_fields=["preferred_language", "updated_at"])
     if fields:
         user.save(update_fields=fields)
     return user

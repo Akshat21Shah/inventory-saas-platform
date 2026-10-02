@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { PublicLanguage } from './publicLanguage';
 
 export interface PublicBranding {
   slug: string;
@@ -18,4 +19,8 @@ export interface PublicBranding {
   favicon_url: string | null;
   /** @nullable */
   app_icon_url: string | null;
+  /** What the sign-in page may offer. */
+  languages: PublicLanguage[];
+  /** The distributor's default for shops. */
+  default_language: string;
 }

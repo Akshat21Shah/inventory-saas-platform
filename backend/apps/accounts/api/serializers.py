@@ -170,13 +170,21 @@ class MeRetailerSerializer(serializers.Serializer[Any]):
     on_hold = serializers.BooleanField()
 
 
+class LanguageSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField()
+    name = serializers.CharField(help_text="In English.")
+    native = serializers.CharField(help_text="In its own script, for the language switcher.")
+
+
 class MeSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     user_type = serializers.ChoiceField(choices=User.UserType.choices)
     email = serializers.EmailField(allow_null=True)
     phone = serializers.CharField(allow_null=True)
     full_name = serializers.CharField(allow_blank=True)
-    preferred_language = serializers.CharField()
+    preferred_language = serializers.CharField(help_text="As saved (may be unavailable now).")
+    language = serializers.CharField(help_text="The language this person sees (ADR-060).")
+    languages = LanguageSerializer(many=True, help_text="The languages they may choose.")
     tenant = MeTenantSerializer(allow_null=True)
     role = MeRoleSerializer(allow_null=True)
     retailer = MeRetailerSerializer(allow_null=True)

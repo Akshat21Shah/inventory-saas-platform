@@ -485,6 +485,7 @@ def test_me_for_super_admin_has_platform_permissions_and_no_tenant():
     )
 
 
+@pytest.mark.usefixtures("every_language")
 def test_me_update_changes_name_and_language(tenant_a):
     user = make_staff_in(tenant_a, "SALES")
     client = _bearer(APIClient(), issue_tokens(user, tenant_a.pk).access)

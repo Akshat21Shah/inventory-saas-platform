@@ -160,7 +160,8 @@ def test_registry_settings_per_tenant_with_per_key_permission(
     tenant_a, tenant_b, owner, sales, run
 ):
     rows = sales.get("/api/v1/settings/registry/").json()
-    assert len(rows) == 56  # + reports (050), activity, summary (056), delivery, returns (057)
+    assert len(rows) == 57  # + reports (050), activity, summary (056), delivery, returns (057),
+    # the shops' language (060)
     assert not any(r["can_edit"] for r in rows)
     assert all(r["can_edit"] for r in owner.get("/api/v1/settings/registry/").json())
     denied = sales.patch(
@@ -323,6 +324,8 @@ def test_public_branding_for_pre_login_pages(tenant_a, tenant_b, owner, run):
         "logo_url": None,
         "favicon_url": None,
         "app_icon_url": None,
+        "languages": [{"code": "en", "name": "English", "native": "English"}],
+        "default_language": "en",
     }
     other = APIClient().get(f"/api/v1/public/tenants/{tenant_b.slug}/branding/").json()
     assert other["primary_color"] != "#0f766e" and other["slug"] == tenant_b.slug

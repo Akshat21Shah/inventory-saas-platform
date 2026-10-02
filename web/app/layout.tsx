@@ -8,9 +8,11 @@ import { cache, type ReactNode } from "react";
 import { BrandTheme } from "@/components/shared/brand-theme";
 import { fetchPublicBranding } from "@/lib/branding";
 import type { HostKind } from "@/lib/hosts";
+import { languageOf } from "@/lib/i18n/config";
 
 import { Providers } from "./providers";
 import "./globals.css";
+import "./fonts.css";
 
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"], display: "swap" });
 
@@ -44,7 +46,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     // Browsers and extensions add attributes to <html> and <body> before React loads (Chrome's
     // __gcrremoteframetoken, translators, password managers). Ignore attribute differences on these
     // two tags only; mismatches anywhere inside the page are still reported.
-    <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+    <html
+      lang={languageOf(locale)}
+      className={`${inter.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Tenant colour as CSS variables before first paint (ADR-028: derived on the client). */}
         <BrandTheme color={host.branding?.primary_color} />

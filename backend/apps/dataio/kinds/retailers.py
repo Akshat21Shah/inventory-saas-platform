@@ -9,7 +9,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-from apps.accounts.models import LANGUAGE_CHOICES, Membership, User
+from apps.accounts.models import Membership, User
 from apps.dataio.kinds.base import Column, RowPlan
 from apps.dataio.parsing import Sheet, parse_decimal, split_list
 from apps.platform.gst import gstin_problem
@@ -124,11 +124,13 @@ NO = {"no", "n", "false", "0", "nahi"}
 LABEL = {c.name: c.label for c in COLUMNS}
 ADDRESS = ("address_line1", "address_line2", "city", "district", "pincode")
 CREDIT = ("credit_limit", "payment_terms_days")
-LANGUAGES = (
-    {code: code for code, _ in LANGUAGE_CHOICES}
-    | {name.lower(): code for code, name in LANGUAGE_CHOICES}
-    | {"hindi": "hi", "marathi": "mr", "english": "en"}
-)
+
+
+def _languages() -> dict[str, str]:
+    """Any language's code, English or native name → its code (from common/languages.json)."""
+    from common.languages import by_any_name
+
+    return by_any_name()
 
 
 class RetailersKind:
@@ -284,7 +286,7 @@ class RetailersKind:
         if v.get("tags"):
             out["tags"] = split_list(v["tags"])
         if v.get("preferred_language"):
-            language = LANGUAGES.get(v["preferred_language"].strip().lower())
+            language = _languages().get(v["preferred_language"].strip().lower())
             if language is None:
                 plan.error(LABEL["preferred_language"], "Write English, Hindi or Marathi.")
             else:
@@ -438,7 +440,9 @@ class RetailersKind:
             .prefetch_related("addresses")
             .order_by("code")
         )
-        names = dict(LANGUAGE_CHOICES)
+        from common.languages import all_languages
+
+        names = {language.code: language.name for language in all_languages()}
         for r in retailers:
             billing = next(
                 (

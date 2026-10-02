@@ -704,6 +704,14 @@
       "ai_search_units": {
         "label": "Typical shop search: units",
         "description": "Units a typical shop search sends to the embedding provider."
+      },
+      "languages_enabled": {
+        "label": "Languages for everyone",
+        "description": "Language codes everyone may choose, separated by commas, for example “en,hi”. English is always on. Turn a language on only after a native speaker has checked its words."
+      },
+      "language_test_tenants": {
+        "label": "Distributors testing languages",
+        "description": "Web addresses (for example “sharma”) of distributors who see every language while it is checked, separated by commas. Super admins always see every language."
       }
     },
     "retailers": {
@@ -714,6 +722,15 @@
       "show_own_brand_badge": {
         "label": "Own-brand badge in the shop",
         "description": "Show an \"own brand\" badge on your own-brand products in the shop."
+      },
+      "default_language": {
+        "label": "Usual language for shops",
+        "description": "The language shops see, and get messages and documents in, until they choose their own.",
+        "options": {
+          "en": "English",
+          "hi": "हिन्दी (Hindi)",
+          "mr": "मराठी (Marathi)"
+        }
       }
     },
     "pricing": {
@@ -886,7 +903,8 @@
       "reports": "Reports",
       "planning": "Stock planning",
       "purchasing": "Purchasing",
-      "ai": "AI"
+      "ai": "AI",
+      "languages": "Languages"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -1043,7 +1061,8 @@
       "retailer": "Shop",
       "supplier": "Supplier",
       "other": "Record"
-    }
+    },
+    "ip": "IP {ip}"
   },
   "platform": {
     "dashboard": {
@@ -2020,7 +2039,8 @@
       "welcomeNote": "A welcome message with the sign-in link is sent to the mobile number.",
       "create": "Add retailer",
       "save": "Save changes",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "languageDefault": "Your usual language for shops"
     },
     "detail": {
       "resendWelcome": "Send the welcome message again",

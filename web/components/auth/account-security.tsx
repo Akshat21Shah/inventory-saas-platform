@@ -26,7 +26,7 @@ import {
   authMfaSetup,
   authPasswordChange,
 } from "@/lib/api/generated/endpoints/auth/auth";
-import type { MfaSetupResponse, PreferredLanguageEnum } from "@/lib/api/generated/model";
+import type { MfaSetupResponse } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatIndianMobile } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ function Profile() {
   const { me, reloadMe } = useAuth();
   const errors = useErrorText();
   const [name, setName] = useState(me?.full_name ?? "");
-  const [language, setLanguage] = useState<string>(me?.preferred_language ?? "en");
+  const [language, setLanguage] = useState<string>(me?.language ?? "en");
   const [busy, setBusy] = useState(false);
 
   async function save(event: FormEvent) {
@@ -72,7 +72,7 @@ function Profile() {
     try {
       await authMeUpdate({
         full_name: name,
-        preferred_language: language as PreferredLanguageEnum,
+        preferred_language: language,
       });
       await reloadMe();
       toast.success(t("saved"));
@@ -95,9 +95,9 @@ function Profile() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(["en", "hi", "mr"] as const).map((code) => (
-                <SelectItem key={code} value={code}>
-                  {t(`languages.${code}`)}
+              {(me?.languages ?? []).map((option) => (
+                <SelectItem key={option.code} value={option.code} lang={option.code}>
+                  {option.native}
                 </SelectItem>
               ))}
             </SelectContent>

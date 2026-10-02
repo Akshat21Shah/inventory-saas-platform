@@ -1,0 +1,26 @@
+{
+  "default": "en",
+  "languages": [
+    {
+      "code": "en",
+      "name": "English",
+      "native": "English",
+      "script": "latin",
+      "pdf_font": "Noto Sans"
+    },
+    {
+      "code": "hi",
+      "name": "Hindi",
+      "native": "हिन्दी",
+      "script": "devanagari",
+      "pdf_font": "Noto Sans Devanagari"
+    },
+    {
+      "code": "mr",
+      "name": "Marathi",
+      "native": "मराठी",
+      "script": "devanagari",
+      "pdf_font": "Noto Sans Devanagari"
+    }
+  ]
+}

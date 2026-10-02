@@ -57,6 +57,16 @@ class BrandingSerializer(serializers.Serializer[Any]):
     app_icon_url = serializers.CharField(allow_null=True, read_only=True)
 
 
+class PublicLanguageSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField()
+    name = serializers.CharField()
+    native = serializers.CharField()
+
+
+class PlatformLanguageSerializer(PublicLanguageSerializer):
+    enabled = serializers.BooleanField(help_text="On for everyone (else only for testing).")
+
+
 class PublicBrandingSerializer(serializers.Serializer[Any]):
     slug = serializers.CharField()
     display_name = serializers.CharField()
@@ -67,6 +77,8 @@ class PublicBrandingSerializer(serializers.Serializer[Any]):
     logo_url = serializers.CharField(allow_null=True)
     favicon_url = serializers.CharField(allow_null=True)
     app_icon_url = serializers.CharField(allow_null=True)
+    languages = PublicLanguageSerializer(many=True, help_text="What the sign-in page may offer.")
+    default_language = serializers.CharField(help_text="The distributor's default for shops.")
 
 
 class AssetUploadSerializer(serializers.Serializer[Any]):

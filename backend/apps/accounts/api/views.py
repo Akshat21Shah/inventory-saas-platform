@@ -33,6 +33,7 @@ from common.authentication import (
 from common.context import request_meta_var
 from common.errors import NotFound
 from common.hosts import HostContext
+from common.languages import all_languages
 from common.permissions import IsStaffOrPlatformUser
 
 
@@ -505,8 +506,32 @@ class MeView(APIView):
     def patch(self, request: Request) -> Response:
         data = s.MeUpdateSerializer(data=request.data, partial=True)
         data.is_valid(raise_exception=True)
-        services.update_profile(request.user, **data.validated_data)  # type: ignore[arg-type]
+        allowed = _languages_for(request)[0]
+        services.update_profile(
+            request.user,  # type: ignore[arg-type]
+            **data.validated_data,
+            allowed_languages=allowed,
+        )
         return Response(s.MeSerializer(_me(request)).data)
+
+
+def _languages_for(request: Request) -> tuple[tuple[str, ...], str]:
+    """The languages this person may choose, and the one they see (ADR-060)."""
+    from common import languages
+
+    user: User = request.user  # type: ignore[assignment]
+    token: Any = request.auth
+    raw_tenant = token.get(TENANT_CLAIM) if token is not None else None
+    tenant_id = UUID(str(raw_tenant)) if raw_tenant else None
+    if user.user_type == User.UserType.PLATFORM:
+        allowed = languages.codes()
+        return allowed, languages.effective(user.preferred_language, allowed)
+    allowed = languages.available_for_tenant(tenant_id)
+    if user.user_type == User.UserType.RETAILER:
+        link = RetailerUser.objects.filter(user=user).select_related("retailer").first()
+        if link is not None:
+            return allowed, languages.shop_language(link.retailer)
+    return allowed, languages.effective(user.preferred_language, allowed)
 
 
 def _me(request: Request) -> dict[str, Any]:
@@ -516,6 +541,7 @@ def _me(request: Request) -> dict[str, Any]:
     tenant_id = UUID(str(raw_tenant)) if raw_tenant else None
     info = tenant_info(tenant_id) if tenant_id else None
     membership = user.__dict__.get("membership")
+    allowed, language = _languages_for(request)
     support_session = None
     session = user.__dict__.get("impersonation_session")
     if session is not None:
@@ -532,6 +558,12 @@ def _me(request: Request) -> dict[str, Any]:
         "phone": user.phone,
         "full_name": user.full_name,
         "preferred_language": user.preferred_language,
+        "language": language,
+        "languages": [
+            {"code": row.code, "name": row.name, "native": row.native}
+            for row in all_languages()
+            if row.code in allowed
+        ],
         "tenant": (
             {"id": info.id, "name": info.name, "slug": info.slug, "status": info.status}
             if info

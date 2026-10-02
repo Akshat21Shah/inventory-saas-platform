@@ -73,6 +73,7 @@ MIDDLEWARE = [
     "common.middleware.RequestContextMiddleware",
     "apps.accounts.middleware.ImpersonationAuditMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # Accept-Language → the request's language
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -140,6 +141,15 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # --- Time & locale: store UTC, display Asia/Kolkata ---------------------------------------------
 LANGUAGE_CODE = "en"
+# The app's languages come from common/languages.json (ADR-060): adding one is data, not code.
+# Each request speaks the language the web asks for (Accept-Language), else English.
+LANGUAGES = [
+    (row["code"], row["name"])
+    for row in __import__("json").loads(
+        (BASE_DIR / "common" / "languages.json").read_text(encoding="utf-8")
+    )["languages"]
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "UTC"
 DISPLAY_TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
@@ -271,7 +281,6 @@ SPECTACULAR_SETTINGS = {
         "ImportKindEnum": "apps.dataio.models.ImportJob.Kind",
         "AddressKindEnum": "apps.retailers.models.RetailerAddress.Kind",
         "RetailerStatusEnum": "apps.retailers.models.Retailer.Status",
-        "PreferredLanguageEnum": "apps.accounts.models.LANGUAGE_CHOICES",
         "OrderStatusEnum": "apps.orders.models.OrderStatus",
         "FulfilmentStatusEnum": "apps.orders.models.Fulfilment.Status",
         "FulfilmentKindEnum": "apps.orders.models.Fulfilment.Kind",

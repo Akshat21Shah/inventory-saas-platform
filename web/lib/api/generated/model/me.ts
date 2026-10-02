@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { Language } from './language';
 import type { MeFeatures } from './meFeatures';
 import type { MeImpersonation } from './meImpersonation';
 import type { MeRetailer } from './meRetailer';
@@ -20,7 +21,12 @@ export interface Me {
   /** @nullable */
   phone: string | null;
   full_name: string;
+  /** As saved (may be unavailable now). */
   preferred_language: string;
+  /** The language this person sees (ADR-060). */
+  language: string;
+  /** The languages they may choose. */
+  languages: Language[];
   tenant: MeTenant | null;
   role: MeRole | null;
   retailer: MeRetailer | null;

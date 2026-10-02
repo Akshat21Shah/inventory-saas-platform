@@ -1,0 +1,18 @@
+/*
+ * Fonts for the scripts our languages use (ADR-060 item 13). The browser downloads a script's font
+ * only when that script's characters are on the page (unicode-range), so English pages never fetch
+ * them. The ranges list only the script's own blocks (not ₹ or punctuation, which every page has).
+ * A new script is a font file in public/fonts, a block here and its family in --font-scripts.
+ */
+@font-face {
+  font-family: "App Devanagari";
+  src: url("/fonts/noto-sans-devanagari/NotoSansDevanagari-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+A830-A839, U+A8E0-A8FF;
+}
+
+:root {
+  --font-scripts: "App Devanagari";
+}

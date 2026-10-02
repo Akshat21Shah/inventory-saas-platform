@@ -4,7 +4,6 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.accounts.models import LANGUAGE_CHOICES
 from apps.notifications.models import (
     Announcement,
     ApprovalStatus,
@@ -17,6 +16,7 @@ from apps.notifications.models import (
     ReminderPause,
     WhatsAppCategory,
 )
+from common.languages import validate_code
 
 
 class InboxItemSerializer(serializers.ModelSerializer[Notification]):
@@ -139,7 +139,11 @@ class TextSerializer(serializers.Serializer[Any]):
 
 class TextInputSerializer(serializers.Serializer[Any]):
     audience = serializers.ChoiceField(choices=Audience.choices, default=Audience.SHOP)
-    locale = serializers.ChoiceField(choices=LANGUAGE_CHOICES, default="en")
+    locale = serializers.CharField(max_length=5, default="en", help_text="A language code.")
+
+    def validate_locale(self, value: str) -> str:
+        return validate_code(value)
+
     subject = serializers.CharField(max_length=200, allow_blank=True, default="")
     body = serializers.CharField(max_length=2000)
 

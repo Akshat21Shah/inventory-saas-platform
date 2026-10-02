@@ -253,7 +253,12 @@ function ReportScreen({ report }: { report: Report }) {
           </p>
         ) : null}
         {report.code === "sales_summary" && rows.length > 1 ? (
-          <PeriodChart rows={rows} label="period" value="total" caption={t("chartNetSales")} />
+          <PeriodChart
+            rows={rows}
+            labelKey="period"
+            valueKey="total"
+            caption={t("chartNetSales")}
+          />
         ) : null}
         {body?.totals && body.rows.length ? (
           <Totals report={report} columns={columns} totals={body.totals} words={words} />

@@ -2765,10 +2765,7 @@ paths:
         name: locale
         schema:
           type: string
-          enum:
-          - en
-          - hi
-          - mr
+        description: A language code.
       tags:
       - notifications
       security:
@@ -2840,10 +2837,7 @@ paths:
         name: locale
         schema:
           type: string
-          enum:
-          - en
-          - hi
-          - mr
+        description: A language code.
       tags:
       - notifications
       security:
@@ -6085,6 +6079,25 @@ paths:
           description: Unknown link (HTML)
         '410':
           description: Expired or withdrawn link (HTML)
+  /api/v1/public/languages/:
+    get:
+      operationId: public_languages
+      description: |-
+        Every language the app has, and whether it is enabled for everyone (ADR-060). For the
+        super admin's sign-in page, where only super admins sign in (they may use any language).
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlatformLanguage'
+          description: ''
   /api/v1/public/states/:
     get:
       operationId: public_states_list
@@ -17395,6 +17408,21 @@ components:
       required:
       - changed
       - warnings
+    Language:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+          description: In English.
+        native:
+          type: string
+          description: In its own script, for the language switcher.
+      required:
+      - code
+      - name
+      - native
     LeadSourceEnum:
       enum:
       - PRODUCT_SUPPLIER
@@ -17876,6 +17904,15 @@ components:
           type: string
         preferred_language:
           type: string
+          description: As saved (may be unavailable now).
+        language:
+          type: string
+          description: The language this person sees (ADR-060).
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Language'
+          description: The languages they may choose.
         tenant:
           allOf:
           - $ref: '#/components/schemas/MeTenant'
@@ -17911,6 +17948,8 @@ components:
       - full_name
       - id
       - impersonation
+      - language
+      - languages
       - mfa_enabled
       - mfa_required
       - permissions
@@ -20262,7 +20301,9 @@ components:
           type: string
           maxLength: 150
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
+          maxLength: 5
     PatchedMembershipUpdateRequest:
       type: object
       properties:
@@ -20515,7 +20556,9 @@ components:
             minLength: 1
             maxLength: 40
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          description: 'A language code; empty: the distributor''s default for shops.'
+          maxLength: 5
     PatchedSettingValuesRequest:
       type: object
       properties:
@@ -21357,6 +21400,23 @@ components:
       - tenant_id
       - tenant_name
       - title
+    PlatformLanguage:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        native:
+          type: string
+        enabled:
+          type: boolean
+          description: On for everyone (else only for testing).
+      required:
+      - code
+      - enabled
+      - name
+      - native
     PlatformTemplate:
       type: object
       properties:
@@ -21445,9 +21505,11 @@ components:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
           default: SHOP
         locale:
-          allOf:
-          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
           default: en
+          description: A language code.
+          maxLength: 5
         subject:
           type: string
           default: ''
@@ -21562,16 +21624,6 @@ components:
           type: integer
       required:
       - changed
-    PreferredLanguageEnum:
-      enum:
-      - en
-      - hi
-      - mr
-      type: string
-      description: |-
-        * `en` - English
-        * `hi` - हिन्दी
-        * `mr` - मराठी
     PreviewLineRequest:
       type: object
       properties:
@@ -22402,14 +22454,37 @@ components:
         app_icon_url:
           type: string
           nullable: true
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicLanguage'
+          description: What the sign-in page may offer.
+        default_language:
+          type: string
+          description: The distributor's default for shops.
       required:
       - app_icon_url
       - available
+      - default_language
       - display_name
       - favicon_url
+      - languages
       - logo_url
       - primary_color
       - slug
+    PublicLanguage:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        native:
+          type: string
+      required:
+      - code
+      - name
+      - native
     PurchaseOrderCancelRequest:
       type: object
       properties:
@@ -24772,16 +24847,6 @@ components:
       description: |-
         * `ACTIVE` - Active
         * `BLOCKED` - On hold
-    RetailerWritePreferredLanguageEnum:
-      enum:
-      - en
-      - hi
-      - mr
-      type: string
-      description: |-
-        * `en` - en
-        * `hi` - hi
-        * `mr` - mr
     RetailerWriteRequest:
       type: object
       properties:
@@ -24830,9 +24895,10 @@ components:
             minLength: 1
             maxLength: 40
         preferred_language:
-          allOf:
-          - $ref: '#/components/schemas/RetailerWritePreferredLanguageEnum'
-          default: en
+          type: string
+          default: ''
+          description: 'A language code; empty: the distributor''s default for shops.'
+          maxLength: 5
         billing_address:
           allOf:
           - $ref: '#/components/schemas/BillingAddressRequest'
@@ -28659,9 +28725,11 @@ components:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
           default: SHOP
         locale:
-          allOf:
-          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
           default: en
+          description: A language code.
+          maxLength: 5
         subject:
           type: string
           default: ''
@@ -28690,9 +28758,11 @@ components:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
           default: SHOP
         locale:
-          allOf:
-          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
           default: en
+          description: A language code.
+          maxLength: 5
         subject:
           type: string
           default: ''

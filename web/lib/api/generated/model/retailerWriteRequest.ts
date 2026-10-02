@@ -6,7 +6,6 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { BillingAddressRequest } from './billingAddressRequest';
-import type { RetailerWritePreferredLanguageEnum } from './retailerWritePreferredLanguageEnum';
 
 export interface RetailerWriteRequest {
   /**
@@ -36,6 +35,10 @@ export interface RetailerWriteRequest {
      * @items.maxLength 40
      */
   tags?: string[];
-  preferred_language?: RetailerWritePreferredLanguageEnum;
+  /**
+     * A language code; empty: the distributor's default for shops.
+     * @maxLength 5
+     */
+  preferred_language?: string;
   billing_address?: BillingAddressRequest | null;
 }

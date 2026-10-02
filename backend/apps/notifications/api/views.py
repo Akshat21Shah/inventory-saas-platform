@@ -28,6 +28,7 @@ from apps.notifications import (
 from apps.notifications.api import serializers as s
 from apps.notifications.models import Announcement, Audience, Channel, Notification
 from apps.retailers.selectors import retailer_for
+from common import languages
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
 from common.permissions import AnyOf, HasPermission, IsTenantStaff
@@ -198,13 +199,13 @@ def _rule(rule: rules.EffectiveRule) -> dict[str, Any]:
 
 # --- Texts --------------------------------------------------------------------------------------
 
-LOCALE = OpenApiParameter("locale", str, required=False, enum=list(texts.LOCALES))
+LOCALE = OpenApiParameter("locale", str, required=False, description="A language code.")
 AUDIENCE = OpenApiParameter("audience", str, required=False, enum=list(Audience.values))
 
 
 def _locale(request: Request) -> str:
     locale = request.query_params.get("locale", "en")
-    if locale not in texts.LOCALES:
+    if not languages.is_known(locale):
         raise InvalidFields({"locale": ["Choose en, hi or mr."]})
     return locale
 

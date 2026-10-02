@@ -133,6 +133,8 @@ describe("BrandingSettings", () => {
       logo_url: null,
       favicon_url: null,
       app_icon_url: null,
+      languages: [{ code: "en", name: "English", native: "English" }],
+      default_language: "en",
     };
     const calls = mockApi({
       "/api/v1/settings/branding/": () => [200, branding],

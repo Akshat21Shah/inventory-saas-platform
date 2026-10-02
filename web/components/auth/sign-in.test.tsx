@@ -48,6 +48,8 @@ const branding = (available: boolean): PublicBranding => ({
   logo_url: null,
   favicon_url: null,
   app_icon_url: null,
+  languages: [{ code: "en", name: "English", native: "English" }],
+  default_language: "en",
 });
 
 function renderLogin(hostKind: HostKind, brand: PublicBranding | null = null) {
