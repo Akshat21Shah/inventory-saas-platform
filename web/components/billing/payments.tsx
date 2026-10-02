@@ -440,7 +440,7 @@ function DueAmounts({
               type="button"
               variant="ghost"
               size="sm"
-              className="min-h-10"
+              className="min-h-10 max-md:min-w-11"
               onClick={() => onChange({ ...values, [due.id]: due.balance_due })}
             >
               {t("all")}
