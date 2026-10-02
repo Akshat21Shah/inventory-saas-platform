@@ -31,6 +31,8 @@ from uuid import UUID
 
 from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -69,7 +71,7 @@ P = PaymentIntent.Purpose
 class GatewayUnavailable(DomainError):
     status_code = 503
     code = ErrorCode.PAYMENT_GATEWAY_UNAVAILABLE
-    default_message = "Payment service is busy, please try again in a minute."
+    default_message = gettext_lazy("Payment service is busy, please try again in a minute.")
 
 
 def _paise(amount: Decimal) -> int:
@@ -87,17 +89,17 @@ def amount_for(
     if purpose == P.INVOICE:
         assert invoice is not None
         if invoice.status != DocumentStatus.ISSUED or invoice.balance_due <= 0:
-            raise InvalidFields({"invoice_id": ["This bill has nothing left to pay."]})
+            raise InvalidFields({"invoice_id": [_("This bill has nothing left to pay.")]})
         return Decimal(invoice.balance_due)
     if purpose == P.OUTSTANDING:
         total = owed(shop)
         if total <= 0:
-            raise InvalidFields({"purpose": ["You have nothing to pay right now."]})
+            raise InvalidFields({"purpose": [_("You have nothing to pay right now.")]})
         return total
     if custom is None or custom < MIN_AMOUNT or custom != custom.quantize(Decimal("0.01")):
-        raise InvalidFields({"amount": ["Enter at least ₹1, in rupees and paise."]})
+        raise InvalidFields({"amount": [_("Enter at least ₹1, in rupees and paise.")]})
     if not get_setting("payments.hold_advances", shop.tenant_id) and custom > owed(shop):
-        raise InvalidFields({"amount": ["That's more than you owe right now."]})
+        raise InvalidFields({"amount": [_("That's more than you owe right now.")]})
     return custom
 
 
@@ -119,7 +121,7 @@ def start_checkout(
     """The shop's active checkout for this target, or a new one (in the request transaction)."""
     config = gateway_config.ready(shop.tenant_id)
     if purpose not in P.values:
-        raise InvalidFields({"purpose": ["Choose a bill, everything you owe or an amount."]})
+        raise InvalidFields({"purpose": [_("Choose a bill, everything you owe or an amount.")]})
     invoice = None
     if purpose == P.INVOICE:
         invoice = Invoice.objects.filter(pk=invoice_id, retailer=shop).first()
@@ -193,7 +195,7 @@ def start_checkout(
 def note_outcome(intent: PaymentIntent, outcome: str) -> PaymentIntent:
     """What the shop's page says happened (informational only: payment comes from the gateway)."""
     if outcome not in ("success", "failed", "dismissed"):
-        raise InvalidFields({"outcome": ["Unknown outcome."]})
+        raise InvalidFields({"outcome": [_("Unknown outcome.")]})
     intent.client_outcome = outcome
     if intent.status == ST.CREATED:
         intent.status = ST.ATTEMPTED
@@ -378,7 +380,7 @@ def mark_reviewed(payment_id: UUID, *, note: str, by: User) -> Payment:
     if payment is None:
         raise NotFound()
     if not payment.needs_review:
-        raise InvalidFields({"payment": ["This payment doesn't need a review."]})
+        raise InvalidFields({"payment": [_("This payment doesn't need a review.")]})
     payment.needs_review, payment.reviewed_at, payment.reviewed_by = False, timezone.now(), by
     payment.save(update_fields=["needs_review", "reviewed_at", "reviewed_by", "updated_at"])
     audit.record(

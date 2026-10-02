@@ -17,6 +17,8 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -47,13 +49,13 @@ REASONS = set(CreditNote.ReturnReason.values)
 class ReturnsSwitchedOff(DomainError):
     status_code = 403
     code = ErrorCode.PERMISSION_DENIED
-    default_message = "Your distributor takes returns by phone."
+    default_message = gettext_lazy("Your distributor takes returns by phone.")
 
 
 class NotWaiting(DomainError):
     status_code = 409
     code = ErrorCode.INVALID_STATE_TRANSITION
-    default_message = "This return request has already been decided."
+    default_message = gettext_lazy("This return request has already been decided.")
 
 
 def asked_elsewhere(line_ids: list[UUID], *, excluding: UUID | None = None) -> dict[UUID, Decimal]:
@@ -146,29 +148,32 @@ def request_return(
     invoice = Invoice.objects.select_for_update().get(pk=invoice.pk)
     problems: dict[str, list[str]] = {}
     if invoice.status != DocumentStatus.ISSUED:
-        problems["invoice"] = ["This bill was cancelled."]
+        problems["invoice"] = [_("This bill was cancelled.")]
     elif not window_open(invoice):
         days = int(get_setting("returns.request_days", invoice.tenant_id))
-        problems["invoice"] = [f"Returns can be asked for within {days} days of the bill."]
+        problems["invoice"] = [
+            _("Returns can be asked for within %(days)s days of the bill.") % {"days": days}
+        ]
     if reason not in REASONS:
-        problems["reason"] = ["Choose why you are returning the goods."]
+        problems["reason"] = [_("Choose why you are returning the goods.")]
     elif reason == CreditNote.ReturnReason.OTHER and not note.strip():
-        problems["note"] = ["Say why you are returning the goods."]
+        problems["note"] = [_("Say why you are returning the goods.")]
     wanted = [line for line in lines if line.quantity > 0]
     if not wanted:
-        problems["lines"] = ["Choose what you want to return."]
+        problems["lines"] = [_("Choose what you want to return.")]
     if len({line.invoice_line_id for line in wanted}) != len(wanted):
-        problems["lines"] = ["List each item once."]
+        problems["lines"] = [_("List each item once.")]
     invoice_lines = {line.pk: line for line in invoice.lines.all()}
     left = returnable(list(invoice_lines.values()))
     for line in wanted:
         found = invoice_lines.get(line.invoice_line_id)
         if found is None:
-            problems["lines"] = ["That item isn't on this bill."]
+            problems["lines"] = [_("That item isn't on this bill.")]
         elif line.quantity > left[found.pk]:
             most = f"{left[found.pk].normalize():f}"
             problems.setdefault("lines", []).append(
-                f"{found.description}: at most {most} can be returned."
+                _("%(description)s: at most %(most)s can be returned.")
+                % {"description": found.description, "most": most}
             )
     if problems:
         raise InvalidFields(problems)
@@ -225,7 +230,7 @@ def cancel_request(request_id: UUID, *, by: User, retailer_id: UUID) -> ReturnRe
 def reject_request(request_id: UUID, *, reason: str, by: User) -> ReturnRequest:
     """Staff say no, with a reason the shop sees."""
     if not reason.strip():
-        raise InvalidFields({"reason": ["Say why, so the shop knows."]})
+        raise InvalidFields({"reason": [_("Say why, so the shop knows.")]})
     request = _locked_request(request_id)
     request.status = S.REJECTED
     request.decided_by, request.decided_at = by, timezone.now()
@@ -261,22 +266,24 @@ def approve_request(request_id: UUID, decisions: list[Decision], *, by: User) ->
         for decision in decisions:
             line = lines.get(decision.line_id)
             if line is None:
-                problems["lines"] = ["That item isn't on this request."]
+                problems["lines"] = [_("That item isn't on this request.")]
             elif decision.quantity < 0 or decision.quantity > line.quantity:
                 asked = f"{line.quantity.normalize():f}"
                 problems.setdefault("lines", []).append(
-                    f"{line.invoice_line.description}: between 0 and {asked}."
+                    _("%(description)s: between 0 and %(asked)s.")
+                    % {"description": line.invoice_line.description, "asked": asked}
                 )
             elif decision.quantity > 0 and decision.disposition not in (
                 CreditNoteLine.Disposition.values
             ):
                 problems.setdefault("lines", []).append(
-                    f"{line.invoice_line.description}: say what happened to the goods."
+                    _("%(description)s: say what happened to the goods.")
+                    % {"description": line.invoice_line.description}
                 )
             else:
                 chosen[line.pk] = decision
         if not problems and not any(d.quantity > 0 for d in chosen.values()):
-            problems["lines"] = ["Approve at least one item, or reject the request."]
+            problems["lines"] = [_("Approve at least one item, or reject the request.")]
         if problems:
             raise InvalidFields(problems)
         note = credit_notes.issue_return(

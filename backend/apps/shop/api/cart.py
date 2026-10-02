@@ -3,6 +3,7 @@
 from decimal import Decimal
 from uuid import UUID
 
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -33,7 +34,7 @@ def _address(request: Request) -> UUID | None:
     try:
         return UUID(raw)
     except ValueError as exc:
-        raise InvalidFields({"address": ["Not a valid address."]}) from exc
+        raise InvalidFields({"address": [_("Not a valid address.")]}) from exc
 
 
 def cart_response(request: Request) -> Response:

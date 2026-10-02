@@ -7,6 +7,7 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import Q
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -42,14 +43,16 @@ def _date(value: str | None, field: str) -> date | None:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Use YYYY-MM-DD."]}) from exc
+        raise InvalidFields({field: [_("Use YYYY-MM-DD.")]}) from exc
 
 
 def _int(value: str | None, field: str, default: int, maximum: int) -> int:
     if not value:
         return default
     if not value.isdigit() or not 1 <= int(value) <= maximum:
-        raise InvalidFields({field: [f"Use a number from 1 to {maximum}."]})
+        raise InvalidFields(
+            {field: [_("Use a number from 1 to %(maximum)s.") % {"maximum": maximum}]}
+        )
     return int(value)
 
 
@@ -85,7 +88,7 @@ def _receivables(request: Request, basis: str | None = None) -> dict[str, Any]:
         try:
             shops = shops.filter(salesperson_id=UUID(q["salesperson"]))
         except ValueError as exc:
-            raise InvalidFields({"salesperson": ["Not a valid id."]}) from exc
+            raise InvalidFields({"salesperson": [_("Not a valid id.")]}) from exc
     used, rows = selectors.receivable_rows(list(shops.values_list("pk", flat=True)), basis=basis)
     if q.get("overdue", "").lower() in ("1", "true", "yes"):
         rows = [row for row in rows if row["overdue"] > 0]
@@ -143,7 +146,7 @@ class AgeingView(Guarded):
     def get(self, request: Request) -> Response:
         basis = request.query_params.get("basis") or None
         if basis not in (None, "INVOICE_DATE", "DUE_DATE"):
-            raise InvalidFields({"basis": ["Use INVOICE_DATE or DUE_DATE."]})
+            raise InvalidFields({"basis": [_("Use INVOICE_DATE or DUE_DATE.")]})
         return Response(s.ReceivablesPageSerializer(_receivables(request, basis)).data)
 
 
@@ -191,9 +194,9 @@ def statement_for(shop: Retailer, request: Request) -> dict[str, Any]:
     date_to = _date(q.get("date_to"), "date_to") or today
     date_from = _date(q.get("date_from"), "date_from") or date_to - timedelta(days=90)
     if date_from > date_to:
-        raise InvalidFields({"date_from": ["The start is after the end."]})
+        raise InvalidFields({"date_from": [_("The start is after the end.")]})
     if (date_to - date_from).days > 731:
-        raise InvalidFields({"date_from": ["Choose at most two years."]})
+        raise InvalidFields({"date_from": [_("Choose at most two years.")]})
     found = selectors.statement(shop.pk, date_from, date_to)
     return {
         "retailer": shop,
@@ -246,7 +249,7 @@ class AdjustmentsView(Guarded):
         v = data.validated_data
         shop = _shop(request, v["retailer"])
         if v["date"] > today_ist():
-            raise InvalidFields({"date": ["The date can't be in the future."]})
+            raise InvalidFields({"date": [_("The date can't be in the future.")]})
         adjustment: LedgerAdjustment = ledger.post_adjustment(
             shop.pk,
             v["kind"],

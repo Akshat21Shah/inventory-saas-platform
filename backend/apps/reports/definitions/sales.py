@@ -35,6 +35,7 @@ from django.db.models import (
 from django.db.models.fields.json import KT
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth, TruncWeek
 from django.db.models.lookups import IsNull
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
@@ -299,11 +300,17 @@ def cost_notes(groups: dict[Any, Figures]) -> list[str]:
     notes = []
     if estimated:
         notes.append(
-            f"{estimated} line(s) had no cost recorded when invoiced: today's cost price is used "
-            "(estimated)."
+            _(
+                "%(estimated)s line(s) had no cost recorded when invoiced: today's cost "
+                "price is used (estimated)."
+            )
+            % {"estimated": estimated}
         )
     if uncosted:
-        notes.append(f"{uncosted} line(s) have no cost price and are left out of the margin.")
+        notes.append(
+            _("%(uncosted)s line(s) have no cost price and are left out of the margin.")
+            % {"uncosted": uncosted}
+        )
     return notes
 
 
@@ -994,7 +1001,7 @@ register(
         rows=register_rows,
         totals=lambda ctx: ctx.once("register_totals", lambda: _register_totals(ctx)),
         notes=lambda ctx: [
-            "Credit notes are shown as minus amounts. Each total includes its round-off.",
+            _("Credit notes are shown as minus amounts. Each total includes its round-off."),
             *(
                 [
                     "Cost is what each invoice line recorded when issued; bills from before that "

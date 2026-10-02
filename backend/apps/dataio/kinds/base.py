@@ -4,6 +4,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from django.utils.functional import Promise
+from django.utils.translation import gettext as _
+
 from apps.accounts.models import User
 from apps.dataio.parsing import Sheet
 
@@ -14,7 +17,7 @@ class Column:
     label: str  # the header in templates and exports, used in messages
     spellings: tuple[str, ...] = ()  # other header texts people use
     required: bool = False  # needed to create a new record
-    help: str = ""
+    help: str | Promise = ""  # translated when shown (ADR-060)
     example: str = ""
 
 
@@ -32,7 +35,7 @@ class RowPlan:
 
     def error(self, label: str, message: str) -> None:
         """Any problem makes the whole row an error: it is reported, never partly applied."""
-        self.problems.append((label, message))
+        self.problems.append((label, str(message)))
         self.action = "ERROR"
 
     @property
@@ -40,7 +43,11 @@ class RowPlan:
         return not self.problems
 
     def messages(self) -> list[str]:
-        return [f"Row {self.number}, column “{label}”: {m}" for label, m in self.problems]
+        return [
+            _("Row %(row)s, column “%(column)s”: %(message)s")
+            % {"row": self.number, "column": label, "message": m}
+            for label, m in self.problems
+        ]
 
 
 class Kind(Protocol):

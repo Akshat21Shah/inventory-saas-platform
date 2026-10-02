@@ -22,6 +22,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.db.models import F, Sum
+from django.utils.translation import gettext
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -148,7 +149,9 @@ def _issue(
     # nothing is owed either way.
     only_free = bool(parts) and all(p.line.is_free and p.credit.total == 0 for p in parts)
     if totals.grand_total <= 0 and not only_free:
-        raise InvalidFields({"lines": ["There is nothing left to credit on this invoice."]})
+        raise InvalidFields(
+            {"lines": [gettext("There is nothing left to credit on this invoice.")]}
+        )
     applied = min(totals.grand_total, invoice.balance_due)
     series, number = numbering.next_number(DocumentType.CREDIT_NOTE, note_date)  # L6
     note: CreditNote = CreditNote.objects.create(
@@ -247,12 +250,19 @@ def _quantity_parts(invoice: Invoice, wanted: dict[UUID, tuple[Decimal, str]]) -
     for line_id, (qty, disposition) in wanted.items():
         line = lines.get(line_id)
         if line is None:
-            raise InvalidFields({"lines": ["That line isn't on this invoice."]})
+            raise InvalidFields({"lines": [gettext("That line isn't on this invoice.")]})
         done_qty, done = _credited(line)
         remaining_qty = Decimal(line.quantity) - done_qty
         if qty <= 0 or qty > remaining_qty:
             left = f"{remaining_qty.normalize():f}"
-            raise InvalidFields({"lines": [f"{line.description}: at most {left} can be credited."]})
+            raise InvalidFields(
+                {
+                    "lines": [
+                        gettext("%(description)s: at most %(left)s can be credited.")
+                        % {"description": line.description, "left": left}
+                    ]
+                }
+            )
         credit = credit_for_quantity(
             qty,
             invoiced_qty=Decimal(line.quantity),
@@ -292,15 +302,15 @@ def issue_return(
 ) -> CreditNote:
     """Goods sent back by the shop (ADR-046 item 5)."""
     if reason not in RETURN_REASONS:
-        raise InvalidFields({"reason": ["Choose why the goods came back."]})
+        raise InvalidFields({"reason": [gettext("Choose why the goods came back.")]})
     if reason == CreditNote.ReturnReason.OTHER and not note.strip():
-        raise InvalidFields({"note": ["Say why the goods came back."]})
+        raise InvalidFields({"note": [gettext("Say why the goods came back.")]})
     if not lines:
-        raise InvalidFields({"lines": ["Choose what came back."]})
+        raise InvalidFields({"lines": [gettext("Choose what came back.")]})
     if any(line.disposition not in Disposition.values for line in lines):
-        raise InvalidFields({"lines": ["Say what happened to the goods."]})
+        raise InvalidFields({"lines": [gettext("Say what happened to the goods.")]})
     if len({line.invoice_line_id for line in lines}) != len(lines):
-        raise InvalidFields({"lines": ["List each line once."]})
+        raise InvalidFields({"lines": [gettext("List each line once.")]})
     with transaction.atomic():
         invoice = _locked_invoice(invoice_id)
         parts = _quantity_parts(
@@ -357,9 +367,9 @@ def issue_price_adjustment(
 ) -> CreditNote:
     """A value correction (no goods move): taxable amounts per invoice line, with a reason."""
     if not note.strip():
-        raise InvalidFields({"note": ["Say why the price is being corrected."]})
+        raise InvalidFields({"note": [gettext("Say why the price is being corrected.")]})
     if not amounts or any(v <= 0 or v != v.quantize(Decimal("0.01")) for v in amounts.values()):
-        raise InvalidFields({"lines": ["Enter amounts above zero, in rupees and paise."]})
+        raise InvalidFields({"lines": [gettext("Enter amounts above zero, in rupees and paise.")]})
     with transaction.atomic():
         invoice = _locked_invoice(invoice_id)
         rounding = _rounding(require_tenant_id())
@@ -368,12 +378,17 @@ def issue_price_adjustment(
         for line_id, taxable in amounts.items():
             line = lines.get(line_id)
             if line is None:
-                raise InvalidFields({"lines": ["That line isn't on this invoice."]})
+                raise InvalidFields({"lines": [gettext("That line isn't on this invoice.")]})
             _, done = _credited(line)
             left = Components.of(line_tax(line)).minus(done)
             if taxable > left.taxable:
                 raise InvalidFields(
-                    {"lines": [f"{line.description}: at most ₹{left.taxable} can be credited."]}
+                    {
+                        "lines": [
+                            gettext("%(description)s: at most ₹%(taxable)s can be credited.")
+                            % {"description": line.description, "taxable": left.taxable}
+                        ]
+                    }
                 )
             credit = credit_for_taxable(
                 taxable, rates=line_tax(line), remaining=left, rounding=rounding

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy
 
 from common.error_codes import ErrorCode
 from common.errors import DomainError
@@ -23,7 +24,7 @@ class BaseModel(models.Model):
 class CrossTenantWrite(DomainError):
     status_code = 403
     code = ErrorCode.CROSS_TENANT_ACCESS
-    default_message = "This record belongs to a different workspace."
+    default_message = gettext_lazy("This record belongs to a different workspace.")
 
 
 class TenantManager[M: models.Model](models.Manager[M]):

@@ -12,6 +12,8 @@ Texts may use only the event's variables, written ``{{ variable }}``; nothing el
 from dataclasses import dataclass
 from typing import Any
 
+from django.utils.translation import gettext as _
+
 from apps.audit import services as audit
 from apps.notifications import approval
 from apps.notifications.catalog import EVENTS, whatsapp_template_name
@@ -103,37 +105,46 @@ def _check(data: TextInput, *, platform: bool) -> None:
         raise NotFound()
     if data.audience not in event.audiences:
         errors["audience"] = [
-            "This message only goes to the supplier."
+            _("This message only goes to the supplier.")
             if event.supplier_facing
-            else "This message only goes to staff."
+            else _("This message only goes to staff.")
             if data.audience == Audience.SHOP
-            else "This message only goes to shops."
+            else _("This message only goes to shops.")
         ]
     allowed_channels = tuple(Channel) if platform else TENANT_CHANNELS
     if data.channel not in allowed_channels:
-        errors["channel"] = ["WhatsApp and SMS texts are set by the platform (approved templates)."]
+        errors["channel"] = [
+            _("WhatsApp and SMS texts are set by the platform (approved templates).")
+        ]
     if not languages.is_known(data.locale):
-        errors["locale"] = [f"Choose one of: {', '.join(languages.codes())}."]
+        errors["locale"] = [
+            _("Choose one of: %(languages)s.") % {"languages": ", ".join(languages.codes())}
+        ]
     needs_subject = data.channel in TENANT_CHANNELS
     if needs_subject and not data.subject.strip():
-        errors["subject"] = ["Enter a title."]
+        errors["subject"] = [_("Enter a title.")]
     if len(data.subject) > MAX_SUBJECT:
-        errors["subject"] = [f"Use at most {MAX_SUBJECT} characters."]
+        errors["subject"] = [
+            _("Use at most %(max_subject)s characters.") % {"max_subject": MAX_SUBJECT}
+        ]
     limit = {Channel.WHATSAPP: WHATSAPP_MAX_BODY, Channel.SMS: SMS_MAX_BODY}.get(
         Channel(data.channel) if data.channel in Channel.values else Channel.IN_APP, MAX_BODY
     )
     if not data.body.strip():
-        errors["body"] = ["Enter the message."]
+        errors["body"] = [_("Enter the message.")]
     elif len(data.body) > limit:
-        errors["body"] = [f"Use at most {limit} characters."]
+        errors["body"] = [_("Use at most %(limit)s characters.") % {"limit": limit}]
     used = set(VARIABLE.findall(data.subject)) | set(VARIABLE.findall(data.body))
     allowed = variables_for(data.event_code, data.audience)
     unknown = sorted(used - set(allowed))
     if unknown:
         known = ", ".join(f"{{{{ {v} }}}}" for v in allowed)
-        errors.setdefault("body", []).append(f"Unknown: {', '.join(unknown)}. You can use {known}.")
+        errors.setdefault("body", []).append(
+            _("Unknown: %(unknown)s. You can use %(known)s.")
+            % {"unknown": ", ".join(unknown), "known": known}
+        )
     if "{%" in data.subject + data.body:
-        errors.setdefault("body", []).append("Only {{ variable }} placeholders are allowed.")
+        errors.setdefault("body", []).append(_("Only {{ variable }} placeholders are allowed."))
     if errors:
         raise InvalidFields(errors)
 
@@ -202,7 +213,7 @@ def save_platform_text(data: TextInput, whatsapp: WhatsAppFields | None = None) 
         and wa.category
         and wa.category not in WhatsAppCategory.values
     ):
-        raise InvalidFields({"category": ["Choose utility, marketing or authentication."]})
+        raise InvalidFields({"category": [_("Choose utility, marketing or authentication.")]})
     key = {
         "event_code": data.event_code,
         "audience": data.audience,

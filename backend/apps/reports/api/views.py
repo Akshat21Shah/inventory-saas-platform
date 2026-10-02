@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from django.http import HttpResponse
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -68,7 +69,7 @@ def _int(value: str | None, field: str, default: int) -> int:
     try:
         return int(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["A whole number."]}) from exc
+        raise InvalidFields({field: [_("A whole number.")]}) from exc
 
 
 class ReportListView(APIView):

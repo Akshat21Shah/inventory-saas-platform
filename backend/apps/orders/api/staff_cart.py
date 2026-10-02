@@ -7,6 +7,8 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -33,7 +35,7 @@ TAGS = ["orders"]
 class OnBehalfDisabled(DomainError):
     status_code = 403
     code = ErrorCode.PERMISSION_DENIED
-    default_message = "Ordering for shops is switched off in your settings."
+    default_message = gettext_lazy("Ordering for shops is switched off in your settings.")
 
 
 def _user(request: Request) -> User:
@@ -58,7 +60,7 @@ def _address(request: Request) -> UUID | None:
     try:
         return UUID(raw)
     except ValueError as exc:
-        raise InvalidFields({"address": ["Not a valid address."]}) from exc
+        raise InvalidFields({"address": [_("Not a valid address.")]}) from exc
 
 
 def _cart_response(request: Request, retailer: Retailer) -> Response:

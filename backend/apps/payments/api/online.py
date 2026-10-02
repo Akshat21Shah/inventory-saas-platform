@@ -8,6 +8,7 @@ from uuid import UUID
 from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -208,7 +209,7 @@ class PaymentIntentListView(generics.ListAPIView[PaymentIntent]):
             rows = rows.filter(retailer__salesperson=user)
         status = q.get("status", "")
         if status and status not in PaymentIntent.Status.values:
-            raise InvalidFields({"status": ["Not a valid value."]})
+            raise InvalidFields({"status": [_("Not a valid value.")]})
         if status:
             rows = rows.filter(status=status)
         retailer = _uuid(q.get("retailer"), "retailer")

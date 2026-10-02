@@ -25,6 +25,7 @@ from uuid import UUID
 
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 
 from apps.billing.tax import (
     ComponentRounding,
@@ -51,7 +52,7 @@ ZERO = Decimal("0")
 class PriceUnavailable(DomainError):
     status_code = 409
     code = ErrorCode.PRICE_UNAVAILABLE
-    default_message = "This product can't be sold right now."
+    default_message = gettext_lazy("This product can't be sold right now.")
 
 
 @dataclass(frozen=True)

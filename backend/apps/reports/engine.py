@@ -10,6 +10,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from django.utils.translation import gettext as _
 from rest_framework.exceptions import PermissionDenied
 
 from apps.accounts.models import User
@@ -118,7 +119,7 @@ def parse(report: Report, given: Mapping[str, Any]) -> dict[str, Any]:
             if f.default is not None:
                 params[f.key] = f.default()
             elif f.required:
-                errors[f.key] = ["This field is required."]
+                errors[f.key] = [_("This field is required.")]
             continue
         try:
             params[f.key] = _parse_one(f.kind, raw, f.choices)
@@ -126,9 +127,11 @@ def parse(report: Report, given: Mapping[str, Any]) -> dict[str, Any]:
             errors[f.key] = [str(exc)]
     if not errors and "date_from" in params and "date_to" in params:
         if params["date_from"] > params["date_to"]:
-            errors["date_to"] = ["The end date is before the start date."]
+            errors["date_to"] = [_("The end date is before the start date.")]
         elif days_between(params) > report.max_days:
-            errors["date_to"] = [f"Choose at most {report.max_days} days."]
+            errors["date_to"] = [
+                _("Choose at most %(max_days)s days.") % {"max_days": report.max_days}
+            ]
     if not errors and report.check is not None:
         errors = report.check(params)
     if errors:

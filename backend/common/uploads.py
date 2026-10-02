@@ -4,6 +4,7 @@ import io
 from dataclasses import dataclass
 
 from django.core.files.uploadedfile import UploadedFile
+from django.utils.translation import gettext as _
 from PIL import Image, UnidentifiedImageError
 
 from common.errors import InvalidFields
@@ -37,17 +38,31 @@ def validate_image(
     scripts. At most ``max_bytes`` (2 MB) and ``max_side`` (4096 px) on either side."""
     data = upload.read(max_bytes + 1)
     if len(data) > max_bytes:
-        raise InvalidFields({field: [f"The image is larger than {max_bytes // (1024 * 1024)} MB."]})
+        raise InvalidFields(
+            {
+                field: [
+                    _("The image is larger than %(value)s MB.")
+                    % {"value": max_bytes // (1024 * 1024)}
+                ]
+            }
+        )
     try:
         with Image.open(io.BytesIO(data)) as probe:
             fmt = probe.format or ""
             width, height = probe.size
             probe.verify()
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
-        raise InvalidFields({field: ["Upload a PNG, JPEG or WebP image."]}) from exc
+        raise InvalidFields({field: [_("Upload a PNG, JPEG or WebP image.")]}) from exc
     if fmt not in _FORMATS:
-        raise InvalidFields({field: ["Upload a PNG, JPEG or WebP image."]})
+        raise InvalidFields({field: [_("Upload a PNG, JPEG or WebP image.")]})
     if width > max_side or height > max_side:
-        raise InvalidFields({field: [f"The image must be at most {max_side} px wide and high."]})
+        raise InvalidFields(
+            {
+                field: [
+                    _("The image must be at most %(max_side)s px wide and high.")
+                    % {"max_side": max_side}
+                ]
+            }
+        )
     content_type, extension = _FORMATS[fmt]
     return ValidImage(data, content_type, extension, width, height)

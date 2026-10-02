@@ -6,6 +6,9 @@ from collections.abc import Iterable
 from decimal import Decimal
 from typing import Any
 
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
+
 from apps.accounts.models import User
 from apps.dataio.kinds.base import Column, RowPlan
 from apps.dataio.parsing import Sheet, parse_decimal
@@ -27,10 +30,24 @@ COLUMNS: tuple[Column, ...] = (
         "Hindustan Traders",
     ),
     C("gstin", "GSTIN", ("gst number", "gst no", "gstin uin"), False, "", "27AAGFK7315R1ZP"),
-    C("state", "State", ("state name", "state code"), False, "Name or 2-digit GST code.", ""),
+    C(
+        "state",
+        "State",
+        ("state name", "state code"),
+        False,
+        gettext_lazy("Name or 2-digit GST code."),
+        "",
+    ),
     C("contact_name", "Contact person", ("contact", "contact name"), False, "", "Ravi Shah"),
     C("phone", "Phone", ("mobile", "phone number", "mobile number"), False, "", "9822012345"),
-    C("email", "Email", ("email id", "e-mail"), False, "Purchase orders are sent here.", ""),
+    C(
+        "email",
+        "Email",
+        ("email id", "e-mail"),
+        False,
+        gettext_lazy("Purchase orders are sent here."),
+        "",
+    ),
     C("address_line1", "Address", ("address line 1", "street"), False, "", "Plot 4, MIDC"),
     C("address_line2", "Address line 2", ("area", "locality"), False, "", ""),
     C("city", "City", ("town",), False, "", "Pune"),
@@ -40,7 +57,7 @@ COLUMNS: tuple[Column, ...] = (
         "Payment days",
         ("credit days", "payment terms", "terms"),
         False,
-        "Days you have to pay them.",
+        gettext_lazy("Days you have to pay them."),
         "30",
     ),
     C(
@@ -48,7 +65,7 @@ COLUMNS: tuple[Column, ...] = (
         "Delivery days",
         ("lead time", "lead time days", "delivery time"),
         False,
-        "Days from ordering to receiving. Empty = your usual delivery time.",
+        gettext_lazy("Days from ordering to receiving. Empty = your usual delivery time."),
         "5",
     ),
     C("notes", "Notes", ("remarks", "comment"), False, "", ""),
@@ -88,25 +105,31 @@ class SuppliersKind:
             # A supplier is the same by GSTIN or by name.
             keys = [k for k in (data.get("gstin"), name_key(v.get("name", ""))) if k]
             if not keys:
-                plan.error(LABEL["name"], "Enter the supplier's name.")
+                plan.error(LABEL["name"], _("Enter the supplier's name."))
                 continue
             twice = next((seen[k] for k in keys if k in seen), None)
             if twice is not None:
-                plan.error(LABEL["name"], f"Also in row {twice}. List each supplier once.")
+                plan.error(
+                    LABEL["name"],
+                    _("Also in row %(twice)s. List each supplier once.") % {"twice": twice},
+                )
                 continue
             seen.update(dict.fromkeys(keys, row.number))
             existing = by_gstin.get(data["gstin"]) if data.get("gstin") else None
             existing = existing or by_name.get(name_key(v.get("name", "")))
             if existing is None:
                 if not v.get("name"):
-                    plan.error(LABEL["name"], "Needed for a new supplier.")
+                    plan.error(LABEL["name"], _("Needed for a new supplier."))
                 if plan.ok:
                     plan.action, plan.data = "NEW", data
             elif mode == "ADD_ONLY":
                 plan.error(
                     LABEL["name"],
-                    f"{existing.name} is already a supplier. "
-                    "To change it, choose “Add new and update existing”.",
+                    _(
+                        "%(name)s is already a supplier. To change it, choose “Add new and "
+                        "update existing”."
+                    )
+                    % {"name": existing.name},
                 )
             elif plan.ok:
                 self._plan_update(plan, data, existing)
@@ -117,9 +140,11 @@ class SuppliersKind:
         if v.get("notes"):
             out["notes"] = v["notes"].strip()
         if out.get("email") and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", out["email"]):
-            plan.error(LABEL["email"], f"{v['email']} isn't an email address.")
+            plan.error(
+                LABEL["email"], _("%(email)s isn't an email address.") % {"email": v["email"]}
+            )
         if out.get("phone") and not services.PHONE.fullmatch(out["phone"]):
-            plan.error(LABEL["phone"], "Enter a phone number with 10 to 15 digits.")
+            plan.error(LABEL["phone"], _("Enter a phone number with 10 to 15 digits."))
         if v.get("gstin"):
             gstin = normalize_gstin(v["gstin"])
             problem = gstin_problem(gstin)
@@ -131,16 +156,24 @@ class SuppliersKind:
             raw = v["state"].strip()
             state = states.get(raw.zfill(2) if raw.isdigit() else raw.lower())
             if state is None:
-                plan.error(LABEL["state"], f"{raw} isn't a state. Use the name or the GST code.")
+                plan.error(
+                    LABEL["state"],
+                    _("%(raw)s isn't a state. Use the name or the GST code.") % {"raw": raw},
+                )
             elif out.get("gstin") and out["gstin"][:2] != state:
-                plan.error(LABEL["state"], "The state must match the first 2 digits of the GSTIN.")
+                plan.error(
+                    LABEL["state"], _("The state must match the first 2 digits of the GSTIN.")
+                )
             else:
                 out["state_id"] = state
         if v.get("pincode"):
             if re.fullmatch(r"[1-9][0-9]{5}", v["pincode"].strip()):
                 out["pincode"] = v["pincode"].strip()
             else:
-                plan.error(LABEL["pincode"], f"{v['pincode']} isn't a 6-digit PIN code.")
+                plan.error(
+                    LABEL["pincode"],
+                    _("%(pincode)s isn't a 6-digit PIN code.") % {"pincode": v["pincode"]},
+                )
         for name, low, high in (("payment_terms_days", 0, 365), ("lead_time_days", 1, 365)):
             if v.get(name):
                 try:
@@ -149,7 +182,10 @@ class SuppliersKind:
                         raise ValueError
                     out[name] = int(days)
                 except ValueError:
-                    plan.error(LABEL[name], f"Enter {low} to {high} days.")
+                    plan.error(
+                        LABEL[name],
+                        _("Enter %(low)s to %(high)s days.") % {"low": low, "high": high},
+                    )
         return out
 
     def _plan_update(self, plan: RowPlan, data: dict[str, Any], supplier: Supplier) -> None:

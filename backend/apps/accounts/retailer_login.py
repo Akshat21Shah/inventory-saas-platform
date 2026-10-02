@@ -17,6 +17,7 @@ from uuid import UUID
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 
 from apps.accounts import selectors
 from apps.accounts.models import LoginChallenge, OTPRequest, User
@@ -45,7 +46,7 @@ from common.tenancy import tenant_context
 class OtpInvalid(DomainError):
     status_code = 400
     code = ErrorCode.OTP_INVALID
-    default_message = "That code is wrong or has expired. Request a new code."
+    default_message = gettext_lazy("That code is wrong or has expired. Request a new code.")
 
 
 def _hash_code(phone: str, code: str) -> str:

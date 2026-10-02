@@ -3,6 +3,7 @@
 from typing import Any, cast
 from uuid import UUID
 
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -86,9 +87,9 @@ class EInvoiceListView(generics.ListAPIView[EInvoiceRecord]):
         q = self.request.query_params
         status, kind = q.get("status", ""), q.get("document_type", "")
         if status and status not in EInvoiceRecord.Status.values:
-            raise InvalidFields({"status": ["Not a valid e-invoice status."]})
+            raise InvalidFields({"status": [_("Not a valid e-invoice status.")]})
         if kind and kind not in DocumentType.values:
-            raise InvalidFields({"document_type": ["Choose invoice or credit note."]})
+            raise InvalidFields({"document_type": [_("Choose invoice or credit note.")]})
         return selectors.einvoice_list(selectors.Filters(status, kind, q.get("search", "")))
 
     def paginate_queryset(self, queryset: Any) -> Any:
@@ -229,7 +230,7 @@ class EWayBillListView(generics.ListAPIView[EWayBill]):
         q = self.request.query_params
         status = q.get("status", "")
         if status and status not in EWayBill.Status.values:
-            raise InvalidFields({"status": ["Not a valid e-way bill status."]})
+            raise InvalidFields({"status": [_("Not a valid e-way bill status.")]})
         needs_action = q.get("needs_action", "") in ("1", "true")
         return selectors.ewaybill_list(
             selectors.Filters(status, "", q.get("search", ""), needs_action=needs_action)

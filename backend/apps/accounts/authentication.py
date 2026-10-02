@@ -11,6 +11,7 @@ On top of the signed token (``common.authentication``), every request re-checks:
 from typing import Any
 from uuid import UUID
 
+from django.utils.translation import gettext as _
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.request import Request
@@ -44,9 +45,9 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
             if impersonating:
                 self._check_impersonation(request, user, token, UUID(str(raw_tenant)))
         elif user.user_type != User.UserType.PLATFORM:
-            raise AuthenticationFailed("This session is not valid.", code="token_not_valid")
+            raise AuthenticationFailed(_("This session is not valid."), code="token_not_valid")
         elif host is not None and host.kind == HostKind.TENANT:
-            raise AuthenticationFailed("This session is not valid here.", code="wrong_host")
+            raise AuthenticationFailed(_("This session is not valid here."), code="wrong_host")
         return user, token
 
     @staticmethod
@@ -60,7 +61,7 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
             or str(session.impersonator_id) != str(token.get(IMPERSONATOR_CLAIM))
         ):
             raise AuthenticationFailed(
-                "This support session has ended.", code="impersonation_ended"
+                _("This support session has ended."), code="impersonation_ended"
             )
         user.__dict__["impersonation_session"] = session
         view = (getattr(request, "parser_context", None) or {}).get("view")
@@ -81,24 +82,26 @@ class SessionJWTAuthentication(TenantJWTAuthentication):
     ) -> None:
         info = tenant_info(tenant_id)
         if info is None:
-            raise AuthenticationFailed("This session is not valid.", code="token_not_valid")
+            raise AuthenticationFailed(_("This session is not valid."), code="token_not_valid")
         if info.status != Tenant.Status.ACTIVE and not impersonating:
             raise TenantUnavailable()  # ADR-018: support may still look at a suspended tenant
         if host is not None and host.kind == HostKind.ADMIN:
-            raise AuthenticationFailed("This session is not valid here.", code="wrong_host")
+            raise AuthenticationFailed(_("This session is not valid here."), code="wrong_host")
         if host is not None and host.kind == HostKind.TENANT and host.tenant_slug != info.slug:
-            raise AuthenticationFailed("This session is not valid here.", code="wrong_host")
+            raise AuthenticationFailed(_("This session is not valid here."), code="wrong_host")
         if user.user_type == User.UserType.RETAILER and (
             user.tenant_id != tenant_id
             or retailer_login_for_tenant(user.phone or "", tenant_id) is None
         ):
             if user.tenant_id == tenant_id:
                 refuse_if_on_hold(user.phone or "", tenant_id)
-            raise AuthenticationFailed("You no longer have access.", code="retailer_inactive")
+            raise AuthenticationFailed(_("You no longer have access."), code="retailer_inactive")
         if user.user_type == User.UserType.STAFF:
             membership = active_membership(user, tenant_id)
             if membership is None:
-                raise AuthenticationFailed("You no longer have access.", code="membership_inactive")
+                raise AuthenticationFailed(
+                    _("You no longer have access."), code="membership_inactive"
+                )
             # Prime the per-request permission cache with the membership we just loaded.
             user.__dict__.setdefault("_perm_cache", {})[tenant_id] = role_codes(membership.role_id)
             user.__dict__["membership"] = membership

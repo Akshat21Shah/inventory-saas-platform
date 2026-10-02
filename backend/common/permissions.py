@@ -7,6 +7,7 @@ implements from Membership → Role → Permission. Until then the check fails c
 from collections.abc import Callable
 from typing import Any
 
+from django.utils.translation import gettext as _
 from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
@@ -74,7 +75,7 @@ class FeatureOn(BasePermission):
         code: str = getattr(view, "required_feature", "")
         if code and not is_feature_enabled(code):
             raise DomainError(
-                "This module isn't switched on for your business.",
+                _("This module isn't switched on for your business."),
                 code=ErrorCode.MODULE_NOT_ENABLED,
                 status_code=403,
             )

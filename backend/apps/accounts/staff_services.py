@@ -14,6 +14,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import Invitation, Membership, Role, User
 from apps.accounts.permissions import OWNER_ROLE
@@ -43,19 +45,19 @@ from common.tenancy import require_tenant_id, tenant_context
 class PlanLimitReached(DomainError):
     status_code = 403
     code = ErrorCode.PLAN_LIMIT_REACHED
-    default_message = "Your plan's limit has been reached."
+    default_message = gettext_lazy("Your plan's limit has been reached.")
 
 
 class LastOwner(DomainError):
     status_code = 400
     code = ErrorCode.LAST_OWNER
-    default_message = "Every business needs at least one active owner."
+    default_message = gettext_lazy("Every business needs at least one active owner.")
 
 
 class AlreadyAMember(DomainError):
     status_code = 409
     code = ErrorCode.ALREADY_A_MEMBER
-    default_message = "This person is already on your team."
+    default_message = gettext_lazy("This person is already on your team.")
 
 
 def assignable_role(role_code: str) -> Role:
@@ -67,7 +69,7 @@ def assignable_role(role_code: str) -> Role:
         or candidates.filter(tenant__isnull=True).first()
     )
     if role is None:
-        raise InvalidFields({"role_code": ["Choose one of the listed roles."]})
+        raise InvalidFields({"role_code": [_("Choose one of the listed roles.")]})
     return role
 
 
@@ -112,14 +114,14 @@ def invite_staff(*, email: str, role_code: str, invited_by: User | None) -> Invi
     role = assignable_role(role_code)
     existing = User.objects.filter(email=email).first()
     if existing is not None and existing.user_type != User.UserType.STAFF:
-        raise InvalidFields({"email": ["This email can't be invited."]})
+        raise InvalidFields({"email": [_("This email can't be invited.")]})
     if existing is not None and Membership.objects.filter(user=existing, is_active=True).exists():
         raise AlreadyAMember()
     if Invitation.objects.filter(
         email=email, status=Invitation.Status.PENDING, expires_at__gt=timezone.now()
     ).exists():
         raise InvalidFields(
-            {"email": ["An invitation is already waiting for this email. Resend it instead."]}
+            {"email": [_("An invitation is already waiting for this email. Resend it instead.")]}
         )
     # A stale pending row (expired) would block the partial unique index: mark it expired.
     Invitation.objects.filter(email=email, status=Invitation.Status.PENDING).update(
@@ -147,7 +149,7 @@ def _pending(invitation_id: UUID) -> Invitation:
     if invitation is None:
         raise NotFound()
     if invitation.status not in (Invitation.Status.PENDING, Invitation.Status.EXPIRED):
-        raise InvalidFields({"status": ["This invitation can no longer be changed."]})
+        raise InvalidFields({"status": [_("This invitation can no longer be changed.")]})
     return invitation
 
 
@@ -227,14 +229,14 @@ def _joining_user(invitation: Invitation, full_name: str, password: str) -> User
         except DjangoValidationError as exc:
             raise InvalidFields({"password": list(exc.messages)}) from exc
         if not full_name.strip():
-            raise InvalidFields({"full_name": ["Enter your name."]})
+            raise InvalidFields({"full_name": [_("Enter your name.")]})
         return User.objects.create_user(
             invitation.email, password, user_type=User.UserType.STAFF, full_name=full_name.strip()
         )
     if user.user_type != User.UserType.STAFF or not user.is_active:
         raise TokenInvalid()
     if not user.check_password(password):
-        raise InvalidFields({"password": ["Enter the password of your existing account."]})
+        raise InvalidFields({"password": [_("Enter the password of your existing account.")]})
     return user
 
 
@@ -318,7 +320,7 @@ def change_member(
     if was_owner and not stays_owner and owners == [membership.pk]:
         raise LastOwner()
     if membership.user_id == by.pk and membership.is_active and not new_active:
-        raise InvalidFields({"is_active": ["You can't deactivate yourself."]})
+        raise InvalidFields({"is_active": [_("You can't deactivate yourself.")]})
     if new_active and not membership.is_active:
         _require_seat(require_tenant_id())
 

@@ -14,6 +14,7 @@ from typing import Any
 from django.core.cache import cache, caches
 from django.core.cache.backends.locmem import LocMemCache
 from django.core.cache.backends.redis import RedisCache
+from django.utils.translation import gettext_lazy
 
 from common.error_codes import ErrorCode
 from common.errors import DomainError
@@ -22,7 +23,7 @@ from common.errors import DomainError
 class RateLimited(DomainError):
     status_code = 429
     code = ErrorCode.RATE_LIMITED
-    default_message = "Too many attempts. Please wait a moment and try again."
+    default_message = gettext_lazy("Too many attempts. Please wait a moment and try again.")
 
     def __init__(self, retry_after: int) -> None:
         super().__init__(details={"retry_after": retry_after})

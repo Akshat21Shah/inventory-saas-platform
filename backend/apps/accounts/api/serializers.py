@@ -3,6 +3,7 @@
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apps.accounts.models import User
@@ -67,7 +68,7 @@ class MfaVerifyInputSerializer(serializers.Serializer[Any]):
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         if not attrs.get("code") and not attrs.get("recovery_code"):
-            raise serializers.ValidationError({"code": ["Enter the code from your app."]})
+            raise serializers.ValidationError({"code": [_("Enter the code from your app.")]})
         return attrs
 
 

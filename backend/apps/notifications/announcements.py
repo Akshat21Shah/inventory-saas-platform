@@ -9,6 +9,7 @@ from uuid import UUID
 
 from django.db.models import Q, QuerySet
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -32,15 +33,15 @@ class AnnouncementInput:
 def _check(data: AnnouncementInput) -> None:
     errors: dict[str, list[str]] = {}
     if not data.title.strip():
-        errors["title"] = ["Enter a title."]
+        errors["title"] = [_("Enter a title.")]
     elif len(data.title) > MAX_TITLE:
-        errors["title"] = [f"Use at most {MAX_TITLE} characters."]
+        errors["title"] = [_("Use at most %(max_title)s characters.") % {"max_title": MAX_TITLE}]
     if not data.body.strip():
-        errors["body"] = ["Enter the message."]
+        errors["body"] = [_("Enter the message.")]
     elif len(data.body) > MAX_BODY:
-        errors["body"] = [f"Use at most {MAX_BODY} characters."]
+        errors["body"] = [_("Use at most %(max_body)s characters.") % {"max_body": MAX_BODY}]
     if data.ends_at is not None and data.ends_at <= data.starts_at:
-        errors["ends_at"] = ["The end must be after the start."]
+        errors["ends_at"] = [_("The end must be after the start.")]
     if errors:
         raise InvalidFields(errors)
 

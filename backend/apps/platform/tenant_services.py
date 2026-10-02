@@ -11,6 +11,8 @@ from uuid import UUID
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts import staff_services
 from apps.accounts.models import Invitation, Membership, User
@@ -56,7 +58,7 @@ TENANT_BUSINESS_FIELDS = (
 class SlugChangeNotConfirmed(DomainError):
     status_code = 400
     code = ErrorCode.SLUG_CHANGE_NOT_CONFIRMED
-    default_message = "Confirm the web address change to continue."
+    default_message = gettext_lazy("Confirm the web address change to continue.")
 
 
 @dataclass(frozen=True)
@@ -103,7 +105,8 @@ def _check_gst_identity(tenant: Tenant) -> None:
         errors["gstin"] = [problem]
     elif tenant.state_id != tenant.gstin[:2]:
         errors["state_code"] = [
-            f"The state must match the first 2 digits of the GSTIN ({tenant.gstin[:2]})."
+            _("The state must match the first 2 digits of the GSTIN (%(gstin)s).")
+            % {"gstin": tenant.gstin[:2]}
         ]
     if errors:
         raise InvalidFields(errors)
@@ -119,7 +122,7 @@ def onboard_tenant(data: OnboardingInput, *, by: User) -> Tenant:
         else Plan.objects.get(is_default=True)
     )
     if plan is None:
-        raise InvalidFields({"plan_code": ["Choose an active plan."]})
+        raise InvalidFields({"plan_code": [_("Choose an active plan.")]})
     tenant = Tenant(
         name=data.name.strip(),
         legal_name=data.legal_name.strip(),
@@ -172,7 +175,7 @@ GST_IDENTITY = ("gstin", "legal_name", "state_id")
 class GstIdentityLocked(DomainError):
     status_code = 409
     code = ErrorCode.GST_IDENTITY_LOCKED
-    default_message = (
+    default_message = gettext_lazy(
         "The GSTIN, legal name and state can't be changed after the first invoice. "
         "Ask the platform team."
     )
@@ -238,7 +241,7 @@ def change_gst_identity(
     """The super admin's separate action for a locked GST identity (task 5.13): a reason, an
     audit entry; invoices already issued keep their snapshot."""
     if not reason.strip():
-        raise InvalidFields({"reason": ["Say why the GST identity is changing."]})
+        raise InvalidFields({"reason": [_("Say why the GST identity is changing.")]})
     tenant = _tenant(tenant_id, lock=True)
     before = {f: getattr(tenant, f) for f in (*GST_IDENTITY, "pan")}
     for field in GST_IDENTITY:
@@ -270,7 +273,7 @@ def suspend_tenant(tenant_id: UUID, *, reason: str, by: User) -> Tenant:
     """ADR-018: every login of this tenant stops at once; all data is kept."""
     tenant = _tenant(tenant_id, lock=True)
     if not reason.strip():
-        raise InvalidFields({"reason": ["Enter the reason for suspending this business."]})
+        raise InvalidFields({"reason": [_("Enter the reason for suspending this business.")]})
     if tenant.status == Tenant.Status.SUSPENDED:
         return tenant
     old = tenant.status
@@ -348,7 +351,7 @@ def change_plan(tenant_id: UUID, plan_code: str, *, by: User) -> Subscription:
     tenant = _tenant(tenant_id)
     plan = Plan.objects.filter(code=plan_code, is_active=True).first()
     if plan is None:
-        raise InvalidFields({"plan_code": ["Choose an active plan."]})
+        raise InvalidFields({"plan_code": [_("Choose an active plan.")]})
     with tenant_context(tenant.pk):
         current: Subscription | None = (
             Subscription.objects.select_for_update().filter(is_current=True).first()
@@ -375,7 +378,7 @@ def resend_owner_invitation(tenant_id: UUID, *, by: User) -> Invitation:
     """ADR-030: while ONBOARDING, send the owner a fresh link (the previous one stops working)."""
     tenant = _tenant(tenant_id)
     if tenant.status != Tenant.Status.ONBOARDING:
-        raise InvalidFields({"status": ["The owner has already joined this business."]})
+        raise InvalidFields({"status": [_("The owner has already joined this business.")]})
     with tenant_context(tenant.pk):
         invitation = (
             Invitation.objects.filter(role__code=OWNER_ROLE, role__tenant__isnull=True)

@@ -6,6 +6,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from django.db import transaction
+from django.utils.translation import gettext
 
 from apps.accounts.models import User
 from apps.catalog.models import Product
@@ -49,9 +50,15 @@ def quote(cart: Cart, *, address_id: UUID | None = None) -> Quote:
 
 def _valid_qty(product: Product, qty: Decimal) -> Decimal:
     if qty < 0 or qty > MAX_QTY or qty != qty.quantize(QTY_STEP):
-        raise InvalidFields({"quantity": ["Enter a quantity between 0 and 100,000."]})
+        raise InvalidFields({"quantity": [gettext("Enter a quantity between 0 and 100,000.")]})
     if not product.unit.allows_decimal and qty % 1:
-        raise InvalidFields({"quantity": [f"{product.unit.name} is counted in whole numbers."]})
+        raise InvalidFields(
+            {
+                "quantity": [
+                    gettext("%(name)s is counted in whole numbers.") % {"name": product.unit.name}
+                ]
+            }
+        )
     return qty
 
 
@@ -70,11 +77,18 @@ def set_quantity(cart: Cart, product_id: UUID, qty: Decimal) -> None:
         else Product.objects.select_related("unit").get(pk=product_id)
     )
     if product is None:
-        raise NotFound("This product isn't available.")
+        raise NotFound(gettext("This product isn't available."))
     qty = _valid_qty(product, qty)
     if line is None:
         if cart.lines.count() >= MAX_LINES:
-            raise InvalidFields({"quantity": [f"A cart can hold up to {MAX_LINES} products."]})
+            raise InvalidFields(
+                {
+                    "quantity": [
+                        gettext("A cart can hold up to %(max_lines)s products.")
+                        % {"max_lines": MAX_LINES}
+                    ]
+                }
+            )
         CartLine.objects.create(cart=cart, product=product, quantity=qty)
     else:
         line.quantity = qty

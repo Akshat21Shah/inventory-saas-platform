@@ -9,6 +9,8 @@ from decimal import Decimal
 from typing import Any
 
 from django.db.models import Count, F, Max, Min, Q, Sum
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.ledger.selectors import BUCKETS, ageing
@@ -35,7 +37,10 @@ COUNTED = (Payment.Status.RECEIVED, Payment.Status.CLEARED, Payment.Status.PENDI
 MODE_LABELS = dict(Payment.Mode.choices)
 STATUS_LABELS = dict(Payment.Status.choices)
 HANDOVER_LABELS = dict(Payment.Handover.choices)
-BASIS_LABELS = {"INVOICE_DATE": "the bill date", "DUE_DATE": "the due date"}
+BASIS_LABELS = {
+    "INVOICE_DATE": gettext_lazy("the bill date"),
+    "DUE_DATE": gettext_lazy("the due date"),
+}
 
 SALESPERSON = Filter("salesperson", "Salesperson", FilterKind.ID, entity="staff")
 SHOP = Filter("shop", "Shop", FilterKind.ID, entity="shop")
@@ -125,7 +130,10 @@ register(
         filters=(SALESPERSON, Filter("overdue_only", "Overdue only", FilterKind.BOOL)),
         rows=lambda ctx: _ageing(ctx)[1],
         totals=ageing_totals,
-        notes=lambda ctx: [f"Aged from {BASIS_LABELS.get(_ageing(ctx)[0], _ageing(ctx)[0])}."],
+        notes=lambda ctx: [
+            _("Aged from %(basis)s.")
+            % {"basis": BASIS_LABELS.get(_ageing(ctx)[0], _ageing(ctx)[0])}
+        ],
         pdf=True,
     )
 )
@@ -344,9 +352,11 @@ register(
             )
         },
         notes=lambda ctx: [
-            "Collected: payments each salesperson collected themselves in the period. Still "
-            "with them: not yet handed over, whenever collected. Received from their shops: "
-            "every payment from the shops now assigned to them, by any means."
+            _(
+                "Collected: payments each salesperson collected themselves in the period. Still "
+                "with them: not yet handed over, whenever collected. Received from their shops: "
+                "every payment from the shops now assigned to them, by any means."
+            )
         ],
     )
 )

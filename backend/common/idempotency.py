@@ -18,6 +18,7 @@ from celery import shared_task
 from django.conf import settings
 from django.db import connection
 from django.utils import timezone
+from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.request import Request
@@ -51,12 +52,12 @@ def idempotent(scope: str) -> Callable[[Callable[..., Response]], Callable[..., 
             key = request.headers.get(HEADER, "")
             if not key:
                 raise DomainError(
-                    "An Idempotency-Key header is required.",
+                    gettext("An Idempotency-Key header is required."),
                     code=ErrorCode.IDEMPOTENCY_KEY_REQUIRED,
                 )
             if not _KEY_RE.match(key):
                 raise DomainError(
-                    "Invalid Idempotency-Key.", code=ErrorCode.IDEMPOTENCY_KEY_INVALID
+                    gettext("Invalid Idempotency-Key."), code=ErrorCode.IDEMPOTENCY_KEY_INVALID
                 )
             if not connection.in_atomic_block:
                 raise RuntimeError("@idempotent views must run inside ATOMIC_REQUESTS")
@@ -86,7 +87,7 @@ def idempotent(scope: str) -> Callable[[Callable[..., Response]], Callable[..., 
                 existing = IdempotencyRecord.objects.get(user_id=user_id, scope=scope, key=key)
                 if existing.request_hash != req_hash:
                     raise DomainError(
-                        "This Idempotency-Key was already used for a different request.",
+                        gettext("This Idempotency-Key was already used for a different request."),
                         code=ErrorCode.IDEMPOTENCY_KEY_REUSED,
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     )

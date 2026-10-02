@@ -8,6 +8,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.db.models import QuerySet
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -45,7 +46,7 @@ def _uuid(value: str | None, field: str) -> UUID | None:
     try:
         return UUID(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Not a valid id."]}) from exc
+        raise InvalidFields({field: [_("Not a valid id.")]}) from exc
 
 
 def _date(value: str | None, field: str) -> date | None:
@@ -54,7 +55,7 @@ def _date(value: str | None, field: str) -> date | None:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Use YYYY-MM-DD."]}) from exc
+        raise InvalidFields({field: [_("Use YYYY-MM-DD.")]}) from exc
 
 
 class Guarded(APIView):
@@ -123,7 +124,7 @@ class PaymentListCreateView(Guarded, generics.ListAPIView[Payment]):
             ("handover_status", Payment.Handover.values),
         ):
             if q.get(field) and q[field] not in allowed:
-                raise InvalidFields({field: ["Not a valid value."]})
+                raise InvalidFields({field: [_("Not a valid value.")]})
         return selectors.payment_list(
             _user(self.request),
             selectors.PaymentFilters(

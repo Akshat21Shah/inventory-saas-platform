@@ -9,6 +9,8 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models.functions import Lower
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.catalog import selectors, services
@@ -25,7 +27,7 @@ COLUMNS: tuple[Column, ...] = (
         "Product code",
         ("code", "item code", "sku", "product id", "item no"),
         True,
-        "Your code for the product. Unique; used to find it again.",
+        gettext_lazy("Your code for the product. Unique; used to find it again."),
         "PG-100",
     ),
     C(
@@ -33,7 +35,7 @@ COLUMNS: tuple[Column, ...] = (
         "Product name",
         ("name", "item name", "product", "description of goods"),
         True,
-        "The name shops see.",
+        gettext_lazy("The name shops see."),
         "Parle-G Glucose Biscuits 100g",
     ),
     C(
@@ -41,7 +43,7 @@ COLUMNS: tuple[Column, ...] = (
         "Unit",
         ("uom", "unit of measure", "units"),
         True,
-        "The unit you sell in: a unit code from Catalog → Units (e.g. PCS, BOX, KG).",
+        gettext_lazy("The unit you sell in: a unit code from Catalog → Units (e.g. PCS, BOX, KG)."),
         "PCS",
     ),
     C(
@@ -49,7 +51,7 @@ COLUMNS: tuple[Column, ...] = (
         "HSN code",
         ("hsn", "hsn sac", "hsn sac code", "hsn code no"),
         True,
-        "4 to 8 digits.",
+        gettext_lazy("4 to 8 digits."),
         "1905",
     ),
     C(
@@ -57,7 +59,7 @@ COLUMNS: tuple[Column, ...] = (
         "GST rate",
         ("gst", "gst %", "tax rate", "gst rate %", "igst rate"),
         True,
-        "The GST % in use today, e.g. 5 or 18.",
+        gettext_lazy("The GST % in use today, e.g. 5 or 18."),
         "5",
     ),
     C(
@@ -65,7 +67,7 @@ COLUMNS: tuple[Column, ...] = (
         "Price",
         ("base price", "selling price", "rate", "sale price", "price rs"),
         True,
-        "Your selling price per unit.",
+        gettext_lazy("Your selling price per unit."),
         "9.00",
     ),
     C(
@@ -73,7 +75,7 @@ COLUMNS: tuple[Column, ...] = (
         "MRP",
         ("maximum retail price", "mrp rs"),
         False,
-        "Printed MRP (includes GST).",
+        gettext_lazy("Printed MRP (includes GST)."),
         "10.00",
     ),
     C(
@@ -81,7 +83,7 @@ COLUMNS: tuple[Column, ...] = (
         "Category",
         ("category path", "group", "product category"),
         False,
-        "Up to 3 levels, separated by >. Missing categories are created.",
+        gettext_lazy("Up to 3 levels, separated by >. Missing categories are created."),
         "Food > Biscuits",
     ),
     C(
@@ -89,7 +91,7 @@ COLUMNS: tuple[Column, ...] = (
         "Brand",
         ("brand name", "company", "make"),
         False,
-        "Missing brands are created.",
+        gettext_lazy("Missing brands are created."),
         "Parle",
     ),
     C(
@@ -97,7 +99,7 @@ COLUMNS: tuple[Column, ...] = (
         "Minimum order",
         ("min order qty", "moq", "minimum order qty"),
         False,
-        "Smallest quantity a shop can order (default 1).",
+        gettext_lazy("Smallest quantity a shop can order (default 1)."),
         "1",
     ),
     C(
@@ -105,7 +107,7 @@ COLUMNS: tuple[Column, ...] = (
         "Order in multiples of",
         ("order multiple", "multiple", "lot size"),
         False,
-        "Shops order in steps of this (default 1).",
+        gettext_lazy("Shops order in steps of this (default 1)."),
         "1",
     ),
     C(
@@ -113,7 +115,7 @@ COLUMNS: tuple[Column, ...] = (
         "Pack unit",
         ("pack", "outer unit"),
         False,
-        "Optional bigger unit, e.g. BOX. Needs a pack size.",
+        gettext_lazy("Optional bigger unit, e.g. BOX. Needs a pack size."),
         "BOX",
     ),
     C(
@@ -121,7 +123,7 @@ COLUMNS: tuple[Column, ...] = (
         "Pack size",
         ("units per pack", "pcs per box", "case size"),
         False,
-        "How many units are in one pack.",
+        gettext_lazy("How many units are in one pack."),
         "12",
     ),
     C(
@@ -129,7 +131,7 @@ COLUMNS: tuple[Column, ...] = (
         "Reorder level",
         ("reorder qty", "min stock"),
         False,
-        "Stock level that should trigger a reorder.",
+        gettext_lazy("Stock level that should trigger a reorder."),
         "50",
     ),
     C(
@@ -137,7 +139,7 @@ COLUMNS: tuple[Column, ...] = (
         "Barcodes",
         ("barcode", "ean", "upc"),
         False,
-        "One or more, separated by commas.",
+        gettext_lazy("One or more, separated by commas."),
         "8901719101038",
     ),
     C(
@@ -145,7 +147,7 @@ COLUMNS: tuple[Column, ...] = (
         "Tags",
         ("keywords",),
         False,
-        "Words that help search, separated by commas.",
+        gettext_lazy("Words that help search, separated by commas."),
         "glucose, tea time",
     ),
     C("description", "Description", ("details", "long description"), False, "", ""),
@@ -154,16 +156,23 @@ COLUMNS: tuple[Column, ...] = (
         "Show in shop",
         ("visible in shop", "shop visible"),
         False,
-        "Yes or No (default Yes).",
+        gettext_lazy("Yes or No (default Yes)."),
         "Yes",
     ),
-    C("is_active", "Active", ("status", "enabled"), False, "Yes or No (default Yes).", "Yes"),
+    C(
+        "is_active",
+        "Active",
+        ("status", "enabled"),
+        False,
+        gettext_lazy("Yes or No (default Yes)."),
+        "Yes",
+    ),
     C(
         "cost_price",
         "Cost price",
         ("cost", "purchase price", "landing cost", "buying price"),
         False,
-        "What one unit costs you. Never shown to shops. Needs the cost permission.",
+        gettext_lazy("What one unit costs you. Never shown to shops. Needs the cost permission."),
         "7.20",
     ),
 )
@@ -244,34 +253,43 @@ class ProductsKind:
             plan = RowPlan(number=row.number, key=key)
             plans.append(plan)
             if not key:
-                plan.error(LABEL["code"], "Enter the product code.")
+                plan.error(LABEL["code"], _("Enter the product code."))
                 continue
             if len(key) > 40:
-                plan.error(LABEL["code"], "Use at most 40 characters.")
+                plan.error(LABEL["code"], _("Use at most 40 characters."))
             lowered = key.lower()
             if lowered in seen_codes:
                 plan.error(
                     LABEL["code"],
-                    f"{key} is also in row {seen_codes[lowered]}. List each product only once.",
+                    _("%(key)s is also in row %(value)s. List each product only once.")
+                    % {"key": key, "value": seen_codes[lowered]},
                 )
                 continue
             seen_codes[lowered] = row.number
             product = existing.get(lowered)
             if product is None and lowered in deleted_codes:
-                plan.error(LABEL["code"], f"{key} belonged to a deleted product. Use a new code.")
+                plan.error(
+                    LABEL["code"],
+                    _("%(key)s belonged to a deleted product. Use a new code.") % {"key": key},
+                )
                 continue
             if product is not None and mode == "ADD_ONLY":
                 plan.error(
                     LABEL["code"],
-                    f"A product with code {key} already exists. To change it, choose "
-                    "“Add new and update existing”.",
+                    _(
+                        "A product with code %(key)s already exists. To change it, choose “Add "
+                        "new and update existing”."
+                    )
+                    % {"key": key},
                 )
                 continue
             if v.get("cost_price") and not can_cost:
                 plan.error(
                     LABEL["cost_price"],
-                    "You can't set cost prices. Remove this column or ask someone who "
-                    "manages costs.",
+                    _(
+                        "You can't set cost prices. Remove this column or ask someone who "
+                        "manages costs."
+                    ),
                 )
                 continue
             if product is None:
@@ -304,18 +322,25 @@ class ProductsKind:
         if v.get("pack_unit"):
             pack = ref["units"].get(v["pack_unit"].upper())
             if pack is None:
-                plan.error(LABEL["pack_unit"], f"{v['pack_unit']} isn't one of your units.")
+                plan.error(
+                    LABEL["pack_unit"],
+                    _("%(pack_unit)s isn't one of your units.") % {"pack_unit": v["pack_unit"]},
+                )
             else:
                 out["pack_unit"] = pack
         if v.get("hsn_code"):
             hsn = re.sub(r"[\s.]", "", v["hsn_code"])
             if hsn.isdigit() and len(hsn) % 2 == 1 and len(hsn) < 8:
-                plan.warnings.append(f"HSN {hsn} read as 0{hsn} (spreadsheets drop leading zeros).")
+                plan.warnings.append(
+                    _("HSN %(hsn)s read as 0%(hsn)s (spreadsheets drop leading zeros).")
+                    % {"hsn": hsn}
+                )
                 hsn = f"0{hsn}"
             if not hsn.isdigit() or not ref["hsn_min"] <= len(hsn) <= 8:
                 plan.error(
                     LABEL["hsn_code"],
-                    f"{v['hsn_code']} isn't a valid HSN code. Use {ref['hsn_min']} to 8 digits.",
+                    _("%(hsn_code)s isn't a valid HSN code. Use %(hsn_min)s to 8 digits.")
+                    % {"hsn_code": v["hsn_code"], "hsn_min": ref["hsn_min"]},
                 )
             else:
                 out["hsn_code"] = hsn
@@ -339,7 +364,7 @@ class ProductsKind:
                     )
                     continue
                 if number < 0:
-                    plan.error(LABEL[name], "Can't be negative.")
+                    plan.error(LABEL[name], _("Can't be negative."))
                     continue
                 out[name] = number
         for name in ("show_in_shop", "is_active"):
@@ -347,7 +372,9 @@ class ProductsKind:
                 try:
                     out[name] = parse_bool(v[name])
                 except ValueError:
-                    plan.error(LABEL[name], f"Write Yes or No (not “{v[name]}”).")
+                    plan.error(
+                        LABEL[name], _("Write Yes or No (not “%(value)s”).") % {"value": v[name]}
+                    )
         if v.get("tags"):
             out["tags"] = split_list(v["tags"])
         if v.get("brand"):
@@ -355,7 +382,7 @@ class ProductsKind:
         if v.get("category"):
             parts = [p for p in CATEGORY_SPLIT.split(v["category"]) if p]
             if len(parts) > 3:
-                plan.error(LABEL["category"], "Categories can be at most 3 levels deep.")
+                plan.error(LABEL["category"], _("Categories can be at most 3 levels deep."))
             else:
                 out["category"] = parts
         return out
@@ -364,13 +391,17 @@ class ProductsKind:
         try:
             rate = parse_decimal(text, places=3)
         except ValueError:
-            plan.error(LABEL["gst_rate"], f"{text} isn't a GST rate. Write a number such as 18.")
+            plan.error(
+                LABEL["gst_rate"],
+                _("%(text)s isn't a GST rate. Write a number such as 18.") % {"text": text},
+            )
             return None
         if rate not in ref["rates"]:
             allowed = ", ".join(f"{r.normalize():f}" for r in ref["rates"])
             plan.error(
                 LABEL["gst_rate"],
-                f"{rate.normalize():f}% isn't a GST rate in use. Use one of {allowed}.",
+                _("%(rate)s%% isn't a GST rate in use. Use one of %(allowed)s.")
+                % {"rate": format(rate.normalize(), "f"), "allowed": allowed},
             )
             return None
         return rate
@@ -380,7 +411,7 @@ class ProductsKind:
     ) -> None:
         for name in REQUIRED:
             if not v.get(name):
-                plan.error(LABEL[name], "Needed for a new product.")
+                plan.error(LABEL[name], _("Needed for a new product."))
         data = self._parse_common(plan, v, ref)
         data["code"] = plan.key
         if v.get("gst_rate"):
@@ -401,11 +432,16 @@ class ProductsKind:
             if rate is not None and (current is None or rate != current.gst_rate):
                 plan.error(
                     LABEL["gst_rate"],
-                    "GST changes need a start date: schedule them under Products → GST rates. "
-                    f"The current rate is {current.gst_rate.normalize():f}%."
+                    _(
+                        "GST changes need a start date: schedule them under Products → GST "
+                        "rates. The current rate is %(gst_rate)s%%."
+                    )
+                    % {"gst_rate": format(current.gst_rate.normalize(), "f")}
                     if current
-                    else "This product has no GST rate in effect; schedule one under "
-                    "Products → GST rates.",
+                    else _(
+                        "This product has no GST rate in effect; schedule one under "
+                        "Products → GST rates."
+                    ),
                 )
         if plan.problems:
             return
@@ -506,11 +542,20 @@ class ProductsKind:
         codes = [re.sub(r"\s", "", b) for b in split_list(v["barcodes"])]
         for code in codes:
             if len(code) > 64:
-                plan.error(LABEL["barcodes"], f"{code[:20]}… is longer than 64 characters.")
+                plan.error(
+                    LABEL["barcodes"],
+                    _("%(value)s… is longer than 64 characters.") % {"value": code[:20]},
+                )
             elif code in seen and seen[code] != plan.number:
-                plan.error(LABEL["barcodes"], f"{code} is also in row {seen[code]}.")
+                plan.error(
+                    LABEL["barcodes"],
+                    _("%(code)s is also in row %(value)s.") % {"code": code, "value": seen[code]},
+                )
             elif code in owners and (product is None or owners[code] != product.pk):
-                plan.error(LABEL["barcodes"], f"{code} already belongs to another product.")
+                plan.error(
+                    LABEL["barcodes"],
+                    _("%(code)s already belongs to another product.") % {"code": code},
+                )
             seen.setdefault(code, plan.number)
         plan.data["barcodes"] = codes
 

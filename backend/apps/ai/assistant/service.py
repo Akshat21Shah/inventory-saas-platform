@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.ai import services
@@ -42,13 +43,15 @@ MAX_ANSWER = 4000
 class AssistantRateLimited(DomainError):
     status_code = 429
     code = ErrorCode.ASSISTANT_RATE_LIMITED
-    default_message = "You've asked a lot of questions in the last hour. Try again a little later."
+    default_message = gettext_lazy(
+        "You've asked a lot of questions in the last hour. Try again a little later."
+    )
 
 
 class AssistantUnavailable(DomainError):
     status_code = 403
     code = ErrorCode.ASSISTANT_NOT_AVAILABLE
-    default_message = "There are no figures the assistant may show you."
+    default_message = gettext_lazy("There are no figures the assistant may show you.")
 
 
 def assistant_model() -> str:

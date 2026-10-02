@@ -11,11 +11,14 @@ from __future__ import annotations
 
 import json
 import re
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 from typing import Any
 from uuid import UUID
+
+from django.utils.translation import gettext as _
 
 MANIFEST = Path(__file__).with_name("languages.json")
 CODE = re.compile(r"^[a-z]{2,3}$")
@@ -28,6 +31,7 @@ class Language:
     native: str  # in its own script
     script: str
     pdf_font: str
+    plural_forms: str  # gettext's Plural-Forms header for its server messages
 
 
 @cache
@@ -133,5 +137,15 @@ def validate_code(value: str, *, allow_blank: bool = False) -> str:
     if not value and allow_blank:
         return ""
     if not is_known(value):
-        raise serializers.ValidationError(f"Choose one of: {', '.join(codes())}.")
+        raise serializers.ValidationError(
+            _("Choose one of: %(codes)s.") % {"codes": ", ".join(codes())}
+        )
     return value
+
+
+def speaking(user: Any, tenant_id: UUID | None) -> AbstractContextManager[None]:
+    """Background work for a person (an import, a report) in their language: what it stores to
+    show them later (messages, notes) is written in it."""
+    from django.utils import translation
+
+    return translation.override(user_language(user, tenant_id) if user is not None else DEFAULT)

@@ -26,6 +26,7 @@ from typing import Any
 from django.db.models import BooleanField, Case, F, Sum, Value, When
 from django.db.models.fields.json import KT, KeyTextTransform
 from django.db.models.lookups import GreaterThan
+from django.utils.translation import gettext as _
 
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
 from apps.catalog.models import Unit
@@ -833,7 +834,10 @@ def summary_notes(ctx: Context) -> list[str]:
     nil = {k: v for k, v in data["nil"].items() if v}
     if nil:
         parts = ", ".join(f"{k} ₹{_money(v):,}" for k, v in sorted(nil.items()))
-        notes.append(f"Nil-rated (0%) supplies, not in these sections (Table 8): {parts}.")
+        notes.append(
+            _("Nil-rated (0%%) supplies, not in these sections (Table 8): %(parts)s.")
+            % {"parts": parts}
+        )
     return notes
 
 

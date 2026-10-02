@@ -45,6 +45,7 @@ dev = [
     "hypothesis>=6.130",
     "types-openpyxl>=3.1.5.20260827",
     "pytest-xdist>=3.6",
+    "polib>=1.2.0",
 ]
 
 [tool.uv]
@@ -74,7 +75,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "\\.venv/"]
 
 [[tool.mypy.overrides]]
-module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*", "boto3.*", "botocore.*", "weasyprint.*", "razorpay.*"]
+module = ["environ.*", "channels.*", "channels_redis.*", "factory.*", "pythonjsonlogger.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "django_filters.*", "corsheaders.*", "boto3.*", "botocore.*", "weasyprint.*", "razorpay.*", "polib.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

@@ -12,6 +12,7 @@ from typing import Any
 
 from django.db.models import Count, F, Max, Min, Sum
 from django.db.models.functions import Round
+from django.utils.translation import gettext
 
 from apps.catalog.selectors import ProductFilters, descendant_ids
 from apps.catalog.selectors import product_list as catalog_products
@@ -209,7 +210,10 @@ def valuation_notes(ctx: Context) -> list[str]:
     )
     if not result.missing_cost:
         return []
-    return [f"{result.missing_cost} product(s) in stock have no cost price and are left out."]
+    return [
+        gettext("%(missing_cost)s product(s) in stock have no cost price and are left out.")
+        % {"missing_cost": result.missing_cost}
+    ]
 
 
 register(
@@ -260,7 +264,10 @@ def low_notes(ctx: Context) -> list[str]:
     missing = stock.products_without_reorder_level(filters)
     if not missing:
         return []
-    return [f"{missing} active product(s) have no reorder level, so they never show as low."]
+    return [
+        gettext("%(missing)s active product(s) have no reorder level, so they never show as low.")
+        % {"missing": missing}
+    ]
 
 
 register(
@@ -479,9 +486,12 @@ def movement_class_notes(ctx: Context) -> list[str]:
     share = int(get_setting("reports.fast_share_percent", tenant))
     basis = "quantity" if ctx.params.get("rank_by") == "quantity" else "sales value"
     return [
-        f"Over the last {days} days. Fast: the top {share}% of products that sold, by {basis}; "
-        "slow: the rest that sold; dead: in stock, nothing sold; new: first stocked in this "
-        "period and not sold yet."
+        gettext(
+            "Over the last %(days)s days. Fast: the top %(share)s%% of products that "
+            "sold, by %(basis)s; slow: the rest that sold; dead: in stock, nothing "
+            "sold; new: first stocked in this period and not sold yet."
+        )
+        % {"days": days, "share": share, "basis": basis}
     ]
 
 
@@ -769,8 +779,10 @@ register(
         rows=fulfilment_rows,
         totals=fulfilment_totals,
         notes=lambda ctx: [
-            "Orders the shop cancelled, and waiting quantities the shop cancelled, are left out. "
-            "Percentages count orders that are no longer open."
+            gettext(
+                "Orders the shop cancelled, and waiting quantities the shop cancelled, are left "
+                "out. Percentages count orders that are no longer open."
+            )
         ],
     )
 )

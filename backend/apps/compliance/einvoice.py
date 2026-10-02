@@ -24,6 +24,7 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -112,7 +113,7 @@ def on_issued(document: Invoice | CreditNote) -> EInvoiceRecord | None:
 def require_module() -> None:
     if not rules.einvoicing_on(require_tenant_id()):
         raise DomainError(
-            "E-invoicing isn't switched on for your business.",
+            _("E-invoicing isn't switched on for your business."),
             code=ErrorCode.MODULE_NOT_ENABLED,
             status_code=403,
         )
@@ -125,7 +126,7 @@ def request(document_type: str, document_id: UUID, *, by: User) -> EInvoiceRecor
     if doc is None:
         raise NotFound()
     if not doc.buyer.get("gstin"):
-        raise InvalidFields({"document": ["Only bills to shops with a GSTIN get an IRN."]})
+        raise InvalidFields({"document": [_("Only bills to shops with a GSTIN get an IRN.")]})
     field = "invoice" if document_type == DocumentType.INVOICE else "credit_note"
     record: EInvoiceRecord | None = (
         EInvoiceRecord.objects.select_for_update().filter(**{field: doc}).first()

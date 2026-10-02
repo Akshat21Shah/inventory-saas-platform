@@ -10,6 +10,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext, gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -48,11 +49,11 @@ ZERO = Decimal("0")
 class InvalidTransition(DomainError):
     status_code = 409
     code = ErrorCode.INVALID_STATE_TRANSITION
-    default_message = "This order can't be changed that way any more."
+    default_message = gettext_lazy("This order can't be changed that way any more.")
 
 
 def _status_message(order: Order) -> str:
-    return f"This order is {order.get_status_display().lower()} now."
+    return gettext("This order is %(order)s now.") % {"order": order.get_status_display().lower()}
 
 
 def lock_order(order_id: UUID) -> Order:
@@ -256,7 +257,7 @@ def _close(order: Order, event: str, to: str, *, by: User | None, reason: str) -
 def reject_order(order_id: UUID, *, reason: str, by: User) -> Order:
     """PLACED / ON_HOLD → REJECTED (a reason is required); everything held is released."""
     if not reason.strip():
-        raise InvalidFields({"reason": ["Tell the shop why the order is rejected."]})
+        raise InvalidFields({"reason": [gettext("Tell the shop why the order is rejected.")]})
     with transaction.atomic():
         order = lock_order(order_id)
         _require(order, OrderStatus.PLACED, OrderStatus.ON_HOLD)
@@ -308,13 +309,17 @@ def modify_order(order_id: UUID, change: Modification, *, by: User) -> Order:
         for line_id, new_qty in change.quantities.items():
             line = lines.get(line_id)
             if line is None:
-                raise InvalidFields({"lines": ["That line isn't on this order."]})
+                raise InvalidFields({"lines": [gettext("That line isn't on this order.")]})
             current = line.qty_ordered - line.qty_cancelled
             if new_qty < 0:
-                raise InvalidFields({"lines": ["Quantities can't be negative."]})
+                raise InvalidFields({"lines": [gettext("Quantities can't be negative.")]})
             if line.free_of_line_id is not None and new_qty > current:
                 raise InvalidFields(
-                    {"lines": ["Free goods follow what is bought: change that line instead."]}
+                    {
+                        "lines": [
+                            gettext("Free goods follow what is bought: change that line instead.")
+                        ]
+                    }
                 )
             if new_qty < current:
                 reductions[line] = current - new_qty
@@ -326,14 +331,20 @@ def modify_order(order_id: UUID, change: Modification, *, by: User) -> Order:
                 )
         if increases and not full_edit:
             raise InvalidFields(
-                {"lines": ["Only reducing or removing items is allowed before acceptance."]}
+                {
+                    "lines": [
+                        gettext("Only reducing or removing items is allowed before acceptance.")
+                    ]
+                }
             )
         remaining = sum(
             (line.qty_ordered - line.qty_cancelled - reductions.get(line, ZERO))
             for line in lines.values()
         )
         if remaining + sum((q for _, q in increases), ZERO) <= 0:
-            raise InvalidFields({"lines": ["Keep at least one item, or reject the order."]})
+            raise InvalidFields(
+                {"lines": [gettext("Keep at least one item, or reject the order.")]}
+            )
         if reductions:
             release_quantities(order, reductions, to_backorder=False, by=by)
         if increases:

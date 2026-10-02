@@ -19,6 +19,7 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import QuerySet
 from django.utils import timezone
+from django.utils.translation import gettext
 
 from apps.accounts.models import User
 from apps.inventory import services as stock
@@ -242,7 +243,8 @@ def _refuse_blocked(order: Order) -> None:
 
     if order.retailer.status == Retailer.Status.BLOCKED:
         raise RetailerOnHold(
-            f"{order.retailer.shop_name} is blocked, so it can't receive stock.",
+            gettext("%(shop_name)s is blocked, so it can't receive stock.")
+            % {"shop_name": order.retailer.shop_name},
             details={"order": order.number, "retailer": str(order.retailer_id)},
             status_code=409,
         )
@@ -366,7 +368,9 @@ def _require_open(orders: Iterable[Order]) -> None:
 
     closed = [order.number for order in orders if order.status not in ACCEPTED_STATUSES]
     if closed:
-        raise InvalidTransition("Some of these orders are closed.", details={"orders": closed})
+        raise InvalidTransition(
+            gettext("Some of these orders are closed."), details={"orders": closed}
+        )
 
 
 def _require_proposed(allocations: list[BackorderAllocation]) -> None:
@@ -375,7 +379,7 @@ def _require_proposed(allocations: list[BackorderAllocation]) -> None:
     decided = [a for a in allocations if a.status != A.PROPOSED]
     if decided:
         raise InvalidTransition(
-            "Some of these were already decided.",
+            gettext("Some of these were already decided."),
             details={"allocations": [str(a.pk) for a in decided]},
         )
 
@@ -413,7 +417,8 @@ def confirm(allocation_ids: list[UUID], *, by: User) -> list[Fulfilment]:
             price, repriced = _billing_price(order, line, allocation.quantity)
             if repriced and not _credit_allows(order, line, allocation.quantity, price):
                 raise CreditLimitExceeded(
-                    f"Today's price puts {order.retailer.shop_name} over the credit limit.",
+                    gettext("Today's price puts %(shop_name)s over the credit limit.")
+                    % {"shop_name": order.retailer.shop_name},
                     details={"order": order.number, "product": line.product_code},
                 )
             prices[allocation.pk] = price
@@ -465,7 +470,9 @@ def allocate_manually(
     from apps.orders.services import credit_refusal
 
     if not amounts or any(q <= 0 for q in amounts.values()):
-        raise InvalidFields({"allocations": ["Choose waiting lines and quantities above 0."]})
+        raise InvalidFields(
+            {"allocations": [gettext("Choose waiting lines and quantities above 0.")]}
+        )
     with transaction.atomic():
         candidates = OrderLine.objects.filter(pk__in=list(amounts), product_id=product_id)
         orders = lock_orders(candidates.values_list("order_id", flat=True))  # L1, L2
@@ -478,10 +485,18 @@ def allocate_manually(
             or orders[line.order_id].status not in ACCEPTED_STATUSES
             for line in lines.values()
         ):
-            raise InvalidFields({"allocations": ["Some lines aren't waiting for that much."]})
+            raise InvalidFields(
+                {"allocations": [gettext("Some lines aren't waiting for that much.")]}
+            )
         free = level.quantity_on_hand - level.quantity_reserved
         if sum(amounts.values(), ZERO) > free:
-            raise InvalidFields({"allocations": [f"Only {free.normalize():f} is free."]})
+            raise InvalidFields(
+                {
+                    "allocations": [
+                        gettext("Only %(free)s is free.") % {"free": format(free.normalize(), "f")}
+                    ]
+                }
+            )
         can_override = bool(by.has_permission_code("credit.manage"))
         overridden: list[Order] = []
         for line_id in sorted(amounts):
@@ -560,7 +575,7 @@ def cancel_backorder(line_id: UUID, *, by: User, retailer_id: UUID | None = None
         level = stock.lock_levels([product_id], stock.default_warehouse())[product_id]  # L3
         line = _lock_lines([line_id])[line_id]  # L4
         if line.qty_backordered <= 0 or order.status not in ACCEPTED_STATUSES:
-            raise InvalidFields({"line": ["Nothing is waiting on this line."]})
+            raise InvalidFields({"line": [gettext("Nothing is waiting on this line.")]})
         quantity = line.qty_backordered
         stock.change_backordered(level, -quantity)
         line.qty_backordered, line.qty_cancelled = ZERO, line.qty_cancelled + quantity
@@ -608,9 +623,9 @@ def cancel_repriced(fulfilment_line_id: UUID, *, by: User, retailer_id: UUID) ->
         fl: FulfilmentLine = FulfilmentLine.objects.select_for_update().get(pk=fulfilment_line_id)
         shipment: Fulfilment = Fulfilment.objects.select_for_update().get(pk=fl.fulfilment_id)
         if not fl.price_increased or fl.cancelled_by_retailer_at is not None:
-            raise InvalidTransition("Only a higher price can be declined, once.")
+            raise InvalidTransition(gettext("Only a higher price can be declined, once."))
         if shipment.status != Fulfilment.Status.ALLOCATED:
-            raise InvalidTransition("This shipment is already packed.")
+            raise InvalidTransition(gettext("This shipment is already packed."))
         level = stock.lock_levels([product_id], shipment.warehouse)[product_id]  # L3
         from apps.billing.credit_notes import credit_unsupplied
 

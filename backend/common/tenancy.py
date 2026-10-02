@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from uuid import UUID
 
 from django.db import DatabaseError, connections, transaction
+from django.utils.translation import gettext_lazy
 
 from common.context import tenant_id_var
 from common.error_codes import ErrorCode
@@ -21,7 +22,7 @@ RLS_SETTING = "app.current_tenant"
 class TenantContextMissing(DomainError):
     status_code = 500
     code = ErrorCode.TENANT_CONTEXT_MISSING
-    default_message = "No tenant is active for this operation."
+    default_message = gettext_lazy("No tenant is active for this operation.")
 
 
 def get_current_tenant_id() -> UUID | None:

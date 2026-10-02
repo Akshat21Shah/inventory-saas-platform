@@ -14,6 +14,7 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import Count, OuterRef, Q, QuerySet, Subquery
 from django.db.models.functions import Coalesce
+from django.utils.translation import gettext
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -120,13 +121,17 @@ def _grid_products(items: list[GridItem]) -> dict[UUID, Product]:
     seen: set[UUID] = set()
     for index, item in enumerate(items):
         if item.product_id not in products:
-            errors.setdefault(f"items.{index}.product", []).append("Choose an existing product.")
+            errors.setdefault(f"items.{index}.product", []).append(
+                gettext("Choose an existing product.")
+            )
         if item.product_id in seen:
-            errors.setdefault(f"items.{index}.product", []).append("This product is listed twice.")
+            errors.setdefault(f"items.{index}.product", []).append(
+                gettext("This product is listed twice.")
+            )
         seen.add(item.product_id)
         if item.discount_type not in DiscountRule.Type.values:
             errors.setdefault(f"items.{index}.discount_type", []).append(
-                "Choose percentage or rupees off per unit."
+                gettext("Choose percentage or rupees off per unit.")
             )
         elif item.value:
             services.check_value(item.discount_type, item.value, f"items.{index}.value", errors)
@@ -270,9 +275,9 @@ def _specials(retailer: Retailer) -> dict[UUID, RetailerPrice]:
 
 def plan_copy(source: Retailer, target: Retailer, mode: str) -> CopyPlan:
     if mode not in CopyMode.values:
-        raise InvalidFields({"mode": ["Choose “Replace” or “Add”."]})
+        raise InvalidFields({"mode": [gettext("Choose “Replace” or “Add”.")]})
     if source.pk == target.pk:
-        raise InvalidFields({"copy_from": ["Choose a different shop to copy from."]})
+        raise InvalidFields({"copy_from": [gettext("Choose a different shop to copy from.")]})
     plan = CopyPlan()
     if source.price_list_id != target.price_list_id:
         plan.price_list = (
@@ -319,10 +324,12 @@ def copy_pricing(
     if target is None:
         raise NotFound()
     if source is None:
-        raise InvalidFields({"copy_from": ["Choose an existing shop."]})
+        raise InvalidFields({"copy_from": [gettext("Choose an existing shop.")]})
     plan = plan_copy(source, target, mode)
     if plan.changes != expected_changes:
-        raise PreviewOutOfDate("The pricing of one of these shops has changed. Preview it again.")
+        raise PreviewOutOfDate(
+            gettext("The pricing of one of these shops has changed. Preview it again.")
+        )
     if plan.price_list:
         services.assign_price_list(target, source.price_list_id)
         target.price_list_id = source.price_list_id
@@ -428,13 +435,13 @@ class Adjustment:
 def _check_adjustment(a: Adjustment) -> None:
     errors: dict[str, list[str]] = {}
     if (a.category_id is None) == (a.brand_id is None):
-        errors["scope"] = ["Choose a category or a brand."]
+        errors["scope"] = [gettext("Choose a category or a brand.")]
     if a.category_id and catalog.category(a.category_id) is None:
-        errors["category"] = ["Choose an existing category."]
+        errors["category"] = [gettext("Choose an existing category.")]
     if a.brand_id and not Brand.objects.filter(pk=a.brand_id, deleted_at__isnull=True).exists():
-        errors["brand"] = ["Choose an existing brand."]
+        errors["brand"] = [gettext("Choose an existing brand.")]
     if not Decimal("-99.99") <= a.percent <= Decimal("1000") or a.percent == 0:
-        errors["percent"] = ["Enter a change between -99.99% and +1000%, other than 0."]
+        errors["percent"] = [gettext("Enter a change between -99.99% and +1000%, other than 0.")]
     if errors:
         raise InvalidFields(errors)
 
@@ -475,7 +482,7 @@ def adjust_price_list(
         raise NotFound()
     rows = plan_adjustment(price_list, a)
     if len(rows) != expected_count:
-        raise PreviewOutOfDate("The prices on this list have changed. Preview it again.")
+        raise PreviewOutOfDate(gettext("The prices on this list have changed. Preview it again."))
     warnings: list[Warning] = []
     for start in range(0, len(rows), services.MAX_BULK_ITEMS):
         chunk = rows[start : start + services.MAX_BULK_ITEMS]

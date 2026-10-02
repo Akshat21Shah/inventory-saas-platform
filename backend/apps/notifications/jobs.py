@@ -20,6 +20,7 @@ from uuid import UUID, uuid5
 
 from django.db.models import Count, Min, Q, Sum
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -130,9 +131,9 @@ def pause_reminders(
     from common.dates import today_ist
 
     if not reason.strip():
-        raise InvalidFields({"reason": ["Say why reminders are paused."]})
+        raise InvalidFields({"reason": [_("Say why reminders are paused.")]})
     if until is not None and until < today_ist():
-        raise InvalidFields({"until": ["Choose today or a later date."]})
+        raise InvalidFields({"until": [_("Choose today or a later date.")]})
     shop = Retailer.objects.filter(pk=retailer_id, deleted_at__isnull=True).first()
     if shop is None:
         raise NotFound()

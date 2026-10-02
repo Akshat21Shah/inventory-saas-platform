@@ -164,6 +164,8 @@ ALLOWED_NEW: dict[str, Any] = {
     "db.payments.Payment.bounce_charge_id": None,
     "api.payment.bounce_charge": None,
     "api.shop-payment.bounce_charge": None,
+    # Phase 11a (ADR-060): the language the shop sees (English: no other language is on).
+    "api.retailer.language": "en",
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,

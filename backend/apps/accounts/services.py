@@ -27,6 +27,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.translation import gettext, gettext_lazy
 
 from apps.accounts import mfa, selectors
 from apps.accounts.models import HandoffCode, LoginChallenge, RecoveryCode, User
@@ -57,7 +58,7 @@ _DUMMY_PASSWORD_HASH = make_password("timing-equaliser-for-unknown-accounts")
 class InvalidCredentials(DomainError):
     status_code = 400
     code = ErrorCode.INVALID_CREDENTIALS
-    default_message = (
+    default_message = gettext_lazy(
         "The email or password is incorrect. After several failed attempts, sign-in is paused "
         "for a few minutes."
     )
@@ -68,7 +69,7 @@ class RetailerOnHold(DomainError):
 
     status_code = 403
     code = ErrorCode.RETAILER_ON_HOLD
-    default_message = "Your account is on hold. Please contact your distributor."
+    default_message = gettext_lazy("Your account is on hold. Please contact your distributor.")
 
 
 def refuse_if_on_hold(phone: str, tenant_id: UUID) -> None:
@@ -82,13 +83,17 @@ class TenantUnavailable(DomainError):
 
     status_code = 403
     code = ErrorCode.TENANT_UNAVAILABLE
-    default_message = "This account is currently unavailable. Please contact your distributor."
+    default_message = gettext_lazy(
+        "This account is currently unavailable. Please contact your distributor."
+    )
 
 
 class TokenInvalid(DomainError):
     status_code = 400
     code = ErrorCode.TOKEN_INVALID
-    default_message = "This link or code has expired or was already used. Please start again."
+    default_message = gettext_lazy(
+        "This link or code has expired or was already used. Please start again."
+    )
 
 
 class LoginStatus(StrEnum):
@@ -482,7 +487,7 @@ def update_profile(
     if preferred_language is not None:
         if preferred_language not in allowed_languages:
             raise InvalidFields(
-                {"preferred_language": ["This language isn't available. Choose another."]}
+                {"preferred_language": [gettext("This language isn't available. Choose another.")]}
             )
         user.preferred_language = preferred_language
         fields.append("preferred_language")
@@ -504,13 +509,17 @@ def update_profile(
 class MfaInvalidCode(DomainError):
     status_code = 400
     code = ErrorCode.MFA_INVALID_CODE
-    default_message = "That code didn't work. Check your authenticator app and try again."
+    default_message = gettext_lazy(
+        "That code didn't work. Check your authenticator app and try again."
+    )
 
 
 class MfaRequiredByPolicy(DomainError):
     status_code = 400
     code = ErrorCode.MFA_REQUIRED_BY_POLICY
-    default_message = "Two-step verification is required for your account and can't be turned off."
+    default_message = gettext_lazy(
+        "Two-step verification is required for your account and can't be turned off."
+    )
 
 
 def _open_challenge(raw: str, kinds: tuple[str, ...]) -> LoginChallenge:
@@ -587,7 +596,7 @@ def begin_enrolment(enrolment_token: str) -> tuple[str, str]:
 def begin_mfa_setup(user: User) -> tuple[str, str, str]:
     """Account security page: returns ``(setup_token, secret, otpauth_uri)``."""
     if user.totp_enabled:
-        raise InvalidFields({"code": ["Two-step verification is already on."]})
+        raise InvalidFields({"code": [gettext("Two-step verification is already on.")]})
     raw = _challenge(LoginChallenge.Kind.MFA_SETUP, user, {})
     secret, uri = begin_enrolment(raw)
     return raw, secret, uri
@@ -650,7 +659,7 @@ def _check_password_and_factor(
     user: User, password: str, code: str | None, recovery_code: str | None
 ) -> None:
     if not user.check_password(password):
-        raise InvalidFields({"password": ["The password is incorrect."]})
+        raise InvalidFields({"password": [gettext("The password is incorrect.")]})
     if not mfa.verify_second_factor(user, code, recovery_code):
         raise MfaInvalidCode()
 
@@ -674,7 +683,7 @@ def regenerate_recovery_codes(
     user: User, password: str, code: str | None, recovery_code: str | None
 ) -> list[str]:
     if not user.totp_enabled:
-        raise InvalidFields({"code": ["Two-step verification is off."]})
+        raise InvalidFields({"code": [gettext("Two-step verification is off.")]})
     _check_password_and_factor(user, password, code, recovery_code)
     codes = mfa.replace_recovery_codes(user)
     audit.record("auth.recovery_codes_regenerated", target=user, tenant_id=None)
@@ -738,7 +747,7 @@ def change_password(
 ) -> IssuedTokens:
     """Change the password; every other session ends, this one continues with new tokens."""
     if not user.check_password(current_password):
-        raise InvalidFields({"current_password": ["The current password is incorrect."]})
+        raise InvalidFields({"current_password": [gettext("The current password is incorrect.")]})
     _validated_new_password(user, new_password)
     user.set_password(new_password)
     user.save(update_fields=["password"])

@@ -4,6 +4,7 @@ shop's documents are "not found"."""
 from typing import Any
 from uuid import UUID
 
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers
 from rest_framework.pagination import CursorPagination
@@ -62,7 +63,7 @@ class ShopInvoicesView(ShopView):
     def get(self, request: Request) -> Response:
         state = request.query_params.get("state", "")
         if state and state not in STATES:
-            raise InvalidFields({"state": ["Use unpaid, paid or overdue."]})
+            raise InvalidFields({"state": [_("Use unpaid, paid or overdue.")]})
         qs = Invoice.objects.filter(retailer=_retailer(request)).select_related("retailer", "order")
         if state == "paid":
             qs = qs.filter(balance_due=0)

@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.utils.translation import gettext as _
+
 from apps.insights.models import Segment, ShopActivity
 from apps.reports.definitions.sales import SALES
 from apps.reports.registry import Column, Context, Filter, FilterKind, Group, Kind, Report, register
@@ -72,7 +74,10 @@ register(
         filters=(SEGMENT, SALESPERSON),
         rows=shop_activity,
         notes=lambda ctx: [
-            "As worked out last night (or when someone asked). Values are order totals incl. GST."
+            _(
+                "As worked out last night (or when someone asked). Values are order totals "
+                "incl. GST."
+            )
         ],
     )
 )

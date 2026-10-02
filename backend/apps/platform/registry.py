@@ -14,6 +14,7 @@ from enum import StrEnum
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext as _
 
 
 class Scope(StrEnum):
@@ -106,41 +107,41 @@ def _to_python(defn: SettingDef, value: Any) -> Any:
     if value is None:
         if defn.nullable:
             return None
-        raise ValidationError("A value is required.", code="required")
+        raise ValidationError(_("A value is required."), code="required")
     if defn.type is SettingType.BOOL:
         if not isinstance(value, bool):
-            raise ValidationError("Choose on or off.", code="invalid_type")
+            raise ValidationError(_("Choose on or off."), code="invalid_type")
         return value
     if defn.type is SettingType.INT:
         if isinstance(value, bool) or not isinstance(value, int):
-            raise ValidationError("Enter a whole number.", code="invalid_type")
+            raise ValidationError(_("Enter a whole number."), code="invalid_type")
         if defn.allowed and value not in defn.allowed:
-            raise ValidationError("Choose one of the listed options.", code="invalid_choice")
+            raise ValidationError(_("Choose one of the listed options."), code="invalid_choice")
         _check_range(defn, value)
         return value
     if defn.type is SettingType.MONEY:
         if isinstance(value, (bool, float)):
-            raise ValidationError("Enter an amount like 1500.00.", code="invalid_type")
+            raise ValidationError(_("Enter an amount like 1500.00."), code="invalid_type")
         try:
             amount = Decimal(str(value))
         except InvalidOperation as exc:
-            raise ValidationError("Enter an amount like 1500.00.", code="invalid_type") from exc
+            raise ValidationError(_("Enter an amount like 1500.00."), code="invalid_type") from exc
         if not amount.is_finite() or amount != amount.quantize(Decimal("0.01")):
-            raise ValidationError("Use at most 2 decimal places.", code="invalid_type")
+            raise ValidationError(_("Use at most 2 decimal places."), code="invalid_type")
         _check_range(defn, amount)
         return amount.quantize(Decimal("0.01"))
     if defn.type is SettingType.ENUM:
         if value not in defn.allowed:
-            raise ValidationError("Choose one of the listed options.", code="invalid_choice")
+            raise ValidationError(_("Choose one of the listed options."), code="invalid_choice")
         if value in defn.reserved_values:
-            raise ValidationError("This option is not available yet.", code="reserved_choice")
+            raise ValidationError(_("This option is not available yet."), code="reserved_choice")
         return value
     if defn.type is SettingType.STRING:
         if not isinstance(value, str):
-            raise ValidationError("Enter text.", code="invalid_type")
+            raise ValidationError(_("Enter text."), code="invalid_type")
         if defn.pattern and not re.fullmatch(defn.pattern, value):
             raise ValidationError(
-                "This value is not in the expected format.", code="invalid_format"
+                _("This value is not in the expected format."), code="invalid_format"
             )
         return value
     raise AssertionError(f"unhandled setting type {defn.type}")
@@ -158,9 +159,13 @@ ASCENDING: tuple[tuple[str, str, str], ...] = (
 
 def _check_range(defn: SettingDef, value: int | Decimal) -> None:
     if defn.min_value is not None and value < defn.min_value:
-        raise ValidationError(f"Enter {defn.min_value} or more.", code="out_of_range")
+        raise ValidationError(
+            _("Enter %(min_value)s or more.") % {"min_value": defn.min_value}, code="out_of_range"
+        )
     if defn.max_value is not None and value > defn.max_value:
-        raise ValidationError(f"Enter {defn.max_value} or less.", code="out_of_range")
+        raise ValidationError(
+            _("Enter %(max_value)s or less.") % {"max_value": defn.max_value}, code="out_of_range"
+        )
 
 
 def to_python(defn: SettingDef, value: Any) -> Any:

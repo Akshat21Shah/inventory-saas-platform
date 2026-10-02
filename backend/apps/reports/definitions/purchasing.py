@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any
 
 from django.db.models import Count, Q, Sum
+from django.utils.translation import gettext as _
 
 from apps.inventory.models import StockInward, StockInwardLine
 from apps.purchasing.models import PurchaseOrder
@@ -114,8 +115,10 @@ register(
         rows=purchases_by_supplier,
         totals=purchases_totals,
         notes=lambda ctx: [
-            "Goods receipts posted in the period (value before GST, at cost); orders sent in the "
-            "period; open and late orders as of today."
+            _(
+                "Goods receipts posted in the period (value before GST, at cost); orders sent in "
+                "the period; open and late orders as of today."
+            )
         ],
     )
 )

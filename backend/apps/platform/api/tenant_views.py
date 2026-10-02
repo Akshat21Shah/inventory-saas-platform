@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from django.http import HttpResponseRedirect
+from django.utils.translation import gettext
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
@@ -151,7 +152,7 @@ def _require_edit_permission(request: Request, keys: list[str]) -> None:
         for k in keys
     ):
         raise DomainError(
-            "This setting belongs to a module that isn't switched on for your business.",
+            gettext("This setting belongs to a module that isn't switched on for your business."),
             code=ErrorCode.MODULE_NOT_ENABLED,
             status_code=403,
         )
@@ -162,7 +163,9 @@ def _require_edit_permission(request: Request, keys: list[str]) -> None:
         if k in registry.REGISTRY and registry.REGISTRY[k].required_permission not in permissions
     ]
     if denied:
-        raise PermissionDenied(f"You can't change: {', '.join(sorted(denied))}.")
+        raise PermissionDenied(
+            gettext("You can't change: %(denied)s.") % {"denied": ", ".join(sorted(denied))}
+        )
 
 
 class TenantSettingsRegistryView(APIView):

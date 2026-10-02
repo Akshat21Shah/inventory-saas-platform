@@ -13,6 +13,8 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import QuerySet
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.utils import datetime_from_epoch
 
@@ -39,13 +41,13 @@ from common.tenancy import tenant_context
 class ImpersonationReadOnly(DomainError):
     status_code = 403
     code = ErrorCode.IMPERSONATION_READ_ONLY
-    default_message = "This support session is view-only."
+    default_message = gettext_lazy("This support session is view-only.")
 
 
 class ImpersonationBlocked(DomainError):
     status_code = 403
     code = ErrorCode.IMPERSONATION_BLOCKED
-    default_message = "This can't be done in a support session."
+    default_message = gettext_lazy("This can't be done in a support session.")
 
 
 def _admin_actor(session: ImpersonationSession) -> Actor:
@@ -76,13 +78,13 @@ def start_impersonation(
     user_agent: str,
 ) -> tuple[ImpersonationSession, Handoff]:
     if not reason.strip():
-        raise InvalidFields({"reason": ["Enter why you need to act as this user."]})
+        raise InvalidFields({"reason": [_("Enter why you need to act as this user.")]})
     tenant = Tenant.objects.filter(pk=tenant_id).first()
     target = User.objects.filter(pk=user_id).first()
     if tenant is None or target is None:
         raise NotFound()
     if target.user_type == User.UserType.PLATFORM or not _target_is_valid(target, tenant):
-        raise InvalidFields({"user_id": ["This user can't be impersonated."]})
+        raise InvalidFields({"user_id": [_("This user can't be impersonated.")]})
     minutes = get_platform_setting("platform.impersonation_session_minutes")
     with tenant_context(tenant.pk):
         session = ImpersonationSession.objects.create(
@@ -159,7 +161,7 @@ def open_session(session_id: UUID, tenant_id: UUID) -> ImpersonationSession | No
 @transaction.atomic
 def enable_act_mode(session: ImpersonationSession, reason: str) -> tuple[str, datetime]:
     if not reason.strip():
-        raise InvalidFields({"reason": ["Enter why you need to make changes."]})
+        raise InvalidFields({"reason": [_("Enter why you need to make changes.")]})
     with tenant_context(session.tenant_id):
         locked = (
             ImpersonationSession.objects.select_for_update()

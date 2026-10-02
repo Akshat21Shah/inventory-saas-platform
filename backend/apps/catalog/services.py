@@ -12,6 +12,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.translation import gettext, gettext_lazy
 from PIL import Image
 
 from apps.accounts.models import User
@@ -45,24 +46,26 @@ if TYPE_CHECKING:
 class InUse(DomainError):
     status_code = 409
     code = ErrorCode.IN_USE
-    default_message = "This is still in use, so it can't be deleted."
+    default_message = gettext_lazy("This is still in use, so it can't be deleted.")
 
 
 class CategoryTooDeep(DomainError):
     code = ErrorCode.CATEGORY_TOO_DEEP
-    default_message = "Categories can be at most 3 levels deep."
+    default_message = gettext_lazy("Categories can be at most 3 levels deep.")
 
 
 class TaxRateNotCancellable(DomainError):
     status_code = 409
     code = ErrorCode.TAX_RATE_NOT_CANCELLABLE
-    default_message = "Only a change that has not taken effect yet can be cancelled."
+    default_message = gettext_lazy("Only a change that has not taken effect yet can be cancelled.")
 
 
 class PreviewOutOfDate(DomainError):
     status_code = 409
     code = ErrorCode.PREVIEW_OUT_OF_DATE
-    default_message = "The products matching this change have changed. Preview it again."
+    default_message = gettext_lazy(
+        "The products matching this change have changed. Preview it again."
+    )
 
 
 @dataclass
@@ -102,7 +105,7 @@ def _parent(parent_id: UUID | None) -> Category | None:
         return None
     parent = selectors.category(parent_id)
     if parent is None:
-        raise InvalidFields({"parent": ["Choose an existing category."]})
+        raise InvalidFields({"parent": [gettext("Choose an existing category.")]})
     return parent
 
 
@@ -127,7 +130,9 @@ def create_category(
         with transaction.atomic():
             category.save()
     except IntegrityError as exc:
-        raise InvalidFields({"name": ["A category with this name already exists here."]}) from exc
+        raise InvalidFields(
+            {"name": [gettext("A category with this name already exists here.")]}
+        ) from exc
     audit.record("catalog.category_created", target=category, target_repr=name)
     return category
 
@@ -150,7 +155,7 @@ def update_category(category_id: UUID, changes: dict[str, Any], *, by: User) -> 
     if "parent_id" in changes and changes["parent_id"] != category.parent_id:
         parent = _parent(changes["parent_id"])
         if parent is not None and parent.pk in selectors.descendant_ids(category.pk):
-            raise InvalidFields({"parent": ["A category can't be moved under itself."]})
+            raise InvalidFields({"parent": [gettext("A category can't be moved under itself.")]})
         level = parent.level + 1 if parent else 1
         if level + _depth_below(category) > MAX_CATEGORY_DEPTH:
             raise CategoryTooDeep()
@@ -159,7 +164,9 @@ def update_category(category_id: UUID, changes: dict[str, Any], *, by: User) -> 
         with transaction.atomic():
             category.save()
     except IntegrityError as exc:
-        raise InvalidFields({"name": ["A category with this name already exists here."]}) from exc
+        raise InvalidFields(
+            {"name": [gettext("A category with this name already exists here.")]}
+        ) from exc
     after = {"name": category.name, "parent": category.parent_id, "sort_order": category.sort_order}
     changes_made = audit.diff(before, after)
     if changes_made:
@@ -189,9 +196,9 @@ def delete_category(category_id: UUID, *, by: User) -> None:
     if category is None:
         raise NotFound()
     if Category.objects.filter(parent=category, deleted_at__isnull=True).exists():
-        raise InUse("Move or delete its sub-categories first.")
+        raise InUse(gettext("Move or delete its sub-categories first."))
     if Product.objects.filter(category=category, deleted_at__isnull=True).exists():
-        raise InUse("Move its products to another category first.")
+        raise InUse(gettext("Move its products to another category first."))
     category.deleted_at, category.is_active = timezone.now(), False
     category.save(update_fields=["deleted_at", "is_active", "updated_at"])
     audit.record("catalog.category_deleted", target=category, target_repr=category.name)
@@ -221,7 +228,7 @@ def save_brand(
         with transaction.atomic():
             brand.save()
     except IntegrityError as exc:
-        raise InvalidFields({"name": ["A brand with this name already exists."]}) from exc
+        raise InvalidFields({"name": [gettext("A brand with this name already exists.")]}) from exc
     if before is None:
         audit.record(
             "catalog.brand_created",
@@ -242,7 +249,7 @@ def delete_brand(brand_id: UUID, *, by: User) -> None:
     if brand is None:
         raise NotFound()
     if Product.objects.filter(brand=brand, deleted_at__isnull=True).exists():
-        raise InUse("Some products still use this brand.")
+        raise InUse(gettext("Some products still use this brand."))
     brand.deleted_at, brand.is_active = timezone.now(), False
     brand.save(update_fields=["deleted_at", "is_active", "updated_at"])
     audit.record("catalog.brand_deleted", target=brand, target_repr=brand.name)
@@ -272,13 +279,17 @@ def save_unit(unit_id: UUID | None, changes: dict[str, Any], *, by: User) -> Uni
         )
         if any(q != q.to_integral_value() for pair in quantities for q in pair):
             raise InvalidFields(
-                {"allows_decimal": ["Some products using this unit have fractional quantities."]}
+                {
+                    "allows_decimal": [
+                        gettext("Some products using this unit have fractional quantities.")
+                    ]
+                }
             )
     try:
         with transaction.atomic():
             unit.save()
     except IntegrityError as exc:
-        raise InvalidFields({"code": ["A unit with this code already exists."]}) from exc
+        raise InvalidFields({"code": [gettext("A unit with this code already exists.")]}) from exc
     after = {f: getattr(unit, f) for f in UNIT_FIELDS}
     audit.record(
         "catalog.unit_created" if not before else "catalog.unit_updated",
@@ -298,7 +309,7 @@ def delete_unit(unit_id: UUID, *, by: User) -> None:
         Product.objects.filter(unit=unit).exists()
         or Product.objects.filter(pack_unit=unit).exists()
     ):
-        raise InUse("Some products use this unit. Mark it inactive instead.")
+        raise InUse(gettext("Some products use this unit. Mark it inactive instead."))
     code = unit.code
     unit.delete()
     audit.record(
@@ -353,22 +364,31 @@ def _active_rate(value: Decimal) -> Decimal:
             f"{r.normalize():f}%"
             for r in TaxRate.objects.filter(is_active=True).values_list("rate", flat=True)
         )
-        raise InvalidFields({"gst_rate": [f"Choose one of the GST rates in use: {allowed}."]})
+        raise InvalidFields(
+            {
+                "gst_rate": [
+                    gettext("Choose one of the GST rates in use: %(allowed)s.")
+                    % {"allowed": allowed}
+                ]
+            }
+        )
     return value
 
 
 def _cess(cess_type_id: UUID | None, cess_rate: Decimal) -> tuple[CessType | None, Decimal]:
     if cess_type_id is None:
         if cess_rate:
-            raise InvalidFields({"cess_type": ["Choose the cess type for this cess rate."]})
+            raise InvalidFields(
+                {"cess_type": [gettext("Choose the cess type for this cess rate.")]}
+            )
         return None, Decimal("0")
     cess = CessType.objects.filter(pk=cess_type_id, is_active=True).first()
     if cess is None:
-        raise InvalidFields({"cess_type": ["Choose an active cess type."]})
+        raise InvalidFields({"cess_type": [gettext("Choose an active cess type.")]})
     if cess.calc_method != CessType.CalcMethod.PERCENT:
-        raise InvalidFields({"cess_type": ["Only percentage cess is supported for now."]})
+        raise InvalidFields({"cess_type": [gettext("Only percentage cess is supported for now.")]})
     if not Decimal("0") <= cess_rate <= Decimal("100"):
-        raise InvalidFields({"cess_rate": ["Enter a cess rate from 0 to 100."]})
+        raise InvalidFields({"cess_rate": [gettext("Enter a cess rate from 0 to 100.")]})
     return cess, cess_rate
 
 
@@ -401,7 +421,8 @@ def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:
     hsn = product.hsn_code
     if not hsn.isdigit() or not min_digits <= len(hsn) <= 8:
         errors.setdefault("hsn_code", []).append(
-            f"Enter an HSN code of {min_digits} to 8 digits (numbers only)."
+            gettext("Enter an HSN code of %(min_digits)s to 8 digits (numbers only).")
+            % {"min_digits": min_digits}
         )
     for ref, qs, label in (
         ("category", selectors.categories(), "category"),
@@ -409,39 +430,45 @@ def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:
     ):
         ref_id = getattr(product, f"{ref}_id")
         if ref_id and not qs.filter(pk=ref_id).exists():
-            errors.setdefault(ref, []).append(f"Choose an existing {label}.")
+            errors.setdefault(ref, []).append(
+                gettext("Choose an existing %(label)s.") % {"label": label}
+            )
     unit = selectors.units().filter(pk=product.unit_id, is_active=True).first()
     if unit is None:
-        errors.setdefault("unit", []).append("Choose an active unit.")
+        errors.setdefault("unit", []).append(gettext("Choose an active unit."))
     if (product.pack_unit_id is None) != (product.pack_size is None):
         errors.setdefault("pack_size", []).append(
-            "Enter both the pack unit and how many base units are in one pack."
+            gettext("Enter both the pack unit and how many base units are in one pack.")
         )
     elif product.pack_unit_id is not None:
         if product.pack_unit_id == product.unit_id:
-            errors.setdefault("pack_unit", []).append("The pack unit must differ from the unit.")
+            errors.setdefault("pack_unit", []).append(
+                gettext("The pack unit must differ from the unit.")
+            )
         elif not selectors.units().filter(pk=product.pack_unit_id).exists():
-            errors.setdefault("pack_unit", []).append("Choose an existing unit.")
+            errors.setdefault("pack_unit", []).append(gettext("Choose an existing unit."))
         if product.pack_size is not None and product.pack_size <= 0:
-            errors.setdefault("pack_size", []).append("Enter a pack size above 0.")
+            errors.setdefault("pack_size", []).append(gettext("Enter a pack size above 0."))
     for name in ("min_order_qty", "order_multiple"):
         value = getattr(product, name)
         if value is None or value <= 0:
-            errors.setdefault(name, []).append("Enter a quantity above 0.")
+            errors.setdefault(name, []).append(gettext("Enter a quantity above 0."))
         elif unit is not None and not unit.allows_decimal and value != value.to_integral_value():
-            errors.setdefault(name, []).append(f"{unit.code} is counted in whole numbers.")
+            errors.setdefault(name, []).append(
+                gettext("%(code)s is counted in whole numbers.") % {"code": unit.code}
+            )
     if product.base_price is None or product.base_price < 0:
-        errors.setdefault("base_price", []).append("Enter a price of 0 or more.")
+        errors.setdefault("base_price", []).append(gettext("Enter a price of 0 or more."))
     if product.cost_price is not None and product.cost_price < 0:
-        errors.setdefault("cost_price", []).append("Enter a cost of 0 or more.")
+        errors.setdefault("cost_price", []).append(gettext("Enter a cost of 0 or more."))
     if product.mrp is not None and product.mrp < 0:
-        errors.setdefault("mrp", []).append("Enter an MRP of 0 or more.")
+        errors.setdefault("mrp", []).append(gettext("Enter an MRP of 0 or more."))
     if product.reorder_level is not None and product.reorder_level < 0:
-        errors.setdefault("reorder_level", []).append("Enter 0 or more.")
+        errors.setdefault("reorder_level", []).append(gettext("Enter 0 or more."))
     if not product.code.strip():
-        errors.setdefault("code", []).append("Enter a product code.")
+        errors.setdefault("code", []).append(gettext("Enter a product code."))
     if not product.name.strip():
-        errors.setdefault("name", []).append("Enter a product name.")
+        errors.setdefault("name", []).append(gettext("Enter a product name."))
 
 
 def price_warnings(product: Product, gst_rate: Decimal | None) -> list[Warning]:
@@ -489,14 +516,18 @@ def _save_product(product: Product) -> None:
             product.save()
     except IntegrityError as exc:
         if "uniq_product_code" in str(exc):
-            raise InvalidFields({"code": ["Another product already uses this code."]}) from exc
+            raise InvalidFields(
+                {"code": [gettext("Another product already uses this code.")]}
+            ) from exc
         raise
 
 
 @transaction.atomic
 def _check_cost_permission(data: dict[str, Any], by: User) -> None:
     if "cost_price" in data and not by.has_permission_code(COST_PERMISSION):
-        raise InvalidFields({"cost_price": ["Only staff who manage costs can set the cost price."]})
+        raise InvalidFields(
+            {"cost_price": [gettext("Only staff who manage costs can set the cost price.")]}
+        )
 
 
 def create_product(
@@ -623,7 +654,7 @@ def delete_product(product_id: UUID, *, by: User) -> None:
 def add_barcode(product_id: UUID, barcode: str, *, by: User) -> ProductBarcode:
     barcode = "".join(barcode.split())
     if not barcode or len(barcode) > 64:
-        raise InvalidFields({"barcode": ["Enter a barcode of up to 64 characters."]})
+        raise InvalidFields({"barcode": [gettext("Enter a barcode of up to 64 characters.")]})
     product = selectors.products().filter(pk=product_id).first()
     if product is None:
         raise NotFound()
@@ -633,7 +664,9 @@ def add_barcode(product_id: UUID, barcode: str, *, by: User) -> ProductBarcode:
                 product=product, barcode=barcode, created_by=by
             )
     except IntegrityError as exc:
-        raise InvalidFields({"barcode": ["Another product already has this barcode."]}) from exc
+        raise InvalidFields(
+            {"barcode": [gettext("Another product already has this barcode.")]}
+        ) from exc
     audit.record("catalog.barcode_added", target=product, metadata={"barcode": barcode})
     return row
 
@@ -670,9 +703,15 @@ def bulk_update(
     product_ids: list[UUID], action: str, *, value: UUID | None = None, by: User
 ) -> int:
     if action not in BULK_ACTIONS:
-        raise InvalidFields({"action": ["Choose a supported action."]})
+        raise InvalidFields({"action": [gettext("Choose a supported action.")]})
     if not product_ids or len(product_ids) > BULK_LIMIT:
-        raise InvalidFields({"product_ids": [f"Select 1 to {BULK_LIMIT} products."]})
+        raise InvalidFields(
+            {
+                "product_ids": [
+                    gettext("Select 1 to %(bulk_limit)s products.") % {"bulk_limit": BULK_LIMIT}
+                ]
+            }
+        )
     field_name, new_value = {
         "activate": ("is_active", True),
         "deactivate": ("is_active", False),
@@ -682,9 +721,9 @@ def bulk_update(
         "set_brand": ("brand_id", value),
     }[action]
     if action == "set_category" and value and selectors.category(value) is None:
-        raise InvalidFields({"value": ["Choose an existing category."]})
+        raise InvalidFields({"value": [gettext("Choose an existing category.")]})
     if action == "set_brand" and value and not selectors.brands().filter(pk=value).exists():
-        raise InvalidFields({"value": ["Choose an existing brand."]})
+        raise InvalidFields({"value": [gettext("Choose an existing brand.")]})
     products = list(selectors.products().filter(pk__in=product_ids).select_for_update(of=("self",)))
     changed = 0
     for product in products:
@@ -717,7 +756,7 @@ def _check_new_rate(gst_rate: Decimal, effective_from: date) -> None:
         errors.update(exc.details["fields"])
     if effective_from < today_ist():
         errors["effective_from"] = [
-            "A rate change can't start in the past. Choose today or a later date."
+            gettext("A rate change can't start in the past. Choose today or a later date.")
         ]
     if errors:
         raise InvalidFields(errors)
@@ -755,7 +794,7 @@ def schedule_tax_rate(
             )
     except IntegrityError as exc:
         raise InvalidFields(
-            {"effective_from": ["A change already starts on this date. Cancel it first."]}
+            {"effective_from": [gettext("A change already starts on this date. Cancel it first.")]}
         ) from exc
     audit.record(
         "catalog.tax_rate_scheduled",
@@ -780,7 +819,7 @@ def cancel_tax_rate(product_id: UUID, rate_id: UUID, *, reason: str, by: User) -
     if row.cancelled_at is not None or row.effective_from <= today_ist():
         raise TaxRateNotCancellable()
     if not reason.strip():
-        raise InvalidFields({"reason": ["Enter why this change is cancelled."]})
+        raise InvalidFields({"reason": [gettext("Enter why this change is cancelled.")]})
     row.cancelled_at, row.cancelled_by, row.cancel_reason = timezone.now(), by, reason.strip()[:200]
     row.save(update_fields=["cancelled_at", "cancelled_by", "cancel_reason"])
     audit.record(
@@ -806,7 +845,7 @@ class RateScheduleFilter:
 def _schedule_targets(f: RateScheduleFilter, effective_from: date) -> tuple[list[Product], int]:
     """Matching products, and how many already have a change starting that day (skipped)."""
     if not (f.hsn_prefix or f.category_id or f.product_ids):
-        raise InvalidFields({"filter": ["Choose products by HSN, category or selection."]})
+        raise InvalidFields({"filter": [gettext("Choose products by HSN, category or selection.")]})
     qs = selectors.products()
     if f.hsn_prefix:
         qs = qs.filter(hsn_code__startswith=f.hsn_prefix)
@@ -902,7 +941,12 @@ def upload_image(
         raise NotFound()
     if product.images.count() >= MAX_IMAGES_PER_PRODUCT:
         raise InvalidFields(
-            {"file": [f"A product can have at most {MAX_IMAGES_PER_PRODUCT} images."]}
+            {
+                "file": [
+                    gettext("A product can have at most %(max_images_per_product)s images.")
+                    % {"max_images_per_product": MAX_IMAGES_PER_PRODUCT}
+                ]
+            }
         )
     valid = validate_image(
         upload, max_bytes=images.PRODUCT_IMAGE_MAX_BYTES, max_side=images.PRODUCT_IMAGE_MAX_SIDE

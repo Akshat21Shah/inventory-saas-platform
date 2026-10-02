@@ -156,6 +156,7 @@ make secrets-scan # gitleaks over the whole git history, every branch (the pre-c
 make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
+make messages    # update + compile the server message catalogs (backend/locale/<code>); the tests fail on a stale or untranslated one
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts, stock, 11 orders, invoices, payments, a credit note and a refund each
 make seed-volume # speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 5,000 / 5,000 orders over a year, reconciled (a few minutes; owner@vol-a.example.com …)
 make perf        # dashboard + every report's first page over the last whole month against p95 < 300 ms (after make seed-volume)

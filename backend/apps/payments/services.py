@@ -25,6 +25,8 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -51,13 +53,13 @@ PAISA = Decimal("0.01")
 
 class PaymentExceedsOutstanding(DomainError):
     code = ErrorCode.PAYMENT_EXCEEDS_OUTSTANDING
-    default_message = "This is more than the shop owes."
+    default_message = gettext_lazy("This is more than the shop owes.")
 
 
 class InvalidPaymentState(DomainError):
     status_code = 409
     code = ErrorCode.INVALID_STATE_TRANSITION
-    default_message = "This payment can't be changed that way now."
+    default_message = gettext_lazy("This payment can't be changed that way now.")
 
 
 @dataclass(frozen=True)
@@ -86,18 +88,18 @@ class PaymentInput:
 def _validate(data: PaymentInput) -> None:
     errors: dict[str, list[str]] = {}
     if data.amount <= 0 or data.amount != data.amount.quantize(PAISA):
-        errors["amount"] = ["Enter an amount above zero, in rupees and paise."]
+        errors["amount"] = [_("Enter an amount above zero, in rupees and paise.")]
     if data.mode not in dict(MANUAL_MODES):  # online payments come only from the gateway
-        errors["mode"] = ["Choose cash, cheque, bank transfer or UPI."]
+        errors["mode"] = [_("Choose cash, cheque, bank transfer or UPI.")]
     if data.mode == Payment.Mode.CHEQUE and not data.cheque_number.strip():
-        errors["cheque_number"] = ["Enter the cheque number."]
+        errors["cheque_number"] = [_("Enter the cheque number.")]
     if data.payment_date > today_ist():
-        errors["payment_date"] = ["The payment date can't be in the future."]
+        errors["payment_date"] = [_("The payment date can't be in the future.")]
     chosen = [(d.target_type, d.target_id) for d in data.pay_first]
     if len(set(chosen)) != len(chosen) or any(d.amount <= 0 for d in data.pay_first):
-        errors["pay_first"] = ["Choose each due once, with an amount above zero."]
+        errors["pay_first"] = [_("Choose each due once, with an amount above zero.")]
     elif sum((d.amount for d in data.pay_first), ZERO) > data.amount:
-        errors["pay_first"] = ["The amounts chosen add up to more than the payment."]
+        errors["pay_first"] = [_("The amounts chosen add up to more than the payment.")]
     if errors:
         raise InvalidFields(errors)
 
@@ -120,7 +122,7 @@ def _target(retailer_id: UUID, target_type: str, target_id: UUID) -> Target:
     else:
         found = None
     if found is None:
-        raise InvalidFields({"pay_first": ["One of the chosen dues isn't this shop's."]})
+        raise InvalidFields({"pay_first": [_("One of the chosen dues isn't this shop's.")]})
     return cast(Target, found)
 
 
@@ -172,7 +174,7 @@ def _credit(
     ledger.add_unapplied(account, payment.amount)
     for target, amount in pay_first:
         if amount > target.balance_due:
-            raise InvalidFields({"pay_first": ["More than is still owed on a chosen due."]})
+            raise InvalidFields({"pay_first": [_("More than is still owed on a chosen due.")]})
         allocation.apply(account, payment, target, amount, automatic=False, by=by)
     allocation.settle(account, by=by)  # oldest money first, for whatever is still owed
 
@@ -210,7 +212,7 @@ def _record(data: PaymentInput, *, by: User | None, collected: bool) -> Payment:
     )
     credit_now = timing == Payment.CreditTiming.ON_RECEIPT
     if data.pay_first and not credit_now:
-        raise InvalidFields({"pay_first": ["A cheque is matched to dues when it clears."]})
+        raise InvalidFields({"pay_first": [_("A cheque is matched to dues when it clears.")]})
     if not get_setting("payments.hold_advances", tenant_id) and data.amount > account.balance:
         raise PaymentExceedsOutstanding(
             details={"outstanding": f"{max(account.balance, ZERO):.2f}"}
@@ -312,14 +314,14 @@ def collect_payment(data: PaymentInput, *, by: User) -> Payment:
     salesman" until handed over. Matched oldest first; choosing dues is left to the office."""
     if not get_setting("payments.sales_can_collect", require_tenant_id()):
         raise DomainError(
-            "Sales staff can't record collections.",
+            _("Sales staff can't record collections."),
             code=ErrorCode.PERMISSION_DENIED,
             status_code=403,
         )
     if retailer_for(by, data.retailer_id) is None:
         raise NotFound()
     if data.pay_first:
-        raise InvalidFields({"pay_first": ["Collections are matched oldest first."]})
+        raise InvalidFields({"pay_first": [_("Collections are matched oldest first.")]})
     with transaction.atomic():
         return _record(data, by=by, collected=True)
 
@@ -363,7 +365,7 @@ def _undo_credit(payment: Payment, *, reason: str, by: User | None) -> None:
 
 def _require_reason(reason: str) -> str:
     if not reason.strip():
-        raise InvalidFields({"reason": ["Say why."]})
+        raise InvalidFields({"reason": [_("Say why.")]})
     return reason.strip()[:300]
 
 
@@ -379,7 +381,7 @@ def clear_cheque(payment_id: UUID, *, on: date | None = None, by: User | None) -
         ):
             raise InvalidPaymentState()
         if cleared_on > today_ist() or cleared_on < payment.payment_date:
-            raise InvalidFields({"on": ["Choose a date between the payment date and today."]})
+            raise InvalidFields({"on": [_("Choose a date between the payment date and today.")]})
         waiting = payment.status == Payment.Status.PENDING_CLEARANCE
         payment.status = Payment.Status.CLEARED
         payment.cleared_at = timezone.now()
@@ -512,7 +514,7 @@ def hand_over(payment_ids: list[UUID], *, by: User) -> list[Payment]:
             for p in payments
         ):
             raise InvalidFields(
-                {"payments": ["Only collections still with sales staff can be handed over."]}
+                {"payments": [_("Only collections still with sales staff can be handed over.")]}
             )
         for payment in payments:
             if payment.handover_status == Payment.Handover.WITH_SALESMAN:
@@ -557,7 +559,7 @@ def allocate(
 ) -> list[Allocation]:
     """Match unused money (a payment, credit-note credit or a credit adjustment) to dues."""
     if not to or any(d.amount <= 0 for d in to):
-        raise InvalidFields({"to": ["Choose at least one due, with an amount above zero."]})
+        raise InvalidFields({"to": [_("Choose at least one due, with an amount above zero.")]})
     with transaction.atomic():
         account = ledger.lock_account(retailer_id)  # L1
         source = _source(retailer_id, source_type, source_id)
@@ -603,7 +605,7 @@ def reallocate(
             "payment", "credit_note", "credit_adjustment", "invoice", "debit_adjustment"
         ).get(pk=allocation_id)
         if row.refund_id:
-            raise InvalidFields({"allocation": ["The money used for a refund can't be moved."]})
+            raise InvalidFields({"allocation": [_("The money used for a refund can't be moved.")]})
         undo = allocation.reverse(account, row, by=by, reason=note)
         source: Source = row.payment or row.credit_note or row.credit_adjustment  # type: ignore[assignment]
         source = type(source).objects.select_for_update().get(pk=source.pk)
@@ -638,7 +640,7 @@ def reallocate(
 
 class RefundExceedsCredit(DomainError):
     code = ErrorCode.REFUND_EXCEEDS_CREDIT
-    default_message = "This is more than the shop's credit balance."
+    default_message = gettext_lazy("This is more than the shop's credit balance.")
 
 
 @dataclass(frozen=True)
@@ -657,11 +659,11 @@ def record_refund(data: RefundInput, *, by: User | None) -> Refund:
     the shop's unused money, oldest first; its own series (RFD/…); audited; a refund voucher."""
     errors: dict[str, list[str]] = {}
     if data.amount <= 0 or data.amount != data.amount.quantize(PAISA):
-        errors["amount"] = ["Enter an amount above zero, in rupees and paise."]
+        errors["amount"] = [_("Enter an amount above zero, in rupees and paise.")]
     if data.mode not in Refund.Mode.values:
-        errors["mode"] = ["Choose cash, bank transfer or UPI."]
+        errors["mode"] = [_("Choose cash, bank transfer or UPI.")]
     if data.refund_date > today_ist():
-        errors["refund_date"] = ["The date can't be in the future."]
+        errors["refund_date"] = [_("The date can't be in the future.")]
     if errors:
         raise InvalidFields(errors)
     with transaction.atomic():
@@ -737,7 +739,7 @@ def reverse_refund(refund_id: UUID, *, reason: str, by: User | None) -> Refund:
         account = ledger.lock_account(found)  # L1
         refund: Refund = Refund.objects.select_for_update().get(pk=refund_id)  # L5
         if refund.status != Refund.Status.ISSUED:
-            raise InvalidPaymentState("This refund was already reversed.")
+            raise InvalidPaymentState(_("This refund was already reversed."))
         for row in allocation.live_allocations(refund=refund):
             allocation.reverse(account, row, by=by, reason=f"Refund reversed: {note}")
         refund.refresh_from_db()

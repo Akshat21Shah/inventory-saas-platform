@@ -9,7 +9,7 @@ OWNER_DB_URL := postgres://app_owner:app_owner@localhost:5432/inventory
 
 .DEFAULT_GOAL := help
 .PHONY: help setup secrets-scan up down logs ps migrate makemigrations seed seed-volume perf perf-exports shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost webhook-tunnel \
-        e2e lint lint-backend lint-frontend fmt api-client db-up check-schema
+        e2e lint lint-backend lint-frontend fmt api-client db-up check-schema messages
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -110,6 +110,9 @@ fmt: ## Auto-format backend and frontend
 api-client: ## Export the OpenAPI schema and regenerate web/lib/api/generated
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py spectacular --file openapi.yaml --validate --fail-on-warn
 	cd web && npm run api:generate
+
+messages: ## Update and compile the server message catalogs (backend/locale; then translate what it lists)
+	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py messages
 
 check-schema: ## Fail if the committed OpenAPI schema is out of date
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py spectacular --file /tmp/openapi.check.yaml --validate --fail-on-warn
