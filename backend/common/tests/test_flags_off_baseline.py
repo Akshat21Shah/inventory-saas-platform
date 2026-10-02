@@ -172,6 +172,10 @@ ALLOWED_NEW: dict[str, Any] = {
     "db.billing.OrderConfirmation.content.language": "en",
     "db.payments.Payment.document_language": "en",
     "db.payments.Refund.document_language": "en",
+    # Phase 11a (ADR-060 item 8): names in English letters for search, kept by the database.
+    "db.catalog.Product.name_key": lambda v: isinstance(v, str) and v,
+    "db.retailers.Retailer.shop_name_key": lambda v: isinstance(v, str) and v,
+    "db.retailers.Retailer.owner_name_key": lambda v: isinstance(v, str),
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -214,6 +218,14 @@ REWORDED: dict[tuple[str, Any], Any] = {
     # language (English unless changed), which is now blank rather than "en".
     ("db.retailers.Retailer.preferred_language", "en"): "",
     ("api.retailer.preferred_language", "en"): "",
+    # Phase 11a (ADR-060 item 8): the search vector also holds names in English letters.
+    (
+        "db.catalog.Product.search_vector",
+        "'-1':4A 'biscuits':2A 'masala':1A 'snk':3A",
+    ): "'-1':6A 'biscuits':2A 'biskuits':4A 'masala':1A,3A 'snk':5A",
+    ("db.catalog.Product.search_vector", "'-1':3A 'lap':2A 'laptop':1A"): (
+        "'-1':4A 'lap':3A 'laptop':1A,2A"
+    ),
     # Phase 9a (ADR-053): the ai module now covers only smart search and the assistant.
     ("api.settings-features.name", "Smart inventory and AI"): "AI features",
     (

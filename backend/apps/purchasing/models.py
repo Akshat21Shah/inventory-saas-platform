@@ -11,11 +11,16 @@ from django.db.models import F, Q
 from apps.billing.models import PdfStatus
 from common.fields import MoneyField, QtyField, RateField, UnitCostField
 from common.models import SoftDeleteMixin, TenantScopedModel
+from common.search_keys import SearchKey
 
 
 class Supplier(SoftDeleteMixin, TenantScopedModel):
     code = models.CharField(max_length=20)  # S-0001, allocated per tenant
     name = models.CharField(max_length=200)
+    # In English letters, for search in either script (ADR-060 item 8). Kept by the database.
+    name_key = models.GeneratedField(
+        expression=SearchKey("name"), output_field=models.TextField(), db_persist=True
+    )
     gstin = models.CharField(max_length=15, null=True, blank=True)  # noqa: DJ001
     state = models.ForeignKey(
         "platform.State", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
@@ -43,6 +48,9 @@ class Supplier(SoftDeleteMixin, TenantScopedModel):
         ]
         indexes = [
             GinIndex(fields=["name"], name="supplier_name_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(
+                fields=["name_key"], name="supplier_name_key_trgm", opclasses=["gin_trgm_ops"]
+            ),
             models.Index(fields=["tenant", "name"], name="supplier_name_idx"),
         ]
 

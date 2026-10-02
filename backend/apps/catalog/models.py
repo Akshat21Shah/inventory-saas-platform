@@ -10,6 +10,7 @@ from django.db.models.functions import Lower
 
 from common.fields import MoneyField, QtyField, RateField
 from common.models import SoftDeleteMixin, TenantScopedModel
+from common.search_keys import SearchKey
 
 MAX_CATEGORY_DEPTH = 3
 
@@ -127,6 +128,11 @@ class Product(SoftDeleteMixin, TenantScopedModel):
     show_in_shop = models.BooleanField(default=True)
     # Maintained by a database trigger (name, codes/barcodes, brand, tags, category).
     search_vector = SearchVectorField(null=True, editable=False)
+    # The name in English letters, for search in either script (ADR-060 item 8). Kept by the
+    # database.
+    name_key = models.GeneratedField(
+        expression=SearchKey("name"), output_field=models.TextField(), db_persist=True
+    )
 
     class Meta:
         ordering = ["name"]
@@ -158,6 +164,7 @@ class Product(SoftDeleteMixin, TenantScopedModel):
         indexes = [
             GinIndex(fields=["tenant", "search_vector"], name="product_search_gin"),
             GinIndex(fields=["name"], name="product_name_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["name_key"], name="product_name_key_trgm", opclasses=["gin_trgm_ops"]),
             GinIndex(fields=["code"], name="product_code_trgm", opclasses=["gin_trgm_ops"]),
             models.Index(fields=["tenant", "category"], name="product_tenant_category_idx"),
             models.Index(fields=["tenant", "brand"], name="product_tenant_brand_idx"),
