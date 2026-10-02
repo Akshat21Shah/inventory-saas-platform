@@ -3,10 +3,11 @@ CI and the evaluation set. It picks one tool from the question's words (and a pe
 rows or days, or a product), then writes a short answer from the tool's figures with a template.
 
 It answers in the question's language (ADR-060 item 9): English, or for a question in Devanagari
-the language whose own words it uses most (Hindi or Marathi). Each language's question words and
+the language whose own words it uses most (Hindi or Marathi); when it fits both equally, the
+asker's own language, else the first listed (Hindi; owner). Each language's question words and
 answer templates are data, ``apps/ai/assistant/words/<code>.json``; a new language adds its file.
-A question's words are tried in its language first, then in English ("आज की sales कितनी है?").
-A real model understands far more.
+A question's words are tried in its language first, then the others, then English ("आज की sales
+कितनी है?"). A real model understands far more.
 """
 
 from __future__ import annotations
@@ -137,19 +138,25 @@ def languages() -> tuple[str, ...]:
     return ("en", *(code for code in found if code != "en"))
 
 
-def language_of(question: str) -> str:
+def language_of(question: str, preferred: str = "en") -> str:
     """English, unless the question is written in an Indian script: then the language whose own
-    words it uses most (the first in code order on a tie)."""
+    words it uses most; on a tie the asker's (``preferred``) if it is one of them, else the first
+    in code order."""
     if not _SCRIPT.search(question):
         return "en"
     used = set(_WORD.findall(question.lower()))
-    others = [code for code in languages() if code != "en"]
-    return max(others, key=lambda code: len(used & words(code).markers)) if others else "en"
+    scores = {code: len(used & words(code).markers) for code in languages() if code != "en"}
+    if not scores:
+        return "en"
+    best = max(scores.values())
+    tied = [code for code, score in scores.items() if score == best]
+    return preferred if preferred in tied else tied[0]
 
 
 def _tried(lang: str) -> tuple[Words, ...]:
-    """The question's language first, then English."""
-    return (words(lang),) if lang == "en" else (words(lang), words("en"))
+    """The question's language first, then the others, then English."""
+    others = [code for code in languages() if code not in (lang, "en")]
+    return tuple(words(code) for code in dict.fromkeys([lang, *others, "en"]))
 
 
 def rupees(value: Any) -> str:
@@ -195,9 +202,9 @@ def _product(question: str, lang: str) -> str | None:
     return None
 
 
-def plan(question: str, offered: set[str]) -> ToolCall | str:
+def plan(question: str, offered: set[str], preferred: str = "en") -> ToolCall | str:
     """The tool call for ``question``, or a reply (in its language) when no offered tool fits."""
-    lang = language_of(question)
+    lang = language_of(question, preferred)
     say = words(lang)
     tried = _tried(lang)
     tool = next(
@@ -381,6 +388,9 @@ def _units(text: str) -> int:
 class ScriptedChat:
     name = "mock"
 
+    def __init__(self, language: str = "en") -> None:
+        self.language = language  # the asker's, for a question that fits two languages
+
     def chat(
         self,
         system: str,
@@ -397,7 +407,7 @@ class ScriptedChat:
             call = next(c for m in reversed(messages) for c in m.tool_calls)
             result = last.tool_results[0]
             question = next(m.text for m in messages if m.role == "user" and m.text)
-            lang = language_of(question)
+            lang = language_of(question, self.language)
             if result.error:
                 reply = words(lang).text("couldnt_get") + json.loads(result.content).get(
                     "error", ""
@@ -408,7 +418,7 @@ class ScriptedChat:
                     call.name, figures, call.args, lang
                 )
             return ChatTurn(reply, (), _units(sent), _units(reply), MODEL)
-        step = plan(last.text, {t.name for t in tools})
+        step = plan(last.text, {t.name for t in tools}, self.language)
         if isinstance(step, str):
             return ChatTurn(step, (), _units(sent), _units(step), MODEL)
         return ChatTurn("", (step,), _units(sent), 10, MODEL)

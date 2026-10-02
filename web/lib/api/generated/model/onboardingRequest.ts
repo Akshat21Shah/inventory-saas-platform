@@ -72,4 +72,9 @@ export interface OnboardingRequest {
      * @nullable
      */
   primary_color?: string | null;
+  /**
+     * The owner's invitation email language; blank: yours.
+     * @maxLength 5
+     */
+  owner_language?: string;
 }

@@ -236,6 +236,7 @@ class EWayBillUpdate(TenantScopedModel):
     remarks = models.CharField(max_length=100, blank=True, default="")
     request_document = models.JSONField(default=dict)
     response = models.JSONField(default=dict)
+    error_code = models.CharField(max_length=40, blank=True, default="")  # GspErrorCode or ours
     error_message = models.CharField(max_length=500, blank=True, default="")
     attempts = models.PositiveSmallIntegerField(default=0)
     next_retry_at = models.DateTimeField(null=True, blank=True)

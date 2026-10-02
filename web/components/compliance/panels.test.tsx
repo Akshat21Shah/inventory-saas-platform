@@ -92,6 +92,7 @@ const bill = (over: Partial<EWayBillSummary> = {}): EWayBillSummary => ({
   cancel_until: null,
   pending_update: "",
   last_update_error: "",
+  last_update_error_code: "",
   ...over,
 });
 

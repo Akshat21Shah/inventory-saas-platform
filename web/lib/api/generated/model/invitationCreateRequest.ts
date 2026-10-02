@@ -14,4 +14,9 @@ export interface InvitationCreateRequest {
      * @maxLength 40
      */
   role_code: string;
+  /**
+     * The email's language (a code from /auth/me/ languages); blank: the inviter's.
+     * @maxLength 5
+     */
+  language?: string;
 }

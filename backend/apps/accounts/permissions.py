@@ -8,6 +8,8 @@ changes. This module is the source of truth: ``sync_permissions`` (run by migrat
 from dataclasses import dataclass
 from typing import Any
 
+from django.utils.translation import gettext, gettext_noop
+
 
 @dataclass(frozen=True)
 class PermissionDef:
@@ -119,20 +121,31 @@ _OWNER_ONLY = {"settings.manage", "branding.manage", "staff.manage", "audit.view
 _SALES_ONLY = {"reports.sales_own", "payments.collect"}
 
 SYSTEM_ROLES: tuple[SystemRoleDef, ...] = (
-    SystemRoleDef("OWNER", "Owner", _ALL_TENANT - _SALES_ONLY),
-    SystemRoleDef("MANAGER", "Manager", _ALL_TENANT - _OWNER_ONLY - _SALES_ONLY),
-    SystemRoleDef("SALES", "Sales", _SALES),
-    SystemRoleDef("WAREHOUSE", "Warehouse", _WAREHOUSE),
-    SystemRoleDef("ACCOUNTS", "Accounts", _ACCOUNTS),
+    # Names are stored in English and translated where the server writes them (role_label).
+    SystemRoleDef("OWNER", gettext_noop("Owner"), _ALL_TENANT - _SALES_ONLY),
+    SystemRoleDef("MANAGER", gettext_noop("Manager"), _ALL_TENANT - _OWNER_ONLY - _SALES_ONLY),
+    SystemRoleDef("SALES", gettext_noop("Sales"), _SALES),
+    SystemRoleDef("WAREHOUSE", gettext_noop("Warehouse"), _WAREHOUSE),
+    SystemRoleDef("ACCOUNTS", gettext_noop("Accounts"), _ACCOUNTS),
     SystemRoleDef(
         "PLATFORM_ADMIN",
-        "Super admin",
+        gettext_noop("Super admin"),
         frozenset(p.code for p in PLATFORM_PERMISSIONS),
         platform=True,
     ),
 )
 
 SYSTEM_ROLE_CODES = frozenset(r.code for r in SYSTEM_ROLES)
+
+_lookup = gettext  # system role names are listed above with gettext_noop
+
+
+def role_label(role: Any) -> str:
+    """A role's name in the active language: a system role's translated, a distributor's own
+    role as they named it."""
+    return _lookup(role.name) if role.is_system else str(role.name)
+
+
 OWNER_ROLE = "OWNER"
 PLATFORM_ADMIN_ROLE = "PLATFORM_ADMIN"
 

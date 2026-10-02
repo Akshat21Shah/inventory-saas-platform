@@ -337,6 +337,9 @@ class Invitation(TenantScopedModel):
     invited_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
+    # The email's language, chosen by the inviter (their own by default; ADR-060). Blank on
+    # invitations sent before it: the inviter's.
+    language = models.CharField(max_length=5, blank=True, default="")
 
     class Meta:
         constraints = [

@@ -420,7 +420,11 @@ def send_update(update_id: UUID, tenant_id: UUID) -> str:
         try:
             given = credentials.for_use(credentials.ready())
         except credentials.NotReady:
-            _update_failed(update, "The GST provider credentials aren't saved or working.")
+            _update_failed(
+                update,
+                "CREDENTIALS_NOT_READY",
+                "The GST provider credentials aren't saved or working.",
+            )
             return str(U.FAILED)
         update.attempts += 1
         update.save(update_fields=["attempts", "updated_at"])
@@ -444,7 +448,7 @@ def send_update(update_id: UUID, tenant_id: UUID) -> str:
                     update.error_message = exc.message[:500]
                     update.save(update_fields=["next_retry_at", "error_message", "updated_at"])
                     return "RETRY"
-                _update_failed(update, exc.message)
+                _update_failed(update, exc.code, exc.message)
             return str(U.FAILED)
         raw, valid_until = exc.raw, None  # cancelled already: our first answer was lost
     with tenant_transaction(tenant_id):
@@ -479,9 +483,12 @@ def send_update(update_id: UUID, tenant_id: UUID) -> str:
     return str(U.DONE)
 
 
-def _update_failed(update: EWayBillUpdate, message: str) -> None:
-    update.status, update.error_message, update.next_retry_at = U.FAILED, message[:500], None
-    update.save(update_fields=["status", "error_message", "next_retry_at", "updated_at"])
+def _update_failed(update: EWayBillUpdate, code: str, message: str) -> None:
+    update.status, update.next_retry_at = U.FAILED, None
+    update.error_code, update.error_message = code, message[:500]
+    update.save(
+        update_fields=["status", "error_code", "error_message", "next_retry_at", "updated_at"]
+    )
 
 
 # --- The every-minute sweep -----------------------------------------------------------------------

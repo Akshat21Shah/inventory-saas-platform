@@ -13,6 +13,7 @@ import pytest
 from django.core.cache import cache
 from django.utils import timezone
 
+from apps.accounts.models import User
 from apps.ai.adapters import mock_chat
 from apps.ai.adapters.chat import ChatTurn, ToolCall
 from apps.ai.adapters.mock_chat import ScriptedChat
@@ -352,6 +353,25 @@ def test_the_model_is_told_to_answer_in_the_questions_language(tenant_a):
     assert "Answer in the language of the question" in prompt
     assert "digits 0-9 in every language" in prompt
     assert "names of shops, products and people exactly as the figures give them" in prompt
+    # A question that could be Hindi or Marathi: the asker's language, else Hindi (owner).
+    assert prompt.endswith("If a question could be Hindi or Marathi, answer in Hindi.")
+    marathi = service.system_prompt(tenant_a, "mr")
+    assert marathi.endswith("If a question could be Hindi or Marathi, answer in Marathi.")
+
+
+def test_a_question_that_fits_hindi_and_marathi_is_answered_in_the_askers_language(
+    world, every_language
+):
+    assert mock_chat.language_of("टॉप 5 प्रोडक्ट", "mr") == "mr"  # no word of either's own
+    assert mock_chat.language_of("टॉप 5 प्रोडक्ट", "en") == "hi"
+    assert mock_chat.language_of("आज किती विक्री झाली?", "hi") == "mr"  # clearly Marathi
+    with tenant_context(world["t"].pk):
+        for saved, opening in (("mr", "टॉप उत्पादने"), ("en", "टॉप प्रोडक्ट"), ("hi", "टॉप प्रोडक्ट")):
+            User.objects.filter(pk=world["owner"].pk).update(preferred_language=saved)
+            asker = User.objects.get(pk=world["owner"].pk)
+            asked = AssistantQuestion.objects.create(user=asker, question="टॉप 5 प्रोडक्ट?")
+            answered = service.answer(asked.pk)
+            assert answered.answer.startswith(opening), (saved, answered.answer)
 
 
 def test_every_language_has_the_stand_ins_words_and_answers():

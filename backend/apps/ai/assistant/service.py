@@ -28,6 +28,7 @@ from apps.platform.selectors import get_platform_setting
 from common.dates import today_ist
 from common.error_codes import ErrorCode
 from common.errors import DomainError
+from common.languages import DEFAULT, Language, all_languages, user_language
 from common.tenancy import require_tenant_id
 
 log = logging.getLogger(__name__)
@@ -59,12 +60,12 @@ def assistant_model() -> str:
     return str(get_platform_setting("platform.ai_assistant_model"))
 
 
-def chat_provider(model: str | None = None) -> ChatProvider:
+def chat_provider(model: str | None = None, *, language: str = DEFAULT) -> ChatProvider:
     """The configured provider (``AI_ASSISTANT_PROVIDER``; ``mock`` unless set) with ``model``
-    (default: the platform setting)."""
+    (default: the platform setting); ``language`` is the asker's."""
     name = getattr(settings, "AI_ASSISTANT_PROVIDER", "mock")
     if name == "mock":
-        return ScriptedChat()
+        return ScriptedChat(language)
     if name == "anthropic":
         from apps.ai.adapters.anthropic import AnthropicChat
 
@@ -72,7 +73,24 @@ def chat_provider(model: str | None = None) -> ChatProvider:
     raise AiProviderError(f"assistant provider {name!r} isn't set up")
 
 
-def system_prompt(tenant: Tenant) -> str:
+def _same_script(asker: str) -> str:
+    """For languages sharing a script (Hindi and Marathi, in Devanagari), which one to answer a
+    question that could be either in: the asker's, else the first listed (owner, ADR-060)."""
+    by_script: dict[str, list[Language]] = {}
+    for language in all_languages():
+        by_script.setdefault(language.script, []).append(language)
+    lines = []
+    for group in by_script.values():
+        if len(group) > 1:
+            chosen = next((x for x in group if x.code == asker), group[0])
+            names = " or ".join(x.name for x in group)
+            lines.append(f"\n- If a question could be {names}, answer in {chosen.name}.")
+    return "".join(lines)
+
+
+def system_prompt(tenant: Tenant, language: str = DEFAULT) -> str:
+    """The model's instructions; ``language`` is the asker's (for questions in a script that
+    several languages share)."""
     return (
         f"You answer questions from the staff of {tenant.name}, a distributor in India, about "
         f"their own business. Today is {today_ist():%d %B %Y} (India time).\n"
@@ -89,7 +107,7 @@ def system_prompt(tenant: Tenant) -> str:
         "to them; don't work it out from other numbers.\n"
         "- Answer in the language of the question (English, Hindi, Marathi or another). Write "
         "numbers and amounts with the digits 0-9 in every language, and the names of shops, "
-        "products and people exactly as the figures give them."
+        "products and people exactly as the figures give them." + _same_script(language)
     )
 
 
@@ -184,10 +202,11 @@ def answer(question_id: UUID, *, model: str | None = None) -> AssistantQuestion:
     user = asked.user
     offered = toolbox.tools_for(user)
     specs = [t.spec() for t in offered]
-    system = system_prompt(Tenant.objects.get(pk=tenant_id))
+    language = user_language(user, tenant_id)
+    system = system_prompt(Tenant.objects.get(pk=tenant_id), language)
     timeout = float(get_platform_setting("platform.ai_assistant_timeout_seconds") or 30)
     try:
-        provider = chat_provider(model)
+        provider = chat_provider(model, language=language)
     except AiProviderError as exc:
         _finish(asked, AssistantQuestion.Status.FAILED, error=str(exc))
         return asked

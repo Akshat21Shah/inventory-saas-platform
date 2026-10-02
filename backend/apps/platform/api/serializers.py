@@ -129,6 +129,13 @@ class OnboardingSerializer(serializers.Serializer[Any]):
     primary_color = serializers.CharField(
         max_length=7, required=False, allow_null=True, default=None
     )
+    owner_language = serializers.CharField(
+        max_length=5,
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="The owner's invitation email language; blank: yours.",
+    )
 
 
 class TenantUpdateSerializer(serializers.Serializer[Any]):

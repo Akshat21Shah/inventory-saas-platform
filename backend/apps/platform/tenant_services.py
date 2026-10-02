@@ -78,6 +78,7 @@ class OnboardingInput:
     owner_name: str = ""
     plan_code: str | None = None
     primary_color: str | None = None
+    owner_language: str = ""  # the owner's invitation; blank: the super admin's own (ADR-060)
 
 
 def _validate_tenant(tenant: Tenant, exclude: list[str] | None = None) -> None:
@@ -157,7 +158,12 @@ def onboard_tenant(data: OnboardingInput, *, by: User) -> Tenant:
             target=tenant,
             metadata={"slug": tenant.slug, "plan": plan.code, "owner_email": data.owner_email},
         )
-        staff_services.invite_staff(email=data.owner_email, role_code=OWNER_ROLE, invited_by=by)
+        staff_services.invite_staff(
+            email=data.owner_email,
+            role_code=OWNER_ROLE,
+            invited_by=by,
+            language=data.owner_language,
+        )
     return tenant
 
 

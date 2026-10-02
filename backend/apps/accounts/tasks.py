@@ -5,9 +5,11 @@ from uuid import UUID
 
 from celery import shared_task
 from django.db import transaction
+from django.utils import translation
 from django.utils.translation import gettext as _
 
 from apps.accounts.models import Invitation, User
+from apps.accounts.permissions import role_label
 from common.hosts import web_url
 from common.languages import speaking
 from common.task_base import TenantTask
@@ -121,6 +123,7 @@ def send_login_otp_sms(phone: str, code: str, sender_name: str) -> None:
     max_retries=8,
 )
 def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str) -> None:
+    from apps.accounts.staff_services import invitation_language
     from apps.platform.models import Tenant
 
     with transaction.atomic(), tenant_context(UUID(tenant_id)):
@@ -133,12 +136,12 @@ def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str)
             return
         tenant: Tenant = invitation.tenant
         inviter = invitation.invited_by.full_name if invitation.invited_by else ""
-        role_name, email = invitation.role.name, invitation.email
-        by = invitation.invited_by
+        role, email = invitation.role, invitation.email
+        language = invitation_language(invitation)
     link = web_url(f"/invite/{raw_token}", tenant_slug=tenant.slug)
-    # The new person has no language yet: the inviter's (ADR-060).
-    with speaking(by, tenant.pk):
-        values = {"inviter": inviter, "business": tenant.name, "role": role_name}
+    # In the language the inviter chose (their own by default; ADR-060).
+    with translation.override(language):
+        values = {"inviter": inviter, "business": tenant.name, "role": role_label(role)}
         invited = (
             _("%(inviter)s has invited you to join %(business)s as %(role)s.") % values
             if inviter

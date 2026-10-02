@@ -14986,6 +14986,9 @@ components:
           description: PART_B or CANCEL while one is being sent.
         last_update_error:
           type: string
+        last_update_error_code:
+          type: string
+          description: Why the last change failed, as a code (shown translated).
         invoice_id:
           type: string
           format: uuid
@@ -15024,6 +15027,7 @@ components:
       - invoice_id
       - invoice_number
       - last_update_error
+      - last_update_error_code
       - next_retry_at
       - pending_update
       - requested_at
@@ -15135,6 +15139,9 @@ components:
           description: PART_B or CANCEL while one is being sent.
         last_update_error:
           type: string
+        last_update_error_code:
+          type: string
+          description: Why the last change failed, as a code (shown translated).
       required:
       - attempts
       - can_cancel
@@ -15151,6 +15158,7 @@ components:
       - generated_at
       - id
       - last_update_error
+      - last_update_error_code
       - next_retry_at
       - pending_update
       - requested_at
@@ -15187,6 +15195,8 @@ components:
           type: string
         remarks:
           type: string
+        error_code:
+          type: string
         error_message:
           type: string
         created_at:
@@ -15199,6 +15209,7 @@ components:
       required:
       - created_at
       - done_at
+      - error_code
       - error_message
       - id
       - kind
@@ -16922,6 +16933,9 @@ components:
         invited_by:
           type: string
           readOnly: true
+        language:
+          type: string
+          maxLength: 5
         created_at:
           type: string
           format: date-time
@@ -16948,6 +16962,10 @@ components:
           type: string
           minLength: 1
           maxLength: 256
+        language:
+          type: string
+          description: The language the page was shown in; a new account keeps it.
+          maxLength: 5
       required:
       - password
       - token
@@ -16962,6 +16980,11 @@ components:
           type: string
           minLength: 1
           maxLength: 40
+        language:
+          type: string
+          description: 'The email''s language (a code from /auth/me/ languages); blank:
+            the inviter''s.'
+          maxLength: 5
       required:
       - email
       - role_code
@@ -16983,11 +17006,15 @@ components:
         expires_at:
           type: string
           format: date-time
+        language:
+          type: string
+          description: The language to show the invite page in.
       required:
       - email
       - existing_account
       - expires_at
       - invited_by
+      - language
       - role
       - tenant_name
     InvitationTokenRequest:
@@ -18559,6 +18586,11 @@ components:
           nullable: true
           minLength: 1
           maxLength: 7
+        owner_language:
+          type: string
+          default: ''
+          description: 'The owner''s invitation email language; blank: yours.'
+          maxLength: 5
       required:
       - address_line1
       - city

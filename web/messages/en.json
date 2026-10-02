@@ -1192,7 +1192,8 @@
         "owner_email": "Owner's email",
         "slug": "Web address",
         "primary_color": "Brand colour",
-        "plan_code": "Plan"
+        "plan_code": "Plan",
+        "owner_language": "Invitation language"
       },
       "hints": {
         "name": "The name customers see.",
@@ -1200,7 +1201,8 @@
         "owner_email": "We send the invitation to this address.",
         "slug": "Customers sign in at this address followed by .{domain}. Only super admins can change it later.",
         "primary_color": "Used for buttons and highlights. The owner can change it later.",
-        "plan_code": "Plan limits are not enforced yet."
+        "plan_code": "Plan limits are not enforced yet.",
+        "owner_language": "The owner's invitation email is sent in this language."
       },
       "invalid": {
         "email": "Enter a valid email address.",
@@ -1218,7 +1220,8 @@
       "create": "Create distributor",
       "created": "{name} was added and the owner has been invited.",
       "back": "Back",
-      "next": "Next"
+      "next": "Next",
+      "yourLanguage": "Your language"
     },
     "detail": {
       "tabs": {

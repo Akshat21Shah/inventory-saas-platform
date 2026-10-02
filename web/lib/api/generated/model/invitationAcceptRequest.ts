@@ -19,4 +19,9 @@ export interface InvitationAcceptRequest {
      * @maxLength 256
      */
   password: string;
+  /**
+     * The language the page was shown in; a new account keeps it.
+     * @maxLength 5
+     */
+  language?: string;
 }

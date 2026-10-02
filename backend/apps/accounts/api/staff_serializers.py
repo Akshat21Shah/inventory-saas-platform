@@ -42,7 +42,16 @@ class InvitationSerializer(serializers.ModelSerializer[Invitation]):
 
     class Meta:
         model = Invitation
-        fields = ["id", "email", "role", "status", "expires_at", "invited_by", "created_at"]
+        fields = [
+            "id",
+            "email",
+            "role",
+            "status",
+            "expires_at",
+            "invited_by",
+            "language",
+            "created_at",
+        ]
 
     def get_status(self, obj: Invitation) -> str:
         if obj.status == Invitation.Status.PENDING and obj.expires_at <= timezone.now():
@@ -56,6 +65,12 @@ class InvitationSerializer(serializers.ModelSerializer[Invitation]):
 class InvitationCreateSerializer(serializers.Serializer[Any]):
     email = serializers.EmailField()
     role_code = serializers.CharField(max_length=40)
+    language = serializers.CharField(
+        max_length=5,
+        required=False,
+        allow_blank=True,
+        help_text="The email's language (a code from /auth/me/ languages); blank: the inviter's.",
+    )
 
 
 class RoleSerializer(serializers.ModelSerializer[Role]):
@@ -87,9 +102,16 @@ class InvitationPreviewSerializer(serializers.Serializer[Any]):
         help_text="True: ask for the existing password instead of creating one."
     )
     expires_at = serializers.DateTimeField()
+    language = serializers.CharField(help_text="The language to show the invite page in.")
 
 
 class InvitationAcceptSerializer(serializers.Serializer[Any]):
     token = serializers.CharField(max_length=200)
     full_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     password = serializers.CharField(max_length=256, trim_whitespace=False)
+    language = serializers.CharField(
+        max_length=5,
+        required=False,
+        allow_blank=True,
+        help_text="The language the page was shown in; a new account keeps it.",
+    )

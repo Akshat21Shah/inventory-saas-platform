@@ -564,6 +564,10 @@ msgstr "पूर्ण संख्या."
 msgid "Accepted"
 msgstr "स्वीकारली"
 
+#: apps/accounts/permissions.py
+msgid "Accounts"
+msgstr "अकाउंट्स"
+
 #: apps/billing/labels.py
 msgid "Ack. date"
 msgstr "Ack. तारीख"
@@ -923,6 +927,10 @@ msgstr "चालू किंवा बंद निवडा."
 #, python-format
 msgid "Choose one of the GST rates in use: %(allowed)s."
 msgstr "वापरात असलेल्या GST दरांपैकी एक निवडा: %(allowed)s."
+
+#: apps/accounts/staff_services.py
+msgid "Choose one of the languages offered."
+msgstr "दिलेल्या भाषांपैकी एक निवडा."
 
 #: apps/platform/registry.py
 msgid "Choose one of the listed options."
@@ -1847,6 +1855,10 @@ msgstr "त्याऐवजी दुसरा प्लॅन डिफॉल
 msgid "Malformed request."
 msgstr "विनंती चुकीची आहे."
 
+#: apps/accounts/permissions.py
+msgid "Manager"
+msgstr "मॅनेजर"
+
 #: apps/reports/definitions/sales.py
 msgid "Margin: own brand vs traded"
 msgstr "मार्जिन: स्वतःचा ब्रँड विरुद्ध इतर"
@@ -2262,6 +2274,10 @@ msgstr "मागील %(days)s दिवसांत. जलद: विकल�
 msgid "Overdue invoices"
 msgstr "थकलेली बिले"
 
+#: apps/accounts/permissions.py
+msgid "Owner"
+msgstr "मालक"
+
 #: apps/orders/fulfilment.py
 #, python-format
 msgid "Pack between 0 and %(quantity)s."
@@ -2446,6 +2462,10 @@ msgstr "ओळ %(row)s, कॉलम “%(column)s”: %(message)s"
 #, python-format
 msgid "Rows of the rule “%(key)s” must match row %(number)s here."
 msgstr "नियम “%(key)s” च्या ओळी इथे ओळ %(number)s शी जुळल्या पाहिजेत."
+
+#: apps/accounts/permissions.py
+msgid "Sales"
+msgstr "सेल्स"
 
 #: apps/reports/definitions/sales.py
 msgid "Sales by brand"
@@ -2681,6 +2701,10 @@ msgstr "स्टॉक मूल्यांकन"
 #: apps/billing/labels.py
 msgid "Subject to the cheque being cleared by the bank."
 msgstr "बँकेने चेक क्लिअर केल्यावरच ग्राह्य."
+
+#: apps/accounts/permissions.py
+msgid "Super admin"
+msgstr "सुपर ॲडमिन"
 
 #: apps/billing/labels.py
 msgid "Supply"
@@ -3519,6 +3543,10 @@ msgstr "वाहन"
 #: apps/billing/labels.py
 msgid "Voucher no."
 msgstr "व्हाउचर क्र."
+
+#: apps/accounts/permissions.py
+msgid "Warehouse"
+msgstr "गोदाम"
 
 #: apps/dataio/services.py
 msgid "We couldn't check this file. Please upload it again."
