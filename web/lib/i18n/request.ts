@@ -3,11 +3,26 @@ import { getRequestConfig } from "next-intl/server";
 
 import { LOCALE_COOKIE, TIME_ZONE, defaultLocale, intlLocale, isLocale } from "./config";
 
-async function messagesFor(code: string): Promise<Record<string, unknown>> {
+type Messages = { [key: string]: string | Messages };
+
+/** A language's messages over the English ones, so a text not translated yet shows in English
+ * rather than as its key (the tests keep every language complete; this is a safety net). */
+function over(base: Messages, own: Messages): Messages {
+  const out: Messages = { ...base };
+  for (const [key, value] of Object.entries(own)) {
+    const under = base[key];
+    out[key] = typeof value === "object" && typeof under === "object" ? over(under, value) : value;
+  }
+  return out;
+}
+
+async function messagesFor(code: string): Promise<Messages> {
+  const english = (await import(`../../messages/${defaultLocale}.json`)).default as Messages;
+  if (code === defaultLocale) return english;
   try {
-    return (await import(`../../messages/${code}.json`)).default;
+    return over(english, (await import(`../../messages/${code}.json`)).default as Messages);
   } catch {
-    return (await import(`../../messages/${defaultLocale}.json`)).default;
+    return english;
   }
 }
 

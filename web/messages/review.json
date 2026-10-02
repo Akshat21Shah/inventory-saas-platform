@@ -1,0 +1,5 @@
+{
+  "note": "Which screen-text files a native speaker has checked (ADR-060 item 11; pre-production item 42). Languages are enabled for everyone only after their review (platform.languages_enabled).",
+  "hi": { "reviewed": false, "source": "Machine draft, 2026-10-02" },
+  "mr": { "reviewed": false, "source": "Machine draft, 2026-10-02" }
+}
