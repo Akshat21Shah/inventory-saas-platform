@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.platform.api import tenant_views as v
+from apps.platform.api import text_views as tv
 
 urlpatterns = [
     path("settings/business/", v.BusinessSettingsView.as_view(), name="settings-business"),
@@ -29,6 +30,7 @@ urlpatterns = [
     ),
     path("audit-logs/", v.TenantAuditLogView.as_view(), name="audit-logs"),
     path("public/languages/", v.PublicLanguagesView.as_view(), name="public-languages"),
+    path("texts/suggestions/", tv.SuggestionCreateView.as_view(), name="text-suggestions"),
     path(
         "public/tenants/<slug:slug>/branding/",
         v.PublicBrandingView.as_view(),

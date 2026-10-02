@@ -5051,6 +5051,121 @@ paths:
               schema:
                 $ref: '#/components/schemas/SlugAvailability'
           description: ''
+  /api/v1/platform/texts/progress/:
+    get:
+      operationId: platform_texts_progress
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TextProgress'
+          description: ''
+  /api/v1/platform/texts/sheet/:
+    get:
+      operationId: platform_texts_sheet
+      description: Every text in one spreadsheet, for a translator (the same as ``texts_export``).
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/platform/texts/suggestions/:
+    get:
+      operationId: platform_text_suggestions_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: language
+        schema:
+          type: string
+          maxLength: 5
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - NEW
+          - DONE
+          - DISMISSED
+          - ''
+          type: string
+        description: |-
+          * `NEW` - New
+          * `DONE` - Done
+          * `DISMISSED` - Dismissed
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSuggestionList'
+          description: ''
+  /api/v1/platform/texts/suggestions/{suggestion_id}/:
+    patch:
+      operationId: platform_text_suggestions_update
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSuggestionUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Suggestion'
+          description: ''
   /api/v1/price-lists/:
     get:
       operationId: price_lists_list
@@ -11067,6 +11182,28 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RateChange'
+          description: ''
+  /api/v1/texts/suggestions/:
+    post:
+      operationId: texts_suggestions_create
+      description: Anyone signed in (staff, a shop's login, a super admin) may suggest
+        a better word.
+      tags:
+      - texts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestionCreated'
           description: ''
   /api/v1/units/:
     get:
@@ -19854,6 +19991,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StockRow'
+    PaginatedSuggestionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Suggestion'
     PaginatedSupplierListList:
       type: object
       required:
@@ -20613,6 +20769,11 @@ components:
           type: string
           format: date
           nullable: true
+    PatchedSuggestionUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/TextSuggestionStatusEnum'
     PatchedSupplierWriteRequest:
       type: object
       description: Validation of shapes only; the service checks GSTINs, phone numbers
@@ -28056,6 +28217,84 @@ components:
       - plan
       - starts_at
       - status
+    Suggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        language:
+          type: string
+          maxLength: 5
+        screen:
+          type: string
+          maxLength: 300
+        current_text:
+          type: string
+          maxLength: 500
+        suggestion:
+          type: string
+          maxLength: 500
+        status:
+          $ref: '#/components/schemas/TextSuggestionStatusEnum'
+        tenant_name:
+          type: string
+          readOnly: true
+        sent_by:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_by:
+          type: string
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - id
+      - language
+      - resolved_by
+      - screen
+      - sent_by
+      - suggestion
+      - tenant_name
+    SuggestionCreateRequest:
+      type: object
+      properties:
+        language:
+          type: string
+          minLength: 1
+          maxLength: 5
+        screen:
+          type: string
+          minLength: 1
+          description: The page's address.
+          maxLength: 300
+        current_text:
+          type: string
+          maxLength: 500
+        suggestion:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - language
+      - screen
+      - suggestion
+    SuggestionCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
     SuggestionIdsRequest:
       type: object
       properties:
@@ -28830,6 +29069,47 @@ components:
       - body
       - channel
       - event
+    TextProgress:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        native:
+          type: string
+        enabled:
+          type: boolean
+          description: On for everyone (platform.languages_enabled).
+        total:
+          type: integer
+          description: Texts in the app.
+        translated:
+          type: integer
+        reviewed:
+          type: integer
+          description: Reviewed by a native speaker.
+        new_suggestions:
+          type: integer
+      required:
+      - code
+      - enabled
+      - name
+      - native
+      - new_suggestions
+      - reviewed
+      - total
+      - translated
+    TextSuggestionStatusEnum:
+      enum:
+      - NEW
+      - DONE
+      - DISMISSED
+      type: string
+      description: |-
+        * `NEW` - New
+        * `DONE` - Done
+        * `DISMISSED` - Dismissed
     TokenResponse:
       type: object
       properties:

@@ -88,3 +88,35 @@ def sync_platform_templates(template_model: Any) -> int:
                     )
                     created += int(made)
     return created
+
+
+TEXT_CHANGED = "The text changed after it was submitted; submit it again."
+
+
+def refresh_translated_templates(
+    template_model: Any, changed: list[tuple[str, str, str, str, str, str]]
+) -> int:
+    """Give the platform's copies of these translated texts the catalogue's new words, where they
+    still hold the old ones (the super admin's own edits are kept). A WhatsApp text whose words
+    change goes back to "not submitted". ``changed``: event, audience, channel, language, the old
+    subject and body (texts_import, ADR-060 item 11). Returns how many changed."""
+    from django.utils import timezone
+
+    refreshed = 0
+    for code, audience, channel, locale, old_subject, old_body in changed:
+        row = template_model.objects.filter(
+            event_code=code, audience=audience, channel=channel, locale=locale
+        ).first()
+        text = texts_in(locale).get(code, {}).get(audience, {}).get(channel)
+        if row is None or text is None or (row.subject, row.body) != (old_subject, old_body):
+            continue
+        body_changed = row.body != text.body
+        row.subject, row.body = text.subject, text.body
+        if channel == "WHATSAPP":
+            row.variables = list(text.variables)
+            if body_changed and row.approval_status != "NOT_SUBMITTED":
+                row.approval_status, row.approval_note = "NOT_SUBMITTED", TEXT_CHANGED
+                row.approval_changed_at = timezone.now()
+        row.save()
+        refreshed += 1
+    return refreshed

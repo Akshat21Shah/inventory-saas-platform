@@ -45,12 +45,14 @@ import type {
   PaginatedImpersonationSessionList,
   PaginatedMembershipList,
   PaginatedPlatformFailureList,
+  PaginatedSuggestionList,
   PaginatedTenantListList,
   PatchedCessTypeUpdateRequest,
   PatchedFeatureFlagRequest,
   PatchedHsnHintUpdateRequest,
   PatchedPlanUpdateRequest,
   PatchedSettingValuesRequest,
+  PatchedSuggestionUpdateRequest,
   PatchedTaxRateUpdateRequest,
   PatchedTenantUpdateRequest,
   Plan,
@@ -74,17 +76,20 @@ import type {
   PlatformTenantsListParams,
   PlatformTenantsSlugAvailableParams,
   PlatformTextInputRequest,
+  PlatformTextSuggestionsListParams,
   ReasonRequest,
   SearchResults,
   Setting,
   SlugAvailability,
   Subscription,
+  Suggestion,
   TaxRate,
   TaxRateRequest,
   TemplateApprovalInputRequest,
   TenantDetail,
   TextPreview,
   TextPreviewInputRequest,
+  TextProgress,
   Turnover,
   TurnoverInputRequest,
   UserHit
@@ -4827,3 +4832,425 @@ export function usePlatformTenantsSlugAvailable<TData = Awaited<ReturnType<typeo
 
 
 
+export type platformTextsProgressResponse200 = {
+  data: TextProgress[]
+  status: 200
+}
+
+export type platformTextsProgressResponseSuccess = (platformTextsProgressResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformTextsProgressResponse = (platformTextsProgressResponseSuccess)
+
+export const getPlatformTextsProgressUrl = () => {
+
+
+
+
+  return `/api/v1/platform/texts/progress/`
+}
+
+export const platformTextsProgress = async ( options?: Parameters<typeof apiFetch>[1]): Promise<platformTextsProgressResponse> => {
+
+  return apiFetch<platformTextsProgressResponse>(getPlatformTextsProgressUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformTextsProgressQueryKey = () => {
+    return [
+    `/api/v1/platform/texts/progress/`
+    ] as const;
+    }
+
+
+export const getPlatformTextsProgressQueryOptions = <TData = Awaited<ReturnType<typeof platformTextsProgress>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsProgress>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformTextsProgressQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTextsProgress>>> = ({ signal }) => platformTextsProgress({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTextsProgress>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformTextsProgressQueryResult = NonNullable<Awaited<ReturnType<typeof platformTextsProgress>>>
+export type PlatformTextsProgressQueryError = unknown
+
+
+export function usePlatformTextsProgress<TData = Awaited<ReturnType<typeof platformTextsProgress>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsProgress>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTextsProgress>>,
+          TError,
+          Awaited<ReturnType<typeof platformTextsProgress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTextsProgress<TData = Awaited<ReturnType<typeof platformTextsProgress>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsProgress>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTextsProgress>>,
+          TError,
+          Awaited<ReturnType<typeof platformTextsProgress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTextsProgress<TData = Awaited<ReturnType<typeof platformTextsProgress>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsProgress>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformTextsProgress<TData = Awaited<ReturnType<typeof platformTextsProgress>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsProgress>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformTextsProgressQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformTextsSheetResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type platformTextsSheetResponseSuccess = (platformTextsSheetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformTextsSheetResponse = (platformTextsSheetResponseSuccess)
+
+export const getPlatformTextsSheetUrl = () => {
+
+
+
+
+  return `/api/v1/platform/texts/sheet/`
+}
+
+/**
+ * Every text in one spreadsheet, for a translator (the same as ``texts_export``).
+ */
+export const platformTextsSheet = async ( options?: Parameters<typeof apiFetch>[1]): Promise<platformTextsSheetResponse> => {
+
+  return apiFetch<platformTextsSheetResponse>(getPlatformTextsSheetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformTextsSheetQueryKey = () => {
+    return [
+    `/api/v1/platform/texts/sheet/`
+    ] as const;
+    }
+
+
+export const getPlatformTextsSheetQueryOptions = <TData = Awaited<ReturnType<typeof platformTextsSheet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsSheet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformTextsSheetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTextsSheet>>> = ({ signal }) => platformTextsSheet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTextsSheet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformTextsSheetQueryResult = NonNullable<Awaited<ReturnType<typeof platformTextsSheet>>>
+export type PlatformTextsSheetQueryError = unknown
+
+
+export function usePlatformTextsSheet<TData = Awaited<ReturnType<typeof platformTextsSheet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsSheet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTextsSheet>>,
+          TError,
+          Awaited<ReturnType<typeof platformTextsSheet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTextsSheet<TData = Awaited<ReturnType<typeof platformTextsSheet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsSheet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTextsSheet>>,
+          TError,
+          Awaited<ReturnType<typeof platformTextsSheet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTextsSheet<TData = Awaited<ReturnType<typeof platformTextsSheet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsSheet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformTextsSheet<TData = Awaited<ReturnType<typeof platformTextsSheet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextsSheet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformTextsSheetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformTextSuggestionsListResponse200 = {
+  data: PaginatedSuggestionList
+  status: 200
+}
+
+export type platformTextSuggestionsListResponseSuccess = (platformTextSuggestionsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformTextSuggestionsListResponse = (platformTextSuggestionsListResponseSuccess)
+
+export const getPlatformTextSuggestionsListUrl = (params?: PlatformTextSuggestionsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/platform/texts/suggestions/?${stringifiedParams}` : `/api/v1/platform/texts/suggestions/`
+}
+
+export const platformTextSuggestionsList = async (params?: PlatformTextSuggestionsListParams, options?: Parameters<typeof apiFetch>[1]): Promise<platformTextSuggestionsListResponse> => {
+
+  return apiFetch<platformTextSuggestionsListResponse>(getPlatformTextSuggestionsListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPlatformTextSuggestionsListQueryKey = (params?: PlatformTextSuggestionsListParams,) => {
+    return [
+    `/api/v1/platform/texts/suggestions/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPlatformTextSuggestionsListQueryOptions = <TData = Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError = unknown>(params?: PlatformTextSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPlatformTextSuggestionsListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof platformTextSuggestionsList>>> = ({ signal }) => platformTextSuggestionsList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PlatformTextSuggestionsListQueryResult = NonNullable<Awaited<ReturnType<typeof platformTextSuggestionsList>>>
+export type PlatformTextSuggestionsListQueryError = unknown
+
+
+export function usePlatformTextSuggestionsList<TData = Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError = unknown>(
+ params: undefined |  PlatformTextSuggestionsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTextSuggestionsList>>,
+          TError,
+          Awaited<ReturnType<typeof platformTextSuggestionsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTextSuggestionsList<TData = Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError = unknown>(
+ params?: PlatformTextSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof platformTextSuggestionsList>>,
+          TError,
+          Awaited<ReturnType<typeof platformTextSuggestionsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePlatformTextSuggestionsList<TData = Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError = unknown>(
+ params?: PlatformTextSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePlatformTextSuggestionsList<TData = Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError = unknown>(
+ params?: PlatformTextSuggestionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof platformTextSuggestionsList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPlatformTextSuggestionsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type platformTextSuggestionsUpdateResponse200 = {
+  data: Suggestion
+  status: 200
+}
+
+export type platformTextSuggestionsUpdateResponseSuccess = (platformTextSuggestionsUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type platformTextSuggestionsUpdateResponse = (platformTextSuggestionsUpdateResponseSuccess)
+
+export const getPlatformTextSuggestionsUpdateUrl = (suggestionId: string,) => {
+
+
+
+
+  return `/api/v1/platform/texts/suggestions/${suggestionId}/`
+}
+
+export const platformTextSuggestionsUpdate = async (suggestionId: string,
+    patchedSuggestionUpdateRequest?: PatchedSuggestionUpdateRequest, options?: Parameters<typeof apiFetch>[1]): Promise<platformTextSuggestionsUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<platformTextSuggestionsUpdateResponse>(getPlatformTextSuggestionsUpdateUrl(suggestionId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(patchedSuggestionUpdateRequest)
+  }
+);}
+
+
+
+
+
+export const getPlatformTextSuggestionsUpdateMutationKey = () => ['platformTextSuggestionsUpdate'] as const;
+
+export const getPlatformTextSuggestionsUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTextSuggestionsUpdate>>, TError,PlatformTextSuggestionsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformTextSuggestionsUpdate>>, TError,PlatformTextSuggestionsUpdateMutationVariables, TContext> => {
+
+const mutationKey = getPlatformTextSuggestionsUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformTextSuggestionsUpdate>>, PlatformTextSuggestionsUpdateMutationVariables> = (props) => {
+          const {suggestionId,data} = props ?? {};
+
+          return  platformTextSuggestionsUpdate(suggestionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformTextSuggestionsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof platformTextSuggestionsUpdate>>>
+    export type PlatformTextSuggestionsUpdateMutationBody = PatchedSuggestionUpdateRequest | undefined
+    export type PlatformTextSuggestionsUpdateMutationError = unknown
+    export type PlatformTextSuggestionsUpdateMutationVariables = {suggestionId: string;data?: PatchedSuggestionUpdateRequest}
+
+    export const usePlatformTextSuggestionsUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformTextSuggestionsUpdate>>, TError,PlatformTextSuggestionsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformTextSuggestionsUpdate>>,
+        TError,
+        PlatformTextSuggestionsUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlatformTextSuggestionsUpdateMutationOptions(options), queryClient);
+    }

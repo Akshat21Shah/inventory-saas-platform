@@ -5,6 +5,8 @@ x-backend: &backend
     context: ../backend
     dockerfile: ../infra/backend.Dockerfile
     target: dev
+    additional_contexts:
+      web_messages: ../web/messages
   env_file:
     - ../.env
     # "make lan" / "make localhost" (infra/dev-domain.sh): platform domain + public storage address.
@@ -22,6 +24,7 @@ x-backend: &backend
     TRUSTED_PROXIES: 172.30.0.10
   volumes:
     - ../backend:/app
+    - ../web/messages:/web_messages:ro  # the screens' texts as edited (translation sheet)
   depends_on:
     postgres: { condition: service_healthy }
     redis: { condition: service_healthy }

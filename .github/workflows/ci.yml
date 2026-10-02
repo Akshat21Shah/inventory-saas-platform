@@ -199,6 +199,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: backend
+          build-contexts: web_messages=web/messages
           file: infra/backend.Dockerfile
           target: dev
           tags: inventory-backend:ci
@@ -271,6 +272,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: backend
+          build-contexts: web_messages=web/messages
           file: infra/backend.Dockerfile
           target: prod
           tags: backend-prod

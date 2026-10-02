@@ -150,6 +150,9 @@ LANGUAGES = [
     )["languages"]
 ]
 LOCALE_PATHS = [BASE_DIR / "locale"]
+# The screens' texts (web/messages), for the translation sheet: the repository's copy, or the one
+# the image carries (infra/backend.Dockerfile copies it to /web_messages).
+WEB_MESSAGES_DIR = Path(env("WEB_MESSAGES_DIR", default=str(REPO_DIR / "web" / "messages")))
 TIME_ZONE = "UTC"
 DISPLAY_TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
@@ -256,6 +259,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "SERVE_INCLUDE_SCHEMA": False,
     "ENUM_NAME_OVERRIDES": {
+        "TextSuggestionStatusEnum": "apps.platform.models.TextSuggestion.Status",
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
         "AiFeatureEnum": "apps.ai.models.AiUsage.Feature",
         "AssistantStatusEnum": "apps.ai.models.AssistantQuestion.Status",

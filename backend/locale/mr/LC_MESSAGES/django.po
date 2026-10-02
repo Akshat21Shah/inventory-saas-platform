@@ -915,6 +915,10 @@ msgstr "बिल किंवा क्रेडिट नोट निवड�
 msgid "Choose lines, or allocate automatically."
 msgstr "ओळी निवडा, किंवा आपोआप वाटप करा."
 
+#: apps/platform/text_suggestions.py
+msgid "Choose new, done or dismissed."
+msgstr "नवीन, झाले किंवा सोडले यांपैकी निवडा."
+
 #: apps/notifications/approval.py
 msgid "Choose not submitted, submitted, approved or rejected."
 msgstr "सादर नाही, सादर, मंजूर किंवा नाकारले निवडा."
@@ -928,7 +932,7 @@ msgstr "चालू किंवा बंद निवडा."
 msgid "Choose one of the GST rates in use: %(allowed)s."
 msgstr "वापरात असलेल्या GST दरांपैकी एक निवडा: %(allowed)s."
 
-#: apps/accounts/staff_services.py
+#: apps/accounts/staff_services.py apps/platform/text_suggestions.py
 msgid "Choose one of the languages offered."
 msgstr "दिलेल्या भाषांपैकी एक निवडा."
 
@@ -2730,6 +2734,10 @@ msgstr "ऑर्डर का नाकारली ते दुकाना�
 msgid "Terms"
 msgstr "अटी"
 
+#: apps/platform/text_suggestions.py
+msgid "Thank you! You've sent a lot of suggestions in the last hour. Try again a little later."
+msgstr "धन्यवाद! तुम्ही मागील एका तासात खूप सूचना पाठवल्या आहेत. थोड्या वेळाने पुन्हा प्रयत्न करा."
+
 #: apps/accounts/services.py
 msgid "That code didn't work. Check your authenticator app and try again."
 msgstr "तो कोड चालला नाही. तुमचे ऑथेंटिकेटर ॲप तपासा आणि पुन्हा प्रयत्न करा."
@@ -3604,6 +3612,10 @@ msgstr "%(languages)s लिहा."
 #: apps/inventory/adjustments.py
 msgid "Write a short note about why the stock changes."
 msgstr "स्टॉक का बदलत आहे याबद्दल छोटी टीप लिहा."
+
+#: apps/platform/text_suggestions.py
+msgid "Write the better word."
+msgstr "अधिक चांगला शब्द लिहा."
 
 #: apps/dataio/kinds/pricing.py
 #, python-format

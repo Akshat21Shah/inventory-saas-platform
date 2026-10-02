@@ -114,6 +114,12 @@ api-client: ## Export the OpenAPI schema and regenerate web/lib/api/generated
 messages: ## Update and compile the server message catalogs (backend/locale; then translate what it lists)
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py messages
 
+texts-export: ## Every screen, server and notification text in one sheet for translators (texts.xlsx)
+	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py texts_export --out ../texts.xlsx
+
+texts-import: ## Check a translator's sheet: make texts-import SHEET=reviewed.xlsx [APPLY=1] (writes the files)
+	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py texts_import $(abspath $(SHEET)) $(if $(APPLY),--apply,)
+
 check-schema: ## Fail if the committed OpenAPI schema is out of date
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py spectacular --file /tmp/openapi.check.yaml --validate --fail-on-warn
 	diff -u backend/openapi.yaml /tmp/openapi.check.yaml

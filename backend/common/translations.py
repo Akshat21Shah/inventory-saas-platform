@@ -8,7 +8,8 @@ up to date (new messages added untranslated, removed ones dropped, translations 
 compiles it; ``manage.py messages --check`` and the tests fail when a catalog is out of date, a
 message has no translation, or a translation's placeholders differ from the English.
 
-Dev-only: uses ``polib`` (a dev dependency). Production only reads the compiled files.
+Uses ``polib``; at run time the app reads the compiled files, and the super admin's translation
+sheet (``common/text_sheet.py``) reads the catalogs too.
 """
 
 from __future__ import annotations

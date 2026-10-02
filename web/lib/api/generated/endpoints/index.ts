@@ -23,3 +23,4 @@ export * from './search/search';
 export * from './settings/settings';
 export * from './shop/shop';
 export * from './staff/staff';
+export * from './texts/texts';
