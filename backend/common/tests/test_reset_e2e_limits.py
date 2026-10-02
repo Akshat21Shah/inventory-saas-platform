@@ -50,3 +50,38 @@ def test_reset_refuses_outside_debug(settings):
     settings.DEBUG = False
     with pytest.raises(CommandError):
         call_command("reset_e2e_limits", "--email", "root@platform.example.com")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_a_locked_account_fails_fast_instead_of_waiting(settings, monkeypatch):
+    """Another session holding the account's row (a stuck request) must not freeze the E2E run:
+    the command gives up after its lock timeout, and the E2E helper tries it once more."""
+    import threading
+    import time
+
+    from django.db import connection, transaction
+
+    from common.management.commands import reset_e2e_limits
+
+    settings.DEBUG = True
+    monkeypatch.setattr(reset_e2e_limits, "LOCK_TIMEOUT", "500ms")
+    admin = make_super_admin("root@platform.example.com")
+    held, release = threading.Event(), threading.Event()
+
+    def hold() -> None:
+        with transaction.atomic():
+            User.objects.select_for_update().get(pk=admin.pk)
+            held.set()
+            release.wait(10)
+        connection.close()
+
+    holder = threading.Thread(target=hold)
+    holder.start()
+    assert held.wait(5)
+    started = time.monotonic()
+    with pytest.raises(CommandError, match="locked by another session"):
+        call_command("reset_e2e_limits", "--email", "root@platform.example.com")
+    assert time.monotonic() - started < 5
+    release.set()
+    holder.join()
+    call_command("reset_e2e_limits", "--email", "root@platform.example.com")  # free again
