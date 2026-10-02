@@ -266,7 +266,9 @@ def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
     from apps.payments.models import Payment
 
     payment = (
-        Payment.objects.select_related("retailer").filter(pk=event.payload["payment_id"]).first()
+        Payment.objects.select_related("retailer", "bounce_charge")
+        .filter(pk=event.payload["payment_id"])
+        .first()
     )
     if payment is None:
         return None
@@ -279,6 +281,12 @@ def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         "reason": event.payload.get("reason") or payment.reversal_reason,
         "cheque_date": day(payment.cheque_date or payment.payment_date),
         "balance": balance_text(payment.retailer_id),
+        # ADR-057 item 4: the charge added when the cheque bounced, if any.
+        "bounce_charge": (
+            f" A cheque bounce charge of {rupees(payment.bounce_charge.amount)} was added."
+            if payment.bounce_charge is not None
+            else ""
+        ),
     }
     ctx = EventContext(
         code,

@@ -329,6 +329,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Credit a cheque to the retailer's account when received (reversed automatically if "
             "it bounces) or only when it clears.",
             allowed=("ON_RECEIPT", "ON_CLEARANCE"), snapshot_on=frozenset({SnapshotOn.PAYMENT})),
+    # ADR-057 item 4: an optional charge when a shop's cheque bounces (no GST; CA question 47).
+    _tenant("payments.cheque_bounce_charge", Group.CREDIT_PAYMENTS, SettingType.MONEY,
+            Decimal("0"),
+            "Charge a shop this amount when its cheque bounces; ₹0 charges nothing. It is added "
+            "to the shop's account, due at once, without GST.",
+            min_value=Decimal("0"), max_value=Decimal("100000")),
     _tenant("payments.sales_can_collect", Group.CREDIT_PAYMENTS, SettingType.BOOL, True,
             "Let sales staff record payments they collect from their shops (tracked until handed "
             "over)."),

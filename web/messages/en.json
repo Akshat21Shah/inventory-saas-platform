@@ -535,6 +535,10 @@
       "sales_can_collect": {
         "label": "Sales staff can collect payments",
         "description": "Let sales staff record payments they collect from their shops (tracked until handed over)."
+      },
+      "cheque_bounce_charge": {
+        "label": "Cheque bounce charge",
+        "description": "Charge a shop this amount when its cheque bounces; ₹0 charges nothing. It is added to the shop's account, due at once, without GST."
       }
     },
     "receivables": {

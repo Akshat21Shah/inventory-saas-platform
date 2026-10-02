@@ -160,6 +160,10 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.shop-invoice.can_request_return": lambda v: isinstance(v, bool),
     "api.shop-invoice.returnable": lambda v: isinstance(v, list),
     "api.dashboard.action.return_requests": lambda v: v is None or v == 0,
+    # ADR-057 item 4: no bounce charge (₹0 by default).
+    "db.payments.Payment.bounce_charge_id": None,
+    "api.payment.bounce_charge": None,
+    "api.shop-payment.bounce_charge": None,
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -180,6 +184,7 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
             or item["key"].startswith(("insights.", "notifications.daily_summary_"))
             or item["key"] in ("orders.shop_confirms_delivery", "orders.delivery_code")
             or item["key"].startswith("returns.")
+            or item["key"] == "payments.cheque_bounce_charge"
         )
         and item["is_default"]
     ),

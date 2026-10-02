@@ -77,6 +77,12 @@ class PaymentDetailSerializer(PaymentRowSerializer):
     recorded_by_name = serializers.SerializerMethodField()
     handed_over_by_name = serializers.SerializerMethodField()
     used_for = UsedForSerializer(many=True, source="used_for_rows")
+    bounce_charge = money(
+        source="bounce_charge.amount",
+        allow_null=True,
+        default=None,
+        help_text="Charged to the shop when this cheque bounced (ADR-057).",
+    )
 
     class Meta(PaymentRowSerializer.Meta):
         fields = [
@@ -90,6 +96,7 @@ class PaymentDetailSerializer(PaymentRowSerializer):
             "cleared_at",
             "reversed_at",
             "reversal_reason",
+            "bounce_charge",
             "used_for",
             "gateway_payment_id",
             "needs_review",

@@ -59,7 +59,7 @@ def dispatched(world: dict[str, Any]) -> Fulfilment:
     order = place(t, world["shop"], (world["product"], "2"))
     with world["run"](), tenant_context(t.pk):
         transitions.accept_order(order.pk, by=owner)
-        shipment = Fulfilment.objects.get(order=order)
+        shipment: Fulfilment = Fulfilment.objects.get(order=order)
         fulfilment.pack(shipment.pk, {}, by=owner)
         fulfilment.dispatch(shipment.pk, Transport("", "", ""), by=owner)
         shipment.refresh_from_db()

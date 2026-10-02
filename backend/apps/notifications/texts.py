@@ -61,6 +61,7 @@ SAMPLE: dict[str, str] = {
     "amount": "₹5,000.00",
     "mode": "UPI",
     "cheque_number": "004512",
+    "bounce_charge": " A cheque bounce charge of ₹500.00 was added.",
     "refund_number": "RFD/26-27/000002",
     "overdue": "₹18,200.00",
     "bills": "3 bills",

@@ -63,6 +63,12 @@ export interface PaymentDetail {
   reversed_at?: string | null;
   /** @maxLength 300 */
   reversal_reason?: string;
+  /**
+     * Charged to the shop when this cheque bounced (ADR-057).
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,2})?$
+     */
+  bounce_charge?: string | null;
   used_for: UsedFor[];
   /** @maxLength 60 */
   gateway_payment_id?: string;

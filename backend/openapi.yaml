@@ -20368,6 +20368,12 @@ components:
         reversal_reason:
           type: string
           maxLength: 300
+        bounce_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Charged to the shop when this cheque bounced (ADR-057).
         used_for:
           type: array
           items:
@@ -26167,6 +26173,12 @@ components:
         reversal_reason:
           type: string
           maxLength: 300
+        bounce_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          description: Charged to the shop when this cheque bounced (ADR-057).
         used_for:
           type: array
           items:
