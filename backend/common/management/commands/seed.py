@@ -31,6 +31,7 @@ from common.demo_billing import seed_billing
 from common.demo_compliance import seed_compliance
 from common.demo_growth import seed_demo_growth
 from common.demo_purchasing import seed_demo_purchasing
+from common.demo_selfservice import seed_demo_returns
 from common.tenancy import tenant_context
 
 STAFF_ROLES = ("OWNER", "MANAGER", "SALES", "WAREHOUSE", "ACCOUNTS")
@@ -143,6 +144,7 @@ class Command(BaseCommand):
                 modules = seed_compliance(tenant)
                 purchasing = seed_demo_purchasing(tenant, owner)
                 free_goods = seed_demo_growth(tenant, owner)
+                return_waiting = seed_demo_returns(tenant)
             self.stdout.write(
                 f"{'created' if created else 'updated'} tenant {tenant.slug}: "
                 f"+{summary.products} products, +{summary.images} photos, "
@@ -154,6 +156,7 @@ class Command(BaseCommand):
                 + (", e-invoices, e-way bills and online payments on (mock)" if modules else "")
                 + (", purchasing and stock planning on" if purchasing else "")
                 + (", free-goods schemes on" if free_goods else "")
+                + (", a return request waiting" if return_waiting else "")
             )
         self.stdout.write(self.style.SUCCESS("seed complete"))
 

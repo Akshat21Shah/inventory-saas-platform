@@ -94,6 +94,11 @@ def test_seed_is_idempotent(settings):
         assert ShopActivity.objects.filter(segment=Segment.NEVER_ORDERED).exists()
     with tenant_context(patel.id):
         assert not FreeGoodsScheme.objects.exists() and ShopActivity.objects.exists()
+    # Phase 9c: a return request waiting at Sharma.
+    from apps.billing.models import ReturnRequest
+
+    with tenant_context(sharma.id):
+        assert list(ReturnRequest.objects.values_list("status", flat=True)) == ["REQUESTED"]
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):
@@ -206,9 +211,11 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "purchase_order",
         "draft_purchase_order",
         "free_goods_scheme",
+        "return_request",
     }
     assert ids["supplier"] and ids["purchase_order"] and ids["draft_purchase_order"]  # 9a
     assert ids["free_goods_scheme"]  # 9b
+    assert ids["return_request"]  # 9c
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]
     assert ids["invoice"] and ids["credit_note"] and ids["payment"] and ids["refund"]  # billing

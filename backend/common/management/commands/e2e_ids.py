@@ -9,7 +9,7 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.billing.models import CreditNote, Invoice
+from apps.billing.models import CreditNote, Invoice, ReturnRequest
 from apps.catalog.models import Product
 from apps.compliance.models import EWayBill
 from apps.dataio.models import ImportJob
@@ -83,6 +83,8 @@ class Command(BaseCommand):
                 "draft_purchase_order": _first(PurchaseOrder.objects.filter(status="DRAFT")),
                 # Phase 9b: a free-goods scheme (Sharma has free goods on).
                 "free_goods_scheme": _first(FreeGoodsScheme.objects.all()),
+                # Phase 9c: a return request waiting for a decision.
+                "return_request": _first(ReturnRequest.objects.all()),
                 "shop_checkout": _first(
                     PaymentIntent.objects.filter(retailer__mobile="+919876500001")
                 ),
