@@ -21,10 +21,22 @@ export const ADMIN = {
 export const OTP_CODE = "123456"; // dev mock SMS (OTP_FIXED_CODE)
 export const SHOP_PHONES = ["9876500000", "9876500001", "9876500002"];
 
+/** Commands safe to run again if a first attempt got stuck (read-only, or the same outcome twice). */
+const RETRYABLE = new Set(["reset_e2e_limits", "e2e_ids", "e2e_workbook", "e2e_totp_state"]);
+
+/** How long one management command may take, from E2E_MANAGE_TIMEOUT_MS (default 60 s; a normal
+ * run takes about 1.5 s through `docker compose exec`). */
+const MANAGE_TIMEOUT_MS = Number(process.env.E2E_MANAGE_TIMEOUT_MS ?? 60_000);
+
 /**
  * Run a dev-only backend management command and return its output. Override the prefix with
  * E2E_MANAGE_COMMAND (everything up to and including `manage.py`) when the stack is not the local
  * docker compose one.
+ *
+ * The call is synchronous, so a stuck command would freeze the whole test worker: not even
+ * Playwright's own timeout can fire (a GST workbook test once hung 15 minutes, then failed on the
+ * next browser call with "Test ended"). So each run has a time limit; a command that is safe to
+ * repeat is tried once more, and anything else fails at once with a clear message.
  */
 export function manage(args: string[]): string {
   const base = process.env.E2E_MANAGE_COMMAND
@@ -40,10 +52,25 @@ export function manage(args: string[]): string {
         "python",
         "manage.py",
       ];
-  return execFileSync(base[0]!, [...base.slice(1), ...args], {
-    stdio: "pipe",
-    maxBuffer: 64 * 1024 * 1024,
-  }).toString();
+  const attempts = RETRYABLE.has(args[0] ?? "") ? 2 : 1;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return execFileSync(base[0]!, [...base.slice(1), ...args], {
+        stdio: "pipe",
+        maxBuffer: 64 * 1024 * 1024,
+        timeout: MANAGE_TIMEOUT_MS,
+        killSignal: "SIGKILL",
+      }).toString();
+    } catch (error) {
+      const failed = error as NodeJS.ErrnoException & { signal?: string; stderr?: Buffer };
+      const stuck = failed.code === "ETIMEDOUT" || failed.signal === "SIGKILL";
+      if (stuck && attempt < attempts) continue;
+      const why = stuck
+        ? `took longer than ${MANAGE_TIMEOUT_MS / 1000} s (attempt ${attempt} of ${attempts})`
+        : `failed: ${failed.stderr?.toString().trim().split("\n").pop() ?? failed.message}`;
+      throw new Error(`manage.py ${args[0]} ${why}`);
+    }
+  }
 }
 
 /**

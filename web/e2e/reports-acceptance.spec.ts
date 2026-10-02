@@ -54,7 +54,9 @@ test("the owner's dashboard, the sales register and its Excel file", async ({ br
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export to Excel" }).click();
-  expect((await download).suggestedFilename()).toMatch(/^sales-by-invoice-\d{8}-\d{8}\.xlsx$/);
+  const excel = await download;
+  expect(excel.suggestedFilename()).toMatch(/^sales-by-invoice-\d{8}-\d{8}\.xlsx$/);
+  expect(await excel.failure()).toBeNull(); // the file actually arrived
 
   const number = (await first.textContent())!.trim();
   await first.click();
@@ -78,7 +80,9 @@ test("the GST workbook is made in the background and downloaded from My exports"
   await expect(row).toBeVisible({ timeout: 90_000 }); // the reports worker makes it
   const download = page.waitForEvent("download");
   await row.click();
-  expect((await download).suggestedFilename()).toMatch(/^gst-summary-.*\.xlsx$/);
+  const workbook = await download;
+  expect(workbook.suggestedFilename()).toMatch(/^gst-summary-.*\.xlsx$/);
+  expect(await workbook.failure()).toBeNull(); // the file actually arrived
 
   await page.goto(`${SHARMA}/manage/notifications`);
   await expect(page.getByText("Report ready").first()).toBeVisible();
