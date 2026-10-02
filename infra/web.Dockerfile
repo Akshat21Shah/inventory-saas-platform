@@ -11,6 +11,9 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
 FROM deps AS build
+# Next.js bakes the /api, /ws and /health proxy's target into the build (rewrites, ADR-020).
+ARG API_INTERNAL_URL=http://localhost:8000
+ENV API_INTERNAL_URL=$API_INTERNAL_URL
 COPY . .
 RUN npm run build
 

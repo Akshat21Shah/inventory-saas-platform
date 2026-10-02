@@ -27,9 +27,10 @@ def _is_transactional(item: pytest.Item) -> bool:
 def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> Any:
     """Transactional tests flush every table, including migration-seeded reference data (states,
     tax rates, plans, flags, permissions, system roles). Re-seed after all fixture teardowns (i.e.
-    after the flush)."""
+    after the flush) when another test follows: after a session's (or an xdist worker's) last test,
+    the test database is gone and the connection points at the real one again."""
     result = yield
-    if _is_transactional(item):
+    if _is_transactional(item) and nextitem is not None:
         with item.config.stash[blocking_manager_key].unblock():
             seed_reference_data(django_apps)
             sync_permissions(django_apps)

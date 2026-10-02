@@ -1,0 +1,18 @@
+# Secret scanning (ADR-055): gitleaks' default rules, plus the public dev and test values that
+# look like secrets but aren't. Each is allowed by its exact value, never by a whole file, so a
+# real key next to one is still caught. Add to this list only a value that is public on purpose.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public dev and test values (never real credentials)"
+regexes = [
+  # E2E owner of throwaway distributors (web/e2e).
+  '''a-long-e2e-owner-passphrase''',
+  # A checkout attempt's idempotency key in a component test.
+  '''abcdef0123456789''',
+  # base64("build-time-only-not-a-real-key00"): collectstatic in the production image build.
+  '''YnVpbGQtdGltZS1vbmx5LW5vdC1hLXJlYWwta2V5MDA=''',
+  # base64("dev-only-insecure-fernet-key-000"): the dev field-encryption key, refused in production.
+  '''ZGV2LW9ubHktaW5zZWN1cmUtZmVybmV0LWtleS0wMDA=''',
+]
