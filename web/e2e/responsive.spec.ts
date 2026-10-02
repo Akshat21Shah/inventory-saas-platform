@@ -46,6 +46,7 @@ interface Ids {
   supplier: string | null;
   purchase_order: string | null;
   draft_purchase_order: string | null;
+  free_goods_scheme: string | null;
 }
 
 function pages(ids: Ids) {
@@ -88,6 +89,7 @@ function pages(ids: Ids) {
     "/manage/products/brands",
     "/manage/products/units",
     "/manage/retailers",
+    "/manage/retailers/activity",
     "/manage/retailers/new",
     `/manage/retailers/${ids.retailer}`,
     `/manage/retailers/${ids.retailer}/discounts`,
@@ -100,6 +102,9 @@ function pages(ids: Ids) {
     "/manage/pricing/discounts",
     "/manage/pricing/discounts/new",
     `/manage/pricing/discounts/${ids.rule}`,
+    "/manage/pricing/free-goods",
+    "/manage/pricing/free-goods/new",
+    ...(ids.free_goods_scheme ? [`/manage/pricing/free-goods/${ids.free_goods_scheme}`] : []),
     "/manage/pricing/report",
     "/manage/stock",
     `/manage/stock/${ids.product}`,

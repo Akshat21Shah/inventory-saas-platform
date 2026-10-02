@@ -16,6 +16,8 @@ export interface CreditNoteLine {
   unit_code: string;
   /** @pattern ^-?\d{0,3}(?:\.\d{0,3})?$ */
   gst_rate: string;
+  is_free: boolean;
+  scheme_name: string;
   /** @pattern ^-?\d{0,11}(?:\.\d{0,3})?$ */
   quantity: string;
   disposition: typeof CreditNoteLineDisposition[keyof typeof CreditNoteLineDisposition];

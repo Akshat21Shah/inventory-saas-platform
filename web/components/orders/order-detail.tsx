@@ -42,6 +42,7 @@ import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { fromMilli, toMilli } from "@/lib/qty";
 
 import { DocumentButton } from "@/components/billing/document-button";
+import { FreeLineLabel } from "@/components/shop/free-goods";
 
 import { ActionDialog } from "./action-dialog";
 import { refreshOrders } from "./board";
@@ -152,7 +153,8 @@ function ModifyDialog({ order }: { order: StaffOrder }) {
     >
       <ul className="space-y-3">
         {order.lines
-          .filter((line) => openQty(line) !== "0")
+          // Free lines follow what is bought (ADR-056): they aren't changed on their own.
+          .filter((line) => openQty(line) !== "0" && !line.free_of_line)
           .map((line) => (
             <li key={line.id} className="flex items-center justify-between gap-3">
               <Label htmlFor={`qty-${line.id}`} className="min-w-0 flex-1">
@@ -589,7 +591,8 @@ export function StaffOrderPage({ orderId }: { orderId: string }) {
                     <div className="flex flex-wrap justify-between gap-2">
                       <span className="min-w-0">
                         <span className="block font-medium">{line.product_name}</span>
-                        <span className="text-muted-foreground text-xs">
+                        {line.free_of_line ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                        <span className="text-muted-foreground block text-xs">
                           {line.product_code} · {formatQty(line.qty_ordered)} {line.unit_code} ×{" "}
                           <MoneyText value={line.unit_price} />
                         </span>

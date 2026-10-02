@@ -25,6 +25,7 @@ import { PageSkeleton, TableSkeleton } from "@/components/shared/skeletons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FreeLineLabel } from "@/components/shop/free-goods";
 import {
   creditNotesCreate,
   creditNotesPdf,
@@ -326,7 +327,8 @@ export function CreditNoteDetailPage({ noteId }: { noteId: string }) {
                   >
                     <span className="min-w-0">
                       <span className="block font-medium">{line.description}</span>
-                      <span className="text-muted-foreground text-xs">
+                      {line.is_free ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                      <span className="text-muted-foreground block text-xs">
                         {line.quantity !== "0.000"
                           ? t("lineQty", { qty: formatQty(line.quantity), unit: line.unit_code })
                           : t("valueOnly")}
@@ -546,7 +548,8 @@ function CreditNoteForm({ invoice }: { invoice: InvoiceDetail }) {
               <li key={line.id} className="space-y-2 p-3">
                 <div className="text-sm">
                   <span className="block font-medium">{line.description}</span>
-                  <span className="text-muted-foreground text-xs">
+                  {line.is_free ? <FreeLineLabel scheme={line.scheme_name} /> : null}
+                  <span className="text-muted-foreground block text-xs">
                     {t("invoiced", {
                       qty: formatQty(line.quantity),
                       unit: line.unit_code,

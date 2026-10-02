@@ -111,6 +111,28 @@ ALLOWED_NEW: dict[str, Any] = {
     "api.order.lines.on_order": None,  # nothing on order while purchasing is off
     "api.receipt.supplier_id": None,
     "api.receipts.results.supplier_id": None,
+    # ADR-056 (core): shops to win back on the dashboard (none worked out in the baseline data).
+    "api.dashboard.action.win_back": lambda v: isinstance(v, int),
+    # ADR-056 (free goods, off): no free lines and no offers.
+    "db.orders.OrderLine.free_of_line_id": None,
+    "db.orders.OrderLine.scheme_id": None,
+    "db.orders.OrderLine.scheme_name": "",
+    "db.orders.OrderLine.scheme_rule": {},
+    "api.order.lines.free_of_line": None,
+    "api.order.lines.scheme_name": "",
+    "api.shop-order.lines.free_of_line": None,
+    "api.shop-order.lines.scheme_name": "",
+    "api.shop-home.last_order.items.free_offer": None,
+    "db.billing.InvoiceLine.is_free": False,
+    "db.billing.InvoiceLine.scheme_name": "",
+    "db.billing.OrderConfirmation.content.lines.free": False,
+    "db.billing.OrderConfirmation.content.lines.scheme": "",
+    "api.invoice.lines.is_free": False,
+    "api.invoice.lines.scheme_name": "",
+    "api.shop-invoice.lines.is_free": False,
+    "api.shop-invoice.lines.scheme_name": "",
+    "api.credit-note.lines.is_free": False,
+    "api.credit-note.lines.scheme_name": "",
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -123,11 +145,20 @@ ALLOWED_NEW: dict[str, Any] = {
 # comparing; every other item is still compared in order).
 ALLOWED_NEW_ITEMS: dict[str, Any] = {
     # Phase 8 (ADR-050): the fast / slow / dead stock settings, at their defaults.
-    "api.settings-registry": lambda item: item.get("group") == "reports" and item["is_default"],
+    # Phase 9b (ADR-056, core): the shop-activity settings, at their defaults.
+    "api.settings-registry": lambda item: (
+        (
+            item.get("group") == "reports"
+            or item["key"].startswith(("insights.", "notifications.daily_summary_"))
+        )
+        and item["is_default"]
+    ),
     # Phase 9a (ADR-053): the purchasing permissions and the new modules, switched off.
     "api.notification-rules.permissions": lambda item: item["code"].startswith("purchasing."),
+    # Phase 9b (ADR-056, core): the daily summary, to owners in the app and by email.
+    "api.notification-rules.events": lambda item: item["code"] == "summary.daily",
     "api.settings-features": lambda item: (
-        item["code"] in ("stock_planning", "purchasing") and item["enabled"] is False
+        item["code"] in ("stock_planning", "purchasing", "free_goods") and item["enabled"] is False
     ),
 }
 

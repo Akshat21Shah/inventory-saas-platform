@@ -341,9 +341,11 @@ def last_order(retailer_id: UUID) -> Order | None:
 
 
 def repeat_quantities(order: Order) -> list[tuple[UUID, Decimal]]:
-    """What the shop asked for on each line (less what was cancelled), in line order."""
+    """What the shop asked for on each line, in line order; free lines are earned again."""
     wanted: dict[UUID, Decimal] = {}
     for line in order.lines.all():
+        if line.free_of_line_id is not None:
+            continue
         qty = Decimal(line.qty_ordered)
         if qty > 0:
             wanted[line.product_id] = wanted.get(line.product_id, Decimal("0")) + qty

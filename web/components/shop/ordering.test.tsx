@@ -60,6 +60,10 @@ function quote(lines: Array<{ id: string; qty: string; later?: string }>): Quote
       later_qty: later,
       stock: null,
       problems: [],
+      is_free: false,
+      free_of_product_id: null,
+      scheme: null,
+      offer: null,
     })),
     item_count: lines.length,
     totals: {
@@ -263,6 +267,55 @@ describe("Checkout on a poor connection", () => {
     expect(screen.getByText("Comes later, when stock arrives")).toBeVisible();
     await user.click(screen.getByRole("button", { name: /Place order/ }));
     expect(await screen.findByText(/prices changed/i)).toBeVisible();
+  });
+
+  it("shows free goods as their own line, and what to add for more", async () => {
+    const base = quote([{ id: "p1", qty: "12.000" }]);
+    const terms = {
+      scheme_id: "s1",
+      name: "Diwali offer",
+      buy_qty: "10.000",
+      free_qty: "1.000",
+      repeat: true,
+      max_free_qty: null,
+      same_product: true,
+      free_product_name: "Parle-G",
+      free_unit: "PCS",
+    };
+    const paid = base.lines[0]!;
+    const cart: Quote = {
+      ...base,
+      lines: [
+        { ...paid, scheme: terms, offer: { scheme: terms, add_qty: "8.000", free_qty: "1.000" } },
+        {
+          ...paid,
+          quantity: "1.000",
+          unit_price: "0.00",
+          line_total: "0.00",
+          is_free: true,
+          free_of_product_id: "p1",
+          scheme: terms,
+          offer: null,
+        },
+      ],
+    };
+    mockApi({
+      "/api/v1/shop/cart/": () => [200, cart],
+      "/api/v1/shop/addresses/": () => [200, []],
+    });
+    renderShop(
+      <>
+        <CartPage />
+        <CartCount />
+      </>,
+    );
+    expect(await screen.findByText("Add 8 more to get 1 free")).toBeVisible();
+    expect(screen.getByText("with Diwali offer")).toBeVisible();
+    expect(screen.getByText("1 free")).toBeVisible();
+    // One stepper (the bought line), and the free line doesn't change the count.
+    expect(screen.getAllByRole("textbox", { name: "Quantity of Parle-G" })).toHaveLength(1);
+    expect(screen.getByRole("textbox", { name: "Quantity of Parle-G" })).toHaveValue("12");
+    expect(screen.getByLabelText("cart count")).toHaveTextContent("1");
   });
 
   it("says why an order waits for approval, or can't be placed, when bills are overdue", async () => {

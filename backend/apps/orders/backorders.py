@@ -201,6 +201,8 @@ def _billing_terms(
     for ``quantity`` (invoiced from the shipment); otherwise the order's (discount ``None``)."""
     if order.settings_snapshot.get("backorders.billing_price") != "CURRENT":
         return line.unit_price, False, None
+    if line.free_of_line_id is not None:  # free goods stay free (ADR-056 item 8)
+        return line.unit_price, False, None
     [result] = resolve_prices(order.retailer, [(line.product, quantity)])
     if not result.valid:
         return line.unit_price, True, None
@@ -545,6 +547,7 @@ def cancel_backorder(line_id: UUID, *, by: User, retailer_id: UUID | None = None
     """The shop (own orders) or staff cancel what a line is still waiting for."""
     from apps.orders.fulfilment import derive_status
     from apps.orders.services import emit, record
+    from apps.orders.transitions import rebalance_free_lines
 
     found = OrderLine.objects.filter(pk=line_id).values_list("order_id", "product_id").first()
     if found is None:
@@ -562,6 +565,7 @@ def cancel_backorder(line_id: UUID, *, by: User, retailer_id: UUID | None = None
         stock.change_backordered(level, -quantity)
         line.qty_backordered, line.qty_cancelled = ZERO, line.qty_cancelled + quantity
         line.save(update_fields=["qty_backordered", "qty_cancelled", "updated_at"])
+        rebalance_free_lines(order, by=by)
         record(
             order,
             OrderEvent.BACKORDER_CANCELLED,
@@ -587,7 +591,7 @@ def cancel_repriced(fulfilment_line_id: UUID, *, by: User, retailer_id: UUID) ->
     line."""
     from apps.orders.fulfilment import derive_status
     from apps.orders.services import emit, record
-    from apps.orders.transitions import InvalidTransition
+    from apps.orders.transitions import InvalidTransition, rebalance_free_lines
 
     found = (
         FulfilmentLine.objects.filter(pk=fulfilment_line_id)
@@ -617,6 +621,7 @@ def cancel_repriced(fulfilment_line_id: UUID, *, by: User, retailer_id: UUID) ->
         line.qty_allocated -= fl.quantity
         line.qty_cancelled += fl.quantity
         line.save(update_fields=["qty_allocated", "qty_cancelled", "updated_at"])
+        rebalance_free_lines(order, by=by)
         fl.cancelled_by_retailer_at, fl.qty_packed = timezone.now(), ZERO
         fl.save(update_fields=["cancelled_by_retailer_at", "qty_packed", "updated_at"])
         if not FulfilmentLine.objects.filter(

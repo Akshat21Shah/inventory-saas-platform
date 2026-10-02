@@ -16,13 +16,19 @@ from apps.catalog.models import Product, ProductTaxRate
 from apps.catalog.selectors import products as catalog_products
 from apps.pricing import resolve, selectors, services
 from apps.pricing.api import serializers as s
-from apps.pricing.models import DiscountRule, PriceList, PriceListItem, RetailerPrice
+from apps.pricing.models import (
+    DiscountRule,
+    FreeGoodsScheme,
+    PriceList,
+    PriceListItem,
+    RetailerPrice,
+)
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import retailer_for
 from common.dates import today_ist
 from common.errors import NotFound
 from common.pagination import DefaultCursorPagination
-from common.permissions import HasPermission
+from common.permissions import FeatureOn, HasPermission
 
 VIEW, MANAGE = "pricing.view", "pricing.manage"
 READ_WRITE = {"GET": VIEW, "POST": MANAGE, "PUT": MANAGE, "PATCH": MANAGE, "DELETE": MANAGE}
@@ -334,6 +340,91 @@ class DiscountRuleDetailView(PricingView):
     )
     def delete(self, request: Request, rule_id: UUID) -> Response:
         services.delete_discount_rule(rule_id, by=_user(request))
+        return Response(status=204)
+
+
+class SchemeView(PricingView):
+    """Free-goods schemes (ADR-056 item 7): only with the ``free_goods`` module on."""
+
+    permission_classes = [HasPermission, FeatureOn]
+    required_feature = "free_goods"
+
+
+class FreeGoodsSchemeListCreateView(SchemeView, generics.ListAPIView[FreeGoodsScheme]):
+    serializer_class = s.FreeGoodsSchemeSerializer
+    pagination_class = ByName
+    filter_backends: list[Any] = []
+
+    def get_queryset(self) -> QuerySet[FreeGoodsScheme]:
+        fake = _fake(self, FreeGoodsScheme)
+        if fake is not None:
+            return fake
+        f = s.FreeGoodsSchemeFilterSerializer(data=self.request.query_params)
+        f.is_valid(raise_exception=True)
+        v = f.validated_data
+        return selectors.free_goods_schemes(
+            active=v["active"], search=v["search"], product_id=v["product"]
+        )
+
+    @extend_schema(
+        parameters=[s.FreeGoodsSchemeFilterSerializer],
+        operation_id="free_goods_schemes_list",
+        tags=["pricing"],
+    )
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        request=s.FreeGoodsSchemeWriteSerializer,
+        responses={201: s.FreeGoodsSchemeSerializer},
+        operation_id="free_goods_schemes_create",
+        tags=["pricing"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.FreeGoodsSchemeWriteSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        scheme = services.save_scheme(
+            None, s.scheme_fields(dict(data.validated_data)), by=_user(request)
+        )
+        saved = selectors.free_goods_schemes().get(pk=scheme.pk)
+        return Response(s.FreeGoodsSchemeSerializer(saved).data, status=201)
+
+
+class FreeGoodsSchemeDetailView(SchemeView):
+    @extend_schema(
+        responses=s.FreeGoodsSchemeSerializer,
+        operation_id="free_goods_schemes_retrieve",
+        tags=["pricing"],
+    )
+    def get(self, request: Request, scheme_id: UUID) -> Response:
+        scheme = selectors.free_goods_schemes().filter(pk=scheme_id).first()
+        if scheme is None:
+            raise NotFound()
+        return Response(s.FreeGoodsSchemeSerializer(scheme).data)
+
+    @extend_schema(
+        request=s.FreeGoodsSchemeWriteSerializer,
+        responses=s.FreeGoodsSchemeSerializer,
+        operation_id="free_goods_schemes_update",
+        tags=["pricing"],
+    )
+    def patch(self, request: Request, scheme_id: UUID) -> Response:
+        data = s.FreeGoodsSchemeWriteSerializer(data=request.data, partial=True)
+        data.is_valid(raise_exception=True)
+        services.save_scheme(
+            scheme_id, s.scheme_fields(dict(data.validated_data)), by=_user(request)
+        )
+        saved = selectors.free_goods_schemes().get(pk=scheme_id)
+        return Response(s.FreeGoodsSchemeSerializer(saved).data)
+
+    @extend_schema(
+        request=None,
+        responses={204: None},
+        operation_id="free_goods_schemes_delete",
+        tags=["pricing"],
+    )
+    def delete(self, request: Request, scheme_id: UUID) -> Response:
+        services.delete_scheme(scheme_id, by=_user(request))
         return Response(status=204)
 
 

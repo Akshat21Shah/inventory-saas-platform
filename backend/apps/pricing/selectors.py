@@ -6,7 +6,13 @@ from django.db.models import Count, IntegerField, OuterRef, Q, QuerySet, Subquer
 from django.db.models.functions import Coalesce
 
 from apps.accounts.models import User
-from apps.pricing.models import DiscountRule, PriceList, PriceListItem, RetailerPrice
+from apps.pricing.models import (
+    DiscountRule,
+    FreeGoodsScheme,
+    PriceList,
+    PriceListItem,
+    RetailerPrice,
+)
 from apps.retailers.models import Retailer
 from apps.retailers.selectors import retailers_for
 
@@ -60,3 +66,25 @@ def discount_rules(*, active: bool | None = None) -> QuerySet[DiscountRule]:
         "product", "category", "brand", "price_list", "retailer"
     ).prefetch_related("slabs")
     return qs if active is None else qs.filter(is_active=active)
+
+
+def free_goods_schemes(
+    *, active: bool | None = None, search: str = "", product_id: UUID | None = None
+) -> QuerySet[FreeGoodsScheme]:
+    qs = FreeGoodsScheme.objects.select_related(
+        "buy_product__unit", "free_product__unit", "price_list", "retailer"
+    )
+    if active is not None:
+        qs = qs.filter(is_active=active)
+    if product_id:
+        qs = qs.filter(Q(buy_product_id=product_id) | Q(free_product_id=product_id))
+    term = search.strip()
+    if term:
+        qs = qs.filter(
+            Q(name__icontains=term)
+            | Q(buy_product__code__icontains=term)
+            | Q(buy_product__name__icontains=term)
+            | Q(free_product__code__icontains=term)
+            | Q(free_product__name__icontains=term)
+        )
+    return qs

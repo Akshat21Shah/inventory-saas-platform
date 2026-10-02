@@ -29,6 +29,16 @@ urlpatterns = [
     path("discount-rules/", v.DiscountRuleListCreateView.as_view(), name="discount-rules"),
     path("pricing/preview/", v.PricePreviewView.as_view(), name="pricing-preview"),
     path(
+        "free-goods-schemes/",
+        v.FreeGoodsSchemeListCreateView.as_view(),
+        name="free-goods-schemes",
+    ),
+    path(
+        "free-goods-schemes/<uuid:scheme_id>/",
+        v.FreeGoodsSchemeDetailView.as_view(),
+        name="free-goods-scheme-detail",
+    ),
+    path(
         "retailers/<uuid:retailer_id>/prices/",
         v.RetailerPriceSheetView.as_view(),
         name="retailer-price-sheet",

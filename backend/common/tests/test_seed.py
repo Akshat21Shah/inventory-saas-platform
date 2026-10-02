@@ -82,6 +82,18 @@ def test_seed_is_idempotent(settings):
         assert ProductStats.objects.exists() and ReorderSuggestion.objects.exists()
     with tenant_context(patel.id):
         assert not Supplier.objects.exists() and not ProductStats.objects.exists()
+    # Phase 9b: shop activity for both; free-goods schemes for Sharma only.
+    from apps.insights.models import Segment, ShopActivity, ShopContact
+    from apps.pricing.models import FreeGoodsScheme
+
+    assert effective_features(sharma.id)["free_goods"]
+    assert not effective_features(patel.id)["free_goods"]
+    with tenant_context(sharma.id):
+        assert FreeGoodsScheme.objects.count() == 3
+        assert ShopActivity.objects.count() == 20 and ShopContact.objects.count() == 1
+        assert ShopActivity.objects.filter(segment=Segment.NEVER_ORDERED).exists()
+    with tenant_context(patel.id):
+        assert not FreeGoodsScheme.objects.exists() and ShopActivity.objects.exists()
 
 
 def test_seed_keeps_an_existing_admin_2fa_key(settings):
@@ -193,8 +205,10 @@ def test_e2e_ids_lists_seeded_records(settings, capsys):
         "supplier",
         "purchase_order",
         "draft_purchase_order",
+        "free_goods_scheme",
     }
     assert ids["supplier"] and ids["purchase_order"] and ids["draft_purchase_order"]  # 9a
+    assert ids["free_goods_scheme"]  # 9b
     assert ids["receipt"] and ids["draft_receipt"] and ids["adjustment"]  # from the demo stock
     assert ids["shop_order"] and ids["order"] and ids["fulfilment"] and ids["backorder_product"]
     assert ids["invoice"] and ids["credit_note"] and ids["payment"] and ids["refund"]  # billing

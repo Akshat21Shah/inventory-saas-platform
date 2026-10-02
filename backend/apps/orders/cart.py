@@ -112,5 +112,5 @@ def reduce_to_available(cart: Cart) -> None:
     """With backorders off: trim each line to what can be sent now (drop lines with nothing)."""
     current = quote(cart)
     for line in current.lines:
-        if line.later_qty > 0:
+        if line.later_qty > 0 and not line.is_free:  # free lines follow what is bought
             set_quantity(cart, line.product_id, line.ready_qty)

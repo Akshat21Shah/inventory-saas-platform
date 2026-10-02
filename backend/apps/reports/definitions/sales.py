@@ -78,6 +78,7 @@ class Paths:
     salesperson: str
     day: str
     unit_cost: str
+    free: str  # free goods under a scheme (ADR-056)
 
 
 INVOICE = Paths(
@@ -86,6 +87,7 @@ INVOICE = Paths(
     "invoice__order__salesperson",
     "invoice__invoice_date",
     "unit_cost",
+    "is_free",
 )
 CREDIT = Paths(
     "invoice_line__product",
@@ -93,6 +95,7 @@ CREDIT = Paths(
     "credit_note__invoice__order__salesperson",
     "credit_note__note_date",
     "invoice_line__unit_cost",
+    "invoice_line__is_free",
 )
 
 
@@ -138,11 +141,16 @@ def today_cost(product: str) -> Subquery:
 
 
 def _figures(rows: QuerySet[Any], paths: Paths, key: Any, *, costs: bool) -> QuerySet[Any]:
-    """Per key: quantity, taxable value, GST, total; with ``costs``, also the cost (recorded or
-    today's), the taxable value of lines with a cost, and how many lines were estimated or had no
-    cost. Costs are only worked out when shown."""
+    """Per key: quantity (and how much of it was free), taxable value, GST, total; with
+    ``costs``, also the cost (recorded or today's), the taxable value of lines with a cost, and
+    how many lines were estimated or had no cost. Costs are only worked out when shown. Free goods
+    count at their cost and add no value, so they lower the margin (ADR-056 item 11)."""
     sums: dict[str, Any] = {
         "qty": Sum("quantity"),
+        "free_qty": Sum(
+            Case(When(**{paths.free: True}, then=F("quantity")), default=Value(ZERO)),
+            output_field=MONEY,
+        ),
         "taxable": Sum("taxable_value"),
         "tax": Sum(F("cgst_amount") + F("sgst_amount") + F("igst_amount") + F("cess_amount")),
         "total": Sum("line_total"),
@@ -176,6 +184,7 @@ def _figures(rows: QuerySet[Any], paths: Paths, key: Any, *, costs: bool) -> Que
 @dataclass
 class Figures:
     qty: Decimal = ZERO
+    free_qty: Decimal = ZERO
     taxable: Decimal = ZERO
     tax: Decimal = ZERO
     total: Decimal = ZERO
@@ -188,7 +197,7 @@ class Figures:
     credited: Decimal = ZERO
 
     def add(self, row: dict[str, Any], sign: int) -> None:
-        for name in ("qty", "taxable", "tax", "total", "cost", "costed_taxable"):
+        for name in ("qty", "free_qty", "taxable", "tax", "total", "cost", "costed_taxable"):
             setattr(self, name, getattr(self, name) + sign * (row.get(name) or ZERO))
         self.estimated += row.get("estimated") or 0
         self.uncosted += row.get("uncosted") or 0
@@ -200,7 +209,8 @@ class Figures:
     def merge(self, other: Figures) -> None:
         """Fold another group's figures into this one (its invoices may overlap: not counted)."""
         for name in (
-            "qty", "taxable", "tax", "total", "cost", "costed_taxable", "billed", "credited",
+            "qty", "free_qty", "taxable", "tax", "total", "cost", "costed_taxable", "billed",
+            "credited",
         ):  # fmt: skip
             setattr(self, name, getattr(self, name) + getattr(other, name))
         self.estimated += other.estimated
@@ -253,6 +263,7 @@ def _money(value: Decimal) -> Decimal:
 def _amounts(f: Figures, whole: Decimal) -> dict[str, Any]:
     return {
         "qty": f.qty,
+        "free_qty": f.free_qty,
         "invoices": f.invoices,
         "taxable": _money(f.taxable),
         "tax": _money(f.tax),
@@ -267,7 +278,7 @@ def _amounts(f: Figures, whole: Decimal) -> dict[str, Any]:
 def _totals(groups: dict[Any, Figures]) -> dict[str, Any]:
     whole = Figures()
     for f in groups.values():
-        for name in ("qty", "taxable", "tax", "total", "cost", "costed_taxable"):
+        for name in ("qty", "free_qty", "taxable", "tax", "total", "cost", "costed_taxable"):
             setattr(whole, name, getattr(whole, name) + getattr(f, name))
         whole.invoices += f.invoices
         whole.estimated += f.estimated
@@ -311,6 +322,7 @@ MARGIN_COL = Column("margin", "Margin", Kind.MONEY, cost=True, total=True)
 MARGIN_PCT = Column("margin_pct", "Margin %", Kind.PERCENT, cost=True, total=True, width=10)
 INVOICES = Column("invoices", "Invoices", Kind.INT, total=True, width=10)
 QTY = Column("qty", "Quantity", Kind.QTY, total=True, width=12)
+FREE_QTY = Column("free_qty", "Of which free", Kind.QTY, total=True, width=12, feature="free_goods")
 MONEY_COLUMNS = (TAXABLE, TAX, TOTAL, SHARE, COST, MARGIN_COL, MARGIN_PCT)
 
 
@@ -524,6 +536,7 @@ register(
             Column("category", "Category", width=20),
             Column("brand", "Brand", width=16),
             QTY,
+            FREE_QTY,
             *MONEY_COLUMNS,
         ),
         filters=PRODUCT_FILTERS,

@@ -28,12 +28,13 @@ from apps.orders.models import (
 from apps.orders.quote import build_quote
 from apps.orders.services import (
     CartNotReady,
-    NotEnoughStock,
     _create_line,
     _problems,
     credit_refusal,
     emit,
+    free_lines_of,
     order_rules,
+    plan_lines,
     recompute_totals,
     record,
 )
@@ -130,6 +131,30 @@ def release_quantities(
 
 def _open_quantity(line: OrderLine) -> Decimal:
     return Decimal(line.qty_pending + line.qty_reserved + line.qty_backordered)
+
+
+def rebalance_free_lines(order: Order, *, by: User | None) -> None:
+    """ADR-056 item 9: after a bought line loses quantity (a change, short supply, a cancelled
+    backorder or shipment), its free line keeps only what the rest still earns under the terms it
+    was given; the excess not yet in a shipment is cancelled. Call last, with the order locked."""
+    from apps.pricing.schemes import Terms
+
+    wanted: dict[OrderLine, Decimal] = {}
+    for line in (
+        OrderLine.objects.select_for_update()
+        .filter(order=order, free_of_line__isnull=False)
+        .select_related("free_of_line")
+    ):
+        source = line.free_of_line
+        if source is None or not line.scheme_rule:
+            continue
+        earned = Terms.from_line(line).earned(source.qty_ordered - source.qty_cancelled)
+        excess = line.qty_ordered - line.qty_cancelled - earned
+        take = min(excess, _open_quantity(line))
+        if take > 0:
+            wanted[line] = take
+    if wanted:
+        release_quantities(order, wanted, to_backorder=False, by=by)
 
 
 # --- Accept ------------------------------------------------------------------------------------
@@ -287,6 +312,10 @@ def modify_order(order_id: UUID, change: Modification, *, by: User) -> Order:
             current = line.qty_ordered - line.qty_cancelled
             if new_qty < 0:
                 raise InvalidFields({"lines": ["Quantities can't be negative."]})
+            if line.free_of_line_id is not None and new_qty > current:
+                raise InvalidFields(
+                    {"lines": ["Free goods follow what is bought: change that line instead."]}
+                )
             if new_qty < current:
                 reductions[line] = current - new_qty
             elif new_qty > current:
@@ -309,6 +338,7 @@ def modify_order(order_id: UUID, change: Modification, *, by: User) -> Order:
             release_quantities(order, reductions, to_backorder=False, by=by)
         if increases:
             diff += _add_lines(order, increases, by=by, override_reason=change.override_reason)
+        rebalance_free_lines(order, by=by)
         recompute_totals(order, list(OrderLine.objects.filter(order=order)))
         record(order, OrderEvent.MODIFY, to=OrderStatus.PLACED, by=by, payload={"changes": diff})
         emit("order.modified", order, changes=diff)
@@ -342,23 +372,33 @@ def _add_lines(
             metadata={"reason": override_reason.strip(), "added": str(added)},
         )
     levels = stock.lock_levels([line.product_id for line in quote.lines], stock.default_warehouse())
+    paid = sorted((x for x in quote.lines if not x.is_free), key=lambda x: x.product_id)
+    plan = plan_lines(paid, free_lines_of(quote.lines), levels, rules, drop_short=False)
     next_no = (OrderLine.objects.filter(order=order).count()) + 1
     diff = []
-    for offset, line in enumerate(sorted(quote.lines, key=lambda x: x.product_id)):
+    rows: dict[int, OrderLine] = {}
+    for offset, planned in enumerate(plan):
+        line = planned.line
+        free_of = rows[id(line.free_of)] if line.free_of is not None else None
+        row = _create_line(
+            order,
+            next_no + offset,
+            line,
+            planned.reserved,
+            planned.later,
+            planned.cancelled,
+            False,
+            free_of=free_of,
+        )
+        rows[id(line)] = row
         level = levels[line.product_id]
-        available = max(level.quantity_on_hand - level.quantity_reserved, ZERO)
-        reserved = min(line.qty, available)
-        later = line.qty - reserved
-        if later and not rules.backorders_enabled:
-            raise NotEnoughStock(details={"lines": [{"product_id": str(line.product_id)}]})
-        row = _create_line(order, next_no + offset, line, reserved, later, ZERO, False)
-        if reserved:
-            stock.reserve(
-                level, reserved, stock.Ref(ReferenceType.ORDER_LINE, row.pk, order.number), by=by
-            )
-        if later:
-            stock.change_backordered(level, later)
-        diff.append({"product": row.product_code, "from": "0", "to": f"{line.qty:f}"})
+        ref = stock.Ref(ReferenceType.ORDER_LINE, row.pk, order.number)
+        if planned.reserved:
+            stock.reserve(level, planned.reserved, ref, by=by)
+        if planned.later:
+            stock.change_backordered(level, planned.later)
+        if free_of is None:
+            diff.append({"product": row.product_code, "from": "0", "to": f"{line.qty:f}"})
     return diff
 
 
@@ -372,7 +412,11 @@ def approve_hold(order_id: UUID, *, by: User) -> Order:
     with transaction.atomic():
         order = lock_order(order_id)
         _require(order, OrderStatus.ON_HOLD)
-        lines = [line for line in _lines(order) if line.qty_pending > 0]
+        # Bought lines before free lines, so free goods take only the stock left (ADR-056).
+        lines = sorted(
+            (line for line in _lines(order) if line.qty_pending > 0),
+            key=lambda line: line.free_of_line_id is not None,
+        )
         if lines:
             rules = order_rules(order.settings_snapshot, order.tenant_id)
             levels = _levels(order, lines)
@@ -397,6 +441,7 @@ def approve_hold(order_id: UUID, *, by: User) -> Order:
                 line.qty_backordered += later
                 line.qty_pending = ZERO
                 line.save()
+            rebalance_free_lines(order, by=by)
             recompute_totals(order, list(OrderLine.objects.filter(order=order)))
         # The approval covers the whole order, backorders included (2026-09-28).
         order.credit_approved_value = order.grand_total

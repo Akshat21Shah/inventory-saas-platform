@@ -52,4 +52,7 @@ export interface InvoiceLine {
      * @pattern ^-?\d{0,11}(?:\.\d{0,3})?$
      */
   credited_quantity: string;
+  /** Free goods under a scheme (₹0, no GST). */
+  is_free: boolean;
+  scheme_name: string;
 }

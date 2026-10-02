@@ -29,6 +29,7 @@ const owner = (overrides: Partial<Body> = {}): Body => ({
     low_stock: { low: 4, out: 1 },
     to_reorder: null,
     late_purchase_orders: null,
+    win_back: null,
   },
   today: { orders_received: { count: 3, amount: "420.00" }, billed: "105.00" },
   trends: {
@@ -106,6 +107,16 @@ describe("DistributorDashboard", () => {
     const late = within(action).getByRole("link", { name: "Purchase orders late: 2" });
     expect(late).toHaveAttribute("href", "/manage/purchasing/orders?late=1");
     expect(within(late).getByText("Expected before today")).toBeInTheDocument();
+  });
+
+  it("shows the shops to win back, linked to the shop activity list", async () => {
+    mockApi({
+      "/api/v1/dashboard/": () => [200, owner({ action: { ...owner().action, win_back: 4 } })],
+    });
+    renderWithIntl(<DistributorDashboard />);
+    const action = await screen.findByRole("region", { name: "Needs action" });
+    const tile = within(action).getByRole("link", { name: "Shops to win back: 4" });
+    expect(tile).toHaveAttribute("href", "/manage/retailers/activity");
   });
 
   it("shows only what the role may see", async () => {

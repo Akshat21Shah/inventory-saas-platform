@@ -1,7 +1,9 @@
 """The Phase 9a speed check (ADR-053, 9a.8): global search (p95 < 200 ms at 40,000 orders) for an
 owner and for a salesperson limited to their own shops, the super admin's search, and the new
 purchasing and stock planning pages (p95 < 300 ms), timed through the whole API in-process as in
-``perf_reports``. ``make perf``, after ``make seed-volume``.
+``perf_reports``. ``make perf``, after ``make seed-volume``. Phase 9b (ADR-056, 9b.6) adds the shop
+activity pages, the free-goods schemes and a 40-line cart with schemes (made for the run and
+removed after).
 
 The searches use the distributor's own records (a product, a shop and its mobile and GSTIN, an
 order, an invoice, a receipt, a goods receipt and a purchase order, with and without their
@@ -23,9 +25,11 @@ from apps.accounts.tokens import issue_tokens
 from apps.billing.models import Invoice
 from apps.catalog.models import Product
 from apps.inventory.models import StockInward
-from apps.orders.models import Order
+from apps.orders.models import Cart, CartLine, Order
 from apps.payments.models import Payment
 from apps.platform.models import Tenant
+from apps.platform.selectors import is_feature_enabled
+from apps.pricing.models import FreeGoodsScheme
 from apps.purchasing.models import PurchaseOrder, Supplier
 from apps.retailers.models import Retailer
 from common.tenancy import tenant_transaction
@@ -160,9 +164,58 @@ class Command(BaseCommand):
             ("product suppliers", f"{API}/products/{product.pk}/suppliers/"),
             ("suppliers from receipts", f"{API}/suppliers/from-receipts/"),
             ("dashboard (with tiles)", f"{API}/dashboard/"),
+            ("shop activity", f"{API}/shop-activity/"),
+            ("shop activity: win back", f"{API}/shop-activity/?win_back=true"),
+            ("shop activity: slowing", f"{API}/shop-activity/?segment=SLOWING"),
+            ("a shop's activity", f"{API}/retailers/{shop.pk}/activity/"),
         ]
+        if is_feature_enabled("free_goods", tenant.pk):  # seed_volume switches it on
+            pages.append(("free-goods schemes", f"{API}/free-goods-schemes/"))
         for name, url in pages:
             measure(name, client, url, target, count)
+        self._measure_cart(tenant, owner, shop, measure, client, target)
         if slow:
             raise CommandError("over the target: " + ", ".join(slow))
         self.stdout.write(self.style.SUCCESS("every p95 is under its target"))
+
+    def _measure_cart(
+        self,
+        tenant: Tenant,
+        owner: User,
+        shop: Retailer,
+        measure: Callable[..., None],
+        client: APIClient,
+        target: float,
+    ) -> None:
+        """A staff member's 40-line cart for a shop, half of it on free-goods schemes: the quote
+        with its free lines. The cart is made for the run and removed after."""
+        from decimal import Decimal
+
+        with tenant_transaction(tenant.pk):
+            on_scheme = list(
+                FreeGoodsScheme.objects.values_list("buy_product_id", flat=True).order_by()[:20]
+            )
+            others = list(
+                Product.objects.exclude(pk__in=on_scheme)
+                .order_by("code")
+                .values_list("pk", flat=True)[: 40 - len(on_scheme)]
+            )
+            cart, _ = Cart.objects.get_or_create(retailer=shop, user=owner)
+            CartLine.objects.filter(cart=cart).delete()
+            CartLine.objects.bulk_create(
+                [
+                    CartLine(tenant_id=tenant.pk, cart=cart, product_id=pk, quantity=Decimal("24"))
+                    for pk in [*on_scheme, *others]
+                ]
+            )
+
+        def lines(body: Any) -> str:
+            free = sum(1 for line in body["lines"] if line["is_free"])
+            return f"{len(body['lines'])} lines, {free} free"
+
+        try:
+            url = f"{API}/retailers/{shop.pk}/cart/"
+            measure("cart: 40 lines with schemes", client, url, target, lines)
+        finally:
+            with tenant_transaction(tenant.pk):
+                Cart.objects.filter(pk=cart.pk).delete()

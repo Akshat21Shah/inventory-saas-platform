@@ -23,7 +23,12 @@ from apps.orders.models import (
     OrderStatus,
 )
 from apps.orders.services import emit, record
-from apps.orders.transitions import InvalidTransition, lock_order, release_quantities
+from apps.orders.transitions import (
+    InvalidTransition,
+    lock_order,
+    rebalance_free_lines,
+    release_quantities,
+)
 from common.db import retry_on_deadlock
 from common.errors import InvalidFields, NotFound
 
@@ -162,6 +167,8 @@ def _return_from_shipment(
             line.qty_cancelled += qty
         line.save()
     backorders.after_stock_released([fl.product_id for fl in lines])
+    if not to_backorder:
+        rebalance_free_lines(order, by=by)
 
 
 # --- Pack --------------------------------------------------------------------------------------
@@ -347,6 +354,8 @@ def take_back(
         line.save()
     shipment.status, shipment.cancelled_reason = F.CANCELLED, reason.strip()[:300]
     shipment.save(update_fields=["status", "cancelled_reason", "updated_at"])
+    if not to_backorder:
+        rebalance_free_lines(order, by=by)
     if order.status == OrderStatus.COMPLETED:  # open again: its shipments decide from here
         order.status, order.closed_at = OrderStatus.ACCEPTED, None
     record(

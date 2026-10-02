@@ -1745,6 +1745,140 @@ paths:
               schema:
                 $ref: '#/components/schemas/EWayBillCounts'
           description: ''
+  /api/v1/free-goods-schemes/:
+    get:
+      operationId: free_goods_schemes_list
+      description: 'Free-goods schemes (ADR-056 item 7): only with the ``free_goods``
+        module on.'
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+          nullable: true
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFreeGoodsSchemeList'
+          description: ''
+    post:
+      operationId: free_goods_schemes_create
+      description: 'Free-goods schemes (ADR-056 item 7): only with the ``free_goods``
+        module on.'
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeGoodsSchemeWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeGoodsScheme'
+          description: ''
+  /api/v1/free-goods-schemes/{scheme_id}/:
+    get:
+      operationId: free_goods_schemes_retrieve
+      description: 'Free-goods schemes (ADR-056 item 7): only with the ``free_goods``
+        module on.'
+      parameters:
+      - in: path
+        name: scheme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeGoodsScheme'
+          description: ''
+    patch:
+      operationId: free_goods_schemes_update
+      description: 'Free-goods schemes (ADR-056 item 7): only with the ``free_goods``
+        module on.'
+      parameters:
+      - in: path
+        name: scheme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFreeGoodsSchemeWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeGoodsScheme'
+          description: ''
+    delete:
+      operationId: free_goods_schemes_delete
+      description: 'Free-goods schemes (ADR-056 item 7): only with the ``free_goods``
+        module on.'
+      parameters:
+      - in: path
+        name: scheme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pricing
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/fulfilments/:
     get:
       operationId: fulfilments_list
@@ -7240,6 +7374,28 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/retailers/{retailer_id}/activity/:
+    get:
+      operationId: retailer_activity
+      description: A shop's activity and its latest contacts (the shop's page).
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - insights
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopActivityDetail'
+          description: ''
   /api/v1/retailers/{retailer_id}/addresses/:
     post:
       operationId: retailers_addresses_create
@@ -7484,6 +7640,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Quote'
+          description: ''
+  /api/v1/retailers/{retailer_id}/contacts/:
+    post:
+      operationId: retailer_contact_create
+      description: Log a call, WhatsApp message or visit (ADR-056 item 3).
+      parameters:
+      - in: path
+        name: retailer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - insights
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopContactInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopContact'
           description: ''
   /api/v1/retailers/{retailer_id}/copy-pricing/:
     post:
@@ -8456,6 +8640,85 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Setting'
+          description: ''
+  /api/v1/shop-activity/:
+    get:
+      operationId: shop_activity_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: salesperson
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: search
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: segment
+        schema:
+          enum:
+          - NEW
+          - ACTIVE
+          - SLOWING
+          - DORMANT
+          - NEVER_ORDERED
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `NEW` - New
+          * `ACTIVE` - Active
+          * `SLOWING` - Slowing down
+          * `DORMANT` - Stopped ordering
+          * `NEVER_ORDERED` - Never ordered
+      - in: query
+        name: win_back
+        schema:
+          type: boolean
+          default: false
+        description: Only shops to win back (ADR-056 item 3).
+      tags:
+      - insights
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShopActivityList'
+          description: ''
+  /api/v1/shop-activity/refresh/:
+    post:
+      operationId: shop_activity_refresh
+      description: Work the figures out again now, in the background; once every five
+        minutes.
+      tags:
+      - insights
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRefresh'
           description: ''
   /api/v1/shop/account/:
     get:
@@ -10663,6 +10926,14 @@ components:
         * `receive` - receive
         * `cancel` - cancel
         * `close` - close
+    ActivityRefresh:
+      type: object
+      properties:
+        status:
+          type: string
+          description: 'QUEUED: worked out in the background.'
+      required:
+      - status
     AdditionRequest:
       type: object
       properties:
@@ -12815,6 +13086,10 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        is_free:
+          type: boolean
+        scheme_name:
+          type: string
         quantity:
           type: string
           format: decimal
@@ -12856,10 +13131,12 @@ components:
       - hsn_code
       - igst_amount
       - invoice_line_id
+      - is_free
       - line_no
       - line_total
       - product_code
       - quantity
+      - scheme_name
       - sgst_amount
       - taxable_value
       - unit_code
@@ -13033,6 +13310,11 @@ components:
           type: integer
           nullable: true
           description: Sent or partly received, expected before today (purchasing).
+        win_back:
+          type: integer
+          nullable: true
+          description: 'Shops to win back (ADR-056): slowing, stopped or never ordered,
+            not contacted lately.'
       required:
       - backorders_to_confirm
       - failed_ewaybills
@@ -13045,6 +13327,7 @@ components:
       - overdue
       - to_pack
       - to_reorder
+      - win_back
     DashboardToday:
       type: object
       properties:
@@ -14658,6 +14941,179 @@ components:
         * `id` - id
         * `text` - text
         * `bool` - bool
+    FreeGoodsScheme:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        buy_product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+        buy_unit:
+          type: string
+          readOnly: true
+        buy_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        free_product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRef'
+          readOnly: true
+        free_unit:
+          type: string
+          readOnly: true
+        free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        repeat:
+          type: boolean
+          readOnly: true
+        max_free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        audience_type:
+          allOf:
+          - $ref: '#/components/schemas/AudienceTypeEnum'
+          readOnly: true
+        price_list:
+          allOf:
+          - $ref: '#/components/schemas/Ref'
+          readOnly: true
+          nullable: true
+        retailer:
+          allOf:
+          - $ref: '#/components/schemas/ShopRef'
+          readOnly: true
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - audience_type
+      - buy_product
+      - buy_qty
+      - buy_unit
+      - created_at
+      - free_product
+      - free_qty
+      - free_unit
+      - id
+      - is_active
+      - max_free_qty
+      - name
+      - price_list
+      - repeat
+      - retailer
+      - updated_at
+      - valid_from
+      - valid_to
+    FreeGoodsSchemeWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        buy_product:
+          type: string
+          format: uuid
+        buy_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        free_product:
+          type: string
+          format: uuid
+        free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        repeat:
+          type: boolean
+          default: true
+        max_free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        audience_type:
+          $ref: '#/components/schemas/AudienceTypeEnum'
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        retailer:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - audience_type
+      - buy_product
+      - buy_qty
+      - free_product
+      - free_qty
+      - name
+    FreeOffer:
+      type: object
+      properties:
+        scheme:
+          $ref: '#/components/schemas/SchemeTerms'
+        add_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Buy this many more ...
+        free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: '... to get this many more free.'
+      required:
+      - add_qty
+      - free_qty
+      - scheme
     FreeProduct:
       type: object
       properties:
@@ -16140,6 +16596,11 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           description: Already credited by credit notes.
+        is_free:
+          type: boolean
+          description: Free goods under a scheme (₹0, no GST).
+        scheme_name:
+          type: string
       required:
       - cess_amount
       - cess_rate
@@ -16154,6 +16615,7 @@ components:
       - id
       - igst_amount
       - igst_rate
+      - is_free
       - line_no
       - line_total
       - order_rate
@@ -16161,6 +16623,7 @@ components:
       - product_id
       - quantity
       - rate_differs_from_order
+      - scheme_name
       - sgst_amount
       - sgst_rate
       - taxable_value
@@ -17524,8 +17987,18 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+        free_of_line:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: 'A free line (₹0, ADR-056): the line that earns it.'
+        scheme_name:
+          type: string
+          readOnly: true
       required:
       - discount_per_unit
+      - free_of_line
       - gst_rate
       - id
       - line_no
@@ -17542,6 +18015,7 @@ components:
       - qty_pending
       - qty_reserved
       - ready_qty
+      - scheme_name
       - unit_code
       - unit_price
     OrderLineInputRequest:
@@ -17959,6 +18433,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EWayBillRow'
+    PaginatedFreeGoodsSchemeList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FreeGoodsScheme'
     PaginatedFulfilmentRowList:
       type: object
       required:
@@ -18472,6 +18965,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RetailerPrice'
+    PaginatedShopActivityList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopActivity'
     PaginatedShopOrderRowList:
       type: object
       required:
@@ -18952,6 +19464,56 @@ components:
           type: boolean
         tenant_toggleable:
           type: boolean
+    PatchedFreeGoodsSchemeWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        buy_product:
+          type: string
+          format: uuid
+        buy_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        free_product:
+          type: string
+          format: uuid
+        free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        repeat:
+          type: boolean
+          default: true
+        max_free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        audience_type:
+          $ref: '#/components/schemas/AudienceTypeEnum'
+        price_list:
+          type: string
+          format: uuid
+          nullable: true
+        retailer:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        valid_to:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
     PatchedHsnHintUpdateRequest:
       type: object
       properties:
@@ -21568,16 +22130,42 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Problem'
+        is_free:
+          type: boolean
+          description: Earned under a free-goods scheme (₹0).
+        free_of_product_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+          description: 'A free line: the product bought to earn it.'
+        scheme:
+          allOf:
+          - $ref: '#/components/schemas/SchemeTerms'
+          nullable: true
+          description: A free line's scheme, or the scheme a bought line earns free
+            goods under.
+        offer:
+          allOf:
+          - $ref: '#/components/schemas/FreeOffer'
+          nullable: true
+          readOnly: true
+          description: 'A bought line: "add 2 more to get 1 free" (none when nothing
+            more is earned).'
       required:
       - discount_percent
       - discount_total
+      - free_of_product_id
+      - is_free
       - later_qty
       - line_total
+      - offer
       - problems
       - product
       - product_id
       - quantity
       - ready_qty
+      - scheme
       - stock
       - unit_price
     QuoteProduct:
@@ -23734,6 +24322,49 @@ components:
       required:
       - effective_from
       - gst_rate
+    SchemeTerms:
+      type: object
+      description: A free-goods scheme as a shop sees it ("Buy 10 get 1 free"); input
+        ``schemes.Terms``.
+      properties:
+        scheme_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        buy_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        repeat:
+          type: boolean
+          description: For every ``buy_qty`` bought, else once a line.
+        max_free_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          description: At most this many free on one order line.
+        same_product:
+          type: boolean
+        free_product_name:
+          type: string
+        free_unit:
+          type: string
+      required:
+      - buy_qty
+      - free_product_name
+      - free_qty
+      - free_unit
+      - max_free_qty
+      - name
+      - repeat
+      - same_product
+      - scheme_id
     ScopeTypeEnum:
       enum:
       - ALL
@@ -24068,6 +24699,133 @@ components:
       - orders_blocked_for_overdue
       - overdue_bills
       - position
+    ShopActivity:
+      type: object
+      description: |-
+        A shop's ordering pattern. Values (order totals incl. GST) are null without a sales-report
+        permission (``context["values"]``).
+      properties:
+        retailer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        retailer_code:
+          type: string
+          readOnly: true
+        shop_name:
+          type: string
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        mobile:
+          type: string
+          readOnly: true
+        shop_status:
+          type: string
+          readOnly: true
+        salesperson_name:
+          type: string
+          nullable: true
+          readOnly: true
+        segment:
+          allOf:
+          - $ref: '#/components/schemas/ShopSegmentEnum'
+          readOnly: true
+        computed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        first_order_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_order_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        days_since_last:
+          type: integer
+          readOnly: true
+          nullable: true
+        usual_gap_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+          readOnly: true
+          nullable: true
+        orders_90:
+          type: integer
+          readOnly: true
+        orders_prev_90:
+          type: integer
+          readOnly: true
+        value_90:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        value_prev_90:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          nullable: true
+          readOnly: true
+        last_contact_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_contact_outcome:
+          nullable: true
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/ShopContactOutcomeEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        last_contact_by:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - computed_at
+      - days_since_last
+      - first_order_date
+      - last_contact_at
+      - last_contact_by
+      - last_contact_outcome
+      - last_order_date
+      - mobile
+      - orders_90
+      - orders_prev_90
+      - owner_name
+      - retailer_code
+      - retailer_id
+      - salesperson_name
+      - segment
+      - shop_name
+      - shop_status
+      - usual_gap_days
+      - value_90
+      - value_prev_90
+    ShopActivityDetail:
+      type: object
+      description: A shop's activity (null until first worked out) and its latest
+        contacts.
+      properties:
+        activity:
+          allOf:
+          - $ref: '#/components/schemas/ShopActivity'
+          nullable: true
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopContact'
+      required:
+      - activity
+      - contacts
     ShopAnnouncement:
       type: object
       properties:
@@ -24172,6 +24930,78 @@ components:
           type: boolean
       required:
       - agreed
+    ShopContact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ShopContactChannelEnum'
+          readOnly: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/ShopContactOutcomeEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        by_name:
+          type: string
+          readOnly: true
+      required:
+      - by_name
+      - channel
+      - created_at
+      - id
+      - note
+      - outcome
+    ShopContactChannelEnum:
+      enum:
+      - CALL
+      - WHATSAPP
+      - VISIT
+      - OTHER
+      type: string
+      description: |-
+        * `CALL` - Call
+        * `WHATSAPP` - WhatsApp
+        * `VISIT` - Visit
+        * `OTHER` - Other
+    ShopContactInputRequest:
+      type: object
+      properties:
+        channel:
+          $ref: '#/components/schemas/ShopContactChannelEnum'
+        outcome:
+          $ref: '#/components/schemas/ShopContactOutcomeEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - channel
+      - outcome
+    ShopContactOutcomeEnum:
+      enum:
+      - REACHED
+      - NO_ANSWER
+      - WILL_ORDER
+      - NOT_INTERESTED
+      - OTHER
+      type: string
+      description: |-
+        * `REACHED` - Spoke to them
+        * `NO_ANSWER` - No answer
+        * `WILL_ORDER` - Will order
+        * `NOT_INTERESTED` - Not interested
+        * `OTHER` - Other
     ShopCredit:
       type: object
       properties:
@@ -24858,11 +25688,19 @@ components:
           allOf:
           - $ref: '#/components/schemas/ShopAvailability'
           readOnly: true
+        free_offer:
+          allOf:
+          - $ref: '#/components/schemas/SchemeTerms'
+          nullable: true
+          readOnly: true
+          description: A free-goods scheme on this product ("Buy 10 get 1 free"),
+            when there is one.
       required:
       - availability
       - brand
       - category
       - code
+      - free_offer
       - id
       - min_order_qty
       - mrp
@@ -24932,6 +25770,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/ShopAvailability'
           readOnly: true
+        free_offer:
+          allOf:
+          - $ref: '#/components/schemas/SchemeTerms'
+          nullable: true
+          readOnly: true
+          description: A free-goods scheme on this product ("Buy 10 get 1 free"),
+            when there is one.
         description:
           type: string
         images:
@@ -24949,6 +25794,7 @@ components:
       - category
       - code
       - description
+      - free_offer
       - id
       - images
       - min_order_qty
@@ -25034,6 +25880,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/ShopAvailability'
           readOnly: true
+        free_offer:
+          allOf:
+          - $ref: '#/components/schemas/SchemeTerms'
+          nullable: true
+          readOnly: true
+          description: A free-goods scheme on this product ("Buy 10 get 1 free"),
+            when there is one.
         last_quantity:
           type: string
           format: decimal
@@ -25043,6 +25896,7 @@ components:
       - brand
       - category
       - code
+      - free_offer
       - id
       - last_quantity
       - min_order_qty
@@ -25055,6 +25909,20 @@ components:
       - price
       - thumbnail_url
       - unit
+    ShopSegmentEnum:
+      enum:
+      - NEW
+      - ACTIVE
+      - SLOWING
+      - DORMANT
+      - NEVER_ORDERED
+      type: string
+      description: |-
+        * `NEW` - New
+        * `ACTIVE` - Active
+        * `SLOWING` - Slowing down
+        * `DORMANT` - Stopped ordering
+        * `NEVER_ORDERED` - Never ordered
     ShopUnit:
       type: object
       properties:
@@ -25439,6 +26307,15 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+        free_of_line:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: 'A free line (₹0, ADR-056): the line that earns it.'
+        scheme_name:
+          type: string
+          readOnly: true
         on_order:
           allOf:
           - $ref: '#/components/schemas/LineOnOrder'
@@ -25446,6 +26323,7 @@ components:
           readOnly: true
       required:
       - discount_per_unit
+      - free_of_line
       - gst_rate
       - id
       - line_no
@@ -25463,6 +26341,7 @@ components:
       - qty_pending
       - qty_reserved
       - ready_qty
+      - scheme_name
       - unit_code
       - unit_price
     StaffPaymentRow:

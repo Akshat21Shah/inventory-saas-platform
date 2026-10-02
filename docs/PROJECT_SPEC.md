@@ -1,8 +1,9 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.9. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.10. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.10 (2026-10-02)** — Phase 9b (ADR-056): shop activity with segments (new, active, slowing, dormant, never ordered), win-back actions and a contacts log; a daily summary for owners by app, email or WhatsApp; free-goods schemes ("buy N get M free", flag `free_goods`) applied by the server, with ₹0 free lines on orders and invoices. Staging and production infrastructure moved to Phase 10; the repository is private (ADR-055).
 - **1.9 (2026-10-01)** — Phase 9 split into 9a–9e with staging after 9a and an after-launch list; Phase 9a plan (ADR-053): global search (core, always on), nightly product stats with ABC and movement classes, suppliers and purchase orders (flag `purchasing`), receiving against purchase orders with an over-receipt tolerance, reorder suggestions that explain themselves (flag `stock_planning`), quantity on order visible to staff; Platform Support role and the Tally / GSTR-1 JSON files in Phase 10.
 - **1.8 (2026-09-30)** — Phase 8 plan (ADR-050): one report framework with permissions and own-shop scope built in; "Orders received" and "Billed" on the dashboard; the salesperson recorded on each order and the cost on each invoice line (margins); fast / slow / dead / new stock; the GST summary workbook for a month or a quarter; background exports with a "Report ready" message; the Tally export designed and on the backlog.
 - **1.7 (2026-09-29)** — Phase 7 plan (ADR-049): turnover band setting; IRNs for B2B invoices and their credit notes only; IRN cancellation re-issues a corrected invoice (default) or takes the goods back; e-way bill thresholds between states and within the state, distance per shop address; one active online checkout per bill; WhatsApp template approval status.
@@ -196,7 +197,7 @@ See `CLAUDE.md` section 2. Summary: Django + DRF + Celery + Channels + PostgreSQ
   - Prices always come from this service.
   - The total discount, as an amount and a percentage ("You save ₹12 (12%)"), and "Buy more, pay less" slab hints.
   - Never rule names, how many rules applied, base prices or cost prices.
-- **Free goods** ("buy X get Y free") are not supported yet. A rule, special price or price-list price that brings a net price to zero is saved with a warning, and the product is hidden from those shops (ADR-034, ADR-036).
+- **Free-goods schemes** ("buy N get M free", Phase 9b, flag `free_goods`, ADR-056): buy N of a product, get M of the same or another product free, repeating "for every N" or once, with an optional cap; for all shops, a price list or one shop; valid dates. The server adds the free goods as a ₹0 line linked to the line that earned them (the best scheme per product); the shop sees "Buy 10 get 1 free" and "Add 2 more to get 1 free". Free lines reserve and backorder stock like other lines and shrink with the bought line. A rule, special price or price-list price that brings a net price to zero is still saved with a warning and hides the product from those shops (ADR-034, ADR-036).
 - **Managing pricing at scale** (hundreds of shops, thousands of products; ADR-037):
   - **Per shop:**
     - A "what this shop pays" table with inline special prices.
@@ -339,7 +340,7 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - Demand forecasting (seasonality-aware) — may be a separate Python service if models grow heavy.
 - Natural-language / semantic product search for retailers (pgvector embeddings), tolerant of spelling and Hindi/English mix.
 - Distributor assistant: ask questions of their own data ("which retailers haven't ordered in 30 days?") using an LLM with tool calls over safe, tenant-scoped read-only query functions (never raw SQL from the model).
-- Retailer re-engagement insights (dormant retailers, declining order frequency).
+- Retailer re-engagement insights (Phase 9b, core, ADR-056): each shop's activity (last order, usual gap, orders and value over 90 days vs the 90 before) and segment (new, active, slowing, dormant, never ordered); a "Shop activity" screen and report, a dashboard tile "Shops to win back", call / WhatsApp / place an order / log a contact.
 - Supplier bill photo → stock inward draft (OCR/LLM extraction, always human-confirmed).
 - All AI calls go through `apps/ai` with provider abstraction, per-tenant usage tracking and limits, and no cross-tenant data in prompts.
 

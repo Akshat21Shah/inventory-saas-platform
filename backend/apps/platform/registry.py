@@ -336,6 +336,19 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Turn off to stop them signing in."),
     _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
             "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
+    # Shop activity and win-back (ADR-056): how shops are grouped.
+    _tenant("insights.new_days", Group.RETAILERS, SettingType.INT, 30,
+            "A shop counts as new for this many days after its first order.",
+            min_value=7, max_value=120),
+    _tenant("insights.dormant_days", Group.RETAILERS, SettingType.INT, 45,
+            "A shop that hasn't ordered for this many days has stopped ordering.",
+            min_value=14, max_value=365),
+    _tenant("insights.slowing_percent", Group.RETAILERS, SettingType.INT, 150,
+            "A shop is slowing down when it hasn't ordered for this share of its usual gap "
+            "between orders (150% of 10 days: 15 days).", min_value=110, max_value=400),
+    _tenant("insights.contact_snooze_days", Group.RETAILERS, SettingType.INT, 14,
+            "After someone contacts a shop, it leaves the win-back list for this many days.",
+            min_value=1, max_value=90),
     # --- Tenant: Reports (ADR-050) -------------------------------------------------------------
     _tenant("reports.movement_days", Group.REPORTS, SettingType.INT, 90,
             "The period for fast, slow and dead stock, in days.", min_value=7, max_value=365),
@@ -411,6 +424,14 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _tenant("notifications.document_link_days", Group.NOTIFICATIONS, SettingType.INT, 30,
             "How many days a bill or receipt link sent by WhatsApp or email keeps working.",
             min_value=1, max_value=365),
+    # The daily summary (ADR-056).
+    _tenant("notifications.daily_summary_enabled", Group.NOTIFICATIONS, SettingType.BOOL, True,
+            "Send a summary each morning: yesterday's orders, billing and collections, and what "
+            "needs action. Who gets it, and how, is set under Who gets which message."),
+    _tenant("notifications.daily_summary_time", Group.NOTIFICATIONS, SettingType.STRING, "08:00",
+            "When the daily summary goes out (Indian time).", pattern=r"([01]\d|2[0-3]):[0-5]\d"),
+    _tenant("notifications.daily_summary_skip_sunday", Group.NOTIFICATIONS, SettingType.BOOL,
+            False, "Don't send the daily summary on Sundays."),
     _tenant("notifications.payment_reminder_days", Group.NOTIFICATIONS, SettingType.STRING,
             "-2,3,7,15,30",
             "Days to remind shops of their bills: a minus number is days before the due date, the "

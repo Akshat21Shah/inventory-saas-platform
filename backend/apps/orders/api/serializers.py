@@ -19,6 +19,12 @@ from apps.pricing.api.serializers import money, qty
 class OrderLineSerializer(serializers.ModelSerializer[OrderLine]):
     product = serializers.UUIDField(source="product_id", read_only=True)
     ready_qty = serializers.SerializerMethodField(help_text="Held for the shop, not yet sent.")
+    free_of_line = serializers.UUIDField(
+        source="free_of_line_id",
+        allow_null=True,
+        read_only=True,
+        help_text="A free line (₹0, ADR-056): the line that earns it.",
+    )
 
     class Meta:
         model = OrderLine
@@ -42,6 +48,8 @@ class OrderLineSerializer(serializers.ModelSerializer[OrderLine]):
             "qty_delivered",
             "ready_qty",
             "line_total",
+            "free_of_line",
+            "scheme_name",
         )
         read_only_fields: tuple[str, ...] = fields
 

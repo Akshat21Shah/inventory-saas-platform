@@ -35,7 +35,7 @@ const lookups = {
 const freeGoods = {
   code: "FREE_GOODS",
   message: "server text",
-  details: { products: 3, retailers: 2 },
+  details: { products: 3, retailers: 2, schemes: false },
 };
 
 const savedRule = (warnings: DiscountRule["warnings"]): DiscountRule => ({
@@ -110,7 +110,7 @@ describe("Special prices", () => {
       price: "0.00",
       note: "",
       updated_at: "2026-09-25T10:00:00Z",
-      warnings: [{ ...freeGoods, details: { products: 1, retailers: 1 } }],
+      warnings: [{ ...freeGoods, details: { products: 1, retailers: 1, schemes: false } }],
     };
     const calls = mockApi({
       "/api/v1/retailer-prices/": () => [200, empty],
@@ -169,7 +169,10 @@ describe("Price list items", () => {
       ],
       "PUT /api/v1/price-lists/pl-gold/items/": () => [
         200,
-        { changed: 1, warnings: [{ ...freeGoods, details: { products: 1, retailers: 3 } }] },
+        {
+          changed: 1,
+          warnings: [{ ...freeGoods, details: { products: 1, retailers: 3, schemes: false } }],
+        },
       ],
     });
     renderWithIntl(<PriceListDetailPage priceListId="pl-gold" />);

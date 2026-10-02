@@ -47,5 +47,11 @@ export interface StaffOrderLine {
   readonly ready_qty: string;
   /** @pattern ^-?\d{0,12}(?:\.\d{0,2})?$ */
   readonly line_total: string;
+  /**
+     * A free line (₹0, ADR-056): the line that earns it.
+     * @nullable
+     */
+  readonly free_of_line: string | null;
+  readonly scheme_name: string;
   readonly on_order: LineOnOrder | null;
 }

@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.search",
     "apps.planning",
+    "apps.insights",
     "apps.purchasing",
     "apps.dataio",
     "apps.shop",
@@ -184,12 +185,19 @@ CELERY_BEAT_SCHEDULE = {
         "task": "notifications.handover_reminders",
         "schedule": crontab(hour=3, minute=30),  # 09:00 IST
     },
+    # The daily summary (ADR-056): each distributor at its own time, checked every 15 minutes.
+    "notifications-daily-summaries": {
+        "task": "notifications.daily_summaries",
+        "schedule": crontab(minute="*/15"),
+    },
     "notifications-payment-reminders": {
         "task": "notifications.payment_reminders",
         "schedule": crontab(hour=4, minute=30),  # 10:00 IST
     },
     # Product stats (ADR-053), after the day's orders: 01:30 IST.
     "planning-refresh": {"task": "planning.refresh_all", "schedule": crontab(hour=20, minute=0)},
+    # 01:45 IST, after the stock stats: shop activity (ADR-056).
+    "insights-refresh": {"task": "insights.refresh_all", "schedule": crontab(hour=20, minute=15)},
 }
 
 CHANNEL_LAYERS = {
@@ -232,6 +240,9 @@ SPECTACULAR_SETTINGS = {
         "AbcClassEnum": "apps.planning.models.AbcClass",
         "MovementClassEnum": "apps.planning.models.MovementClass",
         "RatePeriodEnum": "apps.planning.quantities.RatePeriod",
+        "ShopSegmentEnum": "apps.insights.models.Segment",
+        "ShopContactChannelEnum": "apps.insights.models.ShopContact.Channel",
+        "ShopContactOutcomeEnum": "apps.insights.models.ShopContact.Outcome",
         "PurchaseOrderStatusEnum": "apps.purchasing.models.PurchaseOrder.Status",
         "InvitationStatusEnum": "apps.accounts.models.Invitation.Status",
         "UserTypeEnum": "apps.accounts.models.User.UserType",

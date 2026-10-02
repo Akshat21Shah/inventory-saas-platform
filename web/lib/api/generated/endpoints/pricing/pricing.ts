@@ -36,12 +36,16 @@ import type {
   DiscountRule,
   DiscountRuleWriteRequest,
   DiscountRulesListParams,
+  FreeGoodsScheme,
+  FreeGoodsSchemeWriteRequest,
+  FreeGoodsSchemesListParams,
   FreeProduct,
   GridItemsRequest,
   GridPreviewRow,
   ItemsUpsertRequest,
   ItemsUpsertResult,
   PaginatedDiscountRuleList,
+  PaginatedFreeGoodsSchemeList,
   PaginatedGridRowList,
   PaginatedPriceListItemList,
   PaginatedPriceListList,
@@ -49,6 +53,7 @@ import type {
   PaginatedReportRowList,
   PaginatedRetailerPriceList,
   PatchedDiscountRuleWriteRequest,
+  PatchedFreeGoodsSchemeWriteRequest,
   PatchedPriceListWriteRequest,
   PatchedRetailerPriceUpdateRequest,
   PreviewRequest,
@@ -571,6 +576,506 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDiscountRulesDeleteMutationOptions(options), queryClient);
+    }
+    export type freeGoodsSchemesListResponse200 = {
+  data: PaginatedFreeGoodsSchemeList
+  status: 200
+}
+
+export type freeGoodsSchemesListResponseSuccess = (freeGoodsSchemesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type freeGoodsSchemesListResponse = (freeGoodsSchemesListResponseSuccess)
+
+export const getFreeGoodsSchemesListUrl = (params?: FreeGoodsSchemesListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/free-goods-schemes/?${stringifiedParams}` : `/api/v1/free-goods-schemes/`
+}
+
+/**
+ * Free-goods schemes (ADR-056 item 7): only with the ``free_goods`` module on.
+ */
+export const freeGoodsSchemesList = async (params?: FreeGoodsSchemesListParams, options?: Parameters<typeof apiFetch>[1]): Promise<freeGoodsSchemesListResponse> => {
+
+  return apiFetch<freeGoodsSchemesListResponse>(getFreeGoodsSchemesListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getFreeGoodsSchemesListQueryKey = (params?: FreeGoodsSchemesListParams,) => {
+    return [
+    `/api/v1/free-goods-schemes/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getFreeGoodsSchemesListQueryOptions = <TData = Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError = unknown>(params?: FreeGoodsSchemesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFreeGoodsSchemesListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof freeGoodsSchemesList>>> = ({ signal }) => freeGoodsSchemesList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FreeGoodsSchemesListQueryResult = NonNullable<Awaited<ReturnType<typeof freeGoodsSchemesList>>>
+export type FreeGoodsSchemesListQueryError = unknown
+
+
+export function useFreeGoodsSchemesList<TData = Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError = unknown>(
+ params: undefined |  FreeGoodsSchemesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof freeGoodsSchemesList>>,
+          TError,
+          Awaited<ReturnType<typeof freeGoodsSchemesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFreeGoodsSchemesList<TData = Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError = unknown>(
+ params?: FreeGoodsSchemesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof freeGoodsSchemesList>>,
+          TError,
+          Awaited<ReturnType<typeof freeGoodsSchemesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFreeGoodsSchemesList<TData = Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError = unknown>(
+ params?: FreeGoodsSchemesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useFreeGoodsSchemesList<TData = Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError = unknown>(
+ params?: FreeGoodsSchemesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesList>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFreeGoodsSchemesListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type freeGoodsSchemesCreateResponse201 = {
+  data: FreeGoodsScheme
+  status: 201
+}
+
+export type freeGoodsSchemesCreateResponseSuccess = (freeGoodsSchemesCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type freeGoodsSchemesCreateResponse = (freeGoodsSchemesCreateResponseSuccess)
+
+export const getFreeGoodsSchemesCreateUrl = () => {
+
+
+
+
+  return `/api/v1/free-goods-schemes/`
+}
+
+/**
+ * Free-goods schemes (ADR-056 item 7): only with the ``free_goods`` module on.
+ */
+export const freeGoodsSchemesCreate = async (freeGoodsSchemeWriteRequest: FreeGoodsSchemeWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<freeGoodsSchemesCreateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<freeGoodsSchemesCreateResponse>(getFreeGoodsSchemesCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(freeGoodsSchemeWriteRequest)
+  }
+);}
+
+
+
+
+
+export const getFreeGoodsSchemesCreateMutationKey = () => ['freeGoodsSchemesCreate'] as const;
+
+export const getFreeGoodsSchemesCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesCreate>>, TError,FreeGoodsSchemesCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesCreate>>, TError,FreeGoodsSchemesCreateMutationVariables, TContext> => {
+
+const mutationKey = getFreeGoodsSchemesCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof freeGoodsSchemesCreate>>, FreeGoodsSchemesCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  freeGoodsSchemesCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FreeGoodsSchemesCreateMutationResult = NonNullable<Awaited<ReturnType<typeof freeGoodsSchemesCreate>>>
+    export type FreeGoodsSchemesCreateMutationBody = FreeGoodsSchemeWriteRequest
+    export type FreeGoodsSchemesCreateMutationError = unknown
+    export type FreeGoodsSchemesCreateMutationVariables = {data: FreeGoodsSchemeWriteRequest}
+
+    export const useFreeGoodsSchemesCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesCreate>>, TError,FreeGoodsSchemesCreateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof freeGoodsSchemesCreate>>,
+        TError,
+        FreeGoodsSchemesCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFreeGoodsSchemesCreateMutationOptions(options), queryClient);
+    }
+    export type freeGoodsSchemesRetrieveResponse200 = {
+  data: FreeGoodsScheme
+  status: 200
+}
+
+export type freeGoodsSchemesRetrieveResponseSuccess = (freeGoodsSchemesRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type freeGoodsSchemesRetrieveResponse = (freeGoodsSchemesRetrieveResponseSuccess)
+
+export const getFreeGoodsSchemesRetrieveUrl = (schemeId: string,) => {
+
+
+
+
+  return `/api/v1/free-goods-schemes/${schemeId}/`
+}
+
+/**
+ * Free-goods schemes (ADR-056 item 7): only with the ``free_goods`` module on.
+ */
+export const freeGoodsSchemesRetrieve = async (schemeId: string, options?: Parameters<typeof apiFetch>[1]): Promise<freeGoodsSchemesRetrieveResponse> => {
+
+  return apiFetch<freeGoodsSchemesRetrieveResponse>(getFreeGoodsSchemesRetrieveUrl(schemeId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getFreeGoodsSchemesRetrieveQueryKey = (schemeId: string,) => {
+    return [
+    `/api/v1/free-goods-schemes/${schemeId}/`
+    ] as const;
+    }
+
+
+export const getFreeGoodsSchemesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError = unknown>(schemeId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFreeGoodsSchemesRetrieveQueryKey(schemeId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>> = ({ signal }) => freeGoodsSchemesRetrieve(schemeId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: schemeId !== null && schemeId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FreeGoodsSchemesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>>
+export type FreeGoodsSchemesRetrieveQueryError = unknown
+
+
+export function useFreeGoodsSchemesRetrieve<TData = Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError = unknown>(
+ schemeId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFreeGoodsSchemesRetrieve<TData = Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError = unknown>(
+ schemeId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFreeGoodsSchemesRetrieve<TData = Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError = unknown>(
+ schemeId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useFreeGoodsSchemesRetrieve<TData = Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError = unknown>(
+ schemeId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof freeGoodsSchemesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFreeGoodsSchemesRetrieveQueryOptions(schemeId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type freeGoodsSchemesUpdateResponse200 = {
+  data: FreeGoodsScheme
+  status: 200
+}
+
+export type freeGoodsSchemesUpdateResponseSuccess = (freeGoodsSchemesUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type freeGoodsSchemesUpdateResponse = (freeGoodsSchemesUpdateResponseSuccess)
+
+export const getFreeGoodsSchemesUpdateUrl = (schemeId: string,) => {
+
+
+
+
+  return `/api/v1/free-goods-schemes/${schemeId}/`
+}
+
+/**
+ * Free-goods schemes (ADR-056 item 7): only with the ``free_goods`` module on.
+ */
+export const freeGoodsSchemesUpdate = async (schemeId: string,
+    patchedFreeGoodsSchemeWriteRequest?: PatchedFreeGoodsSchemeWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<freeGoodsSchemesUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<freeGoodsSchemesUpdateResponse>(getFreeGoodsSchemesUpdateUrl(schemeId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(patchedFreeGoodsSchemeWriteRequest)
+  }
+);}
+
+
+
+
+
+export const getFreeGoodsSchemesUpdateMutationKey = () => ['freeGoodsSchemesUpdate'] as const;
+
+export const getFreeGoodsSchemesUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesUpdate>>, TError,FreeGoodsSchemesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesUpdate>>, TError,FreeGoodsSchemesUpdateMutationVariables, TContext> => {
+
+const mutationKey = getFreeGoodsSchemesUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof freeGoodsSchemesUpdate>>, FreeGoodsSchemesUpdateMutationVariables> = (props) => {
+          const {schemeId,data} = props ?? {};
+
+          return  freeGoodsSchemesUpdate(schemeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FreeGoodsSchemesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof freeGoodsSchemesUpdate>>>
+    export type FreeGoodsSchemesUpdateMutationBody = PatchedFreeGoodsSchemeWriteRequest | undefined
+    export type FreeGoodsSchemesUpdateMutationError = unknown
+    export type FreeGoodsSchemesUpdateMutationVariables = {schemeId: string;data?: PatchedFreeGoodsSchemeWriteRequest}
+
+    export const useFreeGoodsSchemesUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesUpdate>>, TError,FreeGoodsSchemesUpdateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof freeGoodsSchemesUpdate>>,
+        TError,
+        FreeGoodsSchemesUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFreeGoodsSchemesUpdateMutationOptions(options), queryClient);
+    }
+    export type freeGoodsSchemesDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type freeGoodsSchemesDeleteResponseSuccess = (freeGoodsSchemesDeleteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type freeGoodsSchemesDeleteResponse = (freeGoodsSchemesDeleteResponseSuccess)
+
+export const getFreeGoodsSchemesDeleteUrl = (schemeId: string,) => {
+
+
+
+
+  return `/api/v1/free-goods-schemes/${schemeId}/`
+}
+
+/**
+ * Free-goods schemes (ADR-056 item 7): only with the ``free_goods`` module on.
+ */
+export const freeGoodsSchemesDelete = async (schemeId: string, options?: Parameters<typeof apiFetch>[1]): Promise<freeGoodsSchemesDeleteResponse> => {
+
+  return apiFetch<freeGoodsSchemesDeleteResponse>(getFreeGoodsSchemesDeleteUrl(schemeId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getFreeGoodsSchemesDeleteMutationKey = () => ['freeGoodsSchemesDelete'] as const;
+
+export const getFreeGoodsSchemesDeleteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesDelete>>, TError,FreeGoodsSchemesDeleteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesDelete>>, TError,FreeGoodsSchemesDeleteMutationVariables, TContext> => {
+
+const mutationKey = getFreeGoodsSchemesDeleteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof freeGoodsSchemesDelete>>, FreeGoodsSchemesDeleteMutationVariables> = (props) => {
+          const {schemeId} = props ?? {};
+
+          return  freeGoodsSchemesDelete(schemeId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FreeGoodsSchemesDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof freeGoodsSchemesDelete>>>
+
+    export type FreeGoodsSchemesDeleteMutationError = unknown
+    export type FreeGoodsSchemesDeleteMutationVariables = {schemeId: string}
+
+    export const useFreeGoodsSchemesDelete = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof freeGoodsSchemesDelete>>, TError,FreeGoodsSchemesDeleteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof freeGoodsSchemesDelete>>,
+        TError,
+        FreeGoodsSchemesDeleteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFreeGoodsSchemesDeleteMutationOptions(options), queryClient);
     }
     export type priceListsListResponse200 = {
   data: PaginatedPriceListList

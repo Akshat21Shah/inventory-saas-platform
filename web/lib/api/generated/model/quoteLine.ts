@@ -5,9 +5,11 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { FreeOffer } from './freeOffer';
 import type { Problem } from './problem';
 import type { QuoteProduct } from './quoteProduct';
 import type { QuoteStock } from './quoteStock';
+import type { SchemeTerms } from './schemeTerms';
 
 export interface QuoteLine {
   product_id: string;
@@ -47,4 +49,15 @@ export interface QuoteLine {
   later_qty: string;
   stock: QuoteStock | null;
   problems: Problem[];
+  /** Earned under a free-goods scheme (₹0). */
+  is_free: boolean;
+  /**
+     * A free line: the product bought to earn it.
+     * @nullable
+     */
+  readonly free_of_product_id: string | null;
+  /** A free line's scheme, or the scheme a bought line earns free goods under. */
+  scheme: SchemeTerms | null;
+  /** A bought line: "add 2 more to get 1 free" (none when nothing more is earned). */
+  readonly offer: FreeOffer | null;
 }

@@ -7,11 +7,14 @@ its notification ids are derived from the tenant, the subject and the date).
   Compulsory for the shop; staff with ``credit.manage`` can pause them per shop.
 - Handover reminders (item 11): collections still with a salesman after ⚙
   ``notifications.handover_reminder_days`` days, one digest per salesman.
-- GST rate changes (item 12): products whose rate changes in 7 days."""
+- GST rate changes (item 12): products whose rate changes in 7 days.
+- The daily summary (ADR-056): once the distributor's summary time has passed, one message per
+  person the rules name, with only what their permissions show; checked every 15 minutes, sent
+  once a day."""
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid5
 
@@ -267,3 +270,64 @@ def rate_change_warnings(today: date) -> int:
     )
     notify(job_event_id(current_tenant().pk, "tax.rate_change_upcoming", target), ctx)
     return len(changes)
+
+
+# --- The daily summary (ADR-056) ----------------------------------------------------------------
+
+
+def summary_due(now: datetime) -> date | None:
+    """Today (Indian date) when the summary should go out now, or None: switched off, a skipped
+    Sunday, or before the distributor's time."""
+    from common.dates import to_ist
+
+    if not get_setting("notifications.daily_summary_enabled"):
+        return None
+    local = to_ist(now)
+    if get_setting("notifications.daily_summary_skip_sunday") and local.weekday() == 6:
+        return None
+    hour, minute = (
+        int(part) for part in str(get_setting("notifications.daily_summary_time")).split(":")
+    )
+    if local.time() < time(hour, minute):
+        return None
+    return local.date()
+
+
+def daily_summaries(now: datetime) -> int:
+    """Each person's summary of yesterday and of what needs action; returns how many people."""
+    from apps.notifications.models import Notification
+    from apps.notifications.summary import summary_for
+
+    today = summary_due(now)
+    if today is None:
+        return 0
+    tenant_id = current_tenant().pk
+    yesterday = today - timedelta(days=1)
+    people = {
+        t.user.pk: t.user
+        for t in consumer.targets("summary.daily", EventContext("summary.daily", {}))
+        if t.user is not None
+    }
+    sent = 0
+    for user in people.values():
+        event_id = job_event_id(tenant_id, "summary.daily", user.pk, today)
+        if Notification.objects.filter(event_id=event_id).exists():
+            continue  # already sent today
+        found = summary_for(user, yesterday)
+        done = found.yesterday or ["nothing to show"]
+        waiting = found.attention or ["nothing waiting"]
+        ctx = EventContext(
+            "summary.daily",
+            {
+                "date": day(yesterday),
+                "yesterday": " · ".join(done),
+                "attention": " · ".join(waiting),
+                "yesterday_lines": "\n".join(f"- {line}" for line in done),
+                "attention_lines": "\n".join(f"- {line}" for line in waiting),
+            },
+            staff_path="/manage",
+            extra={"only_user": user.pk},
+        )
+        notify(event_id, ctx)
+        sent += 1
+    return sent

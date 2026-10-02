@@ -413,6 +413,27 @@ Credit Note vouchers and receipts as Receipt vouchers, as accounting entries wit
 
 ---
 
+## 15a. Free-goods schemes ("buy X get Y free"; Phase 9b, switched on per distributor)
+
+A distributor can run a scheme such as "buy 10 packets, get 1 free" (the same product or another).
+How the platform shows it today:
+
+- The shop pays for the 10 packets at their usual price, with any usual discount; the GST on them
+  is worked out as for any line.
+- The free packet is a separate line on the invoice at ₹0: quantity, HSN and "Free (scheme)", a
+  taxable value of 0 and no GST.
+- If the shop returns some of the packets, staff may take free packets back too, at ₹0 (stock comes
+  back; nothing is charged).
+- Free packets sent later on their own (out of stock at first) get their own ₹0 invoice; free
+  packets alone coming back, or not supplied after invoicing, get a ₹0 credit note.
+- Stock and the margin report count the free packets at their cost.
+
+We understand CBIC Circular 92/11/2019-GST to treat "buy one get one free" offers as one supply
+for the price charged, with input tax credit not reversed; please confirm or correct (questions
+41–46).
+
+---
+
 ## 16. Questions for you
 
 Please answer yes or no, with a note where the answer is no.
@@ -459,3 +480,9 @@ Please answer yes or no, with a note where the answer is no.
 | 38 | **Can you test a Tally import?** Do you use TallyPrime for the distributor's books, and could you export one sample Sales, Credit Note and Receipt voucher from it as XML and later test importing our file (section 15)? | | |
 | 39 | Tally: are accounting entries without stock items right for importing sales? One sales ledger, or one per GST rate? Output tax ledgers per tax (CGST, SGST, IGST, cess) or per rate as well? Shop ledgers under Sundry Debtors named as the shop? | | |
 | 40 | Tally: how should an invoice whose IRN was cancelled appear — as a cancelled voucher, or left out with only the corrected invoice exported? And receipts: one bank ledger per payment mode (cash, cheque, UPI, bank transfer, online gateway), with gateway fees entered by the distributor separately? | | |
+| 41 | Free-goods schemes: is it right to invoice the free goods as a separate ₹0 line (quantity, HSN, "Free (scheme)") with no GST, the GST being charged only on the price of the goods bought? | | |
+| 42 | Should the free goods instead appear on the bought line (e.g. "10 + 1 free" at the price of 10), or should the price be spread over all the goods (a discount in kind)? | | |
+| 43 | Input tax credit: may the distributor keep the input tax credit on goods given free under such a scheme (no reversal)? | | |
+| 44 | E-invoices and GSTR-1: should the free goods go in the IRN as their own ₹0 item, or in the bought item's free-quantity field; and do they count in the HSN summary's quantities? | | |
+| 45 | Returns: when a shop returns goods bought under a scheme, must the free goods given with them be returned or charged, or may the distributor let the shop keep them? | | |
+| 46 | When the free goods are sent later on their own (the bought goods went earlier, the free ones were out of stock), the platform issues a ₹0 tax invoice for them, and a ₹0 credit note when free goods alone come back or are not supplied. Is a ₹0 tax invoice right here, or should it be a delivery challan? | | |

@@ -5,7 +5,14 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.catalog.api.serializers import RefSerializer, WarningSerializer
-from apps.pricing.models import DiscountRule, DiscountSlab, PriceList, PriceListItem, RetailerPrice
+from apps.pricing.models import (
+    DiscountRule,
+    DiscountSlab,
+    FreeGoodsScheme,
+    PriceList,
+    PriceListItem,
+    RetailerPrice,
+)
 
 
 def money(**kwargs: Any) -> serializers.DecimalField:
@@ -267,3 +274,84 @@ class PriceSheetRowSerializer(serializers.Serializer[Any]):
     special = SpecialRefSerializer(
         allow_null=True, help_text="The shop's special price for the product, to edit in place."
     )
+
+
+class SchemeTermsSerializer(serializers.Serializer[Any]):
+    """A free-goods scheme as a shop sees it ("Buy 10 get 1 free"); input ``schemes.Terms``."""
+
+    scheme_id = serializers.UUIDField()
+    name = serializers.CharField()
+    buy_qty = qty()
+    free_qty = qty()
+    repeat = serializers.BooleanField(help_text="For every ``buy_qty`` bought, else once a line.")
+    max_free_qty = qty(allow_null=True, help_text="At most this many free on one order line.")
+    same_product = serializers.BooleanField()
+    free_product_name = serializers.CharField()
+    free_unit = serializers.CharField()
+
+
+class FreeGoodsSchemeSerializer(serializers.ModelSerializer[FreeGoodsScheme]):
+    buy_product = ProductRefSerializer(read_only=True)
+    buy_unit = serializers.CharField(source="buy_product.unit.code", read_only=True)
+    free_product = ProductRefSerializer(read_only=True)
+    free_unit = serializers.CharField(source="free_product.unit.code", read_only=True)
+    price_list = RefSerializer(allow_null=True, read_only=True)
+    retailer = ShopRefSerializer(allow_null=True, read_only=True)
+
+    class Meta:
+        model = FreeGoodsScheme
+        fields = (
+            "id",
+            "name",
+            "buy_product",
+            "buy_unit",
+            "buy_qty",
+            "free_product",
+            "free_unit",
+            "free_qty",
+            "repeat",
+            "max_free_qty",
+            "audience_type",
+            "price_list",
+            "retailer",
+            "valid_from",
+            "valid_to",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+
+class FreeGoodsSchemeWriteSerializer(serializers.Serializer[Any]):
+    name = serializers.CharField(max_length=120)
+    buy_product = serializers.UUIDField()
+    buy_qty = qty()
+    free_product = serializers.UUIDField()
+    free_qty = qty()
+    repeat = serializers.BooleanField(required=False, default=True)
+    max_free_qty = qty(required=False, allow_null=True, default=None)
+    audience_type = serializers.ChoiceField(choices=DiscountRule.Audience.choices)
+    price_list = serializers.UUIDField(required=False, allow_null=True, default=None)
+    retailer = serializers.UUIDField(required=False, allow_null=True, default=None)
+    valid_from = serializers.DateField(required=False, allow_null=True, default=None)
+    valid_to = serializers.DateField(required=False, allow_null=True, default=None)
+    is_active = serializers.BooleanField(required=False, default=True)
+
+
+class FreeGoodsSchemeFilterSerializer(serializers.Serializer[Any]):
+    active = serializers.BooleanField(required=False, allow_null=True, default=None)
+    search = serializers.CharField(required=False, allow_blank=True, default="")
+    product = serializers.UUIDField(required=False, allow_null=True, default=None)
+
+
+SCHEME_FK = {
+    "buy_product": "buy_product_id",
+    "free_product": "free_product_id",
+    "price_list": "price_list_id",
+    "retailer": "retailer_id",
+}
+
+
+def scheme_fields(data: dict[str, Any]) -> dict[str, Any]:
+    return {SCHEME_FK.get(k, k): v for k, v in data.items()}

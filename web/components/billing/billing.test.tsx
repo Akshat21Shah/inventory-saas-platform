@@ -104,6 +104,8 @@ const detail: InvoiceDetail = {
       order_rate: "12.000",
       rate_differs_from_order: true,
       credited_quantity: "3.000",
+      is_free: false,
+      scheme_name: "",
     },
   ],
   credit_notes: [],

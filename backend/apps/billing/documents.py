@@ -269,6 +269,8 @@ def confirmation_content(order: Order) -> dict[str, Any]:
                 "gst_rate": str(line.gst_rate),
                 "tax": str(line.tax_amount),
                 "total": str(line.line_total),
+                "free": line.free_of_line_id is not None,
+                "scheme": line.scheme_name,
             }
             for line in order.lines.order_by("line_no")
         ],

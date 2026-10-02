@@ -108,6 +108,8 @@ class InvoiceLineSerializer(serializers.Serializer[Any]):
     order_rate = rate()
     rate_differs_from_order = serializers.BooleanField()
     credited_quantity = qty(help_text="Already credited by credit notes.")
+    is_free = serializers.BooleanField(help_text="Free goods under a scheme (₹0, no GST).")
+    scheme_name = serializers.CharField()
 
 
 class AppliedSerializer(serializers.Serializer[Any]):
@@ -265,6 +267,8 @@ class CreditNoteLineSerializer(serializers.Serializer[Any]):
     hsn_code = serializers.CharField(source="invoice_line.hsn_code")
     unit_code = serializers.CharField(source="invoice_line.unit_code")
     gst_rate = rate(source="invoice_line.gst_rate")
+    is_free = serializers.BooleanField(source="invoice_line.is_free")
+    scheme_name = serializers.CharField(source="invoice_line.scheme_name")
     quantity = qty()
     disposition = serializers.ChoiceField(
         choices=CreditNoteLine.Disposition.choices, allow_blank=True
