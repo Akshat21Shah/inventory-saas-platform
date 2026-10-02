@@ -30,6 +30,8 @@ class ErrorCode(StrEnum):
     OVER_RECEIPT = "OVER_RECEIPT"  # more received than ordered, beyond the tolerance (ADR-053)
     WRONG_DELIVERY_CODE = "WRONG_DELIVERY_CODE"  # not the shipment's delivery code (ADR-057)
     DELIVERY_CODE_LOCKED = "DELIVERY_CODE_LOCKED"  # too many wrong codes for now (ADR-057)
+    ASSISTANT_RATE_LIMITED = "ASSISTANT_RATE_LIMITED"  # too many questions this hour (ADR-059)
+    ASSISTANT_NOT_AVAILABLE = "ASSISTANT_NOT_AVAILABLE"  # no report the assistant may use
     # authentication & sessions
     INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
     RATE_LIMITED = "RATE_LIMITED"

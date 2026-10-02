@@ -1,5 +1,6 @@
 """Product embeddings in the background (ADR-058 item 3): when a product's text changes, and
-nightly for anything missed, for distributors with the module on (thin: calls the services)."""
+nightly for anything missed, for distributors with the module on; the assistant's answers
+(ADR-059). Thin: they call the services."""
 
 from celery import shared_task
 
@@ -33,3 +34,13 @@ def embed_all() -> int:
     for tenant_id in tenants:
         embed_products.apply_async(kwargs={"tenant_id": str(tenant_id)})
     return len(tenants)
+
+
+@shared_task(name="ai.answer_question", base=TenantTask)
+def answer_question(*, tenant_id: str, question_id: str) -> str:
+    """Answer one waiting question (the provider calls have their own timeout and retry)."""
+    from uuid import UUID
+
+    from apps.ai.assistant import service
+
+    return str(service.answer(UUID(question_id)).status)

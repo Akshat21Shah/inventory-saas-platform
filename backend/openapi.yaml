@@ -110,6 +110,107 @@ paths:
               schema:
                 $ref: '#/components/schemas/Announcement'
           description: ''
+  /api/v1/assistant/questions/:
+    get:
+      operationId: assistant_questions_list
+      description: |-
+        The person's own questions, newest first; POST asks a new one (answered in the
+        background: check the question until it isn't PENDING).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssistantQuestionList'
+          description: ''
+    post:
+      operationId: assistant_ask
+      description: |-
+        The person's own questions, newest first; POST asks a new one (answered in the
+        background: check the question until it isn't PENDING).
+      tags:
+      - assistant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssistantQuestion'
+          description: ''
+  /api/v1/assistant/questions/{question_id}/:
+    get:
+      operationId: assistant_question
+      parameters:
+      - in: path
+        name: question_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssistantQuestion'
+          description: ''
+  /api/v1/assistant/tools/:
+    get:
+      operationId: assistant_tools
+      description: What the assistant may look at for this person (their reports;
+        ADR-059).
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssistantTools'
+          description: ''
   /api/v1/audit-logs/:
     get:
       operationId: audit_logs_list
@@ -11887,6 +11988,15 @@ components:
       - rule_name
       - slab_min_qty
       - value
+    AskRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          minLength: 3
+          maxLength: 500
+      required:
+      - question
     AssetUploadRequest:
       type: object
       properties:
@@ -11895,6 +12005,76 @@ components:
           format: binary
       required:
       - file
+    AssistantQuestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        question:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AssistantStatusEnum'
+          readOnly: true
+        answer:
+          type: string
+          readOnly: true
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        answered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - answer
+      - answered_at
+      - created_at
+      - id
+      - question
+      - status
+      - tools
+    AssistantStatusEnum:
+      enum:
+      - PENDING
+      - ANSWERED
+      - FAILED
+      - LIMITED
+      type: string
+      description: |-
+        * `PENDING` - Being answered
+        * `ANSWERED` - Answered
+        * `FAILED` - Couldn't answer
+        * `LIMITED` - Monthly allowance used up
+    AssistantTool:
+      type: object
+      properties:
+        name:
+          type: string
+        report:
+          type: string
+      required:
+      - name
+      - report
+    AssistantTools:
+      type: object
+      properties:
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssistantTool'
+      required:
+      - tools
     AudienceTypeEnum:
       enum:
       - ALL
@@ -15198,6 +15378,72 @@ components:
       - failed
       - feature
       - units
+    FigureColumn:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ColumnKindEnum'
+      required:
+      - key
+      - kind
+      - label
+    Figures:
+      type: object
+      properties:
+        tool:
+          type: string
+        report:
+          type: string
+          description: The report the figures come from (its code).
+        title:
+          type: string
+        date_from:
+          type: string
+          format: date
+          nullable: true
+        date_to:
+          type: string
+          format: date
+          nullable: true
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/FigureColumn'
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        totals:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        count:
+          type: integer
+          description: Rows found; at most 20 are shown.
+        own_shops:
+          type: boolean
+          description: Only the asker's own shops.
+        notes:
+          type: array
+          items:
+            type: string
+      required:
+      - columns
+      - count
+      - date_from
+      - date_to
+      - notes
+      - own_shops
+      - report
+      - rows
+      - title
+      - tool
+      - totals
     Filter:
       type: object
       properties:
@@ -18669,6 +18915,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Announcement'
+    PaginatedAssistantQuestionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssistantQuestion'
     PaginatedAuditLogList:
       type: object
       required:
@@ -28377,6 +28642,24 @@ components:
       required:
       - access
       - access_expires_at
+    ToolCall:
+      type: object
+      properties:
+        name:
+          type: string
+        args:
+          type: object
+          additionalProperties: {}
+        ok:
+          type: boolean
+        error:
+          type: string
+        figures:
+          $ref: '#/components/schemas/Figures'
+      required:
+      - args
+      - name
+      - ok
     TopProduct:
       type: object
       properties:

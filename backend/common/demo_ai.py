@@ -1,7 +1,8 @@
 """AI demo data (ADR-058, 9d.5). DEBUG only (called from the seed commands).
 
 - Demo (``seed_demo_ai``): Sharma Distributors gets the ``ai`` module and its products' meanings
-  (the local mock), so a shop's misspelt search finds products.
+  (the local mock), so a shop's misspelt search finds products, and its owner three answered
+  questions to the data assistant (ADR-059).
 - Volume (``seed_volume_ai``): the ``ai`` module and product meanings for a test distributor, and a
   busy month of shop searches, all within the current month, so the usage pages are timed at their
   worst (the month's end).
@@ -21,6 +22,11 @@ from apps.platform.selectors import invalidate_tenant_features
 from common.tenancy import tenant_context
 
 DEMO_WITH_AI = ("sharma",)
+DEMO_QUESTIONS = (
+    "Which shops haven't ordered in 30 days?",
+    "What are our top 5 products this month?",
+    "Who owes us the most money?",
+)
 
 
 def _module_on(tenant: Tenant) -> None:
@@ -36,7 +42,21 @@ def seed_demo_ai(tenant: Tenant) -> bool:
         return False
     _module_on(tenant)
     ai.refresh_embeddings()
+    _demo_questions(tenant)
     return True
+
+
+def _demo_questions(tenant: Tenant) -> None:
+    from apps.accounts.models import User
+    from apps.ai.assistant import service
+    from apps.ai.models import AssistantQuestion
+
+    owner = User.objects.filter(email=f"owner@{tenant.slug}.example.com").first()
+    if owner is None or AssistantQuestion.objects.filter(user=owner).exists():
+        return
+    for question in DEMO_QUESTIONS:
+        asked = AssistantQuestion.objects.create(user=owner, question=question)
+        service.answer(asked.pk)
 
 
 def seed_volume_ai(tenant: Tenant, *, searches: int = 60_000, seed: int = 13) -> int | None:

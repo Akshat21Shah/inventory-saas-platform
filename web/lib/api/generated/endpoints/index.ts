@@ -1,3 +1,4 @@
+export * from './assistant/assistant';
 export * from './auth/auth';
 export * from './billing/billing';
 export * from './catalog/catalog';

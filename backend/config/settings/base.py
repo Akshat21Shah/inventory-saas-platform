@@ -206,6 +206,10 @@ CELERY_BEAT_SCHEDULE = {
 # ADR-058: which embedding provider apps.ai uses; only the local mock exists until a real one is
 # chosen and verified (pre-production item 38).
 AI_EMBEDDINGS_PROVIDER = env("AI_EMBEDDINGS_PROVIDER", default="mock")
+# The data assistant (ADR-059): mock unless "anthropic" (after pre-production item 40).
+AI_ASSISTANT_PROVIDER = env("AI_ASSISTANT_PROVIDER", default="mock")
+AI_ASSISTANT_MODEL = env("AI_ASSISTANT_MODEL", default="claude-sonnet-5")
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 
 CHANNEL_LAYERS = {
     "default": {
@@ -244,6 +248,7 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
         "AiFeatureEnum": "apps.ai.models.AiUsage.Feature",
+        "AssistantStatusEnum": "apps.ai.models.AssistantQuestion.Status",
         "SearchHitTypeEnum": "apps.search.api.serializers.HIT_TYPES",
         "AbcClassEnum": "apps.planning.models.AbcClass",
         "MovementClassEnum": "apps.planning.models.MovementClass",
@@ -329,6 +334,8 @@ SPECTACULAR_SETTINGS = {
         "CheckoutPurposeEnum": "apps.payments.models.PaymentIntent.Purpose",
         "ReportFormatEnum": "apps.reports.models.ReportRun.Format",
         "ReportGroupEnum": "apps.reports.registry.GROUP_CHOICES",
+        # A report column's kind, also on the assistant's figures (ADR-059).
+        "ColumnKindEnum": ["text", "money", "qty", "int", "date", "percent"],
         "LoginStatusEnum": [
             "authenticated",
             "handoff",

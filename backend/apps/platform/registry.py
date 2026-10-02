@@ -412,6 +412,10 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
     _platform("platform.ai_timeout_seconds", Group.AI, SettingType.INT, 5,
               "How long the app waits for the AI provider before working without it.",
               min_value=1, max_value=60),
+    _platform("platform.ai_assistant_timeout_seconds", Group.AI, SettingType.INT, 30,
+              "How long the data assistant waits for the AI provider on each step before "
+              "giving up on the question (ADR-059).",
+              min_value=5, max_value=120),
     _platform("platform.ai_search_min_similarity_percent", Group.AI, SettingType.INT, 35,
               "How close in meaning a product must be to what a shop typed to be shown after the "
               "keyword matches.",
