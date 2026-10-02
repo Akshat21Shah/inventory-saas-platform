@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 
+import { PlatformAiUsage } from "@/components/ai/usage";
 import { DailyChart } from "@/components/dashboard/daily-chart";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ErrorState } from "@/components/shared/error-state";
@@ -258,6 +259,7 @@ function Health({ data }: { data: Dashboard }) {
           </Button>
         ) : null}
       </Section>
+      <PlatformAiUsage />
     </div>
   );
 }
