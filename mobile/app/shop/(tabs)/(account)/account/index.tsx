@@ -1,98 +1,78 @@
 /**
- * Account (the first part of 11b.8): the shop, its distributor, the language, signing out and the
- * app's version. Message preferences, "Privacy and data", "Suggest a better word" and switching
- * distributor come with 11b.8.
+ * My account (the web's /shop/account): what the shop owes and paying it, then the money pages,
+ * its returns and its profile, and signing out (owner, checkpoint review item 5). Messages,
+ * addresses, WhatsApp, privacy, help and switching distributor join with 11b.8.
  */
 import Feather from "@expo/vector-icons/Feather";
-import { useState } from "react";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { Link } from "expo-router";
+import type { ComponentProps } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { confirm } from "@/components/shared/confirm";
+import { ErrorState, Skeleton } from "@/components/shared/states";
+import { AccountMoney } from "@/components/shop/money";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
-import { useErrorText } from "@/lib/api/error-text";
-import { authMeUpdate } from "@/lib/api/generated/endpoints/auth/auth";
+import { useShopAccount } from "@/lib/api/generated/endpoints/shop/shop";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { APP_VERSION, config } from "@/lib/config";
 import { useTranslations } from "@/lib/i18n/translations";
-import { space, TOUCH, useTheme } from "@/lib/theme/theme";
+import { space, useTheme } from "@/lib/theme/theme";
+
+type Icon = ComponentProps<typeof Feather>["name"];
 
 export default function AccountTab() {
-  const t = useTranslations("account");
+  const t = useTranslations("shop.money");
+  const tr = useTranslations("shop.returns");
   const ta = useTranslations("app.account");
   const auth = useTranslations("auth");
   const common = useTranslations("common");
-  const { me, branding, reload, signOut } = useAuth();
-  const { message } = useErrorText();
+  const { signOut } = useAuth();
   const { colors, radius } = useTheme();
-  const [saving, setSaving] = useState<string | null>(null);
-  const languages = me?.languages ?? [];
-  const choose = async (code: string) => {
-    setSaving(code);
-    try {
-      await authMeUpdate({ preferred_language: code });
-      await reload();
-    } catch (error) {
-      Alert.alert(message(error));
-    } finally {
-      setSaving(null);
-    }
-  };
+  const query = useShopAccount();
+  const account = query.data?.data;
+  const menu: { href: string; label: string; icon: Icon }[] = [
+    { href: "/shop/invoices", label: t("bills"), icon: "file-text" },
+    { href: "/shop/statement", label: t("statement"), icon: "book-open" },
+    { href: "/shop/payments", label: t("payments"), icon: "credit-card" },
+    { href: "/shop/returns", label: tr("heading"), icon: "rotate-ccw" },
+    { href: "/shop/account/profile", label: t("profile"), icon: "user" },
+  ];
   return (
-    <Screen>
+    <Screen refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>
       <Text size="2xl" weight="bold">
         {t("title")}
       </Text>
-      <Card>
-        <Text size="lg" weight="semibold">
-          {me?.retailer?.shop_name ?? ""}
-        </Text>
-        {me?.retailer?.code ? (
-          <Text tone="muted" size="sm">
-            {ta("shopCode", { code: me.retailer.code })}
-          </Text>
-        ) : null}
-        {branding ? (
-          <Text size="sm">{ta("distributor", { name: branding.display_name })}</Text>
-        ) : null}
-        {me?.phone ? (
-          <Text tone="muted" size="sm">
-            {me.phone}
-          </Text>
-        ) : null}
-      </Card>
-      {languages.length > 1 ? (
-        <Card>
-          <Text weight="semibold">{t("language")}</Text>
-          <View accessibilityRole="radiogroup" style={styles.gap}>
-            {languages.map((language) => {
-              const on = me?.language === language.code;
-              return (
-                <Pressable
-                  key={language.code}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on, busy: saving === language.code }}
-                  disabled={saving !== null}
-                  onPress={() => void choose(language.code)}
-                  style={[
-                    styles.option,
-                    { borderColor: on ? colors.primary : colors.border, borderRadius: radius },
-                  ]}
-                >
-                  <Feather
-                    name={on ? "check-circle" : "circle"}
-                    size={18}
-                    color={on ? colors.primary : colors.mutedForeground}
-                  />
-                  <Text weight={on ? "semibold" : "normal"}>{language.native}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Card>
+      {query.isLoading ? (
+        <Skeleton height={140} />
+      ) : query.error ? (
+        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      ) : account ? (
+        <AccountMoney account={account} />
       ) : null}
+      <View
+        accessibilityLabel={t("menu")}
+        style={[styles.menu, { borderColor: colors.border, borderRadius: radius + 4 }]}
+      >
+        {menu.map((item, index) => (
+          <Link key={item.href} href={item.href} asChild>
+            <Pressable
+              accessibilityRole="link"
+              style={StyleSheet.flatten([
+                styles.item,
+                index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+              ])}
+            >
+              <Feather name={item.icon} size={20} color={colors.mutedForeground} />
+              <Text weight="medium" style={styles.flex}>
+                {item.label}
+              </Text>
+              <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+            </Pressable>
+          </Link>
+        ))}
+      </View>
       <Button
         variant="outline"
         label={auth("signOut")}
@@ -114,14 +94,14 @@ export default function AccountTab() {
 }
 
 const styles = StyleSheet.create({
-  gap: { gap: space[2] },
-  option: {
-    minHeight: TOUCH,
-    borderWidth: 1,
-    paddingHorizontal: space[3],
+  flex: { flex: 1 },
+  menu: { borderWidth: 1 },
+  item: {
+    minHeight: 56,
+    paddingHorizontal: space[4],
     flexDirection: "row",
     alignItems: "center",
-    gap: space[2],
+    gap: space[3],
   },
   centre: { textAlign: "center" },
 });

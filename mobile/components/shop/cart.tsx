@@ -88,7 +88,7 @@ function Notice({ tone, children }: { tone: "warning" | "info" | "danger"; child
 const lineKey = (line: Pick<QuoteLine, "product_id" | "is_free">) =>
   `${line.product_id}${line.is_free ? ":free" : ""}`;
 
-function FreeLineLabel({ scheme }: { scheme: string }) {
+export function FreeLineLabel({ scheme }: { scheme: string }) {
   const t = useTranslations("shop.free");
   const { colors } = useTheme();
   return (

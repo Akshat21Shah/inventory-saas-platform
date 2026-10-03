@@ -60,11 +60,11 @@ export default function ProductScreen() {
   return (
     <>
       {query.isLoading ? (
-        <Screen edges={["bottom"]}>
+        <Screen>
           <ListSkeleton rows={3} />
         </Screen>
       ) : !product ? (
-        <Screen edges={["bottom"]}>
+        <Screen>
           <EmptyState
             icon="package"
             title={t("goneTitle")}
@@ -73,11 +73,7 @@ export default function ProductScreen() {
           />
         </Screen>
       ) : (
-        <Screen
-          edges={["bottom"]}
-          refreshing={query.isRefetching}
-          onRefresh={() => void query.refetch()}
-        >
+        <Screen refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>
           <OnHoldNotice />
           {product.images.length ? (
             <ScrollView

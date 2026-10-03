@@ -6,6 +6,7 @@ import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { DateText } from "@/components/shared/values";
 import { CategoryTiles } from "@/components/shop/catalog";
+import { OwedCard } from "@/components/shop/money";
 import { OrderRowLink } from "@/components/shop/order-row";
 import { OnHoldNotice, ProductCard } from "@/components/shop/product";
 import { SearchEntry } from "@/components/shop/search-box";
@@ -164,6 +165,7 @@ export default function Home() {
       </View>
       <Announcements />
       <OnHoldNotice />
+      <OwedCard />
       <SearchEntry />
       <RepeatLastOrder />
       <RecentOrders />

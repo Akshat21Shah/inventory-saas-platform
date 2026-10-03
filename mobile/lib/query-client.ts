@@ -1,4 +1,5 @@
-import { QueryClient } from "@tanstack/react-query";
+import { focusManager, QueryClient } from "@tanstack/react-query";
+import { AppState } from "react-native";
 
 import { ApiError } from "@/lib/shared/errors";
 
@@ -13,4 +14,13 @@ export function makeQueryClient(): QueryClient {
       mutations: { retry: false },
     },
   });
+}
+
+/** Back in the foreground (from a payment tab, WhatsApp or the home screen), screens refresh what
+ * they show, as a browser tab does when it gets the focus again. Returns the unsubscribe. */
+export function followAppState(): () => void {
+  const subscription = AppState.addEventListener("change", (state) =>
+    focusManager.setFocused(state === "active"),
+  );
+  return () => subscription.remove();
 }

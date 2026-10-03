@@ -323,7 +323,7 @@
   2. The owner's answers (§10.2q) folded into ADR-061, the plan and the backlog — **done**
   3. Backend for the app (11b.2) — **done**:
      - **App sign-in:** `client: "app"` on `auth/retailer/otp/verify/` and `auth/retailer/choose-account/` returns the session in the body (access and refresh tokens, no cookie, no browser handoff). The refresh and sign-out endpoints already took the refresh token in the body. Account choices now carry `tenant_slug`, so the app can pick the account a link is for. The web's flow is unchanged.
-     - **Paying in the browser:** `POST auth/app/web-handoff/` (shops only, not in support sessions) returns a shop page's address, signed in by a handoff code in the URL fragment: single use, 60 seconds, for the shop's own distributor. Only `/shop` pages are allowed. The browser session it opens ends after an hour: a session end given to a shop's sliding session is now kept (`issue_tokens`).
+     - **Paying in the browser:** `POST auth/app/web-handoff/` (shops only, not in support sessions) returns a shop page's address, signed in by a handoff code in the URL fragment: single use, 60 seconds, for the shop's own distributor. Only `/shop` pages are allowed. The browser session it opens ends after an hour: a session end given to a shop's sliding session is now kept (`issue_tokens`). *Replaced after the checkpoint review (item 7) by a payment-only page; see entry 9.*
      - **App settings:** `GET app/config/` (public) with ⚙ `platform.app_min_version` (default 0.0.0), ⚙ `platform.app_latest_version` and ⚙ `platform.privacy_policy_url`, in a new "Android app" group on the super admin's settings page. `AppVersionMiddleware`: a request carrying `X-App-Version` below the minimum (or unreadable) gets `426 APP_UPDATE_REQUIRED` in the app's language. The settings endpoint is always answered, and the web never sends the header.
      - **The distributor's contact:** `GET shop/distributor/` (name, phone, email, as printed on bills) for the app's "Privacy and data" page.
      - **App Links:** `/.well-known/assetlinks.json` on every host, from `ANDROID_APP_ID` and `ANDROID_APP_CERT_SHA256` (`.env.example`); 404 until configured.
@@ -423,7 +423,23 @@
      - **The quantity box** was stretching across product cards once a product was in the cart, which hid the "Last time" note. It's now the web's 64 wide; in the cart the stepper sits on the right, as on the web.
      - **Language on start:** a slow read of the saved language could undo the person's language that had just come from the server. A newer choice now wins (unit test).
      - **Tests:** Jest no longer waits 5 minutes after the tests (the test query cache's timer); 36 unit and screen tests.
-  10. Bills, statement, payments, returns (11b.7) — next
+     - **Paying in the browser covers the payment page only (item 7):**
+       - The app's link is for one open checkout: `POST shop/payments/checkout/{id}/browser/` gives `/pay/{id}` with a one-time code, working once within a minute.
+       - The page has no shop menus or session. Its token works only on that checkout's two pay endpoints, on its distributor's address. It ends when the checkout is paid or expires (30 minutes), or when the shop's login stops.
+       - The general web handoff is removed. Details in ADR-061 item 9.
+       - Tests: 7 backend (single use, the minute, never a shop session as `Pay` or `Bearer`, the final read then the end, expiry, a new link ending the old page, another distributor's address, another shop, staff) and 4 web.
+       - The page is in the responsive check through `manage.py e2e_pay_link`, a one-time link per screen width.
+  10. Bills, statement, payments, returns (11b.7) — **in progress**:
+     - **Account** as on the web: what the shop owes (late in red, its credit, what it can still order), Pay online (everything owed, or an amount), the notices about overdue bills, then My bills, Statement, My payments, Returns, Your profile, sign out and the app's version. The shop, its distributor and the language move to Your profile.
+     - **Home** gets the web's "You owe" card.
+     - **My bills:** To pay / Overdue / Paid, with Newer and Older as on the web (the web's `useCursor`, now synced).
+     - **A bill:** what is left to pay and by when, Pay, the PDF, the items with what was returned, Return items, its returns (withdraw while waiting), totals and credit notes. Bills on an order open the bill, as on the web.
+     - **Statement** with Android's date picker; **My payments** with receipts; **Returns** (owner's addition), each opening its bill.
+     - **Paying:** the checkout screen follows the server's status every 3 seconds while open. "Pay now" opens the payment-only page in a Chrome Custom Tab inside the app's task, and the status is read again on return. Screens also refresh when the app comes back to the foreground.
+     - **Documents:** Open (the phone's PDF viewer) and Share (downloads the PDF and opens Android's share sheet).
+     - Native modules added: expo-web-browser, expo-sharing, expo-file-system, @react-native-community/datetimepicker.
+     - Pages inside the tabs no longer add the phone's bottom inset (the order and product pages had it from before they moved into the tabs).
+     - Tests: 6 more (the checkout's Custom Tab and the server's answer, paid with a receipt, expired; starting a checkout with an Idempotency-Key, Pay only when online payments are on, the "You owe" card).
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**

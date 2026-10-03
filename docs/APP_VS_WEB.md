@@ -34,16 +34,20 @@ Checked on the emulator after the fixes:
 | Sign-in | The distributor's name and colours (from the web address); language in a drop-down | "Shop" and the app's colours; the three languages side by side | The app can't know the distributor before sign-in, so the distributor's colours appear after it. The language is the first choice on a new phone, and all three side by side let someone who can't read English find theirs in one tap |
 | Lists | — | Pull down to refresh | Android's usual way to reload; "Show more" works as on the web |
 | Buttons and steppers | At least 44 px tall | At least 48 dp | Android's touch-target size |
+| Paying online (11b.7) | "Pay now" opens the gateway's checkout on the same page | "Pay now" opens that checkout's payment page in a Chrome Custom Tab, signed in for that payment only; back in the app, the status is read from the server | UPI apps open from a browser, not from inside an app (owner's answer 4; checkpoint item 7) |
+| Documents (11b.7) | "Download" | "Open" (the phone's PDF viewer) and "Share" (WhatsApp, email, Drive) | Sharing is a native addition |
+| Return items (11b.7) | A dialog on the bill | A full screen from the bill, with the same fields, words and limits | A form with a number for each item is easier to fill on a phone as its own screen |
+| Statement dates (11b.7) | The browser's date inputs | Android's date picker | The phone's own way to pick a date |
+| Returns list (11b.7) | Returns show on each bill | Also a Returns list in Account, each opening its bill | The owner asked for it (checkpoint item 5); the web gets it in 11b.8 |
 
 ## Not built yet (the next steps match the web screens captured for this comparison)
 
+Built in 11b.7 and matching the web: the "What you owe" card on home; Account's money summary with Pay online; My bills, a bill (paying it, items, returns, credit notes), Statement, My payments and a checkout; bills on an order open the bill.
+
 | Web | Step |
 | --- | --- |
-| Home: "What you owe" card | 11b.7 |
-| Account: "What you owe", "Pay online", My bills, Statement, My payments | 11b.7 |
-| Bill links on an order (they open as PDFs until then) | 11b.7 |
 | Home: WhatsApp prompt | 11b.8 |
 | The bell with the unread count, Notifications (All / Unread, mark all as read, a tap opens the order, bill or payment) | 11b.8 |
-| Account: Messages (per event and channel), Your profile | 11b.8 |
+| Account: Messages (per event and channel); the name on Your profile | 11b.8 |
 
 The owner asked for these Account entries in the app beyond what the web's Account has today: return requests, saved delivery addresses, WhatsApp consent, privacy and data, help and contacting the distributor, and the app version. The web gets the same Account entries in 11b.8, so both stay the same, except the app version, which only the app has.

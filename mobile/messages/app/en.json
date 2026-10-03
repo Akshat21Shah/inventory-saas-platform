@@ -16,5 +16,12 @@
   },
   "search": {
     "clear": "Clear search"
+  },
+  "document": {
+    "share": "Share"
+  },
+  "returns": {
+    "none": "No returns yet",
+    "noneBody": "To return items, open the bill and tap Return items."
   }
 }

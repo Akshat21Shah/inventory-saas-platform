@@ -12,7 +12,7 @@ import { AuthProvider, useAuth } from "@/lib/auth/auth-provider";
 import { APP_VERSION, config } from "@/lib/config";
 import { loadLanguage } from "@/lib/i18n/language";
 import { I18nProvider } from "@/lib/i18n/provider";
-import { makeQueryClient } from "@/lib/query-client";
+import { followAppState, makeQueryClient } from "@/lib/query-client";
 import { ThemeProvider } from "@/lib/theme/theme";
 
 // Crash and error reports (ADR-061 item 13): only with a DSN; no phone numbers or tokens.
@@ -36,6 +36,7 @@ function RootLayout() {
   const [queryClient] = useState(makeQueryClient);
   useEffect(() => {
     void loadLanguage(); // the saved language replaces the phone's as soon as it is read
+    return followAppState();
   }, []);
   return (
     <SafeAreaProvider>

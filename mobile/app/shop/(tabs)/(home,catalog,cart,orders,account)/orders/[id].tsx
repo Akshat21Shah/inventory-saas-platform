@@ -1,8 +1,8 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useQueryClient } from "@tanstack/react-query";
-import { router, useLocalSearchParams } from "expo-router";
+import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 
 import { confirm } from "@/components/shared/confirm";
 import { DocumentButton } from "@/components/shared/document-button";
@@ -25,7 +25,6 @@ import {
   shopOrderLineCancelBackorder,
   shopOrderRepeat,
   shopOrdersConfirmation,
-  shopInvoicesPdf,
   useShopOrder,
 } from "@/lib/api/generated/endpoints/shop/shop";
 import type { OrderLine, ShopFulfilment, ShopOrder } from "@/lib/api/generated/model";
@@ -263,20 +262,26 @@ function Shipment({ order, shipment }: { order: ShopOrder; shipment: ShopFulfilm
 
 function Documents({ order }: { order: ShopOrder }) {
   const t = useTranslations("shop.orders");
+  const { colors } = useTheme();
   if (!order.invoices.length && !order.has_confirmation) return null;
   return (
     <Section title={t("documents")}>
       {order.invoices.map((bill) => (
-        // The bill's own screen comes with 11b.7; until then it opens the bill itself.
-        <DocumentButton
-          key={bill.id}
-          label={`${bill.number} · ${formatMoney(bill.grand_total)}`}
-          fetchLink={() => shopInvoicesPdf(bill.id)}
-        />
+        // The bill's page, as on the web (in Account, where the web's menu marks it too).
+        <Link key={bill.id} href={`/shop/invoices/${bill.id}`} asChild>
+          <Pressable accessibilityRole="link" style={styles.billRow}>
+            <Text weight="medium" style={styles.flex}>
+              {bill.number}
+            </Text>
+            <MoneyText value={bill.grand_total} />
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        </Link>
       ))}
       {order.has_confirmation ? (
         <DocumentButton
           label={t("confirmation")}
+          fileName={`${order.number}-confirmation`}
           fetchLink={() => shopOrdersConfirmation(order.id)}
         />
       ) : null}
@@ -299,14 +304,14 @@ export default function OrderScreen() {
 
   if (query.isLoading) {
     return (
-      <Screen edges={["bottom"]}>
+      <Screen>
         <ListSkeleton />
       </Screen>
     );
   }
   if (query.error || !order) {
     return (
-      <Screen edges={["bottom"]}>
+      <Screen>
         <EmptyState
           icon="clipboard"
           title={t("goneTitle")}
@@ -332,11 +337,7 @@ export default function OrderScreen() {
   };
   return (
     <>
-      <Screen
-        edges={["bottom"]}
-        refreshing={query.isRefetching}
-        onRefresh={() => void query.refetch()}
-      >
+      <Screen refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>
         {placed === "1" ? (
           <Banner tone="success">
             <Feather name="check-circle" size={20} color={colors.successStrong} />
@@ -437,6 +438,7 @@ export default function OrderScreen() {
 }
 
 const styles = StyleSheet.create({
+  billRow: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: space[2] },
   flex: { flex: 1 },
   section: { gap: space[2] },
   gapXs: { gap: space[1] },

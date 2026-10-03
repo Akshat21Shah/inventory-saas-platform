@@ -27,6 +27,7 @@ const MODULES = {
   "lib/api/errors.ts": "lib/shared/errors.ts",
   "lib/theme/palette.ts": "lib/shared/palette.ts",
   "lib/i18n/config.ts": "lib/shared/i18n-config.ts",
+  "lib/api/pagination.ts": "lib/shared/pagination.ts",
 };
 // JSON can't carry the "synced" header; it is copied as it is.
 const DATA = { "lib/i18n/languages.json": "lib/shared/languages.json" };
