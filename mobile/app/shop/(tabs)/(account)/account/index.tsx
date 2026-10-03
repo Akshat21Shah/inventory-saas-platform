@@ -18,7 +18,9 @@ import { Text } from "@/components/ui/text";
 import { useShopAccount } from "@/lib/api/generated/endpoints/shop/shop";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { APP_VERSION, config } from "@/lib/config";
+import { currentLanguage } from "@/lib/i18n/language";
 import { useTranslations } from "@/lib/i18n/translations";
+import { defaultLocale } from "@/lib/shared/i18n-config";
 import { space, useTheme } from "@/lib/theme/theme";
 
 type Icon = ComponentProps<typeof Feather>["name"];
@@ -28,6 +30,7 @@ export default function AccountTab() {
   const tr = useTranslations("shop.returns");
   const ta = useTranslations("app.account");
   const tc = useTranslations("shop.account");
+  const tw = useTranslations("suggestWord");
   const auth = useTranslations("auth");
   const common = useTranslations("common");
   const { signOut } = useAuth();
@@ -44,6 +47,10 @@ export default function AccountTab() {
     { href: "/shop/account/addresses", label: tc("addresses.title"), icon: "map-pin" },
     { href: "/shop/account/help", label: tc("help.title"), icon: "life-buoy" },
     { href: "/shop/account/privacy", label: tc("privacy.title"), icon: "shield" },
+    // As on the web, only in a translated language (English is the source).
+    ...(currentLanguage() !== defaultLocale
+      ? [{ href: "/shop/account/suggest", label: tw("link"), icon: "edit-3" as Icon }]
+      : []),
   ];
   return (
     <Screen refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>

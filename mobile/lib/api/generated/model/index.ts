@@ -191,6 +191,8 @@ export * from './staffLoginInputRequest';
 export * from './state';
 export * from './statement';
 export * from './statementLine';
+export * from './suggestionCreated';
+export * from './suggestionCreateRequest';
 export * from './supplyTypeEnum';
 export * from './tenantChoice';
 export * from './tokenResponse';

@@ -39,6 +39,8 @@ Checked on the emulator after the fixes:
 | Return items (11b.7) | A dialog on the bill | A full screen from the bill, with the same fields, words and limits | A form with a number for each item is easier to fill on a phone as its own screen |
 | Statement dates (11b.7) | The browser's date inputs | Android's date picker | The phone's own way to pick a date |
 | Push (11b.8) | — | App notifications in three Android channels; the sound while the app is open, with a switch in Messages | Native addition (owner's items 3 and 4) |
+| Suggest a better word (11b.8) | A link on every shop page in Hindi and Marathi, filled with the words selected on the page | An entry in Account in Hindi and Marathi; it sends the screen the shop was on before Account, and the shop types the words | A phone has no text selection across a screen and no page footer; the reviewers still get the screen |
+| Your profile (11b.8) | Name and language saved together with Save | The name with Save; the language applies at once | Choosing a language on a phone should show it straight away |
 | The WhatsApp question (11b.8) | A dialog on the page | Android's own dialog, the same words and buttons | The phone's way to ask |
 | Money pages' tab (11b.7) | Bills, statement, payments and returns highlight no bottom tab (the web marks Account only under `/shop/account`) | They open in the Account tab | Each app screen belongs to a tab's stack; Account is where these pages are opened from |
 
@@ -48,9 +50,8 @@ Built in 11b.7 and matching the web: the "What you owe" card on home; Account's 
 
 | Web | Step |
 | --- | --- |
-| The name on Your profile | 11b.8 |
-| "Suggest a better word" in Hindi and Marathi | 11b.8 |
+| — | Everything the web's shop has is in the app since 11b.8 |
 
-Built in 11b.8 and matching the web: the bell on every page and Notifications; Messages; the WhatsApp question on home.
+Built in 11b.8 and matching the web: the bell on every page and Notifications; Messages; the WhatsApp question on home; the name on Your profile.
 
 The owner asked for more Account entries (checkpoint item 5): Returns, Delivery addresses, Help, Privacy and data. The web's Account has them too since 11b.8, with the same words. Only the app has the version, "Shop with another distributor", the sound switch and the phone's notification settings.

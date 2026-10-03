@@ -453,7 +453,10 @@
        - The WhatsApp question once on home, as the web, in Android's own dialog.
        - Delivery addresses, Help (call, WhatsApp or email the distributor), Privacy and data (the policy, what the app keeps on the phone, asking the distributor to delete the shop's data), and Shop with another distributor.
      - **The web's Account gets the same entries,** so both stay alike: Returns (`/shop/returns`), Delivery addresses, Help, Privacy and data. They're in the responsive check, and their texts are shared with the app.
-     - A `/shop/login` link opens the app's sign-in or home.
+     - Links from WhatsApp, email or a push open each page in its tab (an order in Orders) through `app/+native-intent.tsx`; a `/shop/login` link opens the app's sign-in or home.
+     - Your profile has the name with Save. "Suggest a better word" sits in Account in Hindi and Marathi and sends the screen the shop was on before. The app's API client now includes the `texts` tag, which holds only that endpoint.
+     - Emulator test `e2e/notifications.mjs`: the bell's count, the inbox, and a tapped message opening its page with the count one lower.
+     - The APK file is 38.4 MB (+0.7 MB for expo-notifications).
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**
