@@ -13,7 +13,7 @@ from common import text_sheet
 
 
 class Command(BaseCommand):
-    help = "Write every screen, server and notification text to a spreadsheet for translators."
+    help = "Write every screen, app, server and notification text to a spreadsheet for translators."
 
     def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--out", default="texts.xlsx", help="Where to write the sheet.")

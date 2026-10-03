@@ -1,12 +1,29 @@
 /** What the emulator tests share: adb, the screen's elements, taps and waits. */
 import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ADB = process.env.ADB ?? join(homedir(), "Library/Android/sdk/platform-tools/adb");
 export const PACKAGE = process.env.APP_ID ?? "com.example.shop";
+export const SCHEME = process.env.APP_SCHEME ?? "shopapp";
+
+const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 export const adb = (...args) => execFileSync(ADB, args, { encoding: "utf8" });
+
+/** A management command in the dev stack's backend (`manage.py …`); its output. */
+export const manage = (...args) =>
+  execFileSync(
+    "docker",
+    ["compose", "-f", join(REPO, "infra/docker-compose.yml"), "exec", "-T", "backend"].concat([
+      "python",
+      "manage.py",
+      ...args,
+    ]),
+    { encoding: "utf8" },
+  );
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Every element on screen, with its attributes. */
@@ -29,6 +46,7 @@ export function screen() {
       enabled: attr("enabled") !== "false",
       x: Math.round((x1 + x2) / 2),
       y: Math.round((y1 + y2) / 2),
+      bounds: { x1, y1, x2, y2 },
     };
   });
 }
@@ -57,6 +75,31 @@ export function tap(node) {
 
 export function keyboardShown() {
   return /mInputShown=true/.test(adb("shell", "dumpsys", "input_method"));
+}
+
+/** Open one of the app's screens by its link (`/shop/orders/…`), as a tapped link would. */
+export function openLink(path) {
+  adb(
+    "shell",
+    "am",
+    "start",
+    "-W",
+    "-a",
+    "android.intent.action.VIEW",
+    "-d",
+    `${SCHEME}:/${path}`,
+    PACKAGE,
+  );
+}
+
+/** The screen's density: pixels per dp. */
+export function pixelsPerDp() {
+  const found = /(\d+)\s*$/.exec(adb("shell", "wm", "density").trim());
+  return Number(found?.[1] ?? 160) / 160;
+}
+
+export function saveScreenshot(file) {
+  writeFileSync(file, execFileSync(ADB, ["exec-out", "screencap", "-p"]));
 }
 
 export function startApp() {

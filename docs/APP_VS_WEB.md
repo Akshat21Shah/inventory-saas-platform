@@ -19,6 +19,8 @@ The shop web app is the reference for layout, navigation and behaviour. The Andr
 | Hindi and Marathi | Headings in Noto Sans Devanagari at medium weight | Regular weight on phones whose own fonts have no medium Devanagari; short labels could lose their last word | The same Noto Sans Devanagari Medium, bundled (ADR-061 item 12); every label shows in full |
 | Product cards and the cart | The quantity box is 64 px wide; in the cart the stepper sits on the right | The box stretched across the card and hid the "Last time" note | 64 wide; on the right in the cart |
 | Search results | A tap on "Add" while typing closes the phone's keyboard | The keyboard stayed open and covered the bottom bar | "Add", "+" and "−" close the keyboard |
+| Notifications (11b.10) | "All" and "Unread" are at least 44 px tall on phones | 38 dp | 44 dp, found by the screen tour |
+| Messages (11b.10) | Switches: the brand colour when on, grey when off, a white knob | Android's own teal knob | Same as the web |
 
 Checked on the emulator after the fixes:
 - `mobile/e2e/three-taps.mjs`: search → Add → Cart → Place order, 3 taps (ORD-2026-000060).

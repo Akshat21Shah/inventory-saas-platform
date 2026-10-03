@@ -62,7 +62,9 @@ function SwitchRow({
         value={value}
         disabled={disabled}
         onValueChange={onChange}
-        trackColor={{ true: colors.primary }}
+        // The web's switch: the brand colour when on, the input grey when off, a white knob.
+        trackColor={{ true: colors.primary, false: colors.input }}
+        thumbColor={colors.background}
         accessible={false}
         importantForAccessibility="no"
       />

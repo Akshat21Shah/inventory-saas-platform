@@ -286,7 +286,9 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: backend
-          build-contexts: web_messages=web/messages
+          build-contexts: |
+            web_messages=web/messages
+            app_messages=mobile/messages/app
           file: infra/backend.Dockerfile
           target: dev
           tags: inventory-backend:ci
@@ -350,6 +352,115 @@ jobs:
           path: web/playwright-report
           retention-days: 7
 
+  mobile-emulator:
+    # The app on an Android emulator against the stack with the seed (ADR-061, 11b.10), one job
+    # per language: every screen in that language, and in English also signing in, three taps to
+    # an order, search, notifications and no connection (mobile/e2e/ci.sh). A 2 GB phone, like the
+    # budget phones the app is for. The emulator reaches the stack on this machine at 10.0.2.2, by
+    # name through nip.io, as a phone on the Wi-Fi does after "make lan".
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [en, hi, mr]
+    name: mobile-emulator (${{ matrix.language }})
+    env:
+      COMPOSE: docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml
+      DOMAIN: 10-0-2-2.nip.io
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - run: npm ci
+        working-directory: mobile
+      - name: The app for the emulator (x86_64), talking to the stack
+        working-directory: mobile
+        env:
+          APP_API_URL: http://${{ env.DOMAIN }}:3000
+          APP_PLATFORM_DOMAIN: ${{ env.DOMAIN }}
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
+        run: |
+          npx expo prebuild --platform android --clean
+          cd android && ./gradlew assembleRelease -PreactNativeArchitectures=x86_64 --no-daemon
+      - uses: docker/setup-buildx-action@v4
+      - name: Backend image (dev target, as docker compose builds it)
+        uses: docker/build-push-action@v7
+        with:
+          context: backend
+          build-contexts: |
+            web_messages=web/messages
+            app_messages=mobile/messages/app
+          file: infra/backend.Dockerfile
+          target: dev
+          tags: inventory-backend:ci
+          load: true
+          cache-from: type=gha,scope=backend-dev
+      - name: Web image (production build)
+        uses: docker/build-push-action@v7
+        with:
+          context: web
+          file: infra/web.Dockerfile
+          target: prod
+          tags: inventory-web:ci
+          load: true
+          build-args: API_INTERNAL_URL=http://backend:8000
+      - name: Start the stack on the emulator's address
+        run: |
+          cp .env.example .env
+          sed -i "s/^PLATFORM_DOMAIN=.*/PLATFORM_DOMAIN=${DOMAIN}/" .env
+          $COMPOSE up -d
+      - name: Wait for the API and the web server
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://localhost:8000/health/ready \
+              && curl -fsS -o /dev/null -H "Host: ${DOMAIN}:3000" http://localhost:3000/login; then exit 0; fi
+            sleep 5
+          done
+          $COMPOSE ps
+          exit 1
+      - name: Load demo data
+        run: $COMPOSE exec -T backend python manage.py seed --no-photos
+      - name: Hardware acceleration for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Emulator tests
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ADB: adb
+          LANGUAGES: ${{ matrix.language }}
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          ram-size: 2048M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          script: bash mobile/e2e/ci.sh
+      - name: Screenshots of every screen in each language
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-screenshots-${{ matrix.language }}
+          path: mobile/e2e/screenshots
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Service logs
+        if: failure()
+        run: $COMPOSE logs --tail=200 backend worker web
+
   images:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -360,7 +471,9 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: backend
-          build-contexts: web_messages=web/messages
+          build-contexts: |
+            web_messages=web/messages
+            app_messages=mobile/messages/app
           file: infra/backend.Dockerfile
           target: prod
           tags: backend-prod

@@ -46,3 +46,4 @@ google-services.json
 
 # Test output
 coverage/
+e2e/screenshots/

@@ -154,6 +154,10 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 # The screens' texts (web/messages), for the translation sheet: the repository's copy, or the one
 # the image carries (infra/backend.Dockerfile copies it to /web_messages).
 WEB_MESSAGES_DIR = Path(env("WEB_MESSAGES_DIR", default=str(REPO_DIR / "web" / "messages")))
+# The Android app's own texts (mobile/messages/app), in the same translation sheet (ADR-061).
+APP_MESSAGES_DIR = Path(
+    env("APP_MESSAGES_DIR", default=str(REPO_DIR / "mobile" / "messages" / "app"))
+)
 TIME_ZONE = "UTC"
 DISPLAY_TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True

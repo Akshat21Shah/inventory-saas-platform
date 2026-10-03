@@ -116,7 +116,7 @@ api-client: ## Export the OpenAPI schema and regenerate web/lib/api/generated
 messages: ## Update and compile the server message catalogs (backend/locale; then translate what it lists)
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py messages
 
-texts-export: ## Every screen, server and notification text in one sheet for translators (texts.xlsx)
+texts-export: ## Every screen, app, server and notification text in one sheet for translators (texts.xlsx)
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py texts_export --out ../texts.xlsx
 
 texts-import: ## Check a translator's sheet: make texts-import SHEET=reviewed.xlsx [APPLY=1] (writes the files)
