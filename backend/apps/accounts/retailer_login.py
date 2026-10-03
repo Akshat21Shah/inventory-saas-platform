@@ -6,12 +6,15 @@
   like a wrong code, so nothing reveals whether a number is registered anywhere.
 - On the generic domain, after the code is verified, the phone's owner chooses among their
   distributors (ADR-015); the session then moves to that subdomain with a handoff code.
+- The Android app (``app=True``, ADR-061) signs in on the generic address and gets the session in
+  the response itself: there is no browser to hand it to.
 """
 
 import hashlib
 import secrets
 from contextlib import AbstractContextManager, nullcontext
 from datetime import timedelta
+from urllib.parse import urlencode
 from uuid import UUID
 
 from django.conf import settings
@@ -22,7 +25,6 @@ from django.utils.translation import gettext_lazy
 from apps.accounts import selectors
 from apps.accounts.models import LoginChallenge, OTPRequest, User
 from apps.accounts.services import (
-    Handoff,
     LoginOutcome,
     LoginStatus,
     TenantUnavailable,
@@ -39,7 +41,7 @@ from apps.platform.selectors import get_platform_setting, sms_name, tenant_by_sl
 from common import ratelimit
 from common.error_codes import ErrorCode
 from common.errors import DomainError
-from common.hosts import HostContext, HostKind
+from common.hosts import HostContext, HostKind, web_url
 from common.tenancy import tenant_context
 
 
@@ -139,8 +141,10 @@ def _check_code(phone: str, code: str, tenant: Tenant | None) -> None:
         raise OtpInvalid()
 
 
-def verify_otp(phone: str, code: str, host: HostContext, ip: str | None) -> LoginOutcome:
-    """Verify the code, then sign in (subdomain) or offer the distributor choice (generic)."""
+def verify_otp(
+    phone: str, code: str, host: HostContext, ip: str | None, *, app: bool = False
+) -> LoginOutcome:
+    """Verify the code, then sign in (subdomain, or the app) or offer the distributor choice."""
     ratelimit.hit(
         "otp-verify:ip", ip, get_platform_setting("platform.login_rate_per_ip_per_minute"), 60
     )
@@ -160,6 +164,8 @@ def verify_otp(phone: str, code: str, host: HostContext, ip: str | None) -> Logi
             raise OtpInvalid()
         if len(accounts) == 1:
             only = accounts[0]
+            if app:
+                return _authenticated(only.user, only.tenant.pk)
             return LoginOutcome(
                 status=LoginStatus.HANDOFF,
                 user=only.user,
@@ -182,8 +188,9 @@ def verify_otp(phone: str, code: str, host: HostContext, ip: str | None) -> Logi
 
 
 @transaction.atomic
-def choose_account(choice_token: str, choice_id: UUID) -> Handoff:
-    """The verified phone owner picked a distributor: hand the session to its subdomain."""
+def choose_account(choice_token: str, choice_id: UUID, *, app: bool = False) -> LoginOutcome:
+    """The verified phone owner picked a distributor: hand the session to its subdomain, or
+    give it to the app."""
     challenge = _consume_challenge(choice_token, LoginChallenge.Kind.RETAILER_ACCOUNT_CHOICE)
     if str(choice_id) not in challenge.candidates:
         raise TokenInvalid()
@@ -197,7 +204,13 @@ def choose_account(choice_token: str, choice_id: UUID) -> Handoff:
     )
     if account is None:
         raise TokenInvalid()
-    return create_handoff(account.user, account.tenant)
+    if app:
+        return _authenticated(account.user, account.tenant.pk)
+    return LoginOutcome(
+        status=LoginStatus.HANDOFF,
+        user=account.user,
+        handoff=create_handoff(account.user, account.tenant),
+    )
 
 
 def is_active_retailer_login(user: User, tenant_id: UUID) -> bool:
@@ -205,3 +218,20 @@ def is_active_retailer_login(user: User, tenant_id: UUID) -> bool:
         user.tenant_id == tenant_id
         and selectors.retailer_login_for_tenant(user.phone or "", tenant_id) is not None
     )
+
+
+# The browser session a web handoff opens for the app (ADR-061 item 9): long enough to pay, and it
+# ends on its own; the app's own session is untouched.
+APP_WEB_SESSION = timedelta(hours=1)
+
+
+def app_web_handoff(user: User, tenant_id: UUID, next_path: str) -> str:
+    """The address of a shop page signed in for the app's shop, for a Chrome Custom Tab: a
+    one-time code (60 seconds) in the URL fragment, which never reaches a server's logs."""
+    ratelimit.hit("app-web-handoff:user", str(user.pk), 20, 60)
+    tenant = Tenant.objects.get(pk=tenant_id)
+    if user.user_type != User.UserType.RETAILER or not is_active_retailer_login(user, tenant.pk):
+        raise TokenInvalid()
+    handoff = create_handoff(user, tenant, session_expires_at=timezone.now() + APP_WEB_SESSION)
+    fragment = urlencode({"code": handoff.code, "next": next_path})
+    return f"{web_url('/auth/handoff', tenant_slug=tenant.slug)}#{fragment}"

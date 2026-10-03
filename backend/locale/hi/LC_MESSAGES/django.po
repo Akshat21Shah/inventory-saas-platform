@@ -796,6 +796,10 @@ msgstr "भुगतान की तारीख और आज के बीच
 msgid "Choose a different shop to copy from."
 msgstr "कॉपी करने के लिए कोई दूसरी दुकान चुनें।"
 
+#: apps/accounts/api/serializers.py
+msgid "Choose a page of the shop."
+msgstr "दुकान का कोई पेज चुनें।"
+
 #: apps/payments/gateway_config.py
 msgid "Choose a payment gateway."
 msgstr "पेमेंट गेटवे चुनें।"
@@ -3382,6 +3386,10 @@ msgstr "यह मान अपेक्षित पैटर्न से म�
 #: apps/platform/registry.py
 msgid "This value is not in the expected format."
 msgstr "यह मान अपेक्षित फ़ॉर्मेट में नहीं है।"
+
+#: apps/platform/app_client.py
+msgid "This version of the app is too old. Update it to continue."
+msgstr "ऐप का यह संस्करण बहुत पुराना है। आगे बढ़ने के लिए इसे अपडेट करें।"
 
 #: common/framework_messages.py
 msgid "Time has wrong format. Use one of these formats instead: {format}."

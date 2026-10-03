@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AppConfig,
   PlatformLanguage,
   PublicBranding,
   PublicStatesListParams,
@@ -52,6 +53,115 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export type appConfigResponse200 = {
+  data: AppConfig
+  status: 200
+}
+
+export type appConfigResponseSuccess = (appConfigResponse200) & {
+  headers: Headers;
+};
+;
+
+export type appConfigResponse = (appConfigResponseSuccess)
+
+export const getAppConfigUrl = () => {
+
+
+
+
+  return `/api/v1/app/config/`
+}
+
+/**
+ * Public: an app too old to sign in must still learn that it has to update.
+ */
+export const appConfig = async ( options?: Parameters<typeof apiFetch>[1]): Promise<appConfigResponse> => {
+
+  return apiFetch<appConfigResponse>(getAppConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAppConfigQueryKey = () => {
+    return [
+    `/api/v1/app/config/`
+    ] as const;
+    }
+
+
+export const getAppConfigQueryOptions = <TData = Awaited<ReturnType<typeof appConfig>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof appConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAppConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof appConfig>>> = ({ signal }) => appConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof appConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AppConfigQueryResult = NonNullable<Awaited<ReturnType<typeof appConfig>>>
+export type AppConfigQueryError = unknown
+
+
+export function useAppConfig<TData = Awaited<ReturnType<typeof appConfig>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof appConfig>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof appConfig>>,
+          TError,
+          Awaited<ReturnType<typeof appConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAppConfig<TData = Awaited<ReturnType<typeof appConfig>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof appConfig>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof appConfig>>,
+          TError,
+          Awaited<ReturnType<typeof appConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAppConfig<TData = Awaited<ReturnType<typeof appConfig>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof appConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAppConfig<TData = Awaited<ReturnType<typeof appConfig>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof appConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAppConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 export type publicDocumentResponse200 = {
   data: void

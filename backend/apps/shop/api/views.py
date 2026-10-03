@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import User
 from apps.inventory.availability import ShopStockRules
+from apps.platform.models import Tenant
 from apps.platform.selectors import get_setting
 from apps.pricing import schemes
 from apps.retailers.models import Retailer
@@ -139,3 +140,22 @@ class ShopProductDetailView(ShopView):
         row = {"product": found.product, "price": found.price, "slab_hints": found.slab_hints}
         context = _context(retailer, [found.product.pk])
         return Response(s.ShopProductDetailSerializer(row, context=context).data)
+
+
+class ShopDistributorSerializer(serializers.Serializer[Any]):
+    name = serializers.CharField()
+    phone = serializers.CharField()
+    email = serializers.CharField()
+
+
+class ShopDistributorView(ShopView):
+    """Who to contact: the distributor's business phone and email, as printed on its bills. The
+    app's "Privacy and data" page says to ask them about the shop's data (ADR-061 item 18)."""
+
+    @extend_schema(
+        operation_id="shop_distributor", tags=["shop"], responses=ShopDistributorSerializer
+    )
+    def get(self, request: Request) -> Response:
+        tenant = Tenant.objects.get(pk=_retailer(request).tenant_id)  # the tenant registry
+        body = {"name": tenant.name, "phone": tenant.phone, "email": tenant.email}
+        return Response(ShopDistributorSerializer(body).data)

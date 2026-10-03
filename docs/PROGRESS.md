@@ -321,7 +321,22 @@
        - two emulators: `shop-modern` (Android 16, Pixel 7 size, 4 GB) and `shop-budget` (Android 11, 360 × 640 dp, 2 GB RAM);
        - `shop-budget` boots headless in 23 s.
   2. The owner's answers (§10.2q) folded into ADR-061, the plan and the backlog — **done**
-  3. Backend for the app (11b.2) — next
+  3. Backend for the app (11b.2) — **done**:
+     - **App sign-in:** `client: "app"` on `auth/retailer/otp/verify/` and `auth/retailer/choose-account/` returns the session in the body (access and refresh tokens, no cookie, no browser handoff). The refresh and sign-out endpoints already took the refresh token in the body. Account choices now carry `tenant_slug`, so the app can pick the account a link is for. The web's flow is unchanged.
+     - **Paying in the browser:** `POST auth/app/web-handoff/` (shops only, not in support sessions) returns a shop page's address, signed in by a handoff code in the URL fragment: single use, 60 seconds, for the shop's own distributor. Only `/shop` pages are allowed. The browser session it opens ends after an hour: a session end given to a shop's sliding session is now kept (`issue_tokens`).
+     - **App settings:** `GET app/config/` (public) with ⚙ `platform.app_min_version` (default 0.0.0), ⚙ `platform.app_latest_version` and ⚙ `platform.privacy_policy_url`, in a new "Android app" group on the super admin's settings page. `AppVersionMiddleware`: a request carrying `X-App-Version` below the minimum (or unreadable) gets `426 APP_UPDATE_REQUIRED` in the app's language. The settings endpoint is always answered, and the web never sends the header.
+     - **The distributor's contact:** `GET shop/distributor/` (name, phone, email, as printed on bills) for the app's "Privacy and data" page.
+     - **App Links:** `/.well-known/assetlinks.json` on every host, from `ANDROID_APP_ID` and `ANDROID_APP_CERT_SHA256` (`.env.example`); 404 until configured.
+     - **Translations:** the error, the new server messages and the settings' labels in English, Hindi and Marathi.
+     - **Tests:** 21 backend tests:
+       - the app's session with one or several distributors, the token rotating;
+       - the web still getting a handoff;
+       - the web handoff: single use, expired after a minute, refused on another distributor's address, shop pages only, staff refused, the browser session's one-hour end surviving a refresh;
+       - the version check (below, at and above the minimum, unreadable, no header, the settings always answered, the message in Hindi);
+       - the distributor contact for each tenant's shop.
+
+       Plus 2 web tests for the App Links statement. The full backend suite passes (1,916), as do the web's 368 tests.
+  4. App foundation (11b.4) — next
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**

@@ -5,6 +5,7 @@
  * Multi-tenant B2B inventory & ordering platform. All money values are decimal strings.
  * OpenAPI spec version: 1.0.0
  */
+import type { SignInClientEnum } from './signInClientEnum';
 
 export interface RetailerOtpVerifyInputRequest {
   /**
@@ -17,4 +18,11 @@ export interface RetailerOtpVerifyInputRequest {
      * @maxLength 10
      */
   code: string;
+  /**
+     * "app" for the Android app (ADR-061): a session comes back in the body at once (no browser handoff, no cookie).
+     *
+     * * `web` - web
+     * * `app` - app
+     */
+  client?: SignInClientEnum;
 }

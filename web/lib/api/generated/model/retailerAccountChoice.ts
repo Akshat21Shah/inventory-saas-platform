@@ -13,4 +13,6 @@ export interface RetailerAccountChoice {
   choice_id: string;
   distributor_name: string;
   shop_name: string;
+  /** The distributor's web address name: the app picks the account a link is for. */
+  tenant_slug: string;
 }

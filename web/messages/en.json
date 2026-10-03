@@ -283,7 +283,8 @@
     "WRONG_DELIVERY_CODE": "That isn't the shop's delivery code. Check it with the shop.",
     "DELIVERY_CODE_LOCKED": "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code and say why.",
     "ASSISTANT_RATE_LIMITED": "You've asked a lot of questions in the last hour. Try again a little later.",
-    "ASSISTANT_NOT_AVAILABLE": "There are no figures the assistant may show you."
+    "ASSISTANT_NOT_AVAILABLE": "There are no figures the assistant may show you.",
+    "APP_UPDATE_REQUIRED": "This version of the app is too old. Update it to continue."
   },
   "designSystem": {
     "title": "Design system",
@@ -715,6 +716,18 @@
       "language_test_tenants": {
         "label": "Distributors testing languages",
         "description": "Web addresses (for example “sharma”) of distributors who see every language while it is checked, separated by commas. Super admins always see every language."
+      },
+      "app_min_version": {
+        "label": "Oldest app version allowed",
+        "description": "Android app versions older than this (for example “1.2.0”) must update before they can be used."
+      },
+      "app_latest_version": {
+        "label": "Newest app version",
+        "description": "The newest Android app version in the Play Store, for example “1.3.0”. Older versions are invited to update. Leave empty for no invitation."
+      },
+      "privacy_policy_url": {
+        "label": "Privacy policy address",
+        "description": "Web address (https) of the privacy policy, linked from the app’s “Privacy and data” page and the Play Store listing."
       }
     },
     "retailers": {
@@ -917,7 +930,8 @@
       "planning": "Stock planning",
       "purchasing": "Purchasing",
       "ai": "AI",
-      "languages": "Languages"
+      "languages": "Languages",
+      "app": "Android app"
     },
     "default": "Default",
     "reset": "Reset to default",

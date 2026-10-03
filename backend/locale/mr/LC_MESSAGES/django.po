@@ -796,6 +796,10 @@ msgstr "पेमेंटची तारीख आणि आज यांच�
 msgid "Choose a different shop to copy from."
 msgstr "कॉपी करण्यासाठी दुसरे दुकान निवडा."
 
+#: apps/accounts/api/serializers.py
+msgid "Choose a page of the shop."
+msgstr "दुकानाचे एखादे पान निवडा."
+
 #: apps/payments/gateway_config.py
 msgid "Choose a payment gateway."
 msgstr "पेमेंट गेटवे निवडा."
@@ -3382,6 +3386,10 @@ msgstr "हे मूल्य अपेक्षित पॅटर्नशी
 #: apps/platform/registry.py
 msgid "This value is not in the expected format."
 msgstr "हे मूल्य अपेक्षित स्वरूपात नाही."
+
+#: apps/platform/app_client.py
+msgid "This version of the app is too old. Update it to continue."
+msgstr "ॲपची ही आवृत्ती खूप जुनी आहे. पुढे जाण्यासाठी ती अपडेट करा."
 
 #: common/framework_messages.py
 msgid "Time has wrong format. Use one of these formats instead: {format}."

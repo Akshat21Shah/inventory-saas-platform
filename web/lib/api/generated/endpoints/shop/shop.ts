@@ -58,6 +58,7 @@ import type {
   ShopCartRetrieveParams,
   ShopCategory,
   ShopConsentInputRequest,
+  ShopDistributor,
   ShopHome,
   ShopInvoiceDetail,
   ShopInvoicesListParams,
@@ -1313,6 +1314,116 @@ export function useShopCreditNotesPdf<TData = Awaited<ReturnType<typeof shopCred
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getShopCreditNotesPdfQueryOptions(noteId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type shopDistributorResponse200 = {
+  data: ShopDistributor
+  status: 200
+}
+
+export type shopDistributorResponseSuccess = (shopDistributorResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopDistributorResponse = (shopDistributorResponseSuccess)
+
+export const getShopDistributorUrl = () => {
+
+
+
+
+  return `/api/v1/shop/distributor/`
+}
+
+/**
+ * Who to contact: the distributor's business phone and email, as printed on its bills. The
+ * app's "Privacy and data" page says to ask them about the shop's data (ADR-061 item 18).
+ */
+export const shopDistributor = async ( options?: Parameters<typeof apiFetch>[1]): Promise<shopDistributorResponse> => {
+
+  return apiFetch<shopDistributorResponse>(getShopDistributorUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopDistributorQueryKey = () => {
+    return [
+    `/api/v1/shop/distributor/`
+    ] as const;
+    }
+
+
+export const getShopDistributorQueryOptions = <TData = Awaited<ReturnType<typeof shopDistributor>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopDistributor>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShopDistributorQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shopDistributor>>> = ({ signal }) => shopDistributor({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shopDistributor>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ShopDistributorQueryResult = NonNullable<Awaited<ReturnType<typeof shopDistributor>>>
+export type ShopDistributorQueryError = unknown
+
+
+export function useShopDistributor<TData = Awaited<ReturnType<typeof shopDistributor>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopDistributor>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopDistributor>>,
+          TError,
+          Awaited<ReturnType<typeof shopDistributor>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopDistributor<TData = Awaited<ReturnType<typeof shopDistributor>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopDistributor>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof shopDistributor>>,
+          TError,
+          Awaited<ReturnType<typeof shopDistributor>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useShopDistributor<TData = Awaited<ReturnType<typeof shopDistributor>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopDistributor>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useShopDistributor<TData = Awaited<ReturnType<typeof shopDistributor>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof shopDistributor>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getShopDistributorQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

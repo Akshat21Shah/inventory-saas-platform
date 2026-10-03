@@ -110,6 +110,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Announcement'
           description: ''
+  /api/v1/app/config/:
+    get:
+      operationId: app_config
+      description: 'Public: an app too old to sign in must still learn that it has
+        to update.'
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConfig'
+          description: ''
   /api/v1/assistant/questions/:
     get:
       operationId: assistant_questions_list
@@ -287,6 +303,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/v1/auth/app/web-handoff/:
+    post:
+      operationId: auth_app_web_handoff
+      description: |-
+        The Android app opens a shop page in a Chrome Custom Tab, already signed in (ADR-061 item
+        9): online payment. The code works once, within a minute; the browser session ends after an
+        hour.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppWebHandoffInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppWebHandoff'
           description: ''
   /api/v1/auth/handoff/exchange/:
     post:
@@ -9375,6 +9415,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/shop/distributor/:
+    get:
+      operationId: shop_distributor
+      description: |-
+        Who to contact: the distributor's business phone and email, as printed on its bills. The
+        app's "Privacy and data" page says to ask them about the shop's data (ADR-061 item 18).
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopDistributor'
+          description: ''
   /api/v1/shop/fulfilment-lines/{line_id}/cancel-repriced/:
     post:
       operationId: shop_fulfilment_line_cancel_repriced
@@ -12117,6 +12174,42 @@ components:
       - body
       - starts_at
       - title
+    AppConfig:
+      type: object
+      properties:
+        min_version:
+          type: string
+          description: Older app versions must update first (the API answers 426 APP_UPDATE_REQUIRED).
+        latest_version:
+          type: string
+          description: 'The newest version in the Play Store; empty: unknown.'
+        privacy_policy_url:
+          type: string
+          description: The privacy policy, for the app's Privacy and data page.
+      required:
+      - latest_version
+      - min_version
+      - privacy_policy_url
+    AppWebHandoff:
+      type: object
+      properties:
+        url:
+          type: string
+          description: 'Open in a Chrome Custom Tab: the shop page, signed in once
+            by a code that works one time within a minute.'
+      required:
+      - url
+    AppWebHandoffInputRequest:
+      type: object
+      properties:
+        next:
+          type: string
+          minLength: 1
+          description: The shop page to open in the browser, e.g. /shop/payments/checkout/<id>.
+          maxLength: 300
+          pattern: ^/shop(/[\w\-./?=&%]*)?$
+      required:
+      - next
     Applied:
       type: object
       description: 'Money matched to this document: a payment, credit-note credit
@@ -17811,6 +17904,10 @@ components:
         access_expires_at:
           type: string
           format: date-time
+        refresh:
+          type: string
+          description: 'The Android app only (client "app", ADR-061): it keeps the
+            refresh token in secure storage. The web gets it in a cookie instead.'
         handoff:
           $ref: '#/components/schemas/Handoff'
         choice_token:
@@ -24730,10 +24827,15 @@ components:
           type: string
         shop_name:
           type: string
+        tenant_slug:
+          type: string
+          description: 'The distributor''s web address name: the app picks the account
+            a link is for.'
       required:
       - choice_id
       - distributor_name
       - shop_name
+      - tenant_slug
     RetailerBulkActionEnum:
       enum:
       - assign_salesperson
@@ -24780,6 +24882,15 @@ components:
         choice_id:
           type: string
           format: uuid
+        client:
+          allOf:
+          - $ref: '#/components/schemas/SignInClientEnum'
+          default: web
+          description: |-
+            "app" for the Android app (ADR-061): a session comes back in the body at once (no browser handoff, no cookie).
+
+            * `web` - web
+            * `app` - app
       required:
       - choice_id
       - choice_token
@@ -25002,6 +25113,15 @@ components:
           type: string
           minLength: 1
           maxLength: 10
+        client:
+          allOf:
+          - $ref: '#/components/schemas/SignInClientEnum'
+          default: web
+          description: |-
+            "app" for the Android app (ADR-061): a session comes back in the body at once (no browser handoff, no cookie).
+
+            * `web` - web
+            * `app` - app
       required:
       - code
       - phone
@@ -26265,6 +26385,19 @@ components:
       required:
       - available
       - limit
+    ShopDistributor:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+      required:
+      - email
+      - name
+      - phone
     ShopFulfilment:
       type: object
       description: |-
@@ -27325,6 +27458,14 @@ components:
       required:
       - amount
       - shops
+    SignInClientEnum:
+      enum:
+      - web
+      - app
+      type: string
+      description: |-
+        * `web` - web
+        * `app` - app
     SkippedProduct:
       type: object
       properties:

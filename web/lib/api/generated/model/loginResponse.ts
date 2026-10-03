@@ -19,6 +19,8 @@ export interface LoginResponse {
   user_type?: UserTypeEnum;
   access?: string;
   access_expires_at?: string;
+  /** The Android app only (client "app", ADR-061): it keeps the refresh token in secure storage. The web gets it in a cookie instead. */
+  refresh?: string;
   handoff?: Handoff;
   choice_token?: string;
   tenants?: TenantChoice[];

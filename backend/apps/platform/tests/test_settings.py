@@ -74,7 +74,8 @@ def test_registry_covers_plan_catalogue():
     # threshold (ADR-050) + the AI limit, timeout and search closeness (ADR-058) + the
     # assistant's timeout (ADR-059) + its model, five prices and three typical sizes (owner review)
     # + the enabled languages and the distributors testing them (ADR-060)
-    assert len(PLATFORM_KEYS) == 37
+    # + the Android app's oldest and newest versions and the privacy policy address (ADR-061)
+    assert len(PLATFORM_KEYS) == 40
     assert "security.require_staff_2fa" in TENANT_KEYS
     assert registry.REGISTRY["retailers.blocked_can_sign_in"].default is True
     assert registry.REGISTRY["pricing.discounts_on_special_prices"].default is True

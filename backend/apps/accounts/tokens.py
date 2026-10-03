@@ -55,12 +55,13 @@ def issue_tokens(
     """New refresh + access pair for ``user`` acting in ``tenant_id`` (None for platform users).
 
     ``session_expires_at``: the fixed end of a non-sliding session; computed from the user type's
-    lifetime when a session starts. Sliding sessions (retailers) have none.
+    lifetime when a session starts. Sliding sessions (retailers) have none, unless one is given:
+    the browser session the Android app opens for paying ends on its own (ADR-061 item 9).
     """
     now = timezone.now()
     lifetime = refresh_lifetime(user)
     sliding = user.user_type in settings.AUTH_SLIDING_USER_TYPES
-    if sliding:
+    if sliding and session_expires_at is None:
         expires_at = now + lifetime
     else:
         session_expires_at = session_expires_at or now + lifetime

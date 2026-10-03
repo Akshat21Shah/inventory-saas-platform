@@ -34,7 +34,7 @@ from common.context import request_meta_var
 from common.errors import NotFound
 from common.hosts import HostContext
 from common.languages import all_languages
-from common.permissions import IsStaffOrPlatformUser
+from common.permissions import IsRetailer, IsStaffOrPlatformUser
 
 
 def _client_ip() -> str | None:
@@ -58,8 +58,9 @@ class PublicAuthView(APIView):
         return transaction.non_atomic_requests(super().as_view(**initkwargs))
 
 
-def _login_response(outcome: services.LoginOutcome) -> Response:
-    """Serialize any sign-in step; sets the refresh cookie when the step issued a session."""
+def _login_response(outcome: services.LoginOutcome, *, app: bool = False) -> Response:
+    """Serialize any sign-in step; sets the refresh cookie when the step issued a session. The
+    Android app (ADR-061) gets the refresh token in the body instead, and no cookie."""
     body: dict[str, Any] = {"status": outcome.status.value}
     if outcome.handoff is not None:
         body["handoff"] = {"code": outcome.handoff.code, "tenant_slug": outcome.handoff.tenant_slug}
@@ -78,13 +79,18 @@ def _login_response(outcome: services.LoginOutcome) -> Response:
                 "choice_id": a.user.pk,
                 "distributor_name": a.distributor_name,
                 "shop_name": a.shop_name,
+                "tenant_slug": a.tenant.slug,
             }
             for a in outcome.accounts
         ]
     if outcome.tokens is not None:
         body.update(_token_body(outcome.tokens))
         body["user_type"] = outcome.user.user_type
+        if app and outcome.tokens.refresh:
+            body["refresh"] = outcome.tokens.refresh
     response = Response(s.LoginResponseSerializer(body).data)
+    if app:
+        return response
     if outcome.tokens is not None and outcome.tokens.refresh:  # impersonation: no refresh
         set_refresh_cookie(response, outcome.tokens)
     return response
@@ -304,13 +310,16 @@ class RetailerOtpVerifyView(PublicAuthView):
     def post(self, request: Request) -> Response:
         data = s.RetailerOtpVerifyInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
+        app = data.validated_data["client"] == "app"
         return _login_response(
             retailer_login.verify_otp(
                 data.validated_data["phone"],
                 data.validated_data["code"],
                 _host(request),
                 _client_ip(),
-            )
+                app=app,
+            ),
+            app=app,
         )
 
 
@@ -324,14 +333,39 @@ class RetailerChooseAccountView(PublicAuthView):
     def post(self, request: Request) -> Response:
         data = s.RetailerChooseAccountInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        handoff = retailer_login.choose_account(
-            data.validated_data["choice_token"], data.validated_data["choice_id"]
+        app = data.validated_data["client"] == "app"
+        outcome = retailer_login.choose_account(
+            data.validated_data["choice_token"], data.validated_data["choice_id"], app=app
         )
-        body = {
-            "status": "handoff",
-            "handoff": {"code": handoff.code, "tenant_slug": handoff.tenant_slug},
-        }
-        return Response(s.LoginResponseSerializer(body).data)
+        return _login_response(outcome, app=app)
+
+
+class AppWebHandoffView(APIView):
+    """The Android app opens a shop page in a Chrome Custom Tab, already signed in (ADR-061 item
+    9): online payment. The code works once, within a minute; the browser session ends after an
+    hour."""
+
+    permission_classes = [IsRetailer]
+    impersonation_blocked = True
+
+    @extend_schema(
+        request=s.AppWebHandoffInputSerializer,
+        responses=s.AppWebHandoffSerializer,
+        operation_id="auth_app_web_handoff",
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        data = s.AppWebHandoffInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        tenant_id = _token_tenant_id(request)
+        if tenant_id is None:
+            raise SessionExpired()
+        url = retailer_login.app_web_handoff(
+            request.user,  # type: ignore[arg-type]
+            tenant_id,
+            data.validated_data["next"],
+        )
+        return Response(s.AppWebHandoffSerializer({"url": url}).data)
 
 
 def _token_tenant_id(request: Request) -> UUID | None:

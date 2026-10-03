@@ -74,6 +74,7 @@ MIDDLEWARE = [
     "apps.accounts.middleware.ImpersonationAuditMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # Accept-Language → the request's language
+    "apps.platform.app_client.AppVersionMiddleware",  # too-old Android apps (ADR-061)
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -260,6 +261,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "ENUM_NAME_OVERRIDES": {
         "TextSuggestionStatusEnum": "apps.platform.models.TextSuggestion.Status",
+        "SignInClientEnum": "apps.accounts.api.serializers.SIGN_IN_CLIENTS",
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
         "AiFeatureEnum": "apps.ai.models.AiUsage.Feature",
         "AssistantStatusEnum": "apps.ai.models.AssistantQuestion.Status",
