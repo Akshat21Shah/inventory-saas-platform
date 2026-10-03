@@ -48,6 +48,7 @@ from apps.orders.transitions import lock_order
 from common import outbox
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.tenancy import tenant_transaction
 
 logger = logging.getLogger(__name__)
@@ -210,12 +211,14 @@ def request(
         changed = reissue_preview(invoice)["rate_changes"]
         if changed:
             errors["confirm_rate_changes"] = [
-                _(
-                    "The GST rate valid today differs from the original on %(count)s "
-                    "line(s). The re-issued invoice keeps the original rates: confirm to "
-                    "continue."
+                fill(
+                    _(
+                        "The GST rate valid today differs from the original on %(count)s "
+                        "line(s). The re-issued invoice keeps the original rates: confirm to "
+                        "continue."
+                    ),
+                    {"count": len(changed)},
                 )
-                % {"count": len(changed)}
             ]
     if errors:
         raise InvalidFields(errors)

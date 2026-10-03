@@ -16,6 +16,7 @@ from apps.audit import services as audit
 from apps.notifications.models import Announcement, Channel
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 MAX_TITLE, MAX_BODY = 120, 1000
 
@@ -35,11 +36,13 @@ def _check(data: AnnouncementInput) -> None:
     if not data.title.strip():
         errors["title"] = [_("Enter a title.")]
     elif len(data.title) > MAX_TITLE:
-        errors["title"] = [_("Use at most %(max_title)s characters.") % {"max_title": MAX_TITLE}]
+        errors["title"] = [
+            fill(_("Use at most %(max_title)s characters."), {"max_title": MAX_TITLE})
+        ]
     if not data.body.strip():
         errors["body"] = [_("Enter the message.")]
     elif len(data.body) > MAX_BODY:
-        errors["body"] = [_("Use at most %(max_body)s characters.") % {"max_body": MAX_BODY}]
+        errors["body"] = [fill(_("Use at most %(max_body)s characters."), {"max_body": MAX_BODY})]
     if data.ends_at is not None and data.ends_at <= data.starts_at:
         errors["ends_at"] = [_("The end must be after the start.")]
     if errors:

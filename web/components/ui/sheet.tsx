@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "cn";
 import { Dialog as SheetPrimitive } from "radix-ui";
 

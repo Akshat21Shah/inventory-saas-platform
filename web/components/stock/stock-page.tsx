@@ -3,7 +3,7 @@
 import { ClipboardCheck, Download, FileUp, MoreHorizontal, PackagePlus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 

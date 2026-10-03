@@ -28,6 +28,7 @@ from apps.reports.registry import (
     register,
 )
 from apps.retailers.models import Retailer
+from common.numbers import fill
 from common.permissions import AnyOf
 
 FINANCIAL = "reports.financial"
@@ -131,8 +132,10 @@ register(
         rows=lambda ctx: _ageing(ctx)[1],
         totals=ageing_totals,
         notes=lambda ctx: [
-            _("Aged from %(basis)s.")
-            % {"basis": BASIS_LABELS.get(_ageing(ctx)[0], _ageing(ctx)[0])}
+            fill(
+                _("Aged from %(basis)s."),
+                {"basis": BASIS_LABELS.get(_ageing(ctx)[0], _ageing(ctx)[0])},
+            )
         ],
         pdf=True,
     )

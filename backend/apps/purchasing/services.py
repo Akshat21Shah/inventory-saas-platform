@@ -23,6 +23,7 @@ from apps.platform.validators import normalize_gstin
 from apps.purchasing.models import Supplier, SupplierProduct
 from apps.purchasing.selectors import name_key, open_orders_for, unlinked_receipts
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.sequences import next_value
 
 PROFILE_FIELDS = (
@@ -75,8 +76,12 @@ def _check(supplier: Supplier) -> None:
                 errors["gstin"] = [gettext("Another supplier has this GSTIN.")]
             elif supplier.state_id and supplier.state_id != supplier.gstin[:2]:
                 errors["state_id"] = [
-                    gettext("The state must match the first 2 digits of the GSTIN (%(gstin)s).")
-                    % {"gstin": supplier.gstin[:2]}
+                    fill(
+                        gettext(
+                            "The state must match the first 2 digits of the GSTIN (%(gstin)s)."
+                        ),
+                        {"gstin": supplier.gstin[:2]},
+                    )
                 ]
             supplier.state_id = supplier.gstin[:2]
     if supplier.state_id and not State.objects.filter(pk=supplier.state_id).exists():
@@ -194,7 +199,10 @@ def set_product_suppliers(
     ids = [link.supplier_id for link in links]
     if len(links) > MAX_LINKS:
         errors["links"] = [
-            gettext("A product can have up to %(max_links)s suppliers.") % {"max_links": MAX_LINKS}
+            fill(
+                gettext("A product can have up to %(max_links)s suppliers."),
+                {"max_links": MAX_LINKS},
+            )
         ]
     if len(set(ids)) != len(ids):
         errors["links"] = [gettext("List each supplier once.")]
@@ -268,7 +276,9 @@ def set_preferred_supplier(supplier_id: UUID, product_ids: Iterable[UUID], *, by
         raise InvalidFields(
             {
                 "product_ids": [
-                    gettext("Select 1 to %(bulk_limit)s products.") % {"bulk_limit": BULK_LIMIT}
+                    fill(
+                        gettext("Select 1 to %(bulk_limit)s products."), {"bulk_limit": BULK_LIMIT}
+                    )
                 ]
             }
         )

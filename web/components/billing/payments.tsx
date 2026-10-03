@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, HandCoins, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 

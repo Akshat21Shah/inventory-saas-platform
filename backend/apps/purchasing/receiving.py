@@ -31,6 +31,7 @@ from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine, SupplierPro
 from apps.purchasing.orders import OPEN, NotEditable, lock
 from common.error_codes import ErrorCode
 from common.errors import DomainError
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 S = PurchaseOrder.Status
@@ -140,11 +141,13 @@ def before_post(
     )
     if order.status not in OPEN:
         raise NotEditable(
-            _(
-                "%(number)s is %(order)s: nothing more can be received against it. "
-                "Delete this draft and receive without the order."
+            fill(
+                _(
+                    "%(number)s is %(order)s: nothing more can be received against it. "
+                    "Delete this draft and receive without the order."
+                ),
+                {"number": order.number, "order": order.get_status_display().lower()},
             )
-            % {"number": order.number, "order": order.get_status_display().lower()}
         )
     receiving: dict[UUID, Decimal] = defaultdict(Decimal)
     for line in lines:

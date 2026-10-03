@@ -2,7 +2,8 @@
 
 import { Languages } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 

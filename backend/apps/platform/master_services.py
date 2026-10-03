@@ -17,6 +17,7 @@ from apps.platform.models import CessType, FeatureFlag, HsnRateHint, Plan, TaxRa
 from apps.platform.selectors import invalidate_all_features
 from apps.platform.validators import validate_hsn_prefix
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 HSN_IMPORT_MAX_BYTES = 1_000_000
 HSN_IMPORT_MAX_ROWS = 20_000
@@ -164,7 +165,9 @@ def create_hsn_hint(data: dict[str, Any], *, by: User) -> HsnRateHint:
     try:
         data = {**data, "gst_rate": _hint_rate(data.get("gst_rate"))}
     except ValueError as exc:
-        raise InvalidFields({"gst_rate": [gettext("Rate is %(exc)s.") % {"exc": exc}]}) from exc
+        raise InvalidFields(
+            {"gst_rate": [fill(gettext("Rate is %(exc)s."), {"exc": exc})]}
+        ) from exc
     if HsnRateHint.objects.filter(
         hsn_prefix=data["hsn_prefix"], effective_from=data["effective_from"]
     ).exists():
@@ -181,7 +184,9 @@ def update_hsn_hint(hint_id: Any, changes: dict[str, Any], *, by: User) -> HsnRa
         try:
             changes = {**changes, "gst_rate": _hint_rate(changes["gst_rate"])}
         except ValueError as exc:
-            raise InvalidFields({"gst_rate": [gettext("Rate is %(exc)s.") % {"exc": exc}]}) from exc
+            raise InvalidFields(
+                {"gst_rate": [fill(gettext("Rate is %(exc)s."), {"exc": exc})]}
+            ) from exc
     _save_changed(hint, changes, ("gst_rate", "description"), "hsn_hint.updated")
     return hint
 
@@ -226,8 +231,10 @@ def import_hsn_hints(content: bytes, *, by: User) -> dict[str, int]:
     for line, row in enumerate(reader, start=2):
         if len(rows) >= HSN_IMPORT_MAX_ROWS:
             errors.append(
-                gettext("Row %(line)s: more than %(hsn_import_max_rows)s rows.")
-                % {"line": line, "hsn_import_max_rows": HSN_IMPORT_MAX_ROWS}
+                fill(
+                    gettext("Row %(line)s: more than %(hsn_import_max_rows)s rows."),
+                    {"line": line, "hsn_import_max_rows": HSN_IMPORT_MAX_ROWS},
+                )
             )
             break
         try:
@@ -238,7 +245,9 @@ def import_hsn_hints(content: bytes, *, by: User) -> dict[str, int]:
             rows.append((prefix, rate, effective, (row.get("description") or "").strip()[:255]))
         except (DjangoValidationError, ValueError) as exc:
             message = exc.messages[0] if isinstance(exc, DjangoValidationError) else str(exc)
-            errors.append(gettext("Row %(line)s: %(message)s") % {"line": line, "message": message})
+            errors.append(
+                fill(gettext("Row %(line)s: %(message)s"), {"line": line, "message": message})
+            )
     if errors:
         raise InvalidFields({"file": errors[:50]})
     created = updated = 0

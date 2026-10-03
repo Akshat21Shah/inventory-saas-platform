@@ -1,7 +1,7 @@
 "use client";
 
 import { ImagePlus, Loader2, Trash2, TriangleAlert, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 

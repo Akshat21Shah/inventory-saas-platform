@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
 from common.hosts import RESERVED_TENANT_SLUGS, SLUG_RE
+from common.numbers import fill
 
 # Regular taxpayer GSTIN: state code (2) + PAN (10) + entity number (1) + "Z" + check character
 # (see ``gstin_format_error``; the Tenant check constraint mirrors the layout).
@@ -55,7 +56,7 @@ def gstin_format_error(value: str) -> str | None:
     Whether the state code is in use needs the State table (see ``tenant_services``).
     """
     if len(value) != 15:
-        return _("A GSTIN has 15 characters. This one has %(count)s.") % {"count": len(value)}
+        return fill(_("A GSTIN has 15 characters. This one has %(count)s."), {"count": len(value)})
     if not (value.isascii() and value.isalnum()):
         return _("A GSTIN has only letters and digits.")
     if value != value.upper():
@@ -66,18 +67,22 @@ def gstin_format_error(value: str) -> str | None:
     if not PAN_RE.match(pan):
         return _("Characters 3 to 12 are the PAN: 5 letters, then 4 digits, then 1 letter.")
     if pan[3] not in PAN_HOLDER_TYPES:
-        return _(
-            "Character 6 (%(pan)s) is the PAN holder type, and %(pan)s is not a "
-            "valid type (for example C for a company, F for a firm, P for a person)."
-        ) % {"pan": pan[3]}
+        return fill(
+            _(
+                "Character 6 (%(pan)s) is the PAN holder type, and %(pan)s is not a "
+                "valid type (for example C for a company, F for a firm, P for a person)."
+            ),
+            {"pan": pan[3]},
+        )
     if value[12] == "0":
         return _("Character 13 is the registration number: 1 to 9 or a letter, never 0.")
     if value[13] != "Z":
         return _("Character 14 must be Z.")
     if gstin_check_char(value[:14]) != value[14]:
-        return _(
-            "The last character (the check character) does not match. %(gstin_checksum_hint)s"
-        ) % {"gstin_checksum_hint": GSTIN_CHECKSUM_HINT}
+        return fill(
+            _("The last character (the check character) does not match. %(gstin_checksum_hint)s"),
+            {"gstin_checksum_hint": GSTIN_CHECKSUM_HINT},
+        )
     return None
 
 

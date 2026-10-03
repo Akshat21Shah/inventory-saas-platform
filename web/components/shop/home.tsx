@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";

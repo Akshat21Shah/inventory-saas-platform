@@ -2,7 +2,7 @@
 
 import { LogOut, ShieldAlert } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, type ReactNode } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";

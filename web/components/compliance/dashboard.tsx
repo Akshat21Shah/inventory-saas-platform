@@ -2,7 +2,7 @@
 
 import { AlertTriangle, FileCheck2, FileClock, Truck } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { KpiCard } from "@/components/shared/kpi-card";

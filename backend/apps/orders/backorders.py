@@ -39,6 +39,7 @@ from apps.pricing.resolve import resolve_prices
 from apps.retailers.models import Retailer
 from common.db import retry_on_deadlock
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.tenancy import require_tenant_id, tenant_context
 
 ZERO = Decimal("0")
@@ -243,8 +244,10 @@ def _refuse_blocked(order: Order) -> None:
 
     if order.retailer.status == Retailer.Status.BLOCKED:
         raise RetailerOnHold(
-            gettext("%(shop_name)s is blocked, so it can't receive stock.")
-            % {"shop_name": order.retailer.shop_name},
+            fill(
+                gettext("%(shop_name)s is blocked, so it can't receive stock."),
+                {"shop_name": order.retailer.shop_name},
+            ),
             details={"order": order.number, "retailer": str(order.retailer_id)},
             status_code=409,
         )
@@ -417,8 +420,10 @@ def confirm(allocation_ids: list[UUID], *, by: User) -> list[Fulfilment]:
             price, repriced = _billing_price(order, line, allocation.quantity)
             if repriced and not _credit_allows(order, line, allocation.quantity, price):
                 raise CreditLimitExceeded(
-                    gettext("Today's price puts %(shop_name)s over the credit limit.")
-                    % {"shop_name": order.retailer.shop_name},
+                    fill(
+                        gettext("Today's price puts %(shop_name)s over the credit limit."),
+                        {"shop_name": order.retailer.shop_name},
+                    ),
                     details={"order": order.number, "product": line.product_code},
                 )
             prices[allocation.pk] = price
@@ -493,7 +498,10 @@ def allocate_manually(
             raise InvalidFields(
                 {
                     "allocations": [
-                        gettext("Only %(free)s is free.") % {"free": format(free.normalize(), "f")}
+                        fill(
+                            gettext("Only %(free)s is free."),
+                            {"free": format(free.normalize(), "f")},
+                        )
                     ]
                 }
             )

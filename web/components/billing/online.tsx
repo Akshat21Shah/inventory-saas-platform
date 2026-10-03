@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Copy } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 

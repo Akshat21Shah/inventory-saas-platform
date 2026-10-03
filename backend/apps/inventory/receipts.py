@@ -23,6 +23,7 @@ from common.dates import today_ist
 from common.db import retry_on_deadlock
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.sequences import next_value
 
 MAX_LINES = 500
@@ -76,7 +77,7 @@ def _lines(
         errors["lines"] = [_("Add at least one product.")]
     elif len(data.lines) > MAX_LINES:
         errors["lines"] = [
-            _("A goods receipt can have up to %(max_lines)s lines.") % {"max_lines": MAX_LINES}
+            fill(_("A goods receipt can have up to %(max_lines)s lines."), {"max_lines": MAX_LINES})
         ]
     sees_costs = _can_see_costs(by)
     if not sees_costs and any(line.entered_cost is not None for line in data.lines):
@@ -140,17 +141,20 @@ def _quantity_problem(product: Product, line: LineInput) -> str | None:
     if line.entered_unit not in StockInwardLine.EnteredUnit.values:
         return _("Choose the unit or the pack.")
     if line.entered_unit == "PACK" and product.pack_unit_id is None:
-        return _("%(code)s has no pack size. Enter the quantity in %(code2)s.") % {
-            "code": product.code,
-            "code2": product.unit.code,
-        }
+        return fill(
+            _("%(code)s has no pack size. Enter the quantity in %(code2)s."),
+            {
+                "code": product.code,
+                "code2": product.unit.code,
+            },
+        )
     unit = product.pack_unit if line.entered_unit == "PACK" else product.unit
     if line.entered_qty <= 0:
         return _("Enter a quantity above 0.")
     if line.entered_qty != line.entered_qty.quantize(QTY_STEP):
         return _("Enter a quantity with at most 3 decimals.")
     if unit is not None and not unit.allows_decimal and line.entered_qty % 1:
-        return _("%(code)s is counted in whole numbers.") % {"code": unit.code}
+        return fill(_("%(code)s is counted in whole numbers."), {"code": unit.code})
     return None
 
 
@@ -264,8 +268,10 @@ def post(inward_id: UUID, *, by: User, confirm_over_receipt: bool = False) -> St
             raise InvalidFields(
                 {
                     "lines": [
-                        _("Deleted products can't be received: %(inactive)s.")
-                        % {"inactive": ", ".join(sorted(inactive))}
+                        fill(
+                            _("Deleted products can't be received: %(inactive)s."),
+                            {"inactive": ", ".join(sorted(inactive))},
+                        )
                     ]
                 }
             )

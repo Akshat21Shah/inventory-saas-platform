@@ -37,6 +37,7 @@ from apps.platform.selectors import (
 )
 from common.error_codes import ErrorCode
 from common.errors import DomainError, NotFound
+from common.numbers import fill
 from common.permissions import HasPermission, StaffReadsOrHasPermission
 from common.storage import get_storage
 from common.tenancy import require_tenant_id, tenant_context
@@ -164,7 +165,7 @@ def _require_edit_permission(request: Request, keys: list[str]) -> None:
     ]
     if denied:
         raise PermissionDenied(
-            gettext("You can't change: %(denied)s.") % {"denied": ", ".join(sorted(denied))}
+            fill(gettext("You can't change: %(denied)s."), {"denied": ", ".join(sorted(denied))})
         )
 
 

@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
+import { getTranslations } from "@/lib/i18n/server";
 import { cache, type ReactNode } from "react";
 
 import { BrandTheme } from "@/components/shared/brand-theme";

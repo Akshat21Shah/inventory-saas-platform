@@ -35,6 +35,7 @@ from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier, S
 from common.dates import today_ist
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.outbox import emit
 from common.sequences import next_value
 from common.tenancy import require_tenant_id
@@ -91,17 +92,20 @@ def _quantity_problem(product: Product, line: OrderLineInput) -> str | None:
     if line.entered_unit not in PurchaseOrderLine.EnteredUnit.values:
         return gettext("Choose the unit or the pack.")
     if line.entered_unit == "PACK" and product.pack_unit_id is None:
-        return gettext("%(code)s has no pack size. Enter the quantity in %(code2)s.") % {
-            "code": product.code,
-            "code2": product.unit.code,
-        }
+        return fill(
+            gettext("%(code)s has no pack size. Enter the quantity in %(code2)s."),
+            {
+                "code": product.code,
+                "code2": product.unit.code,
+            },
+        )
     unit = product.pack_unit if line.entered_unit == "PACK" else product.unit
     if line.entered_qty <= 0:
         return gettext("Enter a quantity above 0.")
     if line.entered_qty != line.entered_qty.quantize(QTY_STEP):
         return gettext("Enter a quantity with at most 3 decimals.")
     if unit is not None and not unit.allows_decimal and line.entered_qty % 1:
-        return gettext("%(code)s is counted in whole numbers.") % {"code": unit.code}
+        return fill(gettext("%(code)s is counted in whole numbers."), {"code": unit.code})
     return None
 
 
@@ -113,8 +117,10 @@ def _lines(
         errors["lines"] = [gettext("Add at least one product.")]
     elif len(data.lines) > MAX_LINES:
         errors["lines"] = [
-            gettext("A purchase order can have up to %(max_lines)s lines.")
-            % {"max_lines": MAX_LINES}
+            fill(
+                gettext("A purchase order can have up to %(max_lines)s lines."),
+                {"max_lines": MAX_LINES},
+            )
         ]
     costs = sees_costs(by)
     if not costs and any(line.entered_cost is not None for line in data.lines):
@@ -143,8 +149,10 @@ def _lines(
             continue
         if product.pk in seen:
             errors[key] = [
-                gettext("%(code)s is already on this order. Change that line instead.")
-                % {"code": product.code}
+                fill(
+                    gettext("%(code)s is already on this order. Change that line instead."),
+                    {"code": product.code},
+                )
             ]
             continue
         seen.add(product.pk)

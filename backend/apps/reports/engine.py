@@ -26,6 +26,7 @@ from apps.reports.registry import (
     days_between,
 )
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.permissions import user_has_permission
 from common.tenancy import require_tenant_id
 
@@ -130,7 +131,7 @@ def parse(report: Report, given: Mapping[str, Any]) -> dict[str, Any]:
             errors["date_to"] = [_("The end date is before the start date.")]
         elif days_between(params) > report.max_days:
             errors["date_to"] = [
-                _("Choose at most %(max_days)s days.") % {"max_days": report.max_days}
+                fill(_("Choose at most %(max_days)s days."), {"max_days": report.max_days})
             ]
     if not errors and report.check is not None:
         errors = report.check(params)

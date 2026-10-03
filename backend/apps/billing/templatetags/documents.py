@@ -1,8 +1,8 @@
-"""Formatting for printed documents: Indian digit grouping, quantities, rates, dates, and the
-labels in English and the document's language (ADR-060)."""
+"""Formatting for printed documents: Indian digit grouping (the shared formatter,
+``common/numbers.py``), quantities, rates, dates, and the labels in English and the document's
+language (ADR-060)."""
 
 from datetime import date
-from decimal import Decimal
 from typing import Any
 
 from django import template
@@ -11,58 +11,33 @@ from django.utils.functional import Promise
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import SafeString, mark_safe
 
+from common import numbers
+
 register = template.Library()
-
-
-def _group_indian(digits: str) -> str:
-    """12345678 -> 1,23,45,678."""
-    if len(digits) <= 3:
-        return digits
-    head, tail = digits[:-3], digits[-3:]
-    pairs: list[str] = []
-    while len(head) > 2:
-        pairs.insert(0, head[-2:])
-        head = head[:-2]
-    if head:
-        pairs.insert(0, head)
-    return ",".join(pairs) + "," + tail
 
 
 @register.filter
 def amount(value: Any) -> str:
     """1234567.5 -> 12,34,567.50 (no rupee sign: column headings carry it)."""
-    if value in (None, ""):
-        return ""
-    number = Decimal(str(value)).quantize(Decimal("0.01"))
-    sign = "-" if number < 0 else ""
-    whole, _, paise = f"{abs(number):.2f}".partition(".")
-    return f"{sign}{_group_indian(whole)}.{paise}"
+    return "" if value in (None, "") else numbers.grouped(value, 2)
 
 
 @register.filter
 def indian_number(value: Any) -> str:
     """1234567 -> 12,34,567 (whole numbers: counts)."""
-    if value in (None, ""):
-        return ""
-    number = int(value)
-    return f"{'-' if number < 0 else ''}{_group_indian(str(abs(number)))}"
+    return "" if value in (None, "") else numbers.grouped(int(value))
 
 
 @register.filter
 def rupees(value: Any) -> str:
-    text = amount(value)
-    if text.startswith("-"):
-        return f"-₹{text[1:]}"
-    return f"₹{text}" if text else ""
+    """1234567.5 -> ₹12,34,567.50."""
+    return "" if value in (None, "") else numbers.rupees(value)
 
 
 @register.filter
 def qty(value: Any) -> str:
-    """12.500 -> 12.5, 8.000 -> 8."""
-    if value in (None, ""):
-        return ""
-    text = f"{Decimal(str(value)).normalize():f}"
-    return text
+    """12.500 -> 12.5, 8.000 -> 8, 1234.5 -> 1,234.5."""
+    return "" if value in (None, "") else numbers.grouped(value)
 
 
 @register.filter

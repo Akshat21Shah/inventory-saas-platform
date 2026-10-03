@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 
 /** The GST provider's error codes with a line of their own (others take their context's line). */
 const CODES = [

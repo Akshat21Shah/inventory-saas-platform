@@ -29,6 +29,7 @@ from apps.notifications.models import (
 from apps.notifications.render import VARIABLE, substitute, template_for
 from common import languages
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 TENANT_CHANNELS = (Channel.IN_APP, Channel.EMAIL)
 MAX_SUBJECT, MAX_BODY = 200, 2000
@@ -120,14 +121,14 @@ def _check(data: TextInput, *, platform: bool) -> None:
         ]
     if not languages.is_known(data.locale):
         errors["locale"] = [
-            _("Choose one of: %(languages)s.") % {"languages": ", ".join(languages.codes())}
+            fill(_("Choose one of: %(languages)s."), {"languages": ", ".join(languages.codes())})
         ]
     needs_subject = data.channel in TENANT_CHANNELS
     if needs_subject and not data.subject.strip():
         errors["subject"] = [_("Enter a title.")]
     if len(data.subject) > MAX_SUBJECT:
         errors["subject"] = [
-            _("Use at most %(max_subject)s characters.") % {"max_subject": MAX_SUBJECT}
+            fill(_("Use at most %(max_subject)s characters."), {"max_subject": MAX_SUBJECT})
         ]
     limit = {Channel.WHATSAPP: WHATSAPP_MAX_BODY, Channel.SMS: SMS_MAX_BODY}.get(
         Channel(data.channel) if data.channel in Channel.values else Channel.IN_APP, MAX_BODY
@@ -135,15 +136,17 @@ def _check(data: TextInput, *, platform: bool) -> None:
     if not data.body.strip():
         errors["body"] = [_("Enter the message.")]
     elif len(data.body) > limit:
-        errors["body"] = [_("Use at most %(limit)s characters.") % {"limit": limit}]
+        errors["body"] = [fill(_("Use at most %(limit)s characters."), {"limit": limit})]
     used = set(VARIABLE.findall(data.subject)) | set(VARIABLE.findall(data.body))
     allowed = variables_for(data.event_code, data.audience)
     unknown = sorted(used - set(allowed))
     if unknown:
         known = ", ".join(f"{{{{ {v} }}}}" for v in allowed)
         errors.setdefault("body", []).append(
-            _("Unknown: %(unknown)s. You can use %(known)s.")
-            % {"unknown": ", ".join(unknown), "known": known}
+            fill(
+                _("Unknown: %(unknown)s. You can use %(known)s."),
+                {"unknown": ", ".join(unknown), "known": known},
+            )
         )
     if "{%" in data.subject + data.body:
         errors.setdefault("body", []).append(_("Only {{ variable }} placeholders are allowed."))
@@ -273,14 +276,17 @@ def _sample_phrases() -> dict[str, Any]:
     return {
         "hold_reason": _("Over the credit limit"),
         "reason": _("Out of stock"),
-        "vehicle": _(" by vehicle %(number)s") % {"number": "MH12AB1234"},
-        "delivery_code": _(" Delivery code: %(code)s.") % {"code": "4821"},
+        "vehicle": fill(_(" by vehicle %(number)s"), {"number": "MH12AB1234"}),
+        "delivery_code": fill(_(" Delivery code: %(code)s."), {"code": "4821"}),
         "price_increased": _(" The price has gone up since the order was placed."),
         "alert": _("low stock"),
-        "bounce_charge": _(" A cheque bounce charge of %(amount)s was added.")
-        % {"amount": "₹500.00"},
-        "bills": ngettext("%(count)s bill", "%(count)s bills", 3) % {"count": 3},
-        "items": _("%(product)s %(quantity)s short") % {"product": "Tata Salt 1 kg", "quantity": 2},
+        "bounce_charge": fill(
+            _(" A cheque bounce charge of %(amount)s was added."), {"amount": "₹500.00"}
+        ),
+        "bills": fill(ngettext("%(count)s bill", "%(count)s bills", 3), {"count": 3}),
+        "items": fill(
+            _("%(product)s %(quantity)s short"), {"product": "Tata Salt 1 kg", "quantity": 2}
+        ),
     }
 
 

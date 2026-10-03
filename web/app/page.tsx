@@ -1,6 +1,6 @@
 import { Building, LayoutDashboard, Palette, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/lib/i18n/server";
 import { headers } from "next/headers";
 
 import type { HostKind } from "@/lib/hosts";

@@ -2,7 +2,7 @@
 
 import { tableFeatures, useTable, type ColumnDef, type RowData } from "@tanstack/react-table";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ListChecks } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";

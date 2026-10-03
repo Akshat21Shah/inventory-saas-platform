@@ -30,6 +30,7 @@ from common.crypto import mask
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields
 from common.hosts import web_url
+from common.numbers import fill
 from common.tenancy import require_tenant_id, tenant_transaction
 
 SECRETS = ("key_id", "key_secret", "webhook_secret")
@@ -113,8 +114,10 @@ def save(provider: str, mode: str, given: dict[str, str], *, by: User) -> Gatewa
         raise InvalidFields(
             {
                 "key_id": [
-                    _("A %(mode)s key starts with %(prefix)s.")
-                    % {"mode": mode.lower(), "prefix": prefix}
+                    fill(
+                        _("A %(mode)s key starts with %(prefix)s."),
+                        {"mode": mode.lower(), "prefix": prefix},
+                    )
                 ]
             }
         )

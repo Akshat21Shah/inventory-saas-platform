@@ -25,6 +25,7 @@ from apps.dataio.parsing import Sheet, parse_bool, parse_date, parse_decimal
 from apps.pricing import services as pricing
 from apps.pricing.models import DiscountRule, PriceList, PriceListItem, RetailerPrice
 from apps.retailers.models import Retailer
+from common.numbers import fill
 from common.phone import normalize_indian_mobile
 
 C = Column
@@ -90,7 +91,9 @@ def _price(plan: RowPlan, label: str, text: str) -> Decimal | None:
     except ValueError:
         plan.error(
             label,
-            gettext("%(text)s isn't an amount (use at most 2 decimal places).") % {"text": text},
+            fill(
+                gettext("%(text)s isn't an amount (use at most 2 decimal places)."), {"text": text}
+            ),
         )
         return None
     if value < 0:
@@ -176,16 +179,20 @@ class SpecialPricesKind:
             elif shop is None:
                 plan.error(
                     SP_LABEL["shop"],
-                    gettext("No shop has the mobile number or code %(shop)s.")
-                    % {"shop": v["shop"]},
+                    fill(
+                        gettext("No shop has the mobile number or code %(shop)s."),
+                        {"shop": v["shop"]},
+                    ),
                 )
             if not v.get("product_code"):
                 plan.error(SP_LABEL["product_code"], gettext("Enter the product code."))
             elif product is None:
                 plan.error(
                     SP_LABEL["product_code"],
-                    gettext("No product has the code %(product_code)s.")
-                    % {"product_code": v["product_code"]},
+                    fill(
+                        gettext("No product has the code %(product_code)s."),
+                        {"product_code": v["product_code"]},
+                    ),
                 )
             price = _price(plan, SP_LABEL["price"], v.get("price", ""))
             if shop is None or product is None or price is None:
@@ -194,8 +201,12 @@ class SpecialPricesKind:
             if pair in seen:
                 plan.error(
                     SP_LABEL["product_code"],
-                    gettext("This shop and product are also in row %(value)s. List each pair once.")
-                    % {"value": seen[pair]},
+                    fill(
+                        gettext(
+                            "This shop and product are also in row %(value)s. List each pair once."
+                        ),
+                        {"value": seen[pair]},
+                    ),
                 )
                 continue
             seen[pair] = row.number
@@ -215,11 +226,13 @@ class SpecialPricesKind:
             if mode == "ADD_ONLY":
                 plan.error(
                     SP_LABEL["product_code"],
-                    gettext(
-                        "%(code)s already has a special price for %(code2)s. To change it, "
-                        "choose “Add new and update existing”."
-                    )
-                    % {"code": shop.code, "code2": product.code},
+                    fill(
+                        gettext(
+                            "%(code)s already has a special price for %(code2)s. To change it, "
+                            "choose “Add new and update existing”."
+                        ),
+                        {"code": shop.code, "code2": product.code},
+                    ),
                 )
                 continue
             plan.target_id = current.pk
@@ -324,16 +337,22 @@ class PriceListItemsKind:
                 names = ", ".join(sorted(pl.name for pl in look.lists.values())[:10]) or "none yet"
                 plan.error(
                     PL_LABEL["price_list"],
-                    gettext("No price list is called %(price_list)s. Your price lists: %(names)s.")
-                    % {"price_list": v["price_list"], "names": names},
+                    fill(
+                        gettext(
+                            "No price list is called %(price_list)s. Your price lists: %(names)s."
+                        ),
+                        {"price_list": v["price_list"], "names": names},
+                    ),
                 )
             if not v.get("product_code"):
                 plan.error(PL_LABEL["product_code"], gettext("Enter the product code."))
             elif product is None:
                 plan.error(
                     PL_LABEL["product_code"],
-                    gettext("No product has the code %(product_code)s.")
-                    % {"product_code": v["product_code"]},
+                    fill(
+                        gettext("No product has the code %(product_code)s."),
+                        {"product_code": v["product_code"]},
+                    ),
                 )
             price = _price(plan, PL_LABEL["price"], v.get("price", ""))
             if price_list is None or product is None or price is None:
@@ -342,8 +361,12 @@ class PriceListItemsKind:
             if pair in seen:
                 plan.error(
                     PL_LABEL["product_code"],
-                    gettext("This list and product are also in row %(value)s. List each pair once.")
-                    % {"value": seen[pair]},
+                    fill(
+                        gettext(
+                            "This list and product are also in row %(value)s. List each pair once."
+                        ),
+                        {"value": seen[pair]},
+                    ),
                 )
                 continue
             seen[pair] = row.number
@@ -357,11 +380,13 @@ class PriceListItemsKind:
             if mode == "ADD_ONLY":
                 plan.error(
                     PL_LABEL["product_code"],
-                    gettext(
-                        "%(name)s already has a price for %(code)s. To change it, choose “Add "
-                        "new and update existing”."
-                    )
-                    % {"name": price_list.name, "code": product.code},
+                    fill(
+                        gettext(
+                            "%(name)s already has a price for %(code)s. To change it, choose “Add "
+                            "new and update existing”."
+                        ),
+                        {"name": price_list.name, "code": product.code},
+                    ),
                 )
                 continue
             plan.target_id = current.pk
@@ -548,7 +573,8 @@ class DiscountRulesKind:
             product = look.product(v[key])
             if product is None:
                 plan.error(
-                    DR_LABEL[key], gettext("No product has the code %(value)s.") % {"value": v[key]}
+                    DR_LABEL[key],
+                    fill(gettext("No product has the code %(value)s."), {"value": v[key]}),
                 )
                 return {}
             return {"scope_type": "PRODUCT", "product_id": product.pk}
@@ -556,7 +582,7 @@ class DiscountRulesKind:
             brand = ref["brands"].get(v[key].strip().lower())
             if brand is None:
                 plan.error(
-                    DR_LABEL[key], gettext("No brand is called %(value)s.") % {"value": v[key]}
+                    DR_LABEL[key], fill(gettext("No brand is called %(value)s."), {"value": v[key]})
                 )
                 return {}
             return {"scope_type": "BRAND", "brand_id": brand.pk}
@@ -566,8 +592,10 @@ class DiscountRulesKind:
             if found is None:
                 plan.error(
                     DR_LABEL[key],
-                    gettext("No category %(value)s (write it as Food > Biscuits).")
-                    % {"value": v[key]},
+                    fill(
+                        gettext("No category %(value)s (write it as Food > Biscuits)."),
+                        {"value": v[key]},
+                    ),
                 )
                 return {}
             parent = found.pk
@@ -582,8 +610,10 @@ class DiscountRulesKind:
             if price_list is None:
                 plan.error(
                     DR_LABEL["price_list"],
-                    gettext("No price list is called %(price_list)s.")
-                    % {"price_list": v["price_list"]},
+                    fill(
+                        gettext("No price list is called %(price_list)s."),
+                        {"price_list": v["price_list"]},
+                    ),
                 )
                 return {}
             return {"audience_type": "PRICE_LIST", "price_list_id": price_list.pk}
@@ -592,8 +622,10 @@ class DiscountRulesKind:
             if shop is None:
                 plan.error(
                     DR_LABEL["shop"],
-                    gettext("No shop has the mobile number or code %(shop)s.")
-                    % {"shop": v["shop"]},
+                    fill(
+                        gettext("No shop has the mobile number or code %(shop)s."),
+                        {"shop": v["shop"]},
+                    ),
                 )
                 return {}
             return {"audience_type": "RETAILER", "retailer_id": shop.pk}
@@ -618,8 +650,10 @@ class DiscountRulesKind:
         except ValueError:
             plan.error(
                 DR_LABEL["value"],
-                gettext("%(value)s isn't a number.")
-                % {"value": v.get("value") or gettext("An empty cell")},
+                fill(
+                    gettext("%(value)s isn't a number."),
+                    {"value": v.get("value") or gettext("An empty cell")},
+                ),
             )
         if value is not None and kind is not None:
             errors: dict[str, list[str]] = {}
@@ -634,7 +668,7 @@ class DiscountRulesKind:
             except ValueError:
                 plan.error(
                     DR_LABEL["slab"],
-                    gettext("%(slab)s isn't a quantity above 0.") % {"slab": v["slab"]},
+                    fill(gettext("%(slab)s isn't a quantity above 0."), {"slab": v["slab"]}),
                 )
         for name in ("valid_from", "valid_to"):
             if v.get(name):
@@ -643,7 +677,9 @@ class DiscountRulesKind:
                 except ValueError:
                     plan.error(
                         DR_LABEL[name],
-                        gettext("%(value)s isn't a date. Write DD-MM-YYYY.") % {"value": v[name]},
+                        fill(
+                            gettext("%(value)s isn't a date. Write DD-MM-YYYY."), {"value": v[name]}
+                        ),
                     )
             else:
                 data[name] = None
@@ -660,7 +696,9 @@ class DiscountRulesKind:
         except ValueError:
             plan.error(
                 DR_LABEL["is_active"],
-                gettext("Write Yes or No (not “%(is_active)s”).") % {"is_active": v["is_active"]},
+                fill(
+                    gettext("Write Yes or No (not “%(is_active)s”)."), {"is_active": v["is_active"]}
+                ),
             )
         return data, value, slab
 
@@ -717,8 +755,10 @@ class DiscountRulesKind:
                 if v.get(field_name, "") != v0.get(field_name, ""):
                     plan.error(
                         DR_LABEL[field_name],
-                        gettext("Rows of the rule “%(key)s” must match row %(number)s here.")
-                        % {"key": first.key, "number": first.number},
+                        fill(
+                            gettext("Rows of the rule “%(key)s” must match row %(number)s here."),
+                            {"key": first.key, "number": first.number},
+                        ),
                     )
         slabbed = [r for r in rows if r[4] is not None]
         if slabbed and len(slabbed) != len(rows):
@@ -736,20 +776,24 @@ class DiscountRulesKind:
         if len(matches) > 1 and mode == "ADD_OR_UPDATE":
             first.error(
                 DR_LABEL["name"],
-                gettext(
-                    "%(count)s rules are called “%(key)s”. Rename them first so each name is "
-                    "used once."
-                )
-                % {"count": len(matches), "key": first.key},
+                fill(
+                    gettext(
+                        "%(count)s rules are called “%(key)s”. Rename them first so each name is "
+                        "used once."
+                    ),
+                    {"count": len(matches), "key": first.key},
+                ),
             )
         elif matches and mode == "ADD_ONLY":
             first.error(
                 DR_LABEL["name"],
-                gettext(
-                    "A rule called “%(key)s” already exists. To change it, choose “Add new "
-                    "and update existing”."
-                )
-                % {"key": first.key},
+                fill(
+                    gettext(
+                        "A rule called “%(key)s” already exists. To change it, choose “Add new "
+                        "and update existing”."
+                    ),
+                    {"key": first.key},
+                ),
             )
         failed = next((p for p, *_ in rows if not p.ok), None)
         if failed is not None:
@@ -757,8 +801,12 @@ class DiscountRulesKind:
                 if plan.ok:
                     plan.error(
                         DR_LABEL["name"],
-                        gettext("Row %(number)s of this rule has a problem; the rule is skipped.")
-                        % {"number": failed.number},
+                        fill(
+                            gettext(
+                                "Row %(number)s of this rule has a problem; the rule is skipped."
+                            ),
+                            {"number": failed.number},
+                        ),
                     )
             return
         slabs: list[tuple[Decimal, Decimal]] = sorted(

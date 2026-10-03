@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { Headset, Landmark, Mail, Pencil, Play, ShieldOff } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 

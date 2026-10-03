@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { toast } from "sonner";
 

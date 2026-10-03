@@ -40,6 +40,7 @@ from apps.planning.quantities import up, up_to_pack
 from apps.platform.selectors import get_setting, is_feature_enabled
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 ZERO = Decimal("0")
@@ -204,7 +205,7 @@ def change_quantity(
     unit = suggestion.product.unit
     if quantity is not None and not unit.allows_decimal and quantity != quantity.to_integral():
         raise InvalidFields(
-            {"quantity": [_("%(code)s is counted in whole numbers.") % {"code": unit.code}]}
+            {"quantity": [fill(_("%(code)s is counted in whole numbers."), {"code": unit.code})]}
         )
     suggestion.quantity = quantity
     suggestion.save(update_fields=["quantity", "updated_at"])
@@ -259,8 +260,10 @@ def create_orders(ids: Sequence[UUID], *, by: User) -> list[Any]:
         raise InvalidFields(
             {
                 "suggestion_ids": [
-                    _("Choose a preferred supplier first for: %(without)s.")
-                    % {"without": ", ".join(without)}
+                    fill(
+                        _("Choose a preferred supplier first for: %(without)s."),
+                        {"without": ", ".join(without)},
+                    )
                 ]
             }
         )

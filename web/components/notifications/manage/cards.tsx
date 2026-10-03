@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, Link2Off } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";

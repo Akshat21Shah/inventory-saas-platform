@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, ScanBarcode } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 

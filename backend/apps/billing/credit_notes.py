@@ -50,6 +50,7 @@ from common import outbox
 from common.dates import today_ist
 from common.db import retry_on_deadlock
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill, grouped
 from common.tenancy import require_tenant_id
 
 ZERO = Decimal("0.00")
@@ -256,12 +257,14 @@ def _quantity_parts(invoice: Invoice, wanted: dict[UUID, tuple[Decimal, str]]) -
         done_qty, done = _credited(line)
         remaining_qty = Decimal(line.quantity) - done_qty
         if qty <= 0 or qty > remaining_qty:
-            left = f"{remaining_qty.normalize():f}"
+            left = remaining_qty  # grouped by fill
             raise InvalidFields(
                 {
                     "lines": [
-                        gettext("%(description)s: at most %(left)s can be credited.")
-                        % {"description": line.description, "left": left}
+                        fill(
+                            gettext("%(description)s: at most %(left)s can be credited."),
+                            {"description": line.description, "left": left},
+                        )
                     ]
                 }
             )
@@ -387,8 +390,13 @@ def issue_price_adjustment(
                 raise InvalidFields(
                     {
                         "lines": [
-                            gettext("%(description)s: at most ₹%(taxable)s can be credited.")
-                            % {"description": line.description, "taxable": left.taxable}
+                            fill(
+                                gettext("%(description)s: at most ₹%(taxable)s can be credited."),
+                                {
+                                    "description": line.description,
+                                    "taxable": grouped(left.taxable, 2),
+                                },
+                            )
                         ]
                     }
                 )

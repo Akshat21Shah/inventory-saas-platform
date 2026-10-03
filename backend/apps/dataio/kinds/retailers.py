@@ -22,6 +22,7 @@ from apps.pricing.models import PriceList
 from apps.retailers import services
 from apps.retailers.models import Retailer, RetailerAddress
 from common.languages import all_languages
+from common.numbers import fill
 from common.phone import normalize_indian_mobile
 
 
@@ -30,13 +31,13 @@ def _language_names() -> str:
     names = [language.name for language in all_languages()]
     if len(names) == 1:
         return names[0]
-    return _("%(names)s or %(last)s") % {"names": ", ".join(names[:-1]), "last": names[-1]}
+    return fill(_("%(names)s or %(last)s"), {"names": ", ".join(names[:-1]), "last": names[-1]})
 
 
 def _language_help_now() -> str:
-    return _("%(languages)s. Empty: your usual language for shops.") % {
-        "languages": _language_names()
-    }
+    return fill(
+        _("%(languages)s. Empty: your usual language for shops."), {"languages": _language_names()}
+    )
 
 
 _language_help = lazy(_language_help_now, str)  # in the language of whoever downloads it
@@ -229,8 +230,10 @@ class RetailersKind:
             if mobile in seen:
                 plan.error(
                     LABEL["mobile"],
-                    _("%(mobile)s is also in row %(value)s. List each shop only once.")
-                    % {"mobile": v["mobile"], "value": seen[mobile]},
+                    fill(
+                        _("%(mobile)s is also in row %(value)s. List each shop only once."),
+                        {"mobile": v["mobile"], "value": seen[mobile]},
+                    ),
                 )
                 continue
             seen[mobile] = row.number
@@ -249,11 +252,13 @@ class RetailersKind:
             elif mode == "ADD_ONLY":
                 plan.error(
                     LABEL["mobile"],
-                    _(
-                        "A shop with mobile %(mobile)s already exists. To change it, choose “Add "
-                        "new and update existing”."
-                    )
-                    % {"mobile": v["mobile"]},
+                    fill(
+                        _(
+                            "A shop with mobile %(mobile)s already exists. To change it, "
+                            "choose “Add new and update existing”."
+                        ),
+                        {"mobile": v["mobile"]},
+                    ),
                 )
             else:
                 self._plan_update(plan, data, retailer)
@@ -268,7 +273,8 @@ class RetailersKind:
             email = v["email"].strip().lower()
             if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
                 plan.error(
-                    LABEL["email"], _("%(email)s isn't an email address.") % {"email": v["email"]}
+                    LABEL["email"],
+                    fill(_("%(email)s isn't an email address."), {"email": v["email"]}),
                 )
             else:
                 out["email"] = email
@@ -288,24 +294,30 @@ class RetailersKind:
             if state is None:
                 plan.error(
                     LABEL["state"],
-                    _("%(state)s isn't a state. Use the name or the 2-digit GST code.")
-                    % {"state": v["state"]},
+                    fill(
+                        _("%(state)s isn't a state. Use the name or the 2-digit GST code."),
+                        {"state": v["state"]},
+                    ),
                 )
             else:
                 out["state_id"] = state
         if "gstin" in out and out.get("state_id") and out["state_id"] != out["gstin"][:2]:
             plan.error(
                 LABEL["state"],
-                _("The state must match the first 2 digits of the GSTIN (%(value)s).")
-                % {"value": out["gstin"][:2]},
+                fill(
+                    _("The state must match the first 2 digits of the GSTIN (%(value)s)."),
+                    {"value": out["gstin"][:2]},
+                ),
             )
         if v.get("salesperson"):
             person = ref["staff"].get(v["salesperson"].strip().lower())
             if person is None:
                 plan.error(
                     LABEL["salesperson"],
-                    _("%(salesperson)s isn't an active staff member.")
-                    % {"salesperson": v["salesperson"]},
+                    fill(
+                        _("%(salesperson)s isn't an active staff member."),
+                        {"salesperson": v["salesperson"]},
+                    ),
                 )
             else:
                 out["salesperson_id"] = person
@@ -314,8 +326,10 @@ class RetailersKind:
             if found is None:
                 plan.error(
                     LABEL["price_list"],
-                    _("%(price_list)s isn't one of your price lists.")
-                    % {"price_list": v["price_list"]},
+                    fill(
+                        _("%(price_list)s isn't one of your price lists."),
+                        {"price_list": v["price_list"]},
+                    ),
                 )
             else:
                 out["price_list_id"] = found
@@ -328,7 +342,9 @@ class RetailersKind:
             except ValueError:
                 plan.error(
                     LABEL["credit_limit"],
-                    _("%(credit_limit)s isn't an amount.") % {"credit_limit": v["credit_limit"]},
+                    fill(
+                        _("%(credit_limit)s isn't an amount."), {"credit_limit": v["credit_limit"]}
+                    ),
                 )
         if v.get("payment_terms_days"):
             try:
@@ -345,7 +361,7 @@ class RetailersKind:
             if language is None:
                 plan.error(
                     LABEL["preferred_language"],
-                    _("Write %(languages)s.") % {"languages": _language_names()},
+                    fill(_("Write %(languages)s."), {"languages": _language_names()}),
                 )
             else:
                 out["preferred_language"] = language
@@ -375,7 +391,7 @@ class RetailersKind:
         if address.get("pincode") and not re.fullmatch(r"[1-9][0-9]{5}", address["pincode"]):
             plan.error(
                 LABEL["pincode"],
-                _("%(pincode)s isn't a 6-digit PIN code.") % {"pincode": address["pincode"]},
+                fill(_("%(pincode)s isn't a 6-digit PIN code."), {"pincode": address["pincode"]}),
             )
         if plan.ok:
             plan.action = "NEW"

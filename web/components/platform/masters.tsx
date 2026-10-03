@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 

@@ -40,6 +40,7 @@ from apps.platform.selectors import get_setting
 from common.db import retry_on_deadlock
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 
 ZERO = Decimal("0")
 F = Fulfilment.Status
@@ -128,8 +129,10 @@ def _lock_shipment(fulfilment_id: UUID) -> tuple[Order, Fulfilment]:
 def _require(shipment: Fulfilment, *allowed: str) -> None:
     if shipment.status not in allowed:
         raise InvalidTransition(
-            _("This shipment is %(shipment)s now.")
-            % {"shipment": shipment.get_status_display().lower()},
+            fill(
+                _("This shipment is %(shipment)s now."),
+                {"shipment": shipment.get_status_display().lower()},
+            ),
             details={"status": shipment.status},
         )
 
@@ -199,8 +202,10 @@ def pack(fulfilment_id: UUID, packed: dict[UUID, Decimal], *, by: User) -> Fulfi
             qty = packed.get(fl.pk, fl.quantity)
             if qty < 0 or qty > fl.quantity:
                 errors[str(fl.pk)] = [
-                    _("Pack between 0 and %(quantity)s.")
-                    % {"quantity": format(fl.quantity.normalize(), "f")}
+                    fill(
+                        _("Pack between 0 and %(quantity)s."),
+                        {"quantity": format(fl.quantity.normalize(), "f")},
+                    )
                 ]
         if errors:
             raise InvalidFields(errors)

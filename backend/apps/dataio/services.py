@@ -29,6 +29,7 @@ from apps.dataio.models import ImportJob
 from apps.dataio.parsing import FileProblem, read_sheet, synonyms_for
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.storage import get_storage
 from common.tenancy import require_tenant_id, tenant_transaction
 
@@ -82,7 +83,7 @@ def create_job(kind_code: str, mode: str, upload: "UploadedFile[bytes]", *, by: 
     modes = modes_for(kind_for(kind_code))
     if mode not in modes:
         labels = " or ".join(f"“{ImportJob.Mode(m).label}”" for m in modes)
-        raise InvalidFields({"mode": [_("Choose %(labels)s.") % {"labels": labels}]})
+        raise InvalidFields({"mode": [fill(_("Choose %(labels)s."), {"labels": labels})]})
     data = upload.read(10 * 1024 * 1024 + 1)
     name = (upload.name or "import").split("/")[-1][:200]
     job = ImportJob(kind=kind_code, mode=mode, file_name=name, created_by=by)
@@ -103,7 +104,7 @@ def _plan(job: ImportJob) -> tuple[Kind, list[RowPlan], list[str]]:
     kind = kind_for(job.kind)
     sheet = read_sheet(job.file_name, get_storage().get(job.file_key), _synonyms(kind))
     notes = [
-        _("Column “%(name)s” isn't used and was skipped.") % {"name": n} for n in sheet.ignored
+        fill(_("Column “%(name)s” isn't used and was skipped."), {"name": n}) for n in sheet.ignored
     ]
     required = [c for c in kind.columns if c.required]
     missing = [
@@ -113,11 +114,13 @@ def _plan(job: ImportJob) -> tuple[Kind, list[RowPlan], list[str]]:
     ]
     if missing:
         raise FileProblem(
-            _(
-                "The file is missing these columns: %(columns)s. Download the template to see "
-                "the expected columns."
+            fill(
+                _(
+                    "The file is missing these columns: %(columns)s. Download the template to see "
+                    "the expected columns."
+                ),
+                {"columns": ", ".join(missing)},
             )
-            % {"columns": ", ".join(missing)}
         )
     by = job.committed_by or job.created_by
     assert by is not None

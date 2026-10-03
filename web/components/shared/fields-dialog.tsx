@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { FormField } from "@/components/shared/form-field";

@@ -24,6 +24,7 @@ from apps.retailers.selectors import retailer_for, retailers_for
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
 from common.idempotency import idempotent
+from common.numbers import fill
 from common.permissions import HasPermission
 
 VIEW = "ledger.view"
@@ -51,7 +52,7 @@ def _int(value: str | None, field: str, default: int, maximum: int) -> int:
         return default
     if not value.isdigit() or not 1 <= int(value) <= maximum:
         raise InvalidFields(
-            {field: [_("Use a number from 1 to %(maximum)s.") % {"maximum": maximum}]}
+            {field: [fill(_("Use a number from 1 to %(maximum)s."), {"maximum": maximum})]}
         )
     return int(value)
 

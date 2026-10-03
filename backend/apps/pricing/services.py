@@ -26,6 +26,7 @@ from apps.pricing.models import (
 )
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 MAX_BULK_ITEMS = 5000
 
@@ -92,8 +93,10 @@ def delete_price_list(price_list_id: UUID, *, by: User) -> None:
     shops = Retailer.objects.filter(price_list=price_list, deleted_at__isnull=True).count()
     if shops:
         raise InUse(
-            _("%(shops)s shop(s) use this price list. Move them to another list first.")
-            % {"shops": shops}
+            fill(
+                _("%(shops)s shop(s) use this price list. Move them to another list first."),
+                {"shops": shops},
+            )
         )
     if DiscountRule.objects.filter(price_list=price_list).exists():
         raise InUse(_("Some discount rules are for this price list. Change or delete them first."))
@@ -119,8 +122,10 @@ def upsert_items(
         raise InvalidFields(
             {
                 "items": [
-                    _("Send at most %(max_bulk_items)s prices at a time.")
-                    % {"max_bulk_items": format(MAX_BULK_ITEMS, ",")}
+                    fill(
+                        _("Send at most %(max_bulk_items)s prices at a time."),
+                        {"max_bulk_items": format(MAX_BULK_ITEMS, ",")},
+                    )
                 ]
             }
         )
@@ -318,10 +323,10 @@ def _check_targets(rule: DiscountRule, errors: dict[str, list[str]]) -> None:
         value = getattr(rule, attr)
         field = attr.removesuffix("_id")
         if value is None:
-            errors.setdefault(field, []).append(_("Choose the %(label)s.") % {"label": label})
+            errors.setdefault(field, []).append(fill(_("Choose the %(label)s."), {"label": label}))
         elif not qs.filter(pk=value).exists():
             errors.setdefault(field, []).append(
-                _("Choose an existing %(label)s.") % {"label": label}
+                fill(_("Choose an existing %(label)s."), {"label": label})
             )
 
 
@@ -465,7 +470,7 @@ def _check_scheme_quantities(scheme: FreeGoodsScheme, errors: dict[str, list[str
             errors.setdefault(field, []).append(_("Enter a quantity above 0."))
         elif product is not None and not product.unit.allows_decimal and value % 1:
             errors.setdefault(field, []).append(
-                _("Enter whole %(code)s.") % {"code": product.unit.code}
+                fill(_("Enter whole %(code)s."), {"code": product.unit.code})
             )
     if (
         scheme.max_free_qty is not None

@@ -35,6 +35,7 @@ from apps.platform.selectors import get_setting
 from common.dates import today_ist
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.storage import get_storage
 from common.tenancy import require_tenant_id, tenant_transaction
 from common.uploads import validate_image
@@ -367,8 +368,10 @@ def _active_rate(value: Decimal) -> Decimal:
         raise InvalidFields(
             {
                 "gst_rate": [
-                    gettext("Choose one of the GST rates in use: %(allowed)s.")
-                    % {"allowed": allowed}
+                    fill(
+                        gettext("Choose one of the GST rates in use: %(allowed)s."),
+                        {"allowed": allowed},
+                    )
                 ]
             }
         )
@@ -421,8 +424,10 @@ def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:
     hsn = product.hsn_code
     if not hsn.isdigit() or not min_digits <= len(hsn) <= 8:
         errors.setdefault("hsn_code", []).append(
-            gettext("Enter an HSN code of %(min_digits)s to 8 digits (numbers only).")
-            % {"min_digits": min_digits}
+            fill(
+                gettext("Enter an HSN code of %(min_digits)s to 8 digits (numbers only)."),
+                {"min_digits": min_digits},
+            )
         )
     for ref, qs, label in (
         ("category", selectors.categories(), "category"),
@@ -431,7 +436,7 @@ def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:
         ref_id = getattr(product, f"{ref}_id")
         if ref_id and not qs.filter(pk=ref_id).exists():
             errors.setdefault(ref, []).append(
-                gettext("Choose an existing %(label)s.") % {"label": label}
+                fill(gettext("Choose an existing %(label)s."), {"label": label})
             )
     unit = selectors.units().filter(pk=product.unit_id, is_active=True).first()
     if unit is None:
@@ -455,7 +460,7 @@ def _validate_product(product: Product, errors: dict[str, list[str]]) -> None:
             errors.setdefault(name, []).append(gettext("Enter a quantity above 0."))
         elif unit is not None and not unit.allows_decimal and value != value.to_integral_value():
             errors.setdefault(name, []).append(
-                gettext("%(code)s is counted in whole numbers.") % {"code": unit.code}
+                fill(gettext("%(code)s is counted in whole numbers."), {"code": unit.code})
             )
     if product.base_price is None or product.base_price < 0:
         errors.setdefault("base_price", []).append(gettext("Enter a price of 0 or more."))
@@ -708,7 +713,9 @@ def bulk_update(
         raise InvalidFields(
             {
                 "product_ids": [
-                    gettext("Select 1 to %(bulk_limit)s products.") % {"bulk_limit": BULK_LIMIT}
+                    fill(
+                        gettext("Select 1 to %(bulk_limit)s products."), {"bulk_limit": BULK_LIMIT}
+                    )
                 ]
             }
         )
@@ -943,8 +950,10 @@ def upload_image(
         raise InvalidFields(
             {
                 "file": [
-                    gettext("A product can have at most %(max_images_per_product)s images.")
-                    % {"max_images_per_product": MAX_IMAGES_PER_PRODUCT}
+                    fill(
+                        gettext("A product can have at most %(max_images_per_product)s images."),
+                        {"max_images_per_product": MAX_IMAGES_PER_PRODUCT},
+                    )
                 ]
             }
         )

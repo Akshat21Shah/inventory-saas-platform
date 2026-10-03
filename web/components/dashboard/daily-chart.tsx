@@ -1,6 +1,8 @@
 "use client";
 
-import { useFormatter } from "next-intl";
+import { useLocale } from "next-intl";
+
+import { formatCompact, formatDayMonth } from "@/lib/format";
 import {
   CartesianGrid,
   Line,
@@ -37,13 +39,8 @@ export function DailyChart({
   caption: string;
   dateLabel: string;
 }) {
-  const format = useFormatter();
-  const day = (value: string) =>
-    format.dateTime(new Date(`${value}T00:00:00+05:30`), {
-      day: "numeric",
-      month: "short",
-      timeZone: "Asia/Kolkata",
-    });
+  const locale = useLocale();
+  const day = (value: string) => formatDayMonth(value, locale);
   const value = (row: { date: string }, key: string) =>
     String((row as unknown as Record<string, unknown>)[key] ?? "");
   const points = rows.map((row) => ({
@@ -70,9 +67,7 @@ export function DailyChart({
               minTickGap={24}
             />
             <YAxis
-              tickFormatter={(value: number) =>
-                format.number(value, { notation: "compact", maximumFractionDigits: 1 })
-              }
+              tickFormatter={(value: number) => formatCompact(value)}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
               tickLine={false}
               axisLine={false}

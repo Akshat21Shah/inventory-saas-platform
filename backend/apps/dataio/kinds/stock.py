@@ -23,6 +23,7 @@ from apps.inventory import adjustments
 from apps.inventory.models import AdjustmentReason
 from apps.inventory.selectors import with_stock
 from apps.platform.selectors import get_setting
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 C = Column
@@ -96,8 +97,10 @@ class OpeningStockKind:
             elif product is None:
                 plan.error(
                     LABEL["product_code"],
-                    _("No product has the code %(product_code)s.")
-                    % {"product_code": v["product_code"]},
+                    fill(
+                        _("No product has the code %(product_code)s."),
+                        {"product_code": v["product_code"]},
+                    ),
                 )
             quantity = self._quantity(plan, v.get("quantity", ""), mode)
             cost = self._cost(plan, v.get("cost", ""), can_cost)
@@ -106,8 +109,10 @@ class OpeningStockKind:
             if product.pk in seen:
                 plan.error(
                     LABEL["product_code"],
-                    _("This product is also in row %(value)s. List each product once.")
-                    % {"value": seen[product.pk]},
+                    fill(
+                        _("This product is also in row %(value)s. List each product once."),
+                        {"value": seen[product.pk]},
+                    ),
                 )
                 continue
             seen[product.pk] = row.number
@@ -115,7 +120,7 @@ class OpeningStockKind:
             if not product.unit.allows_decimal and quantity % 1:
                 plan.error(
                     LABEL["quantity"],
-                    _("%(code)s is counted in whole numbers.") % {"code": product.unit.code},
+                    fill(_("%(code)s is counted in whole numbers."), {"code": product.unit.code}),
                 )
                 continue
             on_hand = Decimal(product.on_hand)  # type: ignore[attr-defined]
@@ -127,11 +132,13 @@ class OpeningStockKind:
             if new < reserved:
                 plan.error(
                     LABEL["quantity"],
-                    _(
-                        "%(reserved)s %(code)s is reserved for orders, so the stock can't go "
-                        "below that."
-                    )
-                    % {"reserved": _number(reserved), "code": product.unit.code},
+                    fill(
+                        _(
+                            "%(reserved)s %(code)s is reserved for orders, so the stock can't go "
+                            "below that."
+                        ),
+                        {"reserved": _number(reserved), "code": product.unit.code},
+                    ),
                 )
                 continue
             plan.action = "UPDATE"
@@ -162,7 +169,7 @@ class OpeningStockKind:
         except ValueError:
             plan.error(
                 LABEL["quantity"],
-                _("%(text)s isn't a quantity (at most 3 decimals).") % {"text": text},
+                fill(_("%(text)s isn't a quantity (at most 3 decimals)."), {"text": text}),
             )
             return None
         if value < 0 or (mode == STOCK_ADD and value == 0):
@@ -183,7 +190,8 @@ class OpeningStockKind:
             value = parse_decimal(text, places=4)
         except ValueError:
             plan.error(
-                LABEL["cost"], _("%(text)s isn't an amount (at most 4 decimals).") % {"text": text}
+                LABEL["cost"],
+                fill(_("%(text)s isn't an amount (at most 4 decimals)."), {"text": text}),
             )
             return None
         if value < 0:

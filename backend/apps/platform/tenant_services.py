@@ -37,6 +37,7 @@ from apps.platform.selectors import invalidate_tenant_features, invalidate_tenan
 from apps.platform.validators import normalize_gstin
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.tenancy import tenant_context
 
 # Business fields a super admin (onboarding/edit) and the distributor (settings) may change.
@@ -106,8 +107,10 @@ def _check_gst_identity(tenant: Tenant) -> None:
         errors["gstin"] = [problem]
     elif tenant.state_id != tenant.gstin[:2]:
         errors["state_code"] = [
-            _("The state must match the first 2 digits of the GSTIN (%(gstin)s).")
-            % {"gstin": tenant.gstin[:2]}
+            fill(
+                _("The state must match the first 2 digits of the GSTIN (%(gstin)s)."),
+                {"gstin": tenant.gstin[:2]},
+            )
         ]
     if errors:
         raise InvalidFields(errors)

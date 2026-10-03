@@ -24,6 +24,7 @@ from apps.platform.selectors import is_feature_enabled
 from common.errors import InvalidFields, NotFound
 from common.exceptions import error_body
 from common.idempotency import idempotent
+from common.numbers import fill
 from common.permissions import HasPermission
 
 VIEW, MANAGE, FULFIL = "orders.view", "orders.manage", "orders.fulfil"
@@ -120,7 +121,7 @@ class OrderListCreateView(Guarded, generics.ListAPIView[Order]):
         tab = q.get("tab", "")
         if tab and tab not in selectors.TABS:
             raise InvalidFields(
-                {"tab": [_("Use one of: %(tabs)s.") % {"tabs": ", ".join(selectors.TABS)}]}
+                {"tab": [fill(_("Use one of: %(tabs)s."), {"tabs": ", ".join(selectors.TABS)})]}
             )
         status = q.get("status", "")
         if status and status not in OrderStatus.values:

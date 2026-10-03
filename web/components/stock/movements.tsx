@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";

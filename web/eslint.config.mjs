@@ -7,9 +7,40 @@ import nextTs from "eslint-config-next/typescript";
 const WORDS = "/[A-Za-z]{2,}/";
 const I18N = 'Words on screen go through i18n: t("key") with the text in messages/en.json.';
 
+// Numbers inside messages go through the shared formatter (ADR-060 item 4): translations come from
+// lib/i18n, which formats every number they are given (6,029; 1,23,456), and numbers are
+// formatted only by lib/format.ts.
+const NUMBERS =
+  "Use lib/i18n/translations (or lib/i18n/server): it formats numbers in messages with Indian grouping.";
+const FORMAT = "Format numbers with lib/format.ts (Indian grouping, digits 0–9 in every language).";
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.{ts,tsx}", "lib/i18n/**", "lib/format.ts", "lib/api/generated/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "next-intl",
+              importNames: ["useTranslations", "useFormatter"],
+              message: NUMBERS,
+            },
+            { name: "next-intl/server", importNames: ["getTranslations"], message: NUMBERS },
+          ],
+        },
+      ],
+      "no-restricted-properties": [
+        "error",
+        { object: "Number", property: "toLocaleString", message: FORMAT },
+        { object: "Intl", property: "NumberFormat", message: FORMAT },
+      ],
+    },
+  },
   {
     files: ["app/**/*.tsx", "components/**/*.tsx"],
     ignores: ["**/*.test.tsx", "app/design-system/**"],

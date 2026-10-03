@@ -3,7 +3,8 @@
 import { UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { FormField } from "@/components/shared/form-field";

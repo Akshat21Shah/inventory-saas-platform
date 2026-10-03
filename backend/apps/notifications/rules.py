@@ -7,6 +7,7 @@ from django.utils.translation import gettext
 
 from apps.notifications.catalog import DEFAULT_RULES, EVENTS
 from apps.notifications.models import Channel, NotificationRule
+from common.numbers import fill
 
 
 @dataclass(frozen=True)
@@ -121,7 +122,7 @@ def _check(
     for rule in rules:
         if rule.recipient not in Recipient.values or rule.recipient in SYSTEM_RECIPIENTS:
             errors.append(
-                gettext("Unknown recipient %(recipient)s.") % {"recipient": rule.recipient}
+                fill(gettext("Unknown recipient %(recipient)s."), {"recipient": rule.recipient})
             )
             continue
         if rule.key in seen:
@@ -161,12 +162,17 @@ def _check(
         for channel in rule.channels:
             if channel not in RECIPIENT_CHANNELS[rule.recipient]:
                 errors.append(
-                    gettext("%(channel)s can't be used for this recipient.") % {"channel": channel}
+                    fill(
+                        gettext("%(channel)s can't be used for this recipient."),
+                        {"channel": channel},
+                    )
                 )
             elif channel not in texts:
                 errors.append(
-                    gettext("There is no %(channel)s text for this message yet.")
-                    % {"channel": channel}
+                    fill(
+                        gettext("There is no %(channel)s text for this message yet."),
+                        {"channel": channel},
+                    )
                 )
             elif (
                 channel == Channel.WHATSAPP

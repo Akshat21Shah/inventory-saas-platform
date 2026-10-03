@@ -34,6 +34,7 @@ from apps.notifications.models import ReminderPause
 from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill, grouped
 
 NAMESPACE = UUID("5d6f1f4e-0c1b-4c5e-9a57-2f4b8e9d6a10")
 RATE_CHANGE_NOTICE_DAYS = 7
@@ -118,18 +119,23 @@ def payment_reminders(today: date) -> int:
                  total: Decimal = total, overdue: Decimal = overdue, oldest: date = oldest,
                  paused: bool = paused) -> EventContext:  # fmt: skip
             if late:
-                note = _("%(amount)s overdue since %(date)s") % {
-                    "amount": rupees(overdue),
-                    "date": day(min(d.due_date for d in late)),
-                }
+                note = fill(
+                    _("%(amount)s overdue since %(date)s"),
+                    {
+                        "amount": rupees(overdue),
+                        "date": day(min(d.due_date for d in late)),
+                    },
+                )
             else:
-                note = _("due on %(date)s") % {"date": day(oldest)}
+                note = fill(_("due on %(date)s"), {"date": day(oldest)})
             return EventContext(
                 "payment.reminder",
                 {
                     "shop": shop.shop_name,
-                    "bills": ngettext("%(count)s bill", "%(count)s bills", len(dues))
-                    % {"count": len(dues)},
+                    "bills": fill(
+                        ngettext("%(count)s bill", "%(count)s bills", len(dues)),
+                        {"count": len(dues)},
+                    ),
                     "amount": rupees(total),
                     "overdue": rupees(overdue),
                     "due_note": note,
@@ -217,7 +223,7 @@ def handover_reminders(today: date) -> int:
                 "handover.reminder",
                 {
                     "salesman": names.get(salesman) or _("A salesman"),
-                    "count": str(row["count"]),
+                    "count": grouped(row["count"]),
                     "amount": rupees(row["amount"]),
                     "oldest": day(row["oldest"]),
                 },
@@ -286,7 +292,7 @@ def rate_change_warnings(today: date) -> int:
     ctx = EventContext(
         "tax.rate_change_upcoming",
         {
-            "count": str(len(changes)),
+            "count": grouped(len(changes)),
             "change_date": day(target),
             "products": listing(
                 [f"{c.product} ({rate(c.old_rate)} → {rate(c.new_rate)})" for c in changes]

@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, PenLine, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { FormField } from "@/components/shared/form-field";

@@ -8,12 +8,19 @@ from typing import Any
 
 from apps.notifications.catalog import default_text
 from apps.notifications.models import Audience, NotificationTemplate, PlatformTemplate
+from common import numbers
 
 VARIABLE = re.compile(r"{{\s*(\w+)\s*}}")
 
 
 def substitute(text: str, values: dict[str, Any]) -> str:
-    return VARIABLE.sub(lambda m: str(values.get(m.group(1), "")), text)
+    """``{{ name }}`` filled in; a number with Indian grouping (the shared formatter, ADR-060)."""
+
+    def value(name: str) -> str:
+        found = values.get(name, "")
+        return numbers.grouped(found) if numbers.is_number(found) else str(found)
+
+    return VARIABLE.sub(lambda m: value(m.group(1)), text)
 
 
 @dataclass(frozen=True)

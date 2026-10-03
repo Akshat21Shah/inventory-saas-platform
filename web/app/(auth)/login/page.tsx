@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/lib/i18n/server";
 import { Suspense } from "react";
 
 import { LoginScreen } from "@/components/auth/login-screen";

@@ -9,6 +9,7 @@ from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.dataio.parsing import Sheet
+from common.numbers import fill
 
 
 @dataclass(frozen=True)
@@ -44,8 +45,10 @@ class RowPlan:
 
     def messages(self) -> list[str]:
         return [
-            _("Row %(row)s, column “%(column)s”: %(message)s")
-            % {"row": self.number, "column": label, "message": m}
+            fill(
+                _("Row %(row)s, column “%(column)s”: %(message)s"),
+                {"row": self.number, "column": label, "message": m},
+            )
             for label, m in self.problems
         ]
 

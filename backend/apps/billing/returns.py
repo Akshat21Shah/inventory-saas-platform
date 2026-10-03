@@ -39,6 +39,7 @@ from common import outbox
 from common.dates import today_ist
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.sequences import next_value
 
 ZERO = Decimal("0")
@@ -152,7 +153,7 @@ def request_return(
     elif not window_open(invoice):
         days = int(get_setting("returns.request_days", invoice.tenant_id))
         problems["invoice"] = [
-            _("Returns can be asked for within %(days)s days of the bill.") % {"days": days}
+            fill(_("Returns can be asked for within %(days)s days of the bill."), {"days": days})
         ]
     if reason not in REASONS:
         problems["reason"] = [_("Choose why you are returning the goods.")]
@@ -170,10 +171,12 @@ def request_return(
         if found is None:
             problems["lines"] = [_("That item isn't on this bill.")]
         elif line.quantity > left[found.pk]:
-            most = f"{left[found.pk].normalize():f}"
+            most = left[found.pk]  # grouped by fill
             problems.setdefault("lines", []).append(
-                _("%(description)s: at most %(most)s can be returned.")
-                % {"description": found.description, "most": most}
+                fill(
+                    _("%(description)s: at most %(most)s can be returned."),
+                    {"description": found.description, "most": most},
+                )
             )
     if problems:
         raise InvalidFields(problems)
@@ -268,17 +271,21 @@ def approve_request(request_id: UUID, decisions: list[Decision], *, by: User) ->
             if line is None:
                 problems["lines"] = [_("That item isn't on this request.")]
             elif decision.quantity < 0 or decision.quantity > line.quantity:
-                asked = f"{line.quantity.normalize():f}"
+                asked = line.quantity  # grouped by fill
                 problems.setdefault("lines", []).append(
-                    _("%(description)s: between 0 and %(asked)s.")
-                    % {"description": line.invoice_line.description, "asked": asked}
+                    fill(
+                        _("%(description)s: between 0 and %(asked)s."),
+                        {"description": line.invoice_line.description, "asked": asked},
+                    )
                 )
             elif decision.quantity > 0 and decision.disposition not in (
                 CreditNoteLine.Disposition.values
             ):
                 problems.setdefault("lines", []).append(
-                    _("%(description)s: say what happened to the goods.")
-                    % {"description": line.invoice_line.description}
+                    fill(
+                        _("%(description)s: say what happened to the goods."),
+                        {"description": line.invoice_line.description},
+                    )
                 )
             else:
                 chosen[line.pk] = decision

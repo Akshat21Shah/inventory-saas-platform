@@ -54,6 +54,7 @@ from apps.reports.registry import (
     register,
 )
 from apps.retailers.models import Retailer
+from common.numbers import fill
 from common.permissions import AllOf, AnyOf
 
 SALES = AnyOf(("reports.sales", "reports.sales_own"))
@@ -301,16 +302,20 @@ def cost_notes(groups: dict[Any, Figures]) -> list[str]:
     notes = []
     if estimated:
         notes.append(
-            _(
-                "%(estimated)s line(s) had no cost recorded when invoiced: today's cost "
-                "price is used (estimated)."
+            fill(
+                _(
+                    "%(estimated)s line(s) had no cost recorded when invoiced: today's cost "
+                    "price is used (estimated)."
+                ),
+                {"estimated": estimated},
             )
-            % {"estimated": estimated}
         )
     if uncosted:
         notes.append(
-            _("%(uncosted)s line(s) have no cost price and are left out of the margin.")
-            % {"uncosted": uncosted}
+            fill(
+                _("%(uncosted)s line(s) have no cost price and are left out of the margin."),
+                {"uncosted": uncosted},
+            )
         )
     return notes
 

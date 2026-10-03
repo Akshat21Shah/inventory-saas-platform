@@ -45,6 +45,7 @@ from apps.reports.registry import (
     register,
 )
 from common.dates import today_ist
+from common.numbers import fill
 
 FINANCIAL = "reports.financial"
 ZERO = Decimal("0")
@@ -836,8 +837,10 @@ def summary_notes(ctx: Context) -> list[str]:
     if nil:
         parts = ", ".join(f"{k} ₹{_money(v):,}" for k, v in sorted(nil.items()))
         notes.append(
-            _("Nil-rated (0%%) supplies, not in these sections (Table 8): %(parts)s.")
-            % {"parts": parts}
+            fill(
+                _("Nil-rated (0%%) supplies, not in these sections (Table 8): %(parts)s."),
+                {"parts": parts},
+            )
         )
     return notes
 

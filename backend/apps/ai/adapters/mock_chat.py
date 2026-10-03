@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from apps.ai.adapters.chat import ChatTurn, Message, ToolCall, ToolSpec
+from common import numbers
 
 MODEL = "mock-scripted-1"
 WORDS_DIR = Path(__file__).resolve().parent.parent / "assistant" / "words"
@@ -160,22 +161,12 @@ def _tried(lang: str) -> tuple[Words, ...]:
 
 
 def rupees(value: Any) -> str:
-    """'123456.5' → '₹1,23,456.50' (Indian grouping, digits 0-9 in every language)."""
-    number = Decimal(str(value or 0)).quantize(Decimal("0.01"))
-    sign = "-" if number < 0 else ""
-    whole, _, paise = f"{abs(number):.2f}".partition(".")
-    head, tail = whole[:-3], whole[-3:]
-    groups: list[str] = []
-    while len(head) > 2:
-        groups.insert(0, head[-2:])
-        head = head[:-2]
-    if head:
-        groups.insert(0, head)
-    return f"{sign}₹{','.join([*groups, tail]) if groups else tail}.{paise}"
+    """'123456.5' → '₹1,23,456.50' (the shared formatter: Indian grouping, digits 0-9)."""
+    return numbers.rupees(value or 0)
 
 
 def quantity(value: Any) -> str:
-    return f"{Decimal(str(value or 0)).normalize():f}"
+    return numbers.grouped(value or 0)
 
 
 def _period(question: str, lang: str) -> str | None:

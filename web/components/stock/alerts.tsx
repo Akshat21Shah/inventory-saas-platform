@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 
 import { FilterSelect } from "@/components/catalog/controls";

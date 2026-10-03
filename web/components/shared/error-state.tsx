@@ -1,7 +1,8 @@
 "use client";
 
 import { RefreshCw, TriangleAlert } from "lucide-react";
-import { useMessages, useTranslations } from "next-intl";
+import { useMessages } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { Button } from "@/components/ui/button";
 import { errorMessageKey } from "@/lib/api/errors";

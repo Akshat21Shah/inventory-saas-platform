@@ -16,6 +16,8 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
+from common.numbers import fill
+
 
 class Scope(StrEnum):
     TENANT = "TENANT"
@@ -160,11 +162,13 @@ ASCENDING: tuple[tuple[str, str, str], ...] = (
 def _check_range(defn: SettingDef, value: int | Decimal) -> None:
     if defn.min_value is not None and value < defn.min_value:
         raise ValidationError(
-            _("Enter %(min_value)s or more.") % {"min_value": defn.min_value}, code="out_of_range"
+            fill(_("Enter %(min_value)s or more."), {"min_value": defn.min_value}),
+            code="out_of_range",
         )
     if defn.max_value is not None and value > defn.max_value:
         raise ValidationError(
-            _("Enter %(max_value)s or less.") % {"max_value": defn.max_value}, code="out_of_range"
+            fill(_("Enter %(max_value)s or less."), {"max_value": defn.max_value}),
+            code="out_of_range",
         )
 
 

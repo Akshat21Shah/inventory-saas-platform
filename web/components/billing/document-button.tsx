@@ -1,7 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 

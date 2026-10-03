@@ -17,6 +17,7 @@ from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from apps.shop.selectors import visible_products
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 MAX_QTY = Decimal("100000")
 MAX_LINES = 200
@@ -55,7 +56,10 @@ def _valid_qty(product: Product, qty: Decimal) -> Decimal:
         raise InvalidFields(
             {
                 "quantity": [
-                    gettext("%(name)s is counted in whole numbers.") % {"name": product.unit.name}
+                    fill(
+                        gettext("%(name)s is counted in whole numbers."),
+                        {"name": product.unit.name},
+                    )
                 ]
             }
         )
@@ -84,8 +88,10 @@ def set_quantity(cart: Cart, product_id: UUID, qty: Decimal) -> None:
             raise InvalidFields(
                 {
                     "quantity": [
-                        gettext("A cart can hold up to %(max_lines)s products.")
-                        % {"max_lines": MAX_LINES}
+                        fill(
+                            gettext("A cart can hold up to %(max_lines)s products."),
+                            {"max_lines": MAX_LINES},
+                        )
                     ]
                 }
             )

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
 
 import { FilterSelect } from "@/components/catalog/controls";

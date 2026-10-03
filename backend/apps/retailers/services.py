@@ -23,6 +23,7 @@ from apps.pricing.models import PriceList
 from apps.retailers.models import Retailer, RetailerAddress, RetailerUser
 from common import languages
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.phone import normalize_indian_mobile
 from common.sequences import next_value
 from common.tenancy import require_tenant_id
@@ -84,8 +85,10 @@ def _check_gstin(retailer: Retailer, errors: dict[str, list[str]]) -> None:
         retailer.state_id = retailer.gstin[:2]
     elif retailer.state_id != retailer.gstin[:2]:
         errors.setdefault("state", []).append(
-            _("The state must match the first 2 digits of the GSTIN (%(value)s).")
-            % {"value": retailer.gstin[:2]}
+            fill(
+                _("The state must match the first 2 digits of the GSTIN (%(value)s)."),
+                {"value": retailer.gstin[:2]},
+            )
         )
     clash = Retailer.objects.filter(gstin=retailer.gstin, deleted_at__isnull=True)
     if clash.exclude(pk=retailer.pk).exists():
@@ -122,7 +125,7 @@ def _check_profile(retailer: Retailer, errors: dict[str, list[str]]) -> None:
     if retailer.preferred_language and not languages.is_known(retailer.preferred_language):
         # Empty: the distributor's default for shops (ADR-060).
         errors.setdefault("preferred_language", []).append(
-            _("Choose one of: %(languages)s.") % {"languages": ", ".join(languages.codes())}
+            fill(_("Choose one of: %(languages)s."), {"languages": ", ".join(languages.codes())})
         )
     if (
         retailer.price_list_id

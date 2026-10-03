@@ -15,6 +15,7 @@ from apps.billing.templatetags.documents import day, indian_number, qty, rupees
 from apps.platform.models import Tenant
 from apps.retailers.models import Retailer
 from common.models import OutboxEvent
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 LIST_LIMIT = 5  # "A 2→3, B 1→0 and 3 more"
@@ -63,7 +64,11 @@ def current_tenant() -> Tenant:
 def listing(items: list[str]) -> str:
     shown = ", ".join(items[:LIST_LIMIT])
     more = len(items) - LIST_LIMIT
-    return _("%(shown)s and %(more)s more") % {"shown": shown, "more": more} if more > 0 else shown
+    return (
+        fill(_("%(shown)s and %(more)s more"), {"shown": shown, "more": more})
+        if more > 0
+        else shown
+    )
 
 
 def balance_text(retailer_id: UUID) -> str:
@@ -76,9 +81,9 @@ def balance_text(retailer_id: UUID) -> str:
         .first()
     ) or Decimal("0")
     if balance > 0:
-        return _("%(amount)s to pay") % {"amount": rupees(balance)}
+        return fill(_("%(amount)s to pay"), {"amount": rupees(balance)})
     if balance < 0:
-        return _("%(amount)s in credit") % {"amount": rupees(-balance)}
+        return fill(_("%(amount)s in credit"), {"amount": rupees(-balance)})
     return _("nothing to pay")
 
 
@@ -125,8 +130,10 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
     if "lines" in p:
         values["items"] = listing(
             [
-                _("%(product)s %(quantity)s short")
-                % {"product": name(line["product"]), "quantity": qty(line["short"])}
+                fill(
+                    _("%(product)s %(quantity)s short"),
+                    {"product": name(line["product"]), "quantity": qty(line["short"])},
+                )
                 for line in p["lines"]
             ]
         )
@@ -136,14 +143,16 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         if shipment is not None:
             # A phrase for "left the warehouse{{ vehicle }}": " by vehicle MH12AB1234" or nothing.
             number = shipment.vehicle_number
-            values["vehicle"] = (_(" by vehicle %(number)s") % {"number": number}) if number else ""
+            values["vehicle"] = (
+                (fill(_(" by vehicle %(number)s"), {"number": number})) if number else ""
+            )
             values["transporter"] = shipment.transporter_name
             values["lr_number"] = shipment.lr_number
             # ADR-057: the shop's delivery code, only while the shipment is on its way; only the
             # shop's texts use it.
             on_its_way = shipment.status == Fulfilment.Status.DISPATCHED
             values["delivery_code"] = (
-                _(" Delivery code: %(code)s.") % {"code": shipment.delivery_code}
+                fill(_(" Delivery code: %(code)s."), {"code": shipment.delivery_code})
                 if shipment.delivery_code and on_its_way
                 else ""
             )
@@ -191,7 +200,7 @@ def _invoice(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         p = event.payload
         reissued = p.get("reissued_invoice_id")
         values["note"] = (
-            _("Bill %(number)s replaces it.") % {"number": p["reissued_number"]}
+            fill(_("Bill %(number)s replaces it."), {"number": p["reissued_number"]})
             if reissued
             else _("The goods were taken back.")
         )
@@ -306,8 +315,10 @@ def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         "balance": balance_text(payment.retailer_id),
         # ADR-057 item 4: the charge added when the cheque bounced, if any.
         "bounce_charge": (
-            _(" A cheque bounce charge of %(amount)s was added.")
-            % {"amount": rupees(payment.bounce_charge.amount)}
+            fill(
+                _(" A cheque bounce charge of %(amount)s was added."),
+                {"amount": rupees(payment.bounce_charge.amount)},
+            )
             if payment.bounce_charge is not None
             else ""
         ),

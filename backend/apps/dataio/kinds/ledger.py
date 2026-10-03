@@ -21,6 +21,7 @@ from apps.ledger import services as ledger
 from apps.ledger.models import LedgerAdjustment
 from apps.retailers.models import Retailer
 from common.dates import today_ist
+from common.numbers import fill
 from common.phone import normalize_indian_mobile
 
 C = Column
@@ -157,7 +158,7 @@ class OpeningBalancesKind:
             elif shop is None:
                 plan.error(
                     LABEL["shop"],
-                    _("No shop has the mobile number or code %(shop)s.") % {"shop": v["shop"]},
+                    fill(_("No shop has the mobile number or code %(shop)s."), {"shop": v["shop"]}),
                 )
             amount = None
             try:
@@ -183,8 +184,10 @@ class OpeningBalancesKind:
                 if shop.pk in seen_advance:
                     plan.error(
                         LABEL["amount"],
-                        _("This shop's advance is also in row %(value)s.")
-                        % {"value": seen_advance[shop.pk]},
+                        fill(
+                            _("This shop's advance is also in row %(value)s."),
+                            {"value": seen_advance[shop.pk]},
+                        ),
                     )
                     continue
                 seen_advance[shop.pk] = row.number
@@ -197,8 +200,10 @@ class OpeningBalancesKind:
                 if (shop.pk, number) in seen_bill:
                     plan.error(
                         LABEL["bill_number"],
-                        _("This bill is also in row %(value)s.")
-                        % {"value": seen_bill[shop.pk, number]},
+                        fill(
+                            _("This bill is also in row %(value)s."),
+                            {"value": seen_bill[shop.pk, number]},
+                        ),
                     )
                     continue
                 seen_bill[(shop.pk, number)] = row.number

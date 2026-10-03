@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";

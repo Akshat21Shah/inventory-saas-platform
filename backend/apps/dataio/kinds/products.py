@@ -18,6 +18,7 @@ from apps.catalog.models import Category, Product, ProductBarcode, Unit
 from apps.dataio.kinds.base import Column, RowPlan
 from apps.dataio.parsing import Sheet, parse_bool, parse_decimal, split_list
 from apps.platform.selectors import get_setting
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 C = Column
@@ -261,8 +262,10 @@ class ProductsKind:
             if lowered in seen_codes:
                 plan.error(
                     LABEL["code"],
-                    _("%(key)s is also in row %(value)s. List each product only once.")
-                    % {"key": key, "value": seen_codes[lowered]},
+                    fill(
+                        _("%(key)s is also in row %(value)s. List each product only once."),
+                        {"key": key, "value": seen_codes[lowered]},
+                    ),
                 )
                 continue
             seen_codes[lowered] = row.number
@@ -270,17 +273,19 @@ class ProductsKind:
             if product is None and lowered in deleted_codes:
                 plan.error(
                     LABEL["code"],
-                    _("%(key)s belonged to a deleted product. Use a new code.") % {"key": key},
+                    fill(_("%(key)s belonged to a deleted product. Use a new code."), {"key": key}),
                 )
                 continue
             if product is not None and mode == "ADD_ONLY":
                 plan.error(
                     LABEL["code"],
-                    _(
-                        "A product with code %(key)s already exists. To change it, choose “Add "
-                        "new and update existing”."
-                    )
-                    % {"key": key},
+                    fill(
+                        _(
+                            "A product with code %(key)s already exists. To change it, choose “Add "
+                            "new and update existing”."
+                        ),
+                        {"key": key},
+                    ),
                 )
                 continue
             if v.get("cost_price") and not can_cost:
@@ -324,7 +329,9 @@ class ProductsKind:
             if pack is None:
                 plan.error(
                     LABEL["pack_unit"],
-                    _("%(pack_unit)s isn't one of your units.") % {"pack_unit": v["pack_unit"]},
+                    fill(
+                        _("%(pack_unit)s isn't one of your units."), {"pack_unit": v["pack_unit"]}
+                    ),
                 )
             else:
                 out["pack_unit"] = pack
@@ -332,15 +339,19 @@ class ProductsKind:
             hsn = re.sub(r"[\s.]", "", v["hsn_code"])
             if hsn.isdigit() and len(hsn) % 2 == 1 and len(hsn) < 8:
                 plan.warnings.append(
-                    _("HSN %(hsn)s read as 0%(hsn)s (spreadsheets drop leading zeros).")
-                    % {"hsn": hsn}
+                    fill(
+                        _("HSN %(hsn)s read as 0%(hsn)s (spreadsheets drop leading zeros)."),
+                        {"hsn": hsn},
+                    )
                 )
                 hsn = f"0{hsn}"
             if not hsn.isdigit() or not ref["hsn_min"] <= len(hsn) <= 8:
                 plan.error(
                     LABEL["hsn_code"],
-                    _("%(hsn_code)s isn't a valid HSN code. Use %(hsn_min)s to 8 digits.")
-                    % {"hsn_code": v["hsn_code"], "hsn_min": ref["hsn_min"]},
+                    fill(
+                        _("%(hsn_code)s isn't a valid HSN code. Use %(hsn_min)s to 8 digits."),
+                        {"hsn_code": v["hsn_code"], "hsn_min": ref["hsn_min"]},
+                    ),
                 )
             else:
                 out["hsn_code"] = hsn
@@ -373,7 +384,8 @@ class ProductsKind:
                     out[name] = parse_bool(v[name])
                 except ValueError:
                     plan.error(
-                        LABEL[name], _("Write Yes or No (not “%(value)s”).") % {"value": v[name]}
+                        LABEL[name],
+                        fill(_("Write Yes or No (not “%(value)s”)."), {"value": v[name]}),
                     )
         if v.get("tags"):
             out["tags"] = split_list(v["tags"])
@@ -393,15 +405,17 @@ class ProductsKind:
         except ValueError:
             plan.error(
                 LABEL["gst_rate"],
-                _("%(text)s isn't a GST rate. Write a number such as 18.") % {"text": text},
+                fill(_("%(text)s isn't a GST rate. Write a number such as 18."), {"text": text}),
             )
             return None
         if rate not in ref["rates"]:
             allowed = ", ".join(f"{r.normalize():f}" for r in ref["rates"])
             plan.error(
                 LABEL["gst_rate"],
-                _("%(rate)s%% isn't a GST rate in use. Use one of %(allowed)s.")
-                % {"rate": format(rate.normalize(), "f"), "allowed": allowed},
+                fill(
+                    _("%(rate)s%% isn't a GST rate in use. Use one of %(allowed)s."),
+                    {"rate": format(rate.normalize(), "f"), "allowed": allowed},
+                ),
             )
             return None
         return rate
@@ -432,11 +446,13 @@ class ProductsKind:
             if rate is not None and (current is None or rate != current.gst_rate):
                 plan.error(
                     LABEL["gst_rate"],
-                    _(
-                        "GST changes need a start date: schedule them under Products → GST "
-                        "rates. The current rate is %(gst_rate)s%%."
+                    fill(
+                        _(
+                            "GST changes need a start date: schedule them under Products → GST "
+                            "rates. The current rate is %(gst_rate)s%%."
+                        ),
+                        {"gst_rate": format(current.gst_rate.normalize(), "f")},
                     )
-                    % {"gst_rate": format(current.gst_rate.normalize(), "f")}
                     if current
                     else _(
                         "This product has no GST rate in effect; schedule one under "
@@ -544,17 +560,19 @@ class ProductsKind:
             if len(code) > 64:
                 plan.error(
                     LABEL["barcodes"],
-                    _("%(value)s… is longer than 64 characters.") % {"value": code[:20]},
+                    fill(_("%(value)s… is longer than 64 characters."), {"value": code[:20]}),
                 )
             elif code in seen and seen[code] != plan.number:
                 plan.error(
                     LABEL["barcodes"],
-                    _("%(code)s is also in row %(value)s.") % {"code": code, "value": seen[code]},
+                    fill(
+                        _("%(code)s is also in row %(value)s."), {"code": code, "value": seen[code]}
+                    ),
                 )
             elif code in owners and (product is None or owners[code] != product.pk):
                 plan.error(
                     LABEL["barcodes"],
-                    _("%(code)s already belongs to another product.") % {"code": code},
+                    fill(_("%(code)s already belongs to another product."), {"code": code}),
                 )
             seen.setdefault(code, plan.number)
         plan.data["barcodes"] = codes

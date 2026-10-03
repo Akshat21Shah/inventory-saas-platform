@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { SubNav } from "@/components/shared/sub-nav";
 

@@ -1,5 +1,5 @@
 import { WifiOff } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/lib/i18n/server";
 
 import { EmptyState } from "@/components/shared/empty-state";
 

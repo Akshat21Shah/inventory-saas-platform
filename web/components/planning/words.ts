@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import type { DemandRate } from "@/lib/api/generated/model";
 import { formatQty } from "@/lib/format";

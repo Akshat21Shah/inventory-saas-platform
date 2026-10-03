@@ -18,6 +18,7 @@ from apps.platform.validators import normalize_gstin
 from apps.purchasing import services
 from apps.purchasing.models import Supplier
 from apps.purchasing.selectors import name_key
+from common.numbers import fill
 
 C = Column
 COLUMNS: tuple[Column, ...] = (
@@ -111,7 +112,7 @@ class SuppliersKind:
             if twice is not None:
                 plan.error(
                     LABEL["name"],
-                    _("Also in row %(twice)s. List each supplier once.") % {"twice": twice},
+                    fill(_("Also in row %(twice)s. List each supplier once."), {"twice": twice}),
                 )
                 continue
             seen.update(dict.fromkeys(keys, row.number))
@@ -125,11 +126,13 @@ class SuppliersKind:
             elif mode == "ADD_ONLY":
                 plan.error(
                     LABEL["name"],
-                    _(
-                        "%(name)s is already a supplier. To change it, choose “Add new and "
-                        "update existing”."
-                    )
-                    % {"name": existing.name},
+                    fill(
+                        _(
+                            "%(name)s is already a supplier. To change it, choose “Add new and "
+                            "update existing”."
+                        ),
+                        {"name": existing.name},
+                    ),
                 )
             elif plan.ok:
                 self._plan_update(plan, data, existing)
@@ -141,7 +144,7 @@ class SuppliersKind:
             out["notes"] = v["notes"].strip()
         if out.get("email") and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", out["email"]):
             plan.error(
-                LABEL["email"], _("%(email)s isn't an email address.") % {"email": v["email"]}
+                LABEL["email"], fill(_("%(email)s isn't an email address."), {"email": v["email"]})
             )
         if out.get("phone") and not services.PHONE.fullmatch(out["phone"]):
             plan.error(LABEL["phone"], _("Enter a phone number with 10 to 15 digits."))
@@ -158,7 +161,7 @@ class SuppliersKind:
             if state is None:
                 plan.error(
                     LABEL["state"],
-                    _("%(raw)s isn't a state. Use the name or the GST code.") % {"raw": raw},
+                    fill(_("%(raw)s isn't a state. Use the name or the GST code."), {"raw": raw}),
                 )
             elif out.get("gstin") and out["gstin"][:2] != state:
                 plan.error(
@@ -172,7 +175,7 @@ class SuppliersKind:
             else:
                 plan.error(
                     LABEL["pincode"],
-                    _("%(pincode)s isn't a 6-digit PIN code.") % {"pincode": v["pincode"]},
+                    fill(_("%(pincode)s isn't a 6-digit PIN code."), {"pincode": v["pincode"]}),
                 )
         for name, low, high in (("payment_terms_days", 0, 365), ("lead_time_days", 1, 365)):
             if v.get(name):
@@ -184,7 +187,7 @@ class SuppliersKind:
                 except ValueError:
                     plan.error(
                         LABEL[name],
-                        _("Enter %(low)s to %(high)s days.") % {"low": low, "high": high},
+                        fill(_("Enter %(low)s to %(high)s days."), {"low": low, "high": high}),
                     )
         return out
 

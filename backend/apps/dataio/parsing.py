@@ -16,6 +16,8 @@ from typing import Any
 
 from django.utils.translation import gettext as _
 
+from common.numbers import fill
+
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_ROWS = 20_000
 HEADER_SEARCH_ROWS = 15
@@ -205,8 +207,10 @@ def read_sheet(file_name: str, data: bytes, synonyms: dict[str, str]) -> Sheet:
         rows.append(Row(number=offset, values=values))
         if len(rows) > MAX_ROWS:
             raise FileProblem(
-                _("The file has more than %(max_rows)s rows. Split it into smaller files.")
-                % {"max_rows": format(MAX_ROWS, ",")}
+                fill(
+                    _("The file has more than %(max_rows)s rows. Split it into smaller files."),
+                    {"max_rows": format(MAX_ROWS, ",")},
+                )
             )
     if not rows:
         raise FileProblem(_("The file has column names but no rows to import."))

@@ -20,6 +20,8 @@ from uuid import UUID
 
 from django.utils.translation import gettext as _
 
+from common.numbers import fill
+
 MANIFEST = Path(__file__).with_name("languages.json")
 CODE = re.compile(r"^[a-z]{2,3}$")
 
@@ -138,7 +140,7 @@ def validate_code(value: str, *, allow_blank: bool = False) -> str:
         return ""
     if not is_known(value):
         raise serializers.ValidationError(
-            _("Choose one of: %(codes)s.") % {"codes": ", ".join(codes())}
+            fill(_("Choose one of: %(codes)s."), {"codes": ", ".join(codes())})
         )
     return value
 

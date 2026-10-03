@@ -2,7 +2,7 @@
 
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { FormField } from "@/components/shared/form-field";

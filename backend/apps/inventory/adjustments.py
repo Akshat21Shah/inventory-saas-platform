@@ -29,6 +29,7 @@ from apps.inventory.services import InsufficientStock, StockReserved
 from common.dates import today_ist
 from common.db import retry_on_deadlock
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.sequences import next_value
 
 MAX_LINES = 500
@@ -73,7 +74,7 @@ def _validate(data: AdjustmentInput, by: User, max_lines: int) -> dict[UUID, Pro
         errors["lines"] = [_("Add at least one product.")]
     elif len(data.lines) > max_lines:
         errors["lines"] = [
-            _("An adjustment can have up to %(max_lines)s lines.") % {"max_lines": max_lines}
+            fill(_("An adjustment can have up to %(max_lines)s lines."), {"max_lines": max_lines})
         ]
     if errors:
         raise InvalidFields(errors)
@@ -232,7 +233,9 @@ def set_reorder_level(product_id: UUID, reorder_level: Decimal, *, by: User) -> 
             raise InvalidFields(
                 {
                     "reorder_level": [
-                        _("%(code)s is counted in whole numbers.") % {"code": product.unit.code}
+                        fill(
+                            _("%(code)s is counted in whole numbers."), {"code": product.unit.code}
+                        )
                     ]
                 }
             )

@@ -42,6 +42,7 @@ from apps.orders.services import (
 from common.db import retry_on_deadlock
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 
 ZERO = Decimal("0")
 
@@ -53,7 +54,9 @@ class InvalidTransition(DomainError):
 
 
 def _status_message(order: Order) -> str:
-    return gettext("This order is %(order)s now.") % {"order": order.get_status_display().lower()}
+    return fill(
+        gettext("This order is %(order)s now."), {"order": order.get_status_display().lower()}
+    )
 
 
 def lock_order(order_id: UUID) -> Order:

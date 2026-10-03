@@ -8,6 +8,7 @@ from django.utils.translation import gettext as _
 from PIL import Image, UnidentifiedImageError
 
 from common.errors import InvalidFields
+from common.numbers import fill
 
 MAX_IMAGE_BYTES = 2 * 1024 * 1024
 MAX_IMAGE_SIDE = 4096
@@ -41,8 +42,10 @@ def validate_image(
         raise InvalidFields(
             {
                 field: [
-                    _("The image is larger than %(value)s MB.")
-                    % {"value": max_bytes // (1024 * 1024)}
+                    fill(
+                        _("The image is larger than %(value)s MB."),
+                        {"value": max_bytes // (1024 * 1024)},
+                    )
                 ]
             }
         )
@@ -59,8 +62,10 @@ def validate_image(
         raise InvalidFields(
             {
                 field: [
-                    _("The image must be at most %(max_side)s px wide and high.")
-                    % {"max_side": max_side}
+                    fill(
+                        _("The image must be at most %(max_side)s px wide and high."),
+                        {"max_side": max_side},
+                    )
                 ]
             }
         )

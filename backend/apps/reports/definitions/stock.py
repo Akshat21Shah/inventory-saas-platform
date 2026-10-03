@@ -41,6 +41,7 @@ from apps.reports.registry import (
     register,
 )
 from common.dates import ist_bounds, to_ist, today_ist
+from common.numbers import fill
 from common.permissions import AllOf, AnyOf
 from common.tenancy import require_tenant_id
 
@@ -211,8 +212,10 @@ def valuation_notes(ctx: Context) -> list[str]:
     if not result.missing_cost:
         return []
     return [
-        gettext("%(missing_cost)s product(s) in stock have no cost price and are left out.")
-        % {"missing_cost": result.missing_cost}
+        fill(
+            gettext("%(missing_cost)s product(s) in stock have no cost price and are left out."),
+            {"missing_cost": result.missing_cost},
+        )
     ]
 
 
@@ -265,8 +268,12 @@ def low_notes(ctx: Context) -> list[str]:
     if not missing:
         return []
     return [
-        gettext("%(missing)s active product(s) have no reorder level, so they never show as low.")
-        % {"missing": missing}
+        fill(
+            gettext(
+                "%(missing)s active product(s) have no reorder level, so they never show as low."
+            ),
+            {"missing": missing},
+        )
     ]
 
 
@@ -486,12 +493,14 @@ def movement_class_notes(ctx: Context) -> list[str]:
     share = int(get_setting("reports.fast_share_percent", tenant))
     basis = "quantity" if ctx.params.get("rank_by") == "quantity" else "sales value"
     return [
-        gettext(
-            "Over the last %(days)s days. Fast: the top %(share)s%% of products that "
-            "sold, by %(basis)s; slow: the rest that sold; dead: in stock, nothing "
-            "sold; new: first stocked in this period and not sold yet."
+        fill(
+            gettext(
+                "Over the last %(days)s days. Fast: the top %(share)s%% of products that "
+                "sold, by %(basis)s; slow: the rest that sold; dead: in stock, nothing "
+                "sold; new: first stocked in this period and not sold yet."
+            ),
+            {"days": days, "share": share, "basis": basis},
         )
-        % {"days": days, "share": share, "basis": basis}
     ]
 
 

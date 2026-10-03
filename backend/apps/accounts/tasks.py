@@ -12,6 +12,7 @@ from apps.accounts.models import Invitation, User
 from apps.accounts.permissions import role_label
 from common.hosts import web_url
 from common.languages import speaking
+from common.numbers import fill
 from common.task_base import TenantTask
 from common.tenancy import tenant_context
 
@@ -49,14 +50,16 @@ def send_account_locked_email(user_id: str) -> None:
     with speaking(user, user.tenant_id):
         send_mail(
             subject=_("Sign-in to your account was paused"),
-            message=_(
-                "Hello %(name)s,\n\n"
-                "We paused sign-in to your account for a few minutes because the password was "
-                "entered incorrectly several times.\n\n"
-                "If this was you, wait a few minutes and try again, or reset your password.\n"
-                "If it wasn't you, reset your password now: someone may be trying to get in.\n"
-            )
-            % {"name": user.full_name or ""},
+            message=fill(
+                _(
+                    "Hello %(name)s,\n\n"
+                    "We paused sign-in to your account for a few minutes because the password was "
+                    "entered incorrectly several times.\n\n"
+                    "If this was you, wait a few minutes and try again, or reset your password.\n"
+                    "If it wasn't you, reset your password now: someone may be trying to get in.\n"
+                ),
+                {"name": user.full_name or ""},
+            ),
             recipient_list=[user.email],
         )
 
@@ -86,14 +89,16 @@ def send_password_reset_email(user_id: str) -> None:
     with speaking(user, user.tenant_id):
         send_mail(
             subject=_("Reset your password"),
-            message=_(
-                "Hello %(name)s,\n\n"
-                "Someone asked to reset the password for your account. To choose a new "
-                "password, open this link:\n\n"
-                "%(link)s\n\n"
-                "The link works once. If you didn't ask for this, you can ignore this email.\n"
-            )
-            % {"name": user.full_name or "", "link": password_reset_link(user)},
+            message=fill(
+                _(
+                    "Hello %(name)s,\n\n"
+                    "Someone asked to reset the password for your account. To choose a new "
+                    "password, open this link:\n\n"
+                    "%(link)s\n\n"
+                    "The link works once. If you didn't ask for this, you can ignore this email.\n"
+                ),
+                {"name": user.full_name or "", "link": password_reset_link(user)},
+            ),
             recipient_list=[user.email],
         )
 
@@ -143,18 +148,20 @@ def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str)
     with translation.override(language):
         values = {"inviter": inviter, "business": tenant.name, "role": role_label(role)}
         invited = (
-            _("%(inviter)s has invited you to join %(business)s as %(role)s.") % values
+            fill(_("%(inviter)s has invited you to join %(business)s as %(role)s."), values)
             if inviter
-            else _("You have been invited to join %(business)s as %(role)s.") % values
+            else fill(_("You have been invited to join %(business)s as %(role)s."), values)
         )
         send_mail(
-            subject=_("You're invited to join %(business)s") % values,
-            message=_(
-                "Hello,\n\n%(invited)s\n\n"
-                "To accept, open this link:\n\n%(link)s\n\n"
-                "The link works for 7 days. If you weren't expecting this, you can ignore it.\n"
-            )
-            % {"invited": invited, "link": link},
+            subject=fill(_("You're invited to join %(business)s"), values),
+            message=fill(
+                _(
+                    "Hello,\n\n%(invited)s\n\n"
+                    "To accept, open this link:\n\n%(link)s\n\n"
+                    "The link works for 7 days. If you weren't expecting this, you can ignore it.\n"
+                ),
+                {"invited": invited, "link": link},
+            ),
             recipient_list=[email],
             from_name=tenant.name,
         )

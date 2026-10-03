@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/i18n/translations";
 import type { ReactNode } from "react";
 
 import { DateText, MoneyText } from "@/components/shared/money-text";
