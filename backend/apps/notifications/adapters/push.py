@@ -29,8 +29,21 @@ from apps.notifications.adapters.base import DeliveryError, PermanentDeliveryErr
 
 logger = logging.getLogger(__name__)
 
-# The app creates this Android notification channel ("Messages"); the phone's settings show it.
-ANDROID_CHANNEL = "messages"
+# The Android notification channels the app creates, so a shop can silence one kind in the phone's
+# settings and keep the others (owner, checkpoint review item 4). Each event goes to its group's.
+ANDROID_CHANNELS = {
+    "orders": "orders",  # Orders and deliveries
+    "backorders": "orders",
+    "billing": "money",  # Bills and payments
+    "payments": "money",
+    "reminders": "money",
+    "other": "offers",  # Offers and announcements
+}
+DEFAULT_ANDROID_CHANNEL = "orders"
+
+
+def android_channel(group: str) -> str:
+    return ANDROID_CHANNELS.get(group, DEFAULT_ANDROID_CHANNEL)
 
 
 @dataclass(frozen=True)
@@ -40,6 +53,7 @@ class PushMessage:
     body: str
     data: dict[str, str] = field(default_factory=dict)  # FCM data values are strings
     urgent: bool = True
+    channel: str = DEFAULT_ANDROID_CHANNEL  # the app's Android notification channel
 
 
 class UnregisteredDevice(PermanentDeliveryError):
@@ -132,7 +146,7 @@ class FcmPushSender:
                 "data": message.data,
                 "android": {
                     "priority": "HIGH" if message.urgent else "NORMAL",
-                    "notification": {"channel_id": ANDROID_CHANNEL},
+                    "notification": {"channel_id": message.channel},
                 },
             }
         }

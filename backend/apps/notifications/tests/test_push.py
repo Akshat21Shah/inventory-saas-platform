@@ -142,6 +142,7 @@ def test_only_a_shop_with_the_app_gets_a_push(world):
         "tenant": "alpha",
         "event": "order.placed",
     }
+    assert sent.channel == "orders"  # Android's "Orders and deliveries" (checkpoint item 4)
     # Staff never get pushes (the app is the shop's).
     assert {r.recipient_id for r in rows(world, "order.placed", "PUSH")} == {world["login"].pk}
 
@@ -153,6 +154,7 @@ def test_a_bill_hides_its_amount_unless_whatsapp_already_shows_it(world):
     [row] = rows(world, "invoice.issued", "PUSH")
     assert row.title == f"New bill {invoice.number}" and row.body == DETAILS
     assert "₹" not in row.title + row.body
+    assert MockPushSender.outbox[-1].channel == "money"  # Android's "Bills and payments"
 
     whatsapp_for(world)
     with world["run"]():
@@ -351,7 +353,7 @@ def fcm(monkeypatch):
 def test_fcm_sends_and_signs_in_once(fcm):
     sender, calls, answers = fcm
     answers += [_Answer(200, {"name": "projects/shop-app/messages/1"})] * 2
-    message = PushMessage("tok", "Title", "Body", {"path": "/shop"}, urgent=False)
+    message = PushMessage("tok", "Title", "Body", {"path": "/shop"}, urgent=False, channel="money")
     assert sender.send(message).message_id == "projects/shop-app/messages/1"
     sender.send(message)
     assert [url for url, _ in calls].count("https://oauth2.googleapis.com/token") == 1
@@ -362,7 +364,7 @@ def test_fcm_sends_and_signs_in_once(fcm):
         "token": "tok",
         "notification": {"title": "Title", "body": "Body"},
         "data": {"path": "/shop"},
-        "android": {"priority": "NORMAL", "notification": {"channel_id": "messages"}},
+        "android": {"priority": "NORMAL", "notification": {"channel_id": "money"}},
     }
 
 
@@ -419,3 +421,17 @@ def test_the_app_switch_shows_once_the_shop_has_the_app(world, api_client_for):
     assert "PUSH" in channels()
     off = {"event": "order.accepted", "channel": "PUSH", "enabled": False}
     assert shop.put("/api/v1/shop/notification-preferences/", off, format="json").status_code == 200
+
+
+def test_each_kind_of_message_has_its_android_channel():
+    """Orders and deliveries, Bills and payments, Offers and announcements (checkpoint item 4):
+    every shop event's group maps to one of the three channels the app creates."""
+    from apps.notifications.adapters.push import android_channel
+    from apps.notifications.catalog import EVENTS
+
+    shop_events = [e for e in EVENTS.values() if e.shop_facing and not e.system]
+    channels = {e.code: android_channel(e.group) for e in shop_events}
+    assert set(channels.values()) == {"orders", "money", "offers"}
+    assert channels["order.dispatched"] == channels["backorder.allocated"] == "orders"
+    assert channels["payment.reminder"] == channels["credit_note.issued"] == "money"
+    assert channels["announcement.published"] == "offers"

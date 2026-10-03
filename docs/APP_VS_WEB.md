@@ -38,7 +38,9 @@ Checked on the emulator after the fixes:
 | Documents (11b.7) | "Download" | "Open" (the phone's PDF viewer) and "Share" (WhatsApp, email, Drive) | Sharing is a native addition |
 | Return items (11b.7) | A dialog on the bill | A full screen from the bill, with the same fields, words and limits | A form with a number for each item is easier to fill on a phone as its own screen |
 | Statement dates (11b.7) | The browser's date inputs | Android's date picker | The phone's own way to pick a date |
-| Returns list (11b.7) | Returns show on each bill | Also a Returns list in Account, each opening its bill | The owner asked for it (checkpoint item 5); the web gets it in 11b.8 |
+| Push (11b.8) | — | App notifications in three Android channels; the sound while the app is open, with a switch in Messages | Native addition (owner's items 3 and 4) |
+| The WhatsApp question (11b.8) | A dialog on the page | Android's own dialog, the same words and buttons | The phone's way to ask |
+| Money pages' tab (11b.7) | Bills, statement, payments and returns highlight no bottom tab (the web marks Account only under `/shop/account`) | They open in the Account tab | Each app screen belongs to a tab's stack; Account is where these pages are opened from |
 
 ## Not built yet (the next steps match the web screens captured for this comparison)
 
@@ -46,8 +48,9 @@ Built in 11b.7 and matching the web: the "What you owe" card on home; Account's 
 
 | Web | Step |
 | --- | --- |
-| Home: WhatsApp prompt | 11b.8 |
-| The bell with the unread count, Notifications (All / Unread, mark all as read, a tap opens the order, bill or payment) | 11b.8 |
-| Account: Messages (per event and channel); the name on Your profile | 11b.8 |
+| The name on Your profile | 11b.8 |
+| "Suggest a better word" in Hindi and Marathi | 11b.8 |
 
-The owner asked for these Account entries in the app beyond what the web's Account has today: return requests, saved delivery addresses, WhatsApp consent, privacy and data, help and contacting the distributor, and the app version. The web gets the same Account entries in 11b.8, so both stay the same, except the app version, which only the app has.
+Built in 11b.8 and matching the web: the bell on every page and Notifications; Messages; the WhatsApp question on home.
+
+The owner asked for more Account entries (checkpoint item 5): Returns, Delivery addresses, Help, Privacy and data. The web's Account has them too since 11b.8, with the same words. Only the app has the version, "Shop with another distributor", the sound switch and the phone's notification settings.

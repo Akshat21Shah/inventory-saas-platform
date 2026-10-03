@@ -7,6 +7,8 @@ interface Extra {
   release: boolean;
   sentryDsn: string;
   build: number;
+  /** Firebase is set up for this build (`google-services.json`): the phone can get pushes. */
+  push: boolean;
 }
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Partial<Extra>;
@@ -17,6 +19,7 @@ export const config: Extra = {
   release: extra.release ?? false,
   sentryDsn: extra.sentryDsn ?? "",
   build: extra.build ?? 0,
+  push: extra.push ?? false,
 };
 
 // The same rule at run time: a release build never talks plain http (owner, checkpoint review).

@@ -323,7 +323,35 @@
       "why": "Not accepted: {reason}",
       "credited": "Credit note {number} issued",
       "withdraw": "Withdraw",
-      "withdrawTitle": "Withdraw return {number}?"
+      "withdrawTitle": "Withdraw return {number}?",
+      "none": "No returns yet",
+      "noneBody": "To return items, open the bill and tap Return items."
+    },
+    "account": {
+      "addresses": {
+        "title": "Delivery addresses",
+        "body": "Where your distributor delivers your orders. To add or change one, ask your distributor.",
+        "default": "Default",
+        "none": "No delivery addresses yet."
+      },
+      "help": {
+        "title": "Help",
+        "body": "For anything about your orders, bills or payments, contact your distributor.",
+        "call": "Call",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "noContact": "Your distributor hasn't added a phone number or email yet."
+      },
+      "privacy": {
+        "title": "Privacy and data",
+        "policyTitle": "Privacy policy",
+        "policy": "Read the privacy policy",
+        "noPolicy": "The privacy policy will be available here soon.",
+        "deleteTitle": "Deleting your shop's data",
+        "deleteBody": "To have your shop's account and data deleted, contact your distributor. They hold your shop's records and will arrange it.",
+        "keptBody": "Some records, such as bills and payments, must be kept for as long as the law requires.",
+        "contact": "Contact your distributor"
+      }
     }
   },
   "notifications": {

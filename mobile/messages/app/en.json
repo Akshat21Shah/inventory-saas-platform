@@ -12,7 +12,9 @@
   "account": {
     "version": "App version {version} ({build})",
     "shopCode": "Shop code {code}",
-    "distributor": "You order from {name}"
+    "distributor": "You order from {name}",
+    "switch": "Shop with another distributor",
+    "switchBody": "You'll sign out, sign in again with your mobile number, and choose the distributor."
   },
   "search": {
     "clear": "Clear search"
@@ -20,8 +22,22 @@
   "document": {
     "share": "Share"
   },
-  "returns": {
-    "none": "No returns yet",
-    "noneBody": "To return items, open the bill and tap Return items."
+  "notifications": {
+    "channels": {
+      "orders": "Orders and deliveries",
+      "money": "Bills and payments",
+      "offers": "Offers and announcements"
+    }
+  },
+  "messages": {
+    "appTitle": "This app",
+    "sound": "Sound while the app is open",
+    "soundBody": "A short sound when a message arrives while you're using the app. Your phone's silent and Do Not Disturb settings still apply.",
+    "phoneSettings": "Notification settings on this phone",
+    "phoneSettingsBody": "Turn off one kind of message, or change its sound: Orders and deliveries, Bills and payments, Offers and announcements."
+  },
+  "privacy": {
+    "phoneTitle": "What the app keeps on this phone",
+    "phoneBody": "Your sign-in, your language and settings, and for weak connections your cart and recent pages. Signing out removes them."
   }
 }

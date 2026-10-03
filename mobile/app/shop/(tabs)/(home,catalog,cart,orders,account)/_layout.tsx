@@ -5,6 +5,8 @@
  */
 import { Stack } from "expo-router";
 
+import { NotificationBell } from "@/components/app/notification-bell";
+
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useTheme } from "@/lib/theme/theme";
 
@@ -27,6 +29,7 @@ export default function TabStack() {
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: colors.primaryForeground,
         headerTitleStyle: { fontWeight: "600" },
+        headerRight: () => <NotificationBell />, // the web's bell, on every page
         contentStyle: { backgroundColor: colors.background },
       }}
     />

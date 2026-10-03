@@ -236,7 +236,13 @@ def _send(claimed: Claimed) -> SendResult:
 
 def _send_push(claimed: Claimed) -> SendResult:
     """To each of the person's phones; the screen to open and the in-app message ride along."""
-    from apps.notifications.adapters.push import PushMessage, UnregisteredDevice, get_push_sender
+    from apps.notifications.adapters.push import (
+        PushMessage,
+        UnregisteredDevice,
+        android_channel,
+        get_push_sender,
+    )
+    from apps.notifications.catalog import EVENTS
 
     row = claimed.row
     sender = get_push_sender()
@@ -246,12 +252,14 @@ def _send_push(claimed: Claimed) -> SendResult:
         "tenant": str(row.data.get("tenant") or ""),
         "event": row.event_code,
     }
+    event = EVENTS.get(row.event_code)
+    channel = android_channel(event.group if event else "")
     sent: list[SendResult] = []
     gone: list[str] = []
     errors: list[str] = []
     for token in claimed.devices:
         try:
-            message = PushMessage(token, row.title, row.body, data, row.urgent)
+            message = PushMessage(token, row.title, row.body, data, row.urgent, channel)
             sent.append(sender.send(message))
         except UnregisteredDevice:
             gone.append(token)

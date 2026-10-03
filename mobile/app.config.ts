@@ -10,7 +10,13 @@
  * - `APP_RELEASE=1`: a release build (https only, App Links verified). Development builds allow
  *   plain http (the LAN stack) and declare the links without verification.
  * - `APP_SENTRY_DSN`: crash reports (none when empty).
+ *
+ * Push (ADR-061 item 7): Firebase's `google-services.json` next to this file (git-ignored, an
+ * identifier, not a secret). Without it the app builds and works, without push.
  */
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 import version from "./version.json";
@@ -25,6 +31,9 @@ const { APPLICATION_ID, APP_NAME, URL_SCHEME } = require("./app-identity") as {
 const release = process.env.APP_RELEASE === "1";
 const apiUrl = process.env.APP_API_URL ?? "http://10.0.2.2:3000";
 const platformDomain = process.env.APP_PLATFORM_DOMAIN ?? "localhost";
+const googleServices = existsSync(join(__dirname, "google-services.json"))
+  ? "./google-services.json"
+  : undefined;
 
 // Plain http only in development builds (owner, checkpoint review): a release build refuses any
 // other address, so the build stops here (tests: app.config.test.ts; CI: mobile-build).
@@ -43,6 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   userInterfaceStyle: "light",
   android: {
     package: APPLICATION_ID,
+    googleServicesFile: googleServices,
     versionCode: version.build,
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#2f5bea" },
     allowBackup: false, // the session's refresh token never leaves the phone
@@ -74,6 +84,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ["expo-font", { fonts: ["./assets/fonts/NotoSansDevanagari-Medium.ttf"] }],
     "@sentry/react-native",
     "@react-native-community/datetimepicker", // the statement's dates (11b.7)
+    // Push: the status-bar icon (one colour) and the brand tint (ADR-061 item 7).
+    [
+      "expo-notifications",
+      { icon: "./assets/notification-icon.png", color: "#2f5bea", defaultChannel: "orders" },
+    ],
     [
       "expo-build-properties",
       {
@@ -91,5 +106,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     release,
     sentryDsn: process.env.APP_SENTRY_DSN ?? "",
     build: version.build,
+    push: Boolean(googleServices),
   },
 });

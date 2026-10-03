@@ -19,6 +19,7 @@ import { publicTenantBranding } from "@/lib/api/generated/endpoints/public/publi
 import type { Me, PublicBranding } from "@/lib/api/generated/model";
 import { sessionEnded } from "@/lib/events";
 import { setLanguage } from "@/lib/i18n/language";
+import { forgetThisPhone } from "@/lib/push/push";
 import { isLocale } from "@/lib/shared/i18n-config";
 
 import {
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await forgetThisPhone(); // this phone stops getting the shop's messages
     await endSession();
     await SecureStore.deleteItemAsync(BRANDING_KEY);
     queryClient.clear();

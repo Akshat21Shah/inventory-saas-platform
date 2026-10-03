@@ -440,6 +440,20 @@
      - Native modules added: expo-web-browser, expo-sharing, expo-file-system, @react-native-community/datetimepicker.
      - Pages inside the tabs no longer add the phone's bottom inset (the order and product pages had it from before they moved into the tabs).
      - Tests: 6 more (the checkout's Custom Tab and the server's answer, paid with a receipt, expired; starting a checkout with an Idempotency-Key, Pay only when online payments are on, the "You owe" card).
+  11. Notifications and the rest of Account (11b.8) — **in progress**:
+     - **The bell** in every header, with the unread count (every minute, when a message arrives, back in the foreground). **Notifications** as the web's inbox: All / Unread, mark all as read, Newer / Older; opening a message marks it read and goes to its page.
+     - **Push (expo-notifications, FCM direct):**
+       - Three Android channels in the shop's language: Orders and deliveries, Bills and payments, Offers and announcements. The server now sends each message on its kind's channel (`android_channel` by event group).
+       - With the app closed or in the background: the phone's sound and vibration, which follow silent and Do Not Disturb.
+       - With the app open: the same system sound, unless switched off in Messages.
+       - The phone is registered after sign-in (asking for permission once on Android 13 and up) and removed at sign-out. A tapped message opens its page, marked read; a message from another distributor than the one signed in is left alone.
+       - The status-bar icon is a placeholder. Builds without Firebase's `google-services.json` work without push. The Firebase steps went to the owner on 2026-10-04.
+     - **Account, all of the owner's list:**
+       - Messages, as the web: WhatsApp on or off, per event and channel including the app notification, plus the app's sound switch and a shortcut to the phone's settings for each kind.
+       - The WhatsApp question once on home, as the web, in Android's own dialog.
+       - Delivery addresses, Help (call, WhatsApp or email the distributor), Privacy and data (the policy, what the app keeps on the phone, asking the distributor to delete the shop's data), and Shop with another distributor.
+     - **The web's Account gets the same entries,** so both stay alike: Returns (`/shop/returns`), Delivery addresses, Help, Privacy and data. They're in the responsive check, and their texts are shared with the app.
+     - A `/shop/login` link opens the app's sign-in or home.
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**

@@ -6,6 +6,7 @@ import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { DateText } from "@/components/shared/values";
 import { CategoryTiles } from "@/components/shop/catalog";
+import { WhatsAppPrompt } from "@/components/shop/messages";
 import { OwedCard } from "@/components/shop/money";
 import { OrderRowLink } from "@/components/shop/order-row";
 import { OnHoldNotice, ProductCard } from "@/components/shop/product";
@@ -163,6 +164,7 @@ export default function Home() {
           {t("homeBody")}
         </Text>
       </View>
+      <WhatsAppPrompt />
       <Announcements />
       <OnHoldNotice />
       <OwedCard />

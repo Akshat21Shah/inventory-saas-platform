@@ -1,6 +1,7 @@
 /**
- * Your profile (the web's /shop/account/security): the shop, its distributor, the language and
- * signing out. The name and the rest of 11b.8 come with it.
+ * Your profile (the web's /shop/account/security): the shop and its distributor, the person's
+ * name, the language and signing out. The language applies at once (the web saves it with the
+ * name).
  */
 import Feather from "@expo/vector-icons/Feather";
 import { useState } from "react";
@@ -9,12 +10,14 @@ import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { confirm } from "@/components/shared/confirm";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { useErrorText } from "@/lib/api/error-text";
 import { authMeUpdate } from "@/lib/api/generated/endpoints/auth/auth";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useTranslations } from "@/lib/i18n/translations";
+import { formatIndianMobile } from "@/lib/shared/format";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
 export default function ProfileScreen() {
@@ -27,6 +30,20 @@ export default function ProfileScreen() {
   const { message } = useErrorText();
   const { colors, radius } = useTheme();
   const [saving, setSaving] = useState<string | null>(null);
+  const [name, setName] = useState(me?.full_name ?? "");
+  const [savingName, setSavingName] = useState(false);
+  const saveName = async () => {
+    setSavingName(true);
+    try {
+      await authMeUpdate({ full_name: name.trim() });
+      await reload();
+      Alert.alert(t("saved"));
+    } catch (error) {
+      Alert.alert(message(error));
+    } finally {
+      setSavingName(false);
+    }
+  };
   const languages = me?.languages ?? [];
   const choose = async (code: string) => {
     setSaving(code);
@@ -58,9 +75,18 @@ export default function ProfileScreen() {
         ) : null}
         {me?.phone ? (
           <Text tone="muted" size="sm">
-            {me.phone}
+            {`${t("email")}: ${formatIndianMobile(me.phone)}`}
           </Text>
         ) : null}
+      </Card>
+      <Card>
+        <Input label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
+        <Button
+          label={t("save")}
+          busy={savingName}
+          disabled={name.trim() === (me?.full_name ?? "")}
+          onPress={() => void saveName()}
+        />
       </Card>
       {languages.length > 1 ? (
         <Card>

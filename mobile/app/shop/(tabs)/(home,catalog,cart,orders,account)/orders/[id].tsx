@@ -267,7 +267,7 @@ function Documents({ order }: { order: ShopOrder }) {
   return (
     <Section title={t("documents")}>
       {order.invoices.map((bill) => (
-        // The bill's page, as on the web (in Account, where the web's menu marks it too).
+        // The bill's page, as on the web (in the Account tab, where bills are opened from).
         <Link key={bill.id} href={`/shop/invoices/${bill.id}`} asChild>
           <Pressable accessibilityRole="link" style={styles.billRow}>
             <Text weight="medium" style={styles.flex}>

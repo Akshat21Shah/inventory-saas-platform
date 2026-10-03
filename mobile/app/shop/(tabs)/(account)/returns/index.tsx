@@ -18,7 +18,6 @@ import { space, useTheme } from "@/lib/theme/theme";
 export default function ReturnsScreen() {
   const t = useTranslations("shop.returns");
   const tm = useTranslations("shop.money");
-  const ta = useTranslations("app.returns");
   const { colors, radius } = useTheme();
   const cursor = useCursor();
   const query = useShopReturnRequestsList({ cursor: cursor.cursor });
@@ -34,7 +33,7 @@ export default function ReturnsScreen() {
       ) : query.error ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : rows.length === 0 ? (
-        <EmptyState icon="rotate-ccw" title={ta("none")} body={ta("noneBody")} />
+        <EmptyState icon="rotate-ccw" title={t("none")} body={t("noneBody")} />
       ) : (
         <View style={[styles.list, { borderColor: colors.border, borderRadius: radius + 4 }]}>
           {rows.map((request, index) => (

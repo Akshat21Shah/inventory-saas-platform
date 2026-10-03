@@ -1,7 +1,8 @@
 /**
  * My account (the web's /shop/account): what the shop owes and paying it, then the money pages,
- * its returns and its profile, and signing out (owner, checkpoint review item 5). Messages,
- * addresses, WhatsApp, privacy, help and switching distributor join with 11b.8.
+ * its returns, messages (WhatsApp, the app's notifications and sound), profile, delivery
+ * addresses, help, privacy and data, switching distributor and signing out (owner, checkpoint
+ * review item 5).
  */
 import Feather from "@expo/vector-icons/Feather";
 import { Link } from "expo-router";
@@ -26,6 +27,7 @@ export default function AccountTab() {
   const t = useTranslations("shop.money");
   const tr = useTranslations("shop.returns");
   const ta = useTranslations("app.account");
+  const tc = useTranslations("shop.account");
   const auth = useTranslations("auth");
   const common = useTranslations("common");
   const { signOut } = useAuth();
@@ -37,7 +39,11 @@ export default function AccountTab() {
     { href: "/shop/statement", label: t("statement"), icon: "book-open" },
     { href: "/shop/payments", label: t("payments"), icon: "credit-card" },
     { href: "/shop/returns", label: tr("heading"), icon: "rotate-ccw" },
+    { href: "/shop/account/messages", label: t("messages"), icon: "bell" },
     { href: "/shop/account/profile", label: t("profile"), icon: "user" },
+    { href: "/shop/account/addresses", label: tc("addresses.title"), icon: "map-pin" },
+    { href: "/shop/account/help", label: tc("help.title"), icon: "life-buoy" },
+    { href: "/shop/account/privacy", label: tc("privacy.title"), icon: "shield" },
   ];
   return (
     <Screen refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>
@@ -73,6 +79,20 @@ export default function AccountTab() {
           </Link>
         ))}
       </View>
+      <Button
+        variant="outline"
+        label={ta("switch")}
+        icon={<Feather name="repeat" size={16} color={colors.foreground} />}
+        onPress={() =>
+          confirm({
+            title: ta("switch"),
+            body: ta("switchBody"),
+            confirmLabel: ta("switch"),
+            cancelLabel: common("cancel"),
+            onConfirm: signOut,
+          })
+        }
+      />
       <Button
         variant="outline"
         label={auth("signOut")}
