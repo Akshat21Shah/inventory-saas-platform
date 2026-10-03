@@ -1,8 +1,9 @@
 # Project Specification — Multi-Tenant B2B Inventory & Ordering Platform
 
-Version 1.10. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
+Version 1.16. This is the source of truth for what to build. Working rules are in `CLAUDE.md`. Design details are in `docs/PLAN.md`; decisions are in `docs/DECISIONS.md`.
 
 **Changelog**
+- **1.16 (2026-10-03)** — Phase 11b scope (ADR-061, owner): the Android app is for shops only, and staff mode comes after launch (backlog, with the offline-ordering rules to decide first). Push notifications are a new channel (FCM) that follows the rules, preferences, compulsory events, quiet hours and the recipient's language; a push never carries a sign-in code, and carries amounts only when the same message goes by SMS or WhatsApp. Links in messages open the app. Saved data for weak connections: the cart works offline, placing an order needs a connection. Required updates; Play App Signing; a "Privacy and data" page. Web push for the shop web app is in the backlog.
 - **1.15 (2026-10-02)** — Phase 11a (ADR-060, approved with the owner's answers): English, Hindi and Marathi on every screen, in notifications (each recipient's language; WhatsApp in English until a language's template is approved) and on documents (recommended: bilingual labels on shop documents); Indian number formatting with 0–9 in every language; data stays as entered; search across scripts (transliteration and synonyms); the assistant answers in the question's language; more Indian languages by adding files; translations reviewed by native speakers before launch; the super admin enables each language for the platform (Hindi and Marathi only for testing until reviewed); fonts load only when a language needs them; staff and shops can suggest a better word.
 - **1.14 (2026-10-02)** — Owner review of 9d/9e: the assistant's model is a super admin setting (Claude Sonnet 5.5 by default, Claude Haiku 4.5 the option); AI use and the monthly cap shown as estimated rupees, assistant questions and shop searches; the embedding provider choice compares a hosted provider with an open-source multilingual model in our own containers; data sent to the AI provider goes into the Privacy Policy and the distributor DPA.
 - **1.13 (2026-10-02)** — Phase 9e (ADR-059): the distributor's data assistant — questions answered by a model calling read-only tools that are the existing reports run with the asker's permissions; answered in the background; every question logged; monthly cap and hourly limit; an evaluation set in CI.
@@ -320,7 +321,7 @@ ON_HOLD (credit approval) ──approve──► PLACED flow / ──reject─�
 - Receivables ageing by invoice date (default) or days past due (setting). Advances are applied automatically to new invoices, oldest money first; staff can reverse and reallocate an allocation.
 
 ### 5.13 Notifications
-- Channels: in-app (notification centre + real-time), email, WhatsApp (Business API), push (mobile, later), SMS (OTP only by default).
+- Channels: in-app (notification centre + real-time), email, WhatsApp (Business API), push (the Android shop app, Phase 11b; web push later), SMS (OTP only by default).
 - Event → recipients → channels matrix configurable per tenant (with sensible defaults).
 - Key events: order placed/accepted/rejected/modified/dispatched/delivered, backorder allocated, invoice issued (with PDF link), payment received, payment reminder (scheduled for overdue), low/out-of-stock, backorder demand, e-invoice failure, credit hold.
 - Templates per tenant with platform defaults; WhatsApp templates must match pre-approved templates (store template name + variables).
@@ -489,7 +490,7 @@ Distributor action dashboard, full report set with export, super admin platform 
 Hindi/Marathi translations, accessibility pass, performance/load testing, security review (dependency audit, permission review, pen-test checklist), backup-restore drill, runbooks, production deployment, subscription enforcement ready to switch on, the Platform Support role, and (with the CA review) the Tally export and the GSTR-1 JSON.
 
 ### Phase 11 — Android app
-Expo app for retailers (and later distributor staff) using the generated API client: OTP login, catalog, cart, orders, invoices, payments, push notifications (FCM), tenant branding applied at runtime from the server. Single app on Play Store; branded builds per tenant as a future option.
+Expo app for retailers (and later distributor staff) using the generated API client: OTP login, catalog, cart, orders, invoices, payments, push notifications (FCM), tenant branding applied at runtime from the server. Single app on Play Store; branded builds per tenant as a future option. **Phase 11b (ADR-061):** the shop app; staff mode after launch.
 
 ---
 
