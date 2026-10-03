@@ -204,6 +204,9 @@ class TenantProfile(TenantScopedModel):
     upi_id = models.CharField(max_length=320, blank=True, default="", validators=[validate_upi_id])
     signatory_name = models.CharField(max_length=150, blank=True, default="")
     signatory_image = models.CharField(max_length=255, blank=True, default="")  # storage key
+    # A short name SMS use in place of the business name (owner, ADR-060): Hindi and Marathi SMS
+    # are 70 characters a part, and each part is paid for. Blank: the business name.
+    sms_name = models.CharField(max_length=30, blank=True, default="")
 
     class Meta:
         constraints = [

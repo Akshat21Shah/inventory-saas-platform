@@ -306,6 +306,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
             document_link = links.create(ctx.document[0], ctx.document[1], tenant.slug)
         return document_link
 
+    sms_name = contexts.sms_distributor_name(tenant)  # SMS use the short name (owner, ADR-060)
     for target in people:
         shop = target.retailer is not None
         supplier = target.supplier is not None
@@ -343,6 +344,8 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 "link": url,
                 "document_link": link_for_shop() if carries_link else "",
             }
+            if channel == Channel.SMS:
+                values["distributor"] = sms_name
             text = render(ctx.code, channel, values, text_locale or locale, audience)
             if text is None:
                 continue

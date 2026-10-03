@@ -46,6 +46,7 @@ const business = {
   invoice_terms: "",
   invoice_footer: "",
   signatory_name: "",
+  sms_name: "",
   has_signatory_image: false,
   gst_identity_locked: false,
 };
@@ -120,6 +121,67 @@ describe("BusinessSettings", () => {
       ).toEqual({
         upi_id: "sharma@hdfc",
       }),
+    );
+  });
+});
+
+describe("The short name for SMS (ADR-060)", () => {
+  it("previews the welcome SMS per language with its length and parts, and saves the name", async () => {
+    auth.permissions = ["settings.manage"];
+    const link = "http://sharma.localhost:3000/shop/login";
+    const preview = (name: string) => {
+      const shown = name || "Sharma Distributors";
+      const hindi = `${shown}: स्वागत! ऑर्डर करें: ${link}`;
+      return [
+        {
+          language: "en",
+          native: "English",
+          text: `${shown}: welcome!`,
+          length: 30,
+          single: 160,
+          parts: 1,
+        },
+        {
+          language: "hi",
+          native: "हिन्दी",
+          text: hindi,
+          length: hindi.length,
+          single: 70,
+          parts: hindi.length > 70 ? 2 : 1,
+        },
+      ];
+    };
+    const calls = mockApi({
+      "/api/v1/settings/business/": () => [200, business],
+      "PATCH /api/v1/settings/business/": (body) => [200, { ...business, ...(body as object) }],
+      "/api/v1/settings/bank-details/": () => [200, bank],
+      "/api/v1/public/states/": () => [200, [{ code: "27", name: "Maharashtra" }]],
+      "/api/v1/settings/business/sms-preview/": (_body, url) => [
+        200,
+        preview(url.searchParams.get("name") ?? ""),
+      ],
+    });
+    renderWithIntl(<BusinessSettings />);
+    const card = (await screen.findByRole("heading", { name: "SMS" })).closest(
+      "div[data-slot=card]",
+    )!;
+    // The business name is 19 letters: with the link the Hindi text needs two parts.
+    expect(
+      await within(card as HTMLElement).findByText(/sent as 2 parts, each paid for/),
+    ).toBeVisible();
+    const user = userEvent.setup();
+    await user.type(within(card as HTMLElement).getByLabelText(/short name for sms/i), "Sharma");
+    expect(
+      await within(card as HTMLElement).findByText(/of 70 characters · fits one part/),
+    ).toBeVisible();
+    expect(
+      within(card as HTMLElement).getByText(`Sharma: स्वागत! ऑर्डर करें: ${link}`),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /^save changes$/i }));
+    await waitFor(() =>
+      expect(
+        calls.find((c) => c.path === "/api/v1/settings/business/" && c.method !== "GET")?.body,
+      ).toEqual({ sms_name: "Sharma" }),
     );
   });
 });

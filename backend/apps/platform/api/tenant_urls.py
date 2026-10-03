@@ -5,6 +5,11 @@ from apps.platform.api import text_views as tv
 
 urlpatterns = [
     path("settings/business/", v.BusinessSettingsView.as_view(), name="settings-business"),
+    path(
+        "settings/business/sms-preview/",
+        v.SmsPreviewView.as_view(),
+        name="settings-business-sms-preview",
+    ),
     path("settings/bank-details/", v.BankDetailsView.as_view(), name="settings-bank-details"),
     path("settings/registry/", v.TenantSettingsRegistryView.as_view(), name="settings-registry"),
     path("settings/values/", v.TenantSettingsValuesView.as_view(), name="settings-values"),

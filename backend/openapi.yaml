@@ -8782,6 +8782,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/Business'
           description: ''
+  /api/v1/settings/business/sms-preview/:
+    get:
+      operationId: settings_business_sms_preview
+      description: 'The welcome SMS with a short name for SMS, per language: its length
+        and parts (owner).'
+      parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: The short name being typed.
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SmsPreview'
+          description: ''
   /api/v1/settings/document-series/:
     get:
       operationId: settings_document_series
@@ -12794,6 +12818,11 @@ components:
         signatory_name:
           type: string
           maxLength: 150
+        sms_name:
+          type: string
+          description: 'Used in SMS in place of the business name; blank: the business
+            name.'
+          maxLength: 30
         has_signatory_image:
           type: boolean
           readOnly: true
@@ -20302,6 +20331,11 @@ components:
         signatory_name:
           type: string
           maxLength: 150
+        sms_name:
+          type: string
+          description: 'Used in SMS in place of the business name; blank: the business
+            name.'
+          maxLength: 30
     PatchedCategoryUpdateRequest:
       type: object
       properties:
@@ -27354,6 +27388,32 @@ components:
       required:
       - available
       - slug
+    SmsPreview:
+      type: object
+      properties:
+        language:
+          type: string
+        native:
+          type: string
+        text:
+          type: string
+          description: The welcome SMS as a shop would get it.
+        length:
+          type: integer
+          description: Characters, as the network counts them.
+        single:
+          type: integer
+          description: 'Characters one part holds: 160, or 70 (Unicode).'
+        parts:
+          type: integer
+          description: Parts it is sent in (each is paid for).
+      required:
+      - language
+      - length
+      - native
+      - parts
+      - single
+      - text
     SpecialRef:
       type: object
       properties:

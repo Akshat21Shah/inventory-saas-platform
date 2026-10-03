@@ -22,11 +22,26 @@ class BusinessSerializer(serializers.Serializer[Any]):
     invoice_terms = serializers.CharField(allow_blank=True)
     invoice_footer = serializers.CharField(allow_blank=True)
     signatory_name = serializers.CharField(max_length=150, allow_blank=True)
+    sms_name = serializers.CharField(
+        max_length=30,
+        allow_blank=True,
+        required=False,
+        help_text="Used in SMS in place of the business name; blank: the business name.",
+    )
     has_signatory_image = serializers.BooleanField(read_only=True)
     gst_identity_locked = serializers.BooleanField(
         read_only=True,
         help_text="After the first invoice the GSTIN, legal name and state are read-only.",
     )
+
+
+class SmsPreviewSerializer(serializers.Serializer[Any]):
+    language = serializers.CharField()
+    native = serializers.CharField()
+    text = serializers.CharField(help_text="The welcome SMS as a shop would get it.")
+    length = serializers.IntegerField(help_text="Characters, as the network counts them.")
+    single = serializers.IntegerField(help_text="Characters one part holds: 160, or 70 (Unicode).")
+    parts = serializers.IntegerField(help_text="Parts it is sent in (each is paid for).")
 
 
 class BankDetailsSerializer(serializers.Serializer[Any]):

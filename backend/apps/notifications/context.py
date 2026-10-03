@@ -57,6 +57,13 @@ def distributor_name(tenant: Tenant) -> str:
     return str(brand.get("display_name") or tenant.name)
 
 
+def sms_distributor_name(tenant: Tenant) -> str:
+    """The name SMS carry: the distributor's short name for SMS, else the usual one (owner)."""
+    from apps.platform.selectors import sms_name
+
+    return sms_name(tenant.pk) or distributor_name(tenant)
+
+
 def current_tenant() -> Tenant:
     return Tenant.objects.get(pk=require_tenant_id())
 

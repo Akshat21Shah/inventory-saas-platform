@@ -3617,6 +3617,14 @@ msgstr "स्टॉक क्यों बदल रहा है, इस प�
 msgid "Write the better word."
 msgstr "बेहतर शब्द लिखें।"
 
+#: apps/notifications/sms_preview.py
+msgid "Write the short name on one line, up to 30 letters."
+msgstr "छोटा नाम एक ही पंक्ति में, 30 अक्षरों तक लिखें।"
+
+#: apps/platform/tenant_settings_services.py
+msgid "Write the short name on one line."
+msgstr "छोटा नाम एक ही पंक्ति में लिखें।"
+
 #: apps/dataio/kinds/pricing.py
 #, python-format
 msgid "Write Yes or No (not “%(is_active)s”)."

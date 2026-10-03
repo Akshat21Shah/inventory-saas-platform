@@ -40,6 +40,8 @@ import type {
   PatchedDocumentSeriesChangeRequest,
   PatchedSettingValuesRequest,
   Setting,
+  SettingsBusinessSmsPreviewParams,
+  SmsPreview,
   TenantFeature
 } from '../../model';
 
@@ -1060,7 +1062,123 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getSettingsBusinessUpdateMutationOptions(options), queryClient);
     }
-    export type settingsDocumentSeriesResponse200 = {
+    export type settingsBusinessSmsPreviewResponse200 = {
+  data: SmsPreview[]
+  status: 200
+}
+
+export type settingsBusinessSmsPreviewResponseSuccess = (settingsBusinessSmsPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type settingsBusinessSmsPreviewResponse = (settingsBusinessSmsPreviewResponseSuccess)
+
+export const getSettingsBusinessSmsPreviewUrl = (params?: SettingsBusinessSmsPreviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/settings/business/sms-preview/?${stringifiedParams}` : `/api/v1/settings/business/sms-preview/`
+}
+
+/**
+ * The welcome SMS with a short name for SMS, per language: its length and parts (owner).
+ */
+export const settingsBusinessSmsPreview = async (params?: SettingsBusinessSmsPreviewParams, options?: Parameters<typeof apiFetch>[1]): Promise<settingsBusinessSmsPreviewResponse> => {
+
+  return apiFetch<settingsBusinessSmsPreviewResponse>(getSettingsBusinessSmsPreviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSettingsBusinessSmsPreviewQueryKey = (params?: SettingsBusinessSmsPreviewParams,) => {
+    return [
+    `/api/v1/settings/business/sms-preview/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSettingsBusinessSmsPreviewQueryOptions = <TData = Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError = unknown>(params?: SettingsBusinessSmsPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSettingsBusinessSmsPreviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>> = ({ signal }) => settingsBusinessSmsPreview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SettingsBusinessSmsPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>>
+export type SettingsBusinessSmsPreviewQueryError = unknown
+
+
+export function useSettingsBusinessSmsPreview<TData = Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError = unknown>(
+ params: undefined |  SettingsBusinessSmsPreviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof settingsBusinessSmsPreview>>,
+          TError,
+          Awaited<ReturnType<typeof settingsBusinessSmsPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSettingsBusinessSmsPreview<TData = Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError = unknown>(
+ params?: SettingsBusinessSmsPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof settingsBusinessSmsPreview>>,
+          TError,
+          Awaited<ReturnType<typeof settingsBusinessSmsPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSettingsBusinessSmsPreview<TData = Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError = unknown>(
+ params?: SettingsBusinessSmsPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSettingsBusinessSmsPreview<TData = Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError = unknown>(
+ params?: SettingsBusinessSmsPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof settingsBusinessSmsPreview>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSettingsBusinessSmsPreviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type settingsDocumentSeriesResponse200 = {
   data: DocumentSeries[]
   status: 200
 }

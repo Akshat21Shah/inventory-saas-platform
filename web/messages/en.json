@@ -1556,7 +1556,14 @@
       "saved": "Business details saved.",
       "readOnly": "Only the owner can change these details.",
       "cancel": "Cancel",
-      "gstLocked": "Your GSTIN, legal name and state are fixed now that you have issued invoices. To change them, contact the platform team."
+      "gstLocked": "Your GSTIN, legal name and state are fixed now that you have issued invoices. To change them, contact the platform team.",
+      "sms": "SMS",
+      "smsBody": "An SMS part holds 160 characters in English and 70 in Hindi and Marathi, and every part is paid for. A short name keeps the welcome message to one part. The sign-in link is never shortened: a longer message goes as two parts.",
+      "smsName": "Short name for SMS (optional)",
+      "smsNameHint": "Used in every SMS in place of your business name. Up to 30 characters.",
+      "smsPreview": "The welcome SMS, as a new shop gets it",
+      "smsFits": "{length, number} of {single, number} characters · fits one part",
+      "smsParts": "{length, number} characters · sent as {parts, number} parts, each paid for"
     },
     "bank": {
       "title": "Bank details",

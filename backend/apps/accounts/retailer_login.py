@@ -35,7 +35,7 @@ from apps.accounts.services import (
     token_hash,
 )
 from apps.platform.models import Tenant
-from apps.platform.selectors import get_platform_setting, tenant_by_slug
+from apps.platform.selectors import get_platform_setting, sms_name, tenant_by_slug
 from common import ratelimit
 from common.error_codes import ErrorCode
 from common.errors import DomainError
@@ -105,7 +105,8 @@ def request_otp(phone: str, host: HostContext, ip: str | None) -> None:
         with _in_scope(tenant):
             row.save(force_insert=True)
         if _has_account(phone, tenant):
-            sender = tenant.name if tenant is not None else ""
+            # The short name for SMS when the distributor set one (owner, ADR-060).
+            sender = (sms_name(tenant.pk) or tenant.name) if tenant is not None else ""
             transaction.on_commit(lambda: send_login_otp_sms.delay(phone, code, sender))
 
 

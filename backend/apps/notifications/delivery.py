@@ -159,7 +159,11 @@ def _wait_for_pdf(row: Notification, now: datetime) -> bool:
 def _claim(notification_id: UUID) -> Claimed | None:
     """Mark the row SENDING and read what sending needs (RLS: only inside the transaction)."""
     from apps.notifications.adapters.whatsapp import tenant_sender
-    from apps.notifications.context import current_tenant, distributor_name
+    from apps.notifications.context import (
+        current_tenant,
+        distributor_name,
+        sms_distributor_name,
+    )
 
     now = timezone.now()
     with tenant_transaction(require_tenant_id()):
@@ -177,7 +181,8 @@ def _claim(notification_id: UUID) -> Claimed | None:
         row.save(update_fields=["status", "attempts", "updated_at"])
         tenant = current_tenant()
         sender = tenant_sender() if row.channel == Channel.WHATSAPP else None
-        return Claimed(row, distributor_name(tenant), tenant.email, sender, pdf)
+        name = sms_distributor_name(tenant) if row.channel == Channel.SMS else None
+        return Claimed(row, name or distributor_name(tenant), tenant.email, sender, pdf)
 
 
 def _send(claimed: Claimed) -> SendResult:

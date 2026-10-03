@@ -21,7 +21,7 @@ from common.storage import get_storage
 from common.tenancy import require_tenant_id
 from common.uploads import validate_image
 
-PROFILE_FIELDS = ("invoice_terms", "invoice_footer", "signatory_name")
+PROFILE_FIELDS = ("invoice_terms", "invoice_footer", "signatory_name", "sms_name")
 BANK_FIELDS = (
     "bank_account_name",
     "bank_account_number",
@@ -53,6 +53,8 @@ def update_business(changes: dict[str, Any], *, by: User) -> Tenant:
     }
     tenant = tenant_services.update_tenant(require_tenant_id(), tenant_changes, by=by)
     profile_changes = {k: v for k, v in changes.items() if k in PROFILE_FIELDS}
+    if any(ch in profile_changes.get("sms_name", "") for ch in "\r\n\t"):
+        raise InvalidFields({"sms_name": [_("Write the short name on one line.")]})
     if profile_changes:
         profile = _profile()
         before = {f: getattr(profile, f) for f in PROFILE_FIELDS}

@@ -35,6 +35,11 @@ export interface Business {
   invoice_footer: string;
   /** @maxLength 150 */
   signatory_name: string;
+  /**
+     * Used in SMS in place of the business name; blank: the business name.
+     * @maxLength 30
+     */
+  sms_name?: string;
   readonly has_signatory_image: boolean;
   /** After the first invoice the GSTIN, legal name and state are read-only. */
   readonly gst_identity_locked: boolean;

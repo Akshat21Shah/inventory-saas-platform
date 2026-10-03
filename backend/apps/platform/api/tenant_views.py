@@ -6,7 +6,7 @@ from uuid import UUID
 
 from django.http import HttpResponseRedirect
 from django.utils.translation import gettext
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
@@ -69,6 +69,7 @@ def _business(tenant: Tenant, profile: TenantProfile) -> dict[str, Any]:
         "invoice_terms": profile.invoice_terms,
         "invoice_footer": profile.invoice_footer,
         "signatory_name": profile.signatory_name,
+        "sms_name": profile.sms_name,
         "has_signatory_image": bool(profile.signatory_image),
         "gst_identity_locked": tenant_services.gst_identity_locked(tenant.pk),
     }
@@ -104,6 +105,25 @@ class BusinessSettingsView(APIView):
             changes["state_id"] = changes.pop("state_code")
         tenant_settings_services.update_business(changes, by=_user(request))
         return Response(s.BusinessSerializer(_load_business()).data)
+
+
+class SmsPreviewView(APIView):
+    """The welcome SMS with a short name for SMS, per language: its length and parts (owner)."""
+
+    permission_classes = [StaffReadsOrHasPermission]
+    required_permission = "settings.manage"
+
+    @extend_schema(
+        parameters=[OpenApiParameter("name", str, description="The short name being typed.")],
+        responses=s.SmsPreviewSerializer(many=True),
+        operation_id="settings_business_sms_preview",
+        tags=["settings"],
+    )
+    def get(self, request: Request) -> Response:
+        from apps.notifications.sms_preview import welcome_previews
+
+        rows = welcome_previews(request.query_params.get("name", ""))
+        return Response(s.SmsPreviewSerializer(rows, many=True).data)
 
 
 class BankDetailsView(APIView):
