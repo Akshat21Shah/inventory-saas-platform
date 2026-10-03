@@ -16,7 +16,11 @@ const METRICS = {
 
 export function renderScreen(ui: ReactElement, { language = "en" }: { language?: string } = {}) {
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    // No cache timers: the default five-minute one kept Jest running after the tests.
+    defaultOptions: {
+      queries: { retry: false, gcTime: Infinity },
+      mutations: { retry: false, gcTime: Infinity },
+    },
   });
   return render(
     <SafeAreaProvider initialMetrics={METRICS}>

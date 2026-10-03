@@ -2,7 +2,6 @@ import Feather from "@expo/vector-icons/Feather";
 import { Tabs } from "expo-router";
 import type { ColorValue } from "react-native";
 
-import { useAuth } from "@/lib/auth/auth-provider";
 import { useCart } from "@/lib/cart/cart-state";
 import { useTranslations } from "@/lib/i18n/translations";
 import { useTheme } from "@/lib/theme/theme";
@@ -13,7 +12,6 @@ type Icon = keyof typeof Feather.glyphMap;
 export default function ShopTabs() {
   const t = useTranslations("nav");
   const { colors } = useTheme();
-  const { branding } = useAuth();
   // Products in the cart, as the web's bottom bar shows; it follows each tap at once (the cart
   // state counts taps the server hasn't confirmed yet).
   const { count } = useCart();
@@ -26,11 +24,7 @@ export default function ShopTabs() {
   return (
     <Tabs
       screenOptions={{
-        // The distributor's name on every tab, as the web shop's header; pages carry their own title.
-        headerTitle: branding?.display_name ?? "",
-        headerStyle: { backgroundColor: colors.primary },
-        headerTintColor: colors.primaryForeground,
-        headerTitleStyle: { fontWeight: "600" },
+        headerShown: false, // each tab's stack has its header
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarLabelStyle: { fontSize: 12 },
@@ -38,10 +32,10 @@ export default function ShopTabs() {
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: t("home"), tabBarIcon: icon("home") }} />
-      <Tabs.Screen name="catalog" options={{ title: t("catalog"), tabBarIcon: icon("search") }} />
+      <Tabs.Screen name="(home)" options={{ title: t("home"), tabBarIcon: icon("home") }} />
+      <Tabs.Screen name="(catalog)" options={{ title: t("catalog"), tabBarIcon: icon("search") }} />
       <Tabs.Screen
-        name="cart"
+        name="(cart)"
         options={{
           title: t("cart"),
           tabBarIcon: icon("shopping-cart"),
@@ -52,8 +46,11 @@ export default function ShopTabs() {
           },
         }}
       />
-      <Tabs.Screen name="orders" options={{ title: t("orders"), tabBarIcon: icon("clipboard") }} />
-      <Tabs.Screen name="account" options={{ title: t("account"), tabBarIcon: icon("user") }} />
+      <Tabs.Screen
+        name="(orders)"
+        options={{ title: t("orders"), tabBarIcon: icon("clipboard") }}
+      />
+      <Tabs.Screen name="(account)" options={{ title: t("account"), tabBarIcon: icon("user") }} />
     </Tabs>
   );
 }

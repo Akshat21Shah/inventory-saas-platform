@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Keyboard, Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart/cart-state";
@@ -32,6 +32,12 @@ export function QuantityStepper({
   const { quantityOf, setQuantity } = useCart();
   const { colors, radius } = useTheme();
   const qty = quantityOf(product.id);
+  // A tap outside the search box closes the keyboard (owner, checkpoint review), so the bottom
+  // bar is in reach for the next tap; the tap itself still counts.
+  const set = (quantity: string) => {
+    Keyboard.dismiss();
+    setQuantity(product.id, quantity);
+  };
   const [draft, setDraft] = useState<{ text: string; from: string } | null>(null);
   const typed = draft && draft.from === qty ? draft.text : null;
   const { min_order_qty: min, order_multiple: multiple } = product;
@@ -43,7 +49,7 @@ export function QuantityStepper({
         accessibilityLabel={t("addNamed", { name: product.name })}
         disabled={disabled}
         icon={<Feather name="shopping-cart" size={16} color={colors.primaryForeground} />}
-        onPress={() => setQuantity(product.id, firstQty(min, multiple))}
+        onPress={() => set(firstQty(min, multiple))}
         style={wide ? styles.wide : styles.add}
       />
     );
@@ -74,9 +80,7 @@ export function QuantityStepper({
       style={[styles.row, wide && styles.wide]}
       accessibilityLabel={t("inCart", { qty: formatQty(qty), unit: product.unit.name })}
     >
-      {step("minus", t("less", { name: product.name }), () =>
-        setQuantity(product.id, previousQty(qty, min, multiple)),
-      )}
+      {step("minus", t("less", { name: product.name }), () => set(previousQty(qty, min, multiple)))}
       <TextInput
         accessibilityLabel={t("quantityOf", { name: product.name })}
         keyboardType="decimal-pad"
@@ -93,7 +97,7 @@ export function QuantityStepper({
       {step(
         "plus",
         t("more", { name: product.name }),
-        () => setQuantity(product.id, nextQty(qty, min, multiple)),
+        () => set(nextQty(qty, min, multiple)),
         disabled,
       )}
     </View>
@@ -103,7 +107,7 @@ export function QuantityStepper({
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space[1] },
   wide: { alignSelf: "stretch" },
-  add: { minWidth: 112 },
+  add: { minWidth: 96 }, // the web's min-w-24
   step: {
     width: TOUCH,
     height: TOUCH,

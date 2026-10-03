@@ -386,6 +386,9 @@ export default function OrderScreen() {
             ))}
           </Section>
         ) : null}
+        <Section title={t("timelineTitle")}>
+          <OrderTimeline entries={order.history} />
+        </Section>
         <Card>
           <Documents order={order} />
           <View style={styles.between}>
@@ -429,9 +432,6 @@ export default function OrderScreen() {
             />
           ) : null}
         </Card>
-        <Section title={t("timelineTitle")}>
-          <OrderTimeline entries={order.history} />
-        </Section>
       </Screen>
     </>
   );

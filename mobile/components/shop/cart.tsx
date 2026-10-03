@@ -243,7 +243,10 @@ export function CartScreen() {
     void client.invalidateQueries({
       predicate: (q) => String(q.queryKey[0] ?? "").startsWith("/api/v1/shop/"),
     });
-    router.push({ pathname: "/shop/orders/[id]", params: { id: orderId, placed: "1" } });
+    router.navigate({
+      pathname: "/shop/(tabs)/(orders)/orders/[id]",
+      params: { id: orderId, placed: "1" },
+    });
   };
 
   // Opened again after the app was closed mid-checkout: did that order go through?

@@ -7,7 +7,6 @@ import { EmptyState, ListSkeleton } from "@/components/shared/states";
 import { MoneyText } from "@/components/shared/values";
 import {
   Availability,
-  FreeOfferBadge,
   orderable,
   OnHoldNotice,
   OrderingNote,
@@ -79,22 +78,6 @@ export default function ProductScreen() {
           edges={["bottom"]}
           refreshing={query.isRefetching}
           onRefresh={() => void query.refetch()}
-          footer={
-            <View style={styles.footer}>
-              <QuantityStepper product={product} disabled={!orderable(product)} wide />
-              {!orderable(product) ? (
-                <Text tone="muted" size="sm">
-                  {to("cantOrder")}
-                </Text>
-              ) : !isZero(quantityOf(product.id)) ? (
-                <Button
-                  variant="outline"
-                  label={to("goToCart")}
-                  onPress={() => router.push("/shop/cart")}
-                />
-              ) : null}
-            </View>
-          }
         >
           <OnHoldNotice />
           {product.images.length ? (
@@ -162,8 +145,22 @@ export default function ProductScreen() {
               ))}
             </Card>
           ) : null}
-          {product.free_offer ? <FreeOfferBadge offer={product.free_offer} /> : null}
           {product.description ? <Text size="sm">{product.description}</Text> : null}
+          {/* The order box at the end, as on the web's product page. */}
+          <Card accessibilityLabel={to("orderBox")}>
+            <QuantityStepper product={product} disabled={!orderable(product)} wide />
+            {!orderable(product) ? (
+              <Text tone="muted" size="sm">
+                {to("cantOrder")}
+              </Text>
+            ) : !isZero(quantityOf(product.id)) ? (
+              <Button
+                variant="outline"
+                label={to("goToCart")}
+                onPress={() => router.navigate("/shop/cart")}
+              />
+            ) : null}
+          </Card>
         </Screen>
       )}
     </>

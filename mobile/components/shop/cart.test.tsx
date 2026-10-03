@@ -7,7 +7,10 @@ import { CartScreen } from "./cart";
 
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
-  router: { push: (...args: unknown[]) => mockPush(...args) },
+  router: {
+    push: (...args: unknown[]) => mockPush(...args),
+    navigate: (...args: unknown[]) => mockPush(...args),
+  },
   Link: ({ children }: { children: unknown }) => children,
 }));
 jest.mock("@/lib/auth/auth-provider", () => ({
@@ -90,7 +93,7 @@ it("places the order once, with an Idempotency-Key, and opens it", async () => {
   await fireEvent.press(screen.getByRole("button", { name: "Place order · ₹1,465.00" }));
   await waitFor(() =>
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/shop/orders/[id]",
+      pathname: "/shop/(tabs)/(orders)/orders/[id]",
       params: { id: "order-1", placed: "1" },
     }),
   );

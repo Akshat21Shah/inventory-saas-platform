@@ -402,7 +402,18 @@
   8. **Checkpoint (2026-10-03), waiting for the owner:**
      - **The APK for the owner's phone:** `make mobile-apk` (needs `make lan`) writes `mobile/android/app/build/outputs/apk/release/app-release.apk`. It's for arm64 phones and reaches the dev stack on the LAN address. It's signed with the development key: installable outside the Play Store, never uploadable.
      - **Size:** the arm64 APK file is 37.2 MB (closer to the installed size). The estimated download is about 17.7 MB (every part compressed, as Play delivers it): native libraries 7.7 MB, compiled code 6.6 MB, the JavaScript bundle 2.0 MB, resources 0.8 MB, fonts 0.5 MB. Target 20 MB, hard limit 30 MB. Play's exact figure comes from bundletool on the app bundle at 11b.11. Nothing has been cut.
-  9. Bills, statement, payments, returns (11b.7) — after the checkpoint
+  9. **Checkpoint review (2026-10-03), fixes** — **done**:
+     - **Search keyboard (item 1):** the cause was the search box being re-created when the first results arrived, which closed the keyboard. Now one box stays on the search page for the whole search. It has a clear (×) button, and the keyboard closes only on Search, a tap outside or scrolling. Home and the catalogue open the search page with the keyboard up. Emulator test: `mobile/e2e/search-keyboard.mjs` types "biscuit" letter by letter. It failed on the old layout and passes now.
+     - **Cart badge (item 2):** the Cart tab shows the number of products and updates on every tap.
+     - **https-only releases (item 8):** `app.config.ts` refuses to build a release for an address that isn't https, and turns off plain http in release builds. This is proven by `app.config.test.ts` and by a CI step that runs the release build's config with an http address and expects it to fail.
+     - **npm audit (item 9):** of the advisories, only `decode-uri-component` (via expo-router) was in the shipped bundle. It's replaced by its fixed 0.5.0 (`mobile/vendor/`), and `scripts/audit-shipped.mjs` in CI fails if any package with an advisory ships. The rest (braces, node-forge, uuid) are build tools only and are left for Phase 10.
+     - **The app matches the web (item 10):** `docs/APP_VS_WEB.md` lists every difference, with which ones were fixed, which were kept and why, and which are still to be built.
+       - The bottom bar stays on every page: each tab has its own stack, and category, search, product and order pages are shared by all five.
+       - Product cards and search results have the same steppers as the web.
+       - Emulator test: `mobile/e2e/three-taps.mjs` (search → Add → Cart → Place order in 3 taps).
+       - Status badges, the product page's order box, the order page's timeline and the category title now match the web.
+     - **Tests:** Jest no longer waits 5 minutes after the tests (the test query cache's timer); 30 unit and screen tests.
+  10. Bills, statement, payments, returns (11b.7) — next
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**

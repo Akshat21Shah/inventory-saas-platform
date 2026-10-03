@@ -7,21 +7,10 @@
  * Needs: a running emulator (or USB phone) with the app installed and signed in (`adb devices`).
  *   node e2e/search-keyboard.mjs [word]          (default: "biscuit")
  */
-import { execFileSync } from "node:child_process";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { adb, keyboardShown, PACKAGE, sleep } from "./device.mjs";
 
-const ADB = process.env.ADB ?? join(homedir(), "Library/Android/sdk/platform-tools/adb");
-const PACKAGE = process.env.APP_ID ?? "com.example.shop";
 const WORD = process.argv[2] ?? "biscuit";
 const PAUSE_MS = 700; // longer than the search's 250 ms pause, so results render between letters
-
-const adb = (...args) => execFileSync(ADB, args, { encoding: "utf8" });
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function keyboardShown() {
-  return /mInputShown=true/.test(adb("shell", "dumpsys", "input_method"));
-}
 
 /** The search box: the screen's first focusable EditText with a hint (by class and attributes,
  * so the app's language doesn't matter; the box's container also reports as an EditText). */
