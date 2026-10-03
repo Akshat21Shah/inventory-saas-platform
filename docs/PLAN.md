@@ -1751,7 +1751,7 @@ First after Phase 9 (owner, 2026-10-02); takes over task 10.1. English (default)
 | 11a.11 | FE: language switchers (account and sign-in pages), the distributor settings, per-language notification text editing (three languages side by side, a warning when only one changed), the super admin's language settings and suggestions list, the "Suggest a better word" link; layout fixes for longer text | M |
 | 11a.12 | Responsive check in Hindi and Marathi at 360/768/1440 (CI jobs per language); E2E: a shop orders in Hindi, staff work in Marathi, messages and a PDF in the shop's language — **final review** | M |
 
-### Phase 11b — Android shop app — ADR-061, §10.2q (scope approved 2026-10-03; questions open)
+### Phase 11b — Android shop app — ADR-061, §10.2q (approved 2026-10-03)
 After 11a (merged, PR #18); built with the three languages from the start. **The shop app only** (owner, 2026-10-03); staff mode is after launch (backlog). Branch `phase-11b`, draft PR #19. One checkpoint after 11b.6 (stop there for the owner, with an install file for the owner's phone) and a final review.
 
 | # | Task | Size |
@@ -1792,6 +1792,7 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Purchase orders on WhatsApp | Sending purchase orders from the platform WhatsApp number; 9a emails them and gives a share link (ADR-053). |
 | Staff mode in the Android app | **After launch** (owner, 2026-10-03; ADR-061). Salespeople ordering for shops and collecting payments, warehouse receiving with the phone camera, push for new orders. Until then staff use the web panel on phones (checked at 360 px). First decide the **offline-ordering rules**: an order taken without signal can't be priced or stock-checked by the server, so may staff queue orders offline, what does the shop see meanwhile, and what happens when prices or stock have changed by the time it's sent? Builds on 11b's client, push channel and app sign-in. |
 | Web push for the shop web app | So shops on the web, including iPhone users with the web app on their home screen, also get notifications while it's closed (owner, 2026-10-03). Reuses 11b's push channel and `DeviceToken` (platform WEB). |
+| Several distributors at once in the app | Staying signed in to several distributors at once, with push from all of them (owner, 2026-10-03; 11b signs in to one at a time, with "Switch distributor"). |
 
 ---
 
@@ -2226,7 +2227,20 @@ The scope and six decisions were approved on 2026-10-03 (ADR-061 context). These
 | 8 | **Shops with several distributors:** one at a time, or all signed in together? | **One at a time.** "Switch distributor" in Account asks for a new code and signs in to the other one; push comes from the signed-in distributor only. Several at once (a distributor picker everywhere, push from all) can come later if shops ask. |
 | 9 | **The oldest Android version supported?** | **Android 7 and up** (Expo SDK 57's minimum), tested on Android 11 (the 2 GB budget profile) and Android 16. Raising the minimum later is easy; going below Expo's minimum isn't possible. |
 
-**Owner's answers:** pending.
+**Owner's answers (2026-10-03, plan approved):**
+1. As recommended.
+2. As recommended.
+3. As recommended: never on the lock screen.
+4. As recommended, with conditions:
+   - a Chrome Custom Tab, never an embedded web view, so UPI apps (PhonePe, Google Pay, Paytm) can open from it and return;
+   - the handoff code is single use and expires within a minute;
+   - back in the app, the payment's status comes from the server, never from what the tab reported;
+   - the UPI handoff and return join the owner's real-phone checks at the final review.
+5. A download of 20 MB is the target and **30 MB the hard limit**. The actual size is reported at each checkpoint, and anything cut to meet it is agreed first. The phone's system fonts for Devanagari, no bundled fonts. Saved data 10 MB and photos 50 MB.
+6. "Shop" with the web app's icon as the placeholder; the final name is a pre-production item together with the application ID.
+7. As recommended: the upload key only on this Mac.
+8. One at a time for this release. Staying signed in to several distributors at once, with push from all of them, goes to the backlog.
+9. As recommended: Android 7 and up, tested on Android 11 and 16.
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.

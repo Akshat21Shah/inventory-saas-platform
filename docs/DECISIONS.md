@@ -851,7 +851,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
 - **Consequences:** Shops and staff can work in Hindi or Marathi without new code paths per language; adding a language is a translation job. Costs to watch: Unicode SMS and per-language WhatsApp approvals; translations need a native reviewer before launch.
 
 ## ADR-061 — Phase 11b: the Android shop app
-- **Status:** Proposed — 2026-10-03. Scope approved by the owner on 2026-10-03 with six decisions and additions (folded in below); the questions in PLAN §10.2q are open. Items marked **[question n]** wait for those answers.
+- **Status:** Accepted — 2026-10-03 (owner). The scope was approved with six decisions and additions, then the plan with the answers to PLAN §10.2q. Both are folded in below; **(answer n)** marks an answer.
 - **Context:** The spec's Phase 11 is an Expo app for shops (and later staff). The shop web app (PWA) already covers every shop task, in three languages, at phone width. But it has no notifications while closed (no web push), nothing works offline beyond a fallback page, and shop owners know the Play Store, not "Add to home screen". The owner's scope decisions (2026-10-03):
   1. the shop app only; staff mode after launch;
   2. an organisation Play developer account;
@@ -859,7 +859,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
   4. push straight through FCM, from a Firebase project the owner creates;
   5. the Android tools installed on this Mac;
   6. the cart works offline, but placing an order needs a connection.
-- **Decision (proposed):**
+- **Decision:**
   1. **Scope.** One Android app for every distributor's shops, in `/mobile`, mirroring the shop web app:
      - signing in with a one-time code, and choosing the distributor;
      - home with "Repeat last order", catalogue, search in both scripts (smart search when it's on), product;
@@ -874,7 +874,7 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
      - TanStack Query, React Hook Form + Zod, use-intl (the core of next-intl), Sentry.
      - The native project is generated from `app.config.ts` (`expo prebuild`, not committed); native settings go through config plugins.
      - Builds run with Gradle on this Mac and in GitHub Actions; no Expo cloud services (owner decision 3).
-     - The oldest Android version is Expo's minimum, Android 7 **[question 9]**.
+     - The oldest Android version is Expo's minimum, Android 7; the checks run on Android 11 and Android 16 **(answer 9)**.
   3. **Shared with the web, generated one way and checked in CI.**
      - **The API client:** orval generates `mobile/lib/api/generated` from the same `backend/openapi.yaml`, and `make api-client` regenerates both. The app's fetcher keeps the tokens in secure storage, refreshes once on a 401, and sends the app's language and version.
      - **`make mobile-sync`** copies from the web:
@@ -890,21 +890,21 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
      - With `client: "app"`, the code and distributor steps return the session itself: access and refresh tokens in the body, no cookie, no browser handoff. The refresh and sign-out endpoints already take the refresh token in the body.
      - The refresh token lives in Android's secure storage (Keystore-backed); the access token only in memory. Android backups are off.
      - Sessions last as on the web: 30 days of refresh for shops.
-     - One distributor at a time **[question 8]**.
+     - One distributor at a time in this release **(answer 8)**: "Switch distributor" in Account asks for a new code. Staying signed in to several distributors at once, with push from all of them, is in the backlog.
      - Before sign-in the app uses the phone's language if it's Hindi or Marathi, otherwise English, with a picker on the sign-in screen. After sign-in it uses the person's saved language (ADR-060).
-  5. **Branding at runtime.** Before sign-in the app shows the platform's neutral look and name **[question 6]**. After sign-in it loads the distributor's public branding (name, logo, colour) by its address and applies it to the design tokens. The branding is cached for offline starts.
+  5. **Branding at runtime.** Before sign-in the app shows the platform's neutral look and the placeholder name "Shop", with the web app's icon **(answer 6)**; the final name is chosen with the application ID (pre-production item 45). After sign-in it loads the distributor's public branding (name, logo, colour) by its address and applies it to the design tokens. The branding is cached for offline starts.
   6. **App settings and required updates.**
      - `GET /api/v1/app/config/` (public) gives the minimum supported and latest app versions and the privacy policy's address. They are platform settings, on the super admin's settings page: ⚙ `platform.app_min_version`, ⚙ `platform.app_latest_version`, ⚙ `platform.privacy_policy_url`.
      - Every request carries the app's version (`X-App-Version`). Below the minimum, the API answers `426 APP_UPDATE_REQUIRED`, and the app shows one screen: "Update the app", with a Play Store button. It also checks the minimum on start.
      - Versions: `mobile/version.json` (a semantic version and an always-increasing build number) is the one source for the app, Sentry releases and the store.
   7. **Push notifications, a new channel (owner decision 4).**
      - **Devices:** `DeviceToken` (tenant-scoped, RLS) holds the user, the platform (ANDROID; WEB kept for web push later), the FCM token, the app version, when it was last seen and whether it's active. The token is unique: a phone that signs in as someone else moves it. `POST /api/v1/device-tokens/` registers or refreshes a token; `DELETE` runs on sign-out. Own tokens only, with isolation tests.
-     - **The channel:** `Channel.PUSH` for shop recipients. It goes in the rules matrix **[question 1]**, the shop's message preferences (switchable per event unless the event is compulsory) and quiet hours (non-urgent events wait, as for WhatsApp and SMS), in the recipient's language.
+     - **The channel:** `Channel.PUSH` for shop recipients. It has a column of its own on the rules screen ("App notification"), on by default wherever in-app is on **(answer 1)**. It also goes in the shop's message preferences (switchable per event unless the event is compulsory) and quiet hours (non-urgent events wait, as for WhatsApp and SMS), in the recipient's language.
      - **Content (owner additions):**
        - Each push is built from the in-app message, in the recipient's language.
        - Never a sign-in code. Sign-in codes aren't notifications, and a check refuses any push text carrying a code variable.
-       - Amounts stay off the lock screen unless the same message also goes to the shop by SMS or WhatsApp **[question 2]**. When it does, the push uses the in-app wording. When it doesn't, the push has an amount-free title and the line "Open the app to see the details". Five events have amounts in their title: bill issued, credit note, payment received, refund, payment reminder.
-       - The delivery code: **[question 3]**.
+       - Amounts stay off the lock screen unless the same message is actually going to that shop by SMS or WhatsApp too: the rule sends it and the shop can receive it there (consent given, not switched off) **(answer 2)**. When it does, the push uses the in-app wording. When it doesn't, the push has an amount-free title and the line "Open the app to see the details". Five events have amounts in their title: bill issued, credit note, payment received, refund, payment reminder.
+       - The delivery code is never on the lock screen **(answer 3)**: the push says the order is on its way, and the code shows on the order screen after a tap.
      - **Sending:** through a `PushSender` adapter, from a Celery task with retries and backoff, enqueued after commit. There are two implementations:
        - `mock`, for development and tests, which copies each push to Mailpit as `[Push mock] …` like the other mocks;
        - `fcm`, FCM HTTP v1 with a service account. A token that FCM reports as unregistered is switched off. **TODO(verify)** FCM's request, response and error codes against Firebase's documentation.
@@ -922,10 +922,10 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
      - The production domain is built into the app, so it must be fixed before the release build (pre-production item).
   9. **Payments.**
      - Offline payments are shown as on the web.
-     - Online payment **[question 4]**: the app opens the existing web checkout in a Chrome Custom Tab, signed in with a one-time handoff code (`POST auth/app/web-handoff/`: once only, 60 seconds, for the signed-in shop's distributor). The shop then returns to the app, which shows the status the server has.
+     - Online payment **(answer 4)**: the app opens the existing web checkout in a **Chrome Custom Tab, never an embedded web view**, so UPI apps (PhonePe, Google Pay, Paytm) can open from it and return. It's signed in with a one-time handoff code (`POST auth/app/web-handoff/`: single use, expires within 60 seconds, for the signed-in shop's distributor). When the shop comes back, the app asks the server for the payment's status; it never trusts what the browser tab reported. The UPI handoff and return are on the owner's real-phone checks at the final review.
      - Status changes only from verified gateway webhooks, as today. There is no payment SDK in the app.
   10. **Weak connections (owner decision 6).**
-      - **What's saved for offline use,** within limits **[question 5]**: categories, the catalogue pages and products the shop has seen, its usual products, the last 20 orders and bills, and the statement's first page. Product photos have a separate bounded cache. The least recently used items go first.
+      - **What's saved for offline use,** within limits (saved data at most 10 MB, saved photos at most 50 MB; answer 5): categories, the catalogue pages and products the shop has seen, its usual products, the last 20 orders and bills, and the statement's first page. Product photos have a separate bounded cache. The least recently used items go first.
       - **When offline,** the app says so in plain words, with the time of the saved data ("You're offline. Showing what was saved at 10:42."). Prices are labelled "as last seen".
       - **The cart works offline.** Quantity changes are kept on the phone and sent when the connection is back. They set quantities rather than add to them, so sending one twice is harmless. The server's totals come back then.
       - **What needs a connection:** "Place order", payments, returns and delivery confirmation. Each says so.
@@ -937,14 +937,14 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
       - The app sends nothing to third parties except Sentry crash reports (with phone numbers and tokens scrubbed) and FCM registration.
   12. **Budget phones (owner addition).**
       - Keeping it light: Hermes, R8 shrinking, per-device downloads from the app bundle, server-sized product photos and virtualised long lists.
-      - No bundled fonts: the app uses Android's own Noto Devanagari (**TODO(verify)** on the Android 11 image).
+      - No bundled fonts: the app uses the phone's system fonts for Devanagari **(answer 5)** (**TODO(verify)** on the Android 11 image).
       - Two emulators: a modern phone (Android 16, 4 GB) and a budget phone (Android 11, 2 GB RAM). The main flows run on both.
-      - The download size per phone (arm64) and the saved-data sizes are reported at the checkpoint and the final review, against the targets **[question 5]**.
+      - The download size per phone (arm64) is reported at each checkpoint and the final review: **20 MB is the target and 30 MB the hard limit (answer 5)**. Anything cut to meet it is agreed with the owner first. The saved-data sizes are reported too.
   13. **Crash and error reporting.** Sentry for React Native, only when a DSN is set; each release is named by its version and build number. The release build uploads source maps when a Sentry token is present (a CI secret; local builds skip it). Screens show the app's translated error messages, never raw errors.
   14. **The application ID (owner addition).** One clearly marked setting (`mobile/app-identity.ts`), with the development placeholder `com.example.shop`. Google Play refuses `com.example` IDs, so the placeholder can't be uploaded by mistake. The final ID is chosen before the first upload and can never change afterwards (pre-production item 45).
   15. **Signing (owner addition).**
       - Play App Signing: Google keeps the app signing key; we keep only the upload key.
-      - The upload key is created on this Mac and stored outside the repository (`~/.android-keys/`), with its password in the macOS Keychain. It's backed up to two offline places: the owner's password manager and an encrypted drive. It's never committed or given to CI **[question 7]**.
+      - The upload key is created on this Mac and stored outside the repository (`~/.android-keys/`), with its password in the macOS Keychain. It's backed up to two offline places: the owner's password manager and an encrypted drive. It's never committed or given to CI **(answer 7)**: CI signs its release builds with a throwaway key that Google would refuse.
       - If it's lost, the account owner asks Google to reset it in Play Console and registers a new upload key's certificate. `docs/PLAY_STORE.md` gives the steps (**TODO(verify)** against Play Console help at that step).
   16. **Checks.**
       - Jest and React Native Testing Library for screens and logic, including the offline queue, the link map, and number formatting in all three languages.
