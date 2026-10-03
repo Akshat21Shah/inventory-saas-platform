@@ -7,6 +7,7 @@ from uuid import UUID
 
 from django.db.models import QuerySet
 from django.http import HttpResponse
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -76,7 +77,7 @@ def _uuid(value: str | None, field: str) -> UUID | None:
     try:
         return UUID(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Not a valid id."]}) from exc
+        raise InvalidFields({field: [_("Not a valid id.")]}) from exc
 
 
 def _date(value: str | None, field: str) -> date | None:
@@ -85,7 +86,7 @@ def _date(value: str | None, field: str) -> date | None:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Use YYYY-MM-DD."]}) from exc
+        raise InvalidFields({field: [_("Use YYYY-MM-DD.")]}) from exc
 
 
 class Guarded(APIView):
@@ -241,7 +242,7 @@ class LookupView(Guarded):
     def get(self, request: Request) -> Response:
         product = selectors.lookup(request.query_params.get("code", ""))
         if product is None:
-            raise NotFound("No product has this barcode or code.")
+            raise NotFound(_("No product has this barcode or code."))
         return Response(s.LookupSerializer(product).data)
 
 
@@ -456,7 +457,7 @@ class CompleteCostsView(Guarded):
         costs: dict[UUID, Decimal] = {}
         for row in data.validated_data["costs"]:
             if row["line_id"] in costs:
-                raise InvalidFields({"costs": ["Each line can have one cost."]})
+                raise InvalidFields({"costs": [_("Each line can have one cost.")]})
             costs[row["line_id"]] = row["entered_cost"]
         receipts.complete_costs(inward_id, costs, by=_user(request))
         return _receipt_response(request, inward_id)

@@ -2,7 +2,6 @@
 
 import { Check, Mail, RotateCw, UserPlus, UserRoundX, UserRoundCheck, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
 import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
@@ -48,6 +47,7 @@ import {
 import type { Invitation, Membership, Role } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 function roleLabel(t: ReturnType<typeof useTranslations>, role: { code: string; name: string }) {
   return t.has(`roles.${role.code}`) ? t(`roles.${role.code}`) : role.name;
@@ -319,6 +319,12 @@ export function StaffPage() {
     value: role.code,
     label: roleLabel(t, role),
   }));
+  // The invitation's language: the inviter's own unless they choose another (ADR-060).
+  const { me } = useAuth();
+  const languageOptions = (me?.languages ?? []).map((option) => ({
+    value: option.code,
+    label: option.native,
+  }));
   return (
     <>
       <PageHeader
@@ -337,13 +343,25 @@ export function StaffPage() {
             fields={[
               { name: "email", label: t("email"), required: true },
               { name: "role_code", label: t("role"), kind: "select", options: roleOptions },
+              ...(languageOptions.length > 1
+                ? [
+                    {
+                      name: "language",
+                      label: t("inviteLanguage"),
+                      kind: "select" as const,
+                      options: languageOptions,
+                      hint: t("inviteLanguageHint"),
+                    },
+                  ]
+                : []),
             ]}
-            initial={{ email: "", role_code: "SALES" }}
+            initial={{ email: "", role_code: "SALES", language: me?.language ?? "en" }}
             submitLabel={t("sendInvite")}
             onSubmit={async (values) => {
               await staffInvitationsCreate({
                 email: String(values.email).trim(),
                 role_code: String(values.role_code),
+                ...(languageOptions.length > 1 ? { language: String(values.language) } : {}),
               });
               toast.success(t("invited", { email: String(values.email).trim() }));
               void queryClient.invalidateQueries({ queryKey: getStaffInvitationsListQueryKey() });

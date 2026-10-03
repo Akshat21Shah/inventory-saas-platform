@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormatter } from "next-intl";
+import { formatCompact } from "@/lib/format";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { formatMoney } from "@/lib/format";
@@ -14,20 +14,19 @@ import type { ReportRow } from "./cells";
  */
 export function PeriodChart({
   rows,
-  label,
-  value,
+  labelKey,
+  valueKey,
   caption,
 }: {
   rows: ReportRow[];
-  label: string;
-  value: string;
+  labelKey: string;
+  valueKey: string;
   caption: string;
 }) {
-  const format = useFormatter();
   const bars = rows.map((row) => ({
-    label: String(row[label] ?? ""),
-    value: Number(row[value] ?? 0),
-    text: String(row[value] ?? "0"),
+    label: String(row[labelKey] ?? ""),
+    value: Number(row[valueKey] ?? 0),
+    text: String(row[valueKey] ?? "0"),
   }));
   return (
     <figure className="m-0 rounded-xl border p-3" aria-hidden>
@@ -48,9 +47,7 @@ export function PeriodChart({
               minTickGap={16}
             />
             <YAxis
-              tickFormatter={(n: number) =>
-                format.number(n, { notation: "compact", maximumFractionDigits: 1 })
-              }
+              tickFormatter={(n: number) => formatCompact(n)}
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
               tickLine={false}
               axisLine={false}

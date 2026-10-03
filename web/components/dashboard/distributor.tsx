@@ -17,7 +17,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { ComplianceCards, FailedEWayBillsAlert } from "@/components/compliance/dashboard";
@@ -30,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDashboard } from "@/lib/api/generated/endpoints/dashboard/dashboard";
 import type { DashboardAction, DashboardToday, DashboardTrends } from "@/lib/api/generated/model";
 import { formatMoney } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { DailyChart } from "./daily-chart";

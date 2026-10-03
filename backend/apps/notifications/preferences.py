@@ -5,6 +5,8 @@ welcome). WhatsApp additionally needs the shop's consent (``consent``)."""
 
 from typing import Any
 
+from django.utils.translation import gettext
+
 from apps.accounts.models import User
 from apps.notifications.catalog import EVENTS
 from apps.notifications.models import Channel, NotificationPreference, Recipient
@@ -82,11 +84,13 @@ def set_preference(
         raise NotFound()
     entry = _events_for(user, shop).get(event_code)
     if entry is None or channel not in entry["channels"]:
-        raise InvalidFields({"channel": ["You don't get this message on this channel."]})
+        raise InvalidFields({"channel": [gettext("You don't get this message on this channel.")]})
     if not enabled and channel == Channel.IN_APP:
-        raise InvalidFields({"channel": ["Messages in the app can't be switched off."]})
+        raise InvalidFields({"channel": [gettext("Messages in the app can't be switched off.")]})
     if not enabled and entry["compulsory"]:
-        raise InvalidFields({"channel": ["This message is required and can't be switched off."]})
+        raise InvalidFields(
+            {"channel": [gettext("This message is required and can't be switched off.")]}
+        )
     pref: NotificationPreference
     pref, _ = NotificationPreference.objects.update_or_create(
         user=user, event_code=event_code, channel=channel, defaults={"enabled": enabled}

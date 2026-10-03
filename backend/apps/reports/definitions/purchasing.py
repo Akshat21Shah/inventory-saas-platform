@@ -8,6 +8,8 @@ from decimal import Decimal
 from typing import Any
 
 from django.db.models import Count, Q, Sum
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.inventory.models import StockInward, StockInwardLine
 from apps.purchasing.models import PurchaseOrder
@@ -96,7 +98,7 @@ def purchases_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="purchases_by_supplier",
-        title="Purchases by supplier",
+        title=gettext_lazy("Purchases by supplier"),
         group=Group.PURCHASING,
         description="What you ordered and received from each supplier, and what is late.",
         permission="purchasing.view",
@@ -114,8 +116,10 @@ register(
         rows=purchases_by_supplier,
         totals=purchases_totals,
         notes=lambda ctx: [
-            "Goods receipts posted in the period (value before GST, at cost); orders sent in the "
-            "period; open and late orders as of today."
+            _(
+                "Goods receipts posted in the period (value before GST, at cost); orders sent in "
+                "the period; open and late orders as of today."
+            )
         ],
     )
 )

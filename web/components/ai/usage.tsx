@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ErrorState } from "@/components/shared/error-state";
@@ -13,6 +12,7 @@ import { usePlatformAiUsage } from "@/lib/api/generated/endpoints/platform/platf
 import { useSettingsAiUsage } from "@/lib/api/generated/endpoints/settings/settings";
 import type { TenantAiUsage } from "@/lib/api/generated/model";
 import { formatDate, formatMoney, formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const count = (n: number) => formatQty(String(n), 0);
 

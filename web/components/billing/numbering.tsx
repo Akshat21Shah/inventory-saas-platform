@@ -1,7 +1,6 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,6 +17,7 @@ import {
 } from "@/lib/api/generated/endpoints/settings/settings";
 import type { DocumentSeries } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 function SeriesRow({ row, canEdit }: { row: DocumentSeries; canEdit: boolean }) {
   const t = useTranslations("billing.numbering");

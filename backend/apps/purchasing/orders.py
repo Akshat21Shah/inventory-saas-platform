@@ -21,6 +21,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext, gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -34,6 +35,7 @@ from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier, S
 from common.dates import today_ist
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.outbox import emit
 from common.sequences import next_value
 from common.tenancy import require_tenant_id
@@ -47,7 +49,7 @@ OPEN = (S.SENT, S.PARTLY_RECEIVED)  # waiting for goods
 class NotEditable(DomainError):
     status_code = 409
     code = ErrorCode.INVALID_STATE_TRANSITION
-    default_message = "This purchase order can't be changed now."
+    default_message = gettext_lazy("This purchase order can't be changed now.")
 
 
 @dataclass(frozen=True)
@@ -82,22 +84,28 @@ def _supplier(supplier_id: UUID) -> Supplier:
         pk=supplier_id, deleted_at__isnull=True, is_active=True
     ).first()
     if found is None:
-        raise InvalidFields({"supplier_id": ["Choose one of your active suppliers."]})
+        raise InvalidFields({"supplier_id": [gettext("Choose one of your active suppliers.")]})
     return found
 
 
 def _quantity_problem(product: Product, line: OrderLineInput) -> str | None:
     if line.entered_unit not in PurchaseOrderLine.EnteredUnit.values:
-        return "Choose the unit or the pack."
+        return gettext("Choose the unit or the pack.")
     if line.entered_unit == "PACK" and product.pack_unit_id is None:
-        return f"{product.code} has no pack size. Enter the quantity in {product.unit.code}."
+        return fill(
+            gettext("%(code)s has no pack size. Enter the quantity in %(code2)s."),
+            {
+                "code": product.code,
+                "code2": product.unit.code,
+            },
+        )
     unit = product.pack_unit if line.entered_unit == "PACK" else product.unit
     if line.entered_qty <= 0:
-        return "Enter a quantity above 0."
+        return gettext("Enter a quantity above 0.")
     if line.entered_qty != line.entered_qty.quantize(QTY_STEP):
-        return "Enter a quantity with at most 3 decimals."
+        return gettext("Enter a quantity with at most 3 decimals.")
     if unit is not None and not unit.allows_decimal and line.entered_qty % 1:
-        return f"{unit.code} is counted in whole numbers."
+        return fill(gettext("%(code)s is counted in whole numbers."), {"code": unit.code})
     return None
 
 
@@ -106,12 +114,17 @@ def _lines(
 ) -> list[PurchaseOrderLine]:
     errors: dict[str, list[str]] = {}
     if not data.lines:
-        errors["lines"] = ["Add at least one product."]
+        errors["lines"] = [gettext("Add at least one product.")]
     elif len(data.lines) > MAX_LINES:
-        errors["lines"] = [f"A purchase order can have up to {MAX_LINES} lines."]
+        errors["lines"] = [
+            fill(
+                gettext("A purchase order can have up to %(max_lines)s lines."),
+                {"max_lines": MAX_LINES},
+            )
+        ]
     costs = sees_costs(by)
     if not costs and any(line.entered_cost is not None for line in data.lines):
-        errors["lines"] = ["Only staff who can see costs can enter them."]
+        errors["lines"] = [gettext("Only staff who can see costs can enter them.")]
     if errors:
         raise InvalidFields(errors)
     ids = {line.product_id for line in data.lines}
@@ -132,10 +145,15 @@ def _lines(
         key = f"lines.{index}"
         product = products.get(line.product_id)
         if product is None:
-            errors[key] = ["Choose an existing product."]
+            errors[key] = [gettext("Choose an existing product.")]
             continue
         if product.pk in seen:
-            errors[key] = [f"{product.code} is already on this order. Change that line instead."]
+            errors[key] = [
+                fill(
+                    gettext("%(code)s is already on this order. Change that line instead."),
+                    {"code": product.code},
+                )
+            ]
             continue
         seen.add(product.pk)
         problem = _quantity_problem(product, line)
@@ -143,7 +161,7 @@ def _lines(
             errors[key] = [problem]
             continue
         if line.entered_cost is not None and line.entered_cost < 0:
-            errors[key] = ["Enter a cost of 0 or more."]
+            errors[key] = [gettext("Enter a cost of 0 or more.")]
             continue
         factor = product.pack_size if line.entered_unit == "PACK" else Decimal("1")
         assert factor is not None
@@ -198,7 +216,7 @@ def _save_lines(order: PurchaseOrder, rows: list[PurchaseOrderLine]) -> None:
 
 def _check_expected(expected: date | None, before: date | None = None) -> None:
     if expected is not None and expected != before and expected < today_ist():
-        raise InvalidFields({"expected_date": ["The expected date can't be in the past."]})
+        raise InvalidFields({"expected_date": [gettext("The expected date can't be in the past.")]})
 
 
 def _print_again(order: PurchaseOrder) -> None:
@@ -268,13 +286,19 @@ def update_order(order_id: UUID, data: OrderInput, *, by: User) -> PurchaseOrder
     order = lock(order_id)
     if order.status not in (S.DRAFT, S.SENT) or not _nothing_received(order):
         raise NotEditable(
-            "Something has been received against this order: only “Close the rest” is possible."
+            gettext(
+                "Something has been received against this order: only “Close the rest” is possible."
+            )
             if order.status == S.PARTLY_RECEIVED
             else None
         )
     if order.status == S.SENT and data.supplier_id != order.supplier_id:
         raise InvalidFields(
-            {"supplier_id": ["This order was sent to its supplier. Cancel it and start a new one."]}
+            {
+                "supplier_id": [
+                    gettext("This order was sent to its supplier. Cancel it and start a new one.")
+                ]
+            }
         )
     supplier = _supplier(data.supplier_id)
     before = _summary(order)
@@ -306,7 +330,7 @@ def update_order(order_id: UUID, data: OrderInput, *, by: User) -> PurchaseOrder
 def delete_order(order_id: UUID, *, by: User) -> None:
     order = lock(order_id)
     if order.status != S.DRAFT:
-        raise NotEditable("Only a draft can be deleted. Cancel a sent order instead.")
+        raise NotEditable(gettext("Only a draft can be deleted. Cancel a sent order instead."))
     audit.record("purchasing.po_deleted", target=order, target_repr=order.number)
     order.lines.all().delete()
     order.delete()
@@ -328,10 +352,12 @@ def send_order(order_id: UUID, *, by: User) -> Sent:
 
     order = lock(order_id)
     if order.status not in (S.DRAFT, S.SENT) or not _nothing_received(order):
-        raise NotEditable("Only a draft or a sent order with nothing received can be sent.")
+        raise NotEditable(
+            gettext("Only a draft or a sent order with nothing received can be sent.")
+        )
     supplier = _supplier(order.supplier_id)
     if not order.lines.exists():
-        raise InvalidFields({"lines": ["Add at least one product."]})
+        raise InvalidFields({"lines": [gettext("Add at least one product.")]})
     revised = order.status == S.DRAFT or order.changed_since_sent
     if revised:
         order.revision += 1
@@ -388,7 +414,9 @@ def _no_open_receipt(order: PurchaseOrder) -> None:
 
     if StockInward.objects.filter(purchase_order=order, status=StockInward.Status.DRAFT).exists():
         raise NotEditable(
-            "A goods receipt is being entered for this order. Post or delete that draft first."
+            gettext(
+                "A goods receipt is being entered for this order. Post or delete that draft first."
+            )
         )
 
 
@@ -410,10 +438,10 @@ def cancel_order(
     order = lock(order_id)
     if order.status not in (S.DRAFT, S.SENT) or not _nothing_received(order):
         raise NotEditable(
-            "Something has been received against this order: use “Close the rest” instead."
+            gettext("Something has been received against this order: use “Close the rest” instead.")
         )
     if order.status == S.SENT and not reason.strip():
-        raise InvalidFields({"reason": ["Say why the order is cancelled."]})
+        raise InvalidFields({"reason": [gettext("Say why the order is cancelled.")]})
     _no_open_receipt(order)
     was_sent = order.status == S.SENT
     _cancel_due(order)
@@ -448,10 +476,12 @@ def close_order(order_id: UUID, *, reason: str, by: User) -> PurchaseOrder:
     order = lock(order_id)
     if order.status != S.PARTLY_RECEIVED:
         raise NotEditable(
-            "Only a partly received order can be closed. Cancel an order with nothing received."
+            gettext(
+                "Only a partly received order can be closed. Cancel an order with nothing received."
+            )
         )
     if not reason.strip():
-        raise InvalidFields({"reason": ["Say why the rest won't come."]})
+        raise InvalidFields({"reason": [gettext("Say why the rest won't come.")]})
     _no_open_receipt(order)
     _cancel_due(order)
     order.status = S.CLOSED

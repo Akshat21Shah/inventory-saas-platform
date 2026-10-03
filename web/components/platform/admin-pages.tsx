@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { AuditTable } from "@/components/shared/audit-table";
@@ -20,6 +19,7 @@ import {
 } from "@/lib/api/generated/endpoints/platform/platform";
 import type { ImpersonationSession } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
+import { useTranslations } from "@/lib/i18n/translations";
 
 export function PlatformSettingsPage() {
   const t = useTranslations("platform.settingsPage");

@@ -7,6 +7,7 @@ with its source."""
 from uuid import UUID
 
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -27,10 +28,10 @@ def set_whatsapp_consent(
 ) -> Retailer:
     """Record the shop's choice. Staff opting a shop in must confirm the shop agreed."""
     if source not in Source.values:
-        raise InvalidFields({"source": ["Unknown source."]})
+        raise InvalidFields({"source": [_("Unknown source.")]})
     if agreed and source == Source.STAFF and not confirmed:
         raise InvalidFields(
-            {"whatsapp_consent_confirmed": ["Confirm the shop agreed to WhatsApp messages."]}
+            {"whatsapp_consent_confirmed": [_("Confirm the shop agreed to WhatsApp messages.")]}
         )
     shop: Retailer | None = (
         Retailer.objects.select_for_update().filter(pk=retailer_id, deleted_at__isnull=True).first()

@@ -16,6 +16,8 @@ from typing import Any
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -28,6 +30,7 @@ from common.crypto import mask
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields
 from common.hosts import web_url
+from common.numbers import fill
 from common.tenancy import require_tenant_id, tenant_transaction
 
 SECRETS = ("key_id", "key_secret", "webhook_secret")
@@ -38,13 +41,13 @@ C = GatewayConfig
 class NotReady(DomainError):
     status_code = 409
     code = ErrorCode.PAYMENT_GATEWAY_NOT_READY
-    default_message = "Online payments aren't set up yet."
+    default_message = gettext_lazy("Online payments aren't set up yet.")
 
 
 def require_module(tenant_id: Any = None) -> None:
     if not is_feature_enabled("payments", tenant_id or require_tenant_id()):
         raise DomainError(
-            "Online payments aren't switched on for your business.",
+            _("Online payments aren't switched on for your business."),
             code=ErrorCode.MODULE_NOT_ENABLED,
             status_code=403,
         )
@@ -88,11 +91,11 @@ def save(provider: str, mode: str, given: dict[str, str], *, by: User) -> Gatewa
     require_module()
     errors: dict[str, list[str]] = {}
     if provider not in providers():
-        errors["provider"] = ["Choose a payment gateway."]
+        errors["provider"] = [_("Choose a payment gateway.")]
     if mode not in C.Mode.values:
-        errors["mode"] = ["Choose test or live."]
+        errors["mode"] = [_("Choose test or live.")]
     elif mode == C.Mode.LIVE and not settings.PAYMENTS_ALLOW_LIVE:
-        errors["mode"] = ["Live payments aren't allowed here: use test keys."]
+        errors["mode"] = [_("Live payments aren't allowed here: use test keys.")]
     if errors:
         raise InvalidFields(errors)
     row = current() or GatewayConfig(provider=provider)
@@ -108,7 +111,16 @@ def save(provider: str, mode: str, given: dict[str, str], *, by: User) -> Gatewa
         raise InvalidFields({name: ["This field is required."] for name in missing})
     prefix = KEY_PREFIX.get((provider, mode))
     if prefix and not row.key_id.startswith(prefix):
-        raise InvalidFields({"key_id": [f"A {mode.lower()} key starts with {prefix}."]})
+        raise InvalidFields(
+            {
+                "key_id": [
+                    fill(
+                        _("A %(mode)s key starts with %(prefix)s."),
+                        {"mode": mode.lower(), "prefix": prefix},
+                    )
+                ]
+            }
+        )
     row.provider, row.mode, row.updated_by = provider, mode, by
     row.status, row.verified_at, row.last_error = C.Status.CHECKING, None, ""
     row.save()

@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.billing.credit_notes import line_tax
 from apps.billing.invoicing import buyer_snapshot, seller_snapshot
+from apps.billing.labels import language_for
 from apps.billing.models import (
     CreditNote,
     CreditNoteLine,
@@ -100,6 +101,7 @@ def invoice_context(
         lines = list(invoice.lines.order_by("line_no"))
     return {
         "doc": invoice,
+        "lang": invoice.document_language,  # labels in English and this language (ADR-060)
         "seller": invoice.seller,
         "buyer": invoice.buyer,
         "copies": copies,
@@ -146,6 +148,7 @@ def credit_note_context(
         lines = list(note.lines.select_related("invoice_line").order_by("line_no"))
     return {
         "doc": note,
+        "lang": note.document_language,
         "seller": note.seller,
         "buyer": note.buyer,
         "lines": lines,
@@ -183,6 +186,7 @@ def receipt_context(payment: Payment) -> dict[str, Any]:
             applied.append((f"Refund {row.refund.number}", row.amount))
     return {
         "doc": payment,
+        "lang": payment.document_language,
         "seller": seller_snapshot(tenant),
         "shop": payment.retailer,
         "words": amount_in_words(payment.amount),
@@ -221,6 +225,7 @@ def refund_context(refund: Refund) -> dict[str, Any]:
             sources.append((row.credit_adjustment.get_kind_display(), row.amount))
     return {
         "doc": refund,
+        "lang": refund.document_language,
         "seller": seller_snapshot(tenant),
         "shop": refund.retailer,
         "words": amount_in_words(refund.amount),
@@ -248,6 +253,7 @@ def confirmation_content(order: Order) -> dict[str, Any]:
     """A snapshot of what was accepted: later changes to the order don't alter the document."""
     tenant = Tenant.objects.select_related("state").get(pk=order.tenant_id)
     return {
+        "language": language_for(order.retailer),  # fixed at issue (ADR-060)
         "order_number": order.number,
         "placed_at": order.placed_at.isoformat(),
         "accepted_at": (order.accepted_at or timezone.now()).isoformat(),
@@ -313,7 +319,11 @@ def render_confirmation(confirmation_id: UUID) -> None:
     tenant_id = require_tenant_id()
     with tenant_transaction(tenant_id):
         confirmation = OrderConfirmation.objects.get(pk=confirmation_id)
-        html = render_to_string("billing/order_confirmation.html", {"doc": confirmation.content})
+        content = confirmation.content
+        html = render_to_string(
+            "billing/order_confirmation.html",
+            {"doc": content, "lang": content.get("language", "en")},
+        )
         key = document_key(tenant_id, "order-confirmations", confirmation.content["order_number"])
     get_storage().put(key, get_renderer().render(html), PDF)
     with tenant_transaction(tenant_id):

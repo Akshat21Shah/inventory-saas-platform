@@ -13,6 +13,7 @@ from django.contrib import admin
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.db.models import Model, QuerySet
 from django.http import HttpRequest
+from django.utils.translation import gettext as _
 
 from common.hosts import HostKind
 from common.platform_db import platform_db
@@ -35,7 +36,7 @@ class PlatformAdminLoginForm(AdminAuthenticationForm):
         password = self.cleaned_data.get("password") or ""
         meta = request_meta_var.get()
         error = forms.ValidationError(
-            "Sign-in failed. Check your email, password and code.", code="invalid_login"
+            _("Sign-in failed. Check your email, password and code."), code="invalid_login"
         )
         if self.request is None or not _on_admin_host(self.request):
             raise error

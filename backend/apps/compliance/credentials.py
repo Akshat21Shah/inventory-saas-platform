@@ -14,6 +14,8 @@ from typing import Any
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -39,14 +41,14 @@ REQUIRED = 2
 class NotReady(DomainError):
     status_code = 409
     code = ErrorCode.GST_CREDENTIALS_NOT_READY
-    default_message = "Enter and check your GST provider credentials first."
+    default_message = gettext_lazy("Enter and check your GST provider credentials first.")
 
 
 def require_module() -> None:
     features = effective_features()
     if not any(features.get(code, False) for code in MODULES):
         raise DomainError(
-            "E-invoicing and e-way bills aren't switched on for your business.",
+            _("E-invoicing and e-way bills aren't switched on for your business."),
             code=ErrorCode.MODULE_NOT_ENABLED,
             status_code=403,
         )
@@ -85,7 +87,7 @@ def save(environment: str, given: dict[str, str], *, by: User) -> GstCredential:
     with the names of the fields that changed, never their values."""
     require_module()
     if environment not in GstCredential.Environment.values:
-        raise InvalidFields({"environment": ["Choose sandbox or production."]})
+        raise InvalidFields({"environment": [_("Choose sandbox or production.")]})
     unknown = sorted(set(given) - set(fields()))
     if unknown:
         raise InvalidFields({name: ["Not a field of this provider."] for name in unknown})

@@ -28,6 +28,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -39,6 +40,7 @@ from apps.planning.quantities import up, up_to_pack
 from apps.platform.selectors import get_setting, is_feature_enabled
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 ZERO = Decimal("0")
@@ -199,10 +201,12 @@ def change_quantity(
     """``None`` goes back to the suggested quantity."""
     suggestion = _open(suggestion_id)
     if quantity is not None and (quantity <= 0 or quantity != quantity.quantize(QTY)):
-        raise InvalidFields({"quantity": ["Enter a quantity above 0, with at most 3 decimals."]})
+        raise InvalidFields({"quantity": [_("Enter a quantity above 0, with at most 3 decimals.")]})
     unit = suggestion.product.unit
     if quantity is not None and not unit.allows_decimal and quantity != quantity.to_integral():
-        raise InvalidFields({"quantity": [f"{unit.code} is counted in whole numbers."]})
+        raise InvalidFields(
+            {"quantity": [fill(_("%(code)s is counted in whole numbers."), {"code": unit.code})]}
+        )
     suggestion.quantity = quantity
     suggestion.save(update_fields=["quantity", "updated_at"])
     return suggestion
@@ -214,7 +218,7 @@ def dismiss(suggestion_id: UUID, *, until: date | None, by: User) -> ReorderSugg
     today = today_ist()
     until = until or today + timedelta(days=DISMISS_DAYS)
     if until <= today:
-        raise InvalidFields({"until": ["Choose a date after today."]})
+        raise InvalidFields({"until": [_("Choose a date after today.")]})
     suggestion = _open(suggestion_id)
     suggestion.status = S.DISMISSED
     suggestion.dismissed_by, suggestion.dismissed_at = by, timezone.now()
@@ -231,7 +235,7 @@ def dismiss(suggestion_id: UUID, *, until: date | None, by: User) -> ReorderSugg
 
 def _chosen(ids: Sequence[UUID]) -> list[ReorderSuggestion]:
     if not ids or len(ids) > 500:
-        raise InvalidFields({"suggestion_ids": ["Choose 1 to 500 suggestions."]})
+        raise InvalidFields({"suggestion_ids": [_("Choose 1 to 500 suggestions.")]})
     rows = list(
         ReorderSuggestion.objects.select_for_update()
         .filter(pk__in=ids, status=S.OPEN)
@@ -239,7 +243,9 @@ def _chosen(ids: Sequence[UUID]) -> list[ReorderSuggestion]:
         .order_by("product__code")
     )
     if len(rows) != len(set(ids)):
-        raise InvalidFields({"suggestion_ids": ["Some suggestions are no longer open. Refresh."]})
+        raise InvalidFields(
+            {"suggestion_ids": [_("Some suggestions are no longer open. Refresh.")]}
+        )
     return rows
 
 
@@ -252,7 +258,14 @@ def create_orders(ids: Sequence[UUID], *, by: User) -> list[Any]:
     without = [row.product.code for row in rows if row.supplier_id is None]
     if without:
         raise InvalidFields(
-            {"suggestion_ids": [f"Choose a preferred supplier first for: {', '.join(without)}."]}
+            {
+                "suggestion_ids": [
+                    fill(
+                        _("Choose a preferred supplier first for: %(without)s."),
+                        {"without": ", ".join(without)},
+                    )
+                ]
+            }
         )
     by_supplier: dict[UUID, list[ReorderSuggestion]] = defaultdict(list)
     for row in rows:

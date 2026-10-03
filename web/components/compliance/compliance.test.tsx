@@ -111,9 +111,11 @@ describe("E-invoices & e-way bills settings", () => {
       "/api/v1/settings/registry/": () => [200, []],
     });
     renderWithIntl(<ComplianceSettings />);
-    expect(
-      await screen.findByText("The provider said: The provider refused these credentials."),
-    ).toBeVisible();
+    expect(await screen.findByText("The GST provider refused the login:")).toBeVisible();
+    expect(screen.getByText("The provider refused these credentials.")).toHaveAttribute(
+      "lang",
+      "en",
+    );
     expect(screen.getByText("Not working")).toBeVisible();
   });
 

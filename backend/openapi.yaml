@@ -2765,10 +2765,7 @@ paths:
         name: locale
         schema:
           type: string
-          enum:
-          - en
-          - hi
-          - mr
+        description: A language code.
       tags:
       - notifications
       security:
@@ -2840,10 +2837,7 @@ paths:
         name: locale
         schema:
           type: string
-          enum:
-          - en
-          - hi
-          - mr
+        description: A language code.
       tags:
       - notifications
       security:
@@ -5057,6 +5051,121 @@ paths:
               schema:
                 $ref: '#/components/schemas/SlugAvailability'
           description: ''
+  /api/v1/platform/texts/progress/:
+    get:
+      operationId: platform_texts_progress
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TextProgress'
+          description: ''
+  /api/v1/platform/texts/sheet/:
+    get:
+      operationId: platform_texts_sheet
+      description: Every text in one spreadsheet, for a translator (the same as ``texts_export``).
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/platform/texts/suggestions/:
+    get:
+      operationId: platform_text_suggestions_list
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: language
+        schema:
+          type: string
+          maxLength: 5
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - NEW
+          - DONE
+          - DISMISSED
+          - ''
+          type: string
+        description: |-
+          * `NEW` - New
+          * `DONE` - Done
+          * `DISMISSED` - Dismissed
+      tags:
+      - platform
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSuggestionList'
+          description: ''
+  /api/v1/platform/texts/suggestions/{suggestion_id}/:
+    patch:
+      operationId: platform_text_suggestions_update
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSuggestionUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Suggestion'
+          description: ''
   /api/v1/price-lists/:
     get:
       operationId: price_lists_list
@@ -6085,6 +6194,25 @@ paths:
           description: Unknown link (HTML)
         '410':
           description: Expired or withdrawn link (HTML)
+  /api/v1/public/languages/:
+    get:
+      operationId: public_languages
+      description: |-
+        Every language the app has, and whether it is enabled for everyone (ADR-060). For the
+        super admin's sign-in page, where only super admins sign in (they may use any language).
+      tags:
+      - public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlatformLanguage'
+          description: ''
   /api/v1/public/states/:
     get:
       operationId: public_states_list
@@ -8654,6 +8782,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/Business'
           description: ''
+  /api/v1/settings/business/sms-preview/:
+    get:
+      operationId: settings_business_sms_preview
+      description: 'The welcome SMS with a short name for SMS, per language: its length
+        and parts (owner).'
+      parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: The short name being typed.
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SmsPreview'
+          description: ''
   /api/v1/settings/document-series/:
     get:
       operationId: settings_document_series
@@ -11055,6 +11207,28 @@ paths:
                 items:
                   $ref: '#/components/schemas/RateChange'
           description: ''
+  /api/v1/texts/suggestions/:
+    post:
+      operationId: texts_suggestions_create
+      description: Anyone signed in (staff, a shop's login, a super admin) may suggest
+        a better word.
+      tags:
+      - texts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestionCreated'
+          description: ''
   /api/v1/units/:
     get:
       operationId: catalog_units_list
@@ -12644,6 +12818,11 @@ components:
         signatory_name:
           type: string
           maxLength: 150
+        sms_name:
+          type: string
+          description: 'Used in SMS in place of the business name; blank: the business
+            name.'
+          maxLength: 30
         has_signatory_image:
           type: boolean
           readOnly: true
@@ -14973,6 +15152,9 @@ components:
           description: PART_B or CANCEL while one is being sent.
         last_update_error:
           type: string
+        last_update_error_code:
+          type: string
+          description: Why the last change failed, as a code (shown translated).
         invoice_id:
           type: string
           format: uuid
@@ -15011,6 +15193,7 @@ components:
       - invoice_id
       - invoice_number
       - last_update_error
+      - last_update_error_code
       - next_retry_at
       - pending_update
       - requested_at
@@ -15122,6 +15305,9 @@ components:
           description: PART_B or CANCEL while one is being sent.
         last_update_error:
           type: string
+        last_update_error_code:
+          type: string
+          description: Why the last change failed, as a code (shown translated).
       required:
       - attempts
       - can_cancel
@@ -15138,6 +15324,7 @@ components:
       - generated_at
       - id
       - last_update_error
+      - last_update_error_code
       - next_retry_at
       - pending_update
       - requested_at
@@ -15174,6 +15361,8 @@ components:
           type: string
         remarks:
           type: string
+        error_code:
+          type: string
         error_message:
           type: string
         created_at:
@@ -15186,6 +15375,7 @@ components:
       required:
       - created_at
       - done_at
+      - error_code
       - error_message
       - id
       - kind
@@ -16909,6 +17099,9 @@ components:
         invited_by:
           type: string
           readOnly: true
+        language:
+          type: string
+          maxLength: 5
         created_at:
           type: string
           format: date-time
@@ -16935,6 +17128,10 @@ components:
           type: string
           minLength: 1
           maxLength: 256
+        language:
+          type: string
+          description: The language the page was shown in; a new account keeps it.
+          maxLength: 5
       required:
       - password
       - token
@@ -16949,6 +17146,11 @@ components:
           type: string
           minLength: 1
           maxLength: 40
+        language:
+          type: string
+          description: 'The email''s language (a code from /auth/me/ languages); blank:
+            the inviter''s.'
+          maxLength: 5
       required:
       - email
       - role_code
@@ -16970,11 +17172,15 @@ components:
         expires_at:
           type: string
           format: date-time
+        language:
+          type: string
+          description: The language to show the invite page in.
       required:
       - email
       - existing_account
       - expires_at
       - invited_by
+      - language
       - role
       - tenant_name
     InvitationTokenRequest:
@@ -17395,6 +17601,21 @@ components:
       required:
       - changed
       - warnings
+    Language:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+          description: In English.
+        native:
+          type: string
+          description: In its own script, for the language switcher.
+      required:
+      - code
+      - name
+      - native
     LeadSourceEnum:
       enum:
       - PRODUCT_SUPPLIER
@@ -17876,6 +18097,15 @@ components:
           type: string
         preferred_language:
           type: string
+          description: As saved (may be unavailable now).
+        language:
+          type: string
+          description: The language this person sees (ADR-060).
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Language'
+          description: The languages they may choose.
         tenant:
           allOf:
           - $ref: '#/components/schemas/MeTenant'
@@ -17911,6 +18141,8 @@ components:
       - full_name
       - id
       - impersonation
+      - language
+      - languages
       - mfa_enabled
       - mfa_required
       - permissions
@@ -18520,6 +18752,11 @@ components:
           nullable: true
           minLength: 1
           maxLength: 7
+        owner_language:
+          type: string
+          default: ''
+          description: 'The owner''s invitation email language; blank: yours.'
+          maxLength: 5
       required:
       - address_line1
       - city
@@ -19783,6 +20020,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StockRow'
+    PaginatedSuggestionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Suggestion'
     PaginatedSupplierListList:
       type: object
       required:
@@ -20075,6 +20331,11 @@ components:
         signatory_name:
           type: string
           maxLength: 150
+        sms_name:
+          type: string
+          description: 'Used in SMS in place of the business name; blank: the business
+            name.'
+          maxLength: 30
     PatchedCategoryUpdateRequest:
       type: object
       properties:
@@ -20262,7 +20523,9 @@ components:
           type: string
           maxLength: 150
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
+          maxLength: 5
     PatchedMembershipUpdateRequest:
       type: object
       properties:
@@ -20515,7 +20778,9 @@ components:
             minLength: 1
             maxLength: 40
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          description: 'A language code; empty: the distributor''s default for shops.'
+          maxLength: 5
     PatchedSettingValuesRequest:
       type: object
       properties:
@@ -20538,6 +20803,11 @@ components:
           type: string
           format: date
           nullable: true
+    PatchedSuggestionUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/TextSuggestionStatusEnum'
     PatchedSupplierWriteRequest:
       type: object
       description: Validation of shapes only; the service checks GSTINs, phone numbers
@@ -21357,6 +21627,23 @@ components:
       - tenant_id
       - tenant_name
       - title
+    PlatformLanguage:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        native:
+          type: string
+        enabled:
+          type: boolean
+          description: On for everyone (else only for testing).
+      required:
+      - code
+      - enabled
+      - name
+      - native
     PlatformTemplate:
       type: object
       properties:
@@ -21445,9 +21732,11 @@ components:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
           default: SHOP
         locale:
-          allOf:
-          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
           default: en
+          description: A language code.
+          maxLength: 5
         subject:
           type: string
           default: ''
@@ -21562,16 +21851,6 @@ components:
           type: integer
       required:
       - changed
-    PreferredLanguageEnum:
-      enum:
-      - en
-      - hi
-      - mr
-      type: string
-      description: |-
-        * `en` - English
-        * `hi` - हिन्दी
-        * `mr` - मराठी
     PreviewLineRequest:
       type: object
       properties:
@@ -22402,14 +22681,37 @@ components:
         app_icon_url:
           type: string
           nullable: true
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicLanguage'
+          description: What the sign-in page may offer.
+        default_language:
+          type: string
+          description: The distributor's default for shops.
       required:
       - app_icon_url
       - available
+      - default_language
       - display_name
       - favicon_url
+      - languages
       - logo_url
       - primary_color
       - slug
+    PublicLanguage:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        native:
+          type: string
+      required:
+      - code
+      - name
+      - native
     PurchaseOrderCancelRequest:
       type: object
       properties:
@@ -24552,6 +24854,11 @@ components:
         preferred_language:
           type: string
           readOnly: true
+        language:
+          type: string
+          readOnly: true
+          description: 'The language the shop sees: its own, else your usual one for
+            shops (ADR-060).'
         welcome_sent_at:
           type: string
           format: date-time
@@ -24579,6 +24886,7 @@ components:
       - email
       - gstin
       - id
+      - language
       - mobile
       - notes
       - owner_name
@@ -24772,16 +25080,6 @@ components:
       description: |-
         * `ACTIVE` - Active
         * `BLOCKED` - On hold
-    RetailerWritePreferredLanguageEnum:
-      enum:
-      - en
-      - hi
-      - mr
-      type: string
-      description: |-
-        * `en` - en
-        * `hi` - hi
-        * `mr` - mr
     RetailerWriteRequest:
       type: object
       properties:
@@ -24830,9 +25128,10 @@ components:
             minLength: 1
             maxLength: 40
         preferred_language:
-          allOf:
-          - $ref: '#/components/schemas/RetailerWritePreferredLanguageEnum'
-          default: en
+          type: string
+          default: ''
+          description: 'A language code; empty: the distributor''s default for shops.'
+          maxLength: 5
         billing_address:
           allOf:
           - $ref: '#/components/schemas/BillingAddressRequest'
@@ -27089,6 +27388,32 @@ components:
       required:
       - available
       - slug
+    SmsPreview:
+      type: object
+      properties:
+        language:
+          type: string
+        native:
+          type: string
+        text:
+          type: string
+          description: The welcome SMS as a shop would get it.
+        length:
+          type: integer
+          description: Characters, as the network counts them.
+        single:
+          type: integer
+          description: 'Characters one part holds: 160, or 70 (Unicode).'
+        parts:
+          type: integer
+          description: Parts it is sent in (each is paid for).
+      required:
+      - language
+      - length
+      - native
+      - parts
+      - single
+      - text
     SpecialRef:
       type: object
       properties:
@@ -27952,6 +28277,84 @@ components:
       - plan
       - starts_at
       - status
+    Suggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        language:
+          type: string
+          maxLength: 5
+        screen:
+          type: string
+          maxLength: 300
+        current_text:
+          type: string
+          maxLength: 500
+        suggestion:
+          type: string
+          maxLength: 500
+        status:
+          $ref: '#/components/schemas/TextSuggestionStatusEnum'
+        tenant_name:
+          type: string
+          readOnly: true
+        sent_by:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_by:
+          type: string
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - id
+      - language
+      - resolved_by
+      - screen
+      - sent_by
+      - suggestion
+      - tenant_name
+    SuggestionCreateRequest:
+      type: object
+      properties:
+        language:
+          type: string
+          minLength: 1
+          maxLength: 5
+        screen:
+          type: string
+          minLength: 1
+          description: The page's address.
+          maxLength: 300
+        current_text:
+          type: string
+          maxLength: 500
+        suggestion:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - language
+      - screen
+      - suggestion
+    SuggestionCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
     SuggestionIdsRequest:
       type: object
       properties:
@@ -28637,6 +29040,15 @@ components:
           type: string
         source:
           $ref: '#/components/schemas/NotificationTextSourceEnum'
+        locale:
+          type: string
+          description: The language this text is written in (English when the one
+            asked has none).
+        edited_locales:
+          type: array
+          items:
+            type: string
+          description: The languages in which the distributor has its own text (ADR-060).
         editable:
           type: boolean
         variables:
@@ -28648,6 +29060,8 @@ components:
       - body
       - channel
       - editable
+      - edited_locales
+      - locale
       - source
       - subject
       - variables
@@ -28659,9 +29073,11 @@ components:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
           default: SHOP
         locale:
-          allOf:
-          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
           default: en
+          description: A language code.
+          maxLength: 5
         subject:
           type: string
           default: ''
@@ -28690,9 +29106,11 @@ components:
           - $ref: '#/components/schemas/NotificationAudienceEnum'
           default: SHOP
         locale:
-          allOf:
-          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          type: string
+          minLength: 1
           default: en
+          description: A language code.
+          maxLength: 5
         subject:
           type: string
           default: ''
@@ -28711,6 +29129,47 @@ components:
       - body
       - channel
       - event
+    TextProgress:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        native:
+          type: string
+        enabled:
+          type: boolean
+          description: On for everyone (platform.languages_enabled).
+        total:
+          type: integer
+          description: Texts in the app.
+        translated:
+          type: integer
+        reviewed:
+          type: integer
+          description: Reviewed by a native speaker.
+        new_suggestions:
+          type: integer
+      required:
+      - code
+      - enabled
+      - name
+      - native
+      - new_suggestions
+      - reviewed
+      - total
+      - translated
+    TextSuggestionStatusEnum:
+      enum:
+      - NEW
+      - DONE
+      - DISMISSED
+      type: string
+      description: |-
+        * `NEW` - New
+        * `DONE` - Done
+        * `DISMISSED` - Dismissed
     TokenResponse:
       type: object
       properties:

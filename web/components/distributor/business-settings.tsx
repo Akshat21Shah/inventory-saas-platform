@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { FileSignature, Landmark, Trash2, Upload } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -12,7 +11,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { FormField } from "@/components/shared/form-field";
 import { FormActions } from "@/components/shared/form-actions";
 import { PageHeader } from "@/components/shared/page-header";
-import { PageSkeleton } from "@/components/shared/skeletons";
+import { CardSkeleton, PageSkeleton } from "@/components/shared/skeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,8 +33,12 @@ import {
   settingsBusinessUpdate,
   useSettingsBankDetails,
   useSettingsBusiness,
+  useSettingsBusinessSmsPreview,
 } from "@/lib/api/generated/endpoints/settings/settings";
 import type { BankDetails, Business } from "@/lib/api/generated/model";
+import { useTranslations } from "@/lib/i18n/translations";
+import { useDebounced } from "@/lib/use-debounced";
+import { cn } from "@/lib/utils";
 import { useErrorText } from "@/lib/api/use-error-text";
 
 const BUSINESS_FIELDS = [
@@ -51,7 +54,54 @@ const BUSINESS_FIELDS = [
   "phone",
 ] as const;
 const INVOICE_FIELDS = ["invoice_terms", "invoice_footer", "signatory_name"] as const;
-type EditableKey = (typeof BUSINESS_FIELDS)[number] | (typeof INVOICE_FIELDS)[number];
+const SMS_FIELDS = ["sms_name"] as const;
+type EditableKey =
+  (typeof BUSINESS_FIELDS)[number] | (typeof INVOICE_FIELDS)[number] | (typeof SMS_FIELDS)[number];
+
+/**
+ * The welcome SMS with the short name being typed, in each of the distributor's languages: its
+ * length and whether it fits one part (owner, ADR-060). The server writes and counts it; the link
+ * is never shortened, and a longer text goes as more parts, each paid for.
+ */
+function SmsPreview({ name }: { name: string }) {
+  const t = useTranslations("distributorSettings.business");
+  const typed = useDebounced(name.trim(), 300);
+  const query = useSettingsBusinessSmsPreview({ name: typed });
+  const rows = query.data?.data ?? [];
+  return (
+    <section className="space-y-2" aria-labelledby="sms-preview" aria-live="polite">
+      <h3 id="sms-preview" className="text-sm font-medium">
+        {t("smsPreview")}
+      </h3>
+      {query.isLoading ? (
+        <CardSkeleton />
+      ) : query.error ? (
+        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      ) : (
+        <ul className="grid gap-3 lg:grid-cols-3">
+          {rows.map((row) => (
+            <li key={row.language} className="space-y-1 rounded-lg border p-3">
+              <p className="text-muted-foreground text-xs">{row.native}</p>
+              <p className="text-sm break-words" lang={row.language}>
+                {row.text}
+              </p>
+              <p
+                className={cn(
+                  "text-xs",
+                  row.parts > 1 ? "font-medium text-amber-800" : "text-muted-foreground",
+                )}
+              >
+                {row.parts > 1
+                  ? t("smsParts", { length: row.length, parts: row.parts })
+                  : t("smsFits", { length: row.length, single: row.single })}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 function useSaveState<T extends Record<string, string>>(initial: T) {
   const [values, setValues] = useState(initial);
@@ -74,7 +124,7 @@ function BusinessForm({ business, canEdit }: { business: Business; canEdit: bool
   const queryClient = useQueryClient();
   const states = usePublicStatesList();
   const initial = Object.fromEntries(
-    [...BUSINESS_FIELDS, ...INVOICE_FIELDS].map((k) => [k, business[k] ?? ""]),
+    [...BUSINESS_FIELDS, ...INVOICE_FIELDS, ...SMS_FIELDS].map((k) => [k, business[k] ?? ""]),
   ) as Record<EditableKey, string>;
   const form = useSaveState(initial);
   const [busy, setBusy] = useState(false);
@@ -163,6 +213,27 @@ function BusinessForm({ business, canEdit }: { business: Business; canEdit: bool
           <p className="text-muted-foreground text-sm sm:col-span-2">
             {t("pan", { pan: business.pan || "—" })} · {t("webAddress", { slug: business.slug })}
           </p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2 className="text-lg">{t("sms")}</h2>
+          </CardTitle>
+          <CardDescription>{t("smsBody")}</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <FormField label={t("smsName")} hint={t("smsNameHint")} error={form.fieldErrors.sms_name}>
+            <Input
+              className="h-10 sm:max-w-xs"
+              readOnly={!canEdit}
+              maxLength={30}
+              value={form.values.sms_name}
+              placeholder={business.name}
+              onChange={(e) => form.set("sms_name", e.target.value)}
+            />
+          </FormField>
+          <SmsPreview name={form.values.sms_name} />
         </CardContent>
       </Card>
       <Card>

@@ -9,6 +9,7 @@ from django.db.models.functions import Substr
 
 from common.fields import MoneyField
 from common.models import SoftDeleteMixin, TenantScopedModel
+from common.search_keys import SearchKey
 
 
 class Retailer(SoftDeleteMixin, TenantScopedModel):
@@ -24,6 +25,14 @@ class Retailer(SoftDeleteMixin, TenantScopedModel):
     code = models.CharField(max_length=20)  # R-00001, allocated per tenant
     shop_name = models.CharField(max_length=200)
     owner_name = models.CharField(max_length=150, blank=True, default="")
+    # The names in English letters, for search in either script (ADR-060 item 8): "ganesh" finds
+    # "गणेश किराना". Kept by the database.
+    shop_name_key = models.GeneratedField(
+        expression=SearchKey("shop_name"), output_field=models.TextField(), db_persist=True
+    )
+    owner_name_key = models.GeneratedField(
+        expression=SearchKey("owner_name"), output_field=models.TextField(), db_persist=True
+    )
     mobile = models.CharField(max_length=16)  # +91XXXXXXXXXX, the sign-in number
     email = models.EmailField(blank=True, default="")
     # NULL (not "") for unregistered shops, so uniqueness applies only to real GSTINs.
@@ -42,7 +51,8 @@ class Retailer(SoftDeleteMixin, TenantScopedModel):
     )
     notes = models.TextField(blank=True, default="")
     tags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
-    preferred_language = models.CharField(max_length=5, default="en")
+    # A code from common/languages.json; empty: the distributor's default (ADR-060).
+    preferred_language = models.CharField(max_length=5, blank=True, default="")
     # WhatsApp consent (ADR-048 item 5): no WhatsApp message without opt-in.
     whatsapp_opt_in = models.BooleanField(default=False)
     whatsapp_opt_in_at = models.DateTimeField(null=True, blank=True)
@@ -95,6 +105,9 @@ class Retailer(SoftDeleteMixin, TenantScopedModel):
             models.Index(fields=["tenant", "salesperson"], name="retailer_salesperson_idx"),
             models.Index(fields=["tenant", "status"], name="retailer_status_idx"),
             GinIndex(fields=["shop_name"], name="retailer_name_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(
+                fields=["shop_name_key"], name="retailer_name_key_trgm", opclasses=["gin_trgm_ops"]
+            ),
         ]
 
     def __str__(self) -> str:

@@ -198,6 +198,7 @@ def ewaybill_summary(ewb: EWayBill) -> dict[str, Any]:
         "cancel_until": ends,
         "pending_update": pending.kind if pending else "",
         "last_update_error": last.error_message if last and last.status == "FAILED" else "",
+        "last_update_error_code": last.error_code if last and last.status == "FAILED" else "",
     }
 
 
@@ -219,6 +220,7 @@ def ewaybill_row(ewb: EWayBill) -> dict[str, Any]:
                 "vehicle_number": u.vehicle_number,
                 "reason_code": u.reason_code,
                 "remarks": u.remarks,
+                "error_code": u.error_code,
                 "error_message": u.error_message,
                 "created_at": u.created_at,
                 "done_at": u.done_at,

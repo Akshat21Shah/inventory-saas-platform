@@ -15,4 +15,6 @@ export interface InvitationPreview {
   /** True: ask for the existing password instead of creating one. */
   existing_account: boolean;
   expires_at: string;
+  /** The language to show the invite page in. */
+  language: string;
 }

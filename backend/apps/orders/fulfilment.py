@@ -13,6 +13,8 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -38,6 +40,7 @@ from apps.platform.selectors import get_setting
 from common.db import retry_on_deadlock
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 
 ZERO = Decimal("0")
 F = Fulfilment.Status
@@ -126,7 +129,10 @@ def _lock_shipment(fulfilment_id: UUID) -> tuple[Order, Fulfilment]:
 def _require(shipment: Fulfilment, *allowed: str) -> None:
     if shipment.status not in allowed:
         raise InvalidTransition(
-            f"This shipment is {shipment.get_status_display().lower()} now.",
+            fill(
+                _("This shipment is %(shipment)s now."),
+                {"shipment": shipment.get_status_display().lower()},
+            ),
             details={"status": shipment.status},
         )
 
@@ -195,7 +201,12 @@ def pack(fulfilment_id: UUID, packed: dict[UUID, Decimal], *, by: User) -> Fulfi
         for fl in lines:
             qty = packed.get(fl.pk, fl.quantity)
             if qty < 0 or qty > fl.quantity:
-                errors[str(fl.pk)] = [f"Pack between 0 and {fl.quantity.normalize():f}."]
+                errors[str(fl.pk)] = [
+                    fill(
+                        _("Pack between 0 and %(quantity)s."),
+                        {"quantity": format(fl.quantity.normalize(), "f")},
+                    )
+                ]
         if errors:
             raise InvalidFields(errors)
         short: dict[FulfilmentLine, Decimal] = {}
@@ -310,13 +321,13 @@ def _distance(shipment: Fulfilment, typed: int | None) -> int | None:
 class WrongDeliveryCode(DomainError):
     status_code = 422
     code = ErrorCode.WRONG_DELIVERY_CODE
-    default_message = "That isn't the shop's delivery code."
+    default_message = gettext_lazy("That isn't the shop's delivery code.")
 
 
 class DeliveryCodeLocked(DomainError):
     status_code = 429
     code = ErrorCode.DELIVERY_CODE_LOCKED
-    default_message = (
+    default_message = gettext_lazy(
         "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code."
     )
 
@@ -387,8 +398,10 @@ def deliver(fulfilment_id: UUID, *, by: User, code: str = "", reason: str = "") 
                 raise InvalidFields(
                     {
                         "code": [
-                            "Enter the shop's delivery code, or say why it was delivered "
-                            "without it."
+                            _(
+                                "Enter the shop's delivery code, or say why it was delivered "
+                                "without it."
+                            )
                         ]
                     }
                 )
@@ -417,7 +430,7 @@ def shop_confirm_delivery(fulfilment_id: UUID, *, by: User, retailer_id: UUID) -
             raise NotFound()
         if not get_setting("orders.shop_confirms_delivery", order.tenant_id):
             raise DomainError(
-                "Your distributor marks deliveries.",
+                _("Your distributor marks deliveries."),
                 code=ErrorCode.PERMISSION_DENIED,
                 status_code=403,
             )
@@ -519,11 +532,12 @@ def cancel_accepted(order_id: UUID, *, reason: str, by: User) -> Order:
         order = lock_order(order_id)
         if order.status not in (OrderStatus.ACCEPTED, OrderStatus.PACKED):
             raise InvalidTransition(
-                "Only orders not yet dispatched can be cancelled.", details={"status": order.status}
+                _("Only orders not yet dispatched can be cancelled."),
+                details={"status": order.status},
             )
         shipments = Fulfilment.objects.select_for_update().filter(order=order)
         if shipments.filter(status__in=(F.DISPATCHED, F.DELIVERED)).exists():
-            raise InvalidTransition("Part of this order has been dispatched already.")
+            raise InvalidTransition(_("Part of this order has been dispatched already."))
         for shipment in shipments.filter(status__in=(F.ALLOCATED, F.PACKED)):
             lines = _shipment_lines(shipment)
             amounts = {

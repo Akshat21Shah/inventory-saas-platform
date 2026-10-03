@@ -17,8 +17,9 @@ import { NotificationRulesPage } from "./rules";
 import { NotificationTextsPage } from "./texts";
 
 let permissions = new Set<string>();
+let languages: { code: string; native: string }[] = [];
 vi.mock("@/components/auth/auth-provider", () => ({
-  useAuth: () => ({ me: { id: "u1" }, can: (code: string) => permissions.has(code) }),
+  useAuth: () => ({ me: { id: "u1", languages }, can: (code: string) => permissions.has(code) }),
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -246,6 +247,52 @@ describe("Message texts", () => {
         body: "{{ shop }}'s order was accepted.",
       }),
     );
+  });
+
+  it("shows every language side by side and warns when only one has the distributor's words", async () => {
+    languages = [
+      { code: "en", native: "English" },
+      { code: "hi", native: "हिन्दी" },
+      { code: "mr", native: "मराठी" },
+    ];
+    const text = (locale: string, body: string, source: string) => ({
+      audience: "SHOP",
+      channel: "IN_APP",
+      subject: "Order {{ order_number }}",
+      body,
+      source,
+      editable: true,
+      variables: ["order_number"],
+      locale,
+      edited_locales: ["en"],
+    });
+    const calls = mockApi({
+      "/api/v1/notification-rules/": () => [200, matrix],
+      "/api/v1/notification-templates/order.accepted/": (_body, url) => {
+        const locale = url.searchParams.get("locale") ?? "en";
+        const body = {
+          en: "Our own words.",
+          hi: "आपका ऑर्डर स्वीकार हुआ।",
+          mr: "ऑर्डर स्वीकारली.",
+        };
+        const source = locale === "en" ? "tenant" : "platform";
+        return [200, [text(locale, body[locale as "en"], source)]];
+      },
+      "PUT /api/v1/notification-templates/order.accepted/IN_APP/": () => [200, []],
+    });
+    renderWithIntl(<NotificationTextsPage />);
+    const card = await screen.findByRole("region", { name: "In the app" });
+    expect(within(card).getByRole("status")).toHaveTextContent(
+      "You have your own wording in English only. हिन्दी, मराठी still use the standard text",
+    );
+    const hindi = within(card).getByRole("region", { name: "हिन्दी" });
+    expect(within(hindi).getByLabelText("Message")).toHaveValue("आपका ऑर्डर स्वीकार हुआ।");
+    const user = userEvent.setup();
+    await user.click(within(hindi).getByRole("button", { name: "Save text" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "PUT")?.body).toMatchObject({ locale: "hi" }),
+    );
+    languages = [];
   });
 });
 

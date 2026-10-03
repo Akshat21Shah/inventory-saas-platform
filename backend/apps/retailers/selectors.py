@@ -9,6 +9,7 @@ from django.db.models import Q, QuerySet
 from apps.accounts.models import Membership, User
 from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
+from common.search_keys import key
 from common.tenancy import require_tenant_id
 
 
@@ -52,11 +53,14 @@ def retailers_for(user: User, filters: RetailerFilters | None = None) -> QuerySe
     term = " ".join(f.search.split())
     if term:
         digits = "".join(ch for ch in term if ch.isdigit())
+        in_letters = key(term)  # "ganesh" finds "गणेश किराना" (ADR-060 item 8)
         condition = (
             Q(shop_name__icontains=term)
             | Q(owner_name__icontains=term)
             | Q(code__iexact=term)
             | Q(shop_name__trigram_word_similar=term)
+            | Q(shop_name_key__trigram_word_similar=in_letters)
+            | Q(owner_name_key__trigram_word_similar=in_letters)
         )
         if len(digits) >= 4:
             condition |= Q(mobile__contains=digits)

@@ -14,6 +14,9 @@ from enum import StrEnum
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext as _
+
+from common.numbers import fill
 
 
 class Scope(StrEnum):
@@ -36,6 +39,7 @@ class Group(StrEnum):
     PLANNING = "planning"
     PURCHASING = "purchasing"
     AI = "ai"  # ADR-058: platform-wide AI limits
+    LANGUAGES = "languages"  # ADR-060: which languages people may choose
 
 
 class SettingType(StrEnum):
@@ -105,41 +109,41 @@ def _to_python(defn: SettingDef, value: Any) -> Any:
     if value is None:
         if defn.nullable:
             return None
-        raise ValidationError("A value is required.", code="required")
+        raise ValidationError(_("A value is required."), code="required")
     if defn.type is SettingType.BOOL:
         if not isinstance(value, bool):
-            raise ValidationError("Choose on or off.", code="invalid_type")
+            raise ValidationError(_("Choose on or off."), code="invalid_type")
         return value
     if defn.type is SettingType.INT:
         if isinstance(value, bool) or not isinstance(value, int):
-            raise ValidationError("Enter a whole number.", code="invalid_type")
+            raise ValidationError(_("Enter a whole number."), code="invalid_type")
         if defn.allowed and value not in defn.allowed:
-            raise ValidationError("Choose one of the listed options.", code="invalid_choice")
+            raise ValidationError(_("Choose one of the listed options."), code="invalid_choice")
         _check_range(defn, value)
         return value
     if defn.type is SettingType.MONEY:
         if isinstance(value, (bool, float)):
-            raise ValidationError("Enter an amount like 1500.00.", code="invalid_type")
+            raise ValidationError(_("Enter an amount like 1500.00."), code="invalid_type")
         try:
             amount = Decimal(str(value))
         except InvalidOperation as exc:
-            raise ValidationError("Enter an amount like 1500.00.", code="invalid_type") from exc
+            raise ValidationError(_("Enter an amount like 1500.00."), code="invalid_type") from exc
         if not amount.is_finite() or amount != amount.quantize(Decimal("0.01")):
-            raise ValidationError("Use at most 2 decimal places.", code="invalid_type")
+            raise ValidationError(_("Use at most 2 decimal places."), code="invalid_type")
         _check_range(defn, amount)
         return amount.quantize(Decimal("0.01"))
     if defn.type is SettingType.ENUM:
         if value not in defn.allowed:
-            raise ValidationError("Choose one of the listed options.", code="invalid_choice")
+            raise ValidationError(_("Choose one of the listed options."), code="invalid_choice")
         if value in defn.reserved_values:
-            raise ValidationError("This option is not available yet.", code="reserved_choice")
+            raise ValidationError(_("This option is not available yet."), code="reserved_choice")
         return value
     if defn.type is SettingType.STRING:
         if not isinstance(value, str):
-            raise ValidationError("Enter text.", code="invalid_type")
+            raise ValidationError(_("Enter text."), code="invalid_type")
         if defn.pattern and not re.fullmatch(defn.pattern, value):
             raise ValidationError(
-                "This value is not in the expected format.", code="invalid_format"
+                _("This value is not in the expected format."), code="invalid_format"
             )
         return value
     raise AssertionError(f"unhandled setting type {defn.type}")
@@ -157,9 +161,15 @@ ASCENDING: tuple[tuple[str, str, str], ...] = (
 
 def _check_range(defn: SettingDef, value: int | Decimal) -> None:
     if defn.min_value is not None and value < defn.min_value:
-        raise ValidationError(f"Enter {defn.min_value} or more.", code="out_of_range")
+        raise ValidationError(
+            fill(_("Enter %(min_value)s or more."), {"min_value": defn.min_value}),
+            code="out_of_range",
+        )
     if defn.max_value is not None and value > defn.max_value:
-        raise ValidationError(f"Enter {defn.max_value} or less.", code="out_of_range")
+        raise ValidationError(
+            fill(_("Enter %(max_value)s or less."), {"max_value": defn.max_value}),
+            code="out_of_range",
+        )
 
 
 def to_python(defn: SettingDef, value: Any) -> Any:
@@ -186,6 +196,12 @@ def from_json(defn: SettingDef, stored: Any) -> Any:
 
 _CLOCK = r"([01]\d|2[0-3]):[0-5]\d"  # 24-hour, IST
 _PRICE = r"\d{1,4}(\.\d{1,4})?"  # rupees, up to 4 decimals (WhatsApp prices are paise)
+
+
+def _language_codes() -> tuple[str, ...]:
+    from common.languages import codes
+
+    return codes()
 
 
 def _tenant(
@@ -245,6 +261,11 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "How the invoice total is rounded to the rupee.",
             allowed=("NEAREST", "UP", "DOWN"), snapshot_on=_ESTIMATE_AND_DOCS,
             depends_on=DependsOn("invoicing.round_to_rupee", equals=True)),
+    _tenant("documents.language", Group.INVOICING, SettingType.ENUM, "SHOP",
+            "Shop documents (bills, credit notes, receipts, refund vouchers, Order Confirmations) "
+            "show their labels in English and the shop's language, or in English only. Names "
+            "and amounts are printed as entered either way.",
+            allowed=("SHOP", "ENGLISH")),
     _tenant("invoicing.default_payment_terms_days", Group.INVOICING, SettingType.INT, 30,
             "Default credit days for new retailers (each retailer can differ).",
             min_value=0, max_value=365),
@@ -356,6 +377,12 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
             "Turn off to stop them signing in."),
     _tenant("retailers.show_own_brand_badge", Group.RETAILERS, SettingType.BOOL, False,
             "Show an \"own brand\" badge on your own-brand products in the shop (ADR-039)."),
+    # ADR-060: the language of shops that haven't chosen one (their screens, messages and
+    # documents); the choices are the manifest's languages, so a new language needs no code.
+    _tenant("retailers.default_language", Group.RETAILERS, SettingType.ENUM, "en",
+            "The language your shops see and get their messages and documents in, unless a "
+            "shop chooses its own.",
+            allowed=_language_codes()),
     # Shop activity and win-back (ADR-056): how shops are grouped.
     _tenant("insights.new_days", Group.RETAILERS, SettingType.INT, 30,
             "A shop counts as new for this many days after its first order.",
@@ -455,6 +482,16 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               "How close in meaning a product must be to what a shop typed to be shown after the "
               "keyword matches.",
               min_value=1, max_value=99),
+    # ADR-060 item 12: the languages people may choose. Until a language's native review, it is
+    # only for testing: super admins and the distributors listed below.
+    _platform("platform.languages_enabled", Group.LANGUAGES, SettingType.STRING, "en",
+              "Languages everyone may choose, by code, separated by commas, for example "
+              "\"en,hi\". English is always on.",
+              pattern=r"[a-z]{2,3}(,[a-z]{2,3})*"),
+    _platform("platform.language_test_tenants", Group.LANGUAGES, SettingType.STRING, "",
+              "Distributors (by web address name, separated by commas) whose staff and shops "
+              "may use every language, to test languages that aren't enabled yet.",
+              pattern=r"([a-z0-9-]+(,[a-z0-9-]+)*)?"),
     _platform("platform.hsn_rate_hints_enabled", Group.TAX, SettingType.BOOL, True,
               "Suggest GST rates from the HSN hint table on product forms and imports."),
     _platform("platform.default_invoice_prefix", Group.INVOICING, SettingType.STRING, "INV",

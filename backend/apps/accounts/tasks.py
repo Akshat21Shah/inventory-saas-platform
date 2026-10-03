@@ -5,9 +5,14 @@ from uuid import UUID
 
 from celery import shared_task
 from django.db import transaction
+from django.utils import translation
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import Invitation, User
+from apps.accounts.permissions import role_label
 from common.hosts import web_url
+from common.languages import speaking
+from common.numbers import fill
 from common.task_base import TenantTask
 from common.tenancy import tenant_context
 
@@ -37,22 +42,26 @@ def send_mail(
 def send_account_locked_email(user_id: str) -> None:
     """Tell the account owner that sign-in was paused after repeated failures (ADR-030).
 
-    Phase 6 moves wording to the notification templates (and adds Hindi / Marathi).
+    In the person's language (ADR-060).
     """
     user = User.objects.filter(pk=user_id).first()
     if user is None or not user.email or user.locked_until is None:
         return
-    send_mail(
-        subject="Sign-in to your account was paused",
-        message=(
-            f"Hello {user.full_name or ''},\n\n"
-            "We paused sign-in to your account for a few minutes because the password was "
-            "entered incorrectly several times.\n\n"
-            "If this was you, wait a few minutes and try again, or reset your password.\n"
-            "If it wasn't you, reset your password now: someone may be trying to get in.\n"
-        ),
-        recipient_list=[user.email],
-    )
+    with speaking(user, user.tenant_id):
+        send_mail(
+            subject=_("Sign-in to your account was paused"),
+            message=fill(
+                _(
+                    "Hello %(name)s,\n\n"
+                    "We paused sign-in to your account for a few minutes because the password was "
+                    "entered incorrectly several times.\n\n"
+                    "If this was you, wait a few minutes and try again, or reset your password.\n"
+                    "If it wasn't you, reset your password now: someone may be trying to get in.\n"
+                ),
+                {"name": user.full_name or ""},
+            ),
+            recipient_list=[user.email],
+        )
 
 
 @shared_task(name="accounts.purge_expired_login_records")
@@ -77,17 +86,21 @@ def send_password_reset_email(user_id: str) -> None:
     user = User.objects.filter(pk=user_id, is_active=True).first()
     if user is None or not user.email:
         return
-    send_mail(
-        subject="Reset your password",
-        message=(
-            f"Hello {user.full_name or ''},\n\n"
-            "Someone asked to reset the password for your account. To choose a new password, "
-            "open this link:\n\n"
-            f"{password_reset_link(user)}\n\n"
-            "The link works once. If you didn't ask for this, you can ignore this email.\n"
-        ),
-        recipient_list=[user.email],
-    )
+    with speaking(user, user.tenant_id):
+        send_mail(
+            subject=_("Reset your password"),
+            message=fill(
+                _(
+                    "Hello %(name)s,\n\n"
+                    "Someone asked to reset the password for your account. To choose a new "
+                    "password, open this link:\n\n"
+                    "%(link)s\n\n"
+                    "The link works once. If you didn't ask for this, you can ignore this email.\n"
+                ),
+                {"name": user.full_name or "", "link": password_reset_link(user)},
+            ),
+            recipient_list=[user.email],
+        )
 
 
 @shared_task(
@@ -115,6 +128,7 @@ def send_login_otp_sms(phone: str, code: str, sender_name: str) -> None:
     max_retries=8,
 )
 def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str) -> None:
+    from apps.accounts.staff_services import invitation_language
     from apps.platform.models import Tenant
 
     with transaction.atomic(), tenant_context(UUID(tenant_id)):
@@ -127,19 +141,30 @@ def send_invitation_email(*, invitation_id: str, raw_token: str, tenant_id: str)
             return
         tenant: Tenant = invitation.tenant
         inviter = invitation.invited_by.full_name if invitation.invited_by else ""
-        role_name, email = invitation.role.name, invitation.email
+        role, email = invitation.role, invitation.email
+        language = invitation_language(invitation)
     link = web_url(f"/invite/{raw_token}", tenant_slug=tenant.slug)
-    who = f"{inviter} has" if inviter else "You have been"
-    send_mail(
-        subject=f"You're invited to join {tenant.name}",
-        message=(
-            f"Hello,\n\n{who} invited you to join {tenant.name} as {role_name}.\n\n"
-            f"To accept, open this link:\n\n{link}\n\n"
-            "The link works for 7 days. If you weren't expecting this, you can ignore it.\n"
-        ),
-        recipient_list=[email],
-        from_name=tenant.name,
-    )
+    # In the language the inviter chose (their own by default; ADR-060).
+    with translation.override(language):
+        values = {"inviter": inviter, "business": tenant.name, "role": role_label(role)}
+        invited = (
+            fill(_("%(inviter)s has invited you to join %(business)s as %(role)s."), values)
+            if inviter
+            else fill(_("You have been invited to join %(business)s as %(role)s."), values)
+        )
+        send_mail(
+            subject=fill(_("You're invited to join %(business)s"), values),
+            message=fill(
+                _(
+                    "Hello,\n\n%(invited)s\n\n"
+                    "To accept, open this link:\n\n%(link)s\n\n"
+                    "The link works for 7 days. If you weren't expecting this, you can ignore it.\n"
+                ),
+                {"invited": invited, "link": link},
+            ),
+            recipient_list=[email],
+            from_name=tenant.name,
+        )
 
 
 @shared_task(name="accounts.expire_impersonation_sessions")

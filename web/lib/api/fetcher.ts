@@ -41,6 +41,10 @@ function buildHeaders(options: RequestInit, token: string | null): Headers {
     headers.set("Content-Type", "application/json");
   }
   if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+  // The server answers in the language on screen (ADR-060): its messages and field errors.
+  if (typeof document !== "undefined" && document.documentElement.lang) {
+    headers.set("Accept-Language", document.documentElement.lang);
+  }
   return headers;
 }
 

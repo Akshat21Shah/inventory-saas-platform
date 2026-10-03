@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { PageSkeleton } from "@/components/shared/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { homeFor } from "@/lib/auth/urls";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { AuthCard, UnavailableCard } from "./auth-card";
 import { useAuth } from "./auth-provider";
@@ -104,7 +104,7 @@ export function ShopLoginScreen() {
   if (arrival !== "signedOut" || hostKind !== "TENANT") return <PageSkeleton />;
   if (!branding?.available) return <UnavailableCard />;
   return (
-    <AuthCard title={t("retailer.title")} description={t("retailer.body")}>
+    <AuthCard title={t("retailer.title")} description={t("retailer.body")} shopDefault>
       <RetailerSignIn />
     </AuthCard>
   );

@@ -157,8 +157,9 @@ describe("The checkout page", () => {
     });
     renderWithIntl(<ShopCheckoutPage intentId="c1" />);
     expect(
-      await screen.findByText("The last try didn't go through: Declined by the bank."),
+      await screen.findByText("The last try didn't go through. The payment service said:"),
     ).toBeVisible();
+    expect(screen.getByText("Declined by the bank.")).toHaveAttribute("lang", "en");
     expect(screen.queryByText(/Waiting for the bank/)).toBeNull();
     expect(screen.getByRole("button", { name: "Pay ₹210.00 now" })).toBeVisible();
   });

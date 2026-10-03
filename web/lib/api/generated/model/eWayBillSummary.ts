@@ -50,4 +50,6 @@ export interface EWayBillSummary {
   /** PART_B or CANCEL while one is being sent. */
   pending_update: string;
   last_update_error: string;
+  /** Why the last change failed, as a code (shown translated). */
+  last_update_error_code: string;
 }

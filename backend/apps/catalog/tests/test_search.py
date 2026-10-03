@@ -1,5 +1,6 @@
 """Product search (ADR-034): ranking, typos, codes and barcodes, isolation, and the < 200 ms
-target on 20,000 products."""
+target on 20,000 products, a fifth of them named in Devanagari and searched in either script
+(ADR-060 item 8)."""
 
 import random
 import statistics
@@ -139,6 +140,9 @@ VARIANTS = [
     "Special",
 ]
 SIZES = ["50g", "100g", "200g", "250g", "500g", "1kg", "5kg", "100ml", "500ml", "1L"]
+# Names as distributors enter them in Devanagari.
+DEVANAGARI_KINDS = ["चावल", "नमक", "चाय", "साबुन", "आटा", "तेल", "घी", "मसाला", "नमकीन", "दाल"]
+DEVANAGARI_BRANDS = ["टाटा", "पारले", "हल्दीराम", "आशीर्वाद", "फॉर्च्यून"]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -159,7 +163,12 @@ def test_search_answers_within_200ms_on_20000_products(make_tenant):
                         hsn_code="1905",
                         brand=rng.choice(brands),
                         base_price=Decimal("10"),
-                        name=f"{rng.choice(KINDS)} {rng.choice(VARIANTS)} {rng.choice(SIZES)}",
+                        name=(
+                            f"{rng.choice(DEVANAGARI_BRANDS)} {rng.choice(DEVANAGARI_KINDS)} "
+                            f"{rng.choice(SIZES)}"
+                            if n % 5 == 0
+                            else f"{rng.choice(KINDS)} {rng.choice(VARIANTS)} {rng.choice(SIZES)}"
+                        ),
                         tags=[rng.choice(VARIANTS).lower()],
                     )
                     for n in range(count)
@@ -179,6 +188,11 @@ def test_search_answers_within_200ms_on_20000_products(make_tenant):
         "haldiram namkeen",
         "atta 5kg",
         "xyz-not-there",
+        "चावल",
+        "chawal 5kg",
+        "टाटा नमक",
+        "तांदूळ",
+        "haldiram",
     ]
     timings = []
     # As in production: the runtime role, with RLS applying the tenant inside a transaction.

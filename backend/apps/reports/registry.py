@@ -15,6 +15,8 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
+from django.utils.functional import Promise
+
 from common.dates import today_ist
 from common.permissions import Requirement
 
@@ -110,7 +112,7 @@ class Sheet:
 @dataclass(frozen=True)
 class Report:
     code: str
-    title: str
+    title: str | Promise  # translated when shown (ADR-060)
     group: Group
     permission: Requirement  # to open it at all
     columns: tuple[Column, ...]

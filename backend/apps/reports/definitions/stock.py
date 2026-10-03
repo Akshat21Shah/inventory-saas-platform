@@ -12,6 +12,7 @@ from typing import Any
 
 from django.db.models import Count, F, Max, Min, Sum
 from django.db.models.functions import Round
+from django.utils.translation import gettext, gettext_lazy
 
 from apps.catalog.selectors import ProductFilters, descendant_ids
 from apps.catalog.selectors import product_list as catalog_products
@@ -40,6 +41,7 @@ from apps.reports.registry import (
     register,
 )
 from common.dates import ist_bounds, to_ist, today_ist
+from common.numbers import fill
 from common.permissions import AllOf, AnyOf
 from common.tenancy import require_tenant_id
 
@@ -135,7 +137,7 @@ def summary_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="stock_summary",
-        title="Stock summary",
+        title=gettext_lazy("Stock summary"),
         group=Group.STOCK,
         description="Every product's stock: on hand, held for orders, available and its value.",
         permission=STOCK,
@@ -209,13 +211,18 @@ def valuation_notes(ctx: Context) -> list[str]:
     )
     if not result.missing_cost:
         return []
-    return [f"{result.missing_cost} product(s) in stock have no cost price and are left out."]
+    return [
+        fill(
+            gettext("%(missing_cost)s product(s) in stock have no cost price and are left out."),
+            {"missing_cost": result.missing_cost},
+        )
+    ]
 
 
 register(
     Report(
         code="stock_valuation",
-        title="Stock valuation",
+        title=gettext_lazy("Stock valuation"),
         group=Group.STOCK,
         description="Stock on hand valued at cost price.",
         permission=VALUE,
@@ -260,13 +267,20 @@ def low_notes(ctx: Context) -> list[str]:
     missing = stock.products_without_reorder_level(filters)
     if not missing:
         return []
-    return [f"{missing} active product(s) have no reorder level, so they never show as low."]
+    return [
+        fill(
+            gettext(
+                "%(missing)s active product(s) have no reorder level, so they never show as low."
+            ),
+            {"missing": missing},
+        )
+    ]
 
 
 register(
     Report(
         code="low_stock",
-        title="Low stock",
+        title=gettext_lazy("Low stock"),
         group=Group.STOCK,
         description="Products at or below their reorder level.",
         permission=STOCK,
@@ -326,7 +340,7 @@ def movement_rows(ctx: Context) -> Mapped:
 register(
     Report(
         code="stock_movements",
-        title="Stock movement history",
+        title=gettext_lazy("Stock movement history"),
         group=Group.STOCK,
         description="Every change to stock: received, dispatched, returned, adjusted.",
         permission=STOCK,
@@ -479,16 +493,21 @@ def movement_class_notes(ctx: Context) -> list[str]:
     share = int(get_setting("reports.fast_share_percent", tenant))
     basis = "quantity" if ctx.params.get("rank_by") == "quantity" else "sales value"
     return [
-        f"Over the last {days} days. Fast: the top {share}% of products that sold, by {basis}; "
-        "slow: the rest that sold; dead: in stock, nothing sold; new: first stocked in this "
-        "period and not sold yet."
+        fill(
+            gettext(
+                "Over the last %(days)s days. Fast: the top %(share)s%% of products that "
+                "sold, by %(basis)s; slow: the rest that sold; dead: in stock, nothing "
+                "sold; new: first stocked in this period and not sold yet."
+            ),
+            {"days": days, "share": share, "basis": basis},
+        )
     ]
 
 
 register(
     Report(
         code="stock_movement_class",
-        title="Fast, slow and dead stock",
+        title=gettext_lazy("Fast, slow and dead stock"),
         group=Group.STOCK,
         description="Which products sell fast, slowly or not at all (and which are new).",
         permission=STOCK,
@@ -594,7 +613,7 @@ def _demand(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="backorder_demand",
-        title="Backorder demand",
+        title=gettext_lazy("Backorder demand"),
         group=Group.STOCK,
         description="What shops are waiting for, how long, and what could go out now.",
         permission=DEMAND,
@@ -741,7 +760,7 @@ def fulfilment_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="fulfilment_rate",
-        title="Order fulfilment rate",
+        title=gettext_lazy("Order fulfilment rate"),
         group=Group.STOCK,
         description="How much of what shops ordered was delivered, by order date.",
         permission=AnyOf(("reports.sales", "reports.sales_own", STOCK)),
@@ -769,8 +788,10 @@ register(
         rows=fulfilment_rows,
         totals=fulfilment_totals,
         notes=lambda ctx: [
-            "Orders the shop cancelled, and waiting quantities the shop cancelled, are left out. "
-            "Percentages count orders that are no longer open."
+            gettext(
+                "Orders the shop cancelled, and waiting quantities the shop cancelled, are left "
+                "out. Percentages count orders that are no longer open."
+            )
         ],
     )
 )

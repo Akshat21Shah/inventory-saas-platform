@@ -1,11 +1,11 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { refreshNotifications } from "@/components/notifications/scope";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useLiveUpdates } from "@/lib/live";
 
 /** Events the shop is told about in a short note (the order screens refresh for all of them). */

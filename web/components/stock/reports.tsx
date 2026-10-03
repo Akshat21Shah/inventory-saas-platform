@@ -2,7 +2,6 @@
 
 import { Download } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +28,7 @@ import type { Bucket, LowStockRow, ValuationRow } from "@/lib/api/generated/mode
 import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { ProductCell } from "./product-cell";
@@ -356,7 +356,7 @@ function Valuation() {
                   aria-selected={groupBy === value}
                   onClick={() => setGroupBy(value)}
                   className={cn(
-                    "min-h-11 rounded-full border px-3 text-sm md:min-h-9",
+                    "min-h-11 min-w-11 rounded-full border px-3 text-sm md:min-h-9 md:min-w-0",
                     groupBy === value
                       ? "border-brand-200 bg-brand-50 font-medium"
                       : "hover:bg-muted",

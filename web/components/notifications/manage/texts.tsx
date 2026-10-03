@@ -1,11 +1,11 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/auth/auth-provider";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { FormSelect } from "@/components/shared/form-select";
@@ -17,31 +17,33 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   getNotificationTextsQueryKey,
+  getNotificationTextsQueryOptions,
   notificationTextPreview,
   notificationTextReset,
   notificationTextUpdate,
   useNotificationRules,
-  useNotificationTexts,
 } from "@/lib/api/generated/endpoints/notifications/notifications";
-import type { NotificationTextsLocale, Text, TextPreview } from "@/lib/api/generated/model";
+import type { Text, TextPreview } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
+import { cn } from "@/lib/utils";
 
 import { eventKey, NotificationsNav } from "./nav";
 
-const LOCALES: NotificationTextsLocale[] = ["en", "hi", "mr"];
 const AUDIENCES = ["SHOP", "STAFF", "SUPPLIER"] as const;
 
 function TextEditor({
   event,
   locale,
+  language,
   text,
 }: {
   event: string;
-  locale: NotificationTextsLocale;
+  locale: string;
+  language: string;
   text: Text;
 }) {
   const t = useTranslations("notifyAdmin.texts");
-  const n = useTranslations("notifications");
   const client = useQueryClient();
   const { message, fields } = useErrorText();
   const [subject, setSubject] = useState(text.subject);
@@ -49,10 +51,10 @@ function TextEditor({
   const [preview, setPreview] = useState<TextPreview | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const id = `${event}-${text.audience}-${text.channel}`;
+  const id = `${event}-${text.audience}-${text.channel}-${locale}`;
   const audience = text.audience;
-  const refresh = () =>
-    client.invalidateQueries({ queryKey: getNotificationTextsQueryKey(event, { locale }) });
+  // Every language's copy: which languages have the distributor's own words changes too.
+  const refresh = () => client.invalidateQueries({ queryKey: getNotificationTextsQueryKey(event) });
 
   const run = async (action: () => Promise<unknown>, done?: string) => {
     setBusy(true);
@@ -70,11 +72,11 @@ function TextEditor({
   };
 
   return (
-    <section className="space-y-3 rounded-xl border p-4" aria-labelledby={`${id}-heading`}>
+    <section className="min-w-0 space-y-3" aria-labelledby={`${id}-heading`} lang={locale}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={`${id}-heading`} className="font-semibold">
-          {n(`channels.${text.channel}`)}
-        </h2>
+        <h4 id={`${id}-heading`} className="font-medium">
+          {language}
+        </h4>
         <span className="text-muted-foreground text-xs">{t(`source.${text.source}`)}</span>
       </div>
       {!text.editable ? (
@@ -195,51 +197,103 @@ function TextEditor({
   );
 }
 
-/** Settings → Messages → Message texts: the words of each message, per language. */
+/** The texts of one message (an audience's channel) in every language, side by side, with a
+ * warning when the distributor has its own wording in some languages only (owner, ADR-060). */
+function MessageTexts({
+  event,
+  audience,
+  channel,
+  byLanguage,
+}: {
+  event: string;
+  audience: string;
+  channel: string;
+  byLanguage: { code: string; native: string; text: Text }[];
+}) {
+  const t = useTranslations("notifyAdmin.texts");
+  const n = useTranslations("notifications");
+  const id = `${event}-${audience}-${channel}`;
+  const edited = new Set(byLanguage.flatMap(({ text }) => text.edited_locales ?? []));
+  const editable = byLanguage.some(({ text }) => text.editable);
+  const names = (codes: string[]) =>
+    byLanguage
+      .filter(({ code }) => codes.includes(code))
+      .map(({ native }) => native)
+      .join(", ");
+  const standard = byLanguage.map(({ code }) => code).filter((code) => !edited.has(code));
+  return (
+    <section className="space-y-4 rounded-xl border p-4" aria-labelledby={`${id}-heading`}>
+      <h3 id={`${id}-heading`} className="font-semibold">
+        {n(`channels.${channel}`)}
+      </h3>
+      {editable && edited.size > 0 && standard.length > 0 ? (
+        <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
+          {t("partlyEdited", { edited: names([...edited]), standard: names(standard) })}
+        </p>
+      ) : null}
+      <div
+        className={cn(
+          "grid gap-6",
+          byLanguage.length === 2 && "lg:grid-cols-2",
+          byLanguage.length >= 3 && "lg:grid-cols-3",
+        )}
+      >
+        {byLanguage.map(({ code, native, text }) => (
+          <TextEditor
+            key={`${code}-${text.source}-${text.subject}-${text.body}`}
+            event={event}
+            locale={code}
+            language={native}
+            text={text}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Settings → Messages → Message texts: the words of each message, in every language the
+ * distributor's people may use, side by side. */
 export function NotificationTextsPage() {
   const t = useTranslations("notifyAdmin.texts");
   const n = useTranslations("notifications");
+  const { me } = useAuth();
   const events = useNotificationRules().data?.data.events ?? [];
   const [event, setEvent] = useState("order.accepted");
-  const [locale, setLocale] = useState<NotificationTextsLocale>("en");
-  const query = useNotificationTexts(event, { locale });
-  const texts = query.data?.data ?? [];
+  const shown = me?.languages?.length ? me.languages : [{ code: "en", native: "English" }];
+  const queries = useQueries({
+    queries: shown.map(({ code }) => getNotificationTextsQueryOptions(event, { locale: code })),
+  });
+  const loading = queries.some((q) => q.isLoading);
+  const failed = queries.find((q) => q.error);
+  const english = queries[0]?.data?.data ?? [];
+  const textIn = (index: number, audience: string, channel: string) =>
+    queries[index]?.data?.data.find((x) => x.audience === audience && x.channel === channel);
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />
       <NotificationsNav />
-      <div className="mb-6 grid gap-3 sm:grid-cols-[1fr_12rem]">
-        <div className="space-y-1">
-          <Label htmlFor="text-event">{t("event")}</Label>
-          <FormSelect
-            id="text-event"
-            value={event}
-            onValueChange={setEvent}
-            options={(events.length ? events.map((e) => e.code) : [event]).map((code) => ({
-              value: code,
-              label: n(`events.${eventKey(code)}`),
-            }))}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="text-locale">{t("language")}</Label>
-          <FormSelect
-            id="text-locale"
-            value={locale}
-            onValueChange={(value) => setLocale(value as NotificationTextsLocale)}
-            options={LOCALES.map((code) => ({ value: code, label: t(`languages.${code}`) }))}
-          />
-        </div>
+      <div className="mb-6 max-w-md space-y-1">
+        <Label htmlFor="text-event">{t("event")}</Label>
+        <FormSelect
+          id="text-event"
+          value={event}
+          onValueChange={setEvent}
+          options={(events.length ? events.map((e) => e.code) : [event]).map((code) => ({
+            value: code,
+            label: n(`events.${eventKey(code)}`),
+          }))}
+        />
       </div>
-      {query.isLoading ? (
+      {loading ? (
         <CardSkeleton />
-      ) : query.error ? (
-        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
-      ) : !texts.length ? (
+      ) : failed ? (
+        <ErrorState error={failed.error} onRetry={() => queries.forEach((q) => void q.refetch())} />
+      ) : !english.length ? (
         <EmptyState title={t("empty")} />
       ) : (
         <div className="space-y-8">
-          {AUDIENCES.filter((audience) => texts.some((text) => text.audience === audience)).map(
+          {AUDIENCES.filter((audience) => english.some((text) => text.audience === audience)).map(
             (audience) => (
               <section key={audience} className="space-y-4" aria-labelledby={`to-${audience}`}>
                 <div className="space-y-1">
@@ -248,14 +302,23 @@ export function NotificationTextsPage() {
                   </h2>
                   <p className="text-muted-foreground text-sm">{t(`audienceHints.${audience}`)}</p>
                 </div>
-                {texts
+                {english
                   .filter((text) => text.audience === audience)
                   .map((text) => (
-                    <TextEditor
-                      key={`${event}-${locale}-${audience}-${text.channel}-${text.source}-${text.body}`}
+                    <MessageTexts
+                      key={`${event}-${audience}-${text.channel}`}
                       event={event}
-                      locale={locale}
-                      text={text}
+                      audience={audience}
+                      channel={text.channel}
+                      byLanguage={shown
+                        .map(({ code, native }, index) => ({
+                          code,
+                          native,
+                          text: textIn(index, audience, text.channel),
+                        }))
+                        .filter((row): row is { code: string; native: string; text: Text } =>
+                          Boolean(row.text),
+                        )}
                     />
                   ))}
               </section>

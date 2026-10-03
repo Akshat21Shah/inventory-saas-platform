@@ -92,6 +92,7 @@ const bill = (over: Partial<EWayBillSummary> = {}): EWayBillSummary => ({
   cancel_until: null,
   pending_update: "",
   last_update_error: "",
+  last_update_error_code: "",
   ...over,
 });
 
@@ -170,6 +171,7 @@ describe("An invoice's IRN", () => {
       irn: "",
       ack_no: "",
       ack_date: null,
+      error_code: "INVALID_GSTIN",
       error_message: "The buyer's GSTIN is not active.",
       can_request: true,
       can_cancel: false,
@@ -182,8 +184,12 @@ describe("An invoice's IRN", () => {
     renderWithIntl(<InvoiceDetailPage invoiceId="i1" />);
     const panel = await screen.findByRole("region", { name: "E-invoice (IRN)" });
     expect(within(panel).getByText("IRN failed")).toBeVisible();
-    expect(within(panel).getByRole("alert")).toHaveTextContent(
-      "The GST portal refused it: The buyer's GSTIN is not active.",
+    // A line in the person's language, then the provider's own words, in English (owner).
+    const alert = within(panel).getByRole("alert");
+    expect(alert).toHaveTextContent("The GST portal says the shop's GSTIN isn't valid or active:");
+    expect(within(alert).getByText("The buyer's GSTIN is not active.")).toHaveAttribute(
+      "lang",
+      "en",
     );
     expect(within(panel).getByText(/Must get its IRN by/)).toBeVisible();
     await user.click(within(panel).getByRole("button", { name: "Try again" }));
@@ -349,8 +355,11 @@ describe("An invoice's e-way bill", () => {
     });
     renderWithIntl(<InvoiceDetailPage invoiceId="i1" />);
     const panel = await screen.findByRole("region", { name: "E-way bill" });
-    expect(within(panel).getByRole("alert")).toHaveTextContent(
-      "The e-way bill portal refused it: Enter the distance (1 to 4,000 km).",
+    const alert = within(panel).getByRole("alert");
+    expect(alert).toHaveTextContent("The e-way bill portal refused this e-way bill:");
+    expect(within(alert).getByText("Enter the distance (1 to 4,000 km).")).toHaveAttribute(
+      "lang",
+      "en",
     );
     await user.click(within(panel).getByRole("button", { name: "Try again" }));
     const dialog = await screen.findByRole("dialog");

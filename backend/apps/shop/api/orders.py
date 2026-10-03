@@ -6,6 +6,7 @@ before retrying."""
 from typing import Any
 from uuid import UUID
 
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.pagination import CursorPagination
 from rest_framework.request import Request
@@ -66,7 +67,7 @@ class ShopOrdersView(ShopView):
     def get(self, request: Request) -> Response:
         state = request.query_params.get("state", "")
         if state and state not in selectors.SHOP_STATES:
-            raise InvalidFields({"state": ["Use open or closed."]})
+            raise InvalidFields({"state": [_("Use open or closed.")]})
         paginator = Newest()
         qs = selectors.shop_orders(_retailer(request).pk, state)
         page = paginator.paginate_queryset(qs, request, view=self) or []
@@ -206,7 +207,7 @@ class ShopCheckoutAttemptView(ShopView):
     )
     def get(self, request: Request, key: str) -> Response:
         if not _KEY_RE.match(key):
-            raise InvalidFields({"key": ["Not a valid checkout key."]})
+            raise InvalidFields({"key": [_("Not a valid checkout key.")]})
         retailer = _retailer(request)
         record = IdempotencyRecord.objects.filter(
             user=_user(request), scope=PLACE_SCOPE, key=key, response_status=201

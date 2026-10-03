@@ -1,7 +1,7 @@
 import { WifiOff } from "lucide-react";
-import { getTranslations } from "next-intl/server";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import { getTranslations } from "@/lib/i18n/server";
 
 export default async function OfflinePage() {
   const t = await getTranslations("offline");

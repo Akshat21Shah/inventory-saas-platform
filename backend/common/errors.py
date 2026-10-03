@@ -2,7 +2,22 @@
 
 from typing import Any
 
+from django.utils.functional import Promise
+from django.utils.translation import gettext_lazy
+
 from common.error_codes import ErrorCode
+
+
+def plain(value: Any) -> Any:
+    """Translated text as plain strings, in the language active now (the request's), so errors
+    can be stored as JSON and don't change language later."""
+    if isinstance(value, Promise):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: plain(item) for key, item in value.items()}
+    if isinstance(value, list | tuple):
+        return [plain(item) for item in value]
+    return value
 
 
 class DomainError(Exception):
@@ -10,23 +25,23 @@ class DomainError(Exception):
 
     status_code: int = 400
     code: str = ErrorCode.VALIDATION_ERROR
-    default_message: str = "The request could not be completed."
+    default_message: str | Promise = gettext_lazy("The request could not be completed.")
     headers: dict[str, str] | None = None  # extra response headers (e.g. Retry-After)
 
     def __init__(
         self,
-        message: str | None = None,
+        message: str | Promise | None = None,
         *,
         code: str | None = None,
         details: dict[str, Any] | None = None,
         status_code: int | None = None,
     ) -> None:
-        self.message = message or self.default_message
+        self.message: str = str(message or self.default_message)
         if code is not None:
             self.code = code
         if status_code is not None:
             self.status_code = status_code
-        self.details = details or {}
+        self.details: dict[str, Any] = plain(details or {})
         super().__init__(self.message)
 
 
@@ -35,9 +50,11 @@ class InvalidFields(DomainError):
 
     status_code = 400
     code = ErrorCode.VALIDATION_ERROR
-    default_message = "Some fields need attention."
+    default_message = gettext_lazy("Some fields need attention.")
 
-    def __init__(self, fields: dict[str, list[str]], message: str | None = None) -> None:
+    def __init__(
+        self, fields: dict[str, list[str]] | dict[str, Any], message: str | None = None
+    ) -> None:
         super().__init__(message, details={"fields": fields})
 
 
@@ -47,4 +64,4 @@ class NotFound(DomainError):
 
     status_code = 404
     code = ErrorCode.NOT_FOUND
-    default_message = "We couldn't find what you were looking for."
+    default_message = gettext_lazy("We couldn't find what you were looking for.")

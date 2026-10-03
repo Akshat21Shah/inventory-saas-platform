@@ -8,6 +8,7 @@ The series row is the last lock taken (level L6, PLAN §5.1). At most 16 charact
 from datetime import date
 
 from django.db import connection, transaction
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -86,7 +87,7 @@ def set_prefix(document_type: str, prefix: str, *, day: date, by: User) -> Docum
 
     prefix = prefix.strip().upper()
     if not re.fullmatch(PREFIX_PATTERN, prefix):
-        raise InvalidFields({"prefix": ["Use 1 to 3 capital letters or digits."]})
+        raise InvalidFields({"prefix": [_("Use 1 to 3 capital letters or digits.")]})
     fy = financial_year(day)
     _ensure_series(document_type, fy)
     series: DocumentSeries = DocumentSeries.objects.select_for_update().get(

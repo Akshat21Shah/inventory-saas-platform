@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +11,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { FormSelect } from "@/components/shared/form-select";
 import { DateText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
+import { ProviderMessage } from "@/components/shared/provider-message";
 import { CardSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { SubNav } from "@/components/shared/sub-nav";
@@ -37,6 +37,9 @@ import {
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { languages, locales } from "@/lib/i18n/config";
+import { useTranslations } from "@/lib/i18n/translations";
+import { cn } from "@/lib/utils";
 
 import { eventKey } from "./manage/nav";
 
@@ -142,7 +145,6 @@ function ApprovalControls({ row }: { row: PlatformTemplate }) {
 
 function PlatformTextEditor({ row }: { row: PlatformTemplate }) {
   const t = useTranslations("platformMessages.texts");
-  const n = useTranslations("notifications");
   const client = useQueryClient();
   const { message, fields } = useErrorText();
   const [subject, setSubject] = useState(row.subject);
@@ -172,11 +174,11 @@ function PlatformTextEditor({ row }: { row: PlatformTemplate }) {
   };
 
   return (
-    <section className="space-y-3 rounded-xl border p-4" aria-labelledby={`${id}-h`}>
+    <section className="min-w-0 space-y-3" aria-labelledby={`${id}-h`} lang={row.locale}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={`${id}-h`} className="font-semibold">
-          {t(`audiences.${row.audience}`)} · {n(`channels.${row.channel}`)} · {row.locale}
-        </h2>
+        <h3 id={`${id}-h`} className="font-medium">
+          {languages.find((l) => l.code === row.locale)?.native ?? row.locale}
+        </h3>
         {row.submitted_by_default === true ? (
           <span className="bg-success/12 text-success-strong rounded-full px-2 py-0.5 text-xs">
             {t("firstBatch")}
@@ -348,9 +350,34 @@ export function PlatformTextsPage() {
         <EmptyState title={t("empty")} />
       ) : (
         <div className="space-y-4">
-          {rows.map((row) => (
-            <PlatformTextEditor key={`${row.id}-${row.updated_at}`} row={row} />
-          ))}
+          {[...new Set(rows.map((row) => `${row.audience}|${row.channel}`))].map((group) => {
+            const [audience, channel] = group.split("|");
+            const inGroup = rows
+              .filter((row) => row.audience === audience && row.channel === channel)
+              .sort((a, b) => locales.indexOf(a.locale) - locales.indexOf(b.locale));
+            return (
+              <section
+                key={group}
+                className="space-y-4 rounded-xl border p-4"
+                aria-labelledby={`group-${group}`}
+              >
+                <h2 id={`group-${group}`} className="font-semibold">
+                  {t(`audiences.${audience}`)} · {n(`channels.${channel}`)}
+                </h2>
+                <div
+                  className={cn(
+                    "grid gap-6",
+                    inGroup.length === 2 && "lg:grid-cols-2",
+                    inGroup.length >= 3 && "lg:grid-cols-3",
+                  )}
+                >
+                  {inGroup.map((row) => (
+                    <PlatformTextEditor key={`${row.id}-${row.updated_at}`} row={row} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </>
@@ -361,6 +388,7 @@ export function PlatformTextsPage() {
 export function PlatformFailuresPage() {
   const t = useTranslations("platformMessages.failures");
   const n = useTranslations("notifications");
+  const tp = useTranslations("providerMessages");
   const client = useQueryClient();
   const { message } = useErrorText();
   const cursor = useCursor();
@@ -385,9 +413,12 @@ export function PlatformFailuresPage() {
       id: "error",
       header: t("error"),
       cell: ({ row }) => (
-        <span className="text-destructive block max-w-56 text-xs break-words whitespace-normal">
-          {row.original.last_error}
-        </span>
+        <ProviderMessage
+          line={tp("sending")}
+          message={row.original.last_error}
+          compact
+          className="text-destructive max-w-56 text-xs whitespace-normal"
+        />
       ),
     },
     {

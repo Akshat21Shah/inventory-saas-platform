@@ -2,7 +2,6 @@
 
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -23,9 +22,13 @@ import {
   platformTenantsSlugAvailable,
   usePlatformPlansList,
 } from "@/lib/api/generated/endpoints/platform/platform";
-import { usePublicStatesList } from "@/lib/api/generated/endpoints/public/public";
+import {
+  usePublicLanguages,
+  usePublicStatesList,
+} from "@/lib/api/generated/endpoints/public/public";
 import type { OnboardingRequest } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { DEFAULT_BRAND_COLOR, isHexColor } from "@/lib/theme/palette";
 import { cn, omitKey } from "@/lib/utils";
 
@@ -34,13 +37,16 @@ type Values = Required<Omit<OnboardingRequest, "plan_code" | "primary_color">> &
   primary_color: string;
 };
 
+// The owner's invitation email: blank sends it in the super admin's own language (ADR-060).
+const YOURS = "yours";
+
 const STEPS = [
   { id: "company", fields: ["name", "legal_name", "email", "phone"] },
   {
     id: "gst",
     fields: ["gstin", "state_code", "address_line1", "address_line2", "city", "pincode"],
   },
-  { id: "owner", fields: ["owner_name", "owner_email"] },
+  { id: "owner", fields: ["owner_name", "owner_email", "owner_language"] },
   { id: "address", fields: ["slug", "primary_color"] },
   { id: "plan", fields: ["plan_code"] },
   { id: "review", fields: [] },
@@ -59,6 +65,7 @@ const EMPTY: Values = {
   pincode: "",
   owner_name: "",
   owner_email: "",
+  owner_language: "",
   slug: "",
   primary_color: DEFAULT_BRAND_COLOR,
   plan_code: "",
@@ -76,6 +83,7 @@ const QUICK: Partial<Record<keyof Values, RegExp>> = {
 const OPTIONAL = new Set<keyof Values>([
   "address_line2",
   "owner_name",
+  "owner_language",
   "primary_color",
   "plan_code",
 ]);
@@ -95,6 +103,7 @@ export function OnboardingWizard() {
   const errors = useErrorText();
   const router = useRouter();
   const states = usePublicStatesList();
+  const languages = usePublicLanguages();
   const plans = usePlatformPlansList();
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<Values>(EMPTY);
@@ -247,6 +256,26 @@ export function OnboardingWizard() {
             <>
               {field("owner_name")}
               {field("owner_email", { type: "email", hint: t("hints.owner_email") })}
+              <FormField label={t("fields.owner_language")} hint={t("hints.owner_language")}>
+                <Select
+                  value={values.owner_language || YOURS}
+                  onValueChange={(v) => set("owner_language", v === YOURS ? "" : v)}
+                >
+                  <SelectTrigger className="min-h-10 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={YOURS}>{t("yourLanguage")}</SelectItem>
+                    {(languages.data?.data ?? [])
+                      .filter((option) => option.enabled)
+                      .map((option) => (
+                        <SelectItem key={option.code} value={option.code} lang={option.code}>
+                          {option.native}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
             </>
           ) : null}
           {current.id === "address" ? (
@@ -314,7 +343,10 @@ export function OnboardingWizard() {
                   <dd className="font-medium break-all">
                     {key === "plan_code"
                       ? effective.plan_code || t("defaultPlan")
-                      : effective[key] || "—"}
+                      : key === "owner_language"
+                        ? (languages.data?.data ?? []).find((l) => l.code === effective[key])
+                            ?.native || t("yourLanguage")
+                        : effective[key] || "—"}
                   </dd>
                 </div>
               ))}

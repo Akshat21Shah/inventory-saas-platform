@@ -27,6 +27,7 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import Max, Min, Q, QuerySet
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.insights.models import WIN_BACK, Segment, ShopActivity, ShopContact
@@ -215,9 +216,9 @@ def log_contact(
         raise NotFound()
     problems: dict[str, list[str]] = {}
     if channel not in ShopContact.Channel.values:
-        problems["channel"] = ["Choose how you contacted the shop."]
+        problems["channel"] = [_("Choose how you contacted the shop.")]
     if outcome not in ShopContact.Outcome.values:
-        problems["outcome"] = ["Choose what happened."]
+        problems["outcome"] = [_("Choose what happened.")]
     if problems:
         raise InvalidFields(problems)
     contact: ShopContact = ShopContact.objects.create(

@@ -5,6 +5,7 @@ through the services."""
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
+from django.utils.translation import gettext_lazy
 
 from common.crypto import EncryptedTextField
 from common.fields import MoneyField
@@ -15,11 +16,11 @@ USER = settings.AUTH_USER_MODEL
 
 class Payment(TenantScopedModel):
     class Mode(models.TextChoices):
-        CASH = "CASH", "Cash"
-        CHEQUE = "CHEQUE", "Cheque"
-        BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
-        UPI = "UPI", "UPI"
-        ONLINE = "ONLINE", "Paid online"  # through the payment gateway only (Phase 7)
+        CASH = "CASH", gettext_lazy("Cash")
+        CHEQUE = "CHEQUE", gettext_lazy("Cheque")
+        BANK_TRANSFER = "BANK_TRANSFER", gettext_lazy("Bank transfer")
+        UPI = "UPI", gettext_lazy("UPI")
+        ONLINE = "ONLINE", gettext_lazy("Paid online")  # through the payment gateway only (Phase 7)
 
     class Status(models.TextChoices):
         RECEIVED = "RECEIVED", "Received"  # credited to the shop
@@ -39,6 +40,7 @@ class Payment(TenantScopedModel):
         NOT_NEEDED = "NOT_NEEDED", "Nothing to hand over"  # reversed as entered in error
 
     number = models.CharField(max_length=16)  # receipt number, RCT/26-27/000001
+    document_language = models.CharField(max_length=5, default="en")  # the receipt's (ADR-060)
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     amount = MoneyField()
     mode = models.CharField(max_length=13, choices=Mode.choices)
@@ -135,14 +137,15 @@ class Refund(TenantScopedModel):
     full when recorded). Own number series (RFD/26-27/000001) and a refund voucher."""
 
     class Mode(models.TextChoices):
-        CASH = "CASH", "Cash"
-        BANK_TRANSFER = "BANK_TRANSFER", "Bank transfer"
-        UPI = "UPI", "UPI"
+        CASH = "CASH", gettext_lazy("Cash")
+        BANK_TRANSFER = "BANK_TRANSFER", gettext_lazy("Bank transfer")
+        UPI = "UPI", gettext_lazy("UPI")
 
     class Status(models.TextChoices):
         ISSUED = "ISSUED", "Paid back"
         REVERSED = "REVERSED", "Reversed"  # entered in error: the shop's credit is restored
 
+    document_language = models.CharField(max_length=5, default="en")  # the voucher's (ADR-060)
     number = models.CharField(max_length=16)
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     amount = MoneyField()

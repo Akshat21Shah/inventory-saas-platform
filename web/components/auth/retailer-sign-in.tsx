@@ -2,7 +2,6 @@
 
 import { ArrowLeft, MessageSquare } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { FormField } from "@/components/shared/form-field";
@@ -13,6 +12,7 @@ import {
   authRetailerOtpVerify,
 } from "@/lib/api/generated/endpoints/auth/auth";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { OtpInput } from "./otp-input";
 import { PhoneInput } from "./phone-input";

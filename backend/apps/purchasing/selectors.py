@@ -11,10 +11,12 @@ from uuid import UUID
 
 from django.contrib.postgres.search import TrigramWordSimilarity
 from django.db.models import Count, F, Min, Q, QuerySet, Sum
+from django.db.models.functions import Greatest
 
 from apps.inventory.models import StockInward
 from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier, SupplierProduct
 from common.dates import to_ist, today_ist
+from common.search_keys import key
 
 OPEN_STATUSES = (PurchaseOrder.Status.SENT, PurchaseOrder.Status.PARTLY_RECEIVED)
 
@@ -25,6 +27,7 @@ def suppliers(*, search: str = "", active: bool | None = None) -> QuerySet[Suppl
         qs = qs.filter(is_active=active)
     term = " ".join(search.split())[:100]
     if term:
+        in_letters = key(term)  # in either script (ADR-060 item 8)
         qs = (
             qs.filter(
                 Q(name__icontains=term)
@@ -32,8 +35,14 @@ def suppliers(*, search: str = "", active: bool | None = None) -> QuerySet[Suppl
                 | Q(gstin__iexact=term.upper())
                 | Q(contact_name__icontains=term)
                 | Q(name__trigram_word_similar=term)
+                | Q(name_key__trigram_word_similar=in_letters)
             )
-            .annotate(similarity=TrigramWordSimilarity(term, "name"))
+            .annotate(
+                similarity=Greatest(
+                    TrigramWordSimilarity(term, "name"),
+                    TrigramWordSimilarity(in_letters, "name_key"),
+                )
+            )
             .order_by("-similarity", "name", "id")
         )
     counted: QuerySet[Supplier] = qs.annotate(product_count=Count("links", distinct=True))

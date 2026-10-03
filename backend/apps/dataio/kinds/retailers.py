@@ -8,8 +8,11 @@ from decimal import Decimal
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.functional import lazy
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
-from apps.accounts.models import LANGUAGE_CHOICES, Membership, User
+from apps.accounts.models import Membership, User
 from apps.dataio.kinds.base import Column, RowPlan
 from apps.dataio.parsing import Sheet, parse_decimal, split_list
 from apps.platform.gst import gstin_problem
@@ -18,7 +21,27 @@ from apps.platform.validators import normalize_gstin
 from apps.pricing.models import PriceList
 from apps.retailers import services
 from apps.retailers.models import Retailer, RetailerAddress
+from common.languages import all_languages
+from common.numbers import fill
 from common.phone import normalize_indian_mobile
+
+
+def _language_names() -> str:
+    """The language names for people, e.g. "English, Hindi or Marathi" (common/languages.json)."""
+    names = [language.name for language in all_languages()]
+    if len(names) == 1:
+        return names[0]
+    return fill(_("%(names)s or %(last)s"), {"names": ", ".join(names[:-1]), "last": names[-1]})
+
+
+def _language_help_now() -> str:
+    return fill(
+        _("%(languages)s. Empty: your usual language for shops."), {"languages": _language_names()}
+    )
+
+
+_language_help = lazy(_language_help_now, str)  # in the language of whoever downloads it
+
 
 C = Column
 COLUMNS: tuple[Column, ...] = (
@@ -27,7 +50,7 @@ COLUMNS: tuple[Column, ...] = (
         "Mobile",
         ("mobile number", "phone", "mobile no", "contact number", "whatsapp"),
         True,
-        "10-digit mobile number. The shop signs in with it.",
+        gettext_lazy("10-digit mobile number. The shop signs in with it."),
         "9876543210",
     ),
     C(
@@ -52,7 +75,7 @@ COLUMNS: tuple[Column, ...] = (
         "GSTIN",
         ("gst number", "gst no", "gstin uin"),
         False,
-        "Leave empty for an unregistered shop.",
+        gettext_lazy("Leave empty for an unregistered shop."),
         "27AAGFK7315R1ZP",
     ),
     C(
@@ -60,7 +83,7 @@ COLUMNS: tuple[Column, ...] = (
         "State",
         ("state name", "state code"),
         False,
-        "State name or 2-digit GST code. Needed when there is no GSTIN.",
+        gettext_lazy("State name or 2-digit GST code. Needed when there is no GSTIN."),
         "Maharashtra",
     ),
     C(
@@ -68,7 +91,7 @@ COLUMNS: tuple[Column, ...] = (
         "Address",
         ("address line 1", "billing address", "street"),
         False,
-        "Billing address.",
+        gettext_lazy("Billing address."),
         "12 Station Road",
     ),
     C("address_line2", "Address line 2", ("area", "locality"), False, "", "Near bus stand"),
@@ -80,7 +103,7 @@ COLUMNS: tuple[Column, ...] = (
         "Salesperson email",
         ("salesperson", "sales person", "assigned to"),
         False,
-        "Email of a staff member.",
+        gettext_lazy("Email of a staff member."),
         "sales@yourfirm.com",
     ),
     C(
@@ -88,7 +111,7 @@ COLUMNS: tuple[Column, ...] = (
         "Price list",
         ("price list name", "rate list"),
         False,
-        "Name of one of your price lists. Empty = your normal prices.",
+        gettext_lazy("Name of one of your price lists. Empty = your normal prices."),
         "Gold retailers",
     ),
     C(
@@ -96,7 +119,7 @@ COLUMNS: tuple[Column, ...] = (
         "Credit limit",
         ("credit", "limit"),
         False,
-        "Empty = no limit, 0 = no credit. Needs the credit permission.",
+        gettext_lazy("Empty = no limit, 0 = no credit. Needs the credit permission."),
         "50000",
     ),
     C(
@@ -104,18 +127,32 @@ COLUMNS: tuple[Column, ...] = (
         "Payment days",
         ("credit days", "payment terms", "terms"),
         False,
-        "Days to pay. Needs the credit permission.",
+        gettext_lazy("Days to pay. Needs the credit permission."),
         "30",
     ),
-    C("tags", "Tags", ("group", "category"), False, "Separated by commas.", "wholesale"),
-    C("preferred_language", "Language", ("lang",), False, "English, Hindi or Marathi.", "Marathi"),
+    C(
+        "tags",
+        "Tags",
+        ("group", "category"),
+        False,
+        gettext_lazy("Separated by commas."),
+        "wholesale",
+    ),
+    C(
+        "preferred_language",
+        "Language",
+        ("lang",),
+        False,
+        _language_help(),
+        "Marathi",
+    ),
     C("notes", "Notes", ("remarks", "comment"), False, "", ""),
     C(
         "whatsapp_opt_in",
         "WhatsApp consent",
         ("whatsapp opt in", "agreed to whatsapp", "whatsapp messages"),
         False,
-        "Yes only if the shop agreed to get WhatsApp messages. No stops them.",
+        gettext_lazy("Yes only if the shop agreed to get WhatsApp messages. No stops them."),
         "Yes",
     ),
 )
@@ -124,11 +161,13 @@ NO = {"no", "n", "false", "0", "nahi"}
 LABEL = {c.name: c.label for c in COLUMNS}
 ADDRESS = ("address_line1", "address_line2", "city", "district", "pincode")
 CREDIT = ("credit_limit", "payment_terms_days")
-LANGUAGES = (
-    {code: code for code, _ in LANGUAGE_CHOICES}
-    | {name.lower(): code for code, name in LANGUAGE_CHOICES}
-    | {"hindi": "hi", "marathi": "mr", "english": "en"}
-)
+
+
+def _languages() -> dict[str, str]:
+    """Any language's code, English or native name → its code (from common/languages.json)."""
+    from common.languages import by_any_name
+
+    return by_any_name()
 
 
 class RetailersKind:
@@ -183,23 +222,28 @@ class RetailersKind:
             if mobile is None:
                 plan.error(
                     LABEL["mobile"],
-                    "Enter a 10-digit Indian mobile number."
+                    _("Enter a 10-digit Indian mobile number.")
                     if v.get("mobile")
-                    else "Enter the shop's mobile number.",
+                    else _("Enter the shop's mobile number."),
                 )
                 continue
             if mobile in seen:
                 plan.error(
                     LABEL["mobile"],
-                    f"{v['mobile']} is also in row {seen[mobile]}. List each shop only once.",
+                    fill(
+                        _("%(mobile)s is also in row %(value)s. List each shop only once."),
+                        {"mobile": v["mobile"], "value": seen[mobile]},
+                    ),
                 )
                 continue
             seen[mobile] = row.number
             if not can_credit and any(v.get(c) for c in CREDIT):
                 plan.error(
                     LABEL["credit_limit"],
-                    "You can't set credit limits or payment days. "
-                    "Remove these columns or ask someone with the credit permission.",
+                    _(
+                        "You can't set credit limits or payment days. "
+                        "Remove these columns or ask someone with the credit permission."
+                    ),
                 )
             data = self._parse(plan, v, ref)
             retailer = existing.get(mobile)
@@ -208,8 +252,13 @@ class RetailersKind:
             elif mode == "ADD_ONLY":
                 plan.error(
                     LABEL["mobile"],
-                    f"A shop with mobile {v['mobile']} already exists. "
-                    "To change it, choose “Add new and update existing”.",
+                    fill(
+                        _(
+                            "A shop with mobile %(mobile)s already exists. To change it, "
+                            "choose “Add new and update existing”."
+                        ),
+                        {"mobile": v["mobile"]},
+                    ),
                 )
             else:
                 self._plan_update(plan, data, retailer)
@@ -223,7 +272,10 @@ class RetailersKind:
         if v.get("email"):
             email = v["email"].strip().lower()
             if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
-                plan.error(LABEL["email"], f"{v['email']} isn't an email address.")
+                plan.error(
+                    LABEL["email"],
+                    fill(_("%(email)s isn't an email address."), {"email": v["email"]}),
+                )
             else:
                 out["email"] = email
         if v.get("gstin"):
@@ -242,27 +294,43 @@ class RetailersKind:
             if state is None:
                 plan.error(
                     LABEL["state"],
-                    f"{v['state']} isn't a state. Use the name or the 2-digit GST code.",
+                    fill(
+                        _("%(state)s isn't a state. Use the name or the 2-digit GST code."),
+                        {"state": v["state"]},
+                    ),
                 )
             else:
                 out["state_id"] = state
         if "gstin" in out and out.get("state_id") and out["state_id"] != out["gstin"][:2]:
             plan.error(
                 LABEL["state"],
-                f"The state must match the first 2 digits of the GSTIN ({out['gstin'][:2]}).",
+                fill(
+                    _("The state must match the first 2 digits of the GSTIN (%(value)s)."),
+                    {"value": out["gstin"][:2]},
+                ),
             )
         if v.get("salesperson"):
             person = ref["staff"].get(v["salesperson"].strip().lower())
             if person is None:
                 plan.error(
-                    LABEL["salesperson"], f"{v['salesperson']} isn't an active staff member."
+                    LABEL["salesperson"],
+                    fill(
+                        _("%(salesperson)s isn't an active staff member."),
+                        {"salesperson": v["salesperson"]},
+                    ),
                 )
             else:
                 out["salesperson_id"] = person
         if v.get("price_list"):
             found = ref["price_lists"].get(v["price_list"].strip().lower())
             if found is None:
-                plan.error(LABEL["price_list"], f"{v['price_list']} isn't one of your price lists.")
+                plan.error(
+                    LABEL["price_list"],
+                    fill(
+                        _("%(price_list)s isn't one of your price lists."),
+                        {"price_list": v["price_list"]},
+                    ),
+                )
             else:
                 out["price_list_id"] = found
         if v.get("credit_limit"):
@@ -272,7 +340,12 @@ class RetailersKind:
                     raise ValueError
                 out["credit_limit"] = limit
             except ValueError:
-                plan.error(LABEL["credit_limit"], f"{v['credit_limit']} isn't an amount.")
+                plan.error(
+                    LABEL["credit_limit"],
+                    fill(
+                        _("%(credit_limit)s isn't an amount."), {"credit_limit": v["credit_limit"]}
+                    ),
+                )
         if v.get("payment_terms_days"):
             try:
                 days = parse_decimal(v["payment_terms_days"], places=0)
@@ -280,13 +353,16 @@ class RetailersKind:
                     raise ValueError
                 out["payment_terms_days"] = int(days)
             except ValueError:
-                plan.error(LABEL["payment_terms_days"], "Enter 0 to 365 days.")
+                plan.error(LABEL["payment_terms_days"], _("Enter 0 to 365 days."))
         if v.get("tags"):
             out["tags"] = split_list(v["tags"])
         if v.get("preferred_language"):
-            language = LANGUAGES.get(v["preferred_language"].strip().lower())
+            language = _languages().get(v["preferred_language"].strip().lower())
             if language is None:
-                plan.error(LABEL["preferred_language"], "Write English, Hindi or Marathi.")
+                plan.error(
+                    LABEL["preferred_language"],
+                    fill(_("Write %(languages)s."), {"languages": _language_names()}),
+                )
             else:
                 out["preferred_language"] = language
         if v.get("whatsapp_opt_in"):
@@ -294,7 +370,7 @@ class RetailersKind:
             if answer in YES | NO:
                 out["whatsapp_opt_in"] = answer in YES
             else:
-                plan.error(LABEL["whatsapp_opt_in"], "Write Yes or No.")
+                plan.error(LABEL["whatsapp_opt_in"], _("Write Yes or No."))
         address = {k: v[k] for k in ADDRESS if v.get(k)}
         if address:
             out["address"] = address
@@ -304,16 +380,19 @@ class RetailersKind:
         self, plan: RowPlan, v: dict[str, str], data: dict[str, Any], mobile: str
     ) -> None:
         if not v.get("shop_name"):
-            plan.error(LABEL["shop_name"], "Needed for a new shop.")
+            plan.error(LABEL["shop_name"], _("Needed for a new shop."))
         if not data.get("gstin") and not data.get("state_id") and not v.get("state"):
-            plan.error(LABEL["state"], "Needed when the shop has no GSTIN.")
+            plan.error(LABEL["state"], _("Needed when the shop has no GSTIN."))
         address = data.get("address", {})
         if address and not all(address.get(k) for k in ("address_line1", "city", "pincode")):
             plan.error(
-                LABEL["address_line1"], "For an address, fill in Address, City and PIN code."
+                LABEL["address_line1"], _("For an address, fill in Address, City and PIN code.")
             )
         if address.get("pincode") and not re.fullmatch(r"[1-9][0-9]{5}", address["pincode"]):
-            plan.error(LABEL["pincode"], f"{address['pincode']} isn't a 6-digit PIN code.")
+            plan.error(
+                LABEL["pincode"],
+                fill(_("%(pincode)s isn't a 6-digit PIN code."), {"pincode": address["pincode"]}),
+            )
         if plan.ok:
             plan.action = "NEW"
             plan.data = {**data, "mobile": mobile}
@@ -438,7 +517,7 @@ class RetailersKind:
             .prefetch_related("addresses")
             .order_by("code")
         )
-        names = dict(LANGUAGE_CHOICES)
+        names = {language.code: language.name for language in all_languages()}
         for r in retailers:
             billing = next(
                 (

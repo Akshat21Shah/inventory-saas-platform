@@ -153,7 +153,9 @@ def test_import_new_shops_with_messy_values(tenant_a, run):
         assert ganesh.addresses.get().pincode == "411001"
         om = Retailer.objects.get(mobile="+919876500002")
         assert (om.state_id, om.pan, om.preferred_language) == ("27", "AAGFK7315R", "hi")
-        assert Retailer.objects.get(mobile="+919876500003").credit_limit == Decimal("0.00")
+        laxmi = Retailer.objects.get(mobile="+919876500003")
+        assert laxmi.credit_limit == Decimal("0.00")
+        assert laxmi.preferred_language == ""  # follows the distributor's default (ADR-060)
     assert User.objects.filter(tenant=tenant_a, user_type="RETAILER").count() == 3
     assert [m.template for m in MockSmsSender.outbox] == ["retailer_welcome"] * 3
 
@@ -310,3 +312,26 @@ def test_export_round_trip_and_isolation(tenant_a, tenant_b, run):
     assert b"9876500001" not in other.content
     warehouse = _client(tenant_a, "WAREHOUSE")  # no retailers.view
     assert warehouse.get(f"{API}/retailers/export/").status_code == 403
+
+
+def test_a_language_by_its_own_name_and_unknown_ones_refused(tenant_a, run):
+    owner = _client(tenant_a)
+    shop = ["", "", "27", "", "", "", "", "", ""]  # owner, GSTIN, state … payment days
+    job = upload(
+        owner,
+        run,
+        xlsx(
+            [
+                HEADER,
+                ["9876500011", "Shree Kirana", *shop, "मराठी"],
+                ["9876500012", "Sai Stores", *shop, "HI"],
+                ["9876500013", "Om Traders", *shop, "Klingon"],
+            ]
+        ),
+    )
+    assert job["counts"]["new"] == 2 and job["counts"]["error"] == 1
+    assert messages(job) == ["Row 4, column “Language”: Write English, Hindi or Marathi."]
+    commit(owner, run, job)
+    with tenant_context(tenant_a.pk):
+        languages = dict(Retailer.objects.values_list("shop_name", "preferred_language"))
+    assert languages == {"Shree Kirana": "mr", "Sai Stores": "hi"}

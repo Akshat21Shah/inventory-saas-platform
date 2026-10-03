@@ -95,6 +95,7 @@ class InvitationListCreateView(StaffManageView, generics.ListAPIView[Invitation]
             email=data.validated_data["email"],
             role_code=data.validated_data["role_code"],
             invited_by=request.user,  # type: ignore[arg-type]
+            language=data.validated_data.get("language", ""),
         )
         return Response(s.InvitationSerializer(invitation).data, status=201)
 
@@ -177,6 +178,10 @@ class InvitationAcceptView(PublicAuthView):
         v = data.validated_data
         return _login_response(
             staff_services.accept_invitation(
-                v["token"], _host(request), full_name=v.get("full_name", ""), password=v["password"]
+                v["token"],
+                _host(request),
+                full_name=v.get("full_name", ""),
+                password=v["password"],
+                language=v.get("language", ""),
             )
         )

@@ -12,6 +12,10 @@ Texts may use only the event's variables, written ``{{ variable }}``; nothing el
 from dataclasses import dataclass
 from typing import Any
 
+from django.utils import translation
+from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
+
 from apps.audit import services as audit
 from apps.notifications import approval
 from apps.notifications.catalog import EVENTS, whatsapp_template_name
@@ -23,10 +27,11 @@ from apps.notifications.models import (
     WhatsAppCategory,
 )
 from apps.notifications.render import VARIABLE, substitute, template_for
+from common import languages
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 TENANT_CHANNELS = (Channel.IN_APP, Channel.EMAIL)
-LOCALES = ("en", "hi", "mr")
 MAX_SUBJECT, MAX_BODY = 200, 2000
 WHATSAPP_MAX_BODY = 1024  # TODO(verify): the provider's template body limit
 SMS_MAX_BODY = 480  # three SMS parts; TODO(verify): the DLT template rules
@@ -103,37 +108,48 @@ def _check(data: TextInput, *, platform: bool) -> None:
         raise NotFound()
     if data.audience not in event.audiences:
         errors["audience"] = [
-            "This message only goes to the supplier."
+            _("This message only goes to the supplier.")
             if event.supplier_facing
-            else "This message only goes to staff."
+            else _("This message only goes to staff.")
             if data.audience == Audience.SHOP
-            else "This message only goes to shops."
+            else _("This message only goes to shops.")
         ]
     allowed_channels = tuple(Channel) if platform else TENANT_CHANNELS
     if data.channel not in allowed_channels:
-        errors["channel"] = ["WhatsApp and SMS texts are set by the platform (approved templates)."]
-    if data.locale not in LOCALES:
-        errors["locale"] = ["Choose English, Hindi or Marathi."]
+        errors["channel"] = [
+            _("WhatsApp and SMS texts are set by the platform (approved templates).")
+        ]
+    if not languages.is_known(data.locale):
+        errors["locale"] = [
+            fill(_("Choose one of: %(languages)s."), {"languages": ", ".join(languages.codes())})
+        ]
     needs_subject = data.channel in TENANT_CHANNELS
     if needs_subject and not data.subject.strip():
-        errors["subject"] = ["Enter a title."]
+        errors["subject"] = [_("Enter a title.")]
     if len(data.subject) > MAX_SUBJECT:
-        errors["subject"] = [f"Use at most {MAX_SUBJECT} characters."]
+        errors["subject"] = [
+            fill(_("Use at most %(max_subject)s characters."), {"max_subject": MAX_SUBJECT})
+        ]
     limit = {Channel.WHATSAPP: WHATSAPP_MAX_BODY, Channel.SMS: SMS_MAX_BODY}.get(
         Channel(data.channel) if data.channel in Channel.values else Channel.IN_APP, MAX_BODY
     )
     if not data.body.strip():
-        errors["body"] = ["Enter the message."]
+        errors["body"] = [_("Enter the message.")]
     elif len(data.body) > limit:
-        errors["body"] = [f"Use at most {limit} characters."]
+        errors["body"] = [fill(_("Use at most %(limit)s characters."), {"limit": limit})]
     used = set(VARIABLE.findall(data.subject)) | set(VARIABLE.findall(data.body))
     allowed = variables_for(data.event_code, data.audience)
     unknown = sorted(used - set(allowed))
     if unknown:
         known = ", ".join(f"{{{{ {v} }}}}" for v in allowed)
-        errors.setdefault("body", []).append(f"Unknown: {', '.join(unknown)}. You can use {known}.")
+        errors.setdefault("body", []).append(
+            fill(
+                _("Unknown: %(unknown)s. You can use %(known)s."),
+                {"unknown": ", ".join(unknown), "known": known},
+            )
+        )
     if "{%" in data.subject + data.body:
-        errors.setdefault("body", []).append("Only {{ variable }} placeholders are allowed.")
+        errors.setdefault("body", []).append(_("Only {{ variable }} placeholders are allowed."))
     if errors:
         raise InvalidFields(errors)
 
@@ -202,7 +218,7 @@ def save_platform_text(data: TextInput, whatsapp: WhatsAppFields | None = None) 
         and wa.category
         and wa.category not in WhatsAppCategory.values
     ):
-        raise InvalidFields({"category": ["Choose utility, marketing or authentication."]})
+        raise InvalidFields({"category": [_("Choose utility, marketing or authentication.")]})
     key = {
         "event_code": data.event_code,
         "audience": data.audience,
@@ -246,17 +262,48 @@ def save_platform_text(data: TextInput, whatsapp: WhatsAppFields | None = None) 
 
 
 def preview(data: TextInput, distributor: str) -> dict[str, Any]:
-    """What the text looks like with sample values (validated like a save; nothing stored)."""
+    """What the text looks like with sample values (validated like a save; nothing stored). The
+    sample's own words follow the text's language."""
     _check(data, platform=data.channel not in TENANT_CHANNELS)
-    values = {**SAMPLE, "distributor": distributor}
+    with translation.override(data.locale):
+        values = {**SAMPLE, **{k: str(v) for k, v in _sample_phrases().items()}}
+    values["distributor"] = distributor
     return {"subject": substitute(data.subject, values), "body": substitute(data.body, values)}
+
+
+def _sample_phrases() -> dict[str, Any]:
+    """The sample values that are words, in the active language."""
+    return {
+        "hold_reason": _("Over the credit limit"),
+        "reason": _("Out of stock"),
+        "vehicle": fill(_(" by vehicle %(number)s"), {"number": "MH12AB1234"}),
+        "delivery_code": fill(_(" Delivery code: %(code)s."), {"code": "4821"}),
+        "price_increased": _(" The price has gone up since the order was placed."),
+        "alert": _("low stock"),
+        "bounce_charge": fill(
+            _(" A cheque bounce charge of %(amount)s was added."), {"amount": "₹500.00"}
+        ),
+        "bills": fill(ngettext("%(count)s bill", "%(count)s bills", 3), {"count": 3}),
+        "items": fill(
+            _("%(product)s %(quantity)s short"), {"product": "Tata Salt 1 kg", "quantity": 2}
+        ),
+    }
 
 
 def texts_for(event_code: str, locale: str = "en") -> list[dict[str, Any]]:
     """Each audience's and channel's text in force for an event (the tenant's, else the
-    platform's), for the templates screen: the shop's words first, then the office's."""
+    platform's), for the templates screen: the shop's words first, then the office's. Each says
+    which language it is written in (English when ``locale`` has none) and in which languages the
+    distributor has its own text, so the editor can warn when only some were changed
+    (ADR-060, owner)."""
     if event_code not in EVENTS:
         raise NotFound()
+    edited: dict[tuple[str, str], list[str]] = {}
+    for audience, channel, loc in NotificationTemplate.objects.filter(
+        event_code=event_code, is_active=True
+    ).values_list("audience", "channel", "locale"):
+        edited.setdefault((audience, channel), []).append(loc)
+    order = list(languages.codes())
     found = []
     for audience in EVENTS[event_code].audiences:
         for channel in Channel.values:
@@ -270,6 +317,11 @@ def texts_for(event_code: str, locale: str = "en") -> list[dict[str, Any]]:
                     "subject": resolved.subject,
                     "body": resolved.body,
                     "source": resolved.source,
+                    "locale": resolved.locale,
+                    "edited_locales": sorted(
+                        edited.get((audience, channel), []),
+                        key=lambda code: order.index(code) if code in order else len(order),
+                    ),
                     "editable": channel in TENANT_CHANNELS,
                     "variables": list(variables_for(event_code, audience)),
                 }

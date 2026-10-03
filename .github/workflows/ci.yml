@@ -2,8 +2,8 @@ name: CI
 
 # ADR-055 (amended 2026-10-02: Actions minutes are no longer limited): every push runs every
 # check once (no second run for a pull request), in parallel jobs for a short wall time: the quick
-# checks, Playwright on the production build, the full-stack suites in six jobs (acceptance in
-# three groups of specs, the responsive check per width), the production images.
+# checks, Playwright on the production build, the full-stack suites in thirteen jobs (acceptance in
+# four groups of specs, the responsive check per width and language), the production images.
 on:
   push:
     branches: ["**"]
@@ -144,8 +144,8 @@ jobs:
           path: web/playwright-report
           retention-days: 7
 
-  # Phase acceptance flows and the responsive check against the real stack (docker compose), in
-  # six parallel jobs, each with its own stack: the specs share the super admin, whose 2FA codes are
+  # Phase acceptance flows and the responsive check (in English, Hindi and Marathi) against the
+  # real stack (docker compose), in parallel jobs, each with its own stack: the specs share the super admin, whose 2FA codes are
   # single-use, so a stack runs its specs one at a time.
   e2e-stack:
     runs-on: ubuntu-latest
@@ -166,6 +166,28 @@ jobs:
             width: 768px
           - suite: responsive-1440
             width: 1440px
+          # Languages (ADR-060): a shop orders in Hindi, staff work in Marathi; every screen in
+          # Hindi and in Marathi at each width.
+          - suite: acceptance-4
+            specs: e2e/languages-acceptance.spec.ts
+          - suite: responsive-hi-360
+            width: 360px
+            language: hi
+          - suite: responsive-hi-768
+            width: 768px
+            language: hi
+          - suite: responsive-hi-1440
+            width: 1440px
+            language: hi
+          - suite: responsive-mr-360
+            width: 360px
+            language: mr
+          - suite: responsive-mr-768
+            width: 768px
+            language: mr
+          - suite: responsive-mr-1440
+            width: 1440px
+            language: mr
     name: e2e-stack (${{ matrix.suite }})
     env:
       COMPOSE: docker compose -f infra/docker-compose.yml -f infra/docker-compose.ci.yml
@@ -199,6 +221,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: backend
+          build-contexts: web_messages=web/messages
           file: infra/backend.Dockerfile
           target: dev
           tags: inventory-backend:ci
@@ -242,6 +265,7 @@ jobs:
         env:
           E2E_FULL_STACK: "1"
           E2E_BASE_URL: http://localhost:3000
+          E2E_LANGUAGE: ${{ matrix.language || 'en' }}
         run: npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts -g "every screen at ${{ matrix.width }}"
       - name: Screenshots of every screen at this width
         if: always() && matrix.width
@@ -271,6 +295,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: backend
+          build-contexts: web_messages=web/messages
           file: infra/backend.Dockerfile
           target: prod
           tags: backend-prod

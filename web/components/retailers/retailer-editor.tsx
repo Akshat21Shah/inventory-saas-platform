@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import { Controller, useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
@@ -57,15 +56,20 @@ import type {
   AddressKindEnum,
   PriceSheetRow,
   RetailerDetail,
-  RetailerWritePreferredLanguageEnum,
   Warning,
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { formatIndianMobile } from "@/lib/utils";
 
-import { LANGUAGES, usePriceListOptions, useSalespeopleOptions, useStateOptions } from "./options";
+import {
+  useLanguageOptions,
+  usePriceListOptions,
+  useSalespeopleOptions,
+  useStateOptions,
+} from "./options";
 
 const NONE = "none";
 const schema = z.object({
@@ -102,7 +106,7 @@ function initialValues(r?: RetailerDetail): Values {
     state_code: r?.state_code || NONE,
     salesperson: r?.salesperson?.id ?? NONE,
     price_list: r?.price_list?.id ?? NONE,
-    preferred_language: r?.preferred_language || "en",
+    preferred_language: r?.preferred_language || NONE,
     tags: (r?.tags ?? []).join(", "),
     notes: r?.notes ?? "",
     line1: "",
@@ -176,6 +180,7 @@ function RetailerForm({ retailer }: { retailer?: RetailerDetail }) {
   const manage = can("retailers.manage");
   const states = useStateOptions();
   const salespeople = useSalespeopleOptions();
+  const languageOptions = useLanguageOptions(retailer?.preferred_language);
   const priceLists = usePriceListOptions();
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -204,7 +209,7 @@ function RetailerForm({ retailer }: { retailer?: RetailerDetail }) {
       salesperson: orNull(v.salesperson),
       notes: v.notes,
       tags: list(v.tags),
-      preferred_language: v.preferred_language as RetailerWritePreferredLanguageEnum,
+      preferred_language: v.preferred_language === NONE ? "" : v.preferred_language,
       ...(can("pricing.manage") ? { price_list: orNull(v.price_list) } : {}),
     };
     try {
@@ -273,7 +278,8 @@ function RetailerForm({ retailer }: { retailer?: RetailerDetail }) {
             control={form.control}
             name="preferred_language"
             label={t("language")}
-            options={LANGUAGES}
+            options={languageOptions}
+            none={t("languageDefault")}
             error={fieldError("preferred_language")}
           />
           <FormField label={t("tags")} hint={t("tagsHint")}>

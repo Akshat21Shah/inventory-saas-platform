@@ -12,6 +12,8 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models.functions import Lower
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.catalog import selectors as catalog
@@ -21,6 +23,7 @@ from apps.inventory import adjustments
 from apps.inventory.models import AdjustmentReason
 from apps.inventory.selectors import with_stock
 from apps.platform.selectors import get_setting
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 C = Column
@@ -35,7 +38,7 @@ COLUMNS: tuple[Column, ...] = (
         "Quantity",
         ("qty", "stock", "count", "closing stock", "opening stock", "quantity in stock"),
         True,
-        "In the product's unit (not packs).",
+        gettext_lazy("In the product's unit (not packs)."),
         "120",
     ),
     C(
@@ -43,10 +46,17 @@ COLUMNS: tuple[Column, ...] = (
         "Cost per unit (before GST)",
         ("cost", "cost price", "purchase price", "purchase rate"),
         False,
-        "Optional. Updates the cost price the way your cost setting says.",
+        gettext_lazy("Optional. Updates the cost price the way your cost setting says."),
         "7.50",
     ),
-    C("product_name", "Product name", (), False, "For reference; not imported.", "Parle-G 100g"),
+    C(
+        "product_name",
+        "Product name",
+        (),
+        False,
+        gettext_lazy("For reference; not imported."),
+        "Parle-G 100g",
+    ),
 )
 LABEL = {c.name: c.label for c in COLUMNS}
 
@@ -83,9 +93,15 @@ class OpeningStockKind:
             plans.append(plan)
             product = products.get(v.get("product_code", "").strip().lower())
             if not v.get("product_code"):
-                plan.error(LABEL["product_code"], "Enter the product code.")
+                plan.error(LABEL["product_code"], _("Enter the product code."))
             elif product is None:
-                plan.error(LABEL["product_code"], f"No product has the code {v['product_code']}.")
+                plan.error(
+                    LABEL["product_code"],
+                    fill(
+                        _("No product has the code %(product_code)s."),
+                        {"product_code": v["product_code"]},
+                    ),
+                )
             quantity = self._quantity(plan, v.get("quantity", ""), mode)
             cost = self._cost(plan, v.get("cost", ""), can_cost)
             if product is None or quantity is None or not plan.ok:
@@ -93,13 +109,19 @@ class OpeningStockKind:
             if product.pk in seen:
                 plan.error(
                     LABEL["product_code"],
-                    f"This product is also in row {seen[product.pk]}. List each product once.",
+                    fill(
+                        _("This product is also in row %(value)s. List each product once."),
+                        {"value": seen[product.pk]},
+                    ),
                 )
                 continue
             seen[product.pk] = row.number
             plan.key = product.code
             if not product.unit.allows_decimal and quantity % 1:
-                plan.error(LABEL["quantity"], f"{product.unit.code} is counted in whole numbers.")
+                plan.error(
+                    LABEL["quantity"],
+                    fill(_("%(code)s is counted in whole numbers."), {"code": product.unit.code}),
+                )
                 continue
             on_hand = Decimal(product.on_hand)  # type: ignore[attr-defined]
             reserved = Decimal(product.reserved)  # type: ignore[attr-defined]
@@ -110,8 +132,13 @@ class OpeningStockKind:
             if new < reserved:
                 plan.error(
                     LABEL["quantity"],
-                    f"{_number(reserved)} {product.unit.code} is reserved for orders, so the "
-                    "stock can't go below that.",
+                    fill(
+                        _(
+                            "%(reserved)s %(code)s is reserved for orders, so the stock can't go "
+                            "below that."
+                        ),
+                        {"reserved": _number(reserved), "code": product.unit.code},
+                    ),
                 )
                 continue
             plan.action = "UPDATE"
@@ -119,11 +146,11 @@ class OpeningStockKind:
             plan.changes = {"Stock": [_number(on_hand), _number(new)]}
             if cost is not None:
                 if new < on_hand:
-                    plan.warnings.append("Stock goes down, so the cost is not used.")
+                    plan.warnings.append(_("Stock goes down, so the cost is not used."))
                     cost = None
                 elif manual:
                     plan.warnings.append(
-                        "Your cost setting is “Never”, so the cost price won't change."
+                        _("Your cost setting is “Never”, so the cost price won't change.")
                     )
             plan.data = {
                 "product_id": product.pk,
@@ -135,17 +162,20 @@ class OpeningStockKind:
 
     def _quantity(self, plan: RowPlan, text: str, mode: str) -> Decimal | None:
         if not text:
-            plan.error(LABEL["quantity"], "Enter the quantity.")
+            plan.error(LABEL["quantity"], _("Enter the quantity."))
             return None
         try:
             value = parse_decimal(text, places=3)
         except ValueError:
-            plan.error(LABEL["quantity"], f"{text} isn't a quantity (at most 3 decimals).")
+            plan.error(
+                LABEL["quantity"],
+                fill(_("%(text)s isn't a quantity (at most 3 decimals)."), {"text": text}),
+            )
             return None
         if value < 0 or (mode == STOCK_ADD and value == 0):
             plan.error(
                 LABEL["quantity"],
-                "Enter a quantity above 0." if mode == STOCK_ADD else "Can't be negative.",
+                _("Enter a quantity above 0.") if mode == STOCK_ADD else _("Can't be negative."),
             )
             return None
         return value
@@ -154,15 +184,18 @@ class OpeningStockKind:
         if not text:
             return None
         if not can_cost:
-            plan.error(LABEL["cost"], "Only staff who manage costs can import costs.")
+            plan.error(LABEL["cost"], _("Only staff who manage costs can import costs."))
             return None
         try:
             value = parse_decimal(text, places=4)
         except ValueError:
-            plan.error(LABEL["cost"], f"{text} isn't an amount (at most 4 decimals).")
+            plan.error(
+                LABEL["cost"],
+                fill(_("%(text)s isn't an amount (at most 4 decimals)."), {"text": text}),
+            )
             return None
         if value < 0:
-            plan.error(LABEL["cost"], "Can't be negative.")
+            plan.error(LABEL["cost"], _("Can't be negative."))
             return None
         return value
 

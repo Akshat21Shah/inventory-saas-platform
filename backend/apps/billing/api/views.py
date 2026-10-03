@@ -9,6 +9,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.db.models import QuerySet
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -51,7 +52,7 @@ def _uuid(value: str | None, field: str) -> UUID | None:
     try:
         return UUID(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Not a valid id."]}) from exc
+        raise InvalidFields({field: [_("Not a valid id.")]}) from exc
 
 
 def _date(value: str | None, field: str) -> date | None:
@@ -60,7 +61,7 @@ def _date(value: str | None, field: str) -> date | None:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Use YYYY-MM-DD."]}) from exc
+        raise InvalidFields({field: [_("Use YYYY-MM-DD.")]}) from exc
 
 
 def _bool(value: str | None) -> bool | None:
@@ -113,10 +114,10 @@ class InvoiceListView(Guarded, generics.ListAPIView[Invoice]):
         q = self.request.query_params
         status = q.get("payment_status", "")
         if status and status not in PaymentStatus.values:
-            raise InvalidFields({"payment_status": ["Not a valid payment status."]})
+            raise InvalidFields({"payment_status": [_("Not a valid payment status.")]})
         einvoice = q.get("einvoice_status", "")
         if einvoice and einvoice not in EInvoiceStatus.values:
-            raise InvalidFields({"einvoice_status": ["Not a valid e-invoice status."]})
+            raise InvalidFields({"einvoice_status": [_("Not a valid e-invoice status.")]})
         return selectors.invoice_list(
             _user(self.request),
             selectors.InvoiceFilters(
@@ -214,7 +215,7 @@ class CreditNoteListCreateView(Guarded, generics.ListAPIView[CreditNote]):
         q = self.request.query_params
         kind = q.get("kind", "")
         if kind and kind not in CreditNote.Kind.values:
-            raise InvalidFields({"kind": ["Not a valid kind."]})
+            raise InvalidFields({"kind": [_("Not a valid kind.")]})
         return selectors.credit_note_list(
             _user(self.request),
             selectors.CreditNoteFilters(
@@ -259,7 +260,7 @@ class CreditNoteListCreateView(Guarded, generics.ListAPIView[CreditNote]):
         invoice = _invoice(request, v["invoice"])
         if v["kind"] == CreditNote.Kind.RETURN:
             if any("quantity" not in row for row in v["lines"]):
-                raise InvalidFields({"lines": ["Enter how many came back on each line."]})
+                raise InvalidFields({"lines": [_("Enter how many came back on each line.")]})
             note = credit_notes.issue_return(
                 invoice.pk,
                 [
@@ -272,11 +273,13 @@ class CreditNoteListCreateView(Guarded, generics.ListAPIView[CreditNote]):
             )
         else:
             if not v["lines"] or any("taxable_value" not in row for row in v["lines"]):
-                raise InvalidFields({"lines": ["Enter the taxable value to credit on each line."]})
+                raise InvalidFields(
+                    {"lines": [_("Enter the taxable value to credit on each line.")]}
+                )
             amounts: dict[UUID, Decimal] = {}
             for row in v["lines"]:
                 if row["invoice_line"] in amounts:
-                    raise InvalidFields({"lines": ["Choose each invoice line once."]})
+                    raise InvalidFields({"lines": [_("Choose each invoice line once.")]})
                 amounts[row["invoice_line"]] = row["taxable_value"]
             note = credit_notes.issue_price_adjustment(
                 invoice.pk, amounts, note=v["note"], by=_user(request)
@@ -406,7 +409,7 @@ class ReturnRequestListView(Guarded, generics.ListAPIView[ReturnRequest]):
         q = self.request.query_params
         status = q.get("status", "")
         if status and status not in ReturnRequest.Status.values:
-            raise InvalidFields({"status": ["Not a valid status."]})
+            raise InvalidFields({"status": [_("Not a valid status.")]})
         return selectors.return_request_list(
             _user(self.request), status=status, search=q.get("search", "")
         ).prefetch_related("lines__invoice_line")

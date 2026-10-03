@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.postgres.indexes import BrinIndex
 from django.db import models
 from django.db.models import F, Q
+from django.utils.translation import gettext_lazy
 
 from common.fields import MoneyField, QtyField, UnitCostField
 from common.models import TenantScopedModel
@@ -338,9 +339,9 @@ class StockAdjustmentLine(TenantScopedModel):
 
 class StockAlert(TenantScopedModel):
     class Type(models.TextChoices):
-        LOW_STOCK = "LOW_STOCK", "Low stock"
-        OUT_OF_STOCK = "OUT_OF_STOCK", "Out of stock"
-        BACKORDER_DEMAND = "BACKORDER_DEMAND", "Shops waiting"
+        LOW_STOCK = "LOW_STOCK", gettext_lazy("Low stock")
+        OUT_OF_STOCK = "OUT_OF_STOCK", gettext_lazy("Out of stock")
+        BACKORDER_DEMAND = "BACKORDER_DEMAND", gettext_lazy("Shops waiting")
 
     class Status(models.TextChoices):
         OPEN = "OPEN", "Open"

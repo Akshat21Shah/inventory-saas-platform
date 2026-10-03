@@ -204,6 +204,9 @@ class TenantProfile(TenantScopedModel):
     upi_id = models.CharField(max_length=320, blank=True, default="", validators=[validate_upi_id])
     signatory_name = models.CharField(max_length=150, blank=True, default="")
     signatory_image = models.CharField(max_length=255, blank=True, default="")  # storage key
+    # A short name SMS use in place of the business name (owner, ADR-060): Hindi and Marathi SMS
+    # are 70 characters a part, and each part is paid for. Blank: the business name.
+    sms_name = models.CharField(max_length=30, blank=True, default="")
 
     class Meta:
         constraints = [
@@ -364,3 +367,39 @@ class PlatformSetting(BaseModel):
 
     def __str__(self) -> str:
         return self.key
+
+
+class TextSuggestion(BaseModel):
+    """A better word for a translated text, suggested from a screen by staff or a shop
+    (ADR-060 item 14): for the super admin's list, then the translation sheet. Platform-wide;
+    ``tenant`` says whose people sent it (none from a super admin)."""
+
+    class Status(models.TextChoices):
+        NEW = "NEW", "New"
+        DONE = "DONE", "Done"
+        DISMISSED = "DISMISSED", "Dismissed"
+
+    tenant = models.ForeignKey(
+        Tenant, on_delete=models.CASCADE, null=True, blank=True, related_name="+"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    language = models.CharField(max_length=5)
+    screen = models.CharField(max_length=300)  # the page it was sent from, e.g. /shop/orders
+    current_text = models.CharField(max_length=500, blank=True, default="")
+    suggestion = models.CharField(max_length=500)
+    status = models.CharField(max_length=9, choices=Status.choices, default=Status.NEW)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"], name="text_suggestion_status_idx")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.language}: {self.current_text} → {self.suggestion}"

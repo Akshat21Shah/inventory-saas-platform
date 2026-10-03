@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Lock, MoonStar, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -38,6 +37,7 @@ import type {
 } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { eventKey, NotificationsNav } from "./nav";
 

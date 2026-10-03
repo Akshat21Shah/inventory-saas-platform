@@ -13,6 +13,7 @@ from uuid import UUID
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
@@ -31,7 +32,7 @@ SESSION_EXPIRY_CLAIM = "sess_exp"
 class SessionExpired(DomainError):
     status_code = 401
     code = ErrorCode.SESSION_EXPIRED
-    default_message = "Your session has ended. Please sign in again."
+    default_message = gettext_lazy("Your session has ended. Please sign in again.")
 
 
 @dataclass(frozen=True)

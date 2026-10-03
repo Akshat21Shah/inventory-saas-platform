@@ -6,6 +6,7 @@ lives in the services; amounts come from ``billing/tax.py``."""
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
+from django.utils.translation import gettext_lazy
 
 from common.fields import MoneyField, QtyField, RateField, UnitCostField
 from common.models import TenantScopedModel
@@ -88,6 +89,9 @@ class _TaxDocument(TenantScopedModel):
     retailer = models.ForeignKey("retailers.Retailer", on_delete=models.PROTECT, related_name="+")
     seller = models.JSONField(default=dict)  # legal/trade name, GSTIN, address, state (snapshot)
     buyer = models.JSONField(default=dict)  # name, GSTIN, billing and shipping address, state
+    # The language its labels are printed in besides English, fixed at issue (ADR-060): "en"
+    # prints English only. A reprint is identical.
+    document_language = models.CharField(max_length=5, default="en")
     place_of_supply = models.ForeignKey(
         "platform.State", on_delete=models.PROTECT, related_name="+"
     )
@@ -253,17 +257,17 @@ class CreditNote(_TaxDocument):
     of which ``unapplied_amount`` is not yet used."""
 
     class Kind(models.TextChoices):
-        RETURN = "RETURN", "Return"
-        SHORT_SUPPLY = "SHORT_SUPPLY", "Short supply"
-        CANCELLATION = "CANCELLATION", "Cancellation"
-        PRICE_ADJUSTMENT = "PRICE_ADJUSTMENT", "Price adjustment"
+        RETURN = "RETURN", gettext_lazy("Return")
+        SHORT_SUPPLY = "SHORT_SUPPLY", gettext_lazy("Short supply")
+        CANCELLATION = "CANCELLATION", gettext_lazy("Cancellation")
+        PRICE_ADJUSTMENT = "PRICE_ADJUSTMENT", gettext_lazy("Price adjustment")
 
     class ReturnReason(models.TextChoices):
-        DAMAGED = "DAMAGED", "Damaged"
-        EXPIRED = "EXPIRED", "Expired"
-        WRONG_ITEM = "WRONG_ITEM", "Wrong item"
-        EXCESS_SUPPLY = "EXCESS_SUPPLY", "Excess supply"
-        OTHER = "OTHER", "Other"
+        DAMAGED = "DAMAGED", gettext_lazy("Damaged")
+        EXPIRED = "EXPIRED", gettext_lazy("Expired")
+        WRONG_ITEM = "WRONG_ITEM", gettext_lazy("Wrong item")
+        EXCESS_SUPPLY = "EXCESS_SUPPLY", gettext_lazy("Excess supply")
+        OTHER = "OTHER", gettext_lazy("Other")
 
     note_date = models.DateField()  # IST
     invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name="credit_notes")
@@ -306,9 +310,9 @@ class CreditNoteLine(TenantScopedModel):
     """Append-only. ``quantity`` 0 for value-only credits."""
 
     class Disposition(models.TextChoices):
-        RETURN_TO_STOCK = "RETURN_TO_STOCK", "Return to stock"
-        DAMAGED = "DAMAGED", "Received damaged"
-        NOT_RETURNED = "NOT_RETURNED", "Not physically returned"
+        RETURN_TO_STOCK = "RETURN_TO_STOCK", gettext_lazy("Return to stock")
+        DAMAGED = "DAMAGED", gettext_lazy("Received damaged")
+        NOT_RETURNED = "NOT_RETURNED", gettext_lazy("Not physically returned")
 
     credit_note = models.ForeignKey(CreditNote, on_delete=models.PROTECT, related_name="lines")
     line_no = models.PositiveSmallIntegerField()

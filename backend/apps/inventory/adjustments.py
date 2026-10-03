@@ -12,6 +12,7 @@ from typing import Any
 from uuid import UUID
 
 from django.db import transaction
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -28,6 +29,7 @@ from apps.inventory.services import InsufficientStock, StockReserved
 from common.dates import today_ist
 from common.db import retry_on_deadlock
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.sequences import next_value
 
 MAX_LINES = 500
@@ -63,15 +65,17 @@ def _validate(data: AdjustmentInput, by: User, max_lines: int) -> dict[UUID, Pro
     if any(line.unit_cost is not None for line in data.lines) and not by.has_permission_code(
         "costs.manage"
     ):
-        errors["lines"] = ["Only staff who manage costs can enter them."]
+        errors["lines"] = [_("Only staff who manage costs can enter them.")]
     if data.reason_code not in AdjustmentReason.values:
-        errors["reason_code"] = ["Choose a reason."]
+        errors["reason_code"] = [_("Choose a reason.")]
     if not data.note.strip():
-        errors["note"] = ["Write a short note about why the stock changes."]
+        errors["note"] = [_("Write a short note about why the stock changes.")]
     if not data.lines:
-        errors["lines"] = ["Add at least one product."]
+        errors["lines"] = [_("Add at least one product.")]
     elif len(data.lines) > max_lines:
-        errors["lines"] = [f"An adjustment can have up to {max_lines} lines."]
+        errors["lines"] = [
+            fill(_("An adjustment can have up to %(max_lines)s lines."), {"max_lines": max_lines})
+        ]
     if errors:
         raise InvalidFields(errors)
     products = {
@@ -188,7 +192,7 @@ def create_adjustment(
             )
             logged.append({"product": product.code, "before": before, "change": change})
         if not rows:
-            raise InvalidFields({"lines": ["Nothing changes: every count matches the stock."]})
+            raise InvalidFields({"lines": [_("Nothing changes: every count matches the stock.")]})
         StockAdjustmentLine.objects.bulk_create(sorted(rows, key=lambda row: row.line_no))
         added = {row.product_id: levels[row.product_id] for row in rows if row.quantity_change > 0}
         if added:
@@ -224,10 +228,16 @@ def set_reorder_level(product_id: UUID, reorder_level: Decimal, *, by: User) -> 
         if product is None:
             raise NotFound()
         if reorder_level < 0 or reorder_level != reorder_level.quantize(QTY_STEP):
-            raise InvalidFields({"reorder_level": ["Enter 0 or more, with at most 3 decimals."]})
+            raise InvalidFields({"reorder_level": [_("Enter 0 or more, with at most 3 decimals.")]})
         if not product.unit.allows_decimal and reorder_level % 1:
             raise InvalidFields(
-                {"reorder_level": [f"{product.unit.code} is counted in whole numbers."]}
+                {
+                    "reorder_level": [
+                        fill(
+                            _("%(code)s is counted in whole numbers."), {"code": product.unit.code}
+                        )
+                    ]
+                }
             )
         reorder_level = reorder_level.quantize(QTY_STEP)
         # Stock level first (L3), then the product row, as receipts do.

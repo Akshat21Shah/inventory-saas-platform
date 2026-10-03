@@ -18,6 +18,9 @@ async function get(url: string): Promise<Response> {
   return fetch(url, {
     headers: {
       "X-Requested-With": "fetch",
+      ...(document.documentElement.lang
+        ? { "Accept-Language": document.documentElement.lang }
+        : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     credentials: "include",

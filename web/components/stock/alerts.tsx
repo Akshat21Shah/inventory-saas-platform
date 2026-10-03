@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { FilterSelect } from "@/components/catalog/controls";
@@ -11,6 +10,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { useStockAlertsList } from "@/lib/api/generated/endpoints/inventory/inventory";
 import type { Alert, StockAlertsListStatus, StockAlertsListType } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { ProductCell } from "./product-cell";

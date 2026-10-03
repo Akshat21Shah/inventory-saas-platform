@@ -35,6 +35,8 @@ from django.db.models import (
 from django.db.models.fields.json import KT
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth, TruncWeek
 from django.db.models.lookups import IsNull
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
@@ -52,6 +54,7 @@ from apps.reports.registry import (
     register,
 )
 from apps.retailers.models import Retailer
+from common.numbers import fill
 from common.permissions import AllOf, AnyOf
 
 SALES = AnyOf(("reports.sales", "reports.sales_own"))
@@ -299,11 +302,21 @@ def cost_notes(groups: dict[Any, Figures]) -> list[str]:
     notes = []
     if estimated:
         notes.append(
-            f"{estimated} line(s) had no cost recorded when invoiced: today's cost price is used "
-            "(estimated)."
+            fill(
+                _(
+                    "%(estimated)s line(s) had no cost recorded when invoiced: today's cost "
+                    "price is used (estimated)."
+                ),
+                {"estimated": estimated},
+            )
         )
     if uncosted:
-        notes.append(f"{uncosted} line(s) have no cost price and are left out of the margin.")
+        notes.append(
+            fill(
+                _("%(uncosted)s line(s) have no cost price and are left out of the margin."),
+                {"uncosted": uncosted},
+            )
+        )
     return notes
 
 
@@ -395,7 +408,7 @@ def summary_rows(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="sales_summary",
-        title="Sales summary",
+        title=gettext_lazy("Sales summary"),
         group=Group.SALES,
         description="Billed, credited and net sales per day, week or month.",
         permission=SALES,
@@ -525,7 +538,7 @@ PRODUCT_FILTERS = (*PERIOD, CATEGORY, BRAND, SHOP, SALESPERSON)
 register(
     Report(
         code="sales_by_product",
-        title="Sales by product",
+        title=gettext_lazy("Sales by product"),
         group=Group.SALES,
         description="What sold, net of returns, with margins for those who can see costs.",
         permission=SALES,
@@ -548,7 +561,7 @@ register(
 register(
     Report(
         code="sales_by_category",
-        title="Sales by category",
+        title=gettext_lazy("Sales by category"),
         group=Group.SALES,
         description="Sales per category (as set on each product), net of returns.",
         permission=SALES,
@@ -563,7 +576,7 @@ register(
 register(
     Report(
         code="sales_by_brand",
-        title="Sales by brand",
+        title=gettext_lazy("Sales by brand"),
         group=Group.SALES,
         description="Sales per brand, your own brands marked, net of returns.",
         permission=SALES,
@@ -654,7 +667,7 @@ def salesperson_rows(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="sales_by_shop",
-        title="Sales by shop",
+        title=gettext_lazy("Sales by shop"),
         group=Group.SALES,
         description="Sales per shop, net of returns, with each shop's last bill.",
         permission=SALES,
@@ -678,7 +691,7 @@ register(
 register(
     Report(
         code="sales_by_salesperson",
-        title="Sales by salesperson",
+        title=gettext_lazy("Sales by salesperson"),
         group=Group.SALES,
         description="Sales per salesperson (the shop's salesperson when the order was placed).",
         permission=SALES,
@@ -754,7 +767,7 @@ def margin_rows(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="margin_own_vs_traded",
-        title="Margin: own brand vs traded",
+        title=gettext_lazy("Margin: own brand vs traded"),
         group=Group.SALES,
         description="Taxable sales, cost and margin of your own brands against traded goods.",
         permission=MARGIN,
@@ -967,7 +980,7 @@ def _register_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="sales_by_invoice",
-        title="Sales by invoice",
+        title=gettext_lazy("Sales by invoice"),
         group=Group.SALES,
         description="The sales register: every invoice and credit note in the period, one per row.",
         permission=SALES,
@@ -994,7 +1007,7 @@ register(
         rows=register_rows,
         totals=lambda ctx: ctx.once("register_totals", lambda: _register_totals(ctx)),
         notes=lambda ctx: [
-            "Credit notes are shown as minus amounts. Each total includes its round-off.",
+            _("Credit notes are shown as minus amounts. Each total includes its round-off."),
             *(
                 [
                     "Cost is what each invoice line recorded when issued; bills from before that "

@@ -6,6 +6,7 @@ from uuid import UUID
 
 from django.db.models import QuerySet
 from django.http import HttpResponse
+from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics
@@ -47,7 +48,7 @@ def _require(request: Request, kind_code: str) -> None:
         raise PermissionDenied()
     if not _module_on(kind):
         raise DomainError(
-            "This module isn't switched on for your business.",
+            _("This module isn't switched on for your business."),
             code=ErrorCode.MODULE_NOT_ENABLED,
             status_code=403,
         )
@@ -174,7 +175,7 @@ class ExportView(ImportView):
         kind = services.kind_for(self.kind_code)
         if not _module_on(kind):
             raise DomainError(
-                "This module isn't switched on for your business.",
+                _("This module isn't switched on for your business."),
                 code=ErrorCode.MODULE_NOT_ENABLED,
                 status_code=403,
             )

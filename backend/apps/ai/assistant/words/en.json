@@ -1,0 +1,119 @@
+{
+  "markers": [],
+  "tools": {
+    "shops_not_ordering": "(haven'?t|have not|not|stopped|didn'?t)\\s+order|win back|dormant|inactive|no orders? from",
+    "backorders": "backorder|waiting for|short supplied|pending supply",
+    "low_stock": "low (on )?stock|running (out|low)|reorder|out of stock|short of",
+    "product_stock": "(stock|how (many|much)) (of|for|do we have)|in stock|stock left",
+    "dues": "\\bowe|dues?\\b|outstanding|overdue|receivable|pending payment",
+    "collections": "collect|payments? (received|came|in)|received (payments?|money)",
+    "sales_by_salesperson": "salesm[ae]n|salesperson|sales (staff|team|people)",
+    "sales_by_category": "categor",
+    "top_shops": "(top|best|biggest|largest)\\s+(\\d+\\s+)?(shops?|customers?|retailers?|buyers?)|which shops? (bought|ordered|buy) (the )?most",
+    "top_products": "(top|best|most)\\s*(\\d+\\s+)?(selling|sold|products?|items?)|best.?sellers?|what sold",
+    "sales_summary": "\\bsales?\\b|\\bsold\\b|\\bsell\\b|revenue|turnover|billed|business (this|last|today)"
+  },
+  "periods": {
+    "today": "\\btoday\\b",
+    "yesterday": "\\byesterday\\b",
+    "last_week": "\\blast week\\b|\\bprevious week\\b",
+    "this_week": "\\bthis week\\b",
+    "last_7_days": "\\b(last|past) (7|seven) days\\b",
+    "last_30_days": "\\b(last|past) (30|thirty) days\\b",
+    "last_90_days": "\\b(last|past) (90|ninety) days\\b|\\blast (3|three) months\\b",
+    "last_month": "\\blast month\\b|\\bprevious month\\b",
+    "this_month": "\\bthis month\\b",
+    "last_quarter": "\\blast quarter\\b",
+    "this_quarter": "\\bthis quarter\\b",
+    "last_financial_year": "\\blast (financial )?year\\b",
+    "this_financial_year": "\\bthis (financial )?year\\b"
+  },
+  "top": "\\btop (\\d+)",
+  "days": "(\\d+)\\s*days?",
+  "overdue": "overdue",
+  "product": "(?:stock of|stock for|how (?:many|much)(?: stock)?(?: of)?)\\s+(?P<name>.+?)(?:\\s+(?:do we have|have we got|is left|are left|left|in stock|we have))?\\s*\\??$",
+  "costs": "\\b(margins?|profits?|costs?|cost price|purchase price)\\b",
+  "when": {
+    "today": "today",
+    "yesterday": "yesterday",
+    "this_week": "this week",
+    "last_week": "last week",
+    "last_7_days": "in the last 7 days",
+    "this_month": "this month",
+    "last_month": "last month",
+    "last_30_days": "in the last 30 days",
+    "last_90_days": "in the last 90 days",
+    "this_quarter": "this quarter",
+    "last_quarter": "last quarter",
+    "this_financial_year": "this financial year",
+    "last_financial_year": "last financial year"
+  },
+  "topics": {
+    "sales_summary": "your sales",
+    "top_products": "top products",
+    "top_shops": "top shops",
+    "shops_not_ordering": "shops that stopped ordering",
+    "low_stock": "low stock",
+    "product_stock": "a product's stock",
+    "backorders": "backorders",
+    "dues": "dues",
+    "collections": "collections"
+  },
+  "examples": {
+    "shops_not_ordering": "Which shops haven't ordered in 30 days?",
+    "low_stock": "Which products are running low?"
+  },
+  "say": {
+    "no_access": "You don't have access to those figures. Ask the owner if you need them.",
+    "which_product": "Which product? Ask, for example, “How much stock of Maggi 70g do we have?”",
+    "nothing_to_show": "There are no figures I can show you. Ask the owner if you need them.",
+    "can_answer": "I can answer questions about {topics}.",
+    "try": " Try “{example}”",
+    "and": " and ",
+    "costs_hidden": "Costs and margins aren't shown to you, so these are the sales figures. ",
+    "mine": " (your shops only)",
+    "couldnt_get": "I couldn't get those figures: ",
+    "figures": "Here are the figures.",
+    "no_sales": "No sales {when}{mine}.",
+    "sales": "Sales {when}{mine}: {total} in all, on {invoices} invoices; {credited} credited.",
+    "lists": {
+      "top_products": "Top products",
+      "top_shops": "Top shops",
+      "sales_by_category": "Sales by category",
+      "sales_by_salesperson": "Sales by salesperson"
+    },
+    "list_head": "{what} {when}{mine}:",
+    "no_sales_after_returns": "No sales {when}{mine} after returns.",
+    "everyone_ordered": "Every shop{mine} has ordered in the last {days} days.",
+    "not_ordering": {
+      "one": "{count} shop{mine} haven't ordered in {days} days or more.",
+      "other": "{count} shops{mine} haven't ordered in {days} days or more."
+    },
+    "longest_gaps": "Longest gaps: {items}.",
+    "gap": "{name} ({days} days)",
+    "never_ordered": "Never ordered: {names}.",
+    "nothing_low": "Nothing is below its reorder level.",
+    "low_item": "{name} ({available} left, reorder at {reorder})",
+    "low": {
+      "one": "{count} product is low: {items}.",
+      "other": "{count} products are low: {items}."
+    },
+    "no_product": "I couldn't find a product matching “{product}”.",
+    "stock_item": "{name}: {available} available ({on_hand} on hand, {reserved} held for orders).",
+    "nobody_owes": "No shop{mine} owes anything.",
+    "owed": "Owed the most{mine}: {items}. {balance}",
+    "owed_net": "Net of credit other shops hold, shops owe {amount} in all.",
+    "owed_credit": "Counting the credit shops hold, the balance is {amount} in their favour.",
+    "no_payments": "No payments received {when}{mine}.",
+    "collected": "Collected {when}{mine}: {amount} in {count} payments.",
+    "no_backorders": "No shop is waiting for a backorder.",
+    "backorder_item": {
+      "one": "{name} ({qty} for {shops} shop)",
+      "other": "{name} ({qty} for {shops} shops)"
+    },
+    "backorders": {
+      "one": "{count} product is on backorder: {items}.",
+      "other": "{count} products are on backorder: {items}."
+    }
+  }
+}

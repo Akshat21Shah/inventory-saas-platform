@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import QuerySet
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -28,6 +29,7 @@ from apps.notifications import (
 from apps.notifications.api import serializers as s
 from apps.notifications.models import Announcement, Audience, Channel, Notification
 from apps.retailers.selectors import retailer_for
+from common import languages
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
 from common.permissions import AnyOf, HasPermission, IsTenantStaff
@@ -198,14 +200,14 @@ def _rule(rule: rules.EffectiveRule) -> dict[str, Any]:
 
 # --- Texts --------------------------------------------------------------------------------------
 
-LOCALE = OpenApiParameter("locale", str, required=False, enum=list(texts.LOCALES))
+LOCALE = OpenApiParameter("locale", str, required=False, description="A language code.")
 AUDIENCE = OpenApiParameter("audience", str, required=False, enum=list(Audience.values))
 
 
 def _locale(request: Request) -> str:
     locale = request.query_params.get("locale", "en")
-    if locale not in texts.LOCALES:
-        raise InvalidFields({"locale": ["Choose en, hi or mr."]})
+    if not languages.is_known(locale):
+        raise InvalidFields({"locale": [_("Choose en, hi or mr.")]})
     return locale
 
 
@@ -250,7 +252,7 @@ class EventTextView(Guarded):
         locale = _locale(request)
         audience = request.query_params.get("audience", Audience.SHOP)
         if audience not in Audience.values:
-            raise InvalidFields({"audience": ["Choose SHOP or STAFF."]})
+            raise InvalidFields({"audience": [_("Choose SHOP or STAFF.")]})
         texts.reset_tenant_text(event, channel, locale, audience)
         return Response(s.TextSerializer(texts.texts_for(event, locale), many=True).data)
 
@@ -288,7 +290,7 @@ def _date(value: str | None, field: str) -> date | None:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Use YYYY-MM-DD."]}) from exc
+        raise InvalidFields({field: [_("Use YYYY-MM-DD.")]}) from exc
 
 
 def _uuid(value: str | None, field: str) -> UUID | None:
@@ -297,7 +299,7 @@ def _uuid(value: str | None, field: str) -> UUID | None:
     try:
         return UUID(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Not a valid id."]}) from exc
+        raise InvalidFields({field: [_("Not a valid id.")]}) from exc
 
 
 class DeliveriesView(Guarded, generics.ListAPIView[Notification]):
@@ -311,7 +313,7 @@ class DeliveriesView(Guarded, generics.ListAPIView[Notification]):
         q = self.request.query_params
         for field, allowed in (("status", Notification.Status.values), ("channel", Channel.values)):
             if q.get(field) and q[field] not in allowed:
-                raise InvalidFields({field: ["Not a valid value."]})
+                raise InvalidFields({field: [_("Not a valid value.")]})
         return selectors.deliveries(
             selectors.DeliveryFilters(
                 status=q.get("status", ""),
@@ -385,7 +387,7 @@ class DeliveryRetryView(Guarded):
     def post(self, request: Request, notification_id: UUID) -> Response:
         row = _delivery(notification_id)
         if not delivery.retry(row.pk):
-            raise InvalidFields({"status": ["Only a failed message can be tried again."]})
+            raise InvalidFields({"status": [_("Only a failed message can be tried again.")]})
         audit.record(
             "notifications.delivery_retried",
             target=row,

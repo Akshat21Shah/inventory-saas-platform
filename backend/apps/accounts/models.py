@@ -45,10 +45,6 @@ class UserManager(BaseUserManager["User"]):
         return self.create_user(email, password, **extra)
 
 
-# App languages (spec 8): users and retailers share them.
-LANGUAGE_CHOICES = [("en", "English"), ("hi", "हिन्दी"), ("mr", "मराठी")]
-
-
 class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     class UserType(models.TextChoices):
         PLATFORM = "PLATFORM", "Platform"
@@ -62,7 +58,9 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Django admin access: super admins only
-    preferred_language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default="en")
+    # A code from common/languages.json (ADR-060); validated against it, no choices, so a new
+    # language needs no migration.
+    preferred_language = models.CharField(max_length=5, default="en")
     # TOTP second factor (spec 5.2): secret encrypted at rest (ADR-031); each time step used once.
     totp_secret = EncryptedTextField(blank=True, default="")
     totp_enabled = models.BooleanField(default=False)
@@ -339,6 +337,9 @@ class Invitation(TenantScopedModel):
     invited_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
+    # The email's language, chosen by the inviter (their own by default; ADR-060). Blank on
+    # invitations sent before it: the inviter's.
+    language = models.CharField(max_length=5, blank=True, default="")
 
     class Meta:
         constraints = [

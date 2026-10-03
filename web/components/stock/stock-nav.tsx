@@ -1,9 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { SubNav } from "@/components/shared/sub-nav";
+import { useTranslations } from "@/lib/i18n/translations";
 
 export function StockLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("stock.nav");

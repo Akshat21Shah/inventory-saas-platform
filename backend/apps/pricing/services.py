@@ -8,6 +8,7 @@ from uuid import UUID
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -25,6 +26,7 @@ from apps.pricing.models import (
 )
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 MAX_BULK_ITEMS = 5000
 
@@ -50,7 +52,7 @@ def save_price_list(
 ) -> PriceList:
     name = " ".join(name.split())
     if not name:
-        raise InvalidFields({"name": ["Enter a name."]})
+        raise InvalidFields({"name": [_("Enter a name.")]})
     if price_list_id is None:
         price_list = PriceList(created_by=by)
         before: dict[str, Any] = {}
@@ -67,7 +69,7 @@ def save_price_list(
         with transaction.atomic():
             price_list.save()
     except IntegrityError as exc:
-        raise InvalidFields({"name": ["Another price list has this name."]}) from exc
+        raise InvalidFields({"name": [_("Another price list has this name.")]}) from exc
     after = {
         "name": price_list.name,
         "code": price_list.code,
@@ -90,9 +92,14 @@ def delete_price_list(price_list_id: UUID, *, by: User) -> None:
     price_list = _price_list(price_list_id, lock=True)
     shops = Retailer.objects.filter(price_list=price_list, deleted_at__isnull=True).count()
     if shops:
-        raise InUse(f"{shops} shop(s) use this price list. Move them to another list first.")
+        raise InUse(
+            fill(
+                _("%(shops)s shop(s) use this price list. Move them to another list first."),
+                {"shops": shops},
+            )
+        )
     if DiscountRule.objects.filter(price_list=price_list).exists():
-        raise InUse("Some discount rules are for this price list. Change or delete them first.")
+        raise InUse(_("Some discount rules are for this price list. Change or delete them first."))
     price_list.deleted_at, price_list.is_active = timezone.now(), False
     price_list.save(update_fields=["deleted_at", "is_active", "updated_at"])
     audit.record("pricing.price_list_deleted", target=price_list, target_repr=price_list.name)
@@ -112,19 +119,30 @@ def upsert_items(
     warning. Every change is in one audit entry with old → new per product code."""
     price_list = _price_list(price_list_id, lock=True)
     if len(items) > MAX_BULK_ITEMS:
-        raise InvalidFields({"items": [f"Send at most {MAX_BULK_ITEMS:,} prices at a time."]})
+        raise InvalidFields(
+            {
+                "items": [
+                    fill(
+                        _("Send at most %(max_bulk_items)s prices at a time."),
+                        {"max_bulk_items": format(MAX_BULK_ITEMS, ",")},
+                    )
+                ]
+            }
+        )
     errors: dict[str, list[str]] = {}
     seen: set[UUID] = set()
     for index, item in enumerate(items):
         if item.price < 0:
-            errors.setdefault(f"items.{index}.price", []).append("Enter 0 or more.")
+            errors.setdefault(f"items.{index}.price", []).append(_("Enter 0 or more."))
         if item.product_id in seen:
-            errors.setdefault(f"items.{index}.product", []).append("This product is listed twice.")
+            errors.setdefault(f"items.{index}.product", []).append(
+                _("This product is listed twice.")
+            )
         seen.add(item.product_id)
     products = {p.pk: p for p in catalog.products().filter(pk__in=[i.product_id for i in items])}
     for index, item in enumerate(items):
         if item.product_id not in products:
-            errors.setdefault(f"items.{index}.product", []).append("Choose an existing product.")
+            errors.setdefault(f"items.{index}.product", []).append(_("Choose an existing product."))
     if errors:
         raise InvalidFields(errors)
     current = {
@@ -192,7 +210,7 @@ def save_retailer_price(
     by: User,
 ) -> tuple[RetailerPrice, list[Warning]]:
     if price < 0:
-        raise InvalidFields({"price": ["Enter 0 or more."]})
+        raise InvalidFields({"price": [_("Enter 0 or more.")]})
     if price_id is None:
         retailer = (
             Retailer.objects.filter(pk=retailer_id, deleted_at__isnull=True).first()
@@ -202,9 +220,9 @@ def save_retailer_price(
         product = catalog.products().filter(pk=product_id).first() if product_id else None
         errors: dict[str, list[str]] = {}
         if retailer is None:
-            errors["retailer"] = ["Choose an existing shop."]
+            errors["retailer"] = [_("Choose an existing shop.")]
         if product is None:
-            errors["product"] = ["Choose an existing product."]
+            errors["product"] = [_("Choose an existing product.")]
         if errors:
             raise InvalidFields(errors)
         row = RetailerPrice(
@@ -216,7 +234,7 @@ def save_retailer_price(
                 row.save()
         except IntegrityError as exc:
             raise InvalidFields(
-                {"product": ["This shop already has a special price for this product."]}
+                {"product": [_("This shop already has a special price for this product.")]}
             ) from exc
     else:
         found = RetailerPrice.objects.select_for_update().filter(pk=price_id).first()
@@ -280,9 +298,9 @@ class SlabInput:
 
 def check_value(kind: str, value: Decimal, field: str, errors: dict[str, list[str]]) -> None:
     if kind == DiscountRule.Type.PERCENT and not Decimal("0") < value <= Decimal("100"):
-        errors.setdefault(field, []).append("Enter a percentage above 0 and up to 100.")
+        errors.setdefault(field, []).append(_("Enter a percentage above 0 and up to 100."))
     elif kind == DiscountRule.Type.FLAT_PER_UNIT and value <= 0:
-        errors.setdefault(field, []).append("Enter an amount above 0.")
+        errors.setdefault(field, []).append(_("Enter an amount above 0."))
 
 
 def _check_targets(rule: DiscountRule, errors: dict[str, list[str]]) -> None:
@@ -305,9 +323,11 @@ def _check_targets(rule: DiscountRule, errors: dict[str, list[str]]) -> None:
         value = getattr(rule, attr)
         field = attr.removesuffix("_id")
         if value is None:
-            errors.setdefault(field, []).append(f"Choose the {label}.")
+            errors.setdefault(field, []).append(fill(_("Choose the %(label)s."), {"label": label}))
         elif not qs.filter(pk=value).exists():
-            errors.setdefault(field, []).append(f"Choose an existing {label}.")
+            errors.setdefault(field, []).append(
+                fill(_("Choose an existing %(label)s."), {"label": label})
+            )
 
 
 @transaction.atomic
@@ -330,17 +350,17 @@ def save_discount_rule(
     rule.name = " ".join((rule.name or "").split())
     errors: dict[str, list[str]] = {}
     if not rule.name:
-        errors["name"] = ["Enter a name."]
+        errors["name"] = [_("Enter a name.")]
     if rule.discount_type not in DiscountRule.Type.values:
-        errors["discount_type"] = ["Choose percentage or rupees off per unit."]
+        errors["discount_type"] = [_("Choose percentage or rupees off per unit.")]
     if rule.scope_type not in DiscountRule.Scope.values:
-        errors["scope_type"] = ["Choose what the discount applies to."]
+        errors["scope_type"] = [_("Choose what the discount applies to.")]
     if rule.audience_type not in DiscountRule.Audience.values:
-        errors["audience_type"] = ["Choose which shops get it."]
+        errors["audience_type"] = [_("Choose which shops get it.")]
     if not errors:
         _check_targets(rule, errors)
     if rule.valid_from and rule.valid_to and rule.valid_to < rule.valid_from:
-        errors["valid_to"] = ["The end date must be on or after the start date."]
+        errors["valid_to"] = [_("The end date must be on or after the start date.")]
     existing_slabs = list(rule.slabs.all()) if rule.pk and slabs is None else None
     new_slabs = (
         slabs
@@ -350,10 +370,12 @@ def save_discount_rule(
     if new_slabs:
         quantities = [s.min_qty for s in new_slabs]
         if len(set(quantities)) != len(quantities):
-            errors["slabs"] = ["Each slab needs a different minimum quantity."]
+            errors["slabs"] = [_("Each slab needs a different minimum quantity.")]
         for index, slab in enumerate(new_slabs):
             if slab.min_qty <= 0:
-                errors.setdefault(f"slabs.{index}.min_qty", []).append("Enter a quantity above 0.")
+                errors.setdefault(f"slabs.{index}.min_qty", []).append(
+                    _("Enter a quantity above 0.")
+                )
             check_value(rule.discount_type, slab.value, f"slabs.{index}.value", errors)
         rule.value = Decimal("0")  # slabs carry the values
     else:
@@ -439,22 +461,24 @@ def _check_scheme_quantities(scheme: FreeGoodsScheme, errors: dict[str, list[str
     for product_field, product_id, field, value in checks:
         product = products.get(product_id) if product_id else None
         if field != "max_free_qty" and product is None:
-            errors.setdefault(product_field, []).append("Choose an existing product.")
+            errors.setdefault(product_field, []).append(_("Choose an existing product."))
         if value is None:
             if field != "max_free_qty":
-                errors.setdefault(field, []).append("Enter a quantity above 0.")
+                errors.setdefault(field, []).append(_("Enter a quantity above 0."))
             continue
         if value <= 0:
-            errors.setdefault(field, []).append("Enter a quantity above 0.")
+            errors.setdefault(field, []).append(_("Enter a quantity above 0."))
         elif product is not None and not product.unit.allows_decimal and value % 1:
-            errors.setdefault(field, []).append(f"Enter whole {product.unit.code}.")
+            errors.setdefault(field, []).append(
+                fill(_("Enter whole %(code)s."), {"code": product.unit.code})
+            )
     if (
         scheme.max_free_qty is not None
         and scheme.free_qty
         and scheme.max_free_qty < scheme.free_qty
     ):
         errors.setdefault("max_free_qty", []).append(
-            "The most free on one order can't be less than the free quantity."
+            _("The most free on one order can't be less than the free quantity.")
         )
 
 
@@ -477,9 +501,9 @@ def save_scheme(scheme_id: UUID | None, data: dict[str, Any], *, by: User) -> Fr
     scheme.name = " ".join((scheme.name or "").split())
     errors: dict[str, list[str]] = {}
     if not scheme.name:
-        errors["name"] = ["Enter a name."]
+        errors["name"] = [_("Enter a name.")]
     if scheme.audience_type not in DiscountRule.Audience.values:
-        errors["audience_type"] = ["Choose which shops get it."]
+        errors["audience_type"] = [_("Choose which shops get it.")]
     else:
         for audience, target in AUDIENCE_TARGET.items():
             if scheme.audience_type != audience:
@@ -488,12 +512,12 @@ def save_scheme(scheme_id: UUID | None, data: dict[str, Any], *, by: User) -> Fr
         lists = PriceList.objects.filter(pk=scheme.price_list_id, deleted_at__isnull=True)
         shops = Retailer.objects.filter(pk=scheme.retailer_id, deleted_at__isnull=True)
         if attr == "price_list_id" and not lists.exists():
-            errors["price_list"] = ["Choose an existing price list."]
+            errors["price_list"] = [_("Choose an existing price list.")]
         elif attr == "retailer_id" and not shops.exists():
-            errors["retailer"] = ["Choose an existing shop."]
+            errors["retailer"] = [_("Choose an existing shop.")]
     _check_scheme_quantities(scheme, errors)
     if scheme.valid_from and scheme.valid_to and scheme.valid_to < scheme.valid_from:
-        errors["valid_to"] = ["The end date must be on or after the start date."]
+        errors["valid_to"] = [_("The end date must be on or after the start date.")]
     if errors:
         raise InvalidFields(errors)
     scheme.save()
@@ -528,7 +552,7 @@ def assign_price_list(retailer: Retailer, price_list_id: UUID | None) -> None:
         price_list_id is not None
         and not PriceList.objects.filter(pk=price_list_id, deleted_at__isnull=True).exists()
     ):
-        raise InvalidFields({"price_list": ["Choose an existing price list."]})
+        raise InvalidFields({"price_list": [_("Choose an existing price list.")]})
     retailer.price_list_id = price_list_id
 
 

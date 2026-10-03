@@ -1,9 +1,9 @@
 import { Building, LayoutDashboard, Palette, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 
 import type { HostKind } from "@/lib/hosts";
+import { getTranslations } from "@/lib/i18n/server";
 
 /** Host-aware landing. Phase 1 redirects signed-in users straight to their area. */
 export default async function LandingPage() {

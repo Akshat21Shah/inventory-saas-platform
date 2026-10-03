@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -37,6 +36,7 @@ import { RefundModeEnum, type Refund } from "@/lib/api/generated/model";
 import { ApiError } from "@/lib/api/errors";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 
 import { PaymentsNav } from "./billing-nav";
@@ -291,7 +291,7 @@ export function RefundDetailPage({ refundId }: { refundId: string }) {
     <>
       <Link
         href="/manage/payments/refunds"
-        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11"
+        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11 max-md:min-w-11"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {t("back")}

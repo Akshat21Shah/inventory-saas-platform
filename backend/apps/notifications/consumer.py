@@ -30,6 +30,7 @@ from apps.notifications.render import render
 from apps.notifications.rules import EffectiveRule, effective_rules
 from apps.platform.models import Tenant
 from apps.retailers.models import Retailer, RetailerUser
+from common import languages
 from common.hosts import web_url
 from common.models import OutboxEvent
 
@@ -305,17 +306,20 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
             document_link = links.create(ctx.document[0], ctx.document[1], tenant.slug)
         return document_link
 
+    sms_name = contexts.sms_distributor_name(tenant)  # SMS use the short name (owner, ADR-060)
     for target in people:
         shop = target.retailer is not None
         supplier = target.supplier is not None
         path = ctx.shop_path if shop else "" if supplier else ctx.staff_path
         url = web_url(path or "/", tenant_slug=tenant.slug)
-        values = {**ctx.values, "link": url, "document_link": ""}
-        locale = (
-            (target.retailer.preferred_language if target.retailer else "")
-            or (target.user.preferred_language if target.user else "")
-            or "en"
-        )
+        # Each recipient's language, only if this distributor may use it (ADR-060): the shop's
+        # (or the distributor's default for shops), else the person's, else English.
+        if target.retailer is not None:
+            locale = languages.shop_language(target.retailer)
+        elif target.user is not None:
+            locale = languages.user_language(target.user, tenant.pk)
+        else:
+            locale = languages.DEFAULT
         for channel in sorted(target.channels):
             if channel != Channel.IN_APP and not target.external:
                 continue
@@ -335,7 +339,13 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 text_locale = approval.sendable_locale(ctx.code, locale, audience)
                 reason = "" if text_locale else SKIP.NOT_APPROVED
             carries_link = (shop or supplier) and channel != Channel.IN_APP and not reason
-            values["document_link"] = link_for_shop() if carries_link else ""
+            values = {
+                **ctx.values_in(text_locale or locale),
+                "link": url,
+                "document_link": link_for_shop() if carries_link else "",
+            }
+            if channel == Channel.SMS:
+                values["distributor"] = sms_name
             text = render(ctx.code, channel, values, text_locale or locale, audience)
             if text is None:
                 continue

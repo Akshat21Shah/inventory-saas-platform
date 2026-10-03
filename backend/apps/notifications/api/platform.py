@@ -6,6 +6,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.db.models import QuerySet
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, serializers
 from rest_framework.request import Request
@@ -184,7 +185,7 @@ class PlatformFailureRetryView(CommitThenReadView):
             raise NotFound()
         with transaction.atomic(), tenant_context(found.tenant_id):  # committed before the read
             if not delivery.retry(found.pk):
-                raise InvalidFields({"status": ["Only a failed message can be tried again."]})
+                raise InvalidFields({"status": [_("Only a failed message can be tried again.")]})
             audit.record(
                 "notifications.delivery_retried",
                 target=found,

@@ -6,11 +6,10 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type NotificationTextsLocale = typeof NotificationTextsLocale[keyof typeof NotificationTextsLocale];
-
-
-export const NotificationTextsLocale = {
-  en: 'en',
-  hi: 'hi',
-  mr: 'mr',
-} as const;
+export interface PlatformLanguage {
+  code: string;
+  name: string;
+  native: string;
+  /** On for everyone (else only for testing). */
+  enabled: boolean;
+}

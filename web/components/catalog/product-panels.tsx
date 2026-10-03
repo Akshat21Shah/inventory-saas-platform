@@ -1,7 +1,6 @@
 "use client";
 
 import { ImagePlus, Loader2, Trash2, TriangleAlert, X } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -25,6 +24,7 @@ import {
 } from "@/lib/api/generated/endpoints/catalog/catalog";
 import type { ProductDetail } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { percent, useTaxOptions } from "./options";
 

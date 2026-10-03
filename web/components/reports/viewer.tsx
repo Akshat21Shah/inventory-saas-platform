@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileSpreadsheet, FileText, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +29,7 @@ import type {
 } from "@/lib/api/generated/model";
 import { postForDownload } from "@/lib/api/download";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { NUMERIC_KINDS, ReportLinkCell, ReportValue, type ReportRow } from "./cells";
 import { ReportFilterBar, useReportFilters } from "./filters";
@@ -253,7 +253,12 @@ function ReportScreen({ report }: { report: Report }) {
           </p>
         ) : null}
         {report.code === "sales_summary" && rows.length > 1 ? (
-          <PeriodChart rows={rows} label="period" value="total" caption={t("chartNetSales")} />
+          <PeriodChart
+            rows={rows}
+            labelKey="period"
+            valueKey="total"
+            caption={t("chartNetSales")}
+          />
         ) : null}
         {body?.totals && body.rows.length ? (
           <Totals report={report} columns={columns} totals={body.totals} words={words} />

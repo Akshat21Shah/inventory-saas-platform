@@ -1,9 +1,15 @@
 from django.urls import path
 
 from apps.platform.api import tenant_views as v
+from apps.platform.api import text_views as tv
 
 urlpatterns = [
     path("settings/business/", v.BusinessSettingsView.as_view(), name="settings-business"),
+    path(
+        "settings/business/sms-preview/",
+        v.SmsPreviewView.as_view(),
+        name="settings-business-sms-preview",
+    ),
     path("settings/bank-details/", v.BankDetailsView.as_view(), name="settings-bank-details"),
     path("settings/registry/", v.TenantSettingsRegistryView.as_view(), name="settings-registry"),
     path("settings/values/", v.TenantSettingsValuesView.as_view(), name="settings-values"),
@@ -28,6 +34,8 @@ urlpatterns = [
         name="settings-feature-toggle",
     ),
     path("audit-logs/", v.TenantAuditLogView.as_view(), name="audit-logs"),
+    path("public/languages/", v.PublicLanguagesView.as_view(), name="public-languages"),
+    path("texts/suggestions/", tv.SuggestionCreateView.as_view(), name="text-suggestions"),
     path(
         "public/tenants/<slug:slug>/branding/",
         v.PublicBrandingView.as_view(),

@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { BellOff, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
@@ -15,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { InboxItem } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { INBOX, type InboxScope, refreshNotifications } from "./scope";

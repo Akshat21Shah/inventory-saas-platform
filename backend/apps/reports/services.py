@@ -18,6 +18,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.platform.selectors import get_platform_setting
@@ -106,9 +107,9 @@ def _who(user: User) -> str:
 def request_export(report: Report, ctx: Context, fmt: str, *, by: User) -> Built | ReportRun:
     """The file at once, or a queued run for the background (see the module docstring)."""
     if fmt not in F.values:
-        raise InvalidFields({"format": ["Choose Excel or PDF."]})
+        raise InvalidFields({"format": [_("Choose Excel or PDF.")]})
     if fmt == F.PDF and not report.pdf:
-        raise InvalidFields({"format": ["This report is exported to Excel only."]})
+        raise InvalidFields({"format": [_("This report is exported to Excel only.")]})
     background = report.background_only or report.sheets is not None
     if not background:
         limit = int(get_platform_setting("platform.report_async_rows"))
@@ -117,7 +118,7 @@ def request_export(report: Report, ctx: Context, fmt: str, *, by: User) -> Built
         return build(report, ctx, fmt, _who(by))
     run: ReportRun = ReportRun.objects.create(
         report_code=report.code,
-        title=report.title,
+        title=str(report.title),
         params=_stored(ctx.params),
         format=fmt,
         requested_by=by,

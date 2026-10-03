@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +11,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DateText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
+import { ProviderMessage } from "@/components/shared/provider-message";
 import { CardSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import type {
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { formatDateTime } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 import { useErrorText } from "@/lib/api/use-error-text";
 
@@ -156,6 +157,7 @@ function DeliveryDialog({ id, onClose }: { id: string; onClose: () => void }) {
 export function DeliveriesPage() {
   const t = useTranslations("notifyAdmin");
   const n = useTranslations("notifications");
+  const tp = useTranslations("providerMessages");
   const cursor = useCursor();
   const [status, setStatus] = useState<string>(ALL);
   const [channel, setChannel] = useState<string>(ALL);
@@ -213,9 +215,12 @@ export function DeliveriesPage() {
             </span>
           ) : null}
           {row.original.status === "FAILED" && row.original.last_error ? (
-            <span className="text-destructive block text-xs break-words">
-              {row.original.last_error}
-            </span>
+            <ProviderMessage
+              line={tp("sending")}
+              message={row.original.last_error}
+              compact
+              className="text-destructive text-xs"
+            />
           ) : null}
         </span>
       ),

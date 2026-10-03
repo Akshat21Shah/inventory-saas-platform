@@ -8,6 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import QuerySet
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -23,6 +24,7 @@ from apps.platform.selectors import is_feature_enabled
 from common.errors import InvalidFields, NotFound
 from common.exceptions import error_body
 from common.idempotency import idempotent
+from common.numbers import fill
 from common.permissions import HasPermission
 
 VIEW, MANAGE, FULFIL = "orders.view", "orders.manage", "orders.fulfil"
@@ -46,7 +48,7 @@ def _uuid(value: str | None, field: str) -> UUID | None:
     try:
         return UUID(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Not a valid id."]}) from exc
+        raise InvalidFields({field: [_("Not a valid id.")]}) from exc
 
 
 def _date(value: str | None, field: str) -> date | None:
@@ -55,7 +57,7 @@ def _date(value: str | None, field: str) -> date | None:
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise InvalidFields({field: ["Use YYYY-MM-DD."]}) from exc
+        raise InvalidFields({field: [_("Use YYYY-MM-DD.")]}) from exc
 
 
 class Guarded(APIView):
@@ -118,10 +120,12 @@ class OrderListCreateView(Guarded, generics.ListAPIView[Order]):
         q = self.request.query_params
         tab = q.get("tab", "")
         if tab and tab not in selectors.TABS:
-            raise InvalidFields({"tab": [f"Use one of: {', '.join(selectors.TABS)}."]})
+            raise InvalidFields(
+                {"tab": [fill(_("Use one of: %(tabs)s."), {"tabs": ", ".join(selectors.TABS)})]}
+            )
         status = q.get("status", "")
         if status and status not in OrderStatus.values:
-            raise InvalidFields({"status": ["Not a valid status."]})
+            raise InvalidFields({"status": [_("Not a valid status.")]})
         return selectors.order_list(
             _user(self.request),
             selectors.OrderFilters(
@@ -286,7 +290,7 @@ class HoldRejectView(Guarded):
         data.is_valid(raise_exception=True)
         _visible_order(request, order_id)
         if not Order.objects.filter(pk=order_id, status=OrderStatus.ON_HOLD).exists():
-            raise transitions.InvalidTransition("This order isn't waiting for credit approval.")
+            raise transitions.InvalidTransition(_("This order isn't waiting for credit approval."))
         transitions.reject_order(order_id, reason=data.validated_data["reason"], by=_user(request))
         return _detail(request, order_id)
 
@@ -327,7 +331,7 @@ class FulfilmentListView(Guarded, generics.ListAPIView[Fulfilment]):
             return fake
         status = self.request.query_params.get("status", "")
         if status and status not in Fulfilment.Status.values:
-            raise InvalidFields({"status": ["Not a valid status."]})
+            raise InvalidFields({"status": [_("Not a valid status.")]})
         return selectors.fulfilment_list(_user(self.request), status)
 
     @extend_schema(
@@ -505,7 +509,7 @@ class AllocateView(Guarded):
         v = data.validated_data
         user = _user(request)
         if v["auto"] == bool(v["allocations"]):
-            raise InvalidFields({"allocations": ["Choose lines, or allocate automatically."]})
+            raise InvalidFields({"allocations": [_("Choose lines, or allocate automatically.")]})
         if v["auto"]:
             made = backorders.run_allocation(
                 [v["product"]], trigger=BackorderAllocation.Trigger.MANUAL
@@ -539,7 +543,7 @@ class AllocationListView(Guarded, generics.ListAPIView[BackorderAllocation]):
         q = self.request.query_params
         status = q.get("status", "")
         if status and status not in BackorderAllocation.Status.values:
-            raise InvalidFields({"status": ["Not a valid status."]})
+            raise InvalidFields({"status": [_("Not a valid status.")]})
         return selectors.allocation_list(
             _user(self.request), status, _uuid(q.get("product"), "product")
         )

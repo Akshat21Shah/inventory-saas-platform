@@ -7,11 +7,15 @@
  */
 import type { NotificationAudienceEnum } from './notificationAudienceEnum';
 import type { PlatformTextInputRequestWhatsappCategory } from './platformTextInputRequestWhatsappCategory';
-import type { PreferredLanguageEnum } from './preferredLanguageEnum';
 
 export interface PlatformTextInputRequest {
   audience?: NotificationAudienceEnum;
-  locale?: PreferredLanguageEnum;
+  /**
+     * A language code.
+     * @minLength 1
+     * @maxLength 5
+     */
+  locale?: string;
   /** @maxLength 200 */
   subject?: string;
   /**

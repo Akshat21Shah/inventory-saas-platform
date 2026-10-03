@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
 
 import { FilterSelect } from "@/components/catalog/controls";
@@ -11,6 +10,7 @@ import { FilterBar } from "@/components/shared/filter-bar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { Filter, Report } from "@/lib/api/generated/model";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import type { ReportWords } from "./words";
 

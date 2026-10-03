@@ -35,6 +35,8 @@ export interface RetailerDetail {
   /** @items.maxLength 40 */
   readonly tags: readonly string[];
   readonly preferred_language: string;
+  /** The language the shop sees: its own, else your usual one for shops (ADR-060). */
+  readonly language: string;
   /** @nullable */
   readonly welcome_sent_at: string | null;
   readonly addresses: readonly Address[];

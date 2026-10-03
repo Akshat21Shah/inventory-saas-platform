@@ -26,6 +26,8 @@ from typing import Any
 from django.db.models import BooleanField, Case, F, Sum, Value, When
 from django.db.models.fields.json import KT, KeyTextTransform
 from django.db.models.lookups import GreaterThan
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.billing.models import CreditNote, CreditNoteLine, DocumentStatus, Invoice, InvoiceLine
 from apps.catalog.models import Unit
@@ -43,6 +45,7 @@ from apps.reports.registry import (
     register,
 )
 from common.dates import today_ist
+from common.numbers import fill
 
 FINANCIAL = "reports.financial"
 ZERO = Decimal("0")
@@ -833,14 +836,19 @@ def summary_notes(ctx: Context) -> list[str]:
     nil = {k: v for k, v in data["nil"].items() if v}
     if nil:
         parts = ", ".join(f"{k} ₹{_money(v):,}" for k, v in sorted(nil.items()))
-        notes.append(f"Nil-rated (0%) supplies, not in these sections (Table 8): {parts}.")
+        notes.append(
+            fill(
+                _("Nil-rated (0%%) supplies, not in these sections (Table 8): %(parts)s."),
+                {"parts": parts},
+            )
+        )
     return notes
 
 
 register(
     Report(
         code="gst_summary",
-        title="GST summary (GSTR-1)",
+        title=gettext_lazy("GST summary (GSTR-1)"),
         group=Group.GST,
         description="Sales in the layout of the GSTR-1 Excel template, for your CA.",
         permission=FINANCIAL,

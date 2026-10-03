@@ -1,13 +1,13 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import type { DocumentLink } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 /** Opens a printed document (invoice, credit note, receipt, voucher, confirmation). The server
  * answers with a short-lived link, or "being prepared" (202) while the PDF is printed. A window

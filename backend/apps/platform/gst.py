@@ -1,7 +1,10 @@
 """GSTIN checks that need the State table, shared by tenants and retailers (ADR-033)."""
 
+from django.utils.translation import gettext as _
+
 from apps.platform.models import State
 from apps.platform.validators import gstin_format_error
+from common.numbers import fill
 
 
 def gstin_problem(gstin: str) -> str | None:
@@ -12,7 +15,15 @@ def gstin_problem(gstin: str) -> str | None:
         return problem
     state = State.objects.filter(code=gstin[:2]).first()
     if state is None:
-        return f"The first 2 digits ({gstin[:2]}) are not a GST state code."
+        return fill(
+            _("The first 2 digits (%(gstin)s) are not a GST state code."), {"gstin": gstin[:2]}
+        )
     if not state.is_active:
-        return f"State code {state.code} ({state.name}) is no longer used for new registrations."
+        return fill(
+            _("State code %(code)s (%(name)s) is no longer used for new registrations."),
+            {
+                "code": state.code,
+                "name": state.name,
+            },
+        )
     return None

@@ -2,15 +2,20 @@
 people it may go to, the pages it links (one for the shop, one for staff) and the document it
 carries. Built from the outbox event's payload and the current rows (the tenant is set)."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from apps.billing.templatetags.documents import day, qty, rupees
+from django.utils import translation
+from django.utils.translation import gettext as _
+
+from apps.billing.templatetags.documents import day, indian_number, qty, rupees
 from apps.platform.models import Tenant
 from apps.retailers.models import Retailer
 from common.models import OutboxEvent
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 LIST_LIMIT = 5  # "A 2→3, B 1→0 and 3 more"
@@ -27,6 +32,21 @@ class EventContext:
     staff_path: str = ""  # the page staff open
     document: tuple[str, UUID] | None = None  # (DocumentLink.Kind, object id)
     extra: dict[str, Any] = field(default_factory=dict)
+    # Makes the values again in another language (ADR-060): the words inside a message
+    # ("by vehicle …", "₹500 to pay", "Cash") follow its recipient.
+    rebuild: Callable[[], "EventContext | None"] | None = None
+    locale: str = "en"
+    _by_locale: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+    def values_in(self, locale: str) -> dict[str, Any]:
+        """The template values in ``locale`` (this context's own when it can't be remade)."""
+        if locale == self.locale or self.rebuild is None:
+            return self.values
+        if locale not in self._by_locale:
+            with translation.override(locale):
+                again = self.rebuild()
+            self._by_locale[locale] = again.values if again is not None else self.values
+        return self._by_locale[locale]
 
 
 def distributor_name(tenant: Tenant) -> str:
@@ -37,6 +57,13 @@ def distributor_name(tenant: Tenant) -> str:
     return str(brand.get("display_name") or tenant.name)
 
 
+def sms_distributor_name(tenant: Tenant) -> str:
+    """The name SMS carry: the distributor's short name for SMS, else the usual one (owner)."""
+    from apps.platform.selectors import sms_name
+
+    return sms_name(tenant.pk) or distributor_name(tenant)
+
+
 def current_tenant() -> Tenant:
     return Tenant.objects.get(pk=require_tenant_id())
 
@@ -44,7 +71,11 @@ def current_tenant() -> Tenant:
 def listing(items: list[str]) -> str:
     shown = ", ".join(items[:LIST_LIMIT])
     more = len(items) - LIST_LIMIT
-    return f"{shown} and {more} more" if more > 0 else shown
+    return (
+        fill(_("%(shown)s and %(more)s more"), {"shown": shown, "more": more})
+        if more > 0
+        else shown
+    )
 
 
 def balance_text(retailer_id: UUID) -> str:
@@ -57,10 +88,10 @@ def balance_text(retailer_id: UUID) -> str:
         .first()
     ) or Decimal("0")
     if balance > 0:
-        return f"{rupees(balance)} to pay"
+        return fill(_("%(amount)s to pay"), {"amount": rupees(balance)})
     if balance < 0:
-        return f"{rupees(-balance)} in credit"
-    return "nothing to pay"
+        return fill(_("%(amount)s in credit"), {"amount": rupees(-balance)})
+    return _("nothing to pay")
 
 
 def _with_shop(ctx: EventContext, retailer: Retailer) -> EventContext:
@@ -105,7 +136,13 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         )
     if "lines" in p:
         values["items"] = listing(
-            [f"{name(line['product'])} {qty(line['short'])} short" for line in p["lines"]]
+            [
+                fill(
+                    _("%(product)s %(quantity)s short"),
+                    {"product": name(line["product"]), "quantity": qty(line["short"])},
+                )
+                for line in p["lines"]
+            ]
         )
     if "shipment" in p:
         values["shipment"] = p["shipment"]
@@ -113,14 +150,16 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         if shipment is not None:
             # A phrase for "left the warehouse{{ vehicle }}": " by vehicle MH12AB1234" or nothing.
             number = shipment.vehicle_number
-            values["vehicle"] = f" by vehicle {number}" if number else ""
+            values["vehicle"] = (
+                (fill(_(" by vehicle %(number)s"), {"number": number})) if number else ""
+            )
             values["transporter"] = shipment.transporter_name
             values["lr_number"] = shipment.lr_number
             # ADR-057: the shop's delivery code, only while the shipment is on its way; only the
             # shop's texts use it.
             on_its_way = shipment.status == Fulfilment.Status.DISPATCHED
             values["delivery_code"] = (
-                f" Delivery code: {shipment.delivery_code}."
+                fill(_(" Delivery code: %(code)s."), {"code": shipment.delivery_code})
                 if shipment.delivery_code and on_its_way
                 else ""
             )
@@ -129,7 +168,7 @@ def _order(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext 
         values["product"] = product.name if product else name(p.get("product", ""))
         values["quantity"] = qty(p["quantity"]) if p.get("quantity") else ""
     if p.get("price_increased"):
-        values["price_increased"] = " The price has gone up since the order was placed."
+        values["price_increased"] = _(" The price has gone up since the order was placed.")
     ctx = EventContext(
         code,
         values,
@@ -168,9 +207,9 @@ def _invoice(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         p = event.payload
         reissued = p.get("reissued_invoice_id")
         values["note"] = (
-            f"Bill {p['reissued_number']} replaces it."
+            fill(_("Bill %(number)s replaces it."), {"number": p["reissued_number"]})
             if reissued
-            else "The goods were taken back."
+            else _("The goods were taken back.")
         )
         if reissued:  # the message opens the new bill
             return _with_shop(
@@ -283,7 +322,10 @@ def _payment(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContex
         "balance": balance_text(payment.retailer_id),
         # ADR-057 item 4: the charge added when the cheque bounced, if any.
         "bounce_charge": (
-            f" A cheque bounce charge of {rupees(payment.bounce_charge.amount)} was added."
+            fill(
+                _(" A cheque bounce charge of %(amount)s was added."),
+                {"amount": rupees(payment.bounce_charge.amount)},
+            )
             if payment.bounce_charge is not None
             else ""
         ),
@@ -332,7 +374,7 @@ def _stock_alert(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventCo
     product = Product.objects.filter(pk=p["product_id"]).first()
     if product is None:
         return None
-    alert = StockAlert.Type(p["alert_type"]).label.lower()
+    alert = str(StockAlert.Type(p["alert_type"]).label).lower()
     values = {
         **base,
         "product": product.name,
@@ -370,7 +412,7 @@ def _ewaybill(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventConte
         **base,
         "shop": retailer.shop_name,
         "shipment": p["shipment_number"],
-        "vehicle": p["vehicle_number"] or "not given",
+        "vehicle": p["vehicle_number"] or _("not given"),
         "invoice_number": p["invoice_number"],
         "error": p["error"],
     }
@@ -400,7 +442,7 @@ def _purchase_order(event: OutboxEvent, code: str, base: dict[str, Any]) -> Even
         **base,
         "supplier": order.supplier.name,
         "po_number": order.number,
-        "revision": f" (revised {revision})" if revision > 1 else "",
+        "revision": f" (revised {revision})" if revision > 1 else "",  # suppliers: English
         "expected_date": day(order.expected_date) if order.expected_date else "—",
         "reason": event.payload.get("reason") or order.closed_reason,
     }
@@ -420,10 +462,13 @@ def _report(event: OutboxEvent, code: str, base: dict[str, Any]) -> EventContext
     run = ReportRun.objects.filter(pk=event.payload["run_id"]).first()
     if run is None:
         return None
+    from apps.reports.registry import REGISTRY
+
+    report = REGISTRY.get(run.report_code)
     values = {
         **base,
-        "report": run.title,
-        "rows": f"{run.row_count or 0:,}",
+        "report": str(report.title) if report is not None else run.title,
+        "rows": indian_number(run.row_count or 0),
         "days": get_platform_setting("platform.report_link_days"),
         "error": run.error,
     }
@@ -452,8 +497,18 @@ BUILDERS = {
 
 
 def build(event: OutboxEvent, code: str, tenant: Tenant) -> EventContext | None:
-    """None when the event's object is gone (nothing to say)."""
+    """None when the event's object is gone (nothing to say). Built in English; each
+    recipient's language is made from it when needed (``EventContext.values_in``)."""
     builder = BUILDERS.get(event.event_type.split(".", 1)[0])
     if builder is None:
         return None
-    return builder(event, code, {"distributor": distributor_name(tenant)})
+    base = {"distributor": distributor_name(tenant)}
+
+    def make() -> EventContext | None:
+        return builder(event, code, dict(base))
+
+    with translation.override("en"):
+        ctx = make()
+    if ctx is not None:
+        ctx.rebuild = make
+    return ctx

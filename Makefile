@@ -9,7 +9,7 @@ OWNER_DB_URL := postgres://app_owner:app_owner@localhost:5432/inventory
 
 .DEFAULT_GOAL := help
 .PHONY: help setup secrets-scan up down logs ps migrate makemigrations seed seed-volume perf perf-exports shell test test-backend test-frontend e2e-stack e2e-responsive lan localhost webhook-tunnel \
-        e2e lint lint-backend lint-frontend fmt api-client db-up check-schema
+        e2e lint lint-backend lint-frontend fmt api-client db-up check-schema messages
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -78,8 +78,8 @@ test-frontend: ## vitest
 e2e: ## Playwright (starts the web dev server if not running)
 	cd web && npx playwright test
 
-e2e-stack: ## Acceptance E2E (Phases 1-9) against the running stack (after make up + make seed)
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts e2e/growth-acceptance.spec.ts e2e/selfservice-acceptance.spec.ts e2e/ai-acceptance.spec.ts
+e2e-stack: ## Acceptance E2E (Phases 1-9, 11a) against the running stack (after make up + make seed)
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts e2e/growth-acceptance.spec.ts e2e/selfservice-acceptance.spec.ts e2e/ai-acceptance.spec.ts e2e/languages-acceptance.spec.ts
 
 lan: ## Open the dev stack to phones on your Wi-Fi via <lan-ip>.nip.io (undo: make localhost)
 	infra/dev-domain.sh lan
@@ -92,8 +92,8 @@ webhook-tunnel: ## Dev only: a public https address for payment webhooks ONLY (R
 	echo "Webhook URL = the https://….trycloudflare.com address below + the path under Settings → Online payments → Webhook address"; \
 	cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8765
 
-e2e-responsive: ## Every screen at 360/768/1440 px (after make up + make seed); screenshots in web/test-results/responsive
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts
+e2e-responsive: ## Every screen at 360/768/1440 px (LANGUAGE=hi or mr for those; after make up + make seed); screenshots in web/test-results/responsive
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 E2E_LANGUAGE=$(or $(LANGUAGE),en) npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts
 
 lint: lint-backend lint-frontend ## ruff, mypy, eslint, tsc, prettier
 
@@ -110,6 +110,15 @@ fmt: ## Auto-format backend and frontend
 api-client: ## Export the OpenAPI schema and regenerate web/lib/api/generated
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py spectacular --file openapi.yaml --validate --fail-on-warn
 	cd web && npm run api:generate
+
+messages: ## Update and compile the server message catalogs (backend/locale; then translate what it lists)
+	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py messages
+
+texts-export: ## Every screen, server and notification text in one sheet for translators (texts.xlsx)
+	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py texts_export --out ../texts.xlsx
+
+texts-import: ## Check a translator's sheet: make texts-import SHEET=reviewed.xlsx [APPLY=1] (writes the files)
+	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py texts_import $(abspath $(SHEET)) $(if $(APPLY),--apply,)
 
 check-schema: ## Fail if the committed OpenAPI schema is out of date
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py spectacular --file /tmp/openapi.check.yaml --validate --fail-on-warn

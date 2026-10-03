@@ -10,6 +10,8 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -27,6 +29,7 @@ from apps.dataio.models import ImportJob
 from apps.dataio.parsing import FileProblem, read_sheet, synonyms_for
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
+from common.numbers import fill
 from common.storage import get_storage
 from common.tenancy import require_tenant_id, tenant_transaction
 
@@ -58,7 +61,7 @@ XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 class ImportNotReady(DomainError):
     status_code = 409
     code = ErrorCode.INVALID_STATE_TRANSITION
-    default_message = "This import can't be confirmed in its current state."
+    default_message = gettext_lazy("This import can't be confirmed in its current state.")
 
 
 def kind_for(code: str) -> Kind:
@@ -80,7 +83,7 @@ def create_job(kind_code: str, mode: str, upload: "UploadedFile[bytes]", *, by: 
     modes = modes_for(kind_for(kind_code))
     if mode not in modes:
         labels = " or ".join(f"“{ImportJob.Mode(m).label}”" for m in modes)
-        raise InvalidFields({"mode": [f"Choose {labels}."]})
+        raise InvalidFields({"mode": [fill(_("Choose %(labels)s."), {"labels": labels})]})
     data = upload.read(10 * 1024 * 1024 + 1)
     name = (upload.name or "import").split("/")[-1][:200]
     job = ImportJob(kind=kind_code, mode=mode, file_name=name, created_by=by)
@@ -100,7 +103,9 @@ def create_job(kind_code: str, mode: str, upload: "UploadedFile[bytes]", *, by: 
 def _plan(job: ImportJob) -> tuple[Kind, list[RowPlan], list[str]]:
     kind = kind_for(job.kind)
     sheet = read_sheet(job.file_name, get_storage().get(job.file_key), _synonyms(kind))
-    notes = [f"Column “{name}” isn't used and was skipped." for name in sheet.ignored]
+    notes = [
+        fill(_("Column “%(name)s” isn't used and was skipped."), {"name": n}) for n in sheet.ignored
+    ]
     required = [c for c in kind.columns if c.required]
     missing = [
         c.label
@@ -109,9 +114,13 @@ def _plan(job: ImportJob) -> tuple[Kind, list[RowPlan], list[str]]:
     ]
     if missing:
         raise FileProblem(
-            "The file is missing these columns: "
-            + ", ".join(missing)
-            + ". Download the template to see the expected columns."
+            fill(
+                _(
+                    "The file is missing these columns: %(columns)s. Download the template to see "
+                    "the expected columns."
+                ),
+                {"columns": ", ".join(missing)},
+            )
         )
     by = job.committed_by or job.created_by
     assert by is not None
@@ -192,7 +201,7 @@ def request_commit(job_id: UUID, *, by: User) -> ImportJob:
     if job.status != ImportJob.Status.VALIDATED:
         raise ImportNotReady()
     if not job.counts.get("changes"):
-        raise ImportNotReady("There's nothing to import: every row has an error or no change.")
+        raise ImportNotReady(_("There's nothing to import: every row has an error or no change."))
     job.status, job.committed_by = ImportJob.Status.COMMITTING, by
     job.save(update_fields=["status", "committed_by", "updated_at"])
     audit.record(
@@ -266,7 +275,24 @@ def commit_job(job_id: str) -> None:
         )
 
 
-def mark_failed(job_id: str, message: str) -> None:
+def job_person(job_id: str) -> User | None:
+    """Who the job is for: whoever confirmed it, else whoever uploaded it (their language)."""
+    with tenant_transaction(require_tenant_id()):
+        job = (
+            ImportJob.objects.select_related("created_by", "committed_by").filter(pk=job_id).first()
+        )
+    return (job.committed_by or job.created_by) if job is not None else None
+
+
+def mark_failed(job_id: str, *, while_committing: bool) -> None:
+    message = (
+        _(
+            "The import stopped part-way. Check the imported rows, then upload the file again: "
+            "rows already imported will show as unchanged."
+        )
+        if while_committing
+        else _("We couldn't check this file. Please upload it again.")
+    )
     with tenant_transaction(require_tenant_id()):
         ImportJob.objects.filter(pk=job_id).exclude(status=ImportJob.Status.COMMITTED).update(
             status=ImportJob.Status.FAILED, problem=message
@@ -278,7 +304,12 @@ def mark_failed(job_id: str, message: str) -> None:
 HEADER = Font(bold=True)
 ERROR_FILL = PatternFill("solid", fgColor="FDE2E1")
 CHANGE_FILL = PatternFill("solid", fgColor="FFF4CE")
-STATUS = {"NEW": "New", "UPDATE": "Update", "UNCHANGED": "No change", "ERROR": "Error"}
+STATUS = {
+    "NEW": gettext_lazy("New"),
+    "UPDATE": gettext_lazy("Update"),
+    "UNCHANGED": gettext_lazy("No change"),
+    "ERROR": gettext_lazy("Error"),
+}
 
 
 def _book(rows: Iterable[list[Any]], widths: list[int] | None = None) -> tuple[Workbook, Any]:
@@ -309,16 +340,18 @@ def _bytes(book: Workbook) -> bytes:
 
 def build_report(kind: Kind, plans: list[RowPlan]) -> bytes:
     """Every row with its status and, for errors, exactly what to fix."""
-    rows: list[list[Any]] = [["Row", kind.key_label, "Status", "What to fix", "Changes", "Notes"]]
+    rows: list[list[Any]] = [
+        [_("Row"), kind.key_label, _("Status"), _("What to fix"), _("Changes"), _("Notes")]
+    ]
     for plan in plans:
         rows.append(
             [
                 plan.number,
                 plan.key,
-                STATUS[plan.action],
+                str(STATUS[plan.action]),
                 "\n".join(f"{label}: {message}" for label, message in plan.problems),
                 "\n".join(
-                    f"{k}: {old or '(blank)'} → {new}" for k, (old, new) in plan.changes.items()
+                    f"{k}: {old or _('(blank)')} → {new}" for k, (old, new) in plan.changes.items()
                 ),
                 "\n".join(plan.warnings),
             ]
@@ -348,13 +381,13 @@ def build_template(kind: Kind, by: User) -> bytes:
         [header, [c.example for c in columns]], [max(14, len(h) + 4) for h in header]
     )
     sheet.title = kind.label
-    guide = book.create_sheet("How to fill")
-    guide.append(["Column", "Needed for new rows", "What to enter", "Example"])
+    guide = book.create_sheet(_("How to fill"))
+    guide.append([_("Column"), _("Needed for new rows"), _("What to enter"), _("Example")])
     for c in columns:
-        guide.append([c.label, "Yes" if c.required else "", c.help, c.example])
+        guide.append([c.label, _("Yes") if c.required else "", str(c.help), c.example])
     guide.append([])
     guide.append(
-        ["* = needed when adding a new row. When updating, a blank cell means “no change”."]
+        [_("* = needed when adding a new row. When updating, a blank cell means “no change”.")]
     )
     for title, values in kind.reference_lists().items():
         guide.append([])

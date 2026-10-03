@@ -14,6 +14,10 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from django.utils.translation import gettext as _
+
+from common.numbers import fill
+
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_ROWS = 20_000
 HEADER_SEARCH_ROWS = 15
@@ -144,7 +148,7 @@ def _xlsx_grid(data: bytes) -> list[list[Any]]:
         book = load_workbook(io.BytesIO(data), data_only=True)
     except Exception as exc:
         raise FileProblem(
-            "This isn't a readable Excel file. Save it as .xlsx and try again."
+            _("This isn't a readable Excel file. Save it as .xlsx and try again.")
         ) from exc
     sheet = book.worksheets[0]
     return [list(row) for row in sheet.iter_rows(values_only=True)]
@@ -152,17 +156,17 @@ def _xlsx_grid(data: bytes) -> list[list[Any]]:
 
 def read_grid(file_name: str, data: bytes) -> list[list[Any]]:
     if not data:
-        raise FileProblem("The file is empty.")
+        raise FileProblem(_("The file is empty."))
     if len(data) > MAX_FILE_BYTES:
-        raise FileProblem("The file is larger than 10 MB. Split it into smaller files.")
+        raise FileProblem(_("The file is larger than 10 MB. Split it into smaller files."))
     name = file_name.lower()
     if name.endswith(".xlsx") or data[:2] == b"PK":
         return _xlsx_grid(data)
     if name.endswith((".csv", ".txt")):
         return _csv_grid(data)
     if name.endswith(".xls"):
-        raise FileProblem("Old .xls files aren't supported. Save the file as .xlsx or .csv.")
-    raise FileProblem("Upload an Excel (.xlsx) or CSV file.")
+        raise FileProblem(_("Old .xls files aren't supported. Save the file as .xlsx or .csv."))
+    raise FileProblem(_("Upload an Excel (.xlsx) or CSV file."))
 
 
 def read_sheet(file_name: str, data: bytes, synonyms: dict[str, str]) -> Sheet:
@@ -176,8 +180,10 @@ def read_sheet(file_name: str, data: bytes, synonyms: dict[str, str]) -> Sheet:
             best_index, best_hits = index, hits
     if best_index < 0:
         raise FileProblem(
-            "We couldn't find the column names. Use the template, or put the column names in the "
-            "first row."
+            _(
+                "We couldn't find the column names. Use the template, or put the column names in "
+                "the first row."
+            )
         )
     header = grid[best_index]
     positions: dict[int, str] = {}
@@ -201,10 +207,13 @@ def read_sheet(file_name: str, data: bytes, synonyms: dict[str, str]) -> Sheet:
         rows.append(Row(number=offset, values=values))
         if len(rows) > MAX_ROWS:
             raise FileProblem(
-                f"The file has more than {MAX_ROWS:,} rows. Split it into smaller files."
+                fill(
+                    _("The file has more than %(max_rows)s rows. Split it into smaller files."),
+                    {"max_rows": format(MAX_ROWS, ",")},
+                )
             )
     if not rows:
-        raise FileProblem("The file has column names but no rows to import.")
+        raise FileProblem(_("The file has column names but no rows to import."))
     return Sheet(columns=list(positions.values()), ignored=ignored, rows=rows)
 
 

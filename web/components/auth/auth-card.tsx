@@ -1,31 +1,36 @@
 "use client";
 
 import { Store } from "lucide-react";
-import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslations } from "@/lib/i18n/translations";
 
+import { SignInLanguage } from "./language-picker";
 import { useHostBranding } from "./tenant-branding";
 
-/** Branded sign-in frame: the distributor's logo and name on its subdomain, else the platform's. */
+/** Branded sign-in frame: the distributor's logo and name on its subdomain, else the platform's,
+ * with the language choice (``shopDefault``: a shop's page, which opens in the distributor's
+ * language for shops). */
 export function AuthCard({
   title,
   description,
   children,
   footer,
+  shopDefault = false,
 }: {
   title: string;
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
+  shopDefault?: boolean;
 }) {
   const t = useTranslations();
   const { branding } = useHostBranding();
   const name = branding?.display_name || t("app.name");
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {branding?.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- presigned redirect, not a static asset
           <img src={branding.logo_url} alt="" className="size-10 rounded-lg object-contain" />
@@ -34,7 +39,8 @@ export function AuthCard({
             <Store aria-hidden className="size-5" />
           </span>
         )}
-        <span className="text-lg font-semibold">{name}</span>
+        <span className="min-w-0 flex-1 text-lg font-semibold">{name}</span>
+        <SignInLanguage shopDefault={shopDefault} />
       </div>
       <Card>
         <CardHeader>

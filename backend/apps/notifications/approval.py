@@ -17,6 +17,7 @@ from uuid import UUID
 
 from django.conf import settings
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.audit import services as audit
 from apps.notifications.models import ApprovalStatus, Audience, Channel, PlatformTemplate
@@ -69,12 +70,16 @@ def set_approval(template_id: UUID, status: str, note: str = "") -> PlatformTemp
     if row is None:
         raise NotFound()
     if row.channel != Channel.WHATSAPP:
-        raise InvalidFields({"status": ["Only WhatsApp templates are approved by the provider."]})
+        raise InvalidFields(
+            {"status": [_("Only WhatsApp templates are approved by the provider.")]}
+        )
     if status not in ApprovalStatus.values:
-        raise InvalidFields({"status": ["Choose not submitted, submitted, approved or rejected."]})
+        raise InvalidFields(
+            {"status": [_("Choose not submitted, submitted, approved or rejected.")]}
+        )
     note = note.strip()
     if status == ApprovalStatus.REJECTED and not note:
-        raise InvalidFields({"note": ["Say why the provider rejected it."]})
+        raise InvalidFields({"note": [_("Say why the provider rejected it.")]})
     before = row.approval_status
     row.approval_status, row.approval_note = status, note[:300]
     row.approval_changed_at = timezone.now()

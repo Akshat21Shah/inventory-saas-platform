@@ -1,7 +1,8 @@
 """The assistant's evaluation set (ADR-059 item 7): realistic questions, the tool and arguments
 each should use, and the facts its answer must mention, worked out by running the same report
 directly. Run in CI with the scripted mock (``test_assistant_eval``) and against a real model with
-``manage.py ai_eval``.
+``manage.py ai_eval``. Questions in Hindi and Marathi must be answered in their language, figures
+and names as the reports give them (ADR-060 item 9).
 """
 
 from __future__ import annotations
@@ -23,6 +24,10 @@ class Case:
     question: str
     tool: str | None  # None: no tool fits, the answer says what it can do
     args: dict[str, Any] = field(default_factory=dict)  # must be among the call's arguments
+    language: str = "en"  # the question's, and so the answer's
+
+
+DEVANAGARI = re.compile(r"[\u0900-\u097F]")
 
 
 def _top(rows: list[dict[str, Any]], key: str = "total") -> list[str]:
@@ -91,6 +96,20 @@ CASES: tuple[Case, ...] = (
     Case("How much did we collect this week?", "collections", {"period": "this_week"}),
     Case("What are shops waiting for on backorder?", "backorders"),
     Case("What will the weather be tomorrow?", None),
+    # Hindi and Marathi (ADR-060 item 9).
+    Case("इस महीने की बिक्री कितनी हुई?", "sales_summary", {"period": "this_month"}, "hi"),
+    Case(
+        "इस महीने के टॉप 5 प्रोडक्ट कौन से हैं?",
+        "top_products",
+        {"period": "this_month", "limit": 5},
+        "hi",
+    ),
+    Case("किन दुकानों ने 30 दिन से ऑर्डर नहीं किया?", "shops_not_ordering", {"days": 30}, "hi"),
+    Case("सबसे ज़्यादा बकाया किसका है?", "dues", {}, "hi"),
+    Case("आज किती विक्री झाली?", "sales_summary", {"period": "today"}, "mr"),
+    Case("कोणत्या मालाचा स्टॉक कमी आहे?", "low_stock", {}, "mr"),
+    Case("{product} चा स्टॉक किती आहे?", "product_stock", {}, "mr"),
+    Case("या आठवड्यात किती वसुली झाली?", "collections", {"period": "this_week"}, "mr"),
 )
 
 
@@ -127,6 +146,8 @@ def check(case: Case, asked: AssistantQuestion, user: User) -> list[str]:
     problems: list[str] = []
     if asked.status != AssistantQuestion.Status.ANSWERED:
         return [f"not answered: {asked.status} {asked.error}"]
+    if case.language != "en" and not DEVANAGARI.search(asked.answer):
+        problems.append(f"not answered in the question's language ({case.language})")
     calls = [c for c in asked.tools if c.get("ok")]
     if case.tool is None:
         if calls:

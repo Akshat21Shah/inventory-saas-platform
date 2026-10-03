@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
+
 from apps.insights.models import Segment, ShopActivity
 from apps.reports.definitions.sales import SALES
 from apps.reports.registry import Column, Context, Filter, FilterKind, Group, Kind, Report, register
@@ -49,7 +52,7 @@ def shop_activity(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="shop_activity",
-        title="Shop activity",
+        title=gettext_lazy("Shop activity"),
         group=Group.SALES,
         description="Who is ordering less or has stopped: each shop's last order, usual gap and "
         "the last 90 days against the 90 before.",
@@ -72,7 +75,10 @@ register(
         filters=(SEGMENT, SALESPERSON),
         rows=shop_activity,
         notes=lambda ctx: [
-            "As worked out last night (or when someone asked). Values are order totals incl. GST."
+            _(
+                "As worked out last night (or when someone asked). Values are order totals "
+                "incl. GST."
+            )
         ],
     )
 )

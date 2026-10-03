@@ -1,7 +1,6 @@
 "use client";
 
 import { Percent } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -27,6 +26,7 @@ import {
 } from "@/lib/api/generated/endpoints/pricing/pricing";
 import type { AdjustPreview, Warning } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 type Scope = "category" | "brand";
 

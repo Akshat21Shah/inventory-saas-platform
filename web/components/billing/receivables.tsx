@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, HandCoins, IndianRupee, Store, Wallet } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -32,6 +31,7 @@ import {
   type ReceivablesAgeingBasis,
 } from "@/lib/api/generated/model";
 import { formatDate, formatMoney } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";
@@ -445,7 +445,7 @@ export function RetailerLedgerPage({ retailerId }: { retailerId: string }) {
     <>
       <Link
         href={`/manage/retailers/${retailerId}`}
-        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11"
+        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11 max-md:min-w-11"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {statement.retailer.shop_name}

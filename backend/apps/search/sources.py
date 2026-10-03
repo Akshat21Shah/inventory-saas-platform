@@ -18,6 +18,7 @@ from uuid import UUID
 
 from django.contrib.postgres.search import TrigramWordSimilarity
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
+from django.db.models.functions import Greatest
 
 from apps.accounts.models import Membership, User
 from apps.billing.selectors import credit_notes_for, invoices_for
@@ -29,6 +30,7 @@ from apps.payments.selectors import payments_for, refunds_for
 from apps.retailers.selectors import retailers_for
 from common.dates import to_ist
 from common.permissions import AnyOf, Requirement
+from common.search_keys import SearchKey, key
 
 # What a typed text may be, to jump straight to its record.
 ORDER_NUMBER = re.compile(r"ORD-(\d{4})-(\d{1,8})(?:/\d+)?", re.IGNORECASE)  # an order or shipment
@@ -123,11 +125,14 @@ def _shop_hit(r: Any) -> Hit:
 
 def _shops(user: User, text: str, limit: int) -> list[Hit]:
     digits = re.sub(r"\D", "", text)
+    in_letters = key(text)  # "ganesh" and "गणेश" alike (ADR-060 item 8)
     condition = (
         Q(shop_name__icontains=text)
         | Q(owner_name__icontains=text)
         | Q(code__iexact=text)
         | Q(shop_name__trigram_word_similar=text)
+        | Q(shop_name_key__trigram_word_similar=in_letters)
+        | Q(owner_name_key__trigram_word_similar=in_letters)
     )
     if len(digits) >= 4:
         condition |= Q(mobile__contains=digits)
@@ -137,7 +142,12 @@ def _shops(user: User, text: str, limit: int) -> list[Hit]:
         retailers_for(user)
         .select_related(None)
         .filter(condition)
-        .annotate(similarity=TrigramWordSimilarity(text, "shop_name"))
+        .annotate(
+            similarity=Greatest(
+                TrigramWordSimilarity(text, "shop_name"),
+                TrigramWordSimilarity(in_letters, "shop_name_key"),
+            )
+        )
         .order_by("-similarity", "shop_name")
     )
     return [_shop_hit(r) for r in found[:limit]]
@@ -302,8 +312,11 @@ def _adjustment_exact(user: User, text: str) -> list[Hit]:
 
 def _staff(user: User, text: str, limit: int) -> list[Hit]:
     found = (
-        Membership.objects.filter(
-            Q(user__full_name__icontains=text) | Q(user__email__icontains=text)
+        Membership.objects.annotate(name_key=SearchKey("user__full_name"))
+        .filter(
+            Q(user__full_name__icontains=text)
+            | Q(user__email__icontains=text)
+            | Q(name_key__trigram_word_similar=key(text))  # "suresh" finds "सुरेश"
         )
         .select_related("user", "role")
         .order_by("user__full_name", "pk")

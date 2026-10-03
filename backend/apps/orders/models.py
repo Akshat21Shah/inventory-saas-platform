@@ -5,6 +5,7 @@ in ``services.py``; quantities are in the product's base unit."""
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
+from django.utils.translation import gettext_lazy
 
 from common.fields import MoneyField, QtyField, RateField
 from common.models import TenantScopedModel
@@ -84,8 +85,8 @@ class Order(TenantScopedModel):
         CLOSED = "CLOSED", "Closed"
 
     class HoldReason(models.TextChoices):
-        CREDIT_LIMIT = "CREDIT_LIMIT", "Over the credit limit"
-        OVERDUE = "OVERDUE", "Overdue invoices"
+        CREDIT_LIMIT = "CREDIT_LIMIT", gettext_lazy("Over the credit limit")
+        OVERDUE = "OVERDUE", gettext_lazy("Overdue invoices")
 
     number = models.CharField(max_length=24)  # ORD-2026-000123
     retailer = models.ForeignKey(

@@ -8,6 +8,7 @@ import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
 import { RequireArea } from "@/components/auth/require-area";
 import { NotificationBell } from "@/components/notifications/bell";
 import { BottomNavShell, type NavItem } from "@/components/shared/app-shell";
+import { SuggestWordLink } from "@/components/shared/suggest-word";
 import { CartProvider, useCart } from "@/components/shop/cart-state";
 import { ShopLiveUpdates } from "@/components/shop/live";
 
@@ -38,6 +39,9 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
       headerActions={<NotificationBell scope="shop" tone="onPrimary" />}
     >
       {children}
+      <footer className="mt-10 flex justify-center">
+        <SuggestWordLink />
+      </footer>
     </BottomNavShell>
   );
 }

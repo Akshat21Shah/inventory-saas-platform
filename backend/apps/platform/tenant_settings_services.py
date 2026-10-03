@@ -7,6 +7,7 @@ from typing import Any
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -20,7 +21,7 @@ from common.storage import get_storage
 from common.tenancy import require_tenant_id
 from common.uploads import validate_image
 
-PROFILE_FIELDS = ("invoice_terms", "invoice_footer", "signatory_name")
+PROFILE_FIELDS = ("invoice_terms", "invoice_footer", "signatory_name", "sms_name")
 BANK_FIELDS = (
     "bank_account_name",
     "bank_account_number",
@@ -52,6 +53,8 @@ def update_business(changes: dict[str, Any], *, by: User) -> Tenant:
     }
     tenant = tenant_services.update_tenant(require_tenant_id(), tenant_changes, by=by)
     profile_changes = {k: v for k, v in changes.items() if k in PROFILE_FIELDS}
+    if any(ch in profile_changes.get("sms_name", "") for ch in "\r\n\t"):
+        raise InvalidFields({"sms_name": [_("Write the short name on one line.")]})
     if profile_changes:
         profile = _profile()
         before = {f: getattr(profile, f) for f in PROFILE_FIELDS}
@@ -86,7 +89,7 @@ def update_bank_details(changes: dict[str, Any], *, by: User) -> TenantProfile:
                 errors[field] = list(exc.messages)
     number = profile.bank_account_number
     if number and (not number.isdigit() or not 6 <= len(number) <= 20):
-        errors["bank_account_number"] = ["Enter the account number (6 to 20 digits)."]
+        errors["bank_account_number"] = [_("Enter the account number (6 to 20 digits).")]
     if errors:
         raise InvalidFields(errors)
     diff = audit.diff(
@@ -205,5 +208,5 @@ def toggle_feature(code: str, enabled: bool, *, by: User) -> bool:
     if flag is None:
         raise NotFound()
     if not flag.tenant_toggleable:
-        raise InvalidFields({"enabled": ["This module is managed by the platform team."]})
+        raise InvalidFields({"enabled": [_("This module is managed by the platform team.")]})
     return tenant_services.set_tenant_feature(require_tenant_id(), code, enabled, by=by)

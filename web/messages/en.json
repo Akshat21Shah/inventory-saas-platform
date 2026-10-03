@@ -128,7 +128,9 @@
       "existingAccount": "You already have an account with this email. Enter its password to join.",
       "accept": "Accept invitation"
     },
-    "myAccount": "My account"
+    "myAccount": "My account",
+    "language": "Language",
+    "suggestWord": "Suggest a better word"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -157,7 +159,8 @@
     "itemCount": "{count, plural, one {# item} other {# items}} in the cart",
     "platformMessages": "Messages",
     "purchasing": "Purchasing",
-    "assistant": "Assistant"
+    "assistant": "Assistant",
+    "languages": "Languages"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -704,6 +707,14 @@
       "ai_search_units": {
         "label": "Typical shop search: units",
         "description": "Units a typical shop search sends to the embedding provider."
+      },
+      "languages_enabled": {
+        "label": "Languages for everyone",
+        "description": "Language codes everyone may choose, separated by commas, for example “en,hi”. English is always on. Turn a language on only after a native speaker has checked its words."
+      },
+      "language_test_tenants": {
+        "label": "Distributors testing languages",
+        "description": "Web addresses (for example “sharma”) of distributors who see every language while it is checked, separated by commas. Super admins always see every language."
       }
     },
     "retailers": {
@@ -714,6 +725,15 @@
       "show_own_brand_badge": {
         "label": "Own-brand badge in the shop",
         "description": "Show an \"own brand\" badge on your own-brand products in the shop."
+      },
+      "default_language": {
+        "label": "Usual language for shops",
+        "description": "The language shops see, and get messages and documents in, until they choose their own.",
+        "options": {
+          "en": "English",
+          "hi": "हिन्दी (Hindi)",
+          "mr": "मराठी (Marathi)"
+        }
       }
     },
     "pricing": {
@@ -869,6 +889,16 @@
         "label": "Days to ask for a return",
         "description": "How many days after a bill a shop can ask to return goods from it."
       }
+    },
+    "documents": {
+      "language": {
+        "label": "Language on shop documents",
+        "description": "Bills, credit notes, receipts, refund vouchers and Order Confirmations show their labels in English and the shop's language, or in English only. Names and amounts are printed as entered either way.",
+        "options": {
+          "SHOP": "English and the shop's language",
+          "ENGLISH": "English only"
+        }
+      }
     }
   },
   "settingsForm": {
@@ -886,7 +916,8 @@
       "reports": "Reports",
       "planning": "Stock planning",
       "purchasing": "Purchasing",
-      "ai": "AI"
+      "ai": "AI",
+      "languages": "Languages"
     },
     "default": "Default",
     "reset": "Reset to default",
@@ -1043,7 +1074,8 @@
       "retailer": "Shop",
       "supplier": "Supplier",
       "other": "Record"
-    }
+    },
+    "ip": "IP {ip}"
   },
   "platform": {
     "dashboard": {
@@ -1163,7 +1195,8 @@
         "owner_email": "Owner's email",
         "slug": "Web address",
         "primary_color": "Brand colour",
-        "plan_code": "Plan"
+        "plan_code": "Plan",
+        "owner_language": "Invitation language"
       },
       "hints": {
         "name": "The name customers see.",
@@ -1171,7 +1204,8 @@
         "owner_email": "We send the invitation to this address.",
         "slug": "Customers sign in at this address followed by .{domain}. Only super admins can change it later.",
         "primary_color": "Used for buttons and highlights. The owner can change it later.",
-        "plan_code": "Plan limits are not enforced yet."
+        "plan_code": "Plan limits are not enforced yet.",
+        "owner_language": "The owner's invitation email is sent in this language."
       },
       "invalid": {
         "email": "Enter a valid email address.",
@@ -1189,7 +1223,8 @@
       "create": "Create distributor",
       "created": "{name} was added and the owner has been invited.",
       "back": "Back",
-      "next": "Next"
+      "next": "Next",
+      "yourLanguage": "Your language"
     },
     "detail": {
       "tabs": {
@@ -1352,6 +1387,61 @@
       "saved": "Turnover band saved",
       "suggestEinvoice": "E-invoicing is suggested for this turnover. Switch on \"E-invoices\" below when the business is ready.",
       "reportingLimit": "IRNs must be obtained within {days} days of the invoice date for this turnover: the business will be warned."
+    },
+    "languages": {
+      "title": "Languages",
+      "body": "Which languages everyone may use, the distributors testing the others, how far each language's review has got, and the better words people suggest.",
+      "download": "Download the translation sheet",
+      "englishAlwaysOn": "English is always on. Turn another language on for everyone only after a native speaker has reviewed its words.",
+      "on": "On for everyone",
+      "off": "Off (testing only)",
+      "onFor": "{name} on for everyone",
+      "turnOnTitle": "Turn {name} on for everyone?",
+      "turnOnBody": "Every distributor's staff and shops can then choose it.",
+      "turnOnUnreviewed": "Only {reviewed, number} of {total, number} texts have been reviewed by a native speaker. Every distributor's staff and shops can then choose it.",
+      "turnOn": "Turn on",
+      "turnOffTitle": "Turn {name} off for everyone?",
+      "turnOffBody": "People who chose it see English until it is on again; the test distributors keep it.",
+      "turnOff": "Turn off",
+      "turnedOn": "{name} is on for everyone.",
+      "turnedOff": "{name} is off for everyone.",
+      "translated": "Translated",
+      "reviewed": "Reviewed by a native speaker",
+      "ofTotal": "{count, number} of {total, number}",
+      "percent": "{percent}%",
+      "newSuggestions": "New suggestions",
+      "testersTitle": "Distributors testing languages",
+      "testersBody": "Their staff and shops may use every language, including those not on for everyone yet. Add a distributor by its web address name.",
+      "noTesters": "No distributor is testing languages.",
+      "addTester": "Web address name",
+      "addTesterPlaceholder": "e.g. sharma",
+      "add": "Add",
+      "removeTester": "Remove {slug}",
+      "suggestionsTitle": "Suggested words",
+      "suggestionsBody": "Better words staff and shops sent from their screens. Take the good ones into the translation sheet, then mark them done.",
+      "noSuggestions": "No suggestions here.",
+      "words": "Words",
+      "language": "Language",
+      "screen": "Screen",
+      "from": "From",
+      "platform": "Super admin",
+      "when": "Sent",
+      "status": "Status",
+      "allStatuses": "Every status",
+      "allLanguages": "Every language",
+      "statuses": {
+        "NEW": "New",
+        "DONE": "Done",
+        "DISMISSED": "Dismissed"
+      },
+      "done": "Done",
+      "dismiss": "Dismiss",
+      "reopen": "Back to new",
+      "settled": {
+        "NEW": "Back on the list.",
+        "DONE": "Marked done.",
+        "DISMISSED": "Dismissed."
+      }
     }
   },
   "account": {
@@ -1466,7 +1556,14 @@
       "saved": "Business details saved.",
       "readOnly": "Only the owner can change these details.",
       "cancel": "Cancel",
-      "gstLocked": "Your GSTIN, legal name and state are fixed now that you have issued invoices. To change them, contact the platform team."
+      "gstLocked": "Your GSTIN, legal name and state are fixed now that you have issued invoices. To change them, contact the platform team.",
+      "sms": "SMS",
+      "smsBody": "An SMS part holds 160 characters in English and 70 in Hindi and Marathi, and every part is paid for. A short name keeps the welcome message to one part. The sign-in link is never shortened: a longer message goes as two parts.",
+      "smsName": "Short name for SMS (optional)",
+      "smsNameHint": "Used in every SMS in place of your business name. Up to 30 characters.",
+      "smsPreview": "The welcome SMS, as a new shop gets it",
+      "smsFits": "{length, number} of {single, number} characters · fits one part",
+      "smsParts": "{length, number} characters · sent as {parts, number} parts, each paid for"
     },
     "bank": {
       "title": "Bank details",
@@ -1613,7 +1710,9 @@
       "reports": "Reports",
       "notifications": "Notifications",
       "dashboard": "Dashboard"
-    }
+    },
+    "inviteLanguage": "Language of the invitation",
+    "inviteLanguageHint": "The email and the page they open are in this language."
   },
   "catalog": {
     "nav": {
@@ -2020,7 +2119,8 @@
       "welcomeNote": "A welcome message with the sign-in link is sent to the mobile number.",
       "create": "Add retailer",
       "save": "Save changes",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "languageDefault": "Your usual language for shops"
     },
     "detail": {
       "resendWelcome": "Send the welcome message again",
@@ -2703,7 +2803,6 @@
       "expired": "This payment wasn't finished in time.",
       "startAgain": "Start again",
       "waiting": "Waiting for the bank to confirm. This page updates by itself.",
-      "lastError": "The last try didn't go through: {error}",
       "safe": "You pay on the payment company's secure page. We never see your card or bank details."
     },
     "free": {
@@ -3909,7 +4008,6 @@
           "webhook_secret": "The secret you type when you add the webhook below."
         },
         "savedHint": "Saved: {value}. Leave blank to keep it.",
-        "lastError": "The gateway said: {error}",
         "verifiedAt": "Working since",
         "checking": "Checking the keys with the gateway…",
         "save": "Save",
@@ -4195,7 +4293,6 @@
       "title": "Message texts",
       "description": "The words each message uses, for the shop and for your staff. You can change the in-app and email texts; WhatsApp and SMS texts are approved templates set by the platform.",
       "event": "Which message",
-      "language": "Language",
       "languages": {
         "en": "English",
         "hi": "हिन्दी",
@@ -4227,7 +4324,8 @@
         "SHOP": "What the shop reads, in its own words: “Your order …”.",
         "STAFF": "What your staff read, in the office's words: “Ganesh Kirana's order …”.",
         "SUPPLIER": "Your email to the supplier, with a link to the purchase order."
-      }
+      },
+      "partlyEdited": "You have your own wording in {edited} only. {standard} still use the standard text: change them too if they should say the same."
     },
     "deliveries": {
       "title": "Delivery log",
@@ -4450,7 +4548,6 @@
       },
       "savedHint": "Saved: {value}. Leave blank to keep it.",
       "notSaved": "Not saved yet.",
-      "lastError": "The provider said: {error}",
       "verifiedAt": "Checked",
       "checking": "Checking with the provider…",
       "save": "Save",
@@ -4467,10 +4564,8 @@
       "ackNo": "Ack. no.",
       "ackDate": "Ack. date",
       "waiting": "Waiting to be sent to the GST portal.",
-      "retrying": "The portal didn't answer ({error}). Trying again at <at></at>.",
       "sending": "Sent to the GST portal. This page updates when it answers.",
       "cancelling": "Cancelling the IRN on the GST portal…",
-      "failed": "The GST portal refused it: {error}",
       "reportBy": "Must get its IRN by <day></day> (the reporting limit for your turnover).",
       "pastReportBy": "The reporting limit (<day></day>) has passed. The portal may refuse it: check with your CA.",
       "cancelRefused": "Cancelling the IRN was refused: {error}",
@@ -4527,12 +4622,9 @@
       "validUntil": "Valid until",
       "km": "{km} km",
       "waiting": "Waiting to be sent to the e-way bill portal.",
-      "retrying": "The portal didn't answer ({error}). Trying again at <at></at>.",
       "sending": "Sent to the e-way bill portal. This page updates when it answers.",
-      "failed": "The e-way bill portal refused it: {error}",
       "cancelling": "Cancelling the e-way bill on the portal…",
       "changing": "Sending the new vehicle to the portal…",
-      "updateRefused": "The last change was refused: {error}",
       "cancelled": "Cancelled on <at></at>.",
       "make": "Make e-way bill",
       "tryAgain": "Try again",
@@ -4629,6 +4721,23 @@
       "irnWaiting": "IRNs waiting",
       "irnNearLimit": "IRNs near the reporting limit",
       "ewbWaiting": "E-way bills waiting"
+    },
+    "provider": {
+      "einvoice": "The GST portal refused this bill:",
+      "ewaybill": "The e-way bill portal refused this e-way bill:",
+      "update": "The e-way bill portal refused the last change:",
+      "login": "The GST provider refused the login:",
+      "codes": {
+        "CREDENTIALS_NOT_READY": "The GST provider login isn't saved or isn't working. Check it in Settings, then try again.",
+        "NUMBER_USED": "This bill number was used for an IRN that has been cancelled, so it can't be used again.",
+        "INVOICE_CANCELLED": "The bill was cancelled, so this e-way bill won't be made.",
+        "AUTH_FAILED": "The GST provider refused the login:",
+        "INVALID_GSTIN": "The GST portal says the shop's GSTIN isn't valid or active:",
+        "DUPLICATE": "The GST portal already has an IRN for this bill number:",
+        "PORTAL_DOWN": "The GST portal isn't available right now:",
+        "TIMEOUT": "The GST provider didn't answer in time:",
+        "CANCEL_NOT_ALLOWED": "The GST portal won't cancel it:"
+      }
     }
   },
   "approvalStatus": {
@@ -5871,5 +5980,22 @@
   "aiModels": {
     "claude-sonnet-5-5": "Claude Sonnet 5.5",
     "claude-haiku-4-5-20251001": "Claude Haiku 4.5"
+  },
+  "providerMessages": {
+    "payment": "The last try didn't go through. The payment service said:",
+    "gatewayKeys": "The payment gateway refused these keys:",
+    "paymentService": "The payment service said:",
+    "sending": "The sending service said:",
+    "portalRetrying": "The portal didn't answer. Trying again at <at></at>."
+  },
+  "suggestWord": {
+    "link": "Suggest a better word",
+    "title": "Suggest a better word",
+    "body": "Is a word on this screen hard to understand or wrong? Tell us the word you would use. We send it, with this screen, to the people who look after the app's words.",
+    "current": "Words on the screen",
+    "currentHint": "Select the words on the page before opening this to fill them in.",
+    "better": "Better word",
+    "send": "Send",
+    "thanks": "Thank you! We'll look at it."
   }
 }

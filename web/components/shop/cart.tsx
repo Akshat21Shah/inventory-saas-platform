@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ImageOff, Info, TriangleAlert, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -30,6 +29,7 @@ import type { Problem, Quote, QuoteLine } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { attemptFor, finishAttempt, pendingAttempt } from "@/lib/checkout";
 import { formatMoney, formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent } from "@/lib/idempotency";
 import { useIsCompact } from "@/lib/use-media";
 import { cn } from "@/lib/utils";

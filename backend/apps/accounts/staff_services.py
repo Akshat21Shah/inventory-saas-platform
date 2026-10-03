@@ -14,6 +14,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import Invitation, Membership, Role, User
 from apps.accounts.permissions import OWNER_ROLE
@@ -37,25 +39,26 @@ from common.context import Actor
 from common.error_codes import ErrorCode
 from common.errors import DomainError, InvalidFields, NotFound
 from common.hosts import HostContext, HostKind
+from common.languages import available_for_tenant, effective, user_language
 from common.tenancy import require_tenant_id, tenant_context
 
 
 class PlanLimitReached(DomainError):
     status_code = 403
     code = ErrorCode.PLAN_LIMIT_REACHED
-    default_message = "Your plan's limit has been reached."
+    default_message = gettext_lazy("Your plan's limit has been reached.")
 
 
 class LastOwner(DomainError):
     status_code = 400
     code = ErrorCode.LAST_OWNER
-    default_message = "Every business needs at least one active owner."
+    default_message = gettext_lazy("Every business needs at least one active owner.")
 
 
 class AlreadyAMember(DomainError):
     status_code = 409
     code = ErrorCode.ALREADY_A_MEMBER
-    default_message = "This person is already on your team."
+    default_message = gettext_lazy("This person is already on your team.")
 
 
 def assignable_role(role_code: str) -> Role:
@@ -67,7 +70,7 @@ def assignable_role(role_code: str) -> Role:
         or candidates.filter(tenant__isnull=True).first()
     )
     if role is None:
-        raise InvalidFields({"role_code": ["Choose one of the listed roles."]})
+        raise InvalidFields({"role_code": [_("Choose one of the listed roles.")]})
     return role
 
 
@@ -105,21 +108,37 @@ def _expiry() -> Any:
     return timezone.now() + timedelta(days=settings.INVITATION_TTL_DAYS)
 
 
+def _invitation_language(code: str, inviter: User | None, tenant_id: UUID) -> str:
+    """The language the inviter chose, by default their own (owner, ADR-060): one the new person
+    may use at this distributor."""
+    allowed = available_for_tenant(tenant_id)
+    if not code:
+        return effective(user_language(inviter, tenant_id) if inviter else None, allowed)
+    if code not in allowed:
+        raise InvalidFields({"language": [_("Choose one of the languages offered.")]})
+    return code
+
+
 @transaction.atomic
-def invite_staff(*, email: str, role_code: str, invited_by: User | None) -> Invitation:
+def invite_staff(
+    *, email: str, role_code: str, invited_by: User | None, language: str = ""
+) -> Invitation:
+    """Invite ``email`` as ``role_code``; the email goes in ``language`` (the inviter's own when
+    blank)."""
     tenant_id = require_tenant_id()
     email = email.strip().lower()
+    language = _invitation_language(language, invited_by, tenant_id)
     role = assignable_role(role_code)
     existing = User.objects.filter(email=email).first()
     if existing is not None and existing.user_type != User.UserType.STAFF:
-        raise InvalidFields({"email": ["This email can't be invited."]})
+        raise InvalidFields({"email": [_("This email can't be invited.")]})
     if existing is not None and Membership.objects.filter(user=existing, is_active=True).exists():
         raise AlreadyAMember()
     if Invitation.objects.filter(
         email=email, status=Invitation.Status.PENDING, expires_at__gt=timezone.now()
     ).exists():
         raise InvalidFields(
-            {"email": ["An invitation is already waiting for this email. Resend it instead."]}
+            {"email": [_("An invitation is already waiting for this email. Resend it instead.")]}
         )
     # A stale pending row (expired) would block the partial unique index: mark it expired.
     Invitation.objects.filter(email=email, status=Invitation.Status.PENDING).update(
@@ -128,13 +147,18 @@ def invite_staff(*, email: str, role_code: str, invited_by: User | None) -> Invi
     _require_seat(tenant_id)
     raw, digest = _fresh_token()
     invitation: Invitation = Invitation.objects.create(
-        email=email, role=role, token_hash=digest, expires_at=_expiry(), invited_by=invited_by
+        email=email,
+        role=role,
+        token_hash=digest,
+        expires_at=_expiry(),
+        invited_by=invited_by,
+        language=language,
     )
     audit.record(
         "staff.invited",
         target=invitation,
         target_repr=email,
-        metadata={"email": email, "role": role.code},
+        metadata={"email": email, "role": role.code, "language": language},
     )
     _send(invitation, raw)
     return invitation
@@ -147,7 +171,7 @@ def _pending(invitation_id: UUID) -> Invitation:
     if invitation is None:
         raise NotFound()
     if invitation.status not in (Invitation.Status.PENDING, Invitation.Status.EXPIRED):
-        raise InvalidFields({"status": ["This invitation can no longer be changed."]})
+        raise InvalidFields({"status": [_("This invitation can no longer be changed.")]})
     return invitation
 
 
@@ -215,10 +239,20 @@ def preview_invitation(raw: str, host: HostContext) -> dict[str, Any]:
             "invited_by": invitation.invited_by.full_name if invitation.invited_by else "",
             "existing_account": existing.exists(),
             "expires_at": invitation.expires_at,
+            "language": invitation_language(invitation),
         }
 
 
-def _joining_user(invitation: Invitation, full_name: str, password: str) -> User:
+def invitation_language(invitation: Invitation) -> str:
+    """The invitation's language (older ones: the inviter's), as long as it may still be used."""
+    allowed = available_for_tenant(invitation.tenant_id)
+    if invitation.language:
+        return effective(invitation.language, allowed)
+    inviter = invitation.invited_by
+    return effective(user_language(inviter, invitation.tenant_id) if inviter else None, allowed)
+
+
+def _joining_user(invitation: Invitation, full_name: str, password: str, language: str) -> User:
     user = User.objects.filter(email=invitation.email).first()
     if user is None:
         candidate = User(email=invitation.email, full_name=full_name.strip(), user_type="STAFF")
@@ -227,26 +261,34 @@ def _joining_user(invitation: Invitation, full_name: str, password: str) -> User
         except DjangoValidationError as exc:
             raise InvalidFields({"password": list(exc.messages)}) from exc
         if not full_name.strip():
-            raise InvalidFields({"full_name": ["Enter your name."]})
+            raise InvalidFields({"full_name": [_("Enter your name.")]})
+        # A new account starts in the language its invite page was shown in (ADR-060 item 2).
         return User.objects.create_user(
-            invitation.email, password, user_type=User.UserType.STAFF, full_name=full_name.strip()
+            invitation.email,
+            password,
+            user_type=User.UserType.STAFF,
+            full_name=full_name.strip(),
+            preferred_language=language,
         )
     if user.user_type != User.UserType.STAFF or not user.is_active:
         raise TokenInvalid()
     if not user.check_password(password):
-        raise InvalidFields({"password": ["Enter the password of your existing account."]})
+        raise InvalidFields({"password": [_("Enter the password of your existing account.")]})
     return user
 
 
 def accept_invitation(
-    raw: str, host: HostContext, *, full_name: str, password: str
+    raw: str, host: HostContext, *, full_name: str, password: str, language: str = ""
 ) -> LoginOutcome:
     """Join the tenant (new account, or existing staff account confirmed by its password) and
-    sign in. The owner accepting an ONBOARDING tenant's invitation activates it (ADR-030)."""
+    sign in. The owner accepting an ONBOARDING tenant's invitation activates it (ADR-030). A new
+    account keeps ``language`` (the one the invite page was shown in), else the invitation's."""
     tenant = _tenant_for_link(host)
     with transaction.atomic(), tenant_context(tenant.pk):
         invitation = _open_invitation(raw, lock=True)
-        user = _joining_user(invitation, full_name, password)
+        allowed = available_for_tenant(tenant.pk)
+        chosen = language if language in allowed else invitation_language(invitation)
+        user = _joining_user(invitation, full_name, password, chosen)
         membership = Membership.objects.filter(user=user).first()
         if membership is not None and membership.is_active:
             raise AlreadyAMember()
@@ -318,7 +360,7 @@ def change_member(
     if was_owner and not stays_owner and owners == [membership.pk]:
         raise LastOwner()
     if membership.user_id == by.pk and membership.is_active and not new_active:
-        raise InvalidFields({"is_active": ["You can't deactivate yourself."]})
+        raise InvalidFields({"is_active": [_("You can't deactivate yourself.")]})
     if new_active and not membership.is_active:
         _require_seat(require_tenant_id())
 

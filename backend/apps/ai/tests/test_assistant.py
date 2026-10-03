@@ -1,8 +1,11 @@
 """The data assistant (ADR-059): the tools are the person's reports (permissions, own shops,
 costs), questions are answered in the background and logged, only the asker sees them, the
 module flag, the monthly cap, the hourly limit, provider failures and runaway tool loops, and
-nothing personal reaches the model."""
+nothing personal reaches the model. Questions in Hindi and Marathi are answered in their language
+(ADR-060 item 9)."""
 
+import json
+import re
 from datetime import date, timedelta
 from typing import Any
 
@@ -10,6 +13,7 @@ import pytest
 from django.core.cache import cache
 from django.utils import timezone
 
+from apps.accounts.models import User
 from apps.ai.adapters import mock_chat
 from apps.ai.adapters.chat import ChatTurn, ToolCall
 from apps.ai.adapters.mock_chat import ScriptedChat
@@ -322,3 +326,64 @@ def test_the_model_is_a_platform_setting_and_each_answer_records_what_answered(
     )
     with tenant_context(world["t"].pk):
         assert AssistantQuestion.objects.get(pk=body["id"]).model == "mock-scripted-1"
+
+
+def test_the_stand_in_answers_in_the_questions_language():
+    assert mock_chat.language_of("How much did we sell today?") == "en"
+    assert mock_chat.language_of("आज की बिक्री कितनी है?") == "hi"
+    assert mock_chat.language_of("आज किती विक्री झाली?") == "mr"
+    # What it can't answer, it says in the question's language.
+    assert mock_chat.plan("कल मौसम कैसा रहेगा?", {"low_stock"}) == (
+        "मैं कम स्टॉक के बारे में सवालों के जवाब दे सकता हूँ। पूछकर देखें: “किन प्रोडक्ट का स्टॉक कम है?”"
+    )
+    assert mock_chat.plan("आज किती विक्री झाली?", {"low_stock"}) == (
+        "हे आकडे तुम्हाला उपलब्ध नाहीत. गरज असल्यास मालकांना विचारा."
+    )
+    # English words in a Hindi question still find the figures; "कल" inside a word is no day.
+    call = mock_chat.plan("आज की sales कितनी है?", {"sales_summary"})
+    assert isinstance(call, ToolCall) and call.args == {"period": "today"}
+    call = mock_chat.plan("इस हफ़्ते का कलेक्शन कितना है?", {"collections"})
+    assert isinstance(call, ToolCall) and call.args == {"period": "this_week"}
+    hidden = mock_chat.costs_note("या महिन्यात नफा किती?", {"columns": {"total": "Total"}})
+    assert hidden.startswith("खर्च आणि मार्जिन")
+
+
+def test_the_model_is_told_to_answer_in_the_questions_language(tenant_a):
+    prompt = service.system_prompt(tenant_a)
+    assert "Answer in the language of the question" in prompt
+    assert "digits 0-9 in every language" in prompt
+    assert "names of shops, products and people exactly as the figures give them" in prompt
+    # A question that could be Hindi or Marathi: the asker's language, else Hindi (owner).
+    assert prompt.endswith("If a question could be Hindi or Marathi, answer in Hindi.")
+    marathi = service.system_prompt(tenant_a, "mr")
+    assert marathi.endswith("If a question could be Hindi or Marathi, answer in Marathi.")
+
+
+def test_a_question_that_fits_hindi_and_marathi_is_answered_in_the_askers_language(
+    world, every_language
+):
+    assert mock_chat.language_of("टॉप 5 प्रोडक्ट", "mr") == "mr"  # no word of either's own
+    assert mock_chat.language_of("टॉप 5 प्रोडक्ट", "en") == "hi"
+    assert mock_chat.language_of("आज किती विक्री झाली?", "hi") == "mr"  # clearly Marathi
+    with tenant_context(world["t"].pk):
+        for saved, opening in (("mr", "टॉप उत्पादने"), ("en", "टॉप प्रोडक्ट"), ("hi", "टॉप प्रोडक्ट")):
+            User.objects.filter(pk=world["owner"].pk).update(preferred_language=saved)
+            asker = User.objects.get(pk=world["owner"].pk)
+            asked = AssistantQuestion.objects.create(user=asker, question="टॉप 5 प्रोडक्ट?")
+            answered = service.answer(asked.pk)
+            assert answered.answer.startswith(opening), (saved, answered.answer)
+
+
+def test_every_language_has_the_stand_ins_words_and_answers():
+    english = json.loads((mock_chat.WORDS_DIR / "en.json").read_text("utf-8"))
+    for code in mock_chat.languages():
+        data = json.loads((mock_chat.WORDS_DIR / f"{code}.json").read_text("utf-8"))
+        for part in ("tools", "periods", "when", "topics", "examples", "say"):
+            assert set(data[part]) == set(english[part]), (code, part)
+        for pattern in [*data["tools"].values(), *data["periods"].values()]:
+            re.compile(pattern)
+        for key, text in english["say"].items():  # the same values in every template
+            fields = set(re.findall(r"{(\w+)}", json.dumps(text)))
+            assert set(re.findall(r"{(\w+)}", json.dumps(data["say"][key]))) == fields, (code, key)
+    assert mock_chat.languages() == ("en", "hi", "mr")
+    assert mock_chat.words("kn") is mock_chat.words("en")  # no file yet: English

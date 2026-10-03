@@ -15,5 +15,7 @@ export interface Invitation {
   readonly status: string;
   expires_at: string;
   readonly invited_by: string;
+  /** @maxLength 5 */
+  language?: string;
   readonly created_at: string;
 }

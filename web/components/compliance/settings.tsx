@@ -1,7 +1,6 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -31,11 +30,15 @@ import {
 } from "@/lib/api/generated/endpoints/settings/settings";
 import type { GstCredentials, GstEnvironmentEnum } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { ProviderMessage } from "@/components/shared/provider-message";
+import { useTranslations } from "@/lib/i18n/translations";
+import { useGstFailure } from "./provider-line";
 
 /** The distributor's own login with the GST provider (ADR-049 items 1, 7): saved encrypted,
  * never shown back, checked by the server in the background. */
 function CredentialsCard({ saved }: { saved: GstCredentials }) {
   const t = useTranslations("compliance.settings");
+  const gst = useGstFailure();
   const client = useQueryClient();
   const { message, fields } = useErrorText();
   const [environment, setEnvironment] = useState<GstEnvironmentEnum>(saved.environment);
@@ -123,7 +126,7 @@ function CredentialsCard({ saved }: { saved: GstCredentials }) {
           </div>
           {saved.status === "FAILED" && saved.last_error ? (
             <p role="alert" className="bg-destructive/10 rounded-lg p-3 text-sm">
-              {t("lastError", { error: saved.last_error })}
+              <ProviderMessage {...gst("login", null, saved.last_error)} />
             </p>
           ) : null}
           {saved.status === "VERIFIED" && saved.verified_at ? (

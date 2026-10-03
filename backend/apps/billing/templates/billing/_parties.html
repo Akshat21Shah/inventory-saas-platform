@@ -1,6 +1,6 @@
-<div class="parties">
+{% load documents %}<div class="parties">
   <div>
-    <div class="label">Bill to</div>
+    <div class="label">{% t "Bill to" %}</div>
     <p><b>{{ buyer.name }}</b>{% if buyer.code %} <span class="muted">({{ buyer.code }})</span>{% endif %}</p>
     {% with a=buyer.billing_address|default:buyer.shipping_address %}
       {% if a %}<p>{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}</p>
@@ -8,11 +8,11 @@
       <p>{{ a.state }} ({{ a.state_code }})</p>{% endif %}
     {% endwith %}
     {% if buyer.contact %}<p>{{ buyer.contact }}{% if buyer.phone %} · {{ buyer.phone }}{% endif %}</p>{% endif %}
-    <p><b>GSTIN</b> {{ buyer.gstin|default:"Unregistered" }}</p>
+    <p><b>GSTIN</b> {% if buyer.gstin %}{{ buyer.gstin }}{% else %}{% t "Unregistered" %}{% endif %}</p>
   </div>
   {% if buyer.shipping_address and buyer.billing_address and buyer.shipping_address.id != buyer.billing_address.id %}
   <div>
-    <div class="label">Ship to</div>
+    <div class="label">{% t "Ship to" %}</div>
     {% with a=buyer.shipping_address %}
       <p><b>{{ buyer.name }}</b></p>
       <p>{{ a.line1 }}{% if a.line2 %}, {{ a.line2 }}{% endif %}</p>

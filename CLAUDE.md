@@ -125,7 +125,7 @@ Every screen works at three widths, and CI checks them: **360 px** (phone), **76
 - **Layout switches in code use `lib/use-media.ts`** (`useIsPhone` below 768 px, `useIsCompact` below 1024 px). Everything else uses Tailwind breakpoints (`max-md:`, `md:`, `lg:`).
 - **The shop** is mobile-first: a bottom navigation bar on phones and tablets, navigation in the header on laptops, and a centred content column up to 1152 px wide.
 - **Checks:**
-  - Each new screen is added to `web/e2e/responsive.spec.ts`. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves a screenshot of every screen at every width (the CI artifact `responsive-screenshots`; locally `make e2e-responsive`).
+  - Each new screen is added to `web/e2e/responsive.spec.ts`. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves a screenshot of every screen at every width (the CI artifact `responsive-screenshots`; locally `make e2e-responsive`). CI runs it in English, Hindi and Marathi (`make e2e-responsive LANGUAGE=hi`): Indian-language words can be much shorter or longer than the English, so give short controls a minimum width on phones (`max-md:min-w-11`; `Button` already has it).
   - Component tests can render at any width with `setViewport(width)` from `tests/viewport.ts`.
 
 ## 7. Definition of done (every task)
@@ -149,13 +149,16 @@ make migrate     # run migrations (as the schema-owner DB role)
 make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
-make e2e-stack   # acceptance E2E (Phases 1-9) against the running stack (needs make up + make seed)
-make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
+make e2e-stack   # acceptance E2E (Phases 1-9, 11a) against the running stack (needs make up + make seed)
+make e2e-responsive [LANGUAGE=hi|mr] # every screen at 360/768/1440 px + screenshots, in English or that language (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make secrets-scan # gitleaks over the whole git history, every branch (the pre-commit hook checks each commit)
 make fmt         # auto-format backend + frontend
 make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
+make messages    # update + compile the server message catalogs (backend/locale/<code>); the tests fail on a stale or untranslated one
+make texts-export # every screen, server and notification text in one sheet (texts.xlsx) for a native reviewer; the super admin downloads the same
+make texts-import SHEET=reviewed.xlsx [APPLY=1] # check a reviewer's sheet (placeholders, plurals, SMS/WhatsApp lengths); APPLY writes the files + review marks
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts, stock, 11 orders, invoices, payments, a credit note and a refund each
 make seed-volume # speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 5,000 / 5,000 orders over a year, reconciled (a few minutes; owner@vol-a.example.com …)
 make perf        # dashboard + every report's first page over the last whole month against p95 < 300 ms (after make seed-volume)

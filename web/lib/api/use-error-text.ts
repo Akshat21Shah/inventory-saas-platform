@@ -1,7 +1,9 @@
 "use client";
 
-import { useMessages, useTranslations } from "next-intl";
+import { useMessages } from "next-intl";
 import { useCallback, useMemo } from "react";
+
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { ApiError, errorMessageKey } from "./errors";
 

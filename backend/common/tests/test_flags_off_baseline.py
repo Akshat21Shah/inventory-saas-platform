@@ -164,6 +164,18 @@ ALLOWED_NEW: dict[str, Any] = {
     "db.payments.Payment.bounce_charge_id": None,
     "api.payment.bounce_charge": None,
     "api.shop-payment.bounce_charge": None,
+    # Phase 11a (ADR-060): the language the shop sees (English: no other language is on), and
+    # the language each shop document is printed in, fixed at issue (English, as before).
+    "api.retailer.language": "en",
+    "db.billing.Invoice.document_language": "en",
+    "db.billing.CreditNote.document_language": "en",
+    "db.billing.OrderConfirmation.content.language": "en",
+    "db.payments.Payment.document_language": "en",
+    "db.payments.Refund.document_language": "en",
+    # Phase 11a (ADR-060 item 8): names in English letters for search, kept by the database.
+    "db.catalog.Product.name_key": lambda v: isinstance(v, str) and v,
+    "db.retailers.Retailer.shop_name_key": lambda v: isinstance(v, str) and v,
+    "db.retailers.Retailer.owner_name_key": lambda v: isinstance(v, str),
     # ADR-054 (core, not a module): the shop's document emails also carry the PDF, besides the
     # link that was already there.
     "db.notifications.Notification.data.attach": True,
@@ -185,6 +197,7 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
             or item["key"] in ("orders.shop_confirms_delivery", "orders.delivery_code")
             or item["key"].startswith("returns.")
             or item["key"] == "payments.cheque_bounce_charge"
+            or item["key"] in ("retailers.default_language", "documents.language")  # Phase 11a
         )
         and item["is_default"]
     ),
@@ -201,6 +214,18 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
 
 # Wording changed since the snapshot: (path, old value) -> new value.
 REWORDED: dict[tuple[str, Any], Any] = {
+    # Phase 11a (ADR-060 item 5): a shop saved as English follows the distributor's default
+    # language (English unless changed), which is now blank rather than "en".
+    ("db.retailers.Retailer.preferred_language", "en"): "",
+    ("api.retailer.preferred_language", "en"): "",
+    # Phase 11a (ADR-060 item 8): the search vector also holds names in English letters.
+    (
+        "db.catalog.Product.search_vector",
+        "'-1':4A 'biscuits':2A 'masala':1A 'snk':3A",
+    ): "'-1':6A 'biscuits':2A 'biskuits':4A 'masala':1A,3A 'snk':5A",
+    ("db.catalog.Product.search_vector", "'-1':3A 'lap':2A 'laptop':1A"): (
+        "'-1':4A 'lap':3A 'laptop':1A,2A"
+    ),
     # Phase 9a (ADR-053): the ai module now covers only smart search and the assistant.
     ("api.settings-features.name", "Smart inventory and AI"): "AI features",
     (
@@ -208,6 +233,23 @@ REWORDED: dict[tuple[str, Any], Any] = {
         "Reorder suggestions, demand forecasts and smart search.",
     ): "Smart search and the data assistant.",
 }
+
+# Printing changes since the snapshot that have nothing to do with the Phase 7 flags: the
+# snapshot's text -> today's, applied to the snapshot before comparing.
+REPRINTED: tuple[tuple[str, str], ...] = (
+    # Phase 11a (ADR-060): a Devanagari font after Noto Sans, and the style of a label's
+    # translation (none is printed here: the shop's documents are in English).
+    (
+        'body { font-family: "Noto Sans", "DejaVu Sans"',
+        'body { font-family: "Noto Sans", "Noto Sans Devanagari", "DejaVu Sans"',
+    ),
+    (
+        ".irn img { width: 80pt; height: 80pt; }\n",
+        ".irn img { width: 80pt; height: 80pt; }\n"
+        ".tr { font-weight: normal; }\n"
+        "h2 .tr { text-transform: none; }\n",
+    ),
+)
 
 # Random by design: stored as "<random>".
 VOLATILE = {
@@ -597,6 +639,9 @@ def test_the_app_behaves_as_before_phase_7_with_its_flags_off(django_capture_on_
     _compare(before["api"], current["api"], "api", diffs)
     _compare(before["messages"], current["messages"], "messages", diffs)
     for name, html in docs.items():
-        if (BASELINE / f"{name}.html").read_text() != html + "\n":
+        printed = (BASELINE / f"{name}.html").read_text()
+        for then, now in REPRINTED:
+            printed = printed.replace(then, now)
+        if printed != html + "\n":
             diffs.append(f"document {name}: printed differently")
     assert not diffs, "With the Phase 7 flags off:\n" + "\n".join(diffs[:60])

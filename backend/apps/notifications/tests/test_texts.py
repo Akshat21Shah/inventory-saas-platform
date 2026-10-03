@@ -129,7 +129,7 @@ def test_the_super_admin_sets_the_whatsapp_text_and_its_approved_template(tenant
         texts.save_platform_text(data, WhatsAppFields(category="PROMO"))
     assert (
         PlatformTemplate.objects.filter(
-            event_code="order.accepted", audience="SHOP", channel="WHATSAPP"
+            event_code="order.accepted", audience="SHOP", channel="WHATSAPP", locale="en"
         ).count()
         == 1
     )

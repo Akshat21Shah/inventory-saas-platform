@@ -91,7 +91,7 @@ def about(
     report: Report, ctx: Context, described: list[tuple[str, str]], by: str
 ) -> list[tuple[str, str]]:
     lines: list[tuple[str, str]] = [
-        ("Report", report.title),
+        ("Report", str(report.title)),
         *described,
         ("Made", f"{to_ist(timezone.now()):%d-%m-%Y %H:%M} (IST) for {by}"),
     ]
@@ -115,7 +115,9 @@ def excel(report: Report, ctx: Context, about_lines: list[tuple[str, str]], out:
             rows += _write(book, Sheet(sheet.title, visible, sheet.rows, sheet.preamble))
     else:
         rows = _write(
-            book, Sheet(report.title, cols, _iterate(report.rows(ctx))), _totals(report, ctx, cols)
+            book,
+            Sheet(str(report.title), cols, _iterate(report.rows(ctx))),
+            _totals(report, ctx, cols),
         )
     info = book.create_sheet(title="About")
     for label, value in about_lines:
@@ -168,7 +170,7 @@ def pdf(report: Report, ctx: Context, about_lines: list[tuple[str, str]], out: B
     html = render_to_string(
         "reports/report.html",
         {
-            "title": report.title,
+            "title": str(report.title),
             "about": about_lines,
             "headers": list(zip([c.label for c in cols], numeric, strict=True)),
             "rows": [

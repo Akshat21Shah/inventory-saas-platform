@@ -3,8 +3,11 @@
 
 from dataclasses import dataclass
 
+from django.utils.translation import gettext
+
 from apps.notifications.catalog import DEFAULT_RULES, EVENTS
 from apps.notifications.models import Channel, NotificationRule
+from common.numbers import fill
 
 
 @dataclass(frozen=True)
@@ -118,31 +121,33 @@ def _check(
     seen: set[tuple[str, str]] = set()
     for rule in rules:
         if rule.recipient not in Recipient.values or rule.recipient in SYSTEM_RECIPIENTS:
-            errors.append(f"Unknown recipient {rule.recipient}.")
+            errors.append(
+                fill(gettext("Unknown recipient %(recipient)s."), {"recipient": rule.recipient})
+            )
             continue
         if rule.key in seen:
-            errors.append("Each recipient can appear only once.")
+            errors.append(gettext("Each recipient can appear only once."))
         seen.add(rule.key)
         if rule.recipient == Recipient.STAFF_PERMISSION and rule.permission not in tenant_codes:
-            errors.append("Choose which staff (a permission) should get it.")
+            errors.append(gettext("Choose which staff (a permission) should get it."))
         if rule.recipient != Recipient.STAFF_PERMISSION and rule.permission:
-            errors.append("Only 'Staff who can…' takes a permission.")
+            errors.append(gettext("Only 'Staff who can…' takes a permission."))
         only = ONLY_FOR.get(rule.recipient)
         if only is not None and event_code not in only[0]:
             errors.append(
-                "This recipient is only for purchase orders."
+                gettext("This recipient is only for purchase orders.")
                 if rule.recipient == Recipient.SUPPLIER
-                else "This recipient is only for failed e-way bills."
+                else gettext("This recipient is only for failed e-way bills.")
             )
             continue
         supplier = rule.recipient == Recipient.SUPPLIER
         if rule.recipient == Recipient.SHOP and not event.shop_facing:
-            errors.append("This message is for staff only.")
+            errors.append(gettext("This message is for staff only."))
         if rule.recipient != Recipient.SHOP and not supplier and not event.staff_facing:
             errors.append(
-                "This message is for the supplier only."
+                gettext("This message is for the supplier only.")
                 if event.supplier_facing
-                else "This message is for shops only."
+                else gettext("This message is for shops only.")
             )
         audience = (
             Audience.SHOP
@@ -153,18 +158,28 @@ def _check(
         )
         texts = DEFAULT_TEXTS.get(event_code, {}).get(audience, {})
         if rule.compulsory and rule.recipient != Recipient.SHOP:
-            errors.append("Only the shop's messages can be compulsory.")
+            errors.append(gettext("Only the shop's messages can be compulsory."))
         for channel in rule.channels:
             if channel not in RECIPIENT_CHANNELS[rule.recipient]:
-                errors.append(f"{channel} can't be used for this recipient.")
+                errors.append(
+                    fill(
+                        gettext("%(channel)s can't be used for this recipient."),
+                        {"channel": channel},
+                    )
+                )
             elif channel not in texts:
-                errors.append(f"There is no {channel} text for this message yet.")
+                errors.append(
+                    fill(
+                        gettext("There is no %(channel)s text for this message yet."),
+                        {"channel": channel},
+                    )
+                )
             elif (
                 channel == Channel.WHATSAPP
                 and channel not in in_force.get(rule.key, set())
                 and not approval.is_ready(event_code, audience)
             ):
-                errors.append("This message's WhatsApp template isn't approved yet.")
+                errors.append(gettext("This message's WhatsApp template isn't approved yet."))
     if errors:
         raise InvalidFields({"rules": list(dict.fromkeys(errors))})
 

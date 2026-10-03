@@ -1,5 +1,5 @@
 {% load documents %}<!doctype html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
   <title>Order confirmation {{ doc.order_number }}</title>
@@ -11,16 +11,16 @@
   <header class="top">
     {% include "billing/_seller.html" %}
     <div class="title">
-      <h2>Order confirmation</h2>
-      <p class="note-strong">This is not a tax invoice.</p>
+      <h2>{% t "Order confirmation" %}</h2>
+      <p class="note-strong">{% t "This is not a tax invoice." %}</p>
     </div>
   </header>
 
   <table class="meta">
-    <tr><td class="k">Order no.</td><td><b>{{ doc.order_number }}</b></td><td class="k">Placed</td><td>{{ doc.placed_at|day }}</td></tr>
+    <tr><td class="k">{% t "Order no." %}</td><td><b>{{ doc.order_number }}</b></td><td class="k">{% t "Placed" %}</td><td>{{ doc.placed_at|day }}</td></tr>
     <tr>
-      <td class="k">Accepted</td><td>{{ doc.accepted_at|day }}</td>
-      <td class="k">Prices</td><td>{% if doc.prices_include_tax %}Including GST{% else %}Excluding GST{% endif %}</td>
+      <td class="k">{% t "Accepted" %}</td><td>{{ doc.accepted_at|day }}</td>
+      <td class="k">{% t "Prices" %}</td><td>{% if doc.prices_include_tax %}{% t "Including GST" %}{% else %}{% t "Excluding GST" %}{% endif %}</td>
     </tr>
   </table>
 
@@ -29,20 +29,20 @@
   <table class="lines">
     <thead>
       <tr>
-        <th>Item</th>
+        <th>{% t "Item" %}</th>
         <th class="c">HSN</th>
-        <th class="n">Qty</th>
-        <th class="n">Rate (₹)</th>
-        <th class="n">Discount (₹)</th>
-        <th class="n">Taxable (₹)</th>
-        <th class="n">GST</th>
-        <th class="n">Amount (₹)</th>
+        <th class="n">{% t "Qty" %}</th>
+        <th class="n">{% t "Rate (₹)" %}</th>
+        <th class="n">{% t "Discount (₹)" %}</th>
+        <th class="n">{% t "Taxable (₹)" %}</th>
+        <th class="n">{% t "GST" %}</th>
+        <th class="n">{% t "Amount (₹)" %}</th>
       </tr>
     </thead>
     <tbody>
       {% for line in doc.lines %}
       <tr>
-        <td>{{ line.name }}{% if line.free %} <b>Free{% if line.scheme %} ({{ line.scheme }}){% endif %}</b>{% endif %}<br><span class="muted">{{ line.code }}{% if line.later != "0.000" %} · {{ line.later|qty }} to follow when stock arrives{% endif %}</span></td>
+        <td>{{ line.name }}{% if line.free %} <b>{% t "Free" %}{% if line.scheme %} ({{ line.scheme }}){% endif %}</b>{% endif %}<br><span class="muted">{{ line.code }}{% if line.later != "0.000" %} · {% t "%(quantity)s to follow when stock arrives" quantity=line.later|qty %}{% endif %}</span></td>
         <td class="c">{{ line.hsn }}</td>
         <td class="n">{{ line.quantity|qty }} {{ line.unit }}</td>
         <td class="n">{{ line.unit_price|amount }}</td>
@@ -56,14 +56,14 @@
   </table>
 
   <table class="totals">
-    <tr><td>Taxable value</td><td class="n">{{ doc.totals.taxable|rupees }}</td></tr>
-    <tr><td>GST (estimate)</td><td class="n">{{ doc.totals.tax|rupees }}</td></tr>
-    {% if doc.totals.round_off != "0.00" %}<tr><td>Round off</td><td class="n">{{ doc.totals.round_off|rupees }}</td></tr>{% endif %}
-    <tr class="grand"><td>Estimated total</td><td class="n">{{ doc.totals.grand_total|rupees }}</td></tr>
+    <tr><td>{% t "Taxable value" %}</td><td class="n">{{ doc.totals.taxable|rupees }}</td></tr>
+    <tr><td>{% t "GST (estimate)" %}</td><td class="n">{{ doc.totals.tax|rupees }}</td></tr>
+    {% if doc.totals.round_off != "0.00" %}<tr><td>{% t "Round off" %}</td><td class="n">{{ doc.totals.round_off|rupees }}</td></tr>{% endif %}
+    <tr class="grand"><td>{% t "Estimated total" %}</td><td class="n">{{ doc.totals.grand_total|rupees }}</td></tr>
   </table>
-  <p class="muted" style="margin-top:6pt">The amount payable is on the tax invoice. Tax is worked out at the rate in force on the invoice date.</p>
+  <p class="muted" style="margin-top:6pt">{% t "The amount payable is on the tax invoice. Tax is worked out at the rate in force on the invoice date." %}</p>
 
-  <div class="bottom"><div></div><div class="sign"><p>For <b>{{ seller.legal_name }}</b></p></div></div>
+  <div class="bottom"><div></div><div class="sign"><p>{% t "For %(name)s" name=seller.legal_name bold="name" %}</p></div></div>
 </section>
 {% endwith %}
 </body>

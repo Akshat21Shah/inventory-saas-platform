@@ -1,7 +1,6 @@
 "use client";
 
 import { RotateCcw, Save } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -20,6 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import type { Setting } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { omitKey } from "@/lib/utils";
 
 export const GROUP_ORDER = [

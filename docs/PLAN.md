@@ -1733,8 +1733,23 @@ Re-checked and approved by the owner before anything is created in AWS; prices t
 
 **Open decisions for Phase 10:** how pilot shops get sign-in codes on staging (the super admin's "Test messages" page, or also the distributor owner for their own shops); skipping emails to unverified addresses; test markers on PDFs and emails; whether pilot data moves to production or production starts fresh; standard or lean sizes; one account or Organizations.
 
-### Phase 11a — Language support (web, messages, documents)
-First after Phase 9 (owner, 2026-10-02). Scope: the web app (staff, shop and super admin screens), the messages the app sends (email, WhatsApp and SMS texts, in-app notifications) and the documents (invoice, credit note, receipt and other PDFs) in Hindi and Marathi as well as English, with layout checks; takes over task 10.1. The task breakdown is written and approved before work starts.
+### Phase 11a — Language support (web, messages, documents) — ADR-060, §10.2p (approved 2026-10-02)
+First after Phase 9 (owner, 2026-10-02); takes over task 10.1. English (default), Hindi and Marathi; more Indian languages later by adding files. Branch `phase-11a`, draft PR #18, a backend checkpoint after 11a.9 (stop there for the owner) and a final review.
+
+| # | Task | Size |
+|---|---|---|
+| 11a.1 | Docs: ADR-060, this plan and §10.2p, SPEC 1.15, pre-production items 42–44, CA question 48 | S |
+| 11a.2 | Foundation: `languages.json`; which languages are enabled (⚙ `platform.languages_enabled`, test distributors); the language per request (profile, sign-in choice, distributor default) on web and server; one shared formatter (Indian grouping, digits 0–9) for every language; Noto Sans Devanagari loaded only when Devanagari is shown; a lint rule against hard-coded text, and the few found fixed | M |
+| 11a.3 | Who speaks what: staff, super admin and shop logins choose their language (account pages and sign-in pages); shops follow the distributor's default unless set; the setting `retailers.default_language`; imports and the shop editor | M |
+| 11a.4 | Server messages through gettext: field errors, import errors, report notes, reorder explanations, account emails; Hindi and Marathi `.po` files | L |
+| 11a.5 | Screens: `hi.json` and `mr.json` (≈4,800 messages each, marked "needs review"); a test that every language has every key with the same placeholders and valid plural forms | L |
+| 11a.6 | Notifications: texts per language for every event (in-app, email, SMS, WhatsApp); platform templates per language; per-language editing for the super admin and distributors; translated values (status names, payment modes); the first-batch WhatsApp submission list in Hindi and Marathi; SMS lengths in Unicode | L |
+| 11a.7 | Documents: the chosen document language (§10.2p question 1), fixed at issue; bilingual labels; Hindi and Marathi PDFs tested for embedded Devanagari | M |
+| 11a.8 | Search: transliteration both ways (shop and global search, Devanagari names indexed in English letters too); synonym lists per language; speed check | M |
+| 11a.9 | Assistant: answers in the question's language; the stand-in's Hindi and Marathi words and answer templates; 8 more evaluation questions — **backend checkpoint** | S |
+| 11a.10 | Translation spreadsheet: `texts_export` / `texts_import` and a super admin download; checks on placeholders, plurals and lengths; "Suggest a better word" (the screen, the current text, the language and the suggestion, to the super admin's list) | M |
+| 11a.11 | FE: language switchers (account and sign-in pages), the distributor settings, per-language notification text editing (three languages side by side, a warning when only one changed), the super admin's language settings and suggestions list, the "Suggest a better word" link; layout fixes for longer text | M |
+| 11a.12 | Responsive check in Hindi and Marathi at 360/768/1440 (CI jobs per language); E2E: a shop orders in Hindi, staff work in Marathi, messages and a PDF in the shop's language — **final review** | M |
 
 ### Phase 11b — Android app
 Second, after 11a is merged; built with language support from the start (the same message catalogues and the shop's chosen language).
@@ -2177,6 +2192,19 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | 3 | Model **owner (2026-10-02)** | Anthropic Messages API with tool use; the model is a super admin setting, `claude-sonnet-5-5` by default, `claude-haiku-4-5-20251001` the option; both evaluated (accuracy, cost per question) in item 40; a scripted mock until then |
 | 4 | What is sent **[assumed]** | The question and the tools' rows (names, codes, amounts); no phone numbers, emails, GSTINs or addresses. In the Privacy Policy and the DPA, with the provider's data terms reviewed (item 41) |
 | 5 | Limits **30 an hour approved as a starting point (2026-10-02)** | The monthly AI units cap; 30 questions per person per hour; 30 s per provider call; at most 4 tool rounds |
+
+### 10.2p Phase 11a questions (2026-10-02, ADR-060) — for the owner's answers before building
+| # | Question | Recommendation |
+|---|---|---|
+| 1 | **Documents' language:** English only, bilingual labels, or fully in the shop's language? | **Bilingual labels for shop documents** (invoice, credit note, receipt, refund voucher, Order Confirmation): English first, then the shop's language ("Tax Invoice / कर बीजक"), only when the shop's language isn't English; data as entered; the amount in words in English. A distributor setting can switch to English only. Purchase orders in English. Why not fully translated: GST doesn't require English, but Rule 46's particulars must be unambiguous to tax officers, auditors and the GST portal's English data (e-invoices are English anyway); English-first bilingual keeps that and still reads naturally for the shop. CA question 48 confirms. |
+| 2 | **Digits:** 0–9 or Devanagari numerals (०–९)? | **0–9 everywhere**, with Indian grouping (₹1,23,456.00). Indian official use is the international form of the numerals (Article 343), shops type 0–9 on their keyboards, GSTINs, codes and amounts stay consistent across languages and documents, and mixed numerals invite errors. |
+| 3 | **A distributor's own message wording:** if a distributor edits a message in English only, what do its Hindi and Marathi shops get? | **The standard Hindi or Marathi wording**, with a warning in the editor ("you changed English; Hindi and Marathi shops still get the standard text") and the three languages side by side to edit. Sending the edited English to everyone would break "each recipient's language". |
+| 4 | **Sign-in codes by SMS:** in the person's language, or English? | **English** for the sign-in code (short, one DLT template, 160-character parts; the shop may not have chosen a language yet); **notifications by SMS in the person's language** (a DLT template per language, Unicode parts of 70 characters, so a longer Hindi or Marathi SMS costs more parts). |
+| 5 | **Shops' default:** existing shops have English saved because it was the default. Treat those as "follow the distributor's default"? | **Yes:** existing shops saved as English follow the distributor's default (English unless the distributor changes it); a shop or the distributor can still set English on purpose. Shops imported with Hindi or Marathi keep it. |
+| 6 | **Search synonyms:** a fixed list maintained with the platform, or editable by each distributor? | **A platform list now** (everyday FMCG and grocery words in Hindi, Marathi and Hinglish, ≈300 entries, reviewed with the translations); distributor-specific words go to the backlog. |
+| 7 | **Translation review:** who reviews, and does anything ship before review? | The owner arranges a native Hindi and a native Marathi reviewer (pre-production item 42); until then the languages can be switched on, labelled "Beta" in the language switcher. |
+
+**Owner's answers (2026-10-02):** 1 as recommended (keep CA question 48). 2 as recommended, through one shared formatter. 3 as recommended, and distributors edit the Hindi and Marathi versions in the same editor; only languages they haven't edited fall back to the standard text. 4 as recommended; the Hindi and Marathi welcome SMS fit one 70-character part. 5 as recommended. 6 as recommended (per-distributor lists to the backlog). 7 **changed:** no "Beta" label; the super admin enables or disables each language for the platform (a platform setting); until the review (item 42) Hindi and Marathi stay disabled for real users and enabled only for testing; enabling later needs no code. Additions: Devanagari fonts load only when the person's language needs them; a "Suggest a better word" link for staff and shops sends the screen, the current text and the suggestion to the super admin.
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.

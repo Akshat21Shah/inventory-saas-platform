@@ -12,6 +12,8 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
+from django.utils.translation import gettext as _
+
 from apps.accounts.models import User
 from apps.billing.models import CreditNote, Invoice, PaymentStatus
 from apps.ledger.models import Allocation, LedgerAdjustment, RetailerAccount
@@ -136,7 +138,9 @@ def apply(
 ) -> Allocation:
     """Match ``amount`` of ``source`` to ``target`` on a locked account."""
     if amount <= 0 or amount > source.unapplied_amount or amount > target.balance_due:
-        raise InvalidFields({"amount": ["More than the payment has left, or than is still owed."]})
+        raise InvalidFields(
+            {"amount": [_("More than the payment has left, or than is still owed.")]}
+        )
     allocation: Allocation = Allocation.objects.create(
         retailer_id=account.retailer_id,
         amount=amount,
@@ -178,7 +182,7 @@ def reverse(
     """Undo an allocation (to reallocate it, or because its payment bounced): a new row with the
     opposite amount; the money is unused again and the due is owed again (audited by callers)."""
     if allocation.amount <= 0 or Allocation.objects.filter(reverses=allocation).exists():
-        raise InvalidFields({"allocation": ["This allocation was already undone."]})
+        raise InvalidFields({"allocation": [_("This allocation was already undone.")]})
     source: Source = (
         allocation.payment or allocation.credit_note or allocation.credit_adjustment  # type: ignore[assignment]
     )

@@ -2,9 +2,11 @@
 public branding a tenant's pre-login pages need (PLAN §3.2)."""
 
 from typing import Any
+from uuid import UUID
 
 from django.http import HttpResponseRedirect
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from django.utils.translation import gettext
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
@@ -35,6 +37,7 @@ from apps.platform.selectors import (
 )
 from common.error_codes import ErrorCode
 from common.errors import DomainError, NotFound
+from common.numbers import fill
 from common.permissions import HasPermission, StaffReadsOrHasPermission
 from common.storage import get_storage
 from common.tenancy import require_tenant_id, tenant_context
@@ -66,6 +69,7 @@ def _business(tenant: Tenant, profile: TenantProfile) -> dict[str, Any]:
         "invoice_terms": profile.invoice_terms,
         "invoice_footer": profile.invoice_footer,
         "signatory_name": profile.signatory_name,
+        "sms_name": profile.sms_name,
         "has_signatory_image": bool(profile.signatory_image),
         "gst_identity_locked": tenant_services.gst_identity_locked(tenant.pk),
     }
@@ -101,6 +105,25 @@ class BusinessSettingsView(APIView):
             changes["state_id"] = changes.pop("state_code")
         tenant_settings_services.update_business(changes, by=_user(request))
         return Response(s.BusinessSerializer(_load_business()).data)
+
+
+class SmsPreviewView(APIView):
+    """The welcome SMS with a short name for SMS, per language: its length and parts (owner)."""
+
+    permission_classes = [StaffReadsOrHasPermission]
+    required_permission = "settings.manage"
+
+    @extend_schema(
+        parameters=[OpenApiParameter("name", str, description="The short name being typed.")],
+        responses=s.SmsPreviewSerializer(many=True),
+        operation_id="settings_business_sms_preview",
+        tags=["settings"],
+    )
+    def get(self, request: Request) -> Response:
+        from apps.notifications.sms_preview import welcome_previews
+
+        rows = welcome_previews(request.query_params.get("name", ""))
+        return Response(s.SmsPreviewSerializer(rows, many=True).data)
 
 
 class BankDetailsView(APIView):
@@ -150,7 +173,7 @@ def _require_edit_permission(request: Request, keys: list[str]) -> None:
         for k in keys
     ):
         raise DomainError(
-            "This setting belongs to a module that isn't switched on for your business.",
+            gettext("This setting belongs to a module that isn't switched on for your business."),
             code=ErrorCode.MODULE_NOT_ENABLED,
             status_code=403,
         )
@@ -161,7 +184,9 @@ def _require_edit_permission(request: Request, keys: list[str]) -> None:
         if k in registry.REGISTRY and registry.REGISTRY[k].required_permission not in permissions
     ]
     if denied:
-        raise PermissionDenied(f"You can't change: {', '.join(sorted(denied))}.")
+        raise PermissionDenied(
+            fill(gettext("You can't change: %(denied)s."), {"denied": ", ".join(sorted(denied))})
+        )
 
 
 class TenantSettingsRegistryView(APIView):
@@ -387,7 +412,49 @@ class PublicBrandingView(APIView):
         body = public_branding(slug)
         if body is None:
             raise NotFound()
-        return Response(s.PublicBrandingSerializer(body).data)
+        return Response(s.PublicBrandingSerializer({**body, **_sign_in_languages(body)}).data)
+
+
+def _sign_in_languages(branding: dict[str, Any]) -> dict[str, Any]:
+    """What a sign-in page may offer (ADR-060): the languages this distributor's people may
+    choose, and its default for shops. From the settings cache rather than the branding one, so
+    a change shows at once."""
+    from apps.platform.selectors import get_setting
+    from common import languages
+
+    allowed = languages.available(tenant_slug=branding["slug"])
+    default = get_setting("retailers.default_language", UUID(branding["tenant_id"]))
+    return {
+        "languages": [
+            {"code": row.code, "name": row.name, "native": row.native}
+            for row in languages.all_languages()
+            if row.code in allowed
+        ],
+        "default_language": languages.effective(str(default), allowed),
+    }
+
+
+class PublicLanguagesView(APIView):
+    """Every language the app has, and whether it is enabled for everyone (ADR-060). For the
+    super admin's sign-in page, where only super admins sign in (they may use any language)."""
+
+    authentication_classes: list[type] = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses=s.PlatformLanguageSerializer(many=True),
+        operation_id="public_languages",
+        tags=["public"],
+    )
+    def get(self, request: Request) -> Response:
+        from common import languages
+
+        on = set(languages.enabled())
+        rows = [
+            {"code": row.code, "name": row.name, "native": row.native, "enabled": row.code in on}
+            for row in languages.all_languages()
+        ]
+        return Response(s.PlatformLanguageSerializer(rows, many=True).data)
 
 
 class PublicAssetView(APIView):

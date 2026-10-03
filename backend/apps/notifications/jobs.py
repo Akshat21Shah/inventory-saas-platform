@@ -13,13 +13,17 @@ its notification ids are derived from the tenant, the subject and the date).
   once a day."""
 
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from typing import Any
 from uuid import UUID, uuid5
 
 from django.db.models import Count, Min, Q, Sum
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -30,6 +34,7 @@ from apps.notifications.models import ReminderPause
 from apps.platform.selectors import get_setting
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill, grouped
 
 NAMESPACE = UUID("5d6f1f4e-0c1b-4c5e-9a57-2f4b8e9d6a10")
 RATE_CHANGE_NOTICE_DAYS = 7
@@ -75,6 +80,15 @@ def active_pause(retailer_id: UUID, today: date) -> ReminderPause | None:
     )
 
 
+def in_english(make: Callable[[], EventContext]) -> EventContext:
+    """A scheduled message's context, made in English and remade in each recipient's language
+    when sent (ADR-060)."""
+    with translation.override("en"):
+        ctx = make()
+    ctx.rebuild = make
+    return ctx
+
+
 def payment_reminders(today: date) -> int:
     """Remind each shop due a reminder today. Returns the shops reminded (paused ones count:
     their rows are kept as "Not sent: paused")."""
@@ -99,26 +113,41 @@ def payment_reminders(today: date) -> int:
         late = [d for d in dues if d.due_date < today]
         total = sum((d.balance_due for d in dues), ZERO)
         overdue = sum((d.balance_due for d in late), ZERO)
-        if late:
-            note = f"{rupees(overdue)} overdue since {day(min(d.due_date for d in late))}"
-        else:
-            note = f"due on {day(oldest)}"
-        ctx = EventContext(
-            "payment.reminder",
-            {
-                "shop": shop.shop_name,
-                "bills": f"{len(dues)} bill" + ("s" if len(dues) != 1 else ""),
-                "amount": rupees(total),
-                "overdue": rupees(overdue),
-                "due_note": note,
-            },
-            retailer=shop,
-            salesperson_id=shop.salesperson_id,
-            shop_path="/shop/invoices",
-            staff_path=f"/manage/retailers/{shop.pk}/ledger",
-            extra={"paused": active_pause(shop.pk, today) is not None},
-        )
-        notify(job_event_id(shop.tenant_id, "payment.reminder", shop.pk, today), ctx)
+        paused = active_pause(shop.pk, today) is not None
+
+        def make(shop: Retailer = shop, dues: list[Any] = dues, late: list[Any] = late,
+                 total: Decimal = total, overdue: Decimal = overdue, oldest: date = oldest,
+                 paused: bool = paused) -> EventContext:  # fmt: skip
+            if late:
+                note = fill(
+                    _("%(amount)s overdue since %(date)s"),
+                    {
+                        "amount": rupees(overdue),
+                        "date": day(min(d.due_date for d in late)),
+                    },
+                )
+            else:
+                note = fill(_("due on %(date)s"), {"date": day(oldest)})
+            return EventContext(
+                "payment.reminder",
+                {
+                    "shop": shop.shop_name,
+                    "bills": fill(
+                        ngettext("%(count)s bill", "%(count)s bills", len(dues)),
+                        {"count": len(dues)},
+                    ),
+                    "amount": rupees(total),
+                    "overdue": rupees(overdue),
+                    "due_note": note,
+                },
+                retailer=shop,
+                salesperson_id=shop.salesperson_id,
+                shop_path="/shop/invoices",
+                staff_path=f"/manage/retailers/{shop.pk}/ledger",
+                extra={"paused": paused},
+            )
+
+        notify(job_event_id(shop.tenant_id, "payment.reminder", shop.pk, today), in_english(make))
         reminded += 1
     return reminded
 
@@ -130,9 +159,9 @@ def pause_reminders(
     from common.dates import today_ist
 
     if not reason.strip():
-        raise InvalidFields({"reason": ["Say why reminders are paused."]})
+        raise InvalidFields({"reason": [_("Say why reminders are paused.")]})
     if until is not None and until < today_ist():
-        raise InvalidFields({"until": ["Choose today or a later date."]})
+        raise InvalidFields({"until": [_("Choose today or a later date.")]})
     shop = Retailer.objects.filter(pk=retailer_id, deleted_at__isnull=True).first()
     if shop is None:
         raise NotFound()
@@ -188,18 +217,21 @@ def handover_reminders(today: date) -> int:
     tenant_id = current_tenant().pk
     for row in held:
         salesman = row["collected_by"]
-        ctx = EventContext(
-            "handover.reminder",
-            {
-                "salesman": names.get(salesman) or "A salesman",
-                "count": str(row["count"]),
-                "amount": rupees(row["amount"]),
-                "oldest": day(row["oldest"]),
-            },
-            collector_id=salesman,
-            staff_path="/manage/payments/handover",
-        )
-        notify(job_event_id(tenant_id, "handover.reminder", salesman, today), ctx)
+
+        def make(salesman: UUID = salesman, row: dict[str, Any] = row) -> EventContext:
+            return EventContext(
+                "handover.reminder",
+                {
+                    "salesman": names.get(salesman) or _("A salesman"),
+                    "count": grouped(row["count"]),
+                    "amount": rupees(row["amount"]),
+                    "oldest": day(row["oldest"]),
+                },
+                collector_id=salesman,
+                staff_path="/manage/payments/handover",
+            )
+
+        notify(job_event_id(tenant_id, "handover.reminder", salesman, today), in_english(make))
     return len(held)
 
 
@@ -260,7 +292,7 @@ def rate_change_warnings(today: date) -> int:
     ctx = EventContext(
         "tax.rate_change_upcoming",
         {
-            "count": str(len(changes)),
+            "count": grouped(len(changes)),
             "change_date": day(target),
             "products": listing(
                 [f"{c.product} ({rate(c.old_rate)} → {rate(c.new_rate)})" for c in changes]
@@ -313,21 +345,24 @@ def daily_summaries(now: datetime) -> int:
         event_id = job_event_id(tenant_id, "summary.daily", user.pk, today)
         if Notification.objects.filter(event_id=event_id).exists():
             continue  # already sent today
-        found = summary_for(user, yesterday)
-        done = found.yesterday or ["nothing to show"]
-        waiting = found.attention or ["nothing waiting"]
-        ctx = EventContext(
-            "summary.daily",
-            {
-                "date": day(yesterday),
-                "yesterday": " · ".join(done),
-                "attention": " · ".join(waiting),
-                "yesterday_lines": "\n".join(f"- {line}" for line in done),
-                "attention_lines": "\n".join(f"- {line}" for line in waiting),
-            },
-            staff_path="/manage",
-            extra={"only_user": user.pk},
-        )
-        notify(event_id, ctx)
+
+        def make(user: User = user) -> EventContext:
+            found = summary_for(user, yesterday)
+            done = found.yesterday or [_("nothing to show")]
+            waiting = found.attention or [_("nothing waiting")]
+            return EventContext(
+                "summary.daily",
+                {
+                    "date": day(yesterday),
+                    "yesterday": " · ".join(done),
+                    "attention": " · ".join(waiting),
+                    "yesterday_lines": "\n".join(f"- {line}" for line in done),
+                    "attention_lines": "\n".join(f"- {line}" for line in waiting),
+                },
+                staff_path="/manage",
+                extra={"only_user": user.pk},
+            )
+
+        notify(event_id, in_english(make))
         sent += 1
     return sent

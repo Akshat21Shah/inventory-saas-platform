@@ -3,6 +3,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.db.models import QuerySet
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.pagination import CursorPagination
@@ -177,7 +178,7 @@ class SuggestionCreateOrdersView(PlanningView):
     def post(self, request: Request) -> Response:
         if not is_feature_enabled("purchasing"):
             raise DomainError(
-                "Purchasing isn't switched on for your business.",
+                _("Purchasing isn't switched on for your business."),
                 code=ErrorCode.MODULE_NOT_ENABLED,
                 status_code=403,
             )

@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDown, ChevronRight, Headset } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { Fragment, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AuditLog } from "@/lib/api/generated/model";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useIsCompact } from "@/lib/use-media";
 
 import { EmptyState } from "./empty-state";
@@ -176,7 +176,9 @@ export function AuditTable({
               {expanded ? (
                 <div className="bg-muted/40 space-y-3 rounded-lg p-3">
                   <DiffViewer changes={row.changes} />
-                  {row.ip ? <p className="text-muted-foreground text-xs">IP {row.ip}</p> : null}
+                  {row.ip ? (
+                    <p className="text-muted-foreground text-xs">{t("ip", { ip: row.ip })}</p>
+                  ) : null}
                 </div>
               ) : null}
             </li>
@@ -248,7 +250,7 @@ export function AuditTable({
                       <TableCell colSpan={4} className="bg-muted/40 space-y-3 py-3">
                         <DiffViewer changes={row.changes} />
                         {row.ip ? (
-                          <p className="text-muted-foreground text-xs">IP {row.ip}</p>
+                          <p className="text-muted-foreground text-xs">{t("ip", { ip: row.ip })}</p>
                         ) : null}
                       </TableCell>
                     </TableRow>

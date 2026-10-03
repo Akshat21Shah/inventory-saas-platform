@@ -19,6 +19,8 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import F
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -29,6 +31,7 @@ from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine, SupplierPro
 from apps.purchasing.orders import OPEN, NotEditable, lock
 from common.error_codes import ErrorCode
 from common.errors import DomainError
+from common.numbers import fill
 from common.tenancy import require_tenant_id
 
 S = PurchaseOrder.Status
@@ -38,7 +41,7 @@ UNIT_COST_STEP = Decimal("0.0001")
 class OverReceipt(DomainError):
     status_code = 409
     code = ErrorCode.OVER_RECEIPT
-    default_message = "More is being received than was ordered."
+    default_message = gettext_lazy("More is being received than was ordered.")
 
 
 def open_draft(order_id: UUID) -> StockInward | None:
@@ -52,13 +55,13 @@ def receive_order(order_id: UUID, *, by: User) -> StockInward:
     """The goods-receipt draft for what is still due (the open one, if there is already one)."""
     order = lock(order_id)
     if order.status not in OPEN:
-        raise NotEditable("Only a sent or partly received order can be received.")
+        raise NotEditable(_("Only a sent or partly received order can be received."))
     existing = open_draft(order.pk)
     if existing is not None:
         return existing
     due = [line for line in order.lines.select_related("product") if line.due > 0]
     if not due:
-        raise NotEditable("Nothing is still due on this order.")
+        raise NotEditable(_("Nothing is still due on this order."))
     inward = StockInward(
         warehouse=order.warehouse,
         supplier=order.supplier,
@@ -138,8 +141,13 @@ def before_post(
     )
     if order.status not in OPEN:
         raise NotEditable(
-            f"{order.number} is {order.get_status_display().lower()}: nothing more can be "
-            "received against it. Delete this draft and receive without the order."
+            fill(
+                _(
+                    "%(number)s is %(order)s: nothing more can be received against it. "
+                    "Delete this draft and receive without the order."
+                ),
+                {"number": order.number, "order": order.get_status_display().lower()},
+            )
         )
     receiving: dict[UUID, Decimal] = defaultdict(Decimal)
     for line in lines:
@@ -152,7 +160,9 @@ def before_post(
     allowed = by.has_permission_code("purchasing.manage")
     if not confirm or not allowed:
         raise OverReceipt(
-            "Someone who manages purchasing must confirm receiving this much." if confirm else None,
+            _("Someone who manages purchasing must confirm receiving this much.")
+            if confirm
+            else None,
             details={"lines": over, "tolerance_percent": _tolerance(), "can_confirm": allowed},
         )
     audit.record(

@@ -1,4 +1,5 @@
-# Backend image (API, Celery worker, Celery beat). Build context: backend/
+# Backend image (API, Celery worker, Celery beat). Build context: backend/, plus web/messages as
+# the named context web_messages.
 FROM python:3.13-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -13,6 +14,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir uv==0.12.18 \
     && useradd --create-home --uid 1000 app
+# The screens' texts, for the super admin's translation sheet (ADR-060): the build context
+# "web_messages" is web/messages (compose: additional_contexts; CI: build-contexts).
+COPY --from=web_messages . /web_messages/
+ENV WEB_MESSAGES_DIR=/web_messages
 WORKDIR /app
 
 FROM base AS dev

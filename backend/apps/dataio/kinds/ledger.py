@@ -11,6 +11,8 @@ from typing import Any
 from uuid import UUID
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.dataio.kinds.base import Column, RowPlan
@@ -19,6 +21,7 @@ from apps.ledger import services as ledger
 from apps.ledger.models import LedgerAdjustment
 from apps.retailers.models import Retailer
 from common.dates import today_ist
+from common.numbers import fill
 from common.phone import normalize_indian_mobile
 
 C = Column
@@ -28,7 +31,7 @@ COLUMNS: tuple[Column, ...] = (
         "Shop",
         ("mobile", "mobile number", "shop code", "retailer", "customer"),
         True,
-        "The shop's mobile number or code (R-00001).",
+        gettext_lazy("The shop's mobile number or code (R-00001)."),
         "9876500001",
     ),
     C(
@@ -36,7 +39,9 @@ COLUMNS: tuple[Column, ...] = (
         "Amount owed",
         ("balance", "opening balance", "outstanding", "due", "amount"),
         True,
-        "What the shop owes you. Use a minus sign for money the shop paid in advance.",
+        gettext_lazy(
+            "What the shop owes you. Use a minus sign for money the shop paid in advance."
+        ),
         "12500.00",
     ),
     C(
@@ -44,7 +49,9 @@ COLUMNS: tuple[Column, ...] = (
         "Bill number",
         ("invoice number", "bill no", "invoice no", "reference"),
         False,
-        "The old bill's number, if known. Each bill number is imported once per shop.",
+        gettext_lazy(
+            "The old bill's number, if known. Each bill number is imported once per shop."
+        ),
         "SD/25-26/0412",
     ),
     C(
@@ -52,7 +59,7 @@ COLUMNS: tuple[Column, ...] = (
         "Bill date",
         ("as of date", "date", "balance date", "invoice date"),
         True,
-        "The date of the old bill, or of the advance (DD-MM-YYYY).",
+        gettext_lazy("The date of the old bill, or of the advance (DD-MM-YYYY)."),
         "15-02-2026",
     ),
     C(
@@ -60,8 +67,10 @@ COLUMNS: tuple[Column, ...] = (
         "Due date",
         ("due", "due on", "payment due"),
         False,
-        "When the bill was due (DD-MM-YYYY). The shop's payment terms after the bill date if "
-        "empty.",
+        gettext_lazy(
+            "When the bill was due (DD-MM-YYYY). The shop's payment terms after the bill date if "
+            "empty."
+        ),
         "17-03-2026",
     ),
     C(
@@ -69,7 +78,7 @@ COLUMNS: tuple[Column, ...] = (
         "Note",
         ("narration", "remarks", "description"),
         False,
-        "Shown on the shop's statement.",
+        gettext_lazy("Shown on the shop's statement."),
         "Balance from old books",
     ),
 )
@@ -79,15 +88,15 @@ LABEL = {c.name: c.label for c in COLUMNS}
 def _date(plan: RowPlan, v: dict[str, str], field: str, *, required: bool) -> date | None:
     if not v.get(field):
         if required:
-            plan.error(LABEL[field], "Enter the date, like 15-02-2026.")
+            plan.error(LABEL[field], _("Enter the date, like 15-02-2026."))
         return None
     try:
         day = parse_date(v[field])
     except ValueError:
-        plan.error(LABEL[field], "Use a date like 15-02-2026.")
+        plan.error(LABEL[field], _("Use a date like 15-02-2026."))
         return None
     if field == "bill_date" and day > today_ist():
-        plan.error(LABEL[field], "The date can't be in the future.")
+        plan.error(LABEL[field], _("The date can't be in the future."))
     return day
 
 
@@ -145,43 +154,56 @@ class OpeningBalancesKind:
             plans.append(plan)
             shop = _find(v["shop"], by_mobile, by_code) if v.get("shop") else None
             if not v.get("shop"):
-                plan.error(LABEL["shop"], "Enter the shop's mobile number or code.")
+                plan.error(LABEL["shop"], _("Enter the shop's mobile number or code."))
             elif shop is None:
-                plan.error(LABEL["shop"], f"No shop has the mobile number or code {v['shop']}.")
+                plan.error(
+                    LABEL["shop"],
+                    fill(_("No shop has the mobile number or code %(shop)s."), {"shop": v["shop"]}),
+                )
             amount = None
             try:
                 amount = parse_decimal(v.get("amount", ""), places=2)
                 if amount == 0:
                     plan.action = "UNCHANGED"
             except ValueError:
-                plan.error(LABEL["amount"], "Enter the amount in rupees and paise, e.g. 12500.00.")
+                plan.error(
+                    LABEL["amount"], _("Enter the amount in rupees and paise, e.g. 12500.00.")
+                )
             bill_date = _date(plan, v, "bill_date", required=True)
             due = _date(plan, v, "due_date", required=False)
             if bill_date and due and due < bill_date:
-                plan.error(LABEL["due_date"], "The due date can't be before the bill date.")
+                plan.error(LABEL["due_date"], _("The due date can't be before the bill date."))
             number = v.get("bill_number", "").strip()[:40]
             if shop is None or amount is None or not plan.ok or plan.action == "UNCHANGED":
                 continue
             plan.key = f"{shop.code} {number}".strip()
             if amount < 0:
                 if shop.pk in advances:
-                    plan.error(LABEL["shop"], "This shop already has an opening advance.")
+                    plan.error(LABEL["shop"], _("This shop already has an opening advance."))
                     continue
                 if shop.pk in seen_advance:
                     plan.error(
                         LABEL["amount"],
-                        f"This shop's advance is also in row {seen_advance[shop.pk]}.",
+                        fill(
+                            _("This shop's advance is also in row %(value)s."),
+                            {"value": seen_advance[shop.pk]},
+                        ),
                     )
                     continue
                 seen_advance[shop.pk] = row.number
             elif number:
                 if (shop.pk, number) in bills:
-                    plan.error(LABEL["bill_number"], "This bill is already in the shop's account.")
+                    plan.error(
+                        LABEL["bill_number"], _("This bill is already in the shop's account.")
+                    )
                     continue
                 if (shop.pk, number) in seen_bill:
                     plan.error(
                         LABEL["bill_number"],
-                        f"This bill is also in row {seen_bill[(shop.pk, number)]}.",
+                        fill(
+                            _("This bill is also in row %(value)s."),
+                            {"value": seen_bill[shop.pk, number]},
+                        ),
                     )
                     continue
                 seen_bill[(shop.pk, number)] = row.number

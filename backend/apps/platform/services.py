@@ -5,6 +5,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils.translation import gettext, gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -19,7 +20,7 @@ from common.tenancy import require_tenant_id
 class SettingsInvalid(DomainError):
     status_code = 400
     code = ErrorCode.VALIDATION_ERROR
-    default_message = "Some settings need attention."
+    default_message = gettext_lazy("Some settings need attention.")
 
 
 def _validate(values: Mapping[str, Any], scope: Scope) -> dict[str, tuple[SettingDef, Any]]:
@@ -30,10 +31,10 @@ def _validate(values: Mapping[str, Any], scope: Scope) -> dict[str, tuple[Settin
         try:
             defn = registry.get_definition(key, scope)
         except KeyError:
-            errors[key] = ["This setting does not exist."]
+            errors[key] = [gettext("This setting does not exist.")]
             continue
         if defn.status is Status.RESERVED:
-            errors[key] = ["This setting cannot be changed yet."]
+            errors[key] = [gettext("This setting cannot be changed yet.")]
             continue
         try:
             validated[key] = (defn, registry.to_python(defn, raw))

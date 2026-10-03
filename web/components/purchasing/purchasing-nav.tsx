@@ -1,11 +1,11 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SubNav } from "@/components/shared/sub-nav";
+import { useTranslations } from "@/lib/i18n/translations";
 
 /** The Purchasing section (ADR-053, flag ``purchasing``): its tabs, or a word when it's off. */
 export function PurchasingLayout({ children }: { children: ReactNode }) {

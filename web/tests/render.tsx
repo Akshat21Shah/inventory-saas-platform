@@ -3,7 +3,28 @@ import { render, type RenderOptions } from "@testing-library/react";
 import { IntlErrorCode, NextIntlClientProvider, type IntlError } from "next-intl";
 import { useState, type ReactElement, type ReactNode } from "react";
 
+import { intlLocale } from "@/lib/i18n/config";
 import messages from "@/messages/en.json";
+import hindi from "@/messages/hi.json";
+import marathi from "@/messages/mr.json";
+
+type Messages = { [key: string]: string | Messages };
+
+/** A language's messages over the English ones, as the app loads them. */
+function over(base: Messages, own: Messages): Messages {
+  const out: Messages = { ...base };
+  for (const [key, value] of Object.entries(own)) {
+    const under = base[key];
+    out[key] = typeof value === "object" && typeof under === "object" ? over(under, value) : value;
+  }
+  return out;
+}
+
+const CATALOGS: Record<string, Messages> = {
+  en: messages,
+  hi: over(messages, hindi),
+  mr: over(messages, marathi),
+};
 
 /** A missing or broken message fails the test instead of silently rendering the key. */
 function failOnIntlError(error: IntlError) {
@@ -12,7 +33,7 @@ function failOnIntlError(error: IntlError) {
   );
 }
 
-function Providers({ children }: { children: ReactNode }) {
+function Providers({ children, locale = "en" }: { children: ReactNode; locale?: string }) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -22,8 +43,8 @@ function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <NextIntlClientProvider
-        locale="en"
-        messages={messages}
+        locale={intlLocale(locale)}
+        messages={CATALOGS[locale] ?? messages}
         timeZone="Asia/Kolkata"
         onError={failOnIntlError}
       >
@@ -33,7 +54,14 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
-/** Render with the English catalogue and a fresh query client; `rerender` keeps the providers. */
-export function renderWithIntl(ui: ReactElement, options?: Omit<RenderOptions, "wrapper">) {
-  return render(ui, { wrapper: Providers, ...options });
+/** Render with the English catalogue (or ``locale``'s) and a fresh query client; ``rerender``
+ * keeps the providers. */
+export function renderWithIntl(
+  ui: ReactElement,
+  { locale = "en", ...options }: Omit<RenderOptions, "wrapper"> & { locale?: string } = {},
+) {
+  function Wrapper({ children }: { children: ReactNode }) {
+    return <Providers locale={locale}>{children}</Providers>;
+  }
+  return render(ui, { wrapper: Wrapper, ...options });
 }

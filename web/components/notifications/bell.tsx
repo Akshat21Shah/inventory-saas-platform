@@ -2,9 +2,9 @@
 
 import { Bell } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { INBOX, type InboxScope } from "./scope";

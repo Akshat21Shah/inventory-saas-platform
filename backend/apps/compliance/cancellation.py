@@ -29,6 +29,7 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import F, Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -47,6 +48,7 @@ from apps.orders.transitions import lock_order
 from common import outbox
 from common.dates import today_ist
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.tenancy import tenant_transaction
 
 logger = logging.getLogger(__name__)
@@ -74,9 +76,9 @@ def can_cancel(record: EInvoiceRecord) -> bool:
 
 def _check(record: EInvoiceRecord, invoice: Invoice) -> None:
     if record.document_type != DocumentType.INVOICE:
-        raise InvalidFields({"document": ["Only an invoice's IRN can be cancelled here."]})
+        raise InvalidFields({"document": [_("Only an invoice's IRN can be cancelled here.")]})
     if record.status != S.GENERATED or invoice.status != DocumentStatus.ISSUED:
-        raise InvalidFields({"document": ["Only an invoice with an IRN can be cancelled."]})
+        raise InvalidFields({"document": [_("Only an invoice with an IRN can be cancelled.")]})
     blocker = blocked_by(record, invoice)
     if blocker is not None:
         raise InvalidFields({"document": [blocker["message"]]})
@@ -189,29 +191,34 @@ def request(
     if record.status == S.CANCELLING:
         return record
     if record.document_type != DocumentType.INVOICE or record.invoice_id is None:
-        raise InvalidFields({"document": ["Only an invoice's IRN can be cancelled here."]})
+        raise InvalidFields({"document": [_("Only an invoice's IRN can be cancelled here.")]})
     invoice = Invoice.objects.select_related("order").get(pk=record.invoice_id)
     _check(record, invoice)
     errors: dict[str, list[str]] = {}
     if reason_code not in CancelReason.values:
-        errors["reason_code"] = ["Choose a reason."]
+        errors["reason_code"] = [_("Choose a reason.")]
     remarks = " ".join(remarks.split())
     if reason_code == "OTHER" and not remarks:
-        errors["remarks"] = ["Say why."]
+        errors["remarks"] = [_("Say why.")]
     if len(remarks) > 100:
-        errors["remarks"] = ["Keep it to 100 characters."]
+        errors["remarks"] = [_("Keep it to 100 characters.")]
     if outcome not in OUTCOME.values:
-        errors["outcome"] = ["Choose re-issue or take the goods back."]
+        errors["outcome"] = [_("Choose re-issue or take the goods back.")]
     backorders_on = bool(invoice.order.settings_snapshot.get("backorders.enabled", True))
     if outcome == OUTCOME.TAKE_BACK and to_backorder and not backorders_on:
-        errors["to_backorder"] = ["This order doesn't take backorders: cancel the quantities."]
+        errors["to_backorder"] = [_("This order doesn't take backorders: cancel the quantities.")]
     if outcome == OUTCOME.REISSUE and not confirm_rate_changes:
         changed = reissue_preview(invoice)["rate_changes"]
         if changed:
             errors["confirm_rate_changes"] = [
-                "The GST rate valid today differs from the original on "
-                f"{len(changed)} line(s). The re-issued invoice keeps the original rates: "
-                "confirm to continue."
+                fill(
+                    _(
+                        "The GST rate valid today differs from the original on %(count)s "
+                        "line(s). The re-issued invoice keeps the original rates: confirm to "
+                        "continue."
+                    ),
+                    {"count": len(changed)},
+                )
             ]
     if errors:
         raise InvalidFields(errors)

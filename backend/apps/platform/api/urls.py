@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.platform.api import text_views as tv
 from apps.platform.api import views as v
 
 urlpatterns = [
@@ -87,5 +88,14 @@ urlpatterns = [
     path("audit-logs/", v.PlatformAuditLogView.as_view(), name="platform-audit-logs"),
     path(
         "impersonations/", v.ImpersonationListCreateView.as_view(), name="platform-impersonations"
+    ),
+    # Translations (ADR-060): progress, the sheet, suggested words.
+    path("texts/progress/", tv.TextProgressView.as_view(), name="platform-texts-progress"),
+    path("texts/sheet/", tv.TextSheetView.as_view(), name="platform-texts-sheet"),
+    path("texts/suggestions/", tv.SuggestionListView.as_view(), name="platform-text-suggestions"),
+    path(
+        "texts/suggestions/<uuid:suggestion_id>/",
+        tv.SuggestionDetailView.as_view(),
+        name="platform-text-suggestion",
     ),
 ]

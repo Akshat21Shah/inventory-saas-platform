@@ -4,7 +4,6 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, ImageOff, Search, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -28,6 +27,7 @@ import type {
   ShopProductsParams,
 } from "@/lib/api/generated/model";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { isZero } from "@/lib/qty";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";

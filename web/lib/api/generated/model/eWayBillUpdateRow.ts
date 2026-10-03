@@ -15,6 +15,7 @@ export interface EWayBillUpdateRow {
   vehicle_number: string;
   reason_code: string;
   remarks: string;
+  error_code: string;
   error_message: string;
   created_at: string;
   /** @nullable */

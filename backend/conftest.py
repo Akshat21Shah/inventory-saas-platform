@@ -111,3 +111,18 @@ def api_client_for() -> Callable[..., APIClient]:
         return client
 
     return factory
+
+
+@pytest.fixture
+def every_language(db: Any) -> Any:
+    """Every language in the manifest on for everyone, as after the native-speaker review
+    (ADR-060). Off by default: until then only English is enabled."""
+    from django.core.cache import cache
+
+    from apps.platform.services import set_platform_settings
+    from common import languages
+
+    set_platform_settings({"platform.languages_enabled": ",".join(languages.codes())}, user=None)
+    cache.clear()
+    yield
+    cache.clear()

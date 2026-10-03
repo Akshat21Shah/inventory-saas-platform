@@ -23,6 +23,7 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -68,7 +69,7 @@ def module_on(tenant_id: UUID) -> bool:
 def require_module() -> None:
     if not module_on(require_tenant_id()):
         raise DomainError(
-            "E-way bills aren't switched on for your business.",
+            _("E-way bills aren't switched on for your business."),
             code=ErrorCode.MODULE_NOT_ENABLED,
             status_code=403,
         )
@@ -162,14 +163,14 @@ def request(invoice_id: UUID, transport: TransportInput, *, by: User) -> EWayBil
     if invoice is None:
         raise NotFound()
     if invoice.status != DocumentStatus.ISSUED:
-        raise InvalidFields({"invoice": ["This invoice is cancelled."]})
+        raise InvalidFields({"invoice": [_("This invoice is cancelled.")]})
     if transport.mode not in EWayBill.Mode.values:
-        raise InvalidFields({"transport_mode": ["Choose road, rail, air or ship."]})
+        raise InvalidFields({"transport_mode": [_("Choose road, rail, air or ship.")]})
     ewb: EWayBill | None = (
         EWayBill.objects.select_for_update().filter(invoice=invoice, status__in=LIVE).first()
     )
     if ewb is not None and ewb.status == S.GENERATED:
-        raise InvalidFields({"invoice": ["This invoice already has an e-way bill."]})
+        raise InvalidFields({"invoice": [_("This invoice already has an e-way bill.")]})
     if ewb is not None and ewb.status == S.SUBMITTED:
         return ewb  # being made right now
     if ewb is None:  # "Try again": the failed one, with the corrected details
@@ -317,9 +318,9 @@ def _generated_bill(ewb_id: UUID) -> EWayBill:
     if ewb is None:
         raise NotFound()
     if ewb.status != S.GENERATED:
-        raise InvalidFields({"ewaybill": ["Only a generated e-way bill can be changed."]})
+        raise InvalidFields({"ewaybill": [_("Only a generated e-way bill can be changed.")]})
     if EWayBillUpdate.objects.filter(eway_bill=ewb, status=U.PENDING).exists():
-        raise InvalidFields({"ewaybill": ["A change to this e-way bill is being sent."]})
+        raise InvalidFields({"ewaybill": [_("A change to this e-way bill is being sent.")]})
     return ewb
 
 
@@ -337,13 +338,13 @@ def request_part_b(
     errors: dict[str, list[str]] = {}
     vehicle = "".join(vehicle_number.upper().split())[:20]
     if not vehicle:
-        errors["vehicle_number"] = ["Enter the vehicle number."]
+        errors["vehicle_number"] = [_("Enter the vehicle number.")]
     if reason_code not in PART_B_REASONS:
-        errors["reason_code"] = ["Choose a reason."]
+        errors["reason_code"] = [_("Choose a reason.")]
     if reason_code == "OTHER" and not remarks.strip():
-        errors["remarks"] = ["Say why."]
+        errors["remarks"] = [_("Say why.")]
     if ewb.valid_until is not None and timezone.now() > ewb.valid_until:
-        errors["ewaybill"] = ["This e-way bill has expired."]
+        errors["ewaybill"] = [_("This e-way bill has expired.")]
     if errors:
         raise InvalidFields(errors)
     update: EWayBillUpdate = EWayBillUpdate.objects.create(
@@ -369,12 +370,12 @@ def request_cancel(ewb_id: UUID, *, reason_code: str, remarks: str, by: User) ->
     ewb = _generated_bill(ewb_id)
     errors: dict[str, list[str]] = {}
     if reason_code not in CANCEL_REASONS:
-        errors["reason_code"] = ["Choose a reason."]
+        errors["reason_code"] = [_("Choose a reason.")]
     if reason_code == "OTHER" and not remarks.strip():
-        errors["remarks"] = ["Say why."]
+        errors["remarks"] = [_("Say why.")]
     ends = cancel_window_ends(ewb)
     if ends is None or timezone.now() > ends:
-        errors["ewaybill"] = ["The time allowed for cancelling this e-way bill has passed."]
+        errors["ewaybill"] = [_("The time allowed for cancelling this e-way bill has passed.")]
     if errors:
         raise InvalidFields(errors)
     update: EWayBillUpdate = EWayBillUpdate.objects.create(
@@ -419,7 +420,11 @@ def send_update(update_id: UUID, tenant_id: UUID) -> str:
         try:
             given = credentials.for_use(credentials.ready())
         except credentials.NotReady:
-            _update_failed(update, "The GST provider credentials aren't saved or working.")
+            _update_failed(
+                update,
+                "CREDENTIALS_NOT_READY",
+                "The GST provider credentials aren't saved or working.",
+            )
             return str(U.FAILED)
         update.attempts += 1
         update.save(update_fields=["attempts", "updated_at"])
@@ -443,7 +448,7 @@ def send_update(update_id: UUID, tenant_id: UUID) -> str:
                     update.error_message = exc.message[:500]
                     update.save(update_fields=["next_retry_at", "error_message", "updated_at"])
                     return "RETRY"
-                _update_failed(update, exc.message)
+                _update_failed(update, exc.code, exc.message)
             return str(U.FAILED)
         raw, valid_until = exc.raw, None  # cancelled already: our first answer was lost
     with tenant_transaction(tenant_id):
@@ -478,9 +483,12 @@ def send_update(update_id: UUID, tenant_id: UUID) -> str:
     return str(U.DONE)
 
 
-def _update_failed(update: EWayBillUpdate, message: str) -> None:
-    update.status, update.error_message, update.next_retry_at = U.FAILED, message[:500], None
-    update.save(update_fields=["status", "error_message", "next_retry_at", "updated_at"])
+def _update_failed(update: EWayBillUpdate, code: str, message: str) -> None:
+    update.status, update.next_retry_at = U.FAILED, None
+    update.error_code, update.error_message = code, message[:500]
+    update.save(
+        update_fields=["status", "error_code", "error_message", "next_retry_at", "updated_at"]
+    )
 
 
 # --- The every-minute sweep -----------------------------------------------------------------------

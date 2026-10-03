@@ -41,3 +41,5 @@ celerybeat-schedule*
 infra/dev-domain.env
 # Local test sign-ins: never committed.
 TEST_ACCOUNTS.md
+# Translation sheets (make texts-export): sent to reviewers, never committed.
+/texts*.xlsx

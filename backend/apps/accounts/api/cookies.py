@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -15,7 +16,7 @@ from common.errors import DomainError
 class CrossOriginRefused(DomainError):
     status_code = 403
     code = ErrorCode.PERMISSION_DENIED
-    default_message = "This request was blocked."
+    default_message = gettext_lazy("This request was blocked.")
 
 
 def set_refresh_cookie(response: Response, tokens: IssuedTokens) -> None:

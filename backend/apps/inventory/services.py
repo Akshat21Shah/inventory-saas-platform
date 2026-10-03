@@ -17,6 +17,8 @@ from typing import Any
 from uuid import UUID
 
 from django.db import connection, transaction
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -37,13 +39,13 @@ ZERO = Decimal("0")
 class InsufficientStock(DomainError):
     status_code = 409
     code = ErrorCode.INSUFFICIENT_STOCK
-    default_message = "There isn't enough stock."
+    default_message = gettext_lazy("There isn't enough stock.")
 
 
 class StockReserved(DomainError):
     status_code = 409
     code = ErrorCode.STOCK_RESERVED
-    default_message = "This stock is reserved for orders and can't be removed."
+    default_message = gettext_lazy("This stock is reserved for orders and can't be removed.")
 
 
 @dataclass(frozen=True)
@@ -337,11 +339,11 @@ def update_warehouse(warehouse_id: UUID, changes: dict[str, Any], *, by: User) -
             setattr(warehouse, key, value.strip() if isinstance(value, str) else value)
     errors: dict[str, list[str]] = {}
     if not warehouse.name:
-        errors["name"] = ["Enter a name."]
+        errors["name"] = [_("Enter a name.")]
     if warehouse.pincode and not (warehouse.pincode.isdigit() and len(warehouse.pincode) == 6):
-        errors["pincode"] = ["Enter a 6-digit PIN code."]
+        errors["pincode"] = [_("Enter a 6-digit PIN code.")]
     if warehouse.state_id and not State.objects.filter(pk=warehouse.state_id).exists():
-        errors["state"] = ["Choose a state."]
+        errors["state"] = [_("Choose a state.")]
     if errors:
         raise InvalidFields(errors)
     diff = audit.diff(before, audit.snapshot(warehouse, WAREHOUSE_FIELDS))

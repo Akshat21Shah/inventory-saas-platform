@@ -2,7 +2,6 @@
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -31,6 +30,7 @@ import {
 } from "@/lib/api/generated/endpoints/purchasing/purchasing";
 import type { SupplierProduct } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 interface Row {
   supplier_id: string;

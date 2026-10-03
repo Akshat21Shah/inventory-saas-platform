@@ -1,7 +1,6 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
@@ -10,6 +9,7 @@ import { CardSkeleton } from "@/components/shared/skeletons";
 import { Input } from "@/components/ui/input";
 import { useRetailersList } from "@/lib/api/generated/endpoints/retailers/retailers";
 import type { RetailerList } from "@/lib/api/generated/model";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 
 /** Choose the shop a payment, refund or adjustment is for (search by name, code or mobile). */

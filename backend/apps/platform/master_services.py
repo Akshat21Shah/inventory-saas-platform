@@ -9,6 +9,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models, transaction
+from django.utils.translation import gettext
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -16,6 +17,7 @@ from apps.platform.models import CessType, FeatureFlag, HsnRateHint, Plan, TaxRa
 from apps.platform.selectors import invalidate_all_features
 from apps.platform.validators import validate_hsn_prefix
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 
 HSN_IMPORT_MAX_BYTES = 1_000_000
 HSN_IMPORT_MAX_ROWS = 20_000
@@ -83,7 +85,7 @@ def create_plan(data: dict[str, Any], *, by: User) -> Plan:
 def update_plan(plan_id: Any, changes: dict[str, Any], *, by: User) -> Plan:
     plan: Plan = _get(Plan, pk=plan_id)
     if changes.get("is_default") is False and plan.is_default:
-        raise InvalidFields({"is_default": ["Make another plan the default instead."]})
+        raise InvalidFields({"is_default": [gettext("Make another plan the default instead.")]})
     if changes.get("is_default"):
         Plan.objects.filter(is_default=True).exclude(pk=plan.pk).update(is_default=False)
     if "features" in changes:
@@ -95,7 +97,7 @@ def update_plan(plan_id: Any, changes: dict[str, Any], *, by: User) -> Plan:
 def _check_plan_features(codes: Any) -> None:
     known = set(FeatureFlag.objects.values_list("code", flat=True))
     if not isinstance(codes, list) or not set(codes) <= known:
-        raise InvalidFields({"features": ["Use feature codes from the flag catalogue."]})
+        raise InvalidFields({"features": [gettext("Use feature codes from the flag catalogue.")]})
 
 
 # --- Feature flag catalogue ---------------------------------------------------------------------
@@ -118,7 +120,7 @@ def update_feature_flag(code: str, changes: dict[str, Any], *, by: User) -> Feat
 @transaction.atomic
 def create_tax_rate(*, rate: Decimal, label: str, notes: str = "", by: User) -> TaxRate:
     if TaxRate.objects.filter(rate=rate).exists():
-        raise InvalidFields({"rate": ["This rate already exists."]})
+        raise InvalidFields({"rate": [gettext("This rate already exists.")]})
     return _create(TaxRate(rate=rate, label=label, notes=notes), "tax_rate.created")  # type: ignore[no-any-return]
 
 
@@ -163,11 +165,15 @@ def create_hsn_hint(data: dict[str, Any], *, by: User) -> HsnRateHint:
     try:
         data = {**data, "gst_rate": _hint_rate(data.get("gst_rate"))}
     except ValueError as exc:
-        raise InvalidFields({"gst_rate": [f"Rate is {exc}."]}) from exc
+        raise InvalidFields(
+            {"gst_rate": [fill(gettext("Rate is %(exc)s."), {"exc": exc})]}
+        ) from exc
     if HsnRateHint.objects.filter(
         hsn_prefix=data["hsn_prefix"], effective_from=data["effective_from"]
     ).exists():
-        raise InvalidFields({"hsn_prefix": ["A hint for this prefix and date already exists."]})
+        raise InvalidFields(
+            {"hsn_prefix": [gettext("A hint for this prefix and date already exists.")]}
+        )
     return _create(HsnRateHint(**data), "hsn_hint.created")  # type: ignore[no-any-return]
 
 
@@ -178,7 +184,9 @@ def update_hsn_hint(hint_id: Any, changes: dict[str, Any], *, by: User) -> HsnRa
         try:
             changes = {**changes, "gst_rate": _hint_rate(changes["gst_rate"])}
         except ValueError as exc:
-            raise InvalidFields({"gst_rate": [f"Rate is {exc}."]}) from exc
+            raise InvalidFields(
+                {"gst_rate": [fill(gettext("Rate is %(exc)s."), {"exc": exc})]}
+            ) from exc
     _save_changed(hint, changes, ("gst_rate", "description"), "hsn_hint.updated")
     return hint
 
@@ -203,22 +211,31 @@ def import_hsn_hints(content: bytes, *, by: User) -> dict[str, int]:
     Existing (prefix, date) pairs are updated.
     """
     if len(content) > HSN_IMPORT_MAX_BYTES:
-        raise InvalidFields({"file": ["The file is larger than 1 MB."]})
+        raise InvalidFields({"file": [gettext("The file is larger than 1 MB.")]})
     try:
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
-        raise InvalidFields({"file": ["Save the file as UTF-8 CSV."]}) from exc
+        raise InvalidFields({"file": [gettext("Save the file as UTF-8 CSV.")]}) from exc
     reader = csv.DictReader(io.StringIO(text))
     required = {"hsn_prefix", "gst_rate", "effective_from"}
     if not required <= set(reader.fieldnames or []):
         raise InvalidFields(
-            {"file": ["Columns needed: hsn_prefix, gst_rate, effective_from, description."]}
+            {
+                "file": [
+                    gettext("Columns needed: hsn_prefix, gst_rate, effective_from, description.")
+                ]
+            }
         )
     rows: list[tuple[str, Decimal, date, str]] = []
     errors: list[str] = []
     for line, row in enumerate(reader, start=2):
         if len(rows) >= HSN_IMPORT_MAX_ROWS:
-            errors.append(f"Row {line}: more than {HSN_IMPORT_MAX_ROWS} rows.")
+            errors.append(
+                fill(
+                    gettext("Row %(line)s: more than %(hsn_import_max_rows)s rows."),
+                    {"line": line, "hsn_import_max_rows": HSN_IMPORT_MAX_ROWS},
+                )
+            )
             break
         try:
             prefix = (row.get("hsn_prefix") or "").strip()
@@ -228,7 +245,9 @@ def import_hsn_hints(content: bytes, *, by: User) -> dict[str, int]:
             rows.append((prefix, rate, effective, (row.get("description") or "").strip()[:255]))
         except (DjangoValidationError, ValueError) as exc:
             message = exc.messages[0] if isinstance(exc, DjangoValidationError) else str(exc)
-            errors.append(f"Row {line}: {message}")
+            errors.append(
+                fill(gettext("Row %(line)s: %(message)s"), {"line": line, "message": message})
+            )
     if errors:
         raise InvalidFields({"file": errors[:50]})
     created = updated = 0

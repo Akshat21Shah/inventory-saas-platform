@@ -19,6 +19,7 @@ from apps.platform.models import (
     Tenant,
     TenantBranding,
     TenantFeature,
+    TenantProfile,
     TenantSetting,
 )
 from apps.platform.registry import Scope, SnapshotOn
@@ -110,6 +111,7 @@ def public_branding(slug: str) -> dict[str, Any] | None:
     # Never the specific status (onboarding, suspended, ...): only whether sign-in is open.
     body = {
         "slug": tenant.slug,
+        "tenant_id": str(tenant.pk),  # not shown: for the sign-in languages (ADR-060)
         "available": tenant.status == Tenant.Status.ACTIVE,
         **branding_body(tenant, branding),
     }
@@ -308,3 +310,11 @@ def settings_snapshot(target: SnapshotOn, tenant_id: UUID | None = None) -> dict
         for d in registry.definitions(Scope.TENANT)
         if target in d.snapshot_on
     }
+
+
+def sms_name(tenant_id: UUID) -> str:
+    """The distributor's short name for SMS (owner, ADR-060), blank when it has none: callers use
+    their usual name then."""
+    with tenant_context(tenant_id):
+        name = TenantProfile.objects.values_list("sms_name", flat=True).first()
+    return name or ""

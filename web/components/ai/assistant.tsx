@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -31,6 +30,7 @@ import {
 import type { AssistantQuestion, Column, Figures as FiguresData } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 
 type Row = Record<string, unknown>;
 
@@ -101,7 +101,7 @@ function Figures({ figures }: { figures: FiguresData }) {
         </h3>
         <Link
           href={href}
-          className="text-primary text-sm underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
+          className="text-primary text-sm underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center"
         >
           {t("openReport")}
         </Link>

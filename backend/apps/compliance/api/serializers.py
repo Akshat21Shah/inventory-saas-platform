@@ -197,6 +197,9 @@ class EWayBillSummarySerializer(serializers.Serializer[Any]):
         allow_blank=True, help_text="PART_B or CANCEL while one is being sent."
     )
     last_update_error = serializers.CharField(allow_blank=True)
+    last_update_error_code = serializers.CharField(
+        allow_blank=True, help_text="Why the last change failed, as a code (shown translated)."
+    )
 
 
 class EWayBillUpdateRowSerializer(serializers.Serializer[Any]):
@@ -206,6 +209,7 @@ class EWayBillUpdateRowSerializer(serializers.Serializer[Any]):
     vehicle_number = serializers.CharField(allow_blank=True)
     reason_code = serializers.CharField()
     remarks = serializers.CharField(allow_blank=True)
+    error_code = serializers.CharField(allow_blank=True)
     error_message = serializers.CharField(allow_blank=True)
     created_at = serializers.DateTimeField()
     done_at = serializers.DateTimeField(allow_null=True)

@@ -9,6 +9,7 @@ from uuid import UUID
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.accounts.models import Membership, User
 from apps.accounts.tokens import revoke_all_refresh_tokens
@@ -20,7 +21,9 @@ from apps.platform.selectors import get_setting
 from apps.platform.validators import normalize_gstin
 from apps.pricing.models import PriceList
 from apps.retailers.models import Retailer, RetailerAddress, RetailerUser
+from common import languages
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.phone import normalize_indian_mobile
 from common.sequences import next_value
 from common.tenancy import require_tenant_id
@@ -39,7 +42,6 @@ PROFILE_FIELDS = (
     "preferred_language",
 )
 CREDIT_FIELDS = ("credit_limit", "payment_terms_days")
-LANGUAGES = ("en", "hi", "mr")
 ADDRESS_FIELDS = ("label", "line1", "line2", "city", "district", "pincode", "state_id")
 
 
@@ -83,28 +85,31 @@ def _check_gstin(retailer: Retailer, errors: dict[str, list[str]]) -> None:
         retailer.state_id = retailer.gstin[:2]
     elif retailer.state_id != retailer.gstin[:2]:
         errors.setdefault("state", []).append(
-            f"The state must match the first 2 digits of the GSTIN ({retailer.gstin[:2]})."
+            fill(
+                _("The state must match the first 2 digits of the GSTIN (%(value)s)."),
+                {"value": retailer.gstin[:2]},
+            )
         )
     clash = Retailer.objects.filter(gstin=retailer.gstin, deleted_at__isnull=True)
     if clash.exclude(pk=retailer.pk).exists():
-        errors.setdefault("gstin", []).append("Another shop already has this GSTIN.")
+        errors.setdefault("gstin", []).append(_("Another shop already has this GSTIN."))
 
 
 def _check_mobile(retailer: Retailer, errors: dict[str, list[str]]) -> None:
     try:
         retailer.mobile = normalize_indian_mobile(retailer.mobile)
     except DjangoValidationError:
-        errors.setdefault("mobile", []).append("Enter a 10-digit Indian mobile number.")
+        errors.setdefault("mobile", []).append(_("Enter a 10-digit Indian mobile number."))
         return
     clash = Retailer.objects.filter(mobile=retailer.mobile, deleted_at__isnull=True)
     if clash.exclude(pk=retailer.pk).exists():
-        errors.setdefault("mobile", []).append("Another shop already uses this mobile number.")
+        errors.setdefault("mobile", []).append(_("Another shop already uses this mobile number."))
 
 
 def _check_profile(retailer: Retailer, errors: dict[str, list[str]]) -> None:
     """Profile rules, reported per field in plain words."""
     if not retailer.shop_name.strip():
-        errors.setdefault("shop_name", []).append("Enter the shop name.")
+        errors.setdefault("shop_name", []).append(_("Enter the shop name."))
     _check_mobile(retailer, errors)
     if retailer.gstin:
         _check_gstin(retailer, errors)
@@ -114,18 +119,21 @@ def _check_profile(retailer: Retailer, errors: dict[str, list[str]]) -> None:
         not retailer.state_id
         or not State.objects.filter(code=retailer.state_id, is_active=True).exists()
     ):
-        errors.setdefault("state", []).append("Choose the shop's state.")
+        errors.setdefault("state", []).append(_("Choose the shop's state."))
     if retailer.salesperson_id and not _is_staff(retailer.salesperson_id):
-        errors.setdefault("salesperson", []).append("Choose an active staff member.")
-    if retailer.preferred_language not in LANGUAGES:
-        errors.setdefault("preferred_language", []).append("Choose English, Hindi or Marathi.")
+        errors.setdefault("salesperson", []).append(_("Choose an active staff member."))
+    if retailer.preferred_language and not languages.is_known(retailer.preferred_language):
+        # Empty: the distributor's default for shops (ADR-060).
+        errors.setdefault("preferred_language", []).append(
+            fill(_("Choose one of: %(languages)s."), {"languages": ", ".join(languages.codes())})
+        )
     if (
         retailer.price_list_id
         and not PriceList.objects.filter(
             pk=retailer.price_list_id, deleted_at__isnull=True
         ).exists()
     ):
-        errors.setdefault("price_list", []).append("Choose an existing price list.")
+        errors.setdefault("price_list", []).append(_("Choose an existing price list."))
 
 
 def _is_staff(user_id: UUID) -> bool:
@@ -135,10 +143,10 @@ def _is_staff(user_id: UUID) -> bool:
 def _check_credit(retailer: Retailer, errors: dict[str, list[str]]) -> None:
     if retailer.credit_limit is not None and retailer.credit_limit < 0:
         errors.setdefault("credit_limit", []).append(
-            "Enter 0 or more (leave it empty for no limit)."
+            _("Enter 0 or more (leave it empty for no limit).")
         )
     if not 0 <= int(retailer.payment_terms_days) <= 365:
-        errors.setdefault("payment_terms_days", []).append("Enter 0 to 365 days.")
+        errors.setdefault("payment_terms_days", []).append(_("Enter 0 to 365 days."))
 
 
 def _address(
@@ -164,13 +172,13 @@ def _address(
 def _check_address(address: RetailerAddress) -> None:
     errors: dict[str, list[str]] = {}
     if not address.line1:
-        errors["line1"] = ["Enter the address."]
+        errors["line1"] = [_("Enter the address.")]
     if not address.city:
-        errors["city"] = ["Enter the city."]
+        errors["city"] = [_("Enter the city.")]
     if not (address.pincode.isdigit() and len(address.pincode) == 6 and address.pincode[0] != "0"):
-        errors["pincode"] = ["Enter a 6-digit PIN code."]
+        errors["pincode"] = [_("Enter a 6-digit PIN code.")]
     if not State.objects.filter(code=address.state_id, is_active=True).exists():
-        errors["state"] = ["Choose a state."]
+        errors["state"] = [_("Choose a state.")]
     if errors:
         raise InvalidFields(errors)
 
@@ -247,7 +255,9 @@ def create_retailer(
         with transaction.atomic():
             retailer.save()
     except IntegrityError as exc:
-        raise InvalidFields({"mobile": ["Another shop already uses this mobile number."]}) from exc
+        raise InvalidFields(
+            {"mobile": [_("Another shop already uses this mobile number.")]}
+        ) from exc
     RetailerAccount.objects.create(retailer=retailer)  # the per-shop lock (ADR-044)
     _login(retailer, by=created_by)
     if billing is not None:
@@ -318,7 +328,7 @@ def _move_login(retailer: Retailer) -> None:
         ).exclude(pk=user.pk)
         if taken.exists():
             raise InvalidFields(
-                {"mobile": ["This number was used by a deleted shop. Ask support to free it."]}
+                {"mobile": [_("This number was used by a deleted shop. Ask support to free it.")]}
             )
         user.phone = retailer.mobile
         revoke_all_refresh_tokens(user)
@@ -355,7 +365,7 @@ def block_retailer(retailer_id: UUID, *, reason: str, by: User) -> Retailer:
     """On hold (ADR-036): ordering stops (Phase 4); sign-in follows
     ``retailers.blocked_can_sign_in``."""
     if not reason.strip():
-        raise InvalidFields({"reason": ["Enter why this shop is put on hold."]})
+        raise InvalidFields({"reason": [_("Enter why this shop is put on hold.")]})
     retailer = _retailer(retailer_id, lock=True)
     if retailer.status == Retailer.Status.BLOCKED:
         return retailer
@@ -450,7 +460,7 @@ def save_address(
 ) -> RetailerAddress:
     retailer = _retailer(retailer_id, lock=True)
     if kind not in RetailerAddress.Kind.values:
-        raise InvalidFields({"kind": ["Choose billing or shipping."]})
+        raise InvalidFields({"kind": [_("Choose billing or shipping.")]})
     if address_id is None:
         address = RetailerAddress(retailer=retailer, kind=kind, created_by=by)
         first = not RetailerAddress.objects.filter(retailer=retailer, kind=kind).exists()
@@ -536,15 +546,15 @@ def bulk_update(
     retailer_ids: list[UUID], action: str, *, value: str | None = None, by: User
 ) -> int:
     if action not in BULK_ACTIONS:
-        raise InvalidFields({"action": ["Choose a supported action."]})
+        raise InvalidFields({"action": [_("Choose a supported action.")]})
     if not retailer_ids or len(retailer_ids) > 1000:
-        raise InvalidFields({"retailer_ids": ["Select 1 to 1,000 shops."]})
+        raise InvalidFields({"retailer_ids": [_("Select 1 to 1,000 shops.")]})
     salesperson = UUID(value) if action == "assign_salesperson" and value else None
     if salesperson and not _is_staff(salesperson):
-        raise InvalidFields({"value": ["Choose an active staff member."]})
+        raise InvalidFields({"value": [_("Choose an active staff member.")]})
     price_list = UUID(value) if action == "assign_price_list" and value else None
     if price_list and not PriceList.objects.filter(pk=price_list, deleted_at__isnull=True).exists():
-        raise InvalidFields({"value": ["Choose an existing price list."]})
+        raise InvalidFields({"value": [_("Choose an existing price list.")]})
     retailers = list(
         Retailer.objects.filter(pk__in=retailer_ids, deleted_at__isnull=True).select_for_update()
     )

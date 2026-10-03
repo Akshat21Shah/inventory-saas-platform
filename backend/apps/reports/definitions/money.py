@@ -9,6 +9,8 @@ from decimal import Decimal
 from typing import Any
 
 from django.db.models import Count, F, Max, Min, Q, Sum
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.ledger.selectors import BUCKETS, ageing
@@ -26,6 +28,7 @@ from apps.reports.registry import (
     register,
 )
 from apps.retailers.models import Retailer
+from common.numbers import fill
 from common.permissions import AnyOf
 
 FINANCIAL = "reports.financial"
@@ -35,7 +38,10 @@ COUNTED = (Payment.Status.RECEIVED, Payment.Status.CLEARED, Payment.Status.PENDI
 MODE_LABELS = dict(Payment.Mode.choices)
 STATUS_LABELS = dict(Payment.Status.choices)
 HANDOVER_LABELS = dict(Payment.Handover.choices)
-BASIS_LABELS = {"INVOICE_DATE": "the bill date", "DUE_DATE": "the due date"}
+BASIS_LABELS = {
+    "INVOICE_DATE": gettext_lazy("the bill date"),
+    "DUE_DATE": gettext_lazy("the due date"),
+}
 
 SALESPERSON = Filter("salesperson", "Salesperson", FilterKind.ID, entity="staff")
 SHOP = Filter("shop", "Shop", FilterKind.ID, entity="shop")
@@ -101,7 +107,7 @@ def ageing_totals(ctx: Context) -> dict[str, Any]:
 register(
     Report(
         code="receivables_ageing",
-        title="Receivables ageing",
+        title=gettext_lazy("Receivables ageing"),
         group=Group.MONEY,
         description="What each shop owes, by how long it has been owed.",
         permission=MONEY_OR_OWN,
@@ -125,7 +131,12 @@ register(
         filters=(SALESPERSON, Filter("overdue_only", "Overdue only", FilterKind.BOOL)),
         rows=lambda ctx: _ageing(ctx)[1],
         totals=ageing_totals,
-        notes=lambda ctx: [f"Aged from {BASIS_LABELS.get(_ageing(ctx)[0], _ageing(ctx)[0])}."],
+        notes=lambda ctx: [
+            fill(
+                _("Aged from %(basis)s."),
+                {"basis": BASIS_LABELS.get(_ageing(ctx)[0], _ageing(ctx)[0])},
+            )
+        ],
         pdf=True,
     )
 )
@@ -173,7 +184,7 @@ def collection_rows(ctx: Context) -> Mapped:
         values,
         lambda r: {
             **r,
-            "mode": MODE_LABELS.get(r["mode"], r["mode"]),
+            "mode": str(MODE_LABELS.get(r["mode"], r["mode"])),  # labels translate (ADR-060)
             "status": STATUS_LABELS.get(r["status"], r["status"]),
             "handover": HANDOVER_LABELS.get(r["handover_status"], ""),
             "reference": r["cheque_number"] or r["reference_no"],
@@ -195,7 +206,7 @@ def collection_notes(ctx: Context) -> list[str]:
         .annotate(total=Sum("amount"))
         .order_by("mode")
     )
-    parts = [f"{MODE_LABELS.get(r['mode'], r['mode'])} ₹{_money(r['total']):,}" for r in by_mode]
+    parts = [f"{MODE_LABELS.get(r['mode'], r['mode'])!s} ₹{_money(r['total']):,}" for r in by_mode]
     notes = ["Bounced and reversed payments are listed but not added to the total."]
     if parts:
         notes.insert(0, "By mode: " + ", ".join(parts) + ".")
@@ -205,7 +216,7 @@ def collection_notes(ctx: Context) -> list[str]:
 register(
     Report(
         code="collections",
-        title="Collections",
+        title=gettext_lazy("Collections"),
         group=Group.MONEY,
         description="Every payment received in the period, by mode and who collected it.",
         permission=MONEY_OR_OWN,
@@ -311,7 +322,7 @@ def _make(ctx: Context) -> list[dict[str, Any]]:
 register(
     Report(
         code="salesperson_collections",
-        title="Salesperson collections",
+        title=gettext_lazy("Salesperson collections"),
         group=Group.MONEY,
         description="What each salesperson collected, handed over and still holds.",
         permission=MONEY_OR_OWN,
@@ -344,9 +355,11 @@ register(
             )
         },
         notes=lambda ctx: [
-            "Collected: payments each salesperson collected themselves in the period. Still "
-            "with them: not yet handed over, whenever collected. Received from their shops: "
-            "every payment from the shops now assigned to them, by any means."
+            _(
+                "Collected: payments each salesperson collected themselves in the period. Still "
+                "with them: not yet handed over, whenever collected. Received from their shops: "
+                "every payment from the shops now assigned to them, by any means."
+            )
         ],
     )
 )

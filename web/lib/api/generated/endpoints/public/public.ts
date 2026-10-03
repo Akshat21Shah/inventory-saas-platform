@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  PlatformLanguage,
   PublicBranding,
   PublicStatesListParams,
   State
@@ -164,6 +165,116 @@ export function usePublicDocument<TData = Awaited<ReturnType<typeof publicDocume
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicDocumentQueryOptions(token,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type publicLanguagesResponse200 = {
+  data: PlatformLanguage[]
+  status: 200
+}
+
+export type publicLanguagesResponseSuccess = (publicLanguagesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type publicLanguagesResponse = (publicLanguagesResponseSuccess)
+
+export const getPublicLanguagesUrl = () => {
+
+
+
+
+  return `/api/v1/public/languages/`
+}
+
+/**
+ * Every language the app has, and whether it is enabled for everyone (ADR-060). For the
+ * super admin's sign-in page, where only super admins sign in (they may use any language).
+ */
+export const publicLanguages = async ( options?: Parameters<typeof apiFetch>[1]): Promise<publicLanguagesResponse> => {
+
+  return apiFetch<publicLanguagesResponse>(getPublicLanguagesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPublicLanguagesQueryKey = () => {
+    return [
+    `/api/v1/public/languages/`
+    ] as const;
+    }
+
+
+export const getPublicLanguagesQueryOptions = <TData = Awaited<ReturnType<typeof publicLanguages>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicLanguages>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicLanguagesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicLanguages>>> = ({ signal }) => publicLanguages({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicLanguages>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicLanguagesQueryResult = NonNullable<Awaited<ReturnType<typeof publicLanguages>>>
+export type PublicLanguagesQueryError = unknown
+
+
+export function usePublicLanguages<TData = Awaited<ReturnType<typeof publicLanguages>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicLanguages>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicLanguages>>,
+          TError,
+          Awaited<ReturnType<typeof publicLanguages>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicLanguages<TData = Awaited<ReturnType<typeof publicLanguages>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicLanguages>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicLanguages>>,
+          TError,
+          Awaited<ReturnType<typeof publicLanguages>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicLanguages<TData = Awaited<ReturnType<typeof publicLanguages>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicLanguages>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePublicLanguages<TData = Awaited<ReturnType<typeof publicLanguages>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicLanguages>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPublicLanguagesQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

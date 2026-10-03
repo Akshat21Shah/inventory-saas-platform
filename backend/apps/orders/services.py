@@ -11,6 +11,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 
 from apps.accounts.models import User
 from apps.billing.tax import (
@@ -52,25 +53,27 @@ ZERO = Decimal("0")
 class CartNotReady(DomainError):
     status_code = 422
     code = ErrorCode.CART_NOT_READY
-    default_message = "Your cart needs a change before you can place the order."
+    default_message = gettext_lazy("Your cart needs a change before you can place the order.")
 
 
 class PriceChanged(DomainError):
     status_code = 409
     code = ErrorCode.PRICE_CHANGED
-    default_message = "Some prices changed. Please check your cart and place the order again."
+    default_message = gettext_lazy(
+        "Some prices changed. Please check your cart and place the order again."
+    )
 
 
 class CreditLimitExceeded(DomainError):
     status_code = 422
     code = ErrorCode.CREDIT_LIMIT_EXCEEDED
-    default_message = "This order is over the credit limit."
+    default_message = gettext_lazy("This order is over the credit limit.")
 
 
 class OverdueInvoices(DomainError):
     status_code = 422
     code = ErrorCode.OVERDUE_INVOICES
-    default_message = "There are overdue invoices to pay first."
+    default_message = gettext_lazy("There are overdue invoices to pay first.")
 
 
 def credit_refusal(
@@ -88,13 +91,13 @@ def credit_refusal(
 class NotEnoughStock(DomainError):
     status_code = 409
     code = ErrorCode.INSUFFICIENT_STOCK
-    default_message = "There isn't enough stock for some products."
+    default_message = gettext_lazy("There isn't enough stock for some products.")
 
 
 class RetailerOnHold(DomainError):
     status_code = 403
     code = ErrorCode.RETAILER_ON_HOLD
-    default_message = "Your account is on hold. Please contact your distributor."
+    default_message = gettext_lazy("Your account is on hold. Please contact your distributor.")
 
 
 def _problems(found: list[Problem]) -> list[dict[str, Any]]:

@@ -11,6 +11,7 @@ from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext
 
 from apps.accounts.models import User
 from apps.audit import services as audit
@@ -22,6 +23,7 @@ from apps.platform.validators import normalize_gstin
 from apps.purchasing.models import Supplier, SupplierProduct
 from apps.purchasing.selectors import name_key, open_orders_for, unlinked_receipts
 from common.errors import InvalidFields, NotFound
+from common.numbers import fill
 from common.sequences import next_value
 
 PROFILE_FIELDS = (
@@ -61,7 +63,7 @@ def _clean(key: str, value: Any) -> Any:
 def _check(supplier: Supplier) -> None:
     errors: dict[str, list[str]] = {}
     if not supplier.name:
-        errors["name"] = ["Enter the supplier's name."]
+        errors["name"] = [gettext("Enter the supplier's name.")]
     if supplier.gstin:
         problem = gstin_problem(supplier.gstin)
         if problem:
@@ -71,24 +73,29 @@ def _check(supplier: Supplier) -> None:
                 pk=supplier.pk
             )
             if taken.exists():
-                errors["gstin"] = ["Another supplier has this GSTIN."]
+                errors["gstin"] = [gettext("Another supplier has this GSTIN.")]
             elif supplier.state_id and supplier.state_id != supplier.gstin[:2]:
                 errors["state_id"] = [
-                    f"The state must match the first 2 digits of the GSTIN ({supplier.gstin[:2]})."
+                    fill(
+                        gettext(
+                            "The state must match the first 2 digits of the GSTIN (%(gstin)s)."
+                        ),
+                        {"gstin": supplier.gstin[:2]},
+                    )
                 ]
             supplier.state_id = supplier.gstin[:2]
     if supplier.state_id and not State.objects.filter(pk=supplier.state_id).exists():
-        errors["state_id"] = ["Choose a state."]
+        errors["state_id"] = [gettext("Choose a state.")]
     if supplier.phone and not PHONE.fullmatch(supplier.phone):
-        errors["phone"] = ["Enter a phone number with 10 to 15 digits."]
+        errors["phone"] = [gettext("Enter a phone number with 10 to 15 digits.")]
     if supplier.email and not EMAIL.fullmatch(supplier.email):
-        errors["email"] = ["Enter an email address."]
+        errors["email"] = [gettext("Enter an email address.")]
     if supplier.pincode and not re.fullmatch(r"[1-9][0-9]{5}", supplier.pincode):
-        errors["pincode"] = ["Enter a 6-digit PIN code."]
+        errors["pincode"] = [gettext("Enter a 6-digit PIN code.")]
     if not 0 <= supplier.payment_terms_days <= 365:
-        errors["payment_terms_days"] = ["Enter 0 to 365 days."]
+        errors["payment_terms_days"] = [gettext("Enter 0 to 365 days.")]
     if supplier.lead_time_days is not None and not 1 <= supplier.lead_time_days <= 365:
-        errors["lead_time_days"] = ["Enter 1 to 365 days, or leave it empty."]
+        errors["lead_time_days"] = [gettext("Enter 1 to 365 days, or leave it empty.")]
     if errors:
         raise InvalidFields(errors)
 
@@ -144,7 +151,11 @@ def delete_supplier(supplier_id: UUID, *, by: User) -> None:
     supplier = _supplier(supplier_id, lock=True)
     if open_orders_for(supplier.pk):
         raise InvalidFields(
-            {"supplier": ["This supplier has open purchase orders. Cancel or close them first."]}
+            {
+                "supplier": [
+                    gettext("This supplier has open purchase orders. Cancel or close them first.")
+                ]
+            }
         )
     supplier.deleted_at, supplier.is_active = timezone.now(), False
     supplier.save(update_fields=["deleted_at", "is_active", "updated_at"])
@@ -187,21 +198,28 @@ def set_product_suppliers(
     errors: dict[str, list[str]] = {}
     ids = [link.supplier_id for link in links]
     if len(links) > MAX_LINKS:
-        errors["links"] = [f"A product can have up to {MAX_LINKS} suppliers."]
+        errors["links"] = [
+            fill(
+                gettext("A product can have up to %(max_links)s suppliers."),
+                {"max_links": MAX_LINKS},
+            )
+        ]
     if len(set(ids)) != len(ids):
-        errors["links"] = ["List each supplier once."]
+        errors["links"] = [gettext("List each supplier once.")]
     if sum(link.is_preferred for link in links) > 1:
-        errors["links"] = ["Choose one preferred supplier."]
+        errors["links"] = [gettext("Choose one preferred supplier.")]
     found = set(
         Supplier.objects.filter(pk__in=ids, deleted_at__isnull=True).values_list("pk", flat=True)
     )
     if set(ids) - found:
-        errors["links"] = ["Choose your own active suppliers."]
+        errors["links"] = [gettext("Choose your own active suppliers.")]
     for link in links:
         if link.lead_time_days is not None and not 1 <= link.lead_time_days <= 365:
-            errors["links"] = ["Enter a delivery time of 1 to 365 days, or leave it empty."]
+            errors["links"] = [
+                gettext("Enter a delivery time of 1 to 365 days, or leave it empty.")
+            ]
         if link.pack_size is not None and link.pack_size <= 0:
-            errors["links"] = ["A pack size must be above zero."]
+            errors["links"] = [gettext("A pack size must be above zero.")]
     if errors:
         raise InvalidFields(errors)
     preferred = next((link.supplier_id for link in links if link.is_preferred), None)
@@ -255,7 +273,15 @@ def set_preferred_supplier(supplier_id: UUID, product_ids: Iterable[UUID], *, by
     supplier = _supplier(supplier_id)
     ids = list(dict.fromkeys(product_ids))
     if not ids or len(ids) > BULK_LIMIT:
-        raise InvalidFields({"product_ids": [f"Select 1 to {BULK_LIMIT} products."]})
+        raise InvalidFields(
+            {
+                "product_ids": [
+                    fill(
+                        gettext("Select 1 to %(bulk_limit)s products."), {"bulk_limit": BULK_LIMIT}
+                    )
+                ]
+            }
+        )
     products = list(
         Product.objects.filter(pk__in=ids, deleted_at__isnull=True)
         .order_by("pk")
@@ -320,9 +346,9 @@ def confirm_receipt_suppliers(
     errors: dict[str, list[str]] = {}
     for choice in choices:
         if not " ".join(choice.name.split()):
-            errors["choices"] = ["Each row needs the supplier name from the receipts."]
+            errors["choices"] = [gettext("Each row needs the supplier name from the receipts.")]
         elif choice.create == (choice.supplier_id is not None):
-            errors["choices"] = ["For each name, choose a supplier or create a new one."]
+            errors["choices"] = [gettext("For each name, choose a supplier or create a new one.")]
     if errors:
         raise InvalidFields(errors)
     created = linked = 0
