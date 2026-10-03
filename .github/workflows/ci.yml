@@ -108,6 +108,63 @@ jobs:
       - name: Generated API client is up to date
         run: npm run api:generate && git diff --exit-code -- lib/api/generated
 
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --ci
+      - name: Files synced from the web are up to date
+        run: npm run check
+      - name: Generated API client is up to date
+        run: npm run api-client && git diff --exit-code -- lib/api/generated
+
+  mobile-build:
+    # A release build of the Android app, signed with the build's own throwaway key (never the
+    # upload key: it stays on the release Mac, ADR-061 item 15). Reports the APK's size.
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      APP_RELEASE: "1"
+      APP_API_URL: https://example.invalid
+      APP_PLATFORM_DOMAIN: example.invalid
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - run: npm ci
+      - run: npx expo prebuild --platform android --clean
+      - name: Release build (arm64 phones)
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+      - name: Size
+        run: |
+          ls -l android/app/build/outputs/apk/release/
+          du -k android/app/build/outputs/apk/release/*.apk | awk '{printf "APK: %.1f MB\n", $1/1024}' >> "$GITHUB_STEP_SUMMARY"
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20

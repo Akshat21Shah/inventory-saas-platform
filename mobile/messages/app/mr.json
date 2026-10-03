@@ -1,0 +1,17 @@
+{
+  "update": {
+    "title": "ॲप अपडेट करा",
+    "body": "ॲपची ही आवृत्ती आता चालणार नाही. ऑर्डर करत राहण्यासाठी Play Store मधून ती अपडेट करा.",
+    "button": "Play Store उघडा"
+  },
+  "signIn": {
+    "language": "भाषा",
+    "switchTitle": "दुसऱ्या वितरकाकडून खरेदी करा",
+    "switchBody": "ज्या वितरकाकडून ऑर्डर करायची आहे तो निवडा."
+  },
+  "account": {
+    "version": "ॲप आवृत्ती {version} ({build})",
+    "shopCode": "दुकान कोड {code}",
+    "distributor": "तुम्ही {name} कडून ऑर्डर करता"
+  }
+}

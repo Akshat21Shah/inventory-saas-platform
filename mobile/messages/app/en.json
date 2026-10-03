@@ -1,0 +1,17 @@
+{
+  "update": {
+    "title": "Update the app",
+    "body": "This version of the app is too old to keep working. Update it from the Play Store to carry on ordering.",
+    "button": "Open the Play Store"
+  },
+  "signIn": {
+    "language": "Language",
+    "switchTitle": "Shop with another distributor",
+    "switchBody": "Choose the distributor you want to order from."
+  },
+  "account": {
+    "version": "App version {version} ({build})",
+    "shopCode": "Shop code {code}",
+    "distributor": "You order from {name}"
+  }
+}

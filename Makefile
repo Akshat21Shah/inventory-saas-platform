@@ -21,6 +21,7 @@ setup: .env ## Install local toolchains (backend venv via uv, web node_modules)
 	test -x $(BACKEND_VENV)/bin/uv || (python3 -m venv $(BACKEND_VENV) && $(BACKEND_VENV)/bin/pip install -q uv)
 	cd backend && $(PY)/uv sync --frozen
 	cd web && npm ci
+	cd mobile && npm ci
 	cd backend && $(PY)/uv run pre-commit install  # hooks incl. the secrets scan (ADR-055)
 
 secrets-scan: ## Scan the whole git history (every branch) for secrets with gitleaks (ADR-055)
@@ -110,6 +111,7 @@ fmt: ## Auto-format backend and frontend
 api-client: ## Export the OpenAPI schema and regenerate web/lib/api/generated
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py spectacular --file openapi.yaml --validate --fail-on-warn
 	cd web && npm run api:generate
+	cd mobile && npm run api-client
 
 messages: ## Update and compile the server message catalogs (backend/locale; then translate what it lists)
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py messages
@@ -123,3 +125,25 @@ texts-import: ## Check a translator's sheet: make texts-import SHEET=reviewed.xl
 check-schema: ## Fail if the committed OpenAPI schema is out of date
 	cd backend && DATABASE_URL=$(OWNER_DB_URL) $(PY)/python manage.py spectacular --file /tmp/openapi.check.yaml --validate --fail-on-warn
 	diff -u backend/openapi.yaml /tmp/openapi.check.yaml
+
+# --- Android shop app (mobile/, ADR-061) --------------------------------------------------------
+# The app reaches the dev stack on the LAN address ("make lan"), like a phone on the same Wi-Fi.
+MOBILE_DOMAIN := $(shell sed -n 's/^PLATFORM_DOMAIN=//p' infra/dev-domain.env 2>/dev/null)
+MOBILE_ENV := ANDROID_HOME=$(HOME)/Library/Android/sdk JAVA_HOME=$$(/usr/libexec/java_home 2>/dev/null) \
+	APP_API_URL=http://$(MOBILE_DOMAIN):3000 APP_PLATFORM_DOMAIN=$(MOBILE_DOMAIN) SENTRY_DISABLE_AUTO_UPLOAD=true
+
+mobile-check: ## The app: lint, types, unit tests, files synced from the web
+	cd mobile && npm run lint && npm run typecheck && npm test -- --ci && npm run check
+
+mobile-sync: ## Copy the shared modules, the shop's texts and the design tokens from web/ into mobile/
+	cd mobile && npm run sync
+
+mobile-android: ## Development build on the running emulator or USB phone (needs make lan); then: cd mobile && npx expo start
+	@test -n "$(MOBILE_DOMAIN)" || (echo "Run make lan first: the app reaches the stack on the LAN address" && exit 1)
+	cd mobile && $(MOBILE_ENV) npx expo prebuild --platform android --clean && $(MOBILE_ENV) npx expo run:android --no-bundler
+
+mobile-apk: ## An installable APK for a phone on this Wi-Fi (needs make lan): mobile/android/app/build/outputs/apk/release/
+	@test -n "$(MOBILE_DOMAIN)" || (echo "Run make lan first: the app reaches the stack on the LAN address" && exit 1)
+	cd mobile && $(MOBILE_ENV) npx expo prebuild --platform android --clean
+	cd mobile/android && $(MOBILE_ENV) ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+	@ls -l mobile/android/app/build/outputs/apk/release/*.apk

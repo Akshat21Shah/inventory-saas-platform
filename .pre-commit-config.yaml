@@ -1,5 +1,5 @@
-# The generated API client is compared byte for byte with a fresh generation in CI.
-exclude: ^web/lib/api/generated/
+# The generated API clients are compared byte for byte with a fresh generation in CI.
+exclude: ^(web|mobile)/lib/api/generated/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -10,6 +10,7 @@ repos:
         args: [--unsafe]  # syntax only: Compose files use tags such as !reset
       - id: check-merge-conflict
       - id: check-added-large-files
+        exclude: (^|/)package-lock\.json$  # lock files are large by nature
       - id: detect-private-key
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.8
@@ -33,4 +34,10 @@ repos:
         entry: bash -c 'cd web && npx eslint --max-warnings=0 && npx prettier --check .'
         language: system
         files: ^web/
+        pass_filenames: false
+      - id: mobile-lint
+        name: mobile eslint + prettier
+        entry: bash -c 'cd mobile && npx eslint --max-warnings=0 && npx prettier --check .'
+        language: system
+        files: ^mobile/
         pass_filenames: false
