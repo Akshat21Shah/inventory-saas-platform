@@ -12,7 +12,7 @@ import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
 import { OnHoldNotice } from "./product";
 import { ProductList } from "./product-list";
-import { SearchBox } from "./search-box";
+import { SearchEntry } from "./search-box";
 
 const childrenOf = (c: ShopCategory) => c.children as unknown as ShopCategory[];
 
@@ -130,7 +130,7 @@ export function CatalogScreen({ categoryId }: { categoryId?: string }) {
             {found ? found.node.name : t("catalogTitle")}
           </Text>
           <OnHoldNotice />
-          <SearchBox />
+          <SearchEntry />
           {children.length ? <CategoryTiles categories={children} /> : null}
           <BrandFilter categoryId={categoryId} value={brand} onChange={setBrand} />
         </>

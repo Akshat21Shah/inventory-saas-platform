@@ -19,6 +19,11 @@ export const config: Extra = {
   build: extra.build ?? 0,
 };
 
+// The same rule at run time: a release build never talks plain http (owner, checkpoint review).
+if (config.release && !config.apiUrl.startsWith("https://")) {
+  throw new Error("A release build needs an https API address.");
+}
+
 /** The version every API request carries (`X-App-Version`, ADR-061 item 6). */
 export const APP_VERSION: string = Constants.expoConfig?.version ?? "0.0.0";
 

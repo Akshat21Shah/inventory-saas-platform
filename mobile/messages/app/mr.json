@@ -13,5 +13,8 @@
     "version": "ॲप आवृत्ती {version} ({build})",
     "shopCode": "दुकान कोड {code}",
     "distributor": "तुम्ही {name} कडून ऑर्डर करता"
+  },
+  "search": {
+    "clear": "शोध पुसा"
   }
 }

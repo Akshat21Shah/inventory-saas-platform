@@ -8,7 +8,7 @@ import { DateText } from "@/components/shared/values";
 import { CategoryTiles } from "@/components/shop/catalog";
 import { OrderRowLink } from "@/components/shop/order-row";
 import { OnHoldNotice, ProductCard } from "@/components/shop/product";
-import { SearchBox } from "@/components/shop/search-box";
+import { SearchEntry } from "@/components/shop/search-box";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Screen } from "@/components/ui/screen";
@@ -164,7 +164,7 @@ export default function Home() {
       </View>
       <Announcements />
       <OnHoldNotice />
-      <SearchBox />
+      <SearchEntry />
       <RepeatLastOrder />
       <RecentOrders />
       <View style={styles.gap}>

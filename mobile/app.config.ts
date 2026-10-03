@@ -26,6 +26,12 @@ const release = process.env.APP_RELEASE === "1";
 const apiUrl = process.env.APP_API_URL ?? "http://10.0.2.2:3000";
 const platformDomain = process.env.APP_PLATFORM_DOMAIN ?? "localhost";
 
+// Plain http only in development builds (owner, checkpoint review): a release build refuses any
+// other address, so the build stops here (tests: app.config.test.ts; CI: mobile-build).
+if (release && !/^https:\/\/[^/\s]+/.test(apiUrl)) {
+  throw new Error(`A release build needs an https APP_API_URL, not ${JSON.stringify(apiUrl)}.`);
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: APP_NAME,

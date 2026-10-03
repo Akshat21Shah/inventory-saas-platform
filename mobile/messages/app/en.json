@@ -13,5 +13,8 @@
     "version": "App version {version} ({build})",
     "shopCode": "Shop code {code}",
     "distributor": "You order from {name}"
+  },
+  "search": {
+    "clear": "Clear search"
   }
 }

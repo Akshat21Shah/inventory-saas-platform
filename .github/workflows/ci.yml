@@ -157,9 +157,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - run: npm ci
       - run: npx expo prebuild --platform android --clean
+      - name: Release builds are https only (owner, checkpoint review)
+        run: |
+          grep -q 'android:usesCleartextTraffic="false"' android/app/src/main/AndroidManifest.xml
+          if APP_API_URL=http://example.invalid npx expo config --type public > /dev/null 2>&1; then
+            echo "A release build accepted a plain http address" && exit 1
+          fi
       - name: Release build (arm64 phones)
         working-directory: mobile/android
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+      - name: No package with an npm advisory ships inside the app
+        run: node scripts/audit-shipped.mjs
       - name: Size
         run: |
           ls -l android/app/build/outputs/apk/release/

@@ -73,7 +73,9 @@ export function ProductList({
       refreshing={query.isRefetching && !query.isFetchingNextPage}
       onRefresh={() => void query.refetch()}
       contentContainerStyle={styles.content}
+      // A tap on a result works with the keyboard up; a tap on empty space or scrolling closes it.
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     />
   );
 }

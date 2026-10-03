@@ -13,5 +13,8 @@
     "version": "ऐप संस्करण {version} ({build})",
     "shopCode": "दुकान कोड {code}",
     "distributor": "आप {name} से ऑर्डर करते हैं"
+  },
+  "search": {
+    "clear": "खोज साफ़ करें"
   }
 }

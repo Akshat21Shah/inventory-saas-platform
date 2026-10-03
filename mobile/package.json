@@ -81,5 +81,8 @@
       "<rootDir>/android/",
       "<rootDir>/ios/"
     ]
+  },
+  "overrides": {
+    "decode-uri-component": "file:./vendor/decode-uri-component"
   }
 }
