@@ -70,6 +70,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-secure-store",
     "expo-image",
     "expo-localization",
+    // Hindi and Marathi at medium weight, as the web (checkpoint review item 6, ADR-061).
+    ["expo-font", { fonts: ["./assets/fonts/NotoSansDevanagari-Medium.ttf"] }],
     "@sentry/react-native",
     [
       "expo-build-properties",

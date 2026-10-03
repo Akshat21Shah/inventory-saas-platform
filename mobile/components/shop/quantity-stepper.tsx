@@ -91,6 +91,7 @@ export function QuantityStepper({
         selectTextOnFocus
         style={[
           styles.input,
+          wide && styles.grow,
           { borderColor: colors.input, borderRadius: radius, color: colors.foreground },
         ]}
       />
@@ -115,9 +116,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // 64 wide as the web's w-16; it fills the row only in the wide stepper (the cart), so on a
+  // product card the note beside it keeps its room.
+  grow: { flexGrow: 1 },
   input: {
-    minWidth: 64,
-    flexGrow: 1,
+    width: 64,
     height: TOUCH,
     borderWidth: 1,
     textAlign: "center",

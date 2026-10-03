@@ -411,8 +411,18 @@
        - The bottom bar stays on every page: each tab has its own stack, and category, search, product and order pages are shared by all five.
        - Product cards and search results have the same steppers as the web.
        - Emulator test: `mobile/e2e/three-taps.mjs` (search → Add → Cart → Place order in 3 taps).
-       - Status badges, the product page's order box, the order page's timeline and the category title now match the web.
-     - **Tests:** Jest no longer waits 5 minutes after the tests (the test query cache's timer); 30 unit and screen tests.
+       - Status badges, the product page's order box, the order page's timeline and the page headings (in the page, with the distributor's name in the header) now match the web.
+     - **Hindi and Marathi headings (item 6):**
+       - Compared on both emulators: (a) a larger heading size at regular weight, against (b) one bundled medium Devanagari font. Side-by-side screenshots are in `mobile/dist/item-6/` (git-ignored).
+       - Recommended (b), Noto Sans Devanagari Medium, the web's own font: about 83 KB more in the APK. It's in the build now, waiting for the owner's choice (ADR-061 item 12).
+       - Google's emulator images already have a medium Devanagari, so the regular-weight headings came from the owner's phone's own fonts. The bundled font gives the same result on every phone.
+     - **Clipped Hindi and Marathi labels:**
+       - Short multi-word labels lost their last word: badges, the timeline, "ऑर्डर रद्द करें", "साइन आउट करें", "सभी ब्रांड".
+       - The cause: with a set line height, React Native sizes a label to its measured width, and Android's line breaker can find the words a fraction wider.
+       - Devanagari text now uses its font's own line spacing, and regular text has no numeric weight. Checked on both emulators.
+     - **The quantity box** was stretching across product cards once a product was in the cart, which hid the "Last time" note. It's now the web's 64 wide; in the cart the stepper sits on the right, as on the web.
+     - **Language on start:** a slow read of the saved language could undo the person's language that had just come from the server. A newer choice now wins (unit test).
+     - **Tests:** Jest no longer waits 5 minutes after the tests (the test query cache's timer); 36 unit and screen tests.
   10. Bills, statement, payments, returns (11b.7) — next
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:

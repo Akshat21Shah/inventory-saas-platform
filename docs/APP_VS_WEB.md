@@ -13,9 +13,11 @@ The shop web app is the reference for layout, navigation and behaviour. The Andr
 | Product | The free-offer badge appears once | Shown twice | Once |
 | Order | The timeline comes before the totals | After the totals | Before the totals |
 | After "Place order" | The order opens in Orders | The order opened above the tabs | The order opens in the Orders tab |
-| Category | The heading is the category's name | The title said "Catalog", with the name as a heading below it | The title is the category's name, like the product, order and search pages |
+| Product, order, category, search | "Shop" in the header on every page; the page's heading (product, order number, category, "Search") in the page | The heading was the header's title, so the product's name and the order number appeared twice; the category's header said "Catalog" | The header shows the distributor's name on every page and the heading is in the page, as on the web |
 | Status badges | A dot, a thin ring and medium-weight text | A plain pill | Same as the web |
 | Product cards | "Add" is at least 96 px wide | 112 px | 96 px |
+| Hindi and Marathi | Headings in Noto Sans Devanagari at medium weight | Regular weight on phones whose own fonts have no medium Devanagari; short labels could lose their last word | The same Noto Sans Devanagari Medium, bundled (ADR-061 item 12); every label shows in full |
+| Product cards and the cart | The quantity box is 64 px wide; in the cart the stepper sits on the right | The box stretched across the card and hid the "Last time" note | 64 wide; on the right in the cart |
 | Search results | A tap on "Add" while typing closes the phone's keyboard | The keyboard stayed open and covered the bottom bar | "Add", "+" and "−" close the keyboard |
 
 Checked on the emulator after the fixes:
@@ -26,9 +28,8 @@ Checked on the emulator after the fixes:
 
 | Screen | Web | App | Why |
 | --- | --- | --- | --- |
-| Header, on every page | "Shop" and the notifications bell | The distributor's name on the five tab pages; the page's title with Android's back arrow on the others | One app serves every distributor, so the header says whose shop this is (the web's address already does). The bell joins every header in 11b.8, as on the web |
+| Header, on every page | "Shop" and the notifications bell | The distributor's name, with Android's back arrow on inner pages | One app serves every distributor, so the header says whose shop this is (the web's address already does). The bell joins every header in 11b.8, as on the web |
 | Back links | "Back", "All products" and "Orders" links at the top of inner pages | Android's back arrow and the phone's back button | Android's own back. The web needs the links because a browser's back button is outside the page |
-| Inner pages' headings | The heading on the page (Search, the product's name, the order number, the category) | The same words as the page title in the header | The same text in the same place, without saying it twice |
 | Search on home and the catalogue | Type in the box, press Enter, and the search page opens | A tap on the box opens the search page with the keyboard already up, and results come as you type | One search box that's never re-created, the fix for the keyboard closing while typing (checkpoint item 1). Search is still one tap, and the taps to a placed order are the same |
 | Sign-in | The distributor's name and colours (from the web address); language in a drop-down | "Shop" and the app's colours; the three languages side by side | The app can't know the distributor before sign-in, so the distributor's colours appear after it. The language is the first choice on a new phone, and all three side by side let someone who can't read English find theirs in one tap |
 | Lists | — | Pull down to refresh | Android's usual way to reload; "Show more" works as on the web |

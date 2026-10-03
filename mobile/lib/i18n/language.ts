@@ -10,6 +10,7 @@ import { defaultLocale, isLocale, type Locale } from "@/lib/shared/i18n-config";
 
 const KEY = "app.language";
 let language: Locale = defaultLocale;
+let changes = 0; // setLanguage calls, so a slower read of the saved one can't undo a newer choice
 const listeners = new Set<(code: Locale) => void>();
 
 export function currentLanguage(): Locale {
@@ -23,7 +24,10 @@ export function phoneLanguage(): Locale {
 
 /** On start: the saved language, else the phone's (screens re-render when it differs). */
 export async function loadLanguage(): Promise<Locale> {
+  const before = changes;
   const saved = await SecureStore.getItemAsync(KEY);
+  // The person's language from the server (or a pick on the sign-in screen) came first.
+  if (changes !== before) return language;
   const found = isLocale(saved) ? saved : phoneLanguage();
   if (found !== language) {
     language = found;
@@ -33,7 +37,9 @@ export async function loadLanguage(): Promise<Locale> {
 }
 
 export async function setLanguage(code: Locale): Promise<void> {
-  if (!isLocale(code) || code === language) return;
+  if (!isLocale(code)) return;
+  changes += 1;
+  if (code === language) return;
   language = code;
   await SecureStore.setItemAsync(KEY, code);
   listeners.forEach((listener) => listener(code));

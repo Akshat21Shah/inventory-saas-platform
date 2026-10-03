@@ -1,5 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
-import { Link, Stack } from "expo-router";
+import { Link } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
@@ -126,15 +126,9 @@ export function CatalogScreen({ categoryId }: { categoryId?: string }) {
       params={{ category: categoryId, brand: brand || undefined }}
       header={
         <>
-          {/* A category's name is its page title, as the web's heading; the catalogue's own
-              header is the distributor's name, so its heading stays on the page. */}
-          {found ? (
-            <Stack.Screen options={{ title: found.node.name }} />
-          ) : (
-            <Text size="2xl" weight="bold">
-              {t("catalogTitle")}
-            </Text>
-          )}
+          <Text size="2xl" weight="bold">
+            {found ? found.node.name : t("catalogTitle")}
+          </Text>
           <OnHoldNotice />
           <SearchEntry />
           {children.length ? <CategoryTiles categories={children} /> : null}

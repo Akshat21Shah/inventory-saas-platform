@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useQueryClient } from "@tanstack/react-query";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 
@@ -332,7 +332,6 @@ export default function OrderScreen() {
   };
   return (
     <>
-      <Stack.Screen options={{ title: order.number }} />
       <Screen
         edges={["bottom"]}
         refreshing={query.isRefetching}

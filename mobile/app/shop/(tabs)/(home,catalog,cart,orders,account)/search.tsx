@@ -1,4 +1,4 @@
-import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Keyboard, Pressable, StyleSheet, View, type TextInput } from "react-native";
 
@@ -32,8 +32,10 @@ export default function SearchScreen() {
   }, [text]);
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: t("searchTitle") }} />
       <View style={styles.box}>
+        <Text size="2xl" weight="bold">
+          {t("searchTitle")}
+        </Text>
         <SearchBox ref={box} value={text} onChangeText={setText} />
       </View>
       {search ? (
@@ -51,6 +53,11 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  box: { paddingHorizontal: space[4], paddingTop: space[4], paddingBottom: space[2] },
+  box: {
+    gap: space[4],
+    paddingHorizontal: space[4],
+    paddingTop: space[4],
+    paddingBottom: space[2],
+  },
   hint: { paddingHorizontal: space[4], paddingTop: space[2] },
 });

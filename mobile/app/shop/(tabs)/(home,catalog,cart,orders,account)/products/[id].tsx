@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { Image } from "expo-image";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 
 import { EmptyState, ListSkeleton } from "@/components/shared/states";
@@ -59,7 +59,6 @@ export default function ProductScreen() {
   const photo = Math.min(width - space[8], 560);
   return (
     <>
-      <Stack.Screen options={{ title: product?.name ?? "" }} />
       {query.isLoading ? (
         <Screen edges={["bottom"]}>
           <ListSkeleton rows={3} />

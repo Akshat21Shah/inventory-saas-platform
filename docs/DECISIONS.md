@@ -937,7 +937,11 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
       - The app sends nothing to third parties except Sentry crash reports (with phone numbers and tokens scrubbed) and FCM registration.
   12. **Budget phones (owner addition).**
       - Keeping it light: Hermes, R8 shrinking, per-device downloads from the app bundle, server-sized product photos and virtualised long lists.
-      - No bundled fonts: the app uses the phone's system fonts for Devanagari **(answer 5)** (**TODO(verify)** on the Android 11 image).
+      - Fonts: the phone's system fonts **(answer 5)**, plus one bundled font, Noto Sans Devanagari Medium **(checkpoint review item 6, recommended; waiting for the owner's choice)**.
+        - Why: Google's Android images ship a medium Devanagari, but many phone makers' fonts don't, so on the owner's phone Hindi and Marathi headings came out regular weight.
+        - Compared on both emulators: (a) a larger heading size at regular weight, against (b) the bundled medium font. Recommended (b): headings get the same weight and size as English on every phone, and it's the web's own Devanagari font.
+        - Cost: 184 KB installed, about 83 KB more in the APK and download. It's used only for Devanagari text at medium or semibold weight; Latin text keeps the system font.
+        - Devanagari text on Android has no set line height. With one, React Native sizes a short label to its measured width and Android's line breaker can find the words a fraction wider, so the last word moved to a hidden second line ("ऑर्डर हुआ" showed as "ऑर्डर"). Regular text also has no numeric weight. Both are covered by `components/ui/text.test.tsx`.
       - Two emulators: a modern phone (Android 16, 4 GB) and a budget phone (Android 11, 2 GB RAM). The main flows run on both.
       - The download size per phone (arm64) is reported at each checkpoint and the final review: **20 MB is the target and 30 MB the hard limit (answer 5)**. Anything cut to meet it is agreed with the owner first. The saved-data sizes are reported too.
   13. **Crash and error reporting.** Sentry for React Native, only when a DSN is set; each release is named by its version and build number. The release build uploads source maps when a Sentry token is present (a CI secret; local builds skip it). Screens show the app's translated error messages, never raw errors.
