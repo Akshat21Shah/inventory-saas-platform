@@ -1,7 +1,6 @@
 "use client";
 
 import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -28,6 +27,7 @@ import {
 } from "@/lib/api/generated/endpoints/auth/auth";
 import type { MfaSetupResponse } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { formatIndianMobile } from "@/lib/utils";
 
 import { useAuth } from "./auth-provider";

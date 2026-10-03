@@ -1,7 +1,6 @@
 "use client";
 
 import { Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -50,6 +49,7 @@ import {
   type FieldSpec,
   type FieldValue,
 } from "@/components/shared/fields-dialog";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const s = (value: FieldValue | undefined) => String(value ?? "").trim();
 

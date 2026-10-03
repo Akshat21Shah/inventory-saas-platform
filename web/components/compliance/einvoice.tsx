@@ -2,7 +2,6 @@
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -33,6 +32,7 @@ import type { EInvoiceSummary, IrnCancelReasonEnum } from "@/lib/api/generated/m
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
 import { ProviderMessage } from "@/components/shared/provider-message";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useGstFailure } from "./provider-line";
 
 const REASONS: IrnCancelReasonEnum[] = [

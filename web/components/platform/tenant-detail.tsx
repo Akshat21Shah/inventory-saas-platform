@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { Headset, Landmark, Mail, Pencil, Play, ShieldOff } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -66,6 +65,7 @@ import type {
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { handoffUrl } from "@/lib/auth/urls";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const EDITABLE = [
   "name",

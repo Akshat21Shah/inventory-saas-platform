@@ -1,10 +1,10 @@
 "use client";
 
 import { Gift } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 
 import type { FreeOffer, SchemeTerms } from "@/lib/api/generated/model";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 /** "Buy 10, get 1 free" or "Buy 6, get 1 Lizol Floor Cleaner free": the server's scheme in plain

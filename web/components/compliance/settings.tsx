@@ -1,7 +1,6 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -32,6 +31,7 @@ import {
 import type { GstCredentials, GstEnvironmentEnum } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { ProviderMessage } from "@/components/shared/provider-message";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useGstFailure } from "./provider-line";
 
 /** The distributor's own login with the GST provider (ADR-049 items 1, 7): saved encrypted,

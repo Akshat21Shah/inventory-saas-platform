@@ -2,7 +2,6 @@
 
 import { Check, Mail, RotateCw, UserPlus, UserRoundX, UserRoundCheck, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "@/lib/i18n/translations";
 import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
@@ -48,6 +47,7 @@ import {
 import type { Invitation, Membership, Role } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 function roleLabel(t: ReturnType<typeof useTranslations>, role: { code: string; name: string }) {
   return t.has(`roles.${role.code}`) ? t(`roles.${role.code}`) : role.name;

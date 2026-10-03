@@ -1,7 +1,8 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/translations";
 import { useMemo } from "react";
+
+import { useTranslations } from "@/lib/i18n/translations";
 
 /**
  * A report's words from the messages (`reports.catalogue`, `.filters`, `.choices`, `.groups`),

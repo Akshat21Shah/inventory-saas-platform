@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +38,7 @@ import {
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { languages, locales } from "@/lib/i18n/config";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { eventKey } from "./manage/nav";

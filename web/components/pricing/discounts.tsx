@@ -3,7 +3,6 @@
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -46,6 +45,7 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney, formatQty } from "@/lib/format";
 
 import { getDiscountRulesExportUrl } from "@/lib/api/generated/endpoints/imports/imports";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { ProductPicker, RetailerPicker, type Picked } from "./pickers";
 import { PricingFileActions } from "./shop-report";

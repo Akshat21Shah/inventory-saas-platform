@@ -1,9 +1,9 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/translations";
 import type { ReactNode } from "react";
 
 import { SubNav } from "@/components/shared/sub-nav";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const OTHERS = ["/manage/products/categories", "/manage/products/brands", "/manage/products/units"];
 

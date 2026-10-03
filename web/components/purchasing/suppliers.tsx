@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Download, FileUp, History, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -49,6 +48,7 @@ import type { SupplierDetail, SupplierList, SupplierProduct } from "@/lib/api/ge
 import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useListSearch } from "@/lib/list-search";
 import { useDebounced } from "@/lib/use-debounced";
 

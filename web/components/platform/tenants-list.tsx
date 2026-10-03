@@ -2,7 +2,6 @@
 
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
@@ -21,6 +20,7 @@ import {
 import { usePlatformTenantsList } from "@/lib/api/generated/endpoints/platform/platform";
 import type { PlatformTenantsListStatus, TenantList } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const STATUSES = ["ACTIVE", "ONBOARDING", "SUSPENDED"] as const;
 

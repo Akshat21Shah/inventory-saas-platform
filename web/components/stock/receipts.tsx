@@ -3,7 +3,6 @@
 import { PackagePlus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -27,6 +26,7 @@ import {
 import type { Receipt, ReceiptDetail, ReceiptLine } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { cn } from "@/lib/utils";
 

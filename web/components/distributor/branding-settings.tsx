@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -26,6 +25,7 @@ import {
 } from "@/lib/api/generated/endpoints/settings/settings";
 import type { Branding } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { brandCssVariables, DEFAULT_BRAND_COLOR, isHexColor } from "@/lib/theme/palette";
 
 const ASSETS = [

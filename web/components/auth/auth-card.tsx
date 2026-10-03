@@ -1,10 +1,10 @@
 "use client";
 
 import { Store } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import type { ReactNode } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { SignInLanguage } from "./language-picker";
 import { useHostBranding } from "./tenant-branding";

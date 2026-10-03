@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileSpreadsheet, FileText, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +29,7 @@ import type {
 } from "@/lib/api/generated/model";
 import { postForDownload } from "@/lib/api/download";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { NUMERIC_KINDS, ReportLinkCell, ReportValue, type ReportRow } from "./cells";
 import { ReportFilterBar, useReportFilters } from "./filters";

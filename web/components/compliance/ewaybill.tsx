@@ -1,7 +1,6 @@
 "use client";
 
 import { Truck } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +34,7 @@ import {
 } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { ProviderMessage } from "@/components/shared/provider-message";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useGstFailure } from "./provider-line";
 
 /** Whether an e-way bill is on its way (the page follows it until it lands). */

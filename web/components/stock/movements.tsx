@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
@@ -13,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useStockMovementsList } from "@/lib/api/generated/endpoints/inventory/inventory";
 import type { Movement, MovementTypeEnum } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { ProductCell } from "./product-cell";

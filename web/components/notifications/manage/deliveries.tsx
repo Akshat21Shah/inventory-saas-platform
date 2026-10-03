@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -38,6 +37,7 @@ import type {
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
 import { formatDateTime } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 import { useErrorText } from "@/lib/api/use-error-text";
 

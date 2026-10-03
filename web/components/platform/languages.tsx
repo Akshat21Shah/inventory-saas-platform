@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, Download, RotateCcw, X } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -38,6 +37,7 @@ import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { languages } from "@/lib/i18n/config";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const ENABLED = "platform.languages_enabled";
 const TESTERS = "platform.language_test_tenants";

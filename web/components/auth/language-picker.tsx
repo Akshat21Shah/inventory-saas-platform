@@ -3,7 +3,6 @@
 import { Languages } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect } from "react";
 
 import {
@@ -16,6 +15,7 @@ import {
 import { usePublicLanguages } from "@/lib/api/generated/endpoints/public/public";
 import { hasLanguageCookie, pickLanguage, rememberLanguage } from "@/lib/i18n/client";
 import { languageOf } from "@/lib/i18n/config";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { useHostBranding } from "./tenant-branding";
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/translations";
 import type { ReactNode } from "react";
 
 import { SubNav } from "@/components/shared/sub-nav";
+import { useTranslations } from "@/lib/i18n/translations";
 
 export function PricingLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("pricing.nav");

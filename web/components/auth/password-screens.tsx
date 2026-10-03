@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MailCheck } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -13,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authPasswordForgot, authPasswordReset } from "@/lib/api/generated/endpoints/auth/auth";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { AuthCard } from "./auth-card";
 import { PasswordStrength } from "./password-strength";

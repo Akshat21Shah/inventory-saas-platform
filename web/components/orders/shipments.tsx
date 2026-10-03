@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
@@ -11,6 +10,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { useFulfilmentsList } from "@/lib/api/generated/endpoints/orders/orders";
 import type { FulfilmentRow, FulfilmentsListStatus } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { OrdersNav } from "./orders-nav";

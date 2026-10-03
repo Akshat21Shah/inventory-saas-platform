@@ -1,7 +1,6 @@
 "use client";
 
 import { Copy } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -23,6 +22,7 @@ import {
 } from "@/lib/api/generated/endpoints/pricing/pricing";
 import type { CopyModeEnum, CopyPlan, PriceChange } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { RetailerPicker, type Picked } from "./pickers";

@@ -2,7 +2,6 @@
 
 import { NotificationsNav } from "@/components/notifications/manage/nav";
 import { AiUsageCard } from "@/components/ai/usage";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -23,6 +22,7 @@ import {
 } from "@/lib/api/generated/endpoints/settings/settings";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { useAuth } from "@/components/auth/auth-provider";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { POLICY_GROUPS } from "./settings-nav";
 

@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import type { ReactNode } from "react";
 
 import { DateText, MoneyText } from "@/components/shared/money-text";
 import type { UsedFor } from "@/lib/api/generated/model";
+import { useTranslations } from "@/lib/i18n/translations";
 
 /** Where a payment's or credit's money went: bills, old bills or adjustments, and refunds.
  * `action` renders a per-row control (e.g. "Move" for someone who records payments). */

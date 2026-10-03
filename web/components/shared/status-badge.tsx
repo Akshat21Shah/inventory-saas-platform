@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "@/lib/i18n/translations";
-
 import { cn } from "@/lib/utils";
 
 export type StatusTone = "info" | "warning" | "danger" | "success" | "progress" | "neutral";

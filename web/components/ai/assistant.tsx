@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -31,6 +30,7 @@ import {
 import type { AssistantQuestion, Column, Figures as FiguresData } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 
 type Row = Record<string, unknown>;
 

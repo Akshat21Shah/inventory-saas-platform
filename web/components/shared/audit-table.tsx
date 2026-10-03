@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDown, ChevronRight, Headset } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { Fragment, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AuditLog } from "@/lib/api/generated/model";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useIsCompact } from "@/lib/use-media";
 
 import { EmptyState } from "./empty-state";

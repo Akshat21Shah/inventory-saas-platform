@@ -3,7 +3,6 @@
 import { CircleCheck, Download, FileSpreadsheet, Loader2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -34,6 +33,7 @@ import type {
 import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 /** The server's JSON for an import job's results (ADR-035). */

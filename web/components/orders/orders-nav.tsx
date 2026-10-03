@@ -1,8 +1,7 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/translations";
-
 import { SubNav } from "@/components/shared/sub-nav";
+import { useTranslations } from "@/lib/i18n/translations";
 
 export function OrdersNav() {
   const t = useTranslations("orders.nav");

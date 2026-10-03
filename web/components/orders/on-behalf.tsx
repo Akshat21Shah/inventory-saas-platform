@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +34,7 @@ import {
 import type { Quote, RetailerList } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney, formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
 

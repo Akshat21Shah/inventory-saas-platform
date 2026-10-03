@@ -1,7 +1,6 @@
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useIsPhone } from "@/lib/use-media";
 
 /**

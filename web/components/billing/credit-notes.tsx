@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -49,6 +48,7 @@ import { ApiError } from "@/lib/api/errors";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { fromMilli, toMilli } from "@/lib/qty";
 import { useDebounced } from "@/lib/use-debounced";

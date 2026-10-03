@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useRef, useState } from "react";
 
 import { PageSkeleton } from "@/components/shared/skeletons";
 import { ApiError } from "@/lib/api/errors";
 import { authHandoffExchange } from "@/lib/api/generated/endpoints/auth/auth";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { AuthCard } from "./auth-card";
 import { EnrolStep, RecoveryCodesStep, useSignInFlow } from "./sign-in-flow";

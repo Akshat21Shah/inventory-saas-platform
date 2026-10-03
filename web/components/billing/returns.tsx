@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +34,7 @@ import type { ReturnRequest, ReturnRequestsListStatus } from "@/lib/api/generate
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 
 import { BillingNav } from "./billing-nav";

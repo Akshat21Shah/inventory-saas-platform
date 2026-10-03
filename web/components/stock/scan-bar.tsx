@@ -1,7 +1,6 @@
 "use client";
 
 import { Loader2, ScanBarcode } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +12,7 @@ import { catalogProductBarcodesCreate } from "@/lib/api/generated/endpoints/cata
 import { stockLookup, useStockList } from "@/lib/api/generated/endpoints/inventory/inventory";
 import type { StockRow } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 
 import { CameraButton } from "./camera-scanner";

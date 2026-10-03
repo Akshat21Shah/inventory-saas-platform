@@ -3,7 +3,6 @@
 import { Languages } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { textsSuggestionsCreate } from "@/lib/api/generated/endpoints/texts/texts";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { defaultLocale, languageOf } from "@/lib/i18n/config";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 /** Words selected on the page when the link was used, to start the form with. */

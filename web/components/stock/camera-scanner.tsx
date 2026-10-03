@@ -1,7 +1,6 @@
 "use client";
 
 import { Camera } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"];
 

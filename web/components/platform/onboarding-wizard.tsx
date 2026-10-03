@@ -2,7 +2,6 @@
 
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +28,7 @@ import {
 } from "@/lib/api/generated/endpoints/public/public";
 import type { OnboardingRequest } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { DEFAULT_BRAND_COLOR, isHexColor } from "@/lib/theme/palette";
 import { cn, omitKey } from "@/lib/utils";
 

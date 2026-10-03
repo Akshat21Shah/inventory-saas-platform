@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, NotebookPen, Phone, RefreshCw, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -50,6 +49,7 @@ import type {
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useListSearch } from "@/lib/list-search";
 import { useDebounced } from "@/lib/use-debounced";
 import { useIsCompact } from "@/lib/use-media";

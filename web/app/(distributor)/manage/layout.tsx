@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import { getTranslations } from "@/lib/i18n/server";
 
 import { DistributorShell } from "./shell";

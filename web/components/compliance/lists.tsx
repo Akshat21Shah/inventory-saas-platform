@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -26,6 +25,7 @@ import {
   type EWayBillRow,
 } from "@/lib/api/generated/model";
 import { useCursor } from "@/lib/api/pagination";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 import { ProviderMessage } from "@/components/shared/provider-message";
 import { useGstFailure } from "./provider-line";

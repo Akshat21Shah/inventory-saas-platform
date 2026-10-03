@@ -3,13 +3,13 @@ import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
-import { getTranslations } from "@/lib/i18n/server";
 import { cache, type ReactNode } from "react";
 
 import { BrandTheme } from "@/components/shared/brand-theme";
 import { fetchPublicBranding } from "@/lib/branding";
 import type { HostKind } from "@/lib/hosts";
 import { languageOf } from "@/lib/i18n/config";
+import { getTranslations } from "@/lib/i18n/server";
 
 import { Providers } from "./providers";
 import "./globals.css";

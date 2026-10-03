@@ -3,7 +3,6 @@
 import { ChevronsUpDown, Languages, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 
 import {
@@ -20,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { useAuth } from "./auth-provider";
 

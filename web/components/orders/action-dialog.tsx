@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 /** A dialog with a small form for an order action (pack, dispatch, edit…). Errors from the
  * server are shown in it, in plain words, and it stays open. */

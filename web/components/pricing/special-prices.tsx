@@ -3,7 +3,6 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -36,6 +35,7 @@ import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 
 import { getSpecialPricesExportUrl } from "@/lib/api/generated/endpoints/imports/imports";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { ProductPicker, RetailerPicker, type Picked } from "./pickers";
 import { PricingFileActions } from "./shop-report";

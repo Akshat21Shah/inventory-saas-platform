@@ -2,7 +2,6 @@
 
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -26,6 +25,7 @@ import {
 } from "@/lib/api/generated/endpoints/notifications/notifications";
 import type { Text, TextPreview } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 import { eventKey, NotificationsNav } from "./nav";

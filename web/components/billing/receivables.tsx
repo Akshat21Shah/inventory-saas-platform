@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, HandCoins, IndianRupee, Store, Wallet } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -32,6 +31,7 @@ import {
   type ReceivablesAgeingBasis,
 } from "@/lib/api/generated/model";
 import { formatDate, formatMoney } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";

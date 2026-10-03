@@ -2,7 +2,6 @@
 
 import { ChevronRight, Copy, KeyRound, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useCallback, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +21,7 @@ import type {
 } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { handoffUrl, homeFor, safeNext } from "@/lib/auth/urls";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { useAuth } from "./auth-provider";
 import { OtpInput } from "./otp-input";

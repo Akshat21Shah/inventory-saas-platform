@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 import { Controller, useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
@@ -62,6 +61,7 @@ import type {
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { formatIndianMobile } from "@/lib/utils";
 
 import {

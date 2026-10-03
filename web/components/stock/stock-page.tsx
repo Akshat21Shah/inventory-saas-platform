@@ -3,7 +3,6 @@
 import { ClipboardCheck, Download, FileUp, MoreHorizontal, PackagePlus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +28,7 @@ import type { StockListStatus, StockRow } from "@/lib/api/generated/model";
 import { downloadFile } from "@/lib/api/download";
 import { useCursor } from "@/lib/api/pagination";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 
 import { ProductCell } from "./product-cell";

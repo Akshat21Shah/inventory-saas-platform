@@ -4,7 +4,6 @@ import { useMutation } from "@tanstack/react-query";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -23,6 +22,7 @@ import {
 } from "@/lib/api/generated/endpoints/shop/shop";
 import type { ShopOrderRow } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { CategoryTiles, OnHoldNotice, ProductCard, SearchBox } from "./catalog";

@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "@/lib/i18n/translations";
-
 import { cn } from "@/lib/utils";
 
 /** A hint only; the server's password rules decide (Django validators). */

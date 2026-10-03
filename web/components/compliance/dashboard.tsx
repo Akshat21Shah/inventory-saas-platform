@@ -2,7 +2,6 @@
 
 import { AlertTriangle, FileCheck2, FileClock, Truck } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { KpiCard } from "@/components/shared/kpi-card";
@@ -13,6 +12,7 @@ import {
   useEwaybillsList,
 } from "@/lib/api/generated/endpoints/compliance/compliance";
 import { ProviderMessage } from "@/components/shared/provider-message";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useGstFailure } from "./provider-line";
 
 /** Failed e-way bills (backend checkpoint change 4): shown at the top of the dashboard until

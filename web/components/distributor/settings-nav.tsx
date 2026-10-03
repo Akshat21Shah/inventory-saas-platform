@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import type { ReactNode } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { useTranslations } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 export const POLICY_GROUPS = [

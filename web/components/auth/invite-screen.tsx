@@ -4,7 +4,6 @@ import { UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { FormField } from "@/components/shared/form-field";
@@ -19,6 +18,7 @@ import type { InvitationPreview } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { pickedLanguage, rememberLanguage } from "@/lib/i18n/client";
 import { languageOf } from "@/lib/i18n/config";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { AuthCard } from "./auth-card";
 import { PasswordStrength } from "./password-strength";

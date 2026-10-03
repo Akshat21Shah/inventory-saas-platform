@@ -1,8 +1,7 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/translations";
-
 import { SubNav } from "@/components/shared/sub-nav";
+import { useTranslations } from "@/lib/i18n/translations";
 
 /** Invoices and credit notes (and, when those modules are on, e-invoices and e-way bills), with the invoicing settings for those who manage settings. */
 export function BillingNav() {

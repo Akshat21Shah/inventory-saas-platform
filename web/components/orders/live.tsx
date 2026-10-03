@@ -2,11 +2,11 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { refreshNotifications } from "@/components/notifications/scope";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useLiveUpdates } from "@/lib/live";
 
 import { refreshOrders } from "./board";

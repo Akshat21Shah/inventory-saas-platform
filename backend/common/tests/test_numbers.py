@@ -116,7 +116,7 @@ def test_translated_messages_are_filled_only_through_fill():
                 and _is_translated(node.func.value)
             )
             if filled_with_percent or filled_with_format:
-                wrong.append(f"{path.relative_to(BACKEND)}:{node.lineno}")
+                wrong.append(f"{path.relative_to(BACKEND)}:{getattr(node, 'lineno', '?')}")
     assert wrong == [], "fill a translated message with common.numbers.fill"
 
 

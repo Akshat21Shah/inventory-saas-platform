@@ -3,7 +3,6 @@
 import { ArrowLeft, CheckCircle2, CreditCard, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -27,6 +26,7 @@ import type {
 } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatMoney } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 import { idempotent, newIdempotencyKey } from "@/lib/idempotency";
 import { ProviderMessage } from "@/components/shared/provider-message";
 

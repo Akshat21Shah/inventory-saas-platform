@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useEffect, useState } from "react";
 
 import { PageSkeleton } from "@/components/shared/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { homeFor } from "@/lib/auth/urls";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { AuthCard, UnavailableCard } from "./auth-card";
 import { useAuth } from "./auth-provider";

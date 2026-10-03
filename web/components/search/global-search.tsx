@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMessages } from "next-intl";
-import { useTranslations } from "@/lib/i18n/translations";
 import {
   createContext,
   useCallback,
@@ -49,6 +48,7 @@ import {
 } from "@/lib/api/generated/endpoints/platform/platform";
 import { useSearch } from "@/lib/api/generated/endpoints/search/search";
 import type { SearchHit, SearchResults, UserHit } from "@/lib/api/generated/model";
+import { useTranslations } from "@/lib/i18n/translations";
 import { recentSearches, rememberSearch } from "@/lib/recent-searches";
 import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";

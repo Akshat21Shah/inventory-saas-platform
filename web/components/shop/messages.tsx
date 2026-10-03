@@ -3,7 +3,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Lock, Megaphone } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -32,6 +31,7 @@ import {
 } from "@/lib/api/generated/endpoints/shop/shop";
 import type { NotificationChannelEnum, PreferenceRow } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const labelKey = (code: string) => code.replace(".", "_");
 

@@ -2,7 +2,6 @@
 
 import { Activity, Building, CircleCheck, Hourglass, Plus, ShieldOff } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState, type ReactNode } from "react";
 
 import { PlatformAiUsage } from "@/components/ai/usage";
@@ -19,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { usePlatformDashboard } from "@/lib/api/generated/endpoints/platform/platform";
 import type { Dashboard, PlanUsage, TenantFailures, TopTenant } from "@/lib/api/generated/model";
 import { formatMoney } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 
 function TenantLink({ id, name }: { id: string; name: string }) {
   return (

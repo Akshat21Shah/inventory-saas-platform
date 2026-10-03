@@ -1,7 +1,5 @@
 "use client";
 
-import { useTranslations } from "@/lib/i18n/translations";
-
 import { useAuth } from "@/components/auth/auth-provider";
 import { DateText } from "@/components/shared/money-text";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useProductStats } from "@/lib/api/generated/endpoints/planning/planning";
 import { useProductOnOrder } from "@/lib/api/generated/endpoints/purchasing/purchasing";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { useDemandRate, useStockLasts } from "./words";
 

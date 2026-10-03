@@ -1,13 +1,13 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCatalogProductsSearch } from "@/lib/api/generated/endpoints/catalog/catalog";
 import { useRetailersList } from "@/lib/api/generated/endpoints/retailers/retailers";
+import { useTranslations } from "@/lib/i18n/translations";
 import { useDebounced } from "@/lib/use-debounced";
 
 export interface Picked {

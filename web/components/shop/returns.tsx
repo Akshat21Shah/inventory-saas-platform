@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { Undo2 } from "lucide-react";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +29,7 @@ import {
 import type { ReturnReasonEnum, ShopInvoiceDetail } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
 import { formatQty } from "@/lib/format";
+import { useTranslations } from "@/lib/i18n/translations";
 
 const REASONS: ReturnReasonEnum[] = ["DAMAGED", "EXPIRED", "WRONG_ITEM", "EXCESS_SUPPLY", "OTHER"];
 

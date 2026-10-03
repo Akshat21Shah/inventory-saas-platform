@@ -2,7 +2,6 @@
 
 import { ClipboardCheck, PackagePlus } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "@/lib/i18n/translations";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +21,7 @@ import {
 } from "@/lib/api/generated/endpoints/inventory/inventory";
 import type { StockDetail } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { useTranslations } from "@/lib/i18n/translations";
 
 import { MovementsTable } from "./movements";
 import { BackTo, CountCard } from "./shared";
