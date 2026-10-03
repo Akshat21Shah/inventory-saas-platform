@@ -78,8 +78,8 @@ test-frontend: ## vitest
 e2e: ## Playwright (starts the web dev server if not running)
 	cd web && npx playwright test
 
-e2e-stack: ## Acceptance E2E (Phases 1-9) against the running stack (after make up + make seed)
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts e2e/growth-acceptance.spec.ts e2e/selfservice-acceptance.spec.ts e2e/ai-acceptance.spec.ts
+e2e-stack: ## Acceptance E2E (Phases 1-9, 11a) against the running stack (after make up + make seed)
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 e2e/acceptance.spec.ts e2e/catalog-acceptance.spec.ts e2e/pricing-tools.spec.ts e2e/inventory-acceptance.spec.ts e2e/orders-acceptance.spec.ts e2e/billing-acceptance.spec.ts e2e/notifications-acceptance.spec.ts e2e/compliance-acceptance.spec.ts e2e/reports-acceptance.spec.ts e2e/purchasing-acceptance.spec.ts e2e/growth-acceptance.spec.ts e2e/selfservice-acceptance.spec.ts e2e/ai-acceptance.spec.ts e2e/languages-acceptance.spec.ts
 
 lan: ## Open the dev stack to phones on your Wi-Fi via <lan-ip>.nip.io (undo: make localhost)
 	infra/dev-domain.sh lan
@@ -92,8 +92,8 @@ webhook-tunnel: ## Dev only: a public https address for payment webhooks ONLY (R
 	echo "Webhook URL = the https://….trycloudflare.com address below + the path under Settings → Online payments → Webhook address"; \
 	cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8765
 
-e2e-responsive: ## Every screen at 360/768/1440 px (after make up + make seed); screenshots in web/test-results/responsive
-	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts
+e2e-responsive: ## Every screen at 360/768/1440 px (LANGUAGE=hi or mr for those; after make up + make seed); screenshots in web/test-results/responsive
+	cd web && E2E_FULL_STACK=1 E2E_BASE_URL=http://localhost:3000 E2E_LANGUAGE=$(or $(LANGUAGE),en) npx playwright test --workers=1 --project=desktop e2e/responsive.spec.ts
 
 lint: lint-backend lint-frontend ## ruff, mypy, eslint, tsc, prettier
 

@@ -468,7 +468,7 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
     <>
       <Link
         href="/manage/invoices"
-        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11"
+        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11 max-md:min-w-11"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {t("back")}
@@ -483,14 +483,14 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
             <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 text-sm">
               <Link
                 href={`/manage/retailers/${invoice.retailer.id}`}
-                className="inline-flex min-h-10 items-center hover:underline max-md:min-h-11"
+                className="inline-flex min-h-10 items-center hover:underline max-md:min-h-11 max-md:min-w-11"
               >
                 {invoice.retailer.shop_name}
               </Link>
               <DateText value={invoice.invoice_date} />
               <Link
                 href={`/manage/orders/${invoice.order.id}`}
-                className="inline-flex min-h-10 items-center hover:underline max-md:min-h-11"
+                className="inline-flex min-h-10 items-center hover:underline max-md:min-h-11 max-md:min-w-11"
               >
                 {t("forOrder", { number: invoice.order.number })}
               </Link>
@@ -612,7 +612,7 @@ export function InvoiceDetailPage({ invoiceId }: { invoiceId: string }) {
                     <li key={request.id} className="flex flex-wrap justify-between gap-2 p-3">
                       <Link
                         href={`/manage/invoices/returns/${request.id}`}
-                        className="font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
+                        className="font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center"
                       >
                         {request.number}
                       </Link>

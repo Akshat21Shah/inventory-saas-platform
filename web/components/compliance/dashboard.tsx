@@ -71,7 +71,7 @@ export function FailedEWayBillsAlert() {
       {total > rows.length ? (
         <Link
           href="/manage/invoices/ewaybills"
-          className="inline-flex min-h-10 items-center text-sm font-medium hover:underline max-md:min-h-11"
+          className="inline-flex min-h-10 items-center text-sm font-medium hover:underline max-md:min-h-11 max-md:min-w-11"
         >
           {t("seeAll", { count: total })}
         </Link>

@@ -104,7 +104,7 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
                   href={section.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-10 items-center rounded-full border px-3 text-sm whitespace-nowrap max-md:min-h-11 lg:rounded-lg lg:border-0",
+                    "flex min-h-10 items-center justify-center rounded-full border px-3 text-sm whitespace-nowrap max-md:min-h-11 max-md:min-w-11 lg:justify-start lg:rounded-lg lg:border-0",
                     active
                       ? "bg-brand-50 text-brand-900 border-brand-200 font-medium"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",

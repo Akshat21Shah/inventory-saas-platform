@@ -445,7 +445,7 @@ export function RetailerLedgerPage({ retailerId }: { retailerId: string }) {
     <>
       <Link
         href={`/manage/retailers/${retailerId}`}
-        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11"
+        className="text-muted-foreground mb-4 inline-flex min-h-10 items-center gap-1 text-sm hover:underline max-md:min-h-11 max-md:min-w-11"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {statement.retailer.shop_name}

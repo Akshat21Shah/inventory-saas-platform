@@ -91,7 +91,7 @@ function Profile() {
         </FormField>
         <FormField label={t("language")}>
           <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="min-h-10 w-full">
+            <SelectTrigger className="min-h-10 w-full" aria-label={t("language")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

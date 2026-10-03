@@ -2,12 +2,17 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
+import english from "../messages/en.json";
+import hindi from "../messages/hi.json";
+import marathi from "../messages/mr.json";
 import { signInAsSuperAdmin } from "./support/flows";
-import { FULL_STACK, OTP_CODE, manage, origin, resetLimits } from "./support/stack";
+import { ADMIN, FULL_STACK, OTP_CODE, manage, origin, resetLimits } from "./support/stack";
 
 /**
  * Every screen at phone (360 px), tablet (768 px) and laptop (1440 px) width (CLAUDE.md
- * "Responsive design"). Fails on:
+ * "Responsive design"), in one language: E2E_LANGUAGE (en, hi or mr; ADR-060 item 10, a CI job
+ * each). The test accounts are signed in in English, then see the run's language, and are put
+ * back to English at the end. Fails on:
  * - sideways scrolling of the page;
  * - buttons, links and fields that are off-screen (outside a scrollable strip) or overlap another
  *   one;
@@ -20,7 +25,24 @@ test.skip(({ isMobile }) => isMobile, "sets its own widths");
 test.describe.configure({ mode: "default", timeout: 900_000 });
 
 const WIDTHS = [360, 768, 1440] as const;
-const SHOTS = join(__dirname, "..", "test-results", "responsive");
+const LANGUAGE = process.env.E2E_LANGUAGE ?? "en";
+const CATALOGS = { en: english, hi: hindi, mr: marathi } as const;
+const SEARCH_LABEL = (CATALOGS[LANGUAGE as keyof typeof CATALOGS] ?? english).search.label;
+// English keeps its old place, so earlier screenshots still compare.
+const SHOTS = join(
+  __dirname,
+  "..",
+  "test-results",
+  "responsive",
+  ...(LANGUAGE === "en" ? [] : [LANGUAGE]),
+);
+const TEST_ACCOUNTS = ["--email", "owner@sharma.example.com", "--email", ADMIN.email];
+const TEST_SHOPS = ["--phone", "9876500001"];
+
+/** The run's language for the test accounts and shop (English puts them back). */
+function speak(language: string) {
+  manage(["e2e_language", language, ...TEST_ACCOUNTS, ...TEST_SHOPS]);
+}
 
 interface Ids {
   tenant: string;
@@ -194,6 +216,7 @@ function pages(ids: Ids) {
     "/platform/impersonations",
     "/platform/notifications",
     "/platform/notifications/failures",
+    "/platform/languages",
     "/platform/audit",
     "/platform/account",
   ];
@@ -360,7 +383,7 @@ async function searchOpen(page: Page, base: string, width: number, area: string,
   await page.goto(`${base}${area === "platform" ? "/platform" : "/manage"}`);
   await page.waitForLoadState("networkidle").catch(() => undefined);
   await page.keyboard.press("Control+K");
-  await page.getByRole("combobox", { name: "Search" }).fill(text);
+  await page.getByRole("combobox", { name: SEARCH_LABEL }).fill(text);
   await page.getByRole("option").first().waitFor();
   await page.waitForTimeout(300);
   const problems = await page.evaluate(findProblems, width < 768);
@@ -394,13 +417,26 @@ async function shopPage(browser: Browser, width: number) {
   return { context, page };
 }
 
+// English again for the other suites, even when a run fails half way.
+test.afterAll(() => {
+  if (LANGUAGE !== "en") speak("en");
+});
+
 for (const width of WIDTHS) {
   test(`every screen at ${width}px`, async ({ browser }) => {
     const ids = JSON.parse(manage(["e2e_ids"]).trim().split("\n").pop()!) as Ids;
     const { staff, platform, shop } = pages(ids);
     const problems: string[] = [];
 
+    speak(LANGUAGE);
     const publicContext = await browser.newContext({ viewport: { width, height: 900 } });
+    await publicContext.addCookies(
+      ["sharma", "", "admin"].map((slug) => ({
+        name: "NEXT_LOCALE",
+        value: LANGUAGE,
+        url: origin(slug || undefined),
+      })),
+    );
     const publicPage = await publicContext.newPage();
     problems.push(
       ...(await sweep(publicPage, origin("sharma"), ["/login", "/shop/login"], width, "public")),

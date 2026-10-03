@@ -101,7 +101,7 @@ function Figures({ figures }: { figures: FiguresData }) {
         </h3>
         <Link
           href={href}
-          className="text-primary text-sm underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
+          className="text-primary text-sm underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center"
         >
           {t("openReport")}
         </Link>

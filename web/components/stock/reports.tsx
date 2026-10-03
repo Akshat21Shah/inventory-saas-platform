@@ -356,7 +356,7 @@ function Valuation() {
                   aria-selected={groupBy === value}
                   onClick={() => setGroupBy(value)}
                   className={cn(
-                    "min-h-11 rounded-full border px-3 text-sm md:min-h-9",
+                    "min-h-11 min-w-11 rounded-full border px-3 text-sm md:min-h-9 md:min-w-0",
                     groupBy === value
                       ? "border-brand-200 bg-brand-50 font-medium"
                       : "hover:bg-muted",

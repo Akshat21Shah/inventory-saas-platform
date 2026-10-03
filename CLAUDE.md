@@ -125,7 +125,7 @@ Every screen works at three widths, and CI checks them: **360 px** (phone), **76
 - **Layout switches in code use `lib/use-media.ts`** (`useIsPhone` below 768 px, `useIsCompact` below 1024 px). Everything else uses Tailwind breakpoints (`max-md:`, `md:`, `lg:`).
 - **The shop** is mobile-first: a bottom navigation bar on phones and tablets, navigation in the header on laptops, and a centred content column up to 1152 px wide.
 - **Checks:**
-  - Each new screen is added to `web/e2e/responsive.spec.ts`. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves a screenshot of every screen at every width (the CI artifact `responsive-screenshots`; locally `make e2e-responsive`).
+  - Each new screen is added to `web/e2e/responsive.spec.ts`. It fails on sideways scrolling, off-screen or overlapping controls, and phone targets under 44 px, and saves a screenshot of every screen at every width (the CI artifact `responsive-screenshots`; locally `make e2e-responsive`). CI runs it in English, Hindi and Marathi (`make e2e-responsive LANGUAGE=hi`): Indian-language words can be much shorter or longer than the English, so give short controls a minimum width on phones (`max-md:min-w-11`; `Button` already has it).
   - Component tests can render at any width with `setViewport(width)` from `tests/viewport.ts`.
 
 ## 7. Definition of done (every task)
@@ -149,8 +149,8 @@ make migrate     # run migrations (as the schema-owner DB role)
 make makemigrations
 make test        # backend (pytest, needs postgres) + frontend (vitest)
 make e2e         # Playwright (desktop + 360px)
-make e2e-stack   # acceptance E2E (Phases 1-9) against the running stack (needs make up + make seed)
-make e2e-responsive # every screen at 360/768/1440 px + screenshots (needs make up + make seed)
+make e2e-stack   # acceptance E2E (Phases 1-9, 11a) against the running stack (needs make up + make seed)
+make e2e-responsive [LANGUAGE=hi|mr] # every screen at 360/768/1440 px + screenshots, in English or that language (needs make up + make seed)
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make secrets-scan # gitleaks over the whole git history, every branch (the pre-commit hook checks each commit)
 make fmt         # auto-format backend + frontend
