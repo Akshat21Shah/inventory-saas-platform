@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DateText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
+import { ProviderMessage } from "@/components/shared/provider-message";
 import { CardSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,6 @@ import { useDebounced } from "@/lib/use-debounced";
 import { useErrorText } from "@/lib/api/use-error-text";
 
 import { eventKey, NotificationsNav } from "./nav";
-import { ProviderMessage } from "@/components/shared/provider-message";
 
 const ALL = "all";
 const STATUSES = ["FAILED", "PENDING", "SENDING", "SENT", "SKIPPED"] as const;

@@ -128,7 +128,9 @@
       "existingAccount": "You already have an account with this email. Enter its password to join.",
       "accept": "Accept invitation"
     },
-    "myAccount": "My account"
+    "myAccount": "My account",
+    "language": "Language",
+    "suggestWord": "Suggest a better word"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -157,7 +159,8 @@
     "itemCount": "{count, plural, one {# item} other {# items}} in the cart",
     "platformMessages": "Messages",
     "purchasing": "Purchasing",
-    "assistant": "Assistant"
+    "assistant": "Assistant",
+    "languages": "Languages"
   },
   "shell": {
     "platformTitle": "Platform admin",
@@ -1384,6 +1387,61 @@
       "saved": "Turnover band saved",
       "suggestEinvoice": "E-invoicing is suggested for this turnover. Switch on \"E-invoices\" below when the business is ready.",
       "reportingLimit": "IRNs must be obtained within {days} days of the invoice date for this turnover: the business will be warned."
+    },
+    "languages": {
+      "title": "Languages",
+      "body": "Which languages everyone may use, the distributors testing the others, how far each language's review has got, and the better words people suggest.",
+      "download": "Download the translation sheet",
+      "englishAlwaysOn": "English is always on. Turn another language on for everyone only after a native speaker has reviewed its words.",
+      "on": "On for everyone",
+      "off": "Off (testing only)",
+      "onFor": "{name} on for everyone",
+      "turnOnTitle": "Turn {name} on for everyone?",
+      "turnOnBody": "Every distributor's staff and shops can then choose it.",
+      "turnOnUnreviewed": "Only {reviewed, number} of {total, number} texts have been reviewed by a native speaker. Every distributor's staff and shops can then choose it.",
+      "turnOn": "Turn on",
+      "turnOffTitle": "Turn {name} off for everyone?",
+      "turnOffBody": "People who chose it see English until it is on again; the test distributors keep it.",
+      "turnOff": "Turn off",
+      "turnedOn": "{name} is on for everyone.",
+      "turnedOff": "{name} is off for everyone.",
+      "translated": "Translated",
+      "reviewed": "Reviewed by a native speaker",
+      "ofTotal": "{count, number} of {total, number}",
+      "percent": "{percent}%",
+      "newSuggestions": "New suggestions",
+      "testersTitle": "Distributors testing languages",
+      "testersBody": "Their staff and shops may use every language, including those not on for everyone yet. Add a distributor by its web address name.",
+      "noTesters": "No distributor is testing languages.",
+      "addTester": "Web address name",
+      "addTesterPlaceholder": "e.g. sharma",
+      "add": "Add",
+      "removeTester": "Remove {slug}",
+      "suggestionsTitle": "Suggested words",
+      "suggestionsBody": "Better words staff and shops sent from their screens. Take the good ones into the translation sheet, then mark them done.",
+      "noSuggestions": "No suggestions here.",
+      "words": "Words",
+      "language": "Language",
+      "screen": "Screen",
+      "from": "From",
+      "platform": "Super admin",
+      "when": "Sent",
+      "status": "Status",
+      "allStatuses": "Every status",
+      "allLanguages": "Every language",
+      "statuses": {
+        "NEW": "New",
+        "DONE": "Done",
+        "DISMISSED": "Dismissed"
+      },
+      "done": "Done",
+      "dismiss": "Dismiss",
+      "reopen": "Back to new",
+      "settled": {
+        "NEW": "Back on the list.",
+        "DONE": "Marked done.",
+        "DISMISSED": "Dismissed."
+      }
     }
   },
   "account": {
@@ -1645,7 +1703,9 @@
       "reports": "Reports",
       "notifications": "Notifications",
       "dashboard": "Dashboard"
-    }
+    },
+    "inviteLanguage": "Language of the invitation",
+    "inviteLanguageHint": "The email and the page they open are in this language."
   },
   "catalog": {
     "nav": {
@@ -4226,7 +4286,6 @@
       "title": "Message texts",
       "description": "The words each message uses, for the shop and for your staff. You can change the in-app and email texts; WhatsApp and SMS texts are approved templates set by the platform.",
       "event": "Which message",
-      "language": "Language",
       "languages": {
         "en": "English",
         "hi": "हिन्दी",
@@ -4258,7 +4317,8 @@
         "SHOP": "What the shop reads, in its own words: “Your order …”.",
         "STAFF": "What your staff read, in the office's words: “Ganesh Kirana's order …”.",
         "SUPPLIER": "Your email to the supplier, with a link to the purchase order."
-      }
+      },
+      "partlyEdited": "You have your own wording in {edited} only. {standard} still use the standard text: change them too if they should say the same."
     },
     "deliveries": {
       "title": "Delivery log",
@@ -5920,5 +5980,15 @@
     "paymentService": "The payment service said:",
     "sending": "The sending service said:",
     "portalRetrying": "The portal didn't answer. Trying again at <at></at>."
+  },
+  "suggestWord": {
+    "link": "Suggest a better word",
+    "title": "Suggest a better word",
+    "body": "Is a word on this screen hard to understand or wrong? Tell us the word you would use. We send it, with this screen, to the people who look after the app's words.",
+    "current": "Words on the screen",
+    "currentHint": "Select the words on the page before opening this to fill them in.",
+    "better": "Better word",
+    "send": "Send",
+    "thanks": "Thank you! We'll look at it."
   }
 }

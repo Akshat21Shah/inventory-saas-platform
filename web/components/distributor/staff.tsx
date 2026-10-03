@@ -319,6 +319,12 @@ export function StaffPage() {
     value: role.code,
     label: roleLabel(t, role),
   }));
+  // The invitation's language: the inviter's own unless they choose another (ADR-060).
+  const { me } = useAuth();
+  const languageOptions = (me?.languages ?? []).map((option) => ({
+    value: option.code,
+    label: option.native,
+  }));
   return (
     <>
       <PageHeader
@@ -337,13 +343,25 @@ export function StaffPage() {
             fields={[
               { name: "email", label: t("email"), required: true },
               { name: "role_code", label: t("role"), kind: "select", options: roleOptions },
+              ...(languageOptions.length > 1
+                ? [
+                    {
+                      name: "language",
+                      label: t("inviteLanguage"),
+                      kind: "select" as const,
+                      options: languageOptions,
+                      hint: t("inviteLanguageHint"),
+                    },
+                  ]
+                : []),
             ]}
-            initial={{ email: "", role_code: "SALES" }}
+            initial={{ email: "", role_code: "SALES", language: me?.language ?? "en" }}
             submitLabel={t("sendInvite")}
             onSubmit={async (values) => {
               await staffInvitationsCreate({
                 email: String(values.email).trim(),
                 role_code: String(values.role_code),
+                ...(languageOptions.length > 1 ? { language: String(values.language) } : {}),
               });
               toast.success(t("invited", { email: String(values.email).trim() }));
               void queryClient.invalidateQueries({ queryKey: getStaffInvitationsListQueryKey() });

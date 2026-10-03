@@ -2,7 +2,8 @@
 
 import { UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { FormField } from "@/components/shared/form-field";
@@ -15,6 +16,8 @@ import {
 } from "@/lib/api/generated/endpoints/auth/auth";
 import type { InvitationPreview } from "@/lib/api/generated/model";
 import { useErrorText } from "@/lib/api/use-error-text";
+import { pickedLanguage, rememberLanguage } from "@/lib/i18n/client";
+import { languageOf } from "@/lib/i18n/config";
 
 import { AuthCard } from "./auth-card";
 import { PasswordStrength } from "./password-strength";
@@ -26,6 +29,8 @@ export function InviteScreen({ token }: { token: string }) {
   const t = useTranslations("auth");
   const errors = useErrorText();
   const flow = useSignInFlow({ next: "/manage", handoffNext: "/manage" });
+  const router = useRouter();
+  const locale = useLocale();
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
@@ -36,7 +41,11 @@ export function InviteScreen({ token }: { token: string }) {
 
   useEffect(() => {
     authInvitationPreview({ token })
-      .then((response) => setPreview(response.data))
+      .then((response) => {
+        setPreview(response.data);
+        // The page opens in the invitation's language, unless the person picked another.
+        if (!pickedLanguage() && rememberLanguage(response.data.language)) router.refresh();
+      })
       .catch((err: unknown) => setLoadError(errors.message(err)));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per token
   }, [token]);
@@ -47,7 +56,11 @@ export function InviteScreen({ token }: { token: string }) {
     setError(null);
     setFieldErrors({});
     try {
-      await flow.apply((await authInvitationAccept({ token, full_name: fullName, password })).data);
+      // A new account keeps the language this page is shown in.
+      const language = languageOf(locale);
+      await flow.apply(
+        (await authInvitationAccept({ token, full_name: fullName, password, language })).data,
+      );
     } catch (err) {
       setFieldErrors(errors.fields(err));
       setError(errors.message(err));

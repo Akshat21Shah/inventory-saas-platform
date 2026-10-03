@@ -8,7 +8,10 @@ import { renderWithIntl } from "@/tests/render";
 
 import { RolesPage, StaffPage } from "./staff";
 
-const auth = { me: { id: "u-owner" }, can: () => true };
+const auth: {
+  me: { id: string; language?: string; languages?: { code: string; native: string }[] };
+  can: () => boolean;
+} = { me: { id: "u-owner" }, can: () => true };
 vi.mock("@/components/auth/auth-provider", () => ({ useAuth: () => auth }));
 
 afterEach(() => vi.unstubAllGlobals());
@@ -89,6 +92,37 @@ describe("StaffPage", () => {
       email: "new@sharma.example.com",
       role_code: "SALES",
     });
+  });
+
+  it("sends the invitation in the language the inviter chooses, theirs by default", async () => {
+    auth.me = {
+      id: "u-owner",
+      language: "mr",
+      languages: [
+        { code: "en", native: "English" },
+        { code: "hi", native: "हिन्दी" },
+        { code: "mr", native: "मराठी" },
+      ],
+    };
+    const calls = api({ "POST /api/v1/staff/invitations/": () => [201, {}] });
+    renderWithIntl(<StaffPage />);
+    const user = userEvent.setup();
+    await screen.findByText("Ravi");
+    await user.click(screen.getByRole("button", { name: /invite staff/i }));
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByRole("combobox", { name: /language of the invitation/i }),
+    ).toHaveTextContent("मराठी");
+    await user.type(within(dialog).getByLabelText(/^email/i), "new@sharma.example.com");
+    await user.click(within(dialog).getByRole("button", { name: /send invitation/i }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "POST")?.body).toEqual({
+        email: "new@sharma.example.com",
+        role_code: "SALES",
+        language: "mr",
+      }),
+    );
+    auth.me = { id: "u-owner" };
   });
 
   it("deactivates after confirmation and sends only the change", async () => {

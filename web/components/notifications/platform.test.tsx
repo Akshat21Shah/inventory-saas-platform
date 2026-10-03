@@ -58,7 +58,9 @@ describe("Default message texts", () => {
     expect(
       await screen.findByText("Parameters, in order: distributor, order_number"),
     ).toBeVisible();
-    expect(screen.getByRole("heading", { name: "To the shop · WhatsApp · en" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "To the shop · WhatsApp" })).toBeVisible();
+    // Each language has its column under its message.
+    expect(screen.getAllByRole("heading", { name: "English" }).length).toBeGreaterThan(0);
     expect(screen.getByText("First submission batch")).toBeVisible();
     expect(screen.queryByText("Optional, not submitted by default")).toBeNull();
     const user = userEvent.setup();

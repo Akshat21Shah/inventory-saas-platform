@@ -4,6 +4,7 @@ import {
   Building,
   Flag,
   Headset,
+  Languages,
   LayoutDashboard,
   MessageSquare,
   Percent,
@@ -30,6 +31,7 @@ const ITEMS: NavItem[] = [
   { href: "/platform/tax-rates", labelKey: "taxRates", icon: Percent },
   { href: "/platform/impersonations", labelKey: "impersonations", icon: Headset },
   { href: "/platform/notifications", labelKey: "platformMessages", icon: MessageSquare },
+  { href: "/platform/languages", labelKey: "languages", icon: Languages },
   { href: "/platform/audit", labelKey: "audit", icon: ScrollText },
   { href: "/platform/settings", labelKey: "settings", icon: Settings },
 ];

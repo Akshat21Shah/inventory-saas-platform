@@ -104,7 +104,7 @@ export function ShopLoginScreen() {
   if (arrival !== "signedOut" || hostKind !== "TENANT") return <PageSkeleton />;
   if (!branding?.available) return <UnavailableCard />;
   return (
-    <AuthCard title={t("retailer.title")} description={t("retailer.body")}>
+    <AuthCard title={t("retailer.title")} description={t("retailer.body")} shopDefault>
       <RetailerSignIn />
     </AuthCard>
   );

@@ -17,6 +17,7 @@ import { FormField } from "@/components/shared/form-field";
 import { FormSelect } from "@/components/shared/form-select";
 import { DateText, MoneyText } from "@/components/shared/money-text";
 import { PageHeader } from "@/components/shared/page-header";
+import { ProviderMessage } from "@/components/shared/provider-message";
 import { CardSkeleton } from "@/components/shared/skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,6 @@ import { useErrorText } from "@/lib/api/use-error-text";
 import { useDebounced } from "@/lib/use-debounced";
 
 import { PaymentsNav } from "./billing-nav";
-import { ProviderMessage } from "@/components/shared/provider-message";
 
 const SECRETS = ["key_id", "key_secret", "webhook_secret"] as const;
 const ALL = "all";

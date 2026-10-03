@@ -15,11 +15,12 @@ import {
   authImpersonationEnd,
   authLogout,
   authMeRetrieve,
+  authMeUpdate,
 } from "@/lib/api/generated/endpoints/auth/auth";
 import type { Me } from "@/lib/api/generated/model";
 import { ApiError } from "@/lib/api/errors";
 import { SESSION_ENDED_EVENT } from "@/lib/api/fetcher";
-import { rememberLanguage } from "@/lib/i18n/client";
+import { rememberLanguage, takePickedLanguage } from "@/lib/i18n/client";
 import {
   clearAccessToken,
   getAccessToken,
@@ -57,13 +58,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadMe = useCallback(async (): Promise<Me | null> => {
     try {
-      const response = await authMeRetrieve();
-      setMe(response.data);
+      let found = (await authMeRetrieve()).data;
+      // A language picked on a sign-in page is saved to the profile (ADR-060 item 2).
+      const picked = takePickedLanguage();
+      if (picked && picked !== found.language && found.languages?.some((l) => l.code === picked)) {
+        try {
+          found = (await authMeUpdate({ preferred_language: picked })).data;
+        } catch {
+          // Keep the saved language; the account page can change it.
+        }
+      }
+      setMe(found);
       // Show the person's language (ADR-060): the server says which one they see.
-      if (rememberLanguage(response.data.language)) router.refresh();
+      if (rememberLanguage(found.language)) router.refresh();
       setBlockedCode(null);
       setStatus("authenticated");
-      return response.data;
+      return found;
     } catch (error) {
       clearAccessToken();
       setMe(null);
