@@ -10,6 +10,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { DocumentButton } from "@/components/shared/document-button";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   useShopCheckout,
 } from "@/lib/api/generated/endpoints/shop/shop";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { formatMoney } from "@/lib/shared/format";
 import { space, useTheme } from "@/lib/theme/theme";
 
@@ -57,14 +59,21 @@ export default function CheckoutScreen() {
     }
   }
 
-  if (query.isLoading) {
+  if (isWaiting(query)) {
     return (
       <Screen>
         <ListSkeleton rows={2} />
       </Screen>
     );
   }
-  if (query.error) {
+  if (isUnsaved(query)) {
+    return (
+      <Screen>
+        <Unsaved />
+      </Screen>
+    );
+  }
+  if (failed(query)) {
     return (
       <Screen>
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
@@ -143,6 +152,7 @@ export default function CheckoutScreen() {
           ) : null}
           <Button
             label={t("payNow", { amount: formatMoney(checkout.amount) })}
+            needsInternet
             busy={busy}
             icon={<Feather name="credit-card" size={18} color={colors.primaryForeground} />}
             onPress={() => void pay()}

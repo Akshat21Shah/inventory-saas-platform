@@ -28,3 +28,9 @@ jest.mock("expo-constants", () => ({
 jest.mock("expo-localization", () => ({ getLocales: () => [{ languageCode: "en" }] }));
 
 beforeEach(() => mockStore.clear());
+
+// The phone's connection: NetInfo's own mock (connected).
+jest.mock("@react-native-community/netinfo", () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- NetInfo's published mock
+  require("@react-native-community/netinfo/jest/netinfo-mock.js"),
+);

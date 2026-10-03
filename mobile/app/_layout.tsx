@@ -1,7 +1,7 @@
 import "@/lib/polyfills";
 
 import * as Sentry from "@sentry/react-native";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState, type ReactNode } from "react";
@@ -12,6 +12,8 @@ import { AuthProvider, useAuth } from "@/lib/auth/auth-provider";
 import { APP_VERSION, config } from "@/lib/config";
 import { loadLanguage } from "@/lib/i18n/language";
 import { I18nProvider } from "@/lib/i18n/provider";
+import { followConnection } from "@/lib/offline/online";
+import { persistOptions } from "@/lib/offline/persist";
 import { followAppState, makeQueryClient } from "@/lib/query-client";
 import { ThemeProvider } from "@/lib/theme/theme";
 
@@ -25,6 +27,8 @@ if (config.sentryDsn) {
       crumb.category === "fetch" || crumb.category === "xhr" ? null : crumb,
   });
 }
+
+followConnection(); // requests wait while the phone is offline (ADR-061 item 10)
 
 /** The distributor's colours once signed in, the platform's before. */
 function Branded({ children }: { children: ReactNode }) {
@@ -40,7 +44,7 @@ function RootLayout() {
   }, []);
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
         <I18nProvider>
           <AuthProvider>
             <Branded>
@@ -51,7 +55,7 @@ function RootLayout() {
             </Branded>
           </AuthProvider>
         </I18nProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </SafeAreaProvider>
   );
 }

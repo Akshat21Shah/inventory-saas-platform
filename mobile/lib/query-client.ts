@@ -9,6 +9,9 @@ export function makeQueryClient(): QueryClient {
     defaultOptions: {
       queries: {
         staleTime: 30_000,
+        // Kept a day once unused, so what the shop has seen can be saved for offline use
+        // (lib/offline/persist.ts bounds what's saved).
+        gcTime: 24 * 60 * 60 * 1000,
         retry: (count, error) => !(error instanceof ApiError && error.isClientError) && count < 2,
       },
       mutations: { retry: false },

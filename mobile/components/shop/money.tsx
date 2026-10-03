@@ -92,6 +92,7 @@ export function PayBillButton({ invoiceId, balance }: { invoiceId: string; balan
   return (
     <Button
       label={t("payBill", { amount: formatMoney(balance) })}
+      needsInternet
       busy={busy}
       icon={<Feather name="credit-card" size={16} color={colors.primaryForeground} />}
       onPress={() => void start({ purpose: "INVOICE", invoice_id: invoiceId })}
@@ -112,6 +113,7 @@ function PayAccountCard({ owed }: { owed: string }) {
       {owes ? (
         <Button
           label={t("payAll", { amount: formatMoney(owed) })}
+          needsInternet
           busy={busy}
           icon={<Feather name="credit-card" size={16} color={colors.primaryForeground} />}
           onPress={() => void start({ purpose: "OUTSTANDING" })}
@@ -129,6 +131,7 @@ function PayAccountCard({ owed }: { owed: string }) {
         <Button
           variant="outline"
           label={t("payAmount")}
+          needsInternet
           disabled={busy || !amount.trim()}
           onPress={() => void start({ purpose: "CUSTOM", amount: amount.trim() })}
         />

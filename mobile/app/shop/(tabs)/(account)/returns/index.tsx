@@ -4,6 +4,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { Link } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Pager } from "@/components/shop/money";
@@ -11,6 +12,7 @@ import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { useShopReturnRequestsList } from "@/lib/api/generated/endpoints/shop/shop";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { formatDate, formatQty } from "@/lib/shared/format";
 import { useCursor } from "@/lib/shared/pagination";
 import { space, useTheme } from "@/lib/theme/theme";
@@ -28,9 +30,11 @@ export default function ReturnsScreen() {
       <Text size="2xl" weight="bold">
         {t("heading")}
       </Text>
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <ListSkeleton rows={3} />
-      ) : query.error ? (
+      ) : isUnsaved(query) ? (
+        <Unsaved />
+      ) : failed(query) ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : rows.length === 0 ? (
         <EmptyState icon="rotate-ccw" title={t("none")} body={t("noneBody")} />

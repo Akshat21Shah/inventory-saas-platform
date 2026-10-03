@@ -5,6 +5,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^mobile/patches/  # a patch's blank context lines are a single space
       - id: end-of-file-fixer
       - id: check-yaml
         args: [--unsafe]  # syntax only: Compose files use tags such as !reset

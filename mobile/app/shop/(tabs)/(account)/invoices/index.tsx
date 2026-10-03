@@ -3,6 +3,7 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { MoneyText } from "@/components/shared/values";
@@ -12,6 +13,7 @@ import { Text } from "@/components/ui/text";
 import { useShopInvoicesList } from "@/lib/api/generated/endpoints/shop/shop";
 import type { ShopInvoicesListState } from "@/lib/api/generated/model";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { formatDate } from "@/lib/shared/format";
 import { useCursor } from "@/lib/shared/pagination";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
@@ -64,9 +66,11 @@ export default function BillsScreen() {
           })}
         </View>
       </ScrollView>
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <ListSkeleton rows={3} />
-      ) : query.error ? (
+      ) : isUnsaved(query) ? (
+        <Unsaved />
+      ) : failed(query) ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : rows.length === 0 ? (
         <EmptyState icon="file-text" title={t(`noBills.${state}`)} />

@@ -3,8 +3,10 @@
  * the access token only in memory. Refreshing rotates the refresh token; one refresh runs at a
  * time however many requests need it.
  */
+import NetInfo from "@react-native-community/netinfo";
 import * as SecureStore from "expo-secure-store";
 
+import { withTimeout } from "@/lib/api/timeout";
 import { APP_VERSION, config } from "@/lib/config";
 
 const REFRESH_KEY = "session.refresh";
@@ -48,26 +50,44 @@ export async function sessionTenant(): Promise<string | null> {
 }
 
 async function post(path: string, body: unknown): Promise<Response> {
-  return fetch(`${config.apiUrl}${path}`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      "X-App-Version": APP_VERSION,
-    },
-    body: JSON.stringify(body),
-  });
+  return withTimeout(undefined, (signal) =>
+    fetch(`${config.apiUrl}${path}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-App-Version": APP_VERSION,
+      },
+      body: JSON.stringify(body),
+      signal,
+    }),
+  );
 }
+
+/** Whether the phone has a connection at all: without one, the server isn't tried (a request then
+ * can hang until the system gives up, which held the app's start). */
+async function connected(): Promise<boolean> {
+  try {
+    return (await NetInfo.fetch()).isConnected !== false;
+  } catch {
+    return true;
+  }
+}
+
+let unreachable = false; // the last refresh couldn't reach the server (no connection)
 
 async function doRefresh(): Promise<boolean> {
   const refresh = await SecureStore.getItemAsync(REFRESH_KEY);
   if (!refresh) return false;
   let response: Response;
   try {
+    if (!(await connected())) throw new Error("offline");
     response = await post("/api/v1/auth/token/refresh/", { refresh });
   } catch {
+    unreachable = true;
     return access !== null; // offline: keep what we have; the next request tries again
   }
+  unreachable = false;
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) await clear();
     return false;
@@ -93,7 +113,10 @@ export function refreshSession(): Promise<boolean> {
 /** On start: is there a session to carry on? */
 export async function restoreSession(): Promise<boolean> {
   if (!(await SecureStore.getItemAsync(REFRESH_KEY))) return false;
-  return (await refreshSession()) || access !== null;
+  if ((await refreshSession()) || access !== null) return true;
+  // Started without a connection (ADR-061 item 10): the saved session carries on with what was
+  // saved; the server checks it as soon as the phone is back online.
+  return unreachable && (await SecureStore.getItemAsync(REFRESH_KEY)) !== null;
 }
 
 /** Whether a stored session exists (it may still need a refresh). */

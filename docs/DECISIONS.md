@@ -933,6 +933,10 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
       - **What's saved for offline use,** within limits (saved data at most 10 MB, saved photos at most 50 MB; answer 5): categories, the catalogue pages and products the shop has seen, its usual products, the last 20 orders and bills, and the statement's first page. Product photos have a separate bounded cache. The least recently used items go first.
       - **When offline,** the app says so in plain words, with the time of the saved data ("You're offline. Showing what was saved at 10:42."). Prices are labelled "as last seen".
       - **The cart works offline.** Quantity changes are kept on the phone and sent when the connection is back. They set quantities rather than add to them, so sending one twice is harmless. The server's totals come back then.
+      - **As built (11b.9):**
+        - TanStack Query's persister writes a JSON file in the app's own storage: the allowlist and the 10 MB limit in `lib/offline/persist.ts`, a week's age, and a new app version starting afresh. The file is removed at sign-out.
+        - Photos stay in expo-image's Glide disk cache, capped at 50 MB by a one-line patch (patch-package). Glide's default is 250 MB, and no setting changes it.
+        - A start without a connection keeps the saved session and profile. Only the server's 401 or 403 ends a session.
       - **What needs a connection:** "Place order", payments, returns and delivery confirmation. Each says so.
       - **Placing an order** follows the web's rules (ADR-044 item 6). Each checkout attempt has one Idempotency-Key, kept on the phone until the order succeeds or the cart changes. When the outcome is unknown, the app asks the server (`GET shop/checkout-attempts/{key}`), so a retry never makes a second order.
   11. **Security.**

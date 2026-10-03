@@ -1,0 +1,16 @@
+diff --git a/node_modules/expo-image/android/src/main/java/expo/modules/image/ExpoImageAppGlideModule.kt b/node_modules/expo-image/android/src/main/java/expo/modules/image/ExpoImageAppGlideModule.kt
+index 86a0d4d..2ca4880 100644
+--- a/node_modules/expo-image/android/src/main/java/expo/modules/image/ExpoImageAppGlideModule.kt
++++ b/node_modules/expo-image/android/src/main/java/expo/modules/image/ExpoImageAppGlideModule.kt
+@@ -16,8 +16,10 @@ class ExpoImageAppGlideModule : AppGlideModule() {
+   override fun applyOptions(context: Context, builder: GlideBuilder) {
+     super.applyOptions(context, builder)
+ 
++    // Shop app (ADR-061 item 10, owner's answer 5): saved photos at most 50 MB, least recently
++    // used first out (Glide's default is 250 MB).
+     builder.setDiskCache(
+-      ExpoImageDiskCache.Factory(InternalCacheDiskCacheFactory(context))
++      ExpoImageDiskCache.Factory(InternalCacheDiskCacheFactory(context, 50L * 1024 * 1024))
+     )
+ 
+     builder.setLogLevel(

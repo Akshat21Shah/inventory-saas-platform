@@ -81,3 +81,22 @@ export function reporter() {
     },
   };
 }
+
+/** Test set-up: open the Cart tab and clear it (English). */
+export async function emptyCart() {
+  tap(await waitFor((n) => /, Cart$/.test(n.label) || n.label === "Cart"));
+  const found = (n) => n.label === "Empty the cart" || n.text === "Your cart is empty";
+  let node = await waitFor(found, 4000);
+  for (let i = 0; !node && i < 8; i++) {
+    adb("shell", "input", "swipe", "540", "1700", "540", "700", "300");
+    node = await waitFor(found, 1500);
+  }
+  if (node?.label === "Empty the cart") {
+    tap(node);
+    // Android's confirm dialog, its button in capitals.
+    tap(
+      await waitFor((n) => n.text.toUpperCase() === "EMPTY THE CART" && n.cls.endsWith("Button")),
+    );
+    await waitFor((n) => n.text === "Your cart is empty", 8000);
+  }
+}

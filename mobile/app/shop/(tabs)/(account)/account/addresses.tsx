@@ -2,6 +2,7 @@
  * and changes them, as on the web. */
 import { StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { useShopAddressesList } from "@/lib/api/generated/endpoints/shop/shop";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { space } from "@/lib/theme/theme";
 
 export default function AddressesScreen() {
@@ -25,9 +27,11 @@ export default function AddressesScreen() {
           {t("body")}
         </Text>
       </View>
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <ListSkeleton rows={2} />
-      ) : query.error ? (
+      ) : isUnsaved(query) ? (
+        <Unsaved />
+      ) : failed(query) ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : list.length === 0 ? (
         <EmptyState icon="map-pin" title={t("none")} />

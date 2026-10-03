@@ -60,6 +60,7 @@ export function DocumentButton({
       <Button
         variant={primary ? "primary" : "outline"}
         label={label}
+        needsInternet
         busy={busy === "open"}
         disabled={busy !== null}
         icon={
@@ -75,6 +76,7 @@ export function DocumentButton({
       <Button
         variant="outline"
         label={ta("share")}
+        needsInternet
         busy={busy === "share"}
         disabled={busy !== null}
         icon={<Feather name="share-2" size={16} color={colors.foreground} />}

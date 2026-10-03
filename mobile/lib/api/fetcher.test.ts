@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 
-import { startSession } from "@/lib/auth/session";
+import { endSession, startSession } from "@/lib/auth/session";
 import { sessionEnded, updateRequired } from "@/lib/events";
 import { ApiError } from "@/lib/shared/errors";
 
@@ -28,6 +28,19 @@ describe("apiFetch", () => {
     expect(headers.get("Authorization")).toBe("Bearer A1");
     expect(headers.get("X-App-Version")).toBe("1.0.0");
     expect(headers.get("Accept-Language")).toBe("en");
+  });
+
+  it("after a start without a connection, gets a token before the first request back online", async () => {
+    fetchMock.mockResolvedValueOnce(json(200, {})); // the logout below
+    await endSession(); // no access token in memory
+    await SecureStore.setItemAsync("session.refresh", "R9"); // the saved session
+    fetchMock.mockReset();
+    fetchMock
+      .mockResolvedValueOnce(json(200, { access: "A9", access_expires_at: soon(), refresh: "R10" }))
+      .mockResolvedValueOnce(json(200, { ok: true }));
+    await apiFetch("/api/v1/shop/cart/");
+    expect(fetchMock.mock.calls[0][0]).toBe("http://api.test/api/v1/auth/token/refresh/");
+    expect((fetchMock.mock.calls[1][1].headers as Headers).get("Authorization")).toBe("Bearer A9");
   });
 
   it("refreshes once on a 401 and keeps the rotated refresh token", async () => {

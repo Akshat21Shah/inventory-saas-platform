@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { OrderRowLink } from "@/components/shop/order-row";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Text } from "@/components/ui/text";
 import { shopOrdersList } from "@/lib/api/generated/endpoints/shop/shop";
 import type { ShopOrdersListState } from "@/lib/api/generated/model";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
 function cursorOf(url: string | null | undefined): string | undefined {
@@ -71,9 +73,11 @@ export default function OrdersTab() {
       )}
       ListHeaderComponent={tabs}
       ListEmptyComponent={
-        query.isLoading ? (
+        isWaiting(query) ? (
           <ListSkeleton />
-        ) : query.error ? (
+        ) : isUnsaved(query) ? (
+          <Unsaved />
+        ) : failed(query) ? (
           <ErrorState error={query.error} onRetry={() => void query.refetch()} />
         ) : (
           <EmptyState

@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { refreshNotifications } from "@/components/app/push-setup";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { DateText } from "@/components/shared/values";
@@ -22,6 +23,7 @@ import {
 import type { InboxItem } from "@/lib/api/generated/model";
 import { appHref } from "@/lib/app-href";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { useCursor } from "@/lib/shared/pagination";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
@@ -105,9 +107,11 @@ export default function NotificationsScreen() {
           );
         })}
       </View>
-      {list.isPending ? (
+      {isWaiting(list) ? (
         <ListSkeleton />
-      ) : list.isError ? (
+      ) : isUnsaved(list) ? (
+        <Unsaved />
+      ) : failed(list) ? (
         <ErrorState error={list.error} onRetry={() => void list.refetch()} />
       ) : !page?.results.length ? (
         <EmptyState

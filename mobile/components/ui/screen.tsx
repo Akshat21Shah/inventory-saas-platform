@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 
+import { OfflineBanner } from "@/components/app/offline";
 import { space, useTheme } from "@/lib/theme/theme";
 
 /**
@@ -26,7 +27,14 @@ export function Screen({
   footer?: ReactNode;
 }) {
   const { colors } = useTheme();
-  const body = <View style={styles.column}>{children}</View>;
+  const body = (
+    // Without scrolling the column fills the screen, so its content can be centred (the update
+    // screen's was squeezed to nothing at the top).
+    <View style={[styles.column, !scroll && styles.fill]}>
+      <OfflineBanner />
+      {children}
+    </View>
+  );
   return (
     <SafeAreaView edges={edges} style={[styles.root, { backgroundColor: colors.background }]}>
       {scroll ? (

@@ -5,12 +5,14 @@ import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { DateText, MoneyText } from "@/components/shared/values";
 import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { useShopLedger } from "@/lib/api/generated/endpoints/shop/shop";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { formatDate } from "@/lib/shared/format";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
@@ -75,9 +77,11 @@ export default function StatementScreen() {
       <Text tone="muted" size="sm">
         {t("statementBody")}
       </Text>
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <ListSkeleton rows={3} />
-      ) : query.error ? (
+      ) : isUnsaved(query) ? (
+        <Unsaved />
+      ) : failed(query) ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : statement ? (
         <>

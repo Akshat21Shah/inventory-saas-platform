@@ -3,6 +3,7 @@
 import Feather from "@expo/vector-icons/Feather";
 import { Linking, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { ErrorState, Skeleton } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Screen } from "@/components/ui/screen";
 import { Text } from "@/components/ui/text";
 import { useShopDistributor } from "@/lib/api/generated/endpoints/shop/shop";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { space, useTheme } from "@/lib/theme/theme";
 
 /** A phone number as WhatsApp's link wants it: digits only, with India's 91. */
@@ -33,9 +35,11 @@ export default function HelpScreen() {
           {t("body")}
         </Text>
       </View>
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <Skeleton height={140} />
-      ) : query.error ? (
+      ) : isUnsaved(query) ? (
+        <Unsaved />
+      ) : failed(query) ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : distributor ? (
         <Card>

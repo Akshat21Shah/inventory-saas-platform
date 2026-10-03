@@ -5,7 +5,17 @@
  * Places a real order on the dev stack. Needs the app signed in with the shop's language English.
  *   node e2e/three-taps.mjs [word]     (default: "glucose")
  */
-import { adb, keyboardShown, reporter, sleep, startApp, tap, until, waitFor } from "./device.mjs";
+import {
+  adb,
+  emptyCart,
+  keyboardShown,
+  reporter,
+  sleep,
+  startApp,
+  tap,
+  until,
+  waitFor,
+} from "./device.mjs";
 
 const WORD = process.argv[2] ?? "glucose";
 const { check, finish } = reporter();
@@ -14,23 +24,7 @@ const price = (n) => n.text.startsWith("₹");
 // Setup (not counted): an empty cart, then search results.
 startApp();
 check(Boolean(await waitFor(price, 20000)), "the app opens signed in");
-tap(await waitFor((n) => /, Cart$/.test(n.label) || n.label === "Cart"));
-let clear = await waitFor((n) => n.label === "Clear cart", 3000);
-for (
-  let i = 0;
-  !clear &&
-  i < 6 &&
-  (await waitFor((n) => n.label === "Your cart" || n.text === "Your cart", 2000));
-  i++
-) {
-  adb("shell", "input", "swipe", "540", "1700", "540", "700", "300");
-  clear = await waitFor((n) => n.label === "Clear cart", 1500);
-}
-if (clear) {
-  tap(clear);
-  tap(await waitFor((n) => n.text.toUpperCase() === "CLEAR CART" && n.cls.endsWith("Button")));
-  await sleep(1500);
-}
+await emptyCart();
 tap(await waitFor((n) => /, Home$/.test(n.label) || n.label === "Home"));
 tap(await waitFor((n) => n.cls.endsWith("EditText") && n.clickable && n.hint === ""));
 await waitFor((n) => n.cls.endsWith("EditText") && n.focused);

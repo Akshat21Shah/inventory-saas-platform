@@ -24,6 +24,7 @@ import { useShopProduct } from "@/lib/api/generated/endpoints/shop/shop";
 import type { SchemeTerms } from "@/lib/api/generated/model";
 import { useCart } from "@/lib/cart/cart-state";
 import { useTranslations } from "@/lib/i18n/translations";
+import { isWaiting } from "@/lib/offline/online";
 import { formatQty } from "@/lib/shared/format";
 import { isZero } from "@/lib/shared/qty";
 import { space, useTheme } from "@/lib/theme/theme";
@@ -59,7 +60,7 @@ export default function ProductScreen() {
   const photo = Math.min(width - space[8], 560);
   return (
     <>
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <Screen>
           <ListSkeleton rows={3} />
         </Screen>

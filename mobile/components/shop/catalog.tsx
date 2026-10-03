@@ -3,11 +3,13 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ListSkeleton } from "@/components/shared/states";
 import { Text } from "@/components/ui/text";
 import { useShopBrands, useShopCategories } from "@/lib/api/generated/endpoints/shop/shop";
 import type { ShopCategory } from "@/lib/api/generated/model";
 import { useTranslations } from "@/lib/i18n/translations";
+import { isUnsaved, isWaiting } from "@/lib/offline/online";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
 import { OnHoldNotice } from "./product";
@@ -108,10 +110,17 @@ export function CatalogScreen({ categoryId }: { categoryId?: string }) {
   const t = useTranslations("shop");
   const categories = useShopCategories();
   const [brand, setBrand] = useState("");
-  if (categories.isLoading) {
+  if (isWaiting(categories)) {
     return (
       <View style={styles.pad}>
         <ListSkeleton />
+      </View>
+    );
+  }
+  if (isUnsaved(categories)) {
+    return (
+      <View style={styles.pad}>
+        <Unsaved />
       </View>
     );
   }

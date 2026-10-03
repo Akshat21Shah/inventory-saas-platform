@@ -6,8 +6,15 @@
 import { APP_VERSION, config } from "@/lib/config";
 import { sessionEnded, updateRequired } from "@/lib/events";
 import { currentLanguage } from "@/lib/i18n/language";
-import { accessTokenStale, getAccessToken, refreshSession } from "@/lib/auth/session";
+import {
+  accessTokenStale,
+  getAccessToken,
+  hasStoredSession,
+  refreshSession,
+} from "@/lib/auth/session";
 import { ApiError, NETWORK_ERROR, UNKNOWN_ERROR, isErrorBody } from "@/lib/shared/errors";
+
+import { withTimeout } from "./timeout";
 
 const NO_REFRESH_PATHS = ["/api/v1/auth/token/refresh/", "/api/v1/auth/logout/"];
 
@@ -40,20 +47,29 @@ function buildHeaders(options: RequestInit, token: string | null): Headers {
 
 async function send(url: string, options: RequestInit): Promise<Response> {
   try {
-    return await fetch(`${config.apiUrl}${url}`, {
-      ...options,
-      headers: buildHeaders(options, getAccessToken()),
-    });
-  } catch {
+    return await withTimeout(options.signal, (signal) =>
+      fetch(`${config.apiUrl}${url}`, {
+        ...options,
+        signal,
+        headers: buildHeaders(options, getAccessToken()),
+      }),
+    );
+  } catch (error) {
+    if (options.signal?.aborted) throw error; // the screen went away: not a lost connection
     throw new ApiError(0, { code: NETWORK_ERROR, message: "Network unavailable", details: {} });
   }
 }
 
 export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const canRefresh = !NO_REFRESH_PATHS.some((path) => url.startsWith(path));
-  if (canRefresh && getAccessToken() !== null && accessTokenStale()) await refreshSession();
+  // No access token yet, after a start without a connection (ADR-061 item 10): the saved session
+  // gets one first, so the first request back online is signed in.
+  const signedIn = getAccessToken() !== null || (canRefresh && (await hasStoredSession()));
+  if (canRefresh && signedIn && (getAccessToken() === null || accessTokenStale())) {
+    await refreshSession();
+  }
   let response = await send(url, options);
-  if (response.status === 401 && canRefresh && getAccessToken() !== null) {
+  if (response.status === 401 && canRefresh && signedIn) {
     if (await refreshSession()) {
       response = await send(url, options);
     } else {

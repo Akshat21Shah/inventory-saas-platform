@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/api/generated/endpoints/shop/shop";
 import type { ReturnReasonEnum } from "@/lib/api/generated/model";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { formatQty } from "@/lib/shared/format";
 import { space, text, TOUCH, useTheme } from "@/lib/theme/theme";
 
@@ -40,14 +42,21 @@ export default function ReturnScreen() {
   const [busy, setBusy] = useState(false);
   const bill = query.data?.data;
 
-  if (query.isLoading) {
+  if (isWaiting(query)) {
     return (
       <Screen>
         <ListSkeleton />
       </Screen>
     );
   }
-  if (query.error || !bill) {
+  if (isUnsaved(query)) {
+    return (
+      <Screen>
+        <Unsaved />
+      </Screen>
+    );
+  }
+  if (failed(query) || !bill) {
     return (
       <Screen>
         {query.error ? (
@@ -91,6 +100,7 @@ export default function ReturnScreen() {
           <Button variant="outline" label={t("cancel")} onPress={() => router.back()} />
           <Button
             label={t("send")}
+            needsInternet
             busy={busy}
             disabled={chosen.length === 0}
             onPress={() => void send()}

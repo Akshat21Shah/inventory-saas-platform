@@ -19,6 +19,7 @@ jest.mock("@/lib/auth/auth-provider", () => ({
 jest.mock("@/lib/cart/cart-state", () => ({
   useCart: () => ({
     pending: false,
+    waiting: [],
     version: "p1:6",
     quantityOf: () => "6",
     setQuantity: jest.fn(),

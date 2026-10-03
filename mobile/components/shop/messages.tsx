@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Pressable, StyleSheet, Switch, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { ErrorState, Skeleton } from "@/components/shared/states";
 import { Card } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
@@ -24,6 +25,7 @@ import {
 import type { NotificationChannelEnum, PreferenceRow } from "@/lib/api/generated/model";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { onSoundSettingChange, setSoundSetting, soundSetting } from "@/lib/push/push";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
@@ -113,8 +115,8 @@ function WhatsAppCard() {
   const query = useShopWhatsappConsent();
   const consent = query.data?.data;
   const [busy, setBusy] = useState(false);
-  if (query.isLoading) return <Skeleton height={96} />;
-  if (query.error) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
+  if (isWaiting(query)) return <Skeleton height={96} />;
+  if (failed(query)) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   if (!consent) return null;
   const mobile = me?.phone ?? "";
   const change = async (agreed: boolean) => {
@@ -275,9 +277,11 @@ export function MessagesSettings() {
       </View>
       <WhatsAppCard />
       <AppCard />
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <Skeleton height={160} />
-      ) : query.error ? (
+      ) : isUnsaved(query) ? (
+        <Unsaved />
+      ) : failed(query) ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : (
         <>

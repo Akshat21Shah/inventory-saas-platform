@@ -39,5 +39,16 @@
   "privacy": {
     "phoneTitle": "What the app keeps on this phone",
     "phoneBody": "Your sign-in, your language and settings, and for weak connections your cart and recent pages. Signing out removes them."
+  },
+  "offline": {
+    "banner": "You're offline. Showing what was saved at {time}.",
+    "bannerNothing": "You're offline.",
+    "lastSeen": "as last seen",
+    "needsInternet": "Needs internet. Try again when you're back online.",
+    "cartSaved": "Your cart is saved on this phone and sent when you're back online.",
+    "unsavedTitle": "Not saved for offline use",
+    "unsavedBody": "Open this page again when you're back online.",
+    "waitingTitle": "Waiting to be sent ({count})",
+    "waitingBody": "Prices and totals come when you're back online."
   }
 }

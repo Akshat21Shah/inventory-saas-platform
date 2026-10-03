@@ -83,6 +83,7 @@ export default function ProfileScreen() {
         <Input label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
         <Button
           label={t("save")}
+          needsInternet
           busy={savingName}
           disabled={name.trim() === (me?.full_name ?? "")}
           onPress={() => void saveName()}

@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { ReactNode } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { confirm } from "@/components/shared/confirm";
 import { DocumentButton } from "@/components/shared/document-button";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
@@ -27,6 +28,7 @@ import {
 } from "@/lib/api/generated/endpoints/shop/shop";
 import type { ShopInvoiceDetail } from "@/lib/api/generated/model";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { formatDate, formatQty } from "@/lib/shared/format";
 import { space, useTheme } from "@/lib/theme/theme";
 
@@ -78,6 +80,7 @@ function BillReturns({ bill }: { bill: ShopInvoiceDetail }) {
             <Button
               variant="outline"
               label={t("withdraw")}
+              needsInternet
               onPress={() =>
                 confirm({
                   title: t("withdrawTitle", { number: request.number }),
@@ -110,14 +113,21 @@ export default function BillScreen() {
   const { colors, radius } = useTheme();
   const query = useShopInvoicesRetrieve(id);
   const bill = query.data?.data;
-  if (query.isLoading) {
+  if (isWaiting(query)) {
     return (
       <Screen>
         <ListSkeleton />
       </Screen>
     );
   }
-  if (query.error) {
+  if (isUnsaved(query)) {
+    return (
+      <Screen>
+        <Unsaved />
+      </Screen>
+    );
+  }
+  if (failed(query)) {
     return (
       <Screen>
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />

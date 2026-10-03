@@ -2,7 +2,7 @@
  * Who is signed in, to which distributor, with its branding (ADR-061 items 4 and 5). The session
  * itself is in `session.ts`; this keeps the screens' view of it: loading → signed out or in.
  */
-import { useQueryClient } from "@tanstack/react-query";
+import { onlineManager, useQueryClient } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
 import {
   createContext,
@@ -19,7 +19,9 @@ import { publicTenantBranding } from "@/lib/api/generated/endpoints/public/publi
 import type { Me, PublicBranding } from "@/lib/api/generated/model";
 import { sessionEnded } from "@/lib/events";
 import { setLanguage } from "@/lib/i18n/language";
+import { persister } from "@/lib/offline/persist";
 import { forgetThisPhone } from "@/lib/push/push";
+import { clearFileStore, fileStore } from "@/lib/storage/file-store";
 import { isLocale } from "@/lib/shared/i18n-config";
 
 import {
@@ -32,6 +34,7 @@ import {
 } from "./session";
 
 const BRANDING_KEY = "session.branding";
+const ME_KEY = "me"; // the profile, in the app's own files (file-store.ts)
 
 type Status = "loading" | "signedOut" | "signedIn";
 
@@ -75,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadMe = useCallback(async () => {
     const found = (await authMeRetrieve()).data;
     setMe(found);
+    await fileStore.setItem(ME_KEY, JSON.stringify(found)); // for a start without a connection
     if (isLocale(found.language)) await setLanguage(found.language);
     return found;
   }, []);
@@ -82,6 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await forgetThisPhone(); // this phone stops getting the shop's messages
     await endSession();
+    await persister.removeClient(); // what was saved for offline use
+    await clearFileStore();
     await SecureStore.deleteItemAsync(BRANDING_KEY);
     queryClient.clear();
     setMe(null);
@@ -117,7 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         await loadMe();
       } catch {
-        // offline start: carry on with the saved session; screens show what was saved
+        // Offline start: carry on with the saved session and profile; screens show what was saved.
+        const saved = await fileStore.getItem(ME_KEY);
+        if (saved && alive) setMe(JSON.parse(saved) as Me);
       }
       const fresh = await loadBranding(slug);
       if (alive) {
@@ -131,6 +139,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadMe]);
 
   useEffect(() => sessionEnded.listen(() => void signOut()), [signOut]);
+
+  // Back online after a start without a connection: the profile from the server again.
+  useEffect(
+    () =>
+      onlineManager.subscribe((online) => {
+        if (online && status === "signedIn") void loadMe().catch(() => undefined);
+      }),
+    [status, loadMe],
+  );
 
   const value = useMemo(
     () => ({ status, me, branding, signIn, signOut, reload }),

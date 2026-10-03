@@ -9,6 +9,7 @@ import { Link } from "expo-router";
 import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { confirm } from "@/components/shared/confirm";
 import { ErrorState, Skeleton } from "@/components/shared/states";
 import { AccountMoney } from "@/components/shop/money";
@@ -20,6 +21,7 @@ import { useAuth } from "@/lib/auth/auth-provider";
 import { APP_VERSION, config } from "@/lib/config";
 import { currentLanguage } from "@/lib/i18n/language";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { defaultLocale } from "@/lib/shared/i18n-config";
 import { space, useTheme } from "@/lib/theme/theme";
 
@@ -57,9 +59,11 @@ export default function AccountTab() {
       <Text size="2xl" weight="bold">
         {t("title")}
       </Text>
-      {query.isLoading ? (
+      {isWaiting(query) ? (
         <Skeleton height={140} />
-      ) : query.error ? (
+      ) : isUnsaved(query) ? (
+        <Unsaved />
+      ) : failed(query) ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : account ? (
         <AccountMoney account={account} />

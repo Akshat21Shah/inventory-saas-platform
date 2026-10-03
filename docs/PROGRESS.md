@@ -457,6 +457,29 @@
      - Your profile has the name with Save. "Suggest a better word" sits in Account in Hindi and Marathi and sends the screen the shop was on before. The app's API client now includes the `texts` tag, which holds only that endpoint.
      - Emulator test `e2e/notifications.mjs`: the bell's count, the inbox, and a tapped message opening its page with the count one lower.
      - The APK file is 38.4 MB (+0.7 MB for expo-notifications).
+  12. Weak connections and the budget phone (11b.9) — **in progress**:
+     - **Saved for offline use** (`lib/offline/persist.ts`): categories and brands, the catalogue pages and products seen, home, the cart, the last 20 orders and 20 bills, the statement's first page, payments, the account.
+       - At most 10 MB, the least recently fetched go first. Kept a week, in the app's own files, and removed at sign-out. A new app version starts afresh.
+       - Photos: Glide's disk cache at 50 MB instead of its 250 MB, still least recently used first. It's a one-line patch to expo-image (`mobile/patches/`, applied on every `npm ci` by patch-package).
+     - **Starting without a connection** no longer signs the shop out. The saved session carries on with the saved profile, and the server checks it once the phone is back online. Before, a refresh that couldn't reach the server ended the session.
+     - **Saying so:**
+       - "You're offline. Showing what was saved at …" on every screen.
+       - Prices "as last seen".
+       - Actions that need a connection are off and say "Needs internet": Place order, paying, returns, withdrawing a return, "I received it", declining a re-priced item, cancelling, Order again, Add all to cart, the cart's own actions, documents, saving the name.
+       - Requests wait while offline and resume after (NetInfo with TanStack Query's online manager).
+     - **The cart offline:** changes are kept on the phone, across a restart too, and sent in order once the connection is back. A request cut off mid-way is kept, not reported as an error.
+     - **Found on the emulator and fixed:**
+       - After an offline start, back online, every request was refused: the fetcher only renewed a token it already had. It now gets one first from the saved session.
+       - Those refusals had marked the saved queries as failed, and only successful ones were saved, which wiped the saved copy. Saved data is now kept whatever the last fetch did.
+       - A request made as the connection drops could hang until the system gave up, holding the app's start. Requests now have a 20-second limit, and the session doesn't try the server when the phone has no connection at all.
+       - Screens took "waiting for a connection" for an error: a paused query is pending but not loading. Every screen now has three cases: the skeleton while data comes, "Not saved for offline use" when offline with nothing saved, and an error only when there's nothing to show.
+       - Products added offline didn't show in the cart: the cart draws the server's lines. A "Waiting to be sent" section now shows them by their saved name and photo, prices and totals coming back online.
+       - The required-update screen showed only its button. A screen that doesn't scroll now fills the phone, so its content is centred. Checked on the budget phone with the minimum version raised.
+       - The emulator tests' "empty the cart" step looked for "Clear cart"; the button has said "Empty the cart" since Phase 4.
+     - **Budget phone (Android 11, 2 GB):** the screen shows in 124–146 ms (Android's TotalTime, three cold starts). Memory is 142 MB on home and 159 MB after scrolling the catalogue 20 screens (PSS), within the checkpoint's 143–164 MB.
+     - **Size:** the APK file is 38.4 MB.
+     - **Tests:** 13 more: what's saved and its limits, the offline cart, an offline start, renewing the token after one, the needs-internet button.
+     - **Emulator test `e2e/offline.mjs`** (airplane mode), passing alongside the search, three-taps, notifications and pay-online tests on Android 16.
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**

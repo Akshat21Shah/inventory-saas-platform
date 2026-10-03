@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, router } from "expo-router";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { DateText } from "@/components/shared/values";
 import { CategoryTiles } from "@/components/shop/catalog";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/api/generated/endpoints/shop/shop";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { space, useTheme } from "@/lib/theme/theme";
 
 function Announcements() {
@@ -73,8 +75,8 @@ function RepeatLastOrder() {
     },
     onError: (error) => Alert.alert(message(error)),
   });
-  if (home.isLoading) return <ListSkeleton rows={2} />;
-  if (home.error) return <ErrorState error={home.error} onRetry={() => void home.refetch()} />;
+  if (isWaiting(home)) return <ListSkeleton rows={2} />;
+  if (failed(home)) return <ErrorState error={home.error} onRetry={() => void home.refetch()} />;
   if (!last || last.items.length === 0) return null;
   return (
     <View style={styles.gap}>
@@ -90,6 +92,7 @@ function RepeatLastOrder() {
       <Button
         variant="outline"
         label={t("repeatAll")}
+        needsInternet
         busy={repeat.isPending}
         icon={<Feather name="rotate-ccw" size={16} color={colors.foreground} />}
         onPress={() => repeat.mutate(last.id)}
@@ -105,7 +108,7 @@ function RecentOrders() {
   const t = useTranslations("shop.home");
   const home = useShopHome();
   const data = home.data?.data;
-  if (home.isLoading || home.error || !data) return null;
+  if (!data) return null;
   if (data.recent_orders.length === 0) {
     return <EmptyState icon="clipboard" title={t("noOrdersTitle")} body={t("noOrdersBody")} />;
   }
@@ -178,9 +181,11 @@ export default function Home() {
           </Text>
           <SeeAll href="/shop/catalog" label={t("allProducts")} />
         </View>
-        {categories.isLoading ? (
+        {isWaiting(categories) ? (
           <ListSkeleton rows={2} />
-        ) : categories.error ? (
+        ) : isUnsaved(categories) ? (
+          <Unsaved />
+        ) : failed(categories) ? (
           <ErrorState error={categories.error} onRetry={() => void categories.refetch()} />
         ) : (
           <CategoryTiles categories={tree} />

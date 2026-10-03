@@ -9,6 +9,7 @@ import { Link, router } from "expo-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
 
+import { NeedsInternet, Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { MoneyText } from "@/components/shared/values";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,9 @@ import type { Problem, Quote, QuoteLine } from "@/lib/api/generated/model";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useCart } from "@/lib/cart/cart-state";
 import { attemptFor, finishAttempt, pendingAttempt } from "@/lib/cart/checkout";
+import { savedProduct } from "@/lib/cart/saved-product";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting, useOnline } from "@/lib/offline/online";
 import { ApiError, NETWORK_ERROR } from "@/lib/shared/errors";
 import { formatMoney, formatQty } from "@/lib/shared/format";
 import { idempotent } from "@/lib/shared/idempotency";
@@ -103,6 +106,36 @@ export function FreeLineLabel({ scheme }: { scheme: string }) {
           {t("under", { scheme })}
         </Text>
       ) : null}
+    </View>
+  );
+}
+
+/** Products added or changed on the phone while offline, before the server's cart has them: by
+ * their saved name and photo; prices and totals come back with the connection. */
+function WaitingLines({ ids }: { ids: string[] }) {
+  const t = useTranslations("app.offline");
+  const client = useQueryClient();
+  return (
+    <View style={styles.gap}>
+      <Text weight="semibold">{t("waitingTitle", { count: ids.length })}</Text>
+      <Text tone="muted" size="sm">
+        {t("waitingBody")}
+      </Text>
+      {ids.map((id) => {
+        const product = savedProduct(client, id);
+        if (!product) return null;
+        return (
+          <Card key={id}>
+            <View style={styles.row}>
+              <Thumb url={product.thumbnail_url} size={64} />
+              <Text weight="medium" style={styles.flex}>
+                {product.name}
+              </Text>
+            </View>
+            <QuantityStepper product={product} wide />
+          </Card>
+        );
+      })}
     </View>
   );
 }
@@ -221,13 +254,15 @@ type Stage =
   | { kind: "offline" };
 
 export function CartScreen() {
+  const online = useOnline();
+  const to = useTranslations("app.offline");
   const t = useTranslations("shop.cart");
   const common = useTranslations("common");
   const client = useQueryClient();
   const { me } = useAuth();
   const { message } = useErrorText();
   const { colors, radius } = useTheme();
-  const { pending, version } = useCart();
+  const { pending, version, waiting } = useCart();
   const [address, setAddress] = useState<string | undefined>(undefined);
   const [note, setNote] = useState("");
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
@@ -264,21 +299,28 @@ export function CartScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the person is known
   }, [me]);
 
-  if (query.isLoading) {
+  if (isWaiting(query)) {
     return (
       <Screen>
         <ListSkeleton />
       </Screen>
     );
   }
-  if (query.error || !quote) {
+  if (isUnsaved(query)) {
+    return (
+      <Screen>
+        <Unsaved />
+      </Screen>
+    );
+  }
+  if (failed(query) || !quote) {
     return (
       <Screen>
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       </Screen>
     );
   }
-  if (quote.lines.length === 0) {
+  if (quote.lines.length === 0 && waiting.length === 0) {
     return (
       <Screen>
         <EmptyState
@@ -346,17 +388,22 @@ export function CartScreen() {
       refreshing={query.isRefetching}
       onRefresh={() => void query.refetch()}
       footer={
-        <Button
-          label={label}
-          busy={busy}
-          disabled={!quote.can_place || pending || busy}
-          onPress={() => void submit()}
-        />
+        <View style={styles.gap}>
+          <NeedsInternet />
+          <Button
+            label={label}
+            busy={busy}
+            disabled={!quote.can_place || pending || busy || !online}
+            onPress={() => void submit()}
+          />
+        </View>
       }
     >
       <Text size="2xl" weight="bold">
         {t("title")}
       </Text>
+      {online ? null : <Text size="sm">{to("cartSaved")}</Text>}
+      {waiting.length ? <WaitingLines ids={waiting} /> : null}
       <OnHoldNotice />
       {ready.length ? (
         <View style={styles.gap}>
@@ -383,6 +430,7 @@ export function CartScreen() {
             <Button
               variant="outline"
               label={t("reduce")}
+              needsInternet
               onPress={async () => {
                 const response = await shopCartReduceToAvailable();
                 client.setQueryData(getShopCartRetrieveQueryKey(), response);
@@ -469,6 +517,7 @@ export function CartScreen() {
         <Button
           variant="ghost"
           label={t("clear")}
+          needsInternet
           disabled={busy}
           onPress={() =>
             Alert.alert(t("clearTitle"), undefined, [

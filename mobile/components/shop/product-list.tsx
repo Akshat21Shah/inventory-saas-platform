@@ -7,11 +7,13 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { OfflineBanner, Unsaved } from "@/components/app/offline";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { shopProducts } from "@/lib/api/generated/endpoints/shop/shop";
 import type { ShopProductsParams } from "@/lib/api/generated/model";
 import { useTranslations } from "@/lib/i18n/translations";
+import { useOnline, failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { space } from "@/lib/theme/theme";
 
 import { ProductCard } from "./product";
@@ -29,6 +31,7 @@ export function ProductList({
   header?: ReactElement;
 }) {
   const t = useTranslations("shop");
+  const online = useOnline();
   const query = useInfiniteQuery({
     queryKey: ["/api/v1/shop/products/", "infinite", params],
     queryFn: ({ pageParam, signal }) => shopProducts({ ...params, cursor: pageParam }, { signal }),
@@ -36,9 +39,11 @@ export function ProductList({
     getNextPageParam: (last) => cursorOf(last.data.next),
   });
   const products = query.data?.pages.flatMap((page) => page.data.results) ?? [];
-  const empty = query.isLoading ? (
+  const empty = isWaiting(query) ? (
     <ListSkeleton />
-  ) : query.error ? (
+  ) : isUnsaved(query) ? (
+    <Unsaved />
+  ) : failed(query) ? (
     <ErrorState error={query.error} onRetry={() => void query.refetch()} />
   ) : (
     <EmptyState
@@ -56,7 +61,14 @@ export function ProductList({
           <ProductCard product={item} />
         </View>
       )}
-      ListHeaderComponent={header ? <View style={styles.header}>{header}</View> : null}
+      ListHeaderComponent={
+        header || !online ? (
+          <View style={styles.header}>
+            <OfflineBanner />
+            {header}
+          </View>
+        ) : null
+      }
       ListEmptyComponent={empty}
       ListFooterComponent={
         query.hasNextPage ? (

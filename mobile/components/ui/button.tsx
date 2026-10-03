@@ -1,12 +1,15 @@
 import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from "react-native";
 
+import { NeedsInternet } from "@/components/app/offline";
+import { useOnline } from "@/lib/offline/online";
 import { space, TOUCH, useTheme } from "@/lib/theme/theme";
 
 import { Text } from "./text";
 
 type Variant = "primary" | "outline" | "ghost" | "danger";
 
-/** A button at least 48 × 48 (CLAUDE.md §6a); `busy` shows a spinner and blocks double taps. */
+/** A button at least 48 × 48 (CLAUDE.md §6a); `busy` shows a spinner and blocks double taps.
+ * `needsInternet`: off while the phone is offline, saying so underneath (ADR-061 item 10). */
 export function Button({
   label,
   variant = "primary",
@@ -14,15 +17,19 @@ export function Button({
   disabled,
   icon,
   style,
+  needsInternet = false,
   ...props
 }: Omit<PressableProps, "children"> & {
   label: string;
   variant?: Variant;
   busy?: boolean;
   icon?: React.ReactNode;
+  needsInternet?: boolean;
 }) {
   const { colors, radius } = useTheme();
-  const off = Boolean(disabled) || busy;
+  const online = useOnline();
+  const waiting = needsInternet && !online;
+  const off = Boolean(disabled) || busy || waiting;
   const background = {
     primary: colors.primary,
     outline: colors.background,
@@ -30,7 +37,7 @@ export function Button({
     danger: colors.destructive,
   }[variant];
   const tone = variant === "primary" || variant === "danger" ? "onPrimary" : "default";
-  return (
+  const button = (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -62,6 +69,13 @@ export function Button({
       )}
     </Pressable>
   );
+  if (!waiting) return button;
+  return (
+    <View style={styles.waiting}>
+      {button}
+      <NeedsInternet />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -81,4 +95,5 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
   },
   label: { textAlign: "center", flexShrink: 1 },
+  waiting: { gap: space[1] },
 });

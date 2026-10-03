@@ -4,6 +4,7 @@ import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 
+import { Unsaved } from "@/components/app/offline";
 import { confirm } from "@/components/shared/confirm";
 import { DocumentButton } from "@/components/shared/document-button";
 import { OrderTimeline } from "@/components/shared/order-timeline";
@@ -29,6 +30,7 @@ import {
 } from "@/lib/api/generated/endpoints/shop/shop";
 import type { OrderLine, ShopFulfilment, ShopOrder } from "@/lib/api/generated/model";
 import { useTranslations } from "@/lib/i18n/translations";
+import { failed, isUnsaved, isWaiting } from "@/lib/offline/online";
 import { formatMoney, formatQty } from "@/lib/shared/format";
 import { fromMilli, toMilli } from "@/lib/shared/qty";
 import { space, useTheme } from "@/lib/theme/theme";
@@ -145,6 +147,7 @@ function Lines({ order }: { order: ShopOrder }) {
               <Button
                 variant="outline"
                 label={t("cancelWaiting")}
+                needsInternet
                 onPress={() =>
                   confirm({
                     title: t("cancelWaitingTitle", { name: line.product_name }),
@@ -205,6 +208,7 @@ function Shipment({ order, shipment }: { order: ShopOrder; shipment: ShopFulfilm
       {onItsWay && shipment.can_confirm ? (
         <Button
           label={t("received")}
+          needsInternet
           icon={<Feather name="package" size={16} color={colors.primaryForeground} />}
           onPress={() =>
             confirm({
@@ -239,6 +243,7 @@ function Shipment({ order, shipment }: { order: ShopOrder; shipment: ShopFulfilm
                 <Button
                   variant="outline"
                   label={t("decline")}
+                  needsInternet
                   onPress={() =>
                     confirm({
                       title: t("declineTitle", { name: line.product_name }),
@@ -302,14 +307,21 @@ export default function OrderScreen() {
   const [repeating, setRepeating] = useState(false);
   const order = query.data?.data;
 
-  if (query.isLoading) {
+  if (isWaiting(query)) {
     return (
       <Screen>
         <ListSkeleton />
       </Screen>
     );
   }
-  if (query.error || !order) {
+  if (isUnsaved(query)) {
+    return (
+      <Screen>
+        <Unsaved />
+      </Screen>
+    );
+  }
+  if (failed(query) || !order) {
     return (
       <Screen>
         <EmptyState
@@ -410,6 +422,7 @@ export default function OrderScreen() {
           <Button
             variant="outline"
             label={t("orderAgain")}
+            needsInternet
             busy={repeating}
             icon={<Feather name="rotate-ccw" size={16} color={colors.foreground} />}
             onPress={() => void repeat()}
@@ -418,6 +431,7 @@ export default function OrderScreen() {
             <Button
               variant="ghost"
               label={t("cancel")}
+              needsInternet
               onPress={() =>
                 confirm({
                   title: t("cancelTitle", { number: order.number }),

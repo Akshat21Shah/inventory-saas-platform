@@ -8,6 +8,7 @@ import { Image } from "expo-image";
 import { Link } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { LastSeen } from "@/components/app/offline";
 import { MoneyText } from "@/components/shared/values";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card } from "@/components/ui/card";
@@ -43,6 +44,7 @@ export function PriceBlock({
             ? t("inclGst")
             : t("plusGst", { rate: formatQty(price.gst_rate) })}
         </Text>
+        <LastSeen />
       </View>
       {discounted ? (
         <Text tone="success" size="sm" weight="medium">
