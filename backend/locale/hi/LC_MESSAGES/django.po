@@ -1115,6 +1115,11 @@ msgstr "क्रेडिट कहाँ से"
 msgid "Credit note"
 msgstr "क्रेडिट नोट"
 
+#: apps/notifications/push.py
+#, python-format
+msgid "Credit note %(credit_note_number)s"
+msgstr "क्रेडिट नोट %(credit_note_number)s"
+
 #: apps/billing/labels.py
 msgid "Credit note no."
 msgstr "क्रेडिट नोट नं."
@@ -1947,6 +1952,16 @@ msgstr "जब दुकान का GSTIN न हो, तब ज़रूर�
 msgid "New"
 msgstr "नया"
 
+#: apps/notifications/push.py
+#, python-format
+msgid "New bill %(invoice_number)s"
+msgstr "नया बिल %(invoice_number)s"
+
+#: apps/notifications/push.py
+#, python-format
+msgid "New message from %(distributor)s"
+msgstr "%(distributor)s से नया संदेश"
+
 #: apps/reports/definitions/gst.py
 #, python-format
 msgid "Nil-rated (0%%) supplies, not in these sections (Table 8): %(parts)s."
@@ -2221,6 +2236,10 @@ msgstr "इसे केवल आपका स्टाफ देखता ह�
 msgid "Only {{ variable }} placeholders are allowed."
 msgstr "केवल {{ variable }} प्लेसहोल्डर की अनुमति है।"
 
+#: apps/notifications/push.py
+msgid "Open the app to see the details."
+msgstr "पूरी जानकारी के लिए ऐप खोलें।"
+
 #: apps/dataio/kinds/products.py
 msgid "Optional bigger unit, e.g. BOX. Needs a pack size."
 msgstr "वैकल्पिक बड़ी यूनिट, जैसे BOX। पैक साइज़ ज़रूरी है।"
@@ -2319,6 +2338,14 @@ msgstr "भुगतान की तारीख"
 msgid "Payment receipt"
 msgstr "भुगतान रसीद"
 
+#: apps/notifications/push.py
+msgid "Payment received"
+msgstr "भुगतान मिला"
+
+#: apps/notifications/push.py
+msgid "Payment reminder"
+msgstr "भुगतान रिमाइंडर"
+
 #: apps/payments/online.py
 msgid "Payment service is busy, please try again in a minute."
 msgstr "भुगतान सेवा व्यस्त है, कृपया एक मिनट बाद फिर कोशिश करें।"
@@ -2399,6 +2426,10 @@ msgstr "किससे प्राप्त"
 #: apps/billing/labels.py
 msgid "Reference"
 msgstr "संदर्भ"
+
+#: apps/notifications/push.py
+msgid "Refund received"
+msgstr "रिफ़ंड मिला"
 
 #: apps/billing/labels.py
 msgid "Refund voucher"

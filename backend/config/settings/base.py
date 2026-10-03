@@ -409,6 +409,10 @@ SES_REGION = env("SES_REGION", default="ap-south-1")
 SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
 # WhatsApp: only "mock" until a provider is chosen (TODO(verify), PROGRESS pre-production 8).
 WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
+# Push to the Android shop app (ADR-061 item 7): "mock" (dev and test) or "fcm", which needs the
+# Firebase service account's key as JSON from the secrets manager (pre-production item 49).
+PUSH_PROVIDER = env("PUSH_PROVIDER", default="mock")
+FCM_SERVICE_ACCOUNT_JSON = env("FCM_SERVICE_ACCOUNT_JSON", default="")
 # Online payments (ADR-049 item 9): live gateway keys only where this is on (production).
 PAYMENTS_ALLOW_LIVE = env.bool("PAYMENTS_ALLOW_LIVE", default=False)
 # The platform's GST provider for e-invoices and e-way bills (ADR-049 item 4); each distributor

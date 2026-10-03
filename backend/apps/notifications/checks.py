@@ -15,6 +15,16 @@ def notification_channels_check(app_configs: Any, **kwargs: Any) -> list[CheckMe
         errors.append(
             Error("WHATSAPP_PROVIDER is 'mock' in a deployed environment.", id="notifications.E001")
         )
+    if settings.PUSH_PROVIDER == "mock" and not settings.ALLOW_MOCK_INTEGRATIONS:
+        errors.append(
+            Error("PUSH_PROVIDER is 'mock' in a deployed environment.", id="notifications.E003")
+        )
+    if settings.PUSH_PROVIDER == "fcm" and not settings.FCM_SERVICE_ACCOUNT_JSON:
+        errors.append(
+            Error(
+                "PUSH_PROVIDER is 'fcm' without FCM_SERVICE_ACCOUNT_JSON.", id="notifications.E004"
+            )
+        )
     if settings.EMAIL_PROVIDER == "django" and any(
         name in settings.EMAIL_BACKEND for name in LOCAL_EMAIL_BACKENDS
     ):

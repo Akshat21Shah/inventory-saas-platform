@@ -25,6 +25,8 @@ urlpatterns = [
         name="shop-notification-preferences",
     ),
     path("whatsapp-consent/", v.ShopConsentView.as_view(), name="shop-whatsapp-consent"),
+    path("devices/", v.ShopDeviceView.as_view(), name="shop-device"),
+    path("devices/remove/", v.ShopDeviceRemoveView.as_view(), name="shop-device-remove"),
     path(
         "whatsapp-consent/prompted/",
         v.ShopConsentPromptedView.as_view(),

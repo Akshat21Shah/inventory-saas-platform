@@ -11,6 +11,7 @@
  * * `EMAIL` - Email
  * * `WHATSAPP` - WhatsApp
  * * `SMS` - SMS
+ * * `PUSH` - App notification
  */
 export type NotificationChannelEnum = typeof NotificationChannelEnum[keyof typeof NotificationChannelEnum];
 
@@ -20,4 +21,5 @@ export const NotificationChannelEnum = {
   EMAIL: 'EMAIL',
   WHATSAPP: 'WHATSAPP',
   SMS: 'SMS',
+  PUSH: 'PUSH',
 } as const;

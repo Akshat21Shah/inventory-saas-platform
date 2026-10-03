@@ -4232,7 +4232,8 @@
       "IN_APP": "ऐप में",
       "EMAIL": "ईमेल",
       "WHATSAPP": "WhatsApp",
-      "SMS": "SMS"
+      "SMS": "SMS",
+      "PUSH": "ऐप नोटिफ़िकेशन"
     }
   },
   "notifyAdmin": {

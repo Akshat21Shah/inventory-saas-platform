@@ -2575,6 +2575,7 @@ paths:
           enum:
           - EMAIL
           - IN_APP
+          - PUSH
           - SMS
           - WHATSAPP
       - name: cursor
@@ -9415,6 +9416,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentLink'
           description: ''
+  /api/v1/shop/devices/:
+    post:
+      operationId: shop_device_register
+      description: The app registers its push token after sign-in and whenever it
+        changes (ADR-061 item 7).
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/shop/devices/remove/:
+    post:
+      operationId: shop_device_remove
+      description: 'Signing out or switching distributor: no more pushes to this phone
+        for this login.'
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRemoveRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/shop/distributor/:
     get:
       operationId: shop_distributor
@@ -14376,6 +14413,33 @@ components:
       - equals
       - key
       - not_null
+    DeviceInputRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+        platform:
+          allOf:
+          - $ref: '#/components/schemas/PlatformEnum'
+          default: ANDROID
+        app_version:
+          type: string
+          minLength: 1
+          default: ''
+          pattern: ^\d{1,3}\.\d{1,3}\.\d{1,3}$
+      required:
+      - token
+    DeviceRemoveRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+      required:
+      - token
     DiscountRule:
       type: object
       properties:
@@ -18673,12 +18737,14 @@ components:
       - EMAIL
       - WHATSAPP
       - SMS
+      - PUSH
       type: string
       description: |-
         * `IN_APP` - In-app
         * `EMAIL` - Email
         * `WHATSAPP` - WhatsApp
         * `SMS` - SMS
+        * `PUSH` - App notification
     NotificationRecipientEnum:
       enum:
       - SHOP
@@ -21657,6 +21723,14 @@ components:
       - limit
       - model
       - rows
+    PlatformEnum:
+      enum:
+      - ANDROID
+      - WEB
+      type: string
+      description: |-
+        * `ANDROID` - Android
+        * `WEB` - Web
     PlatformFailure:
       type: object
       properties:

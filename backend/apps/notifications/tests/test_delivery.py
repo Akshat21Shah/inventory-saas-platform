@@ -226,6 +226,7 @@ def test_mocks_are_refused_in_deployed_settings(settings):
     assert {e.id for e in notification_channels_check(None)} == {
         "notifications.E001",
         "notifications.E002",
+        "notifications.E003",  # push (ADR-061)
     }
     with pytest.raises(ImproperlyConfigured):
         get_whatsapp_client("mock")

@@ -32,6 +32,8 @@ import type {
   CheckoutOutcomeRequest,
   ConsentState,
   DeliveryAddress,
+  DeviceInputRequest,
+  DeviceRemoveRequest,
   DocumentLink,
   MarkedRead,
   PaginatedInboxItemList,
@@ -1325,7 +1327,199 @@ export function useShopCreditNotesPdf<TData = Awaited<ReturnType<typeof shopCred
 
 
 
-export type shopDistributorResponse200 = {
+export type shopDeviceRegisterResponse204 = {
+  data: void
+  status: 204
+}
+
+export type shopDeviceRegisterResponseSuccess = (shopDeviceRegisterResponse204) & {
+  headers: Headers;
+};
+;
+
+export type shopDeviceRegisterResponse = (shopDeviceRegisterResponseSuccess)
+
+export const getShopDeviceRegisterUrl = () => {
+
+
+
+
+  return `/api/v1/shop/devices/`
+}
+
+/**
+ * The app registers its push token after sign-in and whenever it changes (ADR-061 item 7).
+ */
+export const shopDeviceRegister = async (deviceInputRequest: DeviceInputRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopDeviceRegisterResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopDeviceRegisterResponse>(getShopDeviceRegisterUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(deviceInputRequest)
+  }
+);}
+
+
+
+
+
+export const getShopDeviceRegisterMutationKey = () => ['shopDeviceRegister'] as const;
+
+export const getShopDeviceRegisterMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopDeviceRegister>>, TError,ShopDeviceRegisterMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopDeviceRegister>>, TError,ShopDeviceRegisterMutationVariables, TContext> => {
+
+const mutationKey = getShopDeviceRegisterMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopDeviceRegister>>, ShopDeviceRegisterMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  shopDeviceRegister(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopDeviceRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof shopDeviceRegister>>>
+    export type ShopDeviceRegisterMutationBody = DeviceInputRequest
+    export type ShopDeviceRegisterMutationError = unknown
+    export type ShopDeviceRegisterMutationVariables = {data: DeviceInputRequest}
+
+    export const useShopDeviceRegister = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopDeviceRegister>>, TError,ShopDeviceRegisterMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopDeviceRegister>>,
+        TError,
+        ShopDeviceRegisterMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopDeviceRegisterMutationOptions(options), queryClient);
+    }
+    export type shopDeviceRemoveResponse204 = {
+  data: void
+  status: 204
+}
+
+export type shopDeviceRemoveResponseSuccess = (shopDeviceRemoveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type shopDeviceRemoveResponse = (shopDeviceRemoveResponseSuccess)
+
+export const getShopDeviceRemoveUrl = () => {
+
+
+
+
+  return `/api/v1/shop/devices/remove/`
+}
+
+/**
+ * Signing out or switching distributor: no more pushes to this phone for this login.
+ */
+export const shopDeviceRemove = async (deviceRemoveRequest: DeviceRemoveRequest, options?: Parameters<typeof apiFetch>[1]): Promise<shopDeviceRemoveResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<shopDeviceRemoveResponse>(getShopDeviceRemoveUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(deviceRemoveRequest)
+  }
+);}
+
+
+
+
+
+export const getShopDeviceRemoveMutationKey = () => ['shopDeviceRemove'] as const;
+
+export const getShopDeviceRemoveMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopDeviceRemove>>, TError,ShopDeviceRemoveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopDeviceRemove>>, TError,ShopDeviceRemoveMutationVariables, TContext> => {
+
+const mutationKey = getShopDeviceRemoveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopDeviceRemove>>, ShopDeviceRemoveMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  shopDeviceRemove(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopDeviceRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof shopDeviceRemove>>>
+    export type ShopDeviceRemoveMutationBody = DeviceRemoveRequest
+    export type ShopDeviceRemoveMutationError = unknown
+    export type ShopDeviceRemoveMutationVariables = {data: DeviceRemoveRequest}
+
+    export const useShopDeviceRemove = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopDeviceRemove>>, TError,ShopDeviceRemoveMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopDeviceRemove>>,
+        TError,
+        ShopDeviceRemoveMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopDeviceRemoveMutationOptions(options), queryClient);
+    }
+    export type shopDistributorResponse200 = {
   data: ShopDistributor
   status: 200
 }

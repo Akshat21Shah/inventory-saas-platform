@@ -336,7 +336,45 @@
        - the distributor contact for each tenant's shop.
 
        Plus 2 web tests for the App Links statement. The full backend suite passes (1,916), as do the web's 368 tests.
-  4. App foundation (11b.4) — next
+  4. Push channel (11b.3) — **done**:
+     - **Phones:** `DeviceToken` (RLS; unique per tenant, notifications migration 0018). `POST shop/devices/` registers or refreshes a phone; `POST shop/devices/remove/` removes it on sign-out (shops only).
+     - **The channel:**
+       - `Channel.PUSH` ("App notification") for shops;
+       - on in every default shop rule that has in-app (28 rules). The migration adds it to distributors' own shop rules that have in-app, and the rules screen accepts it for shops only;
+       - a push row only for a login with an active phone, and none otherwise;
+       - preferences (the switch shows once the login has the app), compulsory events, quiet hours (non-urgent events wait), the shop's language;
+       - bills held for their IRN wait like WhatsApp.
+     - **What it says** (`apps/notifications/push.py`): the in-app words.
+       - The delivery code is never in them.
+       - Amounts are left out unless the same message is actually going to that shop by SMS or WhatsApp. Then a title with an amount becomes an amount-free one ("New bill INV/26-27/000001", "Payment received", …; else "New message from {distributor}"), and a body with an amount becomes "Open the app to see the details."
+       - A test fails when a shop message gains another code variable.
+       - The texts are in Hindi and Marathi.
+     - **Sending:** one row per person, to each of their phones, carrying the screen to open, the in-app message's id, the distributor and the event.
+       - Sent when any phone took it.
+       - Tried again with backoff when the service was busy.
+       - A phone FCM no longer knows is switched off; when none is left, the row fails at once.
+     - **Adapters:**
+       - `mock` (dev and test; a copy in Mailpit as `[Push mock] …`);
+       - `fcm`: FCM HTTP v1, signing in with the service account (RS256 JWT, cached token), with high or normal priority by urgency and the app's "messages" channel; TODO(verify), pre-production item 49.
+       - Deploy checks: `notifications.E003` (mock deployed), `E004` (fcm without its key).
+     - **Web:** the "App notification" label in three languages and the delivery log's channel filter.
+     - **Tests:** 22 backend tests (`test_push.py`):
+       - registering and removing phones per tenant;
+       - no row without the app;
+       - the words and the data a tap needs, staff never pushed;
+       - a bill's amount hidden, then shown once WhatsApp carries it;
+       - the delivery code left out;
+       - Hindi;
+       - switched off except compulsory;
+       - quiet hours;
+       - the rules;
+       - each phone, a removed app, a busy service;
+       - FCM's answers;
+       - the deploy checks;
+       - the preferences switch.
+
+       Updated: the flags-off baseline (the PUSH channel listed, nothing sent), the catalogue check (push uses the in-app words), the deploy-check list.
+  5. App foundation (11b.4) — next
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**
