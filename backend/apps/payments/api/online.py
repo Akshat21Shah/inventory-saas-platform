@@ -179,7 +179,9 @@ class MockGatewayPageView(APIView):
         payload, headers = MockGateway.simulate(keys, order_id, outcome=outcome)
         status, _result = online.handle_webhook("mock", tenant.webhook_token, payload, headers)
         text = "Paid. Go back to the app." if outcome == "CAPTURED" else "The payment failed."
-        back = f'<p><a href="/shop/payments/checkout/{intent.pk}">Back to the app</a></p>'
+        # The shop's checkout page, or the Android app's browser payment page (ADR-061 item 9).
+        page = "pay" if request.query_params.get("back") == "pay" else "shop/payments/checkout"
+        back = f'<p><a href="/{page}/{intent.pk}">Back to the app</a></p>'
         return HttpResponse(PAGE.format(body=f"<p>{text}</p>{back}"), status=status)
 
 

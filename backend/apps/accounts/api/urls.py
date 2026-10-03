@@ -10,7 +10,6 @@ urlpatterns = [
     path("logout/", views.LogoutView.as_view(), name="auth-logout"),
     path("me/", views.MeView.as_view(), name="auth-me"),
     path("ws-ticket/", live.WsTicketView.as_view(), name="auth-ws-ticket"),
-    path("app/web-handoff/", views.AppWebHandoffView.as_view(), name="auth-app-web-handoff"),
     path("staff/mfa/verify/", views.StaffMfaVerifyView.as_view(), name="auth-staff-mfa-verify"),
     path(
         "staff/mfa/enrol/start/",

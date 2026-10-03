@@ -796,10 +796,6 @@ msgstr "पेमेंटची तारीख आणि आज यांच�
 msgid "Choose a different shop to copy from."
 msgstr "कॉपी करण्यासाठी दुसरे दुकान निवडा."
 
-#: apps/accounts/api/serializers.py
-msgid "Choose a page of the shop."
-msgstr "दुकानाचे एखादे पान निवडा."
-
 #: apps/payments/gateway_config.py
 msgid "Choose a payment gateway."
 msgstr "पेमेंट गेटवे निवडा."
@@ -3277,6 +3273,10 @@ msgstr "हे पेमेंट आता अशा प्रकारे ब�
 #: apps/payments/online.py
 msgid "This payment doesn't need a review."
 msgstr "या पेमेंटला तपासणीची गरज नाही."
+
+#: apps/payments/browser.py
+msgid "This payment page has closed. Go back to the app to pay."
+msgstr "हे पेमेंट पेज बंद झाले आहे. पैसे भरण्यासाठी ॲपवर परत जा."
 
 #: apps/accounts/staff_services.py
 msgid "This person is already on your team."

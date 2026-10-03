@@ -249,23 +249,3 @@ class RetailerChooseAccountInputSerializer(serializers.Serializer[Any]):
     choice_token = serializers.CharField(max_length=200)
     choice_id = serializers.UUIDField()
     client = serializers.ChoiceField(choices=SIGN_IN_CLIENTS, default="web", help_text=CLIENT_HELP)
-
-
-class AppWebHandoffInputSerializer(serializers.Serializer[Any]):
-    next = serializers.RegexField(
-        r"^/shop(/[\w\-./?=&%]*)?$",
-        max_length=300,
-        help_text="The shop page to open in the browser, e.g. /shop/payments/checkout/<id>.",
-    )
-
-    def validate_next(self, value: str) -> str:
-        if "//" in value or ".." in value:
-            raise serializers.ValidationError(_("Choose a page of the shop."))
-        return value
-
-
-class AppWebHandoffSerializer(serializers.Serializer[Any]):
-    url = serializers.CharField(
-        help_text="Open in a Chrome Custom Tab: the shop page, signed in once by a code that "
-        "works one time within a minute."
-    )

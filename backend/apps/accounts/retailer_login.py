@@ -14,7 +14,6 @@ import hashlib
 import secrets
 from contextlib import AbstractContextManager, nullcontext
 from datetime import timedelta
-from urllib.parse import urlencode
 from uuid import UUID
 
 from django.conf import settings
@@ -41,7 +40,7 @@ from apps.platform.selectors import get_platform_setting, sms_name, tenant_by_sl
 from common import ratelimit
 from common.error_codes import ErrorCode
 from common.errors import DomainError
-from common.hosts import HostContext, HostKind, web_url
+from common.hosts import HostContext, HostKind
 from common.tenancy import tenant_context
 
 
@@ -218,20 +217,3 @@ def is_active_retailer_login(user: User, tenant_id: UUID) -> bool:
         user.tenant_id == tenant_id
         and selectors.retailer_login_for_tenant(user.phone or "", tenant_id) is not None
     )
-
-
-# The browser session a web handoff opens for the app (ADR-061 item 9): long enough to pay, and it
-# ends on its own; the app's own session is untouched.
-APP_WEB_SESSION = timedelta(hours=1)
-
-
-def app_web_handoff(user: User, tenant_id: UUID, next_path: str) -> str:
-    """The address of a shop page signed in for the app's shop, for a Chrome Custom Tab: a
-    one-time code (60 seconds) in the URL fragment, which never reaches a server's logs."""
-    ratelimit.hit("app-web-handoff:user", str(user.pk), 20, 60)
-    tenant = Tenant.objects.get(pk=tenant_id)
-    if user.user_type != User.UserType.RETAILER or not is_active_retailer_login(user, tenant.pk):
-        raise TokenInvalid()
-    handoff = create_handoff(user, tenant, session_expires_at=timezone.now() + APP_WEB_SESSION)
-    fragment = urlencode({"code": handoff.code, "next": next_path})
-    return f"{web_url('/auth/handoff', tenant_slug=tenant.slug)}#{fragment}"

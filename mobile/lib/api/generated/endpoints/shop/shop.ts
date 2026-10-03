@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BrowserPayLink,
   CancelOrderRequest,
   Checkout,
   CheckoutAttempt,
@@ -4215,6 +4216,88 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getShopCheckoutOutcomeMutationOptions(options), queryClient);
+    }
+    export type shopCheckoutBrowserResponse200 = {
+  data: BrowserPayLink
+  status: 200
+}
+
+export type shopCheckoutBrowserResponseSuccess = (shopCheckoutBrowserResponse200) & {
+  headers: Headers;
+};
+;
+
+export type shopCheckoutBrowserResponse = (shopCheckoutBrowserResponseSuccess)
+
+export const getShopCheckoutBrowserUrl = (intentId: string,) => {
+
+
+
+
+  return `/api/v1/shop/payments/checkout/${intentId}/browser/`
+}
+
+/**
+ * The app pays in a Chrome Custom Tab: this checkout's payment page, opened once by a code that works for a minute. Back in the app, read the checkout's status here.
+ */
+export const shopCheckoutBrowser = async (intentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<shopCheckoutBrowserResponse> => {
+
+  return apiFetch<shopCheckoutBrowserResponse>(getShopCheckoutBrowserUrl(intentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShopCheckoutBrowserMutationKey = () => ['shopCheckoutBrowser'] as const;
+
+export const getShopCheckoutBrowserMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutBrowser>>, TError,ShopCheckoutBrowserMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutBrowser>>, TError,ShopCheckoutBrowserMutationVariables, TContext> => {
+
+const mutationKey = getShopCheckoutBrowserMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shopCheckoutBrowser>>, ShopCheckoutBrowserMutationVariables> = (props) => {
+          const {intentId} = props ?? {};
+
+          return  shopCheckoutBrowser(intentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShopCheckoutBrowserMutationResult = NonNullable<Awaited<ReturnType<typeof shopCheckoutBrowser>>>
+
+    export type ShopCheckoutBrowserMutationError = unknown
+    export type ShopCheckoutBrowserMutationVariables = {intentId: string}
+
+    export const useShopCheckoutBrowser = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shopCheckoutBrowser>>, TError,ShopCheckoutBrowserMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shopCheckoutBrowser>>,
+        TError,
+        ShopCheckoutBrowserMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShopCheckoutBrowserMutationOptions(options), queryClient);
     }
     export type shopProductsResponse200 = {
   data: PaginatedShopProductList

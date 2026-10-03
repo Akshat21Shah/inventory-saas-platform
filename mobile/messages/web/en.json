@@ -289,7 +289,8 @@
       "expired": "This payment wasn't finished in time.",
       "startAgain": "Start again",
       "waiting": "Waiting for the bank to confirm. This page updates by itself.",
-      "safe": "You pay on the payment company's secure page. We never see your card or bank details."
+      "safe": "You pay on the payment company's secure page. We never see your card or bank details.",
+      "backToApp": "Back to the app"
     },
     "free": {
       "offer": "{same, select, true {Buy {buy}, get {free} free} other {Buy {buy}, get {free} {product} free}}",
@@ -656,6 +657,7 @@
     "GST_CREDENTIALS_NOT_READY": "Enter your GST provider credentials in Settings and check them first.",
     "PAYMENT_GATEWAY_NOT_READY": "Online payments aren't set up yet. Try again later or pay another way.",
     "PAYMENT_GATEWAY_UNAVAILABLE": "Payment service is busy, please try again in a minute.",
+    "PAY_PAGE_CLOSED": "This payment page has closed. Go back to the app to pay.",
     "WRONG_DELIVERY_CODE": "That isn't the shop's delivery code. Check it with the shop.",
     "DELIVERY_CODE_LOCKED": "Too many wrong codes. Try again in 15 minutes, or mark it delivered without the code and say why.",
     "ASSISTANT_RATE_LIMITED": "You've asked a lot of questions in the last hour. Try again a little later.",

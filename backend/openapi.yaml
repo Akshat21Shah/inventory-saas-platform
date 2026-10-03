@@ -304,30 +304,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedAuditLogList'
           description: ''
-  /api/v1/auth/app/web-handoff/:
-    post:
-      operationId: auth_app_web_handoff
-      description: |-
-        The Android app opens a shop page in a Chrome Custom Tab, already signed in (ADR-061 item
-        9): online payment. The code works once, within a minute; the browser session ends after an
-        hour.
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AppWebHandoffInputRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AppWebHandoff'
-          description: ''
   /api/v1/auth/handoff/exchange/:
     post:
       operationId: auth_handoff_exchange
@@ -3352,6 +3328,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderCounts'
+          description: ''
+  /api/v1/pay/checkout/:
+    get:
+      operationId: pay_checkout
+      description: No shop session here, and the Pay token works nowhere else.
+      parameters:
+      - in: header
+        name: Authorization
+        schema:
+          type: string
+        description: Pay <token>
+        required: true
+      tags:
+      - pay
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayCheckout'
+          description: ''
+  /api/v1/pay/checkout/outcome/:
+    post:
+      operationId: pay_checkout_outcome
+      description: 'What the page saw (informational: the payment counts only when
+        the gateway confirms it).'
+      parameters:
+      - in: header
+        name: Authorization
+        schema:
+          type: string
+        description: Pay <token>
+        required: true
+      tags:
+      - pay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutOutcomeRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayCheckout'
+          description: ''
+  /api/v1/pay/session/:
+    post:
+      operationId: pay_session
+      description: No shop session here, and the Pay token works nowhere else.
+      tags:
+      - pay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaySessionInputRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaySession'
           description: ''
   /api/v1/payment-allocations/{allocation_id}/reverse/:
     post:
@@ -10074,6 +10122,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/Checkout'
           description: ''
+  /api/v1/shop/payments/checkout/{intent_id}/browser/:
+    post:
+      operationId: shop_checkout_browser
+      description: 'The app pays in a Chrome Custom Tab: this checkout''s payment
+        page, opened once by a code that works for a minute. Back in the app, read
+        the checkout''s status here.'
+      parameters:
+      - in: path
+        name: intent_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shop
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrowserPayLink'
+          description: ''
   /api/v1/shop/products/:
     get:
       operationId: shop_products
@@ -12227,26 +12299,6 @@ components:
       - latest_version
       - min_version
       - privacy_policy_url
-    AppWebHandoff:
-      type: object
-      properties:
-        url:
-          type: string
-          description: 'Open in a Chrome Custom Tab: the shop page, signed in once
-            by a code that works one time within a minute.'
-      required:
-      - url
-    AppWebHandoffInputRequest:
-      type: object
-      properties:
-        next:
-          type: string
-          minLength: 1
-          description: The shop page to open in the browser, e.g. /shop/payments/checkout/<id>.
-          maxLength: 300
-          pattern: ^/shop(/[\w\-./?=&%]*)?$
-      required:
-      - next
     Applied:
       type: object
       description: 'Money matched to this document: a payment, credit-note credit
@@ -12744,6 +12796,20 @@ components:
       - favicon_url
       - logo_url
       - primary_color
+    BrowserPayLink:
+      type: object
+      properties:
+        url:
+          type: string
+          description: 'Open in a Chrome Custom Tab: this checkout''s payment page,
+            opened by a code that works once, within a minute.'
+        expires_at:
+          type: string
+          format: date-time
+          description: When the code stops working.
+      required:
+      - expires_at
+      - url
     Bucket:
       type: object
       properties:
@@ -21127,6 +21193,104 @@ components:
           type: string
           minLength: 1
           nullable: true
+    PayCheckout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        purpose:
+          $ref: '#/components/schemas/CheckoutPurposeEnum'
+        invoice_id:
+          type: string
+          format: uuid
+          nullable: true
+        invoice_number:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/CheckoutStatusEnum'
+        provider:
+          type: string
+        checkout:
+          nullable: true
+          description: 'What the page opens: the gateway''s checkout options (no secrets);
+            for the test gateway, a checkout_url.'
+        expires_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+        payment_id:
+          type: string
+          format: uuid
+          nullable: true
+        receipt_number:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        awaiting_confirmation:
+          type: boolean
+          description: The shop's page saw the payment go through and no failure came
+            after; the gateway's confirmation hasn't arrived yet.
+        page_open:
+          type: boolean
+          description: 'False once the checkout is paid or has expired: this was the
+            page''s last answer.'
+        app_return_url:
+          type: string
+          description: Back to the app's view of this checkout.
+      required:
+      - amount
+      - app_return_url
+      - awaiting_confirmation
+      - checkout
+      - created_at
+      - expires_at
+      - id
+      - invoice_id
+      - invoice_number
+      - last_error
+      - page_open
+      - paid_at
+      - payment_id
+      - provider
+      - purpose
+      - receipt_number
+      - status
+    PaySession:
+      type: object
+      properties:
+        token:
+          type: string
+          description: 'Send as `Authorization: Pay <token>`, only to this page''s
+            pay endpoints. It ends when the checkout is paid or expires.'
+        expires_at:
+          type: string
+          format: date-time
+        checkout:
+          $ref: '#/components/schemas/PayCheckout'
+      required:
+      - checkout
+      - expires_at
+      - token
+    PaySessionInputRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - code
     PaymentAllocateRequest:
       type: object
       properties:

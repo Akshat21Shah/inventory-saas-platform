@@ -75,3 +75,4 @@ class ErrorCode(StrEnum):
     # online payments
     PAYMENT_GATEWAY_NOT_READY = "PAYMENT_GATEWAY_NOT_READY"
     PAYMENT_GATEWAY_UNAVAILABLE = "PAYMENT_GATEWAY_UNAVAILABLE"
+    PAY_PAGE_CLOSED = "PAY_PAGE_CLOSED"  # the app's browser payment page has ended (ADR-061)

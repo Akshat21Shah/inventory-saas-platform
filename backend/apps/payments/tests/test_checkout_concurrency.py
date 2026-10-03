@@ -14,7 +14,7 @@ from apps.inventory.tests.helpers import make_product
 from apps.orders.tests.helpers import add_stock, make_shop, shop_client
 from apps.orders.tests.test_concurrency import parallel
 from apps.payments.models import PaymentIntent
-from apps.payments.tests.test_online import connect
+from apps.payments.tests.conftest import connect
 from common.tenancy import tenant_context
 
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.concurrency]

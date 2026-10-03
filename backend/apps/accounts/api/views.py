@@ -34,7 +34,7 @@ from common.context import request_meta_var
 from common.errors import NotFound
 from common.hosts import HostContext
 from common.languages import all_languages
-from common.permissions import IsRetailer, IsStaffOrPlatformUser
+from common.permissions import IsStaffOrPlatformUser
 
 
 def _client_ip() -> str | None:
@@ -338,34 +338,6 @@ class RetailerChooseAccountView(PublicAuthView):
             data.validated_data["choice_token"], data.validated_data["choice_id"], app=app
         )
         return _login_response(outcome, app=app)
-
-
-class AppWebHandoffView(APIView):
-    """The Android app opens a shop page in a Chrome Custom Tab, already signed in (ADR-061 item
-    9): online payment. The code works once, within a minute; the browser session ends after an
-    hour."""
-
-    permission_classes = [IsRetailer]
-    impersonation_blocked = True
-
-    @extend_schema(
-        request=s.AppWebHandoffInputSerializer,
-        responses=s.AppWebHandoffSerializer,
-        operation_id="auth_app_web_handoff",
-        tags=["auth"],
-    )
-    def post(self, request: Request) -> Response:
-        data = s.AppWebHandoffInputSerializer(data=request.data)
-        data.is_valid(raise_exception=True)
-        tenant_id = _token_tenant_id(request)
-        if tenant_id is None:
-            raise SessionExpired()
-        url = retailer_login.app_web_handoff(
-            request.user,  # type: ignore[arg-type]
-            tenant_id,
-            data.validated_data["next"],
-        )
-        return Response(s.AppWebHandoffSerializer({"url": url}).data)
 
 
 def _token_tenant_id(request: Request) -> UUID | None:

@@ -6,7 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface AppWebHandoff {
-  /** Open in a Chrome Custom Tab: the shop page, signed in once by a code that works one time within a minute. */
+export interface BrowserPayLink {
+  /** Open in a Chrome Custom Tab: this checkout's payment page, opened by a code that works once, within a minute. */
   url: string;
+  /** When the code stops working. */
+  expires_at: string;
 }

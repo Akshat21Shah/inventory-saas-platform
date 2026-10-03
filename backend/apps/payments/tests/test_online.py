@@ -19,66 +19,19 @@ from apps.accounts.tests.factories import make_staff_in
 from apps.audit.models import AuditLog
 from apps.billing.models import Invoice
 from apps.billing.tests.helpers import ship_invoice
-from apps.inventory.tests.helpers import make_product
 from apps.ledger.tests.helpers import check_ledger
-from apps.notifications import quiet
-from apps.orders.tests.helpers import add_stock, client_for, make_shop, settings, shop_client
+from apps.orders.tests.helpers import client_for, make_shop, settings, shop_client
 from apps.payments import tasks
 from apps.payments.gateway.base import GatewayKeys
 from apps.payments.gateway.mock import EVENT_ID, SIGNATURE, MockGateway
-from apps.payments.models import GatewayConfig, Payment, PaymentIntent, WebhookEvent
-from apps.payments.tests.test_gateway import payments_on
+from apps.payments.models import Payment, PaymentIntent, WebhookEvent
+from apps.payments.tests.conftest import KEYS, connect
 from apps.retailers.models import Retailer
 from common.tenancy import tenant_context
 from common.testing.isolation import covers
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("daytime")]
 API = "/api/v1"
-KEYS = GatewayKeys("MOCK", "TEST", "mock_key_1", "secret-1", "hook-1")
-
-
-def connect(tenant: Any, keys: GatewayKeys = KEYS, status: str = "VERIFIED") -> None:
-    payments_on(tenant)
-    with tenant_context(tenant.pk):
-        GatewayConfig.objects.update_or_create(
-            defaults={
-                "provider": keys.provider,
-                "mode": keys.mode,
-                "key_id": keys.key_id,
-                "key_secret": keys.key_secret,
-                "webhook_secret": keys.webhook_secret,
-                "status": status,
-            }
-        )
-
-
-@pytest.fixture(autouse=True)
-def _daytime(monkeypatch):
-    monkeypatch.setattr(quiet, "current_hold", lambda now: None)
-
-
-@pytest.fixture
-def world(tenant_a, tenant_b, django_capture_on_commit_callbacks):
-    connect(tenant_a)
-    owner = make_staff_in(tenant_a, "OWNER")
-    product = make_product(tenant_a, "P-1", base_price=D("100"))
-    add_stock(tenant_a, product, "100")
-    shop = make_shop(tenant_a, email="shop@example.com")
-    run = django_capture_on_commit_callbacks
-    with run(execute=True):
-        bill = ship_invoice(tenant_a, shop, owner, (product, "2"))  # ₹210
-    return {
-        "t": tenant_a,
-        "tb": tenant_b,
-        "owner": owner,
-        "product": product,
-        "shop": shop,
-        "bill": bill,
-        "shop_api": shop_client(tenant_a, shop),
-        "staff": client_for(tenant_a, owner),
-        "sales": client_for(tenant_a, make_staff_in(tenant_a, "SALES")),
-        "run": lambda: run(execute=True),
-    }
 
 
 def checkout(world: dict[str, Any], client: Any = None, **body: Any) -> Any:

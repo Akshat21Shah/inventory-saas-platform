@@ -413,6 +413,10 @@ WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
 # Firebase service account's key as JSON from the secrets manager (pre-production item 49).
 PUSH_PROVIDER = env("PUSH_PROVIDER", default="mock")
 FCM_SERVICE_ACCOUNT_JSON = env("FCM_SERVICE_ACCOUNT_JSON", default="")
+# The Android app's URL scheme (mobile/app-identity.js URL_SCHEME): the browser payment page sends
+# the shop back to the app with it (ADR-061 item 9). The final one comes with the final ID
+# (pre-production item 45).
+ANDROID_APP_SCHEME = env("ANDROID_APP_SCHEME", default="shopapp")
 # Online payments (ADR-049 item 9): live gateway keys only where this is on (production).
 PAYMENTS_ALLOW_LIVE = env.bool("PAYMENTS_ALLOW_LIVE", default=False)
 # The platform's GST provider for e-invoices and e-way bills (ADR-049 item 4); each distributor

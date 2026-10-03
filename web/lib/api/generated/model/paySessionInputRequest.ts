@@ -6,7 +6,10 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface AppWebHandoff {
-  /** Open in a Chrome Custom Tab: the shop page, signed in once by a code that works one time within a minute. */
-  url: string;
+export interface PaySessionInputRequest {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  code: string;
 }
