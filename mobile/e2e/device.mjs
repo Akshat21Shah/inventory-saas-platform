@@ -33,9 +33,18 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * on Android 11). The old file goes first, so an unreadable screen comes back empty, never stale.
  */
 export function screen() {
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     const said = adb("shell", "rm -f /sdcard/e2e.xml; uiautomator dump /sdcard/e2e.xml 2>&1");
-    if (/dumped to/.test(said)) return parse(adb("exec-out", "cat", "/sdcard/e2e.xml"));
+    if (!/dumped to/.test(said)) continue;
+    const nodes = parse(adb("exec-out", "cat", "/sdcard/e2e.xml"));
+    // A slow emulator's "Pixel Launcher isn't responding" covers the app, and the dump reads
+    // only the dialog: "Wait" (safe whichever app it names), then read again.
+    const wait = nodes.some((n) => /isn.t responding$/.test(n.text))
+      ? nodes.find((n) => n.text === "Wait")
+      : null;
+    if (!wait) return nodes;
+    tap(wait);
+    execFileSync("sleep", ["1"]);
   }
   return [];
 }
@@ -53,6 +62,7 @@ function parse(xml) {
       cls: attr("class"),
       hint: attr("hint"),
       focused: attr("focused") === "true",
+      focusable: attr("focusable") === "true",
       clickable: attr("clickable") === "true",
       enabled: attr("enabled") !== "false",
       x: Math.round((x1 + x2) / 2),

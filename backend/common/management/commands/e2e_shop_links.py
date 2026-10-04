@@ -1,12 +1,14 @@
-"""Print the seeded shop's screen addresses that need an id (JSON): its newest order, a product and
-category from it, and its newest bill, so the Android app's screen tour (ADR-061) can open every
-screen by link in any language. Dev only: refuses unless DEBUG is on."""
+"""Print a seeded Sharma shop's screen addresses that need an id (JSON): its newest order, a product
+and category from it, and its newest bill, so the Android app's screen tour (ADR-061) can open
+every screen by link in any language. The shop is Ganesh Patil's unless ``--phone`` names another
+(two phones touring at once need two shops: the tour changes the person's language). Dev only:
+refuses unless DEBUG is on."""
 
 import json
 from typing import Any
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from apps.billing.models import Invoice
 from apps.orders.models import Order
@@ -19,12 +21,16 @@ from common.tenancy import tenant_transaction
 class Command(BaseCommand):
     help = "Print the seeded shop's order, product, category and bill addresses (JSON)."
 
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument("--phone", default=PHONE, help="the shop's mobile, e.g. 9876500000")
+
     def handle(self, *args: Any, **options: Any) -> None:
         if not settings.DEBUG:
             raise CommandError("e2e_shop_links only runs with DEBUG=True")
         tenant = Tenant.objects.get(slug="sharma")
         with tenant_transaction(tenant.pk):
-            shop = Retailer.objects.get(mobile=PHONE)
+            phone = options["phone"]
+            shop = Retailer.objects.get(mobile=phone if phone.startswith("+") else f"+91{phone}")
             order = Order.objects.filter(retailer=shop).order_by("-created_at").first()
             line = order.lines.select_related("product").first() if order else None
             bill = (

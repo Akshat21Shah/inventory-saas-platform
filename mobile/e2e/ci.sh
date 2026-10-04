@@ -17,7 +17,12 @@ on_failure() {
 }
 trap on_failure ERR
 
+# A slow emulator's "… isn't responding" dialogs would cover the app (device.mjs also taps
+# "Wait" on one).
+adb shell settings put global hide_error_dialogs 1 || true
 adb install -r android/app/build/outputs/apk/release/app-release.apk
+# Android 13+ asks before an app may notify; answered here so no system dialog covers a test.
+adb shell pm grant com.example.shop android.permission.POST_NOTIFICATIONS
 node e2e/sign-in.mjs
 if [[ "${LANGUAGES:-en}" == "en" ]]; then
   node e2e/three-taps.mjs

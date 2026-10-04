@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * Emulator set-up (ADR-061, 11b.10): signs the app in to the seeded shop (Ganesh Patil, Sharma)
- * as a person would, with the dev stack's fixed sign-in code (OTP_FIXED_CODE, 123456). Does
- * nothing if the app is signed in already. The other emulator tests start from here in CI.
+ * Emulator set-up (ADR-061, 11b.10): signs the app in to a seeded Sharma shop (Ganesh Patil's,
+ * or SHOP_PHONE's) as a person would, with the dev stack's fixed sign-in code (OTP_FIXED_CODE,
+ * 123456). Does nothing if the app is signed in already. The other emulator tests start from
+ * here in CI.
  *
  * Needs: the dev stack with the seed, the app installed, its screens in English.
  *   node e2e/sign-in.mjs
+ *   SHOP_PHONE=9876500000 node e2e/sign-in.mjs   # Omkar Joshi, who also shops with Patel
  */
 import {
   adb,
@@ -20,7 +22,7 @@ import {
   waitFor,
 } from "./device.mjs";
 
-const PHONE = "9876500001";
+const PHONE = process.env.SHOP_PHONE ?? "9876500001";
 const CODE = "123456";
 const DISTRIBUTOR = "Sharma Distributors";
 const { check, finish } = reporter();
@@ -48,8 +50,11 @@ async function type(find, digits) {
 }
 
 startApp();
+/** Home, or the question asked once on it after sign-in. */
+const signedIn = (n) => n.text.startsWith("Hello") || n.text === "Get updates on WhatsApp?";
+
 const first = await waitFor(
-  (n) => n.text === "Sign in to order" || n.text.startsWith("Hello"),
+  (n) => n.text === "Sign in to order" || signedIn(n),
   90000, // a cold start on CI's software-drawn emulator is slow
 );
 check(first !== null, "the app opens");
@@ -65,8 +70,14 @@ if (first?.text === "Sign in to order") {
   check(await type(field, CODE), "the code is typed");
   tap(await waitFor((n) => n.label === "Sign in" && n.enabled));
   // A number with several distributors chooses one.
-  const next = await waitFor((n) => n.text === DISTRIBUTOR || n.text.startsWith("Hello"), 30000);
+  const next = await waitFor((n) => n.text === DISTRIBUTOR || signedIn(n), 30000);
   if (next?.text === DISTRIBUTOR) tap(next);
+}
+// Asked once after sign-in when the distributor sends WhatsApp messages: "Not now" (it isn't
+// asked again).
+const home = await waitFor(signedIn, 40000);
+if (home?.text === "Get updates on WhatsApp?") {
+  tap(await waitFor((n) => n.text.toUpperCase() === "NOT NOW"));
 }
 check(
   (await waitFor((n) => n.text.startsWith("Hello"), 40000)) !== null,

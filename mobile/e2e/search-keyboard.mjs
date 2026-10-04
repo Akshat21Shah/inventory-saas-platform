@@ -7,7 +7,7 @@
  * Needs: a running emulator (or USB phone) with the app installed and signed in (`adb devices`).
  *   node e2e/search-keyboard.mjs [word]          (default: "biscuit")
  */
-import { adb, keyboardShown, PACKAGE, sleep } from "./device.mjs";
+import { adb, keyboardShown, PACKAGE, screen, sleep, tap, until } from "./device.mjs";
 
 const WORD = process.argv[2] ?? "biscuit";
 const PAUSE_MS = 700; // longer than the search's 250 ms pause, so results render between letters
@@ -15,14 +15,10 @@ const PAUSE_MS = 700; // longer than the search's 250 ms pause, so results rende
 /** The search box: the screen's first focusable EditText with a hint (by class and attributes,
  * so the app's language doesn't matter; the box's container also reports as an EditText). */
 function searchBox() {
-  adb("shell", "uiautomator", "dump", "/sdcard/search-test.xml");
-  const xml = adb("exec-out", "cat", "/sdcard/search-test.xml");
-  const node = (xml.match(/<node [^>]*class="android\.widget\.EditText"[^>]*>/g) ?? []).find(
-    (n) => /focusable="true"/.test(n) && /hint="[^"]+"/.test(n),
-  );
+  const nodes = screen();
+  const node = nodes.find((n) => n.cls === "android.widget.EditText" && n.focusable && n.hint);
   if (!node) return null;
-  const attr = (name) => new RegExp(`${name}="([^"]*)"`).exec(node)?.[1] ?? "";
-  return { text: attr("text"), focused: attr("focused") === "true", hint: attr("hint"), xml };
+  return { ...node, results: nodes.filter((n) => n.text.startsWith("₹")).length };
 }
 
 const failures = [];
@@ -31,36 +27,22 @@ function check(ok, what) {
   if (!ok) failures.push(what);
 }
 
-async function until(test, ms = 8000) {
-  for (const started = Date.now(); Date.now() - started < ms;) {
-    if (test()) return true;
-    await sleep(400);
-  }
-  return false;
-}
-
 // From a fresh start: home, then a tap on the search box, as a shop would do it.
 adb("shell", "am", "force-stop", PACKAGE);
 adb("shell", "am", "start", "-W", "-n", `${PACKAGE}/.MainActivity`);
 const entry = await (async () => {
   for (let i = 0; i < 20; i++) {
-    adb("shell", "uiautomator", "dump", "/sdcard/search-test.xml");
-    const xml = adb("exec-out", "cat", "/sdcard/search-test.xml");
+    const nodes = screen();
     // The home screen's search entry: reported as a clickable EditText without a hint (the
     // search screen's real input has one).
-    const node = (xml.match(/<node [^>]*class="android\.widget\.EditText"[^>]*>/g) ?? []).find(
-      (n) => /clickable="true"/.test(n) && /hint=""/.test(n),
-    );
-    if (node && /₹/.test(xml)) return node;
+    const node = nodes.find((n) => n.cls === "android.widget.EditText" && n.clickable && !n.hint);
+    if (node && nodes.some((n) => n.text.includes("₹"))) return node;
     await sleep(700);
   }
   return null;
 })();
 check(entry !== null, "home shows the search box");
-const [x1, y1, x2, y2] = (/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(entry ?? "") ?? [])
-  .slice(1)
-  .map(Number);
-adb("shell", "input", "tap", String(Math.round((x1 + x2) / 2)), String(Math.round((y1 + y2) / 2)));
+if (entry) tap(entry);
 check(await until(keyboardShown), "tapping it opens search with the keyboard up");
 let box = searchBox();
 // An empty input is reported with its hint as its text.
@@ -84,7 +66,7 @@ for (const letter of WORD) {
 await sleep(1500);
 box = searchBox();
 // Products on screen, counted by their prices (any language).
-const results = (box?.xml.match(/text="₹[^"]*"/g) ?? []).length;
+const results = box?.results ?? 0;
 check(results > 0, `results for "${WORD}" are on screen (${results} prices)`);
 check(keyboardShown(), "the keyboard is still open after the results arrived");
 

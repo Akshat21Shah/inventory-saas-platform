@@ -10,7 +10,8 @@
  * for a person to look at the words: cut-off text can't be read from the screen's elements.
  *
  * Needs: the dev stack with the seed (`make up`, `make seed`), the app installed and signed in to
- * the seeded shop (Ganesh Patil, Sharma). Ends in English.
+ * the seeded shop (Ganesh Patil, Sharma; `e2e/sign-in.mjs`). Ends in English. Two phones at once
+ * need two shops, as the language is the person's: SHOP_PHONE=9876500000 (Omkar Joshi) for one.
  *   node e2e/tour.mjs                 # en, hi, mr
  *   LANGUAGES=hi node e2e/tour.mjs    # one language
  *   ANDROID_SERIAL=emulator-5556 …    # one phone of several
@@ -81,7 +82,9 @@ function untranslated(code) {
 
 // --- The screens --------------------------------------------------------------------------------
 
-const links = JSON.parse(manage("e2e_shop_links"));
+const links = JSON.parse(
+  manage("e2e_shop_links", "--phone", process.env.SHOP_PHONE ?? "9876500001"),
+);
 const SCREENS = [
   ["home", "/shop"],
   ["catalog", "/shop/catalog"],
@@ -110,7 +113,11 @@ for (const [name, path] of SCREENS) check(Boolean(path), `the seed has a ${name}
 
 // --- On the phone ------------------------------------------------------------------------------
 
-const phone = adb("shell", "getprop", "ro.boot.qemu.avd_name").trim() || adb("get-serialno").trim();
+// The emulator's name (Android 12 and up keep it in ro.boot…, Android 11 in ro.kernel…).
+const phone =
+  adb("shell", "getprop", "ro.boot.qemu.avd_name").trim() ||
+  adb("shell", "getprop", "ro.kernel.qemu.avd_name").trim() ||
+  adb("get-serialno").trim();
 const perDp = pixelsPerDp();
 const [width, height] = adb("shell", "wm", "size").trim().split(/\s+/).pop().split("x").map(Number);
 const SHOTS = join(HERE, "screenshots", phone);
