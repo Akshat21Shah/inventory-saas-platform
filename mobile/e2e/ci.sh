@@ -7,6 +7,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# On a failure: what the phone showed, its elements and the app's log, kept with the screenshots.
+on_failure() {
+  mkdir -p e2e/screenshots/failure
+  adb exec-out screencap -p > e2e/screenshots/failure/screen.png || true
+  adb shell uiautomator dump /sdcard/failure.xml && adb exec-out cat /sdcard/failure.xml \
+    > e2e/screenshots/failure/screen.xml || true
+  adb logcat -d -t 2000 > e2e/screenshots/failure/logcat.txt || true
+}
+trap on_failure ERR
+
 adb install -r android/app/build/outputs/apk/release/app-release.apk
 node e2e/sign-in.mjs
 if [[ "${LANGUAGES:-en}" == "en" ]]; then

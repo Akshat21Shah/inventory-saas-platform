@@ -26,10 +26,21 @@ export const manage = (...args) =>
   );
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Every element on screen, with its attributes. */
+/**
+ * Every element on screen, with its attributes. While something on the screen keeps changing (a
+ * countdown, a loading animation), Android's dump waits about 10 s, says "could not get idle
+ * state" and writes nothing; reading the file then gave the screen before (the "stale dump" seen
+ * on Android 11). The old file goes first, so an unreadable screen comes back empty, never stale.
+ */
 export function screen() {
-  adb("shell", "uiautomator", "dump", "/sdcard/e2e.xml");
-  const xml = adb("exec-out", "cat", "/sdcard/e2e.xml");
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const said = adb("shell", "rm -f /sdcard/e2e.xml; uiautomator dump /sdcard/e2e.xml 2>&1");
+    if (/dumped to/.test(said)) return parse(adb("exec-out", "cat", "/sdcard/e2e.xml"));
+  }
+  return [];
+}
+
+function parse(xml) {
   return (xml.match(/<node [^>]*>/g) ?? []).map((raw) => {
     const attr = (name) => new RegExp(` ${name}="([^"]*)"`).exec(raw)?.[1] ?? "";
     const [x1, y1, x2, y2] = (/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(raw) ?? [])

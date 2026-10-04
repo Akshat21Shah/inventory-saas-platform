@@ -30,6 +30,7 @@ import {
   sleep,
   startApp,
   tap,
+  until,
   waitFor,
 } from "./device.mjs";
 
@@ -56,6 +57,8 @@ const english = texts("en");
 const NAMESPACES = new Set(Object.keys(english).map((key) => key.split(".")[0]));
 const LANGUAGES = json("lib/shared/languages.json").languages;
 const chosen = (process.env.LANGUAGES ?? "en,hi,mr").split(",");
+/** Only some screens, by name (`ONLY=profile,messages`); every screen when unset. */
+const only = process.env.ONLY ? new Set(process.env.ONLY.split(",")) : null;
 
 /** A text shown as its key: `shop.money.statement`, or use-intl's `namespace.key` fallback. */
 const looksLikeKey = (text) =>
@@ -187,15 +190,24 @@ async function tour(code) {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   const inEnglish = untranslated(code);
+  let last = null; // the screen toured before
   for (const [index, [name, path]] of SCREENS.entries()) {
-    if (!path) continue;
+    if (!path || (only && !only.has(name))) continue;
+    const started = Date.now();
     openLink(path);
     const keys = new Set();
     const leftInEnglish = new Set();
     const small = new Set();
-    await sleep(1000);
+    // The checks wait for this screen's own elements (not the screen before).
+    const fresh = await until(() => {
+      const now = signature(screen());
+      return now !== "" && now !== last;
+    }, 20000);
     await toTop();
     let nodes = await settled();
+    // A screen that never stops changing can't be read (device.mjs `screen`).
+    check(fresh && nodes.length > 0, `${code} ${name}: the screen's elements can be read`);
+    if (nodes.length === 0) continue;
     for (let part = 1, before = ""; part <= 4; part++) {
       const shot = `${String(index + 1).padStart(2, "0")}-${name}${part > 1 ? `-${part}` : ""}.png`;
       saveScreenshot(join(dir, shot));
@@ -222,6 +234,8 @@ async function tour(code) {
       nodes = screen();
       if (signature(nodes) === before) break;
     }
+    last = signature(nodes);
+    console.log(`     ${code} ${name}: ${Math.round((Date.now() - started) / 1000)} s`);
     check(keys.size === 0, `${code} ${name}: no text shows as its key ${[...keys].join(", ")}`);
     check(
       leftInEnglish.size === 0,
