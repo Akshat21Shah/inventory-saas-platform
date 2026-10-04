@@ -284,6 +284,37 @@ class CheckoutOutcomeSerializer(serializers.Serializer[Any]):
     outcome = serializers.ChoiceField(choices=["success", "failed", "dismissed"])
 
 
+# --- The app's browser payment page (ADR-061 item 9) ---------------------------------------------
+
+
+class BrowserPayLinkSerializer(serializers.Serializer[Any]):
+    url = serializers.CharField(
+        help_text="Open in a Chrome Custom Tab: this checkout's payment page, opened by a code "
+        "that works once, within a minute."
+    )
+    expires_at = serializers.DateTimeField(help_text="When the code stops working.")
+
+
+class PaySessionInputSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField(max_length=100)
+
+
+class PayCheckoutSerializer(CheckoutSerializer):
+    page_open = serializers.BooleanField(
+        help_text="False once the checkout is paid or has expired: this was the page's last answer."
+    )
+    app_return_url = serializers.CharField(help_text="Back to the app's view of this checkout.")
+
+
+class PaySessionSerializer(serializers.Serializer[Any]):
+    token = serializers.CharField(
+        help_text="Send as `Authorization: Pay <token>`, only to this page's pay endpoints. It "
+        "ends when the checkout is paid or expires."
+    )
+    expires_at = serializers.DateTimeField()
+    checkout = PayCheckoutSerializer()
+
+
 class PaymentIntentRowSerializer(CheckoutSerializer):
     shop_name = serializers.CharField()
     retailer_id = serializers.UUIDField()

@@ -5,6 +5,10 @@ by (event, person, channel), so a redelivered event creates nothing new.
 Rows that can't be sent are kept as SKIPPED with the reason (no WhatsApp consent, no address,
 switched off, WhatsApp not enabled, template not approved), so the delivery log answers "why
 didn't the shop get it?".
+
+App notifications (``PUSH``, ADR-061 item 7) go to every shop login with the app on a phone,
+like in-app messages, and say what the in-app message says, kept off the lock screen as ``push``
+decides. A login without the app gets no row for it (most shops: the log stays as it was).
 Delivery itself is ``apps.notifications.delivery`` (after this transaction commits)."""
 
 from dataclasses import dataclass
@@ -16,12 +20,13 @@ from django.utils import timezone
 
 from apps.accounts.models import Membership, User
 from apps.accounts.permissions import OWNER_ROLE
-from apps.notifications import approval, quiet
+from apps.notifications import approval, push, quiet
 from apps.notifications import context as contexts
 from apps.notifications.catalog import EVENTS
 from apps.notifications.models import (
     Audience,
     Channel,
+    DeviceToken,
     Notification,
     NotificationPreference,
     Recipient,
@@ -220,9 +225,13 @@ def targets(code: str, ctx: contexts.EventContext) -> list[Target]:
 # --- What each row says -------------------------------------------------------------------------
 
 
+# Channels that reach every shop login, not just the one with the shop's own number.
+EVERY_LOGIN = frozenset({Channel.IN_APP, Channel.PUSH})
+
+
 def _address(target: Target, channel: str) -> str:
-    if channel == Channel.IN_APP:
-        return ""
+    if channel in EVERY_LOGIN:
+        return ""  # in-app: the person; push: their phones (``DeviceToken``)
     if target.supplier is not None:
         return str(target.supplier.email or "") if channel == Channel.EMAIL else ""
     if target.retailer is not None:
@@ -251,7 +260,7 @@ def _skip_reason(
         return SKIP.FEATURE_OFF
     if channel == Channel.WHATSAPP and target.retailer and not target.retailer.whatsapp_opt_in:
         return SKIP.NO_WHATSAPP_OPT_IN  # compulsory events too: consent comes first
-    if not address:
+    if not address and channel != Channel.PUSH:
         return SKIP.NO_ADDRESS
     if (
         target.user is not None
@@ -289,6 +298,11 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
             user__in=[t.user for t in people if t.user is not None],
         ).values_list("user_id", "channel")
     )
+    with_app = set(
+        DeviceToken.objects.filter(
+            is_active=True, user__in=[t.user for t in people if t.retailer is not None]
+        ).values_list("user_id", flat=True)
+    )
     whatsapp_on = is_feature_enabled("whatsapp", tenant.pk)
     paused = bool(ctx.extra.get("paused"))
     now = timezone.now()
@@ -320,9 +334,16 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
             locale = languages.user_language(target.user, tenant.pk)
         else:
             locale = languages.DEFAULT
-        for channel in sorted(target.channels):
-            if channel != Channel.IN_APP and not target.external:
+        going: set[str] = set()  # this person's channels that will be sent
+        in_app_id: UUID | None = None
+        # The app notification last: whether it may carry amounts depends on SMS and WhatsApp.
+        for channel in sorted(target.channels, key=lambda c: (c == Channel.PUSH, c)):
+            if channel not in EVERY_LOGIN and not target.external:
                 continue
+            if channel == Channel.PUSH and (
+                not shop or target.user is None or target.user.pk not in with_app
+            ):
+                continue  # the app is the shop's (staff mode later), and only with a phone
             address = _address(target, channel)
             reason = _skip_reason(
                 target,
@@ -338,7 +359,7 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
                 # Only an approved template can be sent (ADR-049 item 12); the mock approves all.
                 text_locale = approval.sendable_locale(ctx.code, locale, audience)
                 reason = "" if text_locale else SKIP.NOT_APPROVED
-            carries_link = (shop or supplier) and channel != Channel.IN_APP and not reason
+            carries_link = (shop or supplier) and channel not in EVERY_LOGIN and not reason
             values = {
                 **ctx.values_in(text_locale or locale),
                 "link": url,
@@ -346,57 +367,74 @@ def fan_out(event_id: UUID, ctx: contexts.EventContext, tenant: Tenant) -> int:
             }
             if channel == Channel.SMS:
                 values["distributor"] = sms_name
-            text = render(ctx.code, channel, values, text_locale or locale, audience)
+            if channel == Channel.PUSH:
+                text = push.lock_screen_text(
+                    ctx.code,
+                    values,
+                    text_locale or locale,
+                    amounts_allowed=bool(going & {Channel.SMS, Channel.WHATSAPP}),
+                )
+            else:
+                text = render(ctx.code, channel, values, text_locale or locale, audience)
             if text is None:
                 continue
+            if not reason:
+                going.add(channel)
             in_app = channel == Channel.IN_APP
             send_after = hold if not in_app and not reason else None
             held_for_irn = bool(irn_hold and shop and not in_app and not reason)
             if held_for_irn:  # the bill waits for its IRN, at most 10 minutes (ADR-049 item 6)
                 send_after = max(send_after or now, irn_hold or now)
-            rows.append(
-                Notification(
-                    tenant_id=tenant.pk,  # bulk_create skips save(), which fills it in
-                    event_id=event_id,
-                    event_code=ctx.code,
-                    recipient=target.user,
-                    supplier=target.supplier,
-                    retailer=ctx.retailer,
-                    channel=channel,
-                    address=address,
-                    title=text["title"],
-                    body=text["body"],
-                    data={
-                        "path": path,
-                        "url": url,
-                        "whatsapp": text["whatsapp"],
-                        "document": (
-                            {"kind": ctx.document[0], "id": str(ctx.document[1])}
-                            if ctx.document
-                            else None
-                        ),
-                        "compulsory": target.compulsory,
-                        **({"held_for_irn": True} if held_for_irn else {}),
-                        # The shop's or supplier's email also carries the PDF (delivery).
-                        **(
-                            {"attach": True}
-                            if carries_link and channel == Channel.EMAIL and ctx.document
-                            else {}
-                        ),
-                    },
-                    urgent=event.urgent,
-                    status=(
-                        Notification.Status.SKIPPED
-                        if reason
-                        else Notification.Status.SENT
-                        if in_app
-                        else Notification.Status.PENDING
+            row = Notification(
+                tenant_id=tenant.pk,  # bulk_create skips save(), which fills it in
+                event_id=event_id,
+                event_code=ctx.code,
+                recipient=target.user,
+                supplier=target.supplier,
+                retailer=ctx.retailer,
+                channel=channel,
+                address=address,
+                title=text["title"],
+                body=text["body"],
+                data={
+                    "path": path,
+                    "url": url,
+                    "whatsapp": text["whatsapp"],
+                    "document": (
+                        {"kind": ctx.document[0], "id": str(ctx.document[1])}
+                        if ctx.document
+                        else None
                     ),
-                    skip_reason=reason,
-                    sent_at=now if in_app else None,
-                    send_after=send_after,
-                    provider="in_app" if in_app else "",
-                )
+                    "compulsory": target.compulsory,
+                    **({"held_for_irn": True} if held_for_irn else {}),
+                    # A tap on the push opens the screen and marks the in-app message read.
+                    **(
+                        {"in_app_id": str(in_app_id) if in_app_id else "", "tenant": tenant.slug}
+                        if channel == Channel.PUSH
+                        else {}
+                    ),
+                    # The shop's or supplier's email also carries the PDF (delivery).
+                    **(
+                        {"attach": True}
+                        if carries_link and channel == Channel.EMAIL and ctx.document
+                        else {}
+                    ),
+                },
+                urgent=event.urgent,
+                status=(
+                    Notification.Status.SKIPPED
+                    if reason
+                    else Notification.Status.SENT
+                    if in_app
+                    else Notification.Status.PENDING
+                ),
+                skip_reason=reason,
+                sent_at=now if in_app else None,
+                send_after=send_after,
+                provider="in_app" if in_app else "",
             )
+            if in_app:
+                in_app_id = row.pk
+            rows.append(row)
     created = Notification.objects.bulk_create(rows, ignore_conflicts=True)
     return len(created)

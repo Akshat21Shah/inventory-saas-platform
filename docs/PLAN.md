@@ -1751,19 +1751,22 @@ First after Phase 9 (owner, 2026-10-02); takes over task 10.1. English (default)
 | 11a.11 | FE: language switchers (account and sign-in pages), the distributor settings, per-language notification text editing (three languages side by side, a warning when only one changed), the super admin's language settings and suggestions list, the "Suggest a better word" link; layout fixes for longer text | M |
 | 11a.12 | Responsive check in Hindi and Marathi at 360/768/1440 (CI jobs per language); E2E: a shop orders in Hindi, staff work in Marathi, messages and a PDF in the shop's language — **final review** | M |
 
-### Phase 11b — Android app
-Second, after 11a is merged; built with language support from the start (the same message catalogues and the shop's chosen language).
+### Phase 11b — Android shop app — ADR-061, §10.2q (approved 2026-10-03)
+After 11a (merged, PR #18); built with the three languages from the start. **The shop app only** (owner, 2026-10-03); staff mode is after launch (backlog). Branch `phase-11b`, draft PR #19. One checkpoint after 11b.6 (stop there for the owner, with an install file for the owner's phone) and a final review.
 
 | # | Task | Size |
 |---|---|---|
-| 11.1 | Expo + TS setup, shared generated client + tokens, runtime branding | M |
-| 11.2 | OTP login + secure token storage | S |
-| 11.3 | Home, search, catalog, product | L |
-| 11.4 | Cart, checkout, orders + timeline | L |
-| 11.5 | Invoices (view/share PDF), statement, payments | M |
-| 11.6 | FCM push + device tokens | M |
-| 11.7 | Offline caching, retry, connectivity UX | M |
-| 11.8 | Play Store release checklist + build | S |
+| 11b.1 | Docs: ADR-061, this plan and §10.2q, SPEC 1.16, pre-production items 45–52, backlog (staff mode, web push). Android tools on this Mac: the SDK, an Android 16 phone (4 GB) and an Android 11 budget phone (2 GB, 360 dp) emulator | S |
+| 11b.2 | Backend for the app: app sign-in (`client: "app"` on the code and distributor steps: tokens in the body), the one-time link to a checkout's payment page (payment pages only, after the checkpoint review), `app/config` with the minimum version (`426 APP_UPDATE_REQUIRED`) and the privacy policy address (platform settings), `assetlinks.json` on every host; tests including tenant isolation | M |
+| 11b.3 | Push channel: `DeviceToken` and its API; `PUSH` in the rules matrix, the shop's preferences, compulsory events, quiet hours and the recipient's language; the lock-screen rules (never a code; amounts only when also sent by SMS or WhatsApp); `PushSender` with the mock and FCM HTTP v1; dead tokens switched off; the push column on the web's rules and preferences screens | L |
+| 11b.4 | App foundation: Expo SDK 57 in `/mobile` (native project generated, not committed); the one application ID setting (`com.example.shop` placeholder); the generated client and its fetcher (secure storage, refresh, language, version); `make mobile-sync` (messages, formatter, tokens); branding at runtime; the design-system primitives (buttons, inputs, cards, badges, money, quantity and date text, empty, error and loading states); bottom navigation; Sentry; the dev server address for LAN mode; the CI job | L |
+| 11b.5 | Sign-in (number, code, choice of distributor, language picker), home with "Repeat last order", catalogue, search in both scripts (smart search when on), product | L |
+| 11b.6 | Cart (backorders, free goods, credit messages), checkout with safe retries, orders with their timeline, delivery confirmation and code — **checkpoint**: an APK for the owner's phone (LAN mode), the main flow on both emulators, the install size | L |
+| 11b.7 | Bills (view and share the PDF), statement, payments (online in a Custom Tab), return requests | M |
+| 11b.8 | Notifications: the centre, push (permission, tap to the screen, refresh while open), links that open the app; account: language, message preferences, "Privacy and data", "Suggest a better word", switch distributor, sign out. The exact Firebase steps for the owner, then a real push on the emulator | M |
+| 11b.9 | Offline: saved data within the limits, the offline cart, offline messages; the required-update screen; a budget-phone pass (memory, start time, long lists) | M |
+| 11b.10 | Checks: Maestro flows in English, Hindi and Marathi on a small and a large phone and the 2 GB profile; the emulator job in CI; the app's texts in the translation sheet and the language checks | M |
+| 11b.11 | Release: a signed app bundle (Play App Signing; the upload key stored and backed up as documented), the size report, `docs/PLAY_STORE.md` (listing, Data safety draft, release steps, key reset), an upload to internal testing if the organisation account is ready, otherwise stop at the signed build — **final review** | M |
 
 ### Backlog (not scheduled)
 Requested features with no phase yet. Each needs a spec and an ADR before it is scheduled.
@@ -1787,6 +1790,9 @@ Requested features with no phase yet. Each needs a spec and an ADR before it is 
 | Returns to suppliers | Goods sent back to a supplier with a document (debit note); until then a stock adjustment. |
 | Freight and landed cost | Freight and other charges spread over a goods receipt's cost. |
 | Purchase orders on WhatsApp | Sending purchase orders from the platform WhatsApp number; 9a emails them and gives a share link (ADR-053). |
+| Staff mode in the Android app | **After launch** (owner, 2026-10-03; ADR-061). Salespeople ordering for shops and collecting payments, warehouse receiving with the phone camera, push for new orders. Until then staff use the web panel on phones (checked at 360 px). First decide the **offline-ordering rules**: an order taken without signal can't be priced or stock-checked by the server, so may staff queue orders offline, what does the shop see meanwhile, and what happens when prices or stock have changed by the time it's sent? Builds on 11b's client, push channel and app sign-in. |
+| Web push for the shop web app | So shops on the web, including iPhone users with the web app on their home screen, also get notifications while it's closed (owner, 2026-10-03). Reuses 11b's push channel and `DeviceToken` (platform WEB). |
+| Several distributors at once in the app | Staying signed in to several distributors at once, with push from all of them (owner, 2026-10-03; 11b signs in to one at a time, with "Switch distributor"). |
 
 ---
 
@@ -2205,6 +2211,36 @@ No CA is engaged until all features are built (product owner, 2026-09-30): work 
 | 7 | **Translation review:** who reviews, and does anything ship before review? | The owner arranges a native Hindi and a native Marathi reviewer (pre-production item 42); until then the languages can be switched on, labelled "Beta" in the language switcher. |
 
 **Owner's answers (2026-10-02):** 1 as recommended (keep CA question 48). 2 as recommended, through one shared formatter. 3 as recommended, and distributors edit the Hindi and Marathi versions in the same editor; only languages they haven't edited fall back to the standard text. 4 as recommended; the Hindi and Marathi welcome SMS fit one 70-character part. 5 as recommended. 6 as recommended (per-distributor lists to the backlog). 7 **changed:** no "Beta" label; the super admin enables or disables each language for the platform (a platform setting); until the review (item 42) Hindi and Marathi stay disabled for real users and enabled only for testing; enabling later needs no code. Additions: Devanagari fonts load only when the person's language needs them; a "Suggest a better word" link for staff and shops sends the screen, the current text and the suggestion to the super admin.
+
+### 10.2q Phase 11b questions (2026-10-03, ADR-061) — for the owner's answers before building
+The scope and six decisions were approved on 2026-10-03 (ADR-061 context). These are the open points.
+
+| # | Question | Recommendation |
+|---|---|---|
+| 1 | **Push in the distributor's rules:** a column of its own on the rules screen, or always the same as in-app? | **A column of its own ("App notification"), on by default wherever in-app is on** for shop recipients. A distributor can then keep, say, announcements in the app without a buzz. The shop can switch push off per event in its message preferences, except for compulsory events. |
+| 2 | **Amounts on the lock screen:** when exactly may a push carry amounts? | **Only when the same message is actually going to that shop by SMS or WhatsApp too:** the rule sends it, and the shop can receive it there (consent given, not switched off). Otherwise the push has an amount-free title and "Open the app to see the details". |
+| 3 | **The delivery code in a push:** on the lock screen or not? | **Not on the lock screen.** The push says the order is on its way, and the code shows on the order screen after a tap. Whoever holds the phone can't read it off the lock screen, and the code still reaches the shop in the app and by email, as today. |
+| 4 | **Online payments in the app:** how does the shop pay? | **The existing web checkout in a Chrome Custom Tab**, signed in with a one-time code, then back to the app, which shows the status the server has (from verified webhooks). There's no payment SDK in the app, so card and UPI details never pass through it, and UPI apps open from the tab as they do from the browser (checked on the emulator in Razorpay test mode). The alternative, Razorpay's Android SDK, adds a native dependency and a second checkout to maintain. |
+| 5 | **Limits for budget phones:** what targets? | **A download of at most 20 MB on a typical phone (arm64)**, reported at the checkpoint and the final review. **Saved data at most 10 MB and saved photos at most 50 MB**, least recently used out first. |
+| 6 | **The app's name and icon** on the phone and the Play Store (shown before sign-in, instead of a distributor's brand)? | A placeholder ("Shop", with the web app's icon) during development; the final name and icon before the first upload (pre-production item 47). If the platform's name is decided, it goes in now. |
+| 7 | **Release signing in CI:** should GitHub Actions hold the upload key? | **No.** The uploadable bundle is signed only on this Mac. CI builds and tests release builds signed with a throwaway key that Google would refuse. The upload key never leaves this Mac and its two backups. |
+| 8 | **Shops with several distributors:** one at a time, or all signed in together? | **One at a time.** "Switch distributor" in Account asks for a new code and signs in to the other one; push comes from the signed-in distributor only. Several at once (a distributor picker everywhere, push from all) can come later if shops ask. |
+| 9 | **The oldest Android version supported?** | **Android 7 and up** (Expo SDK 57's minimum), tested on Android 11 (the 2 GB budget profile) and Android 16. Raising the minimum later is easy; going below Expo's minimum isn't possible. |
+
+**Owner's answers (2026-10-03, plan approved):**
+1. As recommended.
+2. As recommended.
+3. As recommended: never on the lock screen.
+4. As recommended, with conditions:
+   - a Chrome Custom Tab, never an embedded web view, so UPI apps (PhonePe, Google Pay, Paytm) can open from it and return;
+   - the handoff code is single use and expires within a minute;
+   - back in the app, the payment's status comes from the server, never from what the tab reported;
+   - the UPI handoff and return join the owner's real-phone checks at the final review.
+5. A download of 20 MB is the target and **30 MB the hard limit**. The actual size is reported at each checkpoint, and anything cut to meet it is agreed first. The phone's system fonts for Devanagari, no bundled fonts. Saved data 10 MB and photos 50 MB.
+6. "Shop" with the web app's icon as the placeholder; the final name is a pre-production item together with the application ID.
+7. As recommended: the upload key only on this Mac.
+8. One at a time for this release. Staying signed in to several distributors at once, with push from all of them, goes to the backlog.
+9. As recommended: Android 7 and up, tested on Android 11 and 16.
 
 ### 10.3 Pending from the product owner
 - A CA's review of `docs/CA_REVIEW.md` (ADR-009 tax engine and rounding, and every later tax question, incl. the GST summary and the Tally design) — **before launch**. No CA is engaged until all features are built; work continues with the current defaults meanwhile.

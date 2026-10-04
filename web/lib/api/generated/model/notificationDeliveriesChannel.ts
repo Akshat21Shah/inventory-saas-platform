@@ -12,6 +12,7 @@ export type NotificationDeliveriesChannel = typeof NotificationDeliveriesChannel
 export const NotificationDeliveriesChannel = {
   EMAIL: 'EMAIL',
   IN_APP: 'IN_APP',
+  PUSH: 'PUSH',
   SMS: 'SMS',
   WHATSAPP: 'WHATSAPP',
 } as const;

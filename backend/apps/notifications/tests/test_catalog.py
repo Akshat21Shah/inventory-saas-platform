@@ -37,7 +37,9 @@ def test_every_rule_names_a_real_event_recipient_channel_and_permission():
             assert rule.permission == "", rule
         assert _audience(rule.recipient) in EVENTS[rule.event].audiences, rule
         for channel in rule.channels:  # a text in the recipient's words
-            assert channel in DEFAULT_TEXTS[rule.event][_audience(rule.recipient)], rule
+            # The app notification uses the in-app words (ADR-061 item 7).
+            needs = "IN_APP" if channel == "PUSH" else channel
+            assert needs in DEFAULT_TEXTS[rule.event][_audience(rule.recipient)], rule
 
 
 def test_every_event_has_texts_in_the_words_of_everyone_it_can_reach():

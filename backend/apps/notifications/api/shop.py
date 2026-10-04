@@ -6,15 +6,15 @@ from uuid import UUID
 
 from django.db.models import QuerySet
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import generics
+from rest_framework import generics, serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.notifications import announcements, consent, preferences, selectors
+from apps.notifications import announcements, consent, devices, preferences, selectors
 from apps.notifications.api import serializers as s
 from apps.notifications.api.views import Newest, _user, consent_state
-from apps.notifications.models import Notification
+from apps.notifications.models import DeviceToken, Notification
 from apps.retailers.models import Retailer
 from apps.shop.api.views import _retailer
 from common.errors import NotFound
@@ -177,3 +177,55 @@ class ShopAnnouncementsView(APIView):
         _retailer(request)
         rows = announcements.showing().order_by("-starts_at")[:10]
         return Response(s.ShopAnnouncementSerializer(rows, many=True).data)
+
+
+class DeviceInputSerializer(serializers.Serializer[Any]):
+    token = serializers.CharField(max_length=512)
+    platform = serializers.ChoiceField(choices=DeviceToken.Platform.choices, default="ANDROID")
+    app_version = serializers.RegexField(r"^\d{1,3}\.\d{1,3}\.\d{1,3}$", required=False, default="")
+
+
+class DeviceRemoveSerializer(serializers.Serializer[Any]):
+    token = serializers.CharField(max_length=512)
+
+
+class ShopDeviceView(APIView):
+    """The app registers its push token after sign-in and whenever it changes (ADR-061 item 7)."""
+
+    permission_classes = [IsRetailer]
+
+    @extend_schema(
+        operation_id="shop_device_register",
+        tags=TAGS,
+        request=DeviceInputSerializer,
+        responses={204: None},
+    )
+    def post(self, request: Request) -> Response:
+        data = DeviceInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        _retailer(request)
+        devices.register_device(
+            _user(request),
+            data.validated_data["token"],
+            data.validated_data["platform"],
+            data.validated_data["app_version"],
+        )
+        return Response(status=204)
+
+
+class ShopDeviceRemoveView(APIView):
+    """Signing out or switching distributor: no more pushes to this phone for this login."""
+
+    permission_classes = [IsRetailer]
+
+    @extend_schema(
+        operation_id="shop_device_remove",
+        tags=TAGS,
+        request=DeviceRemoveSerializer,
+        responses={204: None},
+    )
+    def post(self, request: Request) -> Response:
+        data = DeviceRemoveSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        devices.remove_device(_user(request), data.validated_data["token"])
+        return Response(status=204)

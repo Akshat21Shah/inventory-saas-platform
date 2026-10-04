@@ -1,7 +1,8 @@
 """Which messages a person gets on which channel (ADR-048 item 7). Everything a rule sends is on
 by default; a person can switch a channel off, except in-app (never) and, for a shop, the
 channels of compulsory events (bills, credit notes, bounced cheques, payment reminders,
-welcome). WhatsApp additionally needs the shop's consent (``consent``)."""
+welcome). WhatsApp additionally needs the shop's consent (``consent``). The app notification is
+listed only for a shop login with the app on a phone (ADR-061 item 7)."""
 
 from typing import Any
 
@@ -9,7 +10,7 @@ from django.utils.translation import gettext
 
 from apps.accounts.models import User
 from apps.notifications.catalog import EVENTS
-from apps.notifications.models import Channel, NotificationPreference, Recipient
+from apps.notifications.models import Channel, DeviceToken, NotificationPreference, Recipient
 from apps.notifications.rules import EffectiveRule, available, effective_rules
 from apps.retailers.models import Retailer
 from common.errors import InvalidFields, NotFound
@@ -50,6 +51,7 @@ def settings_for(user: User, *, shop: bool) -> list[dict[str, Any]]:
             "event_code", "channel"
         )
     )
+    has_app = shop and DeviceToken.objects.filter(user=user, is_active=True).exists()
     rows = []
     for code, entry in _events_for(user, shop).items():
         event = EVENTS[code]
@@ -62,7 +64,7 @@ def settings_for(user: User, *, shop: bool) -> list[dict[str, Any]]:
                 "locked": channel == Channel.IN_APP or entry["compulsory"],
             }
             for channel in Channel.values
-            if channel in entry["channels"]
+            if channel in entry["channels"] and (channel != Channel.PUSH or has_app)
         ]
         rows.append(
             {

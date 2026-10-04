@@ -6,6 +6,8 @@ checks their copy (placeholders, plural forms, SMS and WhatsApp lengths) and, wi
 writes it back into the files, which are then committed:
 
 - screens: ``web/messages/<code>.json`` (keys ``screen:<dotted key>``);
+- the Android app's own texts: ``mobile/messages/app/<code>.json`` (keys ``app:<dotted key>``;
+  the app shows the screens' texts too, ADR-061);
 - server messages: ``locale/<code>/LC_MESSAGES/django.po`` and its compiled ``.mo``
   (``server:<English>``, ``server:<context>|<English>``; a plural's forms ``…#0``, ``…#1``);
 - notification texts: ``apps/notifications/catalog_texts/<code>.json``
@@ -109,8 +111,13 @@ def _flat(tree: dict[str, Any], prefix: str = "") -> dict[str, str]:
     return out
 
 
-def screen_file(code: str) -> Path:
-    return Path(settings.WEB_MESSAGES_DIR) / f"{code}.json"
+# Texts kept as JSON message files, by key prefix: where they are and what the sheet calls them.
+JSON_TEXTS = {"screen": "Screen", "app": "Android app"}
+
+
+def message_file(kind: str, code: str) -> Path:
+    folder = settings.WEB_MESSAGES_DIR if kind == "screen" else settings.APP_MESSAGES_DIR
+    return Path(folder) / f"{code}.json"
 
 
 def _server_tokens(english: str) -> list[str]:
@@ -134,18 +141,20 @@ def _screen_note(english: str) -> str:
     return " ".join(p for p in parts if p)
 
 
-def _screen_rows(codes: list[str]) -> list[Row]:
-    if not screen_file("en").exists():
+def _json_rows(kind: str, codes: list[str]) -> list[Row]:
+    if not message_file(kind, "en").exists():
         return []
-    english = _flat(_read_json(screen_file("en")))
+    english = _flat(_read_json(message_file(kind, "en")))
     own = {
-        code: _flat(_read_json(screen_file(code))) if screen_file(code).exists() else {}
+        code: _flat(_read_json(message_file(kind, code)))
+        if message_file(kind, code).exists()
+        else {}
         for code in codes
     }
     return [
         Row(
-            f"screen:{key}",
-            "Screen",
+            f"{kind}:{key}",
+            JSON_TEXTS[kind],
             text,
             {c: own[c].get(key, "") for c in codes},
             _screen_note(text),
@@ -238,9 +247,10 @@ def _notification_rows(codes: list[str]) -> list[Row]:
 
 
 def rows() -> list[Row]:
-    """Every text: screens, server messages, notifications."""
+    """Every text: screens, the Android app's own, server messages, notifications."""
     codes = [lang.code for lang in translated()]
-    return _screen_rows(codes) + _server_rows(codes) + _notification_rows(codes)
+    screens = _json_rows("screen", codes) + _json_rows("app", codes)
+    return screens + _server_rows(codes) + _notification_rows(codes)
 
 
 @dataclass(frozen=True)
@@ -464,7 +474,7 @@ def _check_notification(row: Row, text: str, before: str) -> tuple[list[str], li
 
 def check_text(row: Row, text: str, before: str) -> tuple[list[str], list[str]]:
     """What is wrong with ``text`` as ``row``'s translation (errors, warnings)."""
-    if row.kind == "screen":
+    if row.kind in JSON_TEXTS:
         return _check_screen(row.english, text), []
     if row.kind == "server":
         if placeholders(text) != placeholders(row.english):
@@ -542,10 +552,10 @@ def _set_path(tree: dict[str, Any], dotted: str, value: str) -> None:
     tree[parts[-1]] = value
 
 
-def _apply_screens(changes: list[Change]) -> list[Path]:
+def _apply_json(kind: str, changes: list[Change]) -> list[Path]:
     written = []
     for code in sorted({c.code for c in changes}):
-        path = screen_file(code)
+        path = message_file(kind, code)
         data = _read_json(path)
         for change in (c for c in changes if c.code == code):
             _set_path(data, change.key.split(":", 1)[1], change.after)
@@ -658,7 +668,7 @@ def apply(outcome: Outcome) -> list[Path]:
     by_kind: dict[str, list[Change]] = defaultdict(list)
     for change in outcome.changes:
         by_kind[change.key.split(":", 1)[0]].append(change)
-    written = _apply_screens(by_kind["screen"])
+    written = _apply_json("screen", by_kind["screen"]) + _apply_json("app", by_kind["app"])
     written += _apply_server(by_kind["server"])
     written += _apply_notifications(by_kind["notification"])
     written += _apply_marks(outcome)

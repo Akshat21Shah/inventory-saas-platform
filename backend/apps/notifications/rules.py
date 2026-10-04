@@ -167,7 +167,8 @@ def _check(
                         {"channel": channel},
                     )
                 )
-            elif channel not in texts:
+            elif channel not in texts and not (channel == Channel.PUSH and Channel.IN_APP in texts):
+                # The app notification uses the in-app words (ADR-061 item 7).
                 errors.append(
                     fill(
                         gettext("There is no %(channel)s text for this message yet."),

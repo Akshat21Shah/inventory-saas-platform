@@ -154,16 +154,20 @@ make e2e-responsive [LANGUAGE=hi|mr] # every screen at 360/768/1440 px + screens
 make lint        # ruff, ruff format --check, mypy, eslint, tsc, prettier --check
 make secrets-scan # gitleaks over the whole git history, every branch (the pre-commit hook checks each commit)
 make fmt         # auto-format backend + frontend
-make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated
+make api-client  # export backend/openapi.yaml and regenerate web/lib/api/generated and mobile/lib/api/generated
 make check-schema # fail if backend/openapi.yaml is stale
 make messages    # update + compile the server message catalogs (backend/locale/<code>); the tests fail on a stale or untranslated one
-make texts-export # every screen, server and notification text in one sheet (texts.xlsx) for a native reviewer; the super admin downloads the same
+make texts-export # every screen (web and Android app), server and notification text in one sheet (texts.xlsx) for a native reviewer; the super admin downloads the same
 make texts-import SHEET=reviewed.xlsx [APPLY=1] # check a reviewer's sheet (placeholders, plurals, SMS/WhatsApp lengths); APPLY writes the files + review marks
 make seed        # demo data: super admin (+ dev 2FA key), 2 tenants, staff per role, 20 shops, 200 products with photos, price lists, discounts, stock, 11 orders, invoices, payments, a credit note and a refund each
 make seed-volume # speed-check data: 3 test distributors (vol-a/b/c) with 40,000 / 5,000 / 5,000 orders over a year, reconciled (a few minutes; owner@vol-a.example.com …)
 make perf        # dashboard + every report's first page over the last whole month against p95 < 300 ms (after make seed-volume)
 make perf-exports # the heaviest background exports (full-year sales register, GSTR-1 quarter, 92-day stock movements): time and memory growth
 make lan         # open the dev stack to phones on your Wi-Fi: http://{slug}.<lan-ip-with-dashes>.nip.io:3000
+make mobile-check  # the Android shop app (mobile/): lint, types, unit tests, files synced from web/ up to date
+make mobile-sync   # copy the shared modules, the shop's texts and the design tokens from web/ into mobile/
+make mobile-android # development build on the running emulator or a USB phone (needs make lan); then cd mobile && npx expo start
+make mobile-apk    # an installable release APK for a phone on this Wi-Fi (needs make lan; debug-signed, never uploadable)
 make localhost   # back to *.localhost (run before the E2E suites)
 make webhook-tunnel # dev only: public https address for payment webhooks only (Razorpay test mode)
 ```

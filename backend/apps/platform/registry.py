@@ -40,6 +40,7 @@ class Group(StrEnum):
     PURCHASING = "purchasing"
     AI = "ai"  # ADR-058: platform-wide AI limits
     LANGUAGES = "languages"  # ADR-060: which languages people may choose
+    APP = "app"  # ADR-061: the Android app
 
 
 class SettingType(StrEnum):
@@ -492,6 +493,19 @@ _DEFINITIONS: tuple[SettingDef, ...] = (
               "Distributors (by web address name, separated by commas) whose staff and shops "
               "may use every language, to test languages that aren't enabled yet.",
               pattern=r"([a-z0-9-]+(,[a-z0-9-]+)*)?"),
+    # ADR-061 item 6: the Android app's versions and its "Privacy and data" page.
+    _platform("platform.app_min_version", Group.APP, SettingType.STRING, "0.0.0",
+              "The oldest Android app version that may still be used, for example \"1.2.0\". "
+              "Older versions are asked to update before they can do anything.",
+              pattern=r"\d{1,3}\.\d{1,3}\.\d{1,3}"),
+    _platform("platform.app_latest_version", Group.APP, SettingType.STRING, "",
+              "The newest Android app version in the Play Store, for example \"1.3.0\". Older "
+              "versions are invited to update; empty: no invitation.",
+              pattern=r"(\d{1,3}\.\d{1,3}\.\d{1,3})?"),
+    _platform("platform.privacy_policy_url", Group.APP, SettingType.STRING, "",
+              "Web address of the privacy policy, linked from the app's \"Privacy and data\" "
+              "page (and the Play Store listing).",
+              pattern=r"(https://[^\s]+)?"),
     _platform("platform.hsn_rate_hints_enabled", Group.TAX, SettingType.BOOL, True,
               "Suggest GST rates from the HSN hint table on product forms and imports."),
     _platform("platform.default_invoice_prefix", Group.INVOICING, SettingType.STRING, "INV",

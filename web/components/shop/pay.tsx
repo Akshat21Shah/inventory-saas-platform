@@ -159,15 +159,27 @@ type Options = {
 } & Omit<RazorpayOptions, "handler" | "modal">;
 
 /** Opens the gateway: the test gateway's page in dev, Razorpay's checkout otherwise. What the
- * page sees is only noted; the payment counts once the gateway's signed webhook confirms it. */
-function PayNow({ checkout, onOutcome }: { checkout: Checkout; onOutcome: () => void }) {
+ * page sees is only noted (`noteOutcome`: the shop's own session, or the app's browser payment
+ * page); the payment counts once the gateway's signed webhook confirms it. */
+export function PayNow({
+  checkout,
+  onOutcome,
+  noteOutcome = (outcome) => shopCheckoutOutcome(checkout.id, { outcome }),
+  returnTo,
+}: {
+  checkout: Checkout;
+  onOutcome: () => void;
+  noteOutcome?: (outcome: CheckoutOutcomeOutcomeEnum) => Promise<unknown>;
+  /** Where the test gateway's page links back to: "pay" for the app's browser payment page. */
+  returnTo?: "pay";
+}) {
   const t = useTranslations("shop.pay");
   const [busy, setBusy] = useState(false);
   const options = (checkout.checkout ?? {}) as Options;
 
   async function note(outcome: CheckoutOutcomeOutcomeEnum) {
     try {
-      await shopCheckoutOutcome(checkout.id, { outcome });
+      await noteOutcome(outcome);
     } finally {
       onOutcome();
     }
@@ -175,7 +187,9 @@ function PayNow({ checkout, onOutcome }: { checkout: Checkout; onOutcome: () => 
 
   async function open() {
     if (options.checkout_url) {
-      window.location.assign(options.checkout_url);
+      window.location.assign(
+        returnTo ? `${options.checkout_url}?back=${returnTo}` : options.checkout_url,
+      );
       return;
     }
     setBusy(true);

@@ -11,6 +11,11 @@ outbox).
 In-app rows are delivered when created; the person's open sessions are told to refresh their
 bell (``push_in_app``).
 
+An app notification (``PUSH``, ADR-061 item 7) is one row per person, sent to each of their
+phones with the app: it is sent when any phone took it, and tried again when none did because the
+service was busy. A phone the service no longer knows (app removed) is switched off; when that
+leaves none, the row fails at once.
+
 A shop's or supplier's email about a document also carries its PDF (ADR-054), besides the secure
 link: while the PDF is still being printed the email waits (``PDF_RECHECK`` at a time, at most
 ``PDF_WAIT``, not counted as a try); a PDF that failed, is still not ready, can't be read or is
@@ -28,7 +33,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.notifications.adapters.base import DeliveryError, PermanentDeliveryError, SendResult
-from apps.notifications.models import Channel, DeliveryAttempt, Notification
+from apps.notifications.models import Channel, DeliveryAttempt, DeviceToken, Notification
 from common.tenancy import require_tenant_id, tenant_transaction
 
 if TYPE_CHECKING:
@@ -124,6 +129,7 @@ class Claimed:
     reply_to: str
     whatsapp: "SenderIdentity | None"
     pdf: "Pdf | None" = None
+    devices: tuple[str, ...] = ()  # app notifications: the person's phones
 
 
 def _pdf_for(row: Notification) -> "Pdf | None":
@@ -182,7 +188,14 @@ def _claim(notification_id: UUID) -> Claimed | None:
         tenant = current_tenant()
         sender = tenant_sender() if row.channel == Channel.WHATSAPP else None
         name = sms_distributor_name(tenant) if row.channel == Channel.SMS else None
-        return Claimed(row, name or distributor_name(tenant), tenant.email, sender, pdf)
+        devices: tuple[str, ...] = ()
+        if row.channel == Channel.PUSH and row.recipient_id is not None:
+            devices = tuple(
+                DeviceToken.objects.filter(user_id=row.recipient_id, is_active=True)
+                .order_by("-last_seen_at")
+                .values_list("token", flat=True)
+            )
+        return Claimed(row, name or distributor_name(tenant), tenant.email, sender, pdf, devices)
 
 
 def _send(claimed: Claimed) -> SendResult:
@@ -216,7 +229,53 @@ def _send(claimed: Claimed) -> SendResult:
         template = row.event_code.replace(".", "_")  # its DLT template, e.g. retailer_welcome
         get_sms_sender().send_text(row.address, row.body, sender_name=name, template=template)
         return SendResult(f"sms-{settings.SMS_PROVIDER}")
+    if row.channel == Channel.PUSH:
+        return _send_push(claimed)
     raise PermanentDeliveryError(f"nothing sends {row.channel}")
+
+
+def _send_push(claimed: Claimed) -> SendResult:
+    """To each of the person's phones; the screen to open and the in-app message ride along."""
+    from apps.notifications.adapters.push import (
+        PushMessage,
+        UnregisteredDevice,
+        android_channel,
+        get_push_sender,
+    )
+    from apps.notifications.catalog import EVENTS
+
+    row = claimed.row
+    sender = get_push_sender()
+    data = {
+        "path": str(row.data.get("path") or ""),
+        "notification": str(row.data.get("in_app_id") or ""),
+        "tenant": str(row.data.get("tenant") or ""),
+        "event": row.event_code,
+    }
+    event = EVENTS.get(row.event_code)
+    channel = android_channel(event.group if event else "")
+    sent: list[SendResult] = []
+    gone: list[str] = []
+    errors: list[str] = []
+    for token in claimed.devices:
+        try:
+            message = PushMessage(token, row.title, row.body, data, row.urgent, channel)
+            sent.append(sender.send(message))
+        except UnregisteredDevice:
+            gone.append(token)
+        except DeliveryError as exc:
+            errors.append(str(exc) or type(exc).__name__)
+    if gone:
+        with tenant_transaction(require_tenant_id()):
+            DeviceToken.objects.filter(token__in=gone).update(
+                is_active=False, updated_at=timezone.now()
+            )
+    summary = {"devices": len(claimed.devices), "sent": len(sent), "removed": len(gone)}
+    if sent:
+        return SendResult(sent[0].provider, sent[0].message_id, summary)
+    if errors:
+        raise DeliveryError(errors[0])
+    raise PermanentDeliveryError("no phone with the app")
 
 
 def _attachments(pdf: "Pdf | None") -> tuple[tuple["Attachment", ...], dict[str, str]]:

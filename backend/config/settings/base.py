@@ -74,6 +74,7 @@ MIDDLEWARE = [
     "apps.accounts.middleware.ImpersonationAuditMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # Accept-Language → the request's language
+    "apps.platform.app_client.AppVersionMiddleware",  # too-old Android apps (ADR-061)
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -153,6 +154,10 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 # The screens' texts (web/messages), for the translation sheet: the repository's copy, or the one
 # the image carries (infra/backend.Dockerfile copies it to /web_messages).
 WEB_MESSAGES_DIR = Path(env("WEB_MESSAGES_DIR", default=str(REPO_DIR / "web" / "messages")))
+# The Android app's own texts (mobile/messages/app), in the same translation sheet (ADR-061).
+APP_MESSAGES_DIR = Path(
+    env("APP_MESSAGES_DIR", default=str(REPO_DIR / "mobile" / "messages" / "app"))
+)
 TIME_ZONE = "UTC"
 DISPLAY_TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
@@ -260,6 +265,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "ENUM_NAME_OVERRIDES": {
         "TextSuggestionStatusEnum": "apps.platform.models.TextSuggestion.Status",
+        "SignInClientEnum": "apps.accounts.api.serializers.SIGN_IN_CLIENTS",
         "TenantStatusEnum": "apps.platform.models.Tenant.Status",
         "AiFeatureEnum": "apps.ai.models.AiUsage.Feature",
         "AssistantStatusEnum": "apps.ai.models.AssistantQuestion.Status",
@@ -407,6 +413,14 @@ SES_REGION = env("SES_REGION", default="ap-south-1")
 SES_CONFIGURATION_SET = env("SES_CONFIGURATION_SET", default="")
 # WhatsApp: only "mock" until a provider is chosen (TODO(verify), PROGRESS pre-production 8).
 WHATSAPP_PROVIDER = env("WHATSAPP_PROVIDER", default="mock")
+# Push to the Android shop app (ADR-061 item 7): "mock" (dev and test) or "fcm", which needs the
+# Firebase service account's key as JSON from the secrets manager (pre-production item 49).
+PUSH_PROVIDER = env("PUSH_PROVIDER", default="mock")
+FCM_SERVICE_ACCOUNT_JSON = env("FCM_SERVICE_ACCOUNT_JSON", default="")
+# The Android app's URL scheme (mobile/app-identity.js URL_SCHEME): the browser payment page sends
+# the shop back to the app with it (ADR-061 item 9). The final one comes with the final ID
+# (pre-production item 45).
+ANDROID_APP_SCHEME = env("ANDROID_APP_SCHEME", default="shopapp")
 # Online payments (ADR-049 item 9): live gateway keys only where this is on (production).
 PAYMENTS_ALLOW_LIVE = env.bool("PAYMENTS_ALLOW_LIVE", default=False)
 # The platform's GST provider for e-invoices and e-way bills (ADR-049 item 4); each distributor

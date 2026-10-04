@@ -32,6 +32,7 @@
     - Playwright: 4 tests (desktop + 360px).
     - pre-commit; GitHub Actions CI (backend, frontend, e2e, image builds).
 - 2026-09-30 — Phase 7 merged to `main` (PR #8), after a live check with Razorpay test keys (keys, checkout, success and failure, webhooks, reconciliation).
+- 2026-10-03 — Phase 11a merged to `main` (PR #18).
 
 ## Phase 0 acceptance
 - `make up` runs everything: all services up; backend healthy; worker online; beat dispatching the outbox sweeper.
@@ -263,7 +264,7 @@
   17. Final review — **approved (2026-09-28)**: the product owner's manual test passed on a laptop and a phone (the full list: dashboard, invoices and PDFs, credit notes, payments, cheques, allocations, collections and handover, refunds, receivables and ageing, statements, old bills, overdue blocking, advances off, invoicing at acceptance, number prefixes, GST lock, sales collections, the shop's bills, statement and payments), plus CGST/SGST and inter-state IGST checked by hand, the ledger balance against invoices, payments, credit notes and refunds, invoice immutability, gapless numbering for every series and the GST identity lock. Old bills confirmed as several per shop.
   18. Refund reversal (final review request) — **done**: `refunds/{id}/reverse` (`payments.record`, reason required, audited `payments.refund_reversed`): the money the refund used is back in the shop's credit and pays what it owes, oldest first; a REFUND_REVERSAL credit points at the original entry; status "Reversed"; the voucher is printed again marked "Reversed" (outbox `refund.reversed`). "Reverse (error)" on the refund page; statements show "Refund reversed". Tests: 4 backend (credit restored exactly and the voucher marked, restored credit paying a later bill, a refund owed again after a bounce cancelled, API roles and isolation), 2 component tests; the reconciliation property test gained a reversal step (about 11% of examples reverse a refund); leaving the refund owed after reversal fails it.
 - **Phase 9 split** (product owner, 2026-10-01; ADR-053, PLAN §8 Phase 9 and §10.2k, SPEC 1.9): 9a global search, stock planning and purchasing; ~~9a+ staging~~ (moved to Phase 10, 2026-10-02, ADR-055); 9b sales growth; 9c shop self-service and money; 9d AI foundation and semantic search; 9e data assistant. Phase 10 also gets the Platform Support role and, with the CA review, the Tally export and GSTR-1 JSON. After launch: multi-warehouse and transfers, batches and expiry, manufacturing, demand forecasting, supplier-bill photo reading, convenience fee, own WhatsApp number and templates, saved filters and scheduled reports. Each sub-phase is its own branch and PR; 9d/9e and free-goods schemes may move after launch. **All of Phase 9 is built (2026-10-02):** 9a merged (PR #10); 9b–9e in stacked PRs #12–#15 for the owner's review, each with its **[assumed]** decisions listed in its ADR (056–059).
-- **Phase 11a — Language support** — **in progress** (branch `phase-11a` from `main` 23683bb, draft PR #18; ADR-060 accepted 2026-10-02 with the owner's answers, PLAN Phase 11a and §10.2p, SPEC 1.15). Backend checkpoint after 11a.9 approved (2026-10-03); **11a.10–11a.12 done, at the final review (2026-10-03), waiting for the owner**. Commits in order:
+- **Phase 11a — Language support** — **merged to `main` (PR #18, 2026-10-03)** (branch `phase-11a` from `main` 23683bb, draft PR #18; ADR-060 accepted 2026-10-02 with the owner's answers, PLAN Phase 11a and §10.2p, SPEC 1.15). Backend checkpoint after 11a.9 approved (2026-10-03); 11a.10–11a.12 done; final review with the owner's two changes (below); merged by the owner on 2026-10-03. Commits in order:
   1. Docs: plan, the owner's answers and additions (language availability setting, fonts only when needed, "Suggest a better word") — **done**
   2. Foundation — **done**: one language list (`backend/common/languages.json`, the web has an identical copy, a test keeps them equal; adding a language there needs no code change); ⚙ `platform.languages_enabled` (default `en`) and ⚙ `platform.language_test_tenants` (the dev seed adds `sharma`) decide who may use which language, super admins always all; ⚙ `retailers.default_language` for shops that haven't chosen (saved-English shops now follow it, migration); `/auth/me/` says the language a person sees and may choose; sign-in pages get the distributor's languages and default; the API answers in the language the web asks for (`Accept-Language`, Django's `LocaleMiddleware`); the web reads the language from the `NEXT_LOCALE` cookie set from the person's profile, uses Latin digits with Indian grouping for every language, and loads the Devanagari font only when a page shows Devanagari (English pages don't download it); a lint rule stops new hard-coded words on screen (the last three fixed). Tests: 9 backend.
   3. Who speaks what — **done** (backend; the switchers on account and sign-in pages are 11a.11): staff, super admins and shop logins save their language on their profile (only languages they may use; a shop login's choice is the shop's); a shop with no language follows ⚙ `retailers.default_language`; the shop page shows the saved language and the one the shop sees; a distributor may save a language ahead of its review (the shop sees English until it is on); the shop editor offers the distributor's languages and "Your usual language for shops"; the import takes a language by code, English or its own name ("मराठी"), blank for the default, and names the choices from the language list. Tests: 1 + 1 import.
@@ -313,6 +314,198 @@
   3. The assistant now says when costs or margins aren't shown to the person, and its fallback offers only topics their reports cover.
   Also: the return-request E2E now uses the shop's newest bill with something left to return (`e2e_ids` `returnable_shop_invoice`); repeated local runs had used up the first bill.
   Notes: Sharma's demo shops are all new or never-ordered (a few weeks of history), so "stopped ordering" and "slowing down" show on the volume distributor vol-a (5 and 165). Sales staff see every shop unless Settings → Orders → "What sales staff can see" is "Only their assigned retailers" (Sharma's default is all); with that set, the assistant answers for their shops only.
+- **Phase 11b — Android shop app** — **in progress** (branch `phase-11b` from `main` ff906e6, draft PR #19; ADR-061 accepted 2026-10-03 with the owner's answers, PLAN Phase 11b and §10.2q, SPEC 1.16). Checkpoint after 11b.6 with an APK for the owner's phone. Scope approved on 2026-10-03: the shop app only, with staff mode after launch; an organisation Play account; builds on this Mac and in GitHub Actions; push through FCM; the cart works offline, but placing an order needs a connection. Commits in order:
+  1. Docs: ADR-061, the plan and its nine questions, SPEC 1.16, pre-production items 45–52, backlog (staff mode with the offline-ordering rules question, web push for the shop web app) — **done**
+     - Android tools on this Mac — **done**:
+       - the Android SDK in `~/Library/Android/sdk` (platform tools, emulator, Android 36, command-line tools; 8.8 GB);
+       - two emulators: `shop-modern` (Android 16, Pixel 7 size, 4 GB) and `shop-budget` (Android 11, 360 × 640 dp, 2 GB RAM);
+       - `shop-budget` boots headless in 23 s.
+  2. The owner's answers (§10.2q) folded into ADR-061, the plan and the backlog — **done**
+  3. Backend for the app (11b.2) — **done**:
+     - **App sign-in:** `client: "app"` on `auth/retailer/otp/verify/` and `auth/retailer/choose-account/` returns the session in the body (access and refresh tokens, no cookie, no browser handoff). The refresh and sign-out endpoints already took the refresh token in the body. Account choices now carry `tenant_slug`, so the app can pick the account a link is for. The web's flow is unchanged.
+     - **Paying in the browser:** `POST auth/app/web-handoff/` (shops only, not in support sessions) returns a shop page's address, signed in by a handoff code in the URL fragment: single use, 60 seconds, for the shop's own distributor. Only `/shop` pages are allowed. The browser session it opens ends after an hour: a session end given to a shop's sliding session is now kept (`issue_tokens`). *Replaced after the checkpoint review (item 7) by a payment-only page; see entry 9.*
+     - **App settings:** `GET app/config/` (public) with ⚙ `platform.app_min_version` (default 0.0.0), ⚙ `platform.app_latest_version` and ⚙ `platform.privacy_policy_url`, in a new "Android app" group on the super admin's settings page. `AppVersionMiddleware`: a request carrying `X-App-Version` below the minimum (or unreadable) gets `426 APP_UPDATE_REQUIRED` in the app's language. The settings endpoint is always answered, and the web never sends the header.
+     - **The distributor's contact:** `GET shop/distributor/` (name, phone, email, as printed on bills) for the app's "Privacy and data" page.
+     - **App Links:** `/.well-known/assetlinks.json` on every host, from `ANDROID_APP_ID` and `ANDROID_APP_CERT_SHA256` (`.env.example`); 404 until configured.
+     - **Translations:** the error, the new server messages and the settings' labels in English, Hindi and Marathi.
+     - **Tests:** 21 backend tests:
+       - the app's session with one or several distributors, the token rotating;
+       - the web still getting a handoff;
+       - the web handoff: single use, expired after a minute, refused on another distributor's address, shop pages only, staff refused, the browser session's one-hour end surviving a refresh;
+       - the version check (below, at and above the minimum, unreadable, no header, the settings always answered, the message in Hindi);
+       - the distributor contact for each tenant's shop.
+
+       Plus 2 web tests for the App Links statement. The full backend suite passes (1,916), as do the web's 368 tests.
+  4. Push channel (11b.3) — **done**:
+     - **Phones:** `DeviceToken` (RLS; unique per tenant, notifications migration 0018). `POST shop/devices/` registers or refreshes a phone; `POST shop/devices/remove/` removes it on sign-out (shops only).
+     - **The channel:**
+       - `Channel.PUSH` ("App notification") for shops;
+       - on in every default shop rule that has in-app (28 rules). The migration adds it to distributors' own shop rules that have in-app, and the rules screen accepts it for shops only;
+       - a push row only for a login with an active phone, and none otherwise;
+       - preferences (the switch shows once the login has the app), compulsory events, quiet hours (non-urgent events wait), the shop's language;
+       - bills held for their IRN wait like WhatsApp.
+     - **What it says** (`apps/notifications/push.py`): the in-app words.
+       - The delivery code is never in them.
+       - Amounts are left out unless the same message is actually going to that shop by SMS or WhatsApp. Then a title with an amount becomes an amount-free one ("New bill INV/26-27/000001", "Payment received", …; else "New message from {distributor}"), and a body with an amount becomes "Open the app to see the details."
+       - A test fails when a shop message gains another code variable.
+       - The texts are in Hindi and Marathi.
+     - **Sending:** one row per person, to each of their phones, carrying the screen to open, the in-app message's id, the distributor and the event.
+       - Sent when any phone took it.
+       - Tried again with backoff when the service was busy.
+       - A phone FCM no longer knows is switched off; when none is left, the row fails at once.
+     - **Adapters:**
+       - `mock` (dev and test; a copy in Mailpit as `[Push mock] …`);
+       - `fcm`: FCM HTTP v1, signing in with the service account (RS256 JWT, cached token), with high or normal priority by urgency and the app's "messages" channel; TODO(verify), pre-production item 49.
+       - Deploy checks: `notifications.E003` (mock deployed), `E004` (fcm without its key).
+     - **Web:** the "App notification" label in three languages and the delivery log's channel filter.
+     - **Tests:** 22 backend tests (`test_push.py`):
+       - registering and removing phones per tenant;
+       - no row without the app;
+       - the words and the data a tap needs, staff never pushed;
+       - a bill's amount hidden, then shown once WhatsApp carries it;
+       - the delivery code left out;
+       - Hindi;
+       - switched off except compulsory;
+       - quiet hours;
+       - the rules;
+       - each phone, a removed app, a busy service;
+       - FCM's answers;
+       - the deploy checks;
+       - the preferences switch.
+
+       Updated: the flags-off baseline (the PUSH channel listed, nothing sent), the catalogue check (push uses the in-app words), the deploy-check list.
+  5. App foundation (11b.4) — **done** (`mobile/`):
+     - **The app:** Expo SDK 57 (React Native 0.86.3, React 19.2.3, Hermes), TypeScript strict, Expo Router with screens at the web's `/shop/...` paths. The native project is generated (`expo prebuild`) and git-ignored.
+     - **Identity:** `app-identity.js` is the one marked setting: ID `com.example.shop` (refused by Play, so it can't be uploaded by mistake) and the name "Shop". `version.json` holds the version and build number.
+     - **The client:** generated by orval from the same `openapi.yaml`, limited to the auth, shop and public endpoints (1.1 MB of source). Its fetcher keeps tokens in secure storage, refreshes once on a 401, and sends `Accept-Language` and `X-App-Version`. A 426 opens the "Update the app" screen.
+     - **Shared with the web** (`npm run sync`, checked in CI): the formatter, number grouping, quantities, Idempotency-Keys, API errors, brand palette, language list and locale helpers; 23 text namespaces (about 53 KB a language); the design tokens, converted from OKLCH to hex. The app's own texts are in `messages/app/` in three languages.
+     - **Branding:** the distributor's colour applied with the web's palette function; its branding cached for offline starts.
+     - **Design primitives:** Text, Button, Input, Card, Badge, Screen; loading, empty and error states; money, quantity and date text through the shared formatter.
+     - **Sentry:** only with a DSN, no personal data, network breadcrumbs dropped.
+     - **Found on the emulator:**
+       - Hermes has no `Intl.PluralRules`: added the FormatJS polyfills (conditional, with only English, Hindi and Marathi data).
+       - React Native measures Devanagari at a numeric weight of 500 or 600 narrower than Android draws it, which cut off the last words ("सब कार्ट में जोड़ें"). Medium and semibold now use Android's medium font family.
+     - **Checks:** `make mobile-check`; the CI jobs `mobile` (lint, types, unit tests, synced files and generated client up to date) and `mobile-build` (a release build for arm64, signed with the build's own key, its size in the run summary); a pre-commit hook for the app's lint and formatting.
+  6. Sign-in, home, catalogue, search, product (11b.5) — **done**:
+     - **Sign-in:** number, code, then the choice of distributor, in the app's session. A link for one distributor chooses it by itself. The language picker shows only languages on for everyone.
+     - **Home:** greeting, announcements, the on-hold notice, search, "Order again" (repeat all), recent orders and categories.
+     - **Catalogue and products:** catalogue and categories with sub-categories and a brand filter; search with a delay while typing; virtualised lists of 30 at a time; the product page (photos, prices as the server gives them, availability, ordering rules, offers, slab prices, the stepper).
+  7. Cart, checkout, orders, delivery (11b.6) — **done**:
+     - **Cart:** taps show at once and are sent in order. The cart shows "now" and "later" lines, problems in the server's words, address and instructions, the server's totals, "Reduce to what's available" and "Clear cart".
+     - **Checkout** (ADR-044 item 6): one Idempotency-Key per attempt, kept in secure storage across restarts. After a dropped connection the app asks the server about the same key before trying again; reopened mid-checkout, it checks the leftover attempt.
+     - **Orders:** open and closed lists; the order with its items' states, cancelling waiting items, deliveries with the delivery code, "I received it", declining a re-priced item, bills and the Order Confirmation (opened as PDFs until 11b.7), order again, cancel, and the timeline.
+     - **Account (first part):** the shop, its distributor, language, sign out, version.
+     - **Tests:** 25 unit and screen tests (sign-in incl. several distributors and a link's distributor; checkout's key kept across a dropped connection, no second order; the fetcher's refresh, 426 and network errors; number grouping in three languages; the app's texts complete).
+     - **On the Android 16 emulator, against the seeded LAN stack:** sign-in as Ganesh Kirana; home; "chawal" finding the basmati rice; adding an in-stock and an out-of-stock product; the cart's now/later split; placing ORD-2026-000053 with its backorder; after staff dispatch (delivery codes on for the test), the code shown; with codes off, "I received it" completing ORD-2026-000055 ("Confirmed by the shop"); the whole flow in Hindi. Delivery codes are back off for Sharma.
+     - **On the Android 11 budget emulator (2 GB RAM, 360 × 640 dp)**, with the release APK: sign-in, the Hindi home with the phone's own Devanagari font, "Order again" into the cart, and ORD-2026-000056 placed. The app started in 150 ms and used 143–164 MB (PSS).
+     - **Found on the budget phone:** screens inside the tabs added the phone's bottom inset that the tab bar already keeps, which left a band above the tabs. Only pages above the tabs add it now.
+  8. **Checkpoint (2026-10-03), waiting for the owner:**
+     - **The APK for the owner's phone:** `make mobile-apk` (needs `make lan`) writes `mobile/android/app/build/outputs/apk/release/app-release.apk`. It's for arm64 phones and reaches the dev stack on the LAN address. It's signed with the development key: installable outside the Play Store, never uploadable.
+     - **Size:** the arm64 APK file is 37.2 MB (closer to the installed size). The estimated download is about 17.7 MB (every part compressed, as Play delivers it): native libraries 7.7 MB, compiled code 6.6 MB, the JavaScript bundle 2.0 MB, resources 0.8 MB, fonts 0.5 MB. Target 20 MB, hard limit 30 MB. Play's exact figure comes from bundletool on the app bundle at 11b.11. Nothing has been cut.
+  9. **Checkpoint review (2026-10-03), fixes** — **done**:
+     - **Search keyboard (item 1):** the cause was the search box being re-created when the first results arrived, which closed the keyboard. Now one box stays on the search page for the whole search. It has a clear (×) button, and the keyboard closes only on Search, a tap outside or scrolling. Home and the catalogue open the search page with the keyboard up. Emulator test: `mobile/e2e/search-keyboard.mjs` types "biscuit" letter by letter. It failed on the old layout and passes now.
+     - **Cart badge (item 2):** the Cart tab shows the number of products and updates on every tap.
+     - **https-only releases (item 8):** `app.config.ts` refuses to build a release for an address that isn't https, and turns off plain http in release builds. This is proven by `app.config.test.ts` and by a CI step that runs the release build's config with an http address and expects it to fail.
+     - **npm audit (item 9):** of the advisories, only `decode-uri-component` (via expo-router) was in the shipped bundle. It's replaced by its fixed 0.5.0 (`mobile/vendor/`), and `scripts/audit-shipped.mjs` in CI fails if any package with an advisory ships. The rest (braces, node-forge, uuid) are build tools only and are left for Phase 10.
+     - **The app matches the web (item 10):** `docs/APP_VS_WEB.md` lists every difference, with which ones were fixed, which were kept and why, and which are still to be built.
+       - The bottom bar stays on every page: each tab has its own stack, and category, search, product and order pages are shared by all five.
+       - Product cards and search results have the same steppers as the web.
+       - Emulator test: `mobile/e2e/three-taps.mjs` (search → Add → Cart → Place order in 3 taps).
+       - Status badges, the product page's order box, the order page's timeline and the page headings (in the page, with the distributor's name in the header) now match the web.
+     - **Hindi and Marathi headings (item 6):**
+       - Compared on both emulators: (a) a larger heading size at regular weight, against (b) one bundled medium Devanagari font. Side-by-side screenshots are in `mobile/dist/item-6/` (git-ignored).
+       - Recommended (b), Noto Sans Devanagari Medium, the web's own font: about 83 KB more in the APK. It's in the build now, waiting for the owner's choice (ADR-061 item 12).
+       - Google's emulator images already have a medium Devanagari, so the regular-weight headings came from the owner's phone's own fonts. The bundled font gives the same result on every phone.
+     - **Clipped Hindi and Marathi labels:**
+       - Short multi-word labels lost their last word: badges, the timeline, "ऑर्डर रद्द करें", "साइन आउट करें", "सभी ब्रांड".
+       - The cause: with a set line height, React Native sizes a label to its measured width, and Android's line breaker can find the words a fraction wider.
+       - Devanagari text now uses its font's own line spacing, and regular text has no numeric weight. Checked on both emulators.
+     - **The quantity box** was stretching across product cards once a product was in the cart, which hid the "Last time" note. It's now the web's 64 wide; in the cart the stepper sits on the right, as on the web.
+     - **Language on start:** a slow read of the saved language could undo the person's language that had just come from the server. A newer choice now wins (unit test).
+     - **Tests:** Jest no longer waits 5 minutes after the tests (the test query cache's timer); 36 unit and screen tests.
+     - **Paying in the browser covers the payment page only (item 7):**
+       - The app's link is for one open checkout: `POST shop/payments/checkout/{id}/browser/` gives `/pay/{id}` with a one-time code, working once within a minute.
+       - The page has no shop menus or session. Its token works only on that checkout's two pay endpoints, on its distributor's address. It ends when the checkout is paid or expires (30 minutes), or when the shop's login stops.
+       - The general web handoff is removed. Details in ADR-061 item 9.
+       - Tests: 7 backend (single use, the minute, never a shop session as `Pay` or `Bearer`, the final read then the end, expiry, a new link ending the old page, another distributor's address, another shop, staff) and 4 web.
+       - The page is in the responsive check through `manage.py e2e_pay_link`, a one-time link per screen width.
+  10. Bills, statement, payments, returns (11b.7) — **in progress**:
+     - **Account** as on the web: what the shop owes (late in red, its credit, what it can still order), Pay online (everything owed, or an amount), the notices about overdue bills, then My bills, Statement, My payments, Returns, Your profile, sign out and the app's version. The shop, its distributor and the language move to Your profile.
+     - **Home** gets the web's "You owe" card.
+     - **My bills:** To pay / Overdue / Paid, with Newer and Older as on the web (the web's `useCursor`, now synced).
+     - **A bill:** what is left to pay and by when, Pay, the PDF, the items with what was returned, Return items, its returns (withdraw while waiting), totals and credit notes. Bills on an order open the bill, as on the web.
+     - **Statement** with Android's date picker; **My payments** with receipts; **Returns** (owner's addition), each opening its bill.
+     - **Paying:** the checkout screen follows the server's status every 3 seconds while open. "Pay now" opens the payment-only page in a Chrome Custom Tab inside the app's task, and the status is read again on return. Screens also refresh when the app comes back to the foreground.
+     - **Documents:** Open (the phone's PDF viewer) and Share (downloads the PDF and opens Android's share sheet).
+     - Native modules added: expo-web-browser, expo-sharing, expo-file-system, @react-native-community/datetimepicker.
+     - Pages inside the tabs no longer add the phone's bottom inset (the order and product pages had it from before they moved into the tabs).
+     - Tests: 6 more (the checkout's Custom Tab and the server's answer, paid with a receipt, expired; starting a checkout with an Idempotency-Key, Pay only when online payments are on, the "You owe" card).
+  11. Notifications and the rest of Account (11b.8) — **in progress**:
+     - **The bell** in every header, with the unread count (every minute, when a message arrives, back in the foreground). **Notifications** as the web's inbox: All / Unread, mark all as read, Newer / Older; opening a message marks it read and goes to its page.
+     - **Push (expo-notifications, FCM direct):**
+       - Three Android channels in the shop's language: Orders and deliveries, Bills and payments, Offers and announcements. The server now sends each message on its kind's channel (`android_channel` by event group).
+       - With the app closed or in the background: the phone's sound and vibration, which follow silent and Do Not Disturb.
+       - With the app open: the same system sound, unless switched off in Messages.
+       - The phone is registered after sign-in (asking for permission once on Android 13 and up) and removed at sign-out. A tapped message opens its page, marked read; a message from another distributor than the one signed in is left alone.
+       - The status-bar icon is a placeholder. Builds without Firebase's `google-services.json` work without push. The Firebase steps went to the owner on 2026-10-04.
+     - **Account, all of the owner's list:**
+       - Messages, as the web: WhatsApp on or off, per event and channel including the app notification, plus the app's sound switch and a shortcut to the phone's settings for each kind.
+       - The WhatsApp question once on home, as the web, in Android's own dialog.
+       - Delivery addresses, Help (call, WhatsApp or email the distributor), Privacy and data (the policy, what the app keeps on the phone, asking the distributor to delete the shop's data), and Shop with another distributor.
+     - **The web's Account gets the same entries,** so both stay alike: Returns (`/shop/returns`), Delivery addresses, Help, Privacy and data. They're in the responsive check, and their texts are shared with the app.
+     - Links from WhatsApp, email or a push open each page in its tab (an order in Orders) through `app/+native-intent.tsx`; a `/shop/login` link opens the app's sign-in or home.
+     - Your profile has the name with Save. "Suggest a better word" sits in Account in Hindi and Marathi and sends the screen the shop was on before. The app's API client now includes the `texts` tag, which holds only that endpoint.
+     - Emulator test `e2e/notifications.mjs`: the bell's count, the inbox, and a tapped message opening its page with the count one lower.
+     - The APK file is 38.4 MB (+0.7 MB for expo-notifications).
+  12. Weak connections and the budget phone (11b.9) — **in progress**:
+     - **Saved for offline use** (`lib/offline/persist.ts`): categories and brands, the catalogue pages and products seen, home, the cart, the last 20 orders and 20 bills, the statement's first page, payments, the account.
+       - At most 10 MB, the least recently fetched go first. Kept a week, in the app's own files, and removed at sign-out. A new app version starts afresh.
+       - Photos: Glide's disk cache at 50 MB instead of its 250 MB, still least recently used first. It's a one-line patch to expo-image (`mobile/patches/`, applied on every `npm ci` by patch-package).
+     - **Starting without a connection** no longer signs the shop out. The saved session carries on with the saved profile, and the server checks it once the phone is back online. Before, a refresh that couldn't reach the server ended the session.
+     - **Saying so:**
+       - "You're offline. Showing what was saved at …" on every screen.
+       - Prices "as last seen".
+       - Actions that need a connection are off and say "Needs internet": Place order, paying, returns, withdrawing a return, "I received it", declining a re-priced item, cancelling, Order again, Add all to cart, the cart's own actions, documents, saving the name.
+       - Requests wait while offline and resume after (NetInfo with TanStack Query's online manager).
+     - **The cart offline:** changes are kept on the phone, across a restart too, and sent in order once the connection is back. A request cut off mid-way is kept, not reported as an error.
+     - **Found on the emulator and fixed:**
+       - After an offline start, back online, every request was refused: the fetcher only renewed a token it already had. It now gets one first from the saved session.
+       - Those refusals had marked the saved queries as failed, and only successful ones were saved, which wiped the saved copy. Saved data is now kept whatever the last fetch did.
+       - A request made as the connection drops could hang until the system gave up, holding the app's start. Requests now have a 20-second limit, and the session doesn't try the server when the phone has no connection at all.
+       - Screens took "waiting for a connection" for an error: a paused query is pending but not loading. Every screen now has three cases: the skeleton while data comes, "Not saved for offline use" when offline with nothing saved, and an error only when there's nothing to show.
+       - Products added offline didn't show in the cart: the cart draws the server's lines. A "Waiting to be sent" section now shows them by their saved name and photo, prices and totals coming back online.
+       - The required-update screen showed only its button. A screen that doesn't scroll now fills the phone, so its content is centred. Checked on the budget phone with the minimum version raised.
+       - The emulator tests' "empty the cart" step looked for "Clear cart"; the button has said "Empty the cart" since Phase 4.
+     - **Budget phone (Android 11, 2 GB):** the screen shows in 124–146 ms (Android's TotalTime, three cold starts). Memory is 142 MB on home and 159 MB after scrolling the catalogue 20 screens (PSS), within the checkpoint's 143–164 MB.
+     - **Size:** the APK file is 38.4 MB.
+     - **Tests:** 13 more: what's saved and its limits, the offline cart, an offline start, renewing the token after one, the needs-internet button.
+     - **Emulator test `e2e/offline.mjs`** (airplane mode), passing alongside the search, three-taps, notifications and pay-online tests on Android 16.
+  13. Checks in three languages (11b.10) — **in progress**:
+     - **The translation sheet** (`make texts-export`, the super admin's download) has the app's own texts: `app:` keys, "Android app" in the Where column, 32 rows. They're checked like the screens' texts (placeholders, plural forms) and written back to `mobile/messages/app/<code>.json`. The backend image and the dev stack carry them as they carry `web/messages`. 6,185 rows in all.
+     - **Language checks:** a Jest check reads the app's code and fails on any key it asks for that isn't in the English texts (a mistyped key would show as the key itself); checked by planting two. The existing check keeps Hindi and Marathi complete with the same placeholders.
+     - **Screen tour** (`e2e/tour.mjs`): for each language it picks the language on Your profile, opens all 22 screens by their links, scrolls each to the end, and checks:
+       - no text shows as its key;
+       - in Hindi and Marathi, no text the app translates shows in English;
+       - every target is at least 44 × 44 dp.
+       It saves a screenshot of every position (`e2e/screenshots/<phone>/<language>/`) for a person to read the words, as cut-off text can't be read from the screen's elements.
+     - **Found and fixed:**
+       - Notifications' "All" and "Unread" were 38 dp tall; now 44.
+       - The switches had Android's teal knob; now the web's colours (brand when on, grey when off, white knob).
+       - The "stale dump" on Android 11 (known issues): while something on screen keeps changing (the sign-in code's countdown, a loading animation), Android's UI dump waits about 10 s, says "could not get idle state" and writes nothing, and the tests read the previous screen's file. The old file is now removed first, so such a screen reads as empty and the tour fails it as unreadable.
+     - **Also found by running everything on the small phone:**
+       - A system "Pixel Launcher isn't responding" dialog (seen in CI) hid the app from the dump. CI now turns error dialogs off, and the dump helper taps "Wait" on one.
+       - The flows waited for a price on the first screen of Home or the catalogue, and a 720 × 1280 screen shows none there. They now wait for "Hello" or scroll to the price (`scrollTo`), and emptying the cart scrolls by the screen's size.
+       - On a small screen the language choice on Your profile is below the fold; the tour scrolls to it.
+       - Android 11's dump has no hint attribute and reports an empty box's placeholder as its text. The search test now finds the box by its label too. It had only run on Android 16 before.
+       - The search test had its own copy of the dump code; it now uses the shared helper.
+     - **Results (2026-10-04, release APK against the seeded stack):**
+       - **Large phone** (Android 16, 1080 × 2400): all 22 screens pass in English, Hindi and Marathi, 16–33 s a screen.
+       - **Small phone with 2 GB** (Android 11, 720 × 1280, 360 dp): all 22 screens pass in all three languages, signed in as a second shop (Omkar Joshi) so both phones could tour at once; each person has their own language.
+       - **Flows:** three taps, search, notifications and offline pass on both phones. Paying online passed on Android 16 in 11b.7.
+       - Screenshots looked at by eye show no cut-off Hindi or Marathi words: home, the catalogue, a product, the cart, orders, an order, Account, a bill, Messages and the statement, across both sizes. The rest are in each run's screenshots (CI: `app-screenshots-<language>`).
+     - **Sign-in for the tests** (`e2e/sign-in.mjs`): a seeded shop with the dev stack's fixed code, typed as a person would. It waits for the keyboard, checks the digits, closes the keyboard that covers "Send code", and answers the one-time WhatsApp question with "Not now". `SHOP_PHONE` picks another shop. Checked from a fresh start on Android 11 (59 s), including choosing the distributor.
+     - **CI:** an emulator job per language (Android 14, x86_64, 2 GB). It builds the app for `10-0-2-2.nip.io`, starts the stack with the seed on that domain, grants the notification permission, signs in and tours the screens. The English job also runs three taps, search, notifications and offline. Paying online needs Chrome and stays a local check. A failed step keeps a screenshot, the screen's elements and the log. The first runs showed the build, the stack, the emulator (booted in 47 s with hardware acceleration) and sign-in working; three taps passed in CI.
+
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**
   2. Tools over the report engine: eleven read-only tools (sales summary, top products, sales by category, top shops, sales by salesperson, shops not ordering, low stock, a product's stock, dues, collections, backorders), each a report run with the asker's permissions (own shops for sales staff, cost columns only with `costs.view`, modules respected); arguments checked (named periods in India time, at most 20 rows); payment references never sent, emails and phone numbers scrubbed — **done**
@@ -1101,8 +1294,19 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 | 42 | Translations (ADR-060): a native Hindi and a native Marathi speaker review every text. Steps: the super admin downloads the translation sheet (Languages page; or `make texts-export`); the reviewer corrects the Hindi or Marathi and marks each row "reviewed"; a developer runs `make texts-import SHEET=… APPLY=1`, the tests, and commits (changed notification texts come with their data migration); the Languages page shows the reviewed count. Take the suggested words on the Languages page into the sheet. The search synonyms (`backend/apps/search/words/<code>.json`) are reviewed in their files. Until then Hindi and Marathi stay off for real users and on only for the test distributors; turn each on (Languages page) after its review | `web/messages/`, `backend/locale/`, `backend/apps/notifications/catalog_texts/`, `backend/apps/search/words/` | Native reviewers | Owner | Open |
 | 43 | SMS in Hindi and Marathi (ADR-060): register a DLT template per language for each SMS notification (the sign-in code stays English, §10.2p question 4); Unicode SMS are 70 characters a part, so check the provider's price per part (the Hindi and Marathi welcome SMS fit one part when the distributor's name and the sign-in link together are at most 48 characters in Hindi and 49 in Marathi; a distributor with a long name sets a **short name for SMS** in its business details, and the live preview there shows each language's length and parts with the real link. The link is never shortened: a text over one part goes as two, each paid for. Register each SMS template with the distributor-name variable sized for up to 30 characters, and check the preview with the production web address) | SMS provider adapter | The DLT portal; the SMS provider's docs | Owner + dev | Open |
 | 44 | WhatsApp in Hindi and Marathi (ADR-060): submit the first-batch templates in each language (29 each: `docs/WHATSAPP_TEMPLATES.md`, made by `manage.py whatsapp_submissions`) and record each approval; until then those shops get English | Super admin → WhatsApp templates | The WhatsApp provider's template rules | Owner | Open |
+| 45 | Android application ID and the app's name (ADR-061 items 5 and 14): choose the final name (placeholder "Shop") and the final ID (a reverse domain the company controls) before the **first** Play Store upload. It can never change afterwards. Replace the placeholder `com.example.shop`, which Google Play refuses, in the one setting | `mobile/app-identity.js` | Play Console; the company's domain | Owner | Open |
+| 46 | Play developer account (ADR-061 item 17): an **organisation** account in the company's name (D-U-N-S number, which is free from Dun & Bradstreet; organisation name, address, phone and website; a contact person). **Fallback, a personal account:** its first app needs a closed test with at least 12 testers opted in for 14 days in a row before it can go to production (personal accounts created after 13 November 2023). Developer verification: Play Console registers Play apps automatically (the rollout starts outside India; check again before launch) | — | Play Console Help: "Choose a developer account type", "App testing requirements for new personal developer accounts"; developer.android.com/developer-verification (read 2026-10-03) | Owner | Open |
+| 47 | Play listing (ADR-061 item 17): target API level (36 for new apps and updates since 31 August 2026; check again before the upload); the Data safety form (draft in `docs/PLAY_STORE.md`, 11b.11; required even for an app that collects nothing); content rating; category; the app's final name and icon (§10.2q question 6); listing texts and screenshots in English, Hindi and Marathi | `docs/PLAY_STORE.md` | Play Console Help: "Data safety section", "Target API level requirements" | Owner + dev | Open |
+| 48 | Privacy policy and data deletion (ADR-061 items 17, 18): a public privacy policy page (not a PDF), linked on the listing and in the app (⚙ `platform.privacy_policy_url`), covering push tokens, crash reports and the distributor's role for its shops' data (with item 41). Confirm that Google's account-deletion rule doesn't apply (shops are created by their distributor; the app has no sign-up), and review the wording of the app's "Privacy and data" page | the app's Privacy and data page | Google Play User Data policy; a lawyer | Owner | Open |
+| 49 | Firebase / FCM (ADR-061 item 7): the Firebase project under the business Google account; the Android app registered with the final application ID; `google-services.json` supplied to builds; the backend's service-account key in the secrets manager. Verify the FCM HTTP v1 adapter (request, response, error codes, unregistered tokens) | `backend/apps/notifications/adapters/push.py` | Firebase Cloud Messaging documentation | Owner + dev | Open |
+| 50 | App Links (ADR-061 item 8): the production domain is built into the app, so fix it before the release build. `assetlinks.json` carries the Play App Signing certificate's SHA-256 (from Play Console) and the upload key's. Check on staging that links on tenant subdomains open the app (Android's documentation doesn't say how wildcard hosts are verified) | the web server; `mobile/app.config.ts` | Android App Links documentation; a staging test | Dev | Open |
+| 51 | Upload key (ADR-061 item 15): create it on the release Mac, store it outside the repository with two offline backups, enrol in Play App Signing at the first upload; check the key-reset steps in `docs/PLAY_STORE.md` against Play Console Help | `docs/PLAY_STORE.md` | Play Console Help (app signing) | Owner + dev | Open |
+| 52 | App crash reports (ADR-061 item 13): a Sentry project for the app, its DSN in release builds, the source-map upload token as a CI secret; check that phone numbers and tokens are scrubbed | `mobile/` Sentry set-up | Sentry documentation | Dev | Open |
 
 ## Known issues / pending
+- **Android app, dependency audit (2026-10-03):** `npm audit` in `mobile/` reports 30 findings (`node-forge`, `braces` and others). All are in Expo's build and development tooling (the dev server's certificates, file watching), none in the app's bundle. They go into Phase 10's dependency audit.
+- **Android app, development builds only:** on a slow emulator start, Expo Router's own link handling logs "Can't perform a React state update on a component that hasn't mounted yet". It comes from the router's internals, not from the app, and release builds don't show it. Revisit with the next Expo SDK.
+- **Fixed (11b.10): Android emulator tooling.** On the Android 11 image the UI dump seemed to return a stale snapshot. The cause: while something on screen keeps changing, the dump fails after about 10 s ("could not get idle state") and the scripts read the previous file. `e2e/device.mjs` now removes the file first, so such a screen reads as empty and the tour reports it. The scripts stay (ADR-061 item 16, as built).
 - Dev only (2026-10-03): after the web container was killed (out of memory while recompiling about 150 changed files), its compile cache made the dev server hang on "Compiling /manage" with no CPU use, while the production build was fine. The cache is in the container's own volume (`/app/.next`), so restarting doesn't clear it: `docker compose -f infra/docker-compose.yml up -d --force-recreate --renew-anon-volumes web` does.
 - **Fixed (11a.8):** the volume seed's speed check (`test_seed_volume::test_the_speed_check_times_every_page`) sometimes spent minutes on `sales_by_salesperson` (CI run 36997550247, 74 s; then locally). Cause, from the captured plan: the test's rows are never committed, so the tables have no statistics; the planner took each for one row and joined invoice lines, invoices and orders with nested loops over whole indexes, which grows with the cube of the data. The fixture now runs `ANALYZE` in the test's own transaction after seeding (it sees the uncommitted rows, and its statistics roll back with the test); the check takes under 2 s. Real data is analysed by autovacuum, so `make perf` and production were never affected.
 - Local dev only: a long-running Next.js dev server (Turbopack) can start serving the dynamic sibling for a page that sits next to an `[id]` route (e.g. `/manage/invoices/returns` shows an invoice-detail page and the API logs `GET /api/v1/invoices/returns/ 404`). Restart the web container (`docker compose -f infra/docker-compose.yml restart web`) before a long E2E run if pages look wrong. Production builds (CI, staging) aren't affected.

@@ -1111,6 +1111,11 @@ msgstr "क्रेडिट कुठून"
 msgid "Credit note"
 msgstr "क्रेडिट नोट"
 
+#: apps/notifications/push.py
+#, python-format
+msgid "Credit note %(credit_note_number)s"
+msgstr "क्रेडिट नोट %(credit_note_number)s"
+
 #: apps/billing/labels.py
 msgid "Credit note no."
 msgstr "क्रेडिट नोट क्र."
@@ -1943,6 +1948,16 @@ msgstr "दुकानाचा GSTIN नसेल तेव्हा आवश
 msgid "New"
 msgstr "नवीन"
 
+#: apps/notifications/push.py
+#, python-format
+msgid "New bill %(invoice_number)s"
+msgstr "नवीन बिल %(invoice_number)s"
+
+#: apps/notifications/push.py
+#, python-format
+msgid "New message from %(distributor)s"
+msgstr "%(distributor)s कडून नवीन संदेश"
+
 #: apps/reports/definitions/gst.py
 #, python-format
 msgid "Nil-rated (0%%) supplies, not in these sections (Table 8): %(parts)s."
@@ -2217,6 +2232,10 @@ msgstr "हे फक्त तुमचे कर्मचारी पाह�
 msgid "Only {{ variable }} placeholders are allowed."
 msgstr "फक्त {{ variable }} प्लेसहोल्डरला परवानगी आहे."
 
+#: apps/notifications/push.py
+msgid "Open the app to see the details."
+msgstr "संपूर्ण माहितीसाठी ॲप उघडा."
+
 #: apps/dataio/kinds/products.py
 msgid "Optional bigger unit, e.g. BOX. Needs a pack size."
 msgstr "पर्यायी मोठे युनिट, उदा. BOX. पॅक साइज आवश्यक."
@@ -2315,6 +2334,14 @@ msgstr "पेमेंटची तारीख"
 msgid "Payment receipt"
 msgstr "पेमेंट पावती"
 
+#: apps/notifications/push.py
+msgid "Payment received"
+msgstr "पेमेंट मिळाले"
+
+#: apps/notifications/push.py
+msgid "Payment reminder"
+msgstr "पेमेंट रिमाइंडर"
+
 #: apps/payments/online.py
 msgid "Payment service is busy, please try again in a minute."
 msgstr "पेमेंट सेवा व्यस्त आहे, कृपया एका मिनिटाने पुन्हा प्रयत्न करा."
@@ -2395,6 +2422,10 @@ msgstr "कोणाकडून मिळाले"
 #: apps/billing/labels.py
 msgid "Reference"
 msgstr "संदर्भ"
+
+#: apps/notifications/push.py
+msgid "Refund received"
+msgstr "परतावा मिळाला"
 
 #: apps/billing/labels.py
 msgid "Refund voucher"
@@ -3243,6 +3274,10 @@ msgstr "हे पेमेंट आता अशा प्रकारे ब�
 msgid "This payment doesn't need a review."
 msgstr "या पेमेंटला तपासणीची गरज नाही."
 
+#: apps/payments/browser.py
+msgid "This payment page has closed. Go back to the app to pay."
+msgstr "हे पेमेंट पेज बंद झाले आहे. पैसे भरण्यासाठी ॲपवर परत जा."
+
 #: apps/accounts/staff_services.py
 msgid "This person is already on your team."
 msgstr "ही व्यक्ती आधीच तुमच्या टीममध्ये आहे."
@@ -3382,6 +3417,10 @@ msgstr "हे मूल्य अपेक्षित पॅटर्नशी
 #: apps/platform/registry.py
 msgid "This value is not in the expected format."
 msgstr "हे मूल्य अपेक्षित स्वरूपात नाही."
+
+#: apps/platform/app_client.py
+msgid "This version of the app is too old. Update it to continue."
+msgstr "ॲपची ही आवृत्ती खूप जुनी आहे. पुढे जाण्यासाठी ती अपडेट करा."
 
 #: common/framework_messages.py
 msgid "Time has wrong format. Use one of these formats instead: {format}."

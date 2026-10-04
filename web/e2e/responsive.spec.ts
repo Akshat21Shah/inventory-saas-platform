@@ -231,6 +231,10 @@ function pages(ids: Ids) {
     "/shop/account",
     "/shop/account/security",
     "/shop/account/messages",
+    "/shop/account/addresses",
+    "/shop/account/help",
+    "/shop/account/privacy",
+    "/shop/returns",
     "/shop/invoices",
     ...(ids.shop_invoice ? [`/shop/invoices/${ids.shop_invoice}`] : []),
     "/shop/statement",
@@ -371,7 +375,10 @@ async function sweep(page: Page, base: string, all: string[], width: number, are
     await page.waitForTimeout(400); // images and late layout
     const problems = await page.evaluate(findProblems, width < 768);
     for (const p of problems) found.push(`${width}px ${area}${path}: ${p.kind}: ${p.what}`);
-    const name = `${area}${path}`.replace(/[/?=]+/g, "_").replace(/_$/, "");
+    const name = `${area}${path}`
+      .replace(/#.*/, "") // a one-time code
+      .replace(/[/?=]+/g, "_")
+      .replace(/_$/, "");
     await page.screenshot({ path: join(dir, `${name}.png`), fullPage: true });
   }
   return found;
@@ -460,6 +467,16 @@ for (const width of WIDTHS) {
     const r = await shopPage(browser, width);
     problems.push(...(await sweep(r.page, origin("sharma"), shop, width, "shop")));
     await r.context.close();
+
+    // The Android app's browser payment page (ADR-061 item 9), opened by a one-time link.
+    const pay = new URL(JSON.parse(manage(["e2e_pay_link"]).trim().split("\n").pop()!).url);
+    const payContext = await browser.newContext({ viewport: { width, height: 900 } });
+    await payContext.addCookies([{ name: "NEXT_LOCALE", value: LANGUAGE, url: origin("sharma") }]);
+    const payPage = await payContext.newPage();
+    problems.push(
+      ...(await sweep(payPage, origin("sharma"), [`${pay.pathname}${pay.hash}`], width, "pay")),
+    );
+    await payContext.close();
 
     expect(problems, problems.join("\n")).toEqual([]);
   });

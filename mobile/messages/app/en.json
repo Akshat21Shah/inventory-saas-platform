@@ -1,0 +1,54 @@
+{
+  "update": {
+    "title": "Update the app",
+    "body": "This version of the app is too old to keep working. Update it from the Play Store to carry on ordering.",
+    "button": "Open the Play Store"
+  },
+  "signIn": {
+    "language": "Language",
+    "switchTitle": "Shop with another distributor",
+    "switchBody": "Choose the distributor you want to order from."
+  },
+  "account": {
+    "version": "App version {version} ({build})",
+    "shopCode": "Shop code {code}",
+    "distributor": "You order from {name}",
+    "switch": "Shop with another distributor",
+    "switchBody": "You'll sign out, sign in again with your mobile number, and choose the distributor."
+  },
+  "search": {
+    "clear": "Clear search"
+  },
+  "document": {
+    "share": "Share"
+  },
+  "notifications": {
+    "channels": {
+      "orders": "Orders and deliveries",
+      "money": "Bills and payments",
+      "offers": "Offers and announcements"
+    }
+  },
+  "messages": {
+    "appTitle": "This app",
+    "sound": "Sound while the app is open",
+    "soundBody": "A short sound when a message arrives while you're using the app. Your phone's silent and Do Not Disturb settings still apply.",
+    "phoneSettings": "Notification settings on this phone",
+    "phoneSettingsBody": "Turn off one kind of message, or change its sound: Orders and deliveries, Bills and payments, Offers and announcements."
+  },
+  "privacy": {
+    "phoneTitle": "What the app keeps on this phone",
+    "phoneBody": "Your sign-in, your language and settings, and for weak connections your cart and recent pages. Signing out removes them."
+  },
+  "offline": {
+    "banner": "You're offline. Showing what was saved at {time}.",
+    "bannerNothing": "You're offline.",
+    "lastSeen": "as last seen",
+    "needsInternet": "Needs internet. Try again when you're back online.",
+    "cartSaved": "Your cart is saved on this phone and sent when you're back online.",
+    "unsavedTitle": "Not saved for offline use",
+    "unsavedBody": "Open this page again when you're back online.",
+    "waitingTitle": "Waiting to be sent ({count})",
+    "waitingBody": "Prices and totals come when you're back online."
+  }
+}

@@ -503,7 +503,7 @@ def test_hsn_hints_crud_and_import(api, run):
 @covers("platform-settings-registry", "platform-settings-values")
 def test_platform_settings(api, run):
     rows = api.get(f"{P}/settings/registry/").json()
-    assert len(rows) == 37  # + the AI limits, model and prices (ADR-058, 059), languages (060)
+    assert len(rows) == 40  # + AI limits, model, prices (ADR-058, 059), languages (060), app (061)
     row = next(r for r in rows if r["key"] == "platform.login_lockout_minutes")
     assert (row["value"], row["default"], row["is_default"], row["can_edit"]) == (
         15,

@@ -13,13 +13,14 @@ platform number sends for every distributor.
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cache
 from pathlib import Path
 
 from apps.notifications.models import Audience, Channel, DocumentLink, Recipient, WhatsAppCategory
 
 IN, EM, WA, SMS = Channel.IN_APP, Channel.EMAIL, Channel.WHATSAPP, Channel.SMS
+PU = Channel.PUSH  # the Android shop app (ADR-061 item 7)
 UTILITY, MARKETING = WhatsAppCategory.UTILITY, WhatsAppCategory.MARKETING
 
 
@@ -262,10 +263,19 @@ DEFAULT_RULES: tuple[Rule, ...] = (
     Rule("retailer.welcome", S, (SMS,), compulsory=True),
     Rule("announcement.published", S, (IN,)),
 )
+# The app notification is on wherever the shop's in-app message is (owner, 2026-10-03; ADR-061,
+# §10.2q answer 1). Its words are the in-app message's, kept off the lock screen as needed
+# (``apps.notifications.push``).
+DEFAULT_RULES = tuple(
+    replace(rule, channels=(*rule.channels, PU))
+    if rule.recipient == S and IN in rule.channels
+    else rule
+    for rule in DEFAULT_RULES
+)
 
 # Which channels each recipient can use (the rules screen offers only these).
 RECIPIENT_CHANNELS: dict[str, tuple[str, ...]] = {
-    S: (IN, WA, EM, SMS),
+    S: (IN, PU, WA, EM, SMS),
     SP: (IN, WA, EM),
     CO: (IN, WA, EM),
     ST: (IN, WA, EM),

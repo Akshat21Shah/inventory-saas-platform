@@ -40,6 +40,7 @@ api_v1: list[URLPattern | URLResolver] = [
     path("shop/", include("apps.shop.api.urls")),
     path("shop/", include("apps.notifications.api.shop_urls")),
     path("shop/", include("apps.payments.api.shop_urls")),
+    path("pay/", include("apps.payments.api.pay_urls")),
     path(
         "webhooks/payments/<str:provider>/<str:token>/",
         GatewayWebhookView.as_view(),

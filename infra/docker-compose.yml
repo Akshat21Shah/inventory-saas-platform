@@ -7,6 +7,7 @@ x-backend: &backend
     target: dev
     additional_contexts:
       web_messages: ../web/messages
+      app_messages: ../mobile/messages/app
   env_file:
     - ../.env
     # "make lan" / "make localhost" (infra/dev-domain.sh): platform domain + public storage address.
@@ -25,6 +26,7 @@ x-backend: &backend
   volumes:
     - ../backend:/app
     - ../web/messages:/web_messages:ro  # the screens' texts as edited (translation sheet)
+    - ../mobile/messages/app:/app_messages:ro  # the Android app's own texts, likewise
   depends_on:
     postgres: { condition: service_healthy }
     redis: { condition: service_healthy }

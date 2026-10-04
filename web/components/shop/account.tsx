@@ -5,9 +5,13 @@ import {
   Bell,
   ChevronRight,
   FileText,
+  LifeBuoy,
   LogOut,
+  MapPin,
   ReceiptText,
   ScrollText,
+  ShieldCheck,
+  Undo2,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -114,6 +118,8 @@ export function OwedCard() {
 export function ShopAccountPage() {
   const t = useTranslations("shop.money");
   const accountT = useTranslations("account");
+  const returnsT = useTranslations("shop.returns");
+  const more = useTranslations("shop.account");
   const { signOut } = useAuth();
   const query = useShopAccount();
   const account = query.data?.data;
@@ -121,8 +127,13 @@ export function ShopAccountPage() {
     { href: "/shop/invoices", label: t("bills"), icon: FileText },
     { href: "/shop/statement", label: t("statement"), icon: ScrollText },
     { href: "/shop/payments", label: t("payments"), icon: ReceiptText },
+    { href: "/shop/returns", label: returnsT("heading"), icon: Undo2 },
     { href: "/shop/account/messages", label: t("messages"), icon: Bell },
     { href: "/shop/account/security", label: t("profile"), icon: UserRound },
+    // The owner's Phase 11b additions, the same in the Android app.
+    { href: "/shop/account/addresses", label: more("addresses.title"), icon: MapPin },
+    { href: "/shop/account/help", label: more("help.title"), icon: LifeBuoy },
+    { href: "/shop/account/privacy", label: more("privacy.title"), icon: ShieldCheck },
   ];
   return (
     <div className="space-y-6">

@@ -30,7 +30,7 @@ from apps.orders.models import Fulfilment
 from apps.orders.tests.helpers import add_stock, place, shop_client
 from apps.payments.gateway.mock import MockGateway
 from apps.payments.models import Payment
-from apps.payments.tests.test_online import KEYS, connect
+from apps.payments.tests.conftest import KEYS, connect
 from apps.retailers.models import RetailerAddress
 from common.storage import get_storage
 from common.tenancy import tenant_context

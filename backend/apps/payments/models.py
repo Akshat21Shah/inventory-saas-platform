@@ -316,3 +316,34 @@ class WebhookEvent(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.provider} {self.event_id}"
+
+
+class CheckoutBrowserSession(TenantScopedModel):
+    """The Android app paying in the browser (ADR-061 item 9; owner, checkpoint review item 7).
+
+    The app asks for a link: a one-time code (one minute) for one checkout's payment page. The page
+    trades it for a session that works only on that checkout's pay endpoints, never as a shop
+    session, and ends when the checkout is paid or expires (30 minutes at most). Only hashes of the
+    code and the session are kept."""
+
+    intent = models.ForeignKey(PaymentIntent, on_delete=models.CASCADE, related_name="+")
+    user = models.ForeignKey(USER, on_delete=models.CASCADE, related_name="+")
+    code_hash = models.CharField(max_length=64, unique=True)
+    code_expires_at = models.DateTimeField()
+    session_hash = models.CharField(max_length=64, blank=True, default="")
+    opened_at = models.DateTimeField(null=True, blank=True)  # the code was used
+    expires_at = models.DateTimeField()  # the checkout's own expiry
+    ended_at = models.DateTimeField(null=True, blank=True)  # paid, expired or replaced
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session_hash"],
+                condition=~Q(session_hash=""),
+                name="uniq_pay_session",
+            ),
+        ]
+        indexes = [models.Index(fields=["tenant", "intent"], name="pay_session_intent_idx")]
+
+    def __str__(self) -> str:
+        return f"browser pay {self.intent_id}"

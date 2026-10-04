@@ -32,6 +32,9 @@ class RetailerAccountChoiceSerializer(serializers.Serializer[Any]):
     choice_id = serializers.UUIDField()
     distributor_name = serializers.CharField()
     shop_name = serializers.CharField()
+    tenant_slug = serializers.CharField(
+        help_text="The distributor's web address name: the app picks the account a link is for."
+    )
 
 
 class LoginResponseSerializer(serializers.Serializer[Any]):
@@ -50,6 +53,11 @@ class LoginResponseSerializer(serializers.Serializer[Any]):
     user_type = serializers.ChoiceField(choices=User.UserType.choices, required=False)
     access = serializers.CharField(required=False)
     access_expires_at = serializers.DateTimeField(required=False)
+    refresh = serializers.CharField(
+        required=False,
+        help_text='The Android app only (client "app", ADR-061): it keeps the refresh token in '
+        "secure storage. The web gets it in a cookie instead.",
+    )
     handoff = HandoffSerializer(required=False)
     choice_token = serializers.CharField(required=False)
     tenants = TenantChoiceSerializer(many=True, required=False)
@@ -221,9 +229,17 @@ class RetailerOtpRequestResponseSerializer(serializers.Serializer[Any]):
     resend_after = serializers.IntegerField(help_text="Seconds before offering 'send again'.")
 
 
+SIGN_IN_CLIENTS = ("web", "app")  # the Android app signs in for itself (ADR-061)
+CLIENT_HELP = (
+    '"app" for the Android app (ADR-061): a session comes back in the body at once (no browser '
+    "handoff, no cookie)."
+)
+
+
 class RetailerOtpVerifyInputSerializer(serializers.Serializer[Any]):
     phone = serializers.CharField(max_length=20)
     code = serializers.CharField(max_length=10)
+    client = serializers.ChoiceField(choices=SIGN_IN_CLIENTS, default="web", help_text=CLIENT_HELP)
 
     def validate_phone(self, value: str) -> str:
         return _normalized_mobile(value)
@@ -232,3 +248,4 @@ class RetailerOtpVerifyInputSerializer(serializers.Serializer[Any]):
 class RetailerChooseAccountInputSerializer(serializers.Serializer[Any]):
     choice_token = serializers.CharField(max_length=200)
     choice_id = serializers.UUIDField()
+    client = serializers.ChoiceField(choices=SIGN_IN_CLIENTS, default="web", help_text=CLIENT_HELP)

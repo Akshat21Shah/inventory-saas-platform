@@ -45,7 +45,7 @@ import { eventKey, NotificationsNav } from "./nav";
 
 const ALL = "all";
 const STATUSES = ["FAILED", "PENDING", "SENDING", "SENT", "SKIPPED"] as const;
-const CHANNELS = ["IN_APP", "EMAIL", "WHATSAPP", "SMS"] as const;
+const CHANNELS = ["IN_APP", "PUSH", "EMAIL", "WHATSAPP", "SMS"] as const;
 
 function refreshDeliveries(client: ReturnType<typeof useQueryClient>) {
   void client.invalidateQueries({

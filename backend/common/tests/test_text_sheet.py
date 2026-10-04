@@ -1,7 +1,8 @@
-"""The translation sheet (ADR-060 item 11): every screen, server and notification text with its
-Hindi and Marathi and their review status; a translator's copy is checked (placeholders, plural
-forms, SMS and WhatsApp lengths) and written back into the files, with review marks and a data
-migration for the platform's copies of changed notification texts. Works on copies of the files."""
+"""The translation sheet (ADR-060 item 11): every screen, Android app, server and notification
+text with its Hindi and Marathi and their review status; a translator's copy is checked
+(placeholders, plural forms, SMS and WhatsApp lengths) and written back into the files, with review
+marks and a data migration for the platform's copies of changed notification texts. Works on
+copies of the files."""
 
 import json
 import shutil
@@ -34,6 +35,8 @@ def files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, settings: Any) -> Ite
         settings.WEB_MESSAGES_DIR, tmp_path / "web", ignore=shutil.ignore_patterns("*.ts")
     )
     settings.WEB_MESSAGES_DIR = tmp_path / "web"
+    shutil.copytree(settings.APP_MESSAGES_DIR, tmp_path / "app")
+    settings.APP_MESSAGES_DIR = tmp_path / "app"
     shutil.copytree(BACKEND / "locale", tmp_path / "locale")
     monkeypatch.setattr(
         text_sheet, "po_path", lambda code: tmp_path / "locale" / code / "LC_MESSAGES" / "django.po"
@@ -92,6 +95,7 @@ def test_the_sheet_has_every_text_with_its_status(files):
     keys = {str(sheet.cell(r, 1).value) for r in range(2, sheet.max_row + 1)}
     assert "screen:auth.signInTitle" in keys and "server:Enter your name." in keys
     assert WELCOME_SMS in keys
+    assert "app:update.title" in keys  # the Android app's own texts (ADR-061)
     assert not any("/SUPPLIER/" in key for key in keys)  # suppliers' letters stay English
     assert sheet.max_row > 5000
     assert {sheet.cell(r, 5).value for r in range(2, 50)} == {NEEDS_REVIEW}
@@ -111,6 +115,7 @@ def test_a_translators_copy_is_written_back_with_its_review_marks(files):
             _set("server:Enter your name.", "Marathi status", REVIEWED),
             _set(WELCOME_SMS, "Hindi", new_sms),
             _set(WELCOME_SMS, "Hindi status", REVIEWED),
+            _set("app:update.button", "Marathi", "प्ले स्टोअर उघडा"),
         )
     )
     outcome = text_sheet.read(stream)
@@ -119,12 +124,15 @@ def test_a_translators_copy_is_written_back_with_its_review_marks(files):
         ("screen:auth.signInTitle", "hi"),
         ("server:Enter your name.", "mr"),
         (WELCOME_SMS, "hi"),
+        ("app:update.button", "mr"),
     }
     old_sms = texts_in("hi")["retailer.welcome"]["SHOP"]["SMS"].body
     text_sheet.apply(outcome)
 
     hindi = json.loads((files / "web" / "hi.json").read_text("utf-8"))
     assert hindi["auth"]["signInTitle"] == "लॉग इन करें"
+    app = json.loads((files / "app" / "mr.json").read_text("utf-8"))
+    assert app["update"]["button"] == "प्ले स्टोअर उघडा"
     marathi = polib.pofile(str(files / "locale" / "mr" / "LC_MESSAGES" / "django.po"))
     assert marathi.find("Enter your name.").msgstr == "कृपया तुमचे नाव लिहा."
     assert (files / "locale" / "mr" / "LC_MESSAGES" / "django.mo").read_bytes() == (
@@ -158,6 +166,7 @@ def test_a_translators_copy_is_written_back_with_its_review_marks(files):
         (WELCOME_SMS, "Hindi", "{{ distributor }}: " + "क" * 80 + " {{ link }}", "one part"),
         (WELCOME_SMS, "Hindi", "स्वागत है! {{ link }}", "start with"),
         (WELCOME_SMS, "Marathi", "{{ distributor }}: {{ secret }}", "use only these values"),
+        ("app:account.version", "Marathi", "ॲप आवृत्ती {version}", "{build}"),
         ("screen:auth.signInTitle", "Hindi status", REVIEWED, None),  # fine
     ],
 )

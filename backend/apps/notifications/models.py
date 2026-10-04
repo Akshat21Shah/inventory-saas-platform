@@ -17,6 +17,7 @@ class Channel(models.TextChoices):
     EMAIL = "EMAIL", "Email"
     WHATSAPP = "WHATSAPP", "WhatsApp"
     SMS = "SMS", "SMS"
+    PUSH = "PUSH", "App notification"  # the Android shop app (ADR-061 item 7)
 
 
 class Recipient(models.TextChoices):
@@ -245,6 +246,32 @@ class NotificationPreference(TenantScopedModel):
 
     def __str__(self) -> str:
         return f"{self.event_code} {self.channel} {self.enabled}"
+
+
+class DeviceToken(TenantScopedModel):
+    """A phone that gets push notifications for one person (ADR-061 item 7). Unique per tenant:
+    the app signs in to one distributor at a time and removes its token when it signs out or
+    switches; a token FCM no longer knows is switched off when a push to it fails."""
+
+    class Platform(models.TextChoices):
+        ANDROID = "ANDROID", "Android"
+        WEB = "WEB", "Web"  # web push, later (backlog)
+
+    user = models.ForeignKey(USER, on_delete=models.CASCADE, related_name="+")
+    platform = models.CharField(max_length=8, choices=Platform.choices)
+    token = models.CharField(max_length=512)
+    app_version = models.CharField(max_length=20, blank=True, default="")
+    last_seen_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "token"], name="uniq_device_token"),
+        ]
+        indexes = [models.Index(fields=["tenant", "user", "is_active"], name="device_user_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.platform} …{self.token[-6:]}"
 
 
 class DocumentLink(TenantScopedModel):

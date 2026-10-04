@@ -1,5 +1,5 @@
-# Backend image (API, Celery worker, Celery beat). Build context: backend/, plus web/messages as
-# the named context web_messages.
+# Backend image (API, Celery worker, Celery beat). Build context: backend/, plus web/messages and
+# mobile/messages/app as the named contexts web_messages and app_messages.
 FROM python:3.13-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir uv==0.12.18 \
 # "web_messages" is web/messages (compose: additional_contexts; CI: build-contexts).
 COPY --from=web_messages . /web_messages/
 ENV WEB_MESSAGES_DIR=/web_messages
+# The Android app's own texts, in the same sheet (ADR-061): the context "app_messages".
+COPY --from=app_messages . /app_messages/
+ENV APP_MESSAGES_DIR=/app_messages
 WORKDIR /app
 
 FROM base AS dev

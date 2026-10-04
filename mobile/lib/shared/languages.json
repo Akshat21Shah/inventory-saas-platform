@@ -1,0 +1,29 @@
+{
+  "default": "en",
+  "languages": [
+    {
+      "code": "en",
+      "name": "English",
+      "native": "English",
+      "script": "latin",
+      "pdf_font": "Noto Sans",
+      "plural_forms": "nplurals=2; plural=(n != 1);"
+    },
+    {
+      "code": "hi",
+      "name": "Hindi",
+      "native": "हिन्दी",
+      "script": "devanagari",
+      "pdf_font": "Noto Sans Devanagari",
+      "plural_forms": "nplurals=2; plural=(n > 1);"
+    },
+    {
+      "code": "mr",
+      "name": "Marathi",
+      "native": "मराठी",
+      "script": "devanagari",
+      "pdf_font": "Noto Sans Devanagari",
+      "plural_forms": "nplurals=2; plural=(n != 1);"
+    }
+  ]
+}

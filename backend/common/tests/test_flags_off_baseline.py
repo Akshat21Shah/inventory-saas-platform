@@ -210,6 +210,10 @@ ALLOWED_NEW_ITEMS: dict[str, Any] = {
     "api.settings-features": lambda item: (
         item["code"] in ("stock_planning", "purchasing", "free_goods") and item["enabled"] is False
     ),
+    # Phase 11b (ADR-061 item 7, core): the app notification, on wherever the shop's in-app
+    # message is. Nothing is sent: no shop has the app in this flow.
+    "api.notification-rules.events.rules.channels": lambda item: item == "PUSH",
+    "api.notification-rules.recipients.SHOP": lambda item: item == "PUSH",
 }
 
 # Wording changed since the snapshot: (path, old value) -> new value.
