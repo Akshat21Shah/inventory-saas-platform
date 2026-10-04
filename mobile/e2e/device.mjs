@@ -146,15 +146,42 @@ export function reporter() {
   };
 }
 
+/** The screen's size in pixels, [width, height]. */
+export function screenSize() {
+  return adb("shell", "wm", "size").trim().split(/\s+/).pop().split("x").map(Number);
+}
+
+/** Scroll the screen up by about half its height. */
+export function scrollDown() {
+  const [width, height] = screenSize();
+  const x = String(Math.round(width / 2));
+  adb(
+    "shell",
+    "input",
+    "swipe",
+    x,
+    String(Math.round(height * 0.7)),
+    x,
+    String(Math.round(height * 0.3)),
+    "300",
+  );
+}
+
+/** Wait for an element, scrolling down when it isn't on screen: a small phone shows less. */
+export async function scrollTo(predicate, ms = 10000, scrolls = 6) {
+  let node = await waitFor(predicate, ms);
+  for (let i = 0; !node && i < scrolls; i++) {
+    scrollDown();
+    node = await waitFor(predicate, 2000);
+  }
+  return node;
+}
+
 /** Test set-up: open the Cart tab and clear it (English). */
 export async function emptyCart() {
   tap(await waitFor((n) => /, Cart$/.test(n.label) || n.label === "Cart"));
   const found = (n) => n.label === "Empty the cart" || n.text === "Your cart is empty";
-  let node = await waitFor(found, 4000);
-  for (let i = 0; !node && i < 8; i++) {
-    adb("shell", "input", "swipe", "540", "1700", "540", "700", "300");
-    node = await waitFor(found, 1500);
-  }
+  const node = await scrollTo(found, 4000, 8);
   if (node?.label === "Empty the cart") {
     tap(node);
     // Android's confirm dialog, its button in capitals.

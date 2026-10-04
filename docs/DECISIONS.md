@@ -965,6 +965,10 @@ Details of each design live in `docs/PLAN.md`. The section references (§) below
       - A CI job for lint, types, tests, the generated and synced files, and a release build.
       - An emulator job in CI (**TODO(verify)** hardware acceleration on GitHub's Linux runners; otherwise the emulator flows run locally before each review).
       - Backend tests for every new endpoint, including tenant isolation.
+      - **As built (11b.10):**
+        - The emulator checks are node scripts over adb (`mobile/e2e/`), not Maestro. The flows (search, three taps, notifications, paying online, offline) were already written that way and pass on both emulators. The screen tour reads each language's words from the app's own message files, which Maestro flows would need copied per language. Maestro would add its own command-line tool on the Mac and in CI for no check the scripts lack.
+        - The "stale snapshot" on Android 11 turned out to be a failed dump (the screen never went idle) followed by reading the previous file. It is fixed in the scripts.
+        - An emulator job in CI per language: Android 14, x86_64, 2 GB, with hardware acceleration on GitHub's Linux runners. The English job also runs the flows except paying online, which needs Chrome and stays a local check.
   17. **Google Play (checked against Google's pages on 2026-10-03; pre-production items 46–48).**
       - **Developer account:** an organisation account (it needs a D-U-N-S number). The fallback is a personal account, which needs a closed test first: 12 testers opted in for 14 days in a row (personal accounts created after 13 November 2023).
       - **Target API:** 36 for new apps and updates since 31 August 2026. Expo SDK 57 targets 36.

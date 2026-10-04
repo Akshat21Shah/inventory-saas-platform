@@ -9,7 +9,17 @@
  * airplane mode on and off.
  *   node e2e/offline.mjs
  */
-import { adb, emptyCart, reporter, screen, sleep, startApp, tap, waitFor } from "./device.mjs";
+import {
+  adb,
+  emptyCart,
+  reporter,
+  screen,
+  scrollTo,
+  sleep,
+  startApp,
+  tap,
+  waitFor,
+} from "./device.mjs";
 
 const { check, finish } = reporter();
 const tabs = () => {
@@ -27,7 +37,7 @@ try {
   await waitFor((n) => n.text.startsWith("Hello"), 25000);
   await emptyCart();
   tap(tabs()[1]);
-  await waitFor((n) => n.text.startsWith("₹"), 15000);
+  await scrollTo((n) => n.text.startsWith("₹"), 15000);
   tap(tabs()[0]);
   await sleep(5000); // the saved copy is written a few seconds after a change
 
@@ -47,14 +57,14 @@ try {
   );
   tap(tabs()[1]);
   check(
-    (await waitFor((n) => n.text.startsWith("₹"), 10000)) !== null,
+    (await scrollTo((n) => n.text.startsWith("₹"), 10000)) !== null,
     "the saved catalogue shows",
   );
   check(
-    screen().some((n) => n.text === "as last seen"),
+    (await scrollTo((n) => n.text === "as last seen", 3000, 2)) !== null,
     'prices read "as last seen"',
   );
-  const add = await waitFor((n) => /^Add .+ to cart$/.test(n.label) && n.enabled, 10000);
+  const add = await scrollTo((n) => /^Add .+ to cart$/.test(n.label) && n.enabled, 5000, 3);
   check(add !== null, "a product can be added offline");
   const product = add.label.replace(/^Add (.+) to cart$/, "$1");
   tap(add);

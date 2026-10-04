@@ -184,7 +184,21 @@ function smallTargets(nodes) {
 async function chooseLanguage(code) {
   const { native } = LANGUAGES.find((language) => language.code === code);
   openLink("/shop/account/profile");
-  const option = await waitFor((n) => n.text === native, 20000);
+  // On a small phone the choice is below the fold, and the dump lists only what's visible.
+  let option = await waitFor((n) => n.text === native, 8000);
+  for (let i = 0; !option && i < 4; i++) {
+    adb(
+      "shell",
+      "input",
+      "swipe",
+      String(width / 2),
+      String(height * 0.7),
+      String(width / 2),
+      String(height * 0.3),
+      "400",
+    );
+    option = await waitFor((n) => n.text === native, 3000);
+  }
   if (!option) return false;
   tap(option);
   // The app switches at once: the tab bar's "Home" is in the new language.

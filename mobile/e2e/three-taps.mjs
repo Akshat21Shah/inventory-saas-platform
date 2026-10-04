@@ -19,11 +19,10 @@ import {
 
 const WORD = process.argv[2] ?? "glucose";
 const { check, finish } = reporter();
-const price = (n) => n.text.startsWith("₹");
 
 // Setup (not counted): an empty cart, then search results.
 startApp();
-check(Boolean(await waitFor(price, 20000)), "the app opens signed in");
+check(Boolean(await waitFor((n) => n.text.startsWith("Hello"), 20000)), "the app opens signed in");
 await emptyCart();
 tap(await waitFor((n) => /, Home$/.test(n.label) || n.label === "Home"));
 tap(await waitFor((n) => n.cls.endsWith("EditText") && n.clickable && n.hint === ""));

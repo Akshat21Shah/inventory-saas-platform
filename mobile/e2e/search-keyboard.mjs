@@ -12,11 +12,14 @@ import { adb, keyboardShown, PACKAGE, screen, sleep, tap, until } from "./device
 const WORD = process.argv[2] ?? "biscuit";
 const PAUSE_MS = 700; // longer than the search's 250 ms pause, so results render between letters
 
-/** The search box: the screen's first focusable EditText with a hint (by class and attributes,
- * so the app's language doesn't matter; the box's container also reports as an EditText). */
+/** The search box: the screen's first focusable EditText with a hint or a label (by class and
+ * attributes, so the app's language doesn't matter; the box's container also reports as an
+ * EditText, with neither). Android 11's dump has no hint attribute. */
 function searchBox() {
   const nodes = screen();
-  const node = nodes.find((n) => n.cls === "android.widget.EditText" && n.focusable && n.hint);
+  const node = nodes.find(
+    (n) => n.cls === "android.widget.EditText" && n.focusable && (n.hint || n.label),
+  );
   if (!node) return null;
   return { ...node, results: nodes.filter((n) => n.text.startsWith("₹")).length };
 }
@@ -36,7 +39,7 @@ const entry = await (async () => {
     // The home screen's search entry: reported as a clickable EditText without a hint (the
     // search screen's real input has one).
     const node = nodes.find((n) => n.cls === "android.widget.EditText" && n.clickable && !n.hint);
-    if (node && nodes.some((n) => n.text.includes("₹"))) return node;
+    if (node) return node;
     await sleep(700);
   }
   return null;
@@ -45,9 +48,10 @@ check(entry !== null, "home shows the search box");
 if (entry) tap(entry);
 check(await until(keyboardShown), "tapping it opens search with the keyboard up");
 let box = searchBox();
-// An empty input is reported with its hint as its text.
+// An empty input is reported with its hint as its text (Android 11: the placeholder, and no hint
+// to compare it with).
 check(
-  Boolean(box?.focused) && (box?.text === "" || box?.text === box?.hint),
+  Boolean(box?.focused) && (box?.text === "" || box?.text === box?.hint || !box?.hint),
   "the search box is focused and empty",
 );
 

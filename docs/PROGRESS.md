@@ -480,6 +480,31 @@
      - **Size:** the APK file is 38.4 MB.
      - **Tests:** 13 more: what's saved and its limits, the offline cart, an offline start, renewing the token after one, the needs-internet button.
      - **Emulator test `e2e/offline.mjs`** (airplane mode), passing alongside the search, three-taps, notifications and pay-online tests on Android 16.
+  13. Checks in three languages (11b.10) — **in progress**:
+     - **The translation sheet** (`make texts-export`, the super admin's download) has the app's own texts: `app:` keys, "Android app" in the Where column, 32 rows. They're checked like the screens' texts (placeholders, plural forms) and written back to `mobile/messages/app/<code>.json`. The backend image and the dev stack carry them as they carry `web/messages`. 6,185 rows in all.
+     - **Language checks:** a Jest check reads the app's code and fails on any key it asks for that isn't in the English texts (a mistyped key would show as the key itself); checked by planting two. The existing check keeps Hindi and Marathi complete with the same placeholders.
+     - **Screen tour** (`e2e/tour.mjs`): for each language it picks the language on Your profile, opens all 22 screens by their links, scrolls each to the end, and checks:
+       - no text shows as its key;
+       - in Hindi and Marathi, no text the app translates shows in English;
+       - every target is at least 44 × 44 dp.
+       It saves a screenshot of every position (`e2e/screenshots/<phone>/<language>/`) for a person to read the words, as cut-off text can't be read from the screen's elements.
+     - **Found and fixed:**
+       - Notifications' "All" and "Unread" were 38 dp tall; now 44.
+       - The switches had Android's teal knob; now the web's colours (brand when on, grey when off, white knob).
+       - The "stale dump" on Android 11 (known issues): while something on screen keeps changing (the sign-in code's countdown, a loading animation), Android's UI dump waits about 10 s, says "could not get idle state" and writes nothing, and the tests read the previous screen's file. The old file is now removed first, so such a screen reads as empty and the tour fails it as unreadable.
+     - **Also found by running everything on the small phone:**
+       - A system "Pixel Launcher isn't responding" dialog (seen in CI) hid the app from the dump. CI now turns error dialogs off, and the dump helper taps "Wait" on one.
+       - The flows waited for a price on the first screen of Home or the catalogue, and a 720 × 1280 screen shows none there. They now wait for "Hello" or scroll to the price (`scrollTo`), and emptying the cart scrolls by the screen's size.
+       - On a small screen the language choice on Your profile is below the fold; the tour scrolls to it.
+       - Android 11's dump has no hint attribute and reports an empty box's placeholder as its text. The search test now finds the box by its label too. It had only run on Android 16 before.
+       - The search test had its own copy of the dump code; it now uses the shared helper.
+     - **Results (2026-10-04, release APK against the seeded stack):**
+       - **Large phone** (Android 16, 1080 × 2400): all 22 screens pass in English, Hindi and Marathi, 16–33 s a screen.
+       - **Small phone with 2 GB** (Android 11, 720 × 1280, 360 dp): all 22 screens pass in all three languages, signed in as a second shop (Omkar Joshi) so both phones could tour at once; each person has their own language.
+       - **Flows:** three taps, search, notifications and offline pass on both phones. Paying online passed on Android 16 in 11b.7.
+       - Screenshots looked at by eye show no cut-off Hindi or Marathi words: home, the catalogue, a product, the cart, orders, an order, Account, a bill, Messages and the statement, across both sizes. The rest are in each run's screenshots (CI: `app-screenshots-<language>`).
+     - **Sign-in for the tests** (`e2e/sign-in.mjs`): a seeded shop with the dev stack's fixed code, typed as a person would. It waits for the keyboard, checks the digits, closes the keyboard that covers "Send code", and answers the one-time WhatsApp question with "Not now". `SHOP_PHONE` picks another shop. Checked from a fresh start on Android 11 (59 s), including choosing the distributor.
+     - **CI:** an emulator job per language (Android 14, x86_64, 2 GB). It builds the app for `10-0-2-2.nip.io`, starts the stack with the seed on that domain, grants the notification permission, signs in and tours the screens. The English job also runs three taps, search, notifications and offline. Paying online needs Chrome and stays a local check. A failed step keeps a screenshot, the screen's elements and the log. The first runs showed the build, the stack, the emulator (booted in 47 s with hardware acceleration) and sign-in working; three taps passed in CI.
 
 - **Phase 9e — Distributor data assistant** — **done, PR open** (branch `phase-9e` on top of `phase-9d`; ADR-059, PLAN §10.2o, SPEC 1.13; flag `ai`; built without stopping, assumptions marked for review). Commits in order:
   1. Docs: ADR-059, PLAN 9e tasks and §10.2o, SPEC 1.13, pre-production item 40 — **done**
@@ -1281,7 +1306,7 @@ Every `TODO(verify)` in the code is listed here, so each item is checked before 
 ## Known issues / pending
 - **Android app, dependency audit (2026-10-03):** `npm audit` in `mobile/` reports 30 findings (`node-forge`, `braces` and others). All are in Expo's build and development tooling (the dev server's certificates, file watching), none in the app's bundle. They go into Phase 10's dependency audit.
 - **Android app, development builds only:** on a slow emulator start, Expo Router's own link handling logs "Can't perform a React state update on a component that hasn't mounted yet". It comes from the router's internals, not from the app, and release builds don't show it. Revisit with the next Expo SDK.
-- **Android emulator tooling:** on the Android 11 image, the UI dump can return a stale snapshot, so screenshots are the record there. Maestro (11b.10) replaces the ad hoc scripts.
+- **Fixed (11b.10): Android emulator tooling.** On the Android 11 image the UI dump seemed to return a stale snapshot. The cause: while something on screen keeps changing, the dump fails after about 10 s ("could not get idle state") and the scripts read the previous file. `e2e/device.mjs` now removes the file first, so such a screen reads as empty and the tour reports it. The scripts stay (ADR-061 item 16, as built).
 - Dev only (2026-10-03): after the web container was killed (out of memory while recompiling about 150 changed files), its compile cache made the dev server hang on "Compiling /manage" with no CPU use, while the production build was fine. The cache is in the container's own volume (`/app/.next`), so restarting doesn't clear it: `docker compose -f infra/docker-compose.yml up -d --force-recreate --renew-anon-volumes web` does.
 - **Fixed (11a.8):** the volume seed's speed check (`test_seed_volume::test_the_speed_check_times_every_page`) sometimes spent minutes on `sales_by_salesperson` (CI run 36997550247, 74 s; then locally). Cause, from the captured plan: the test's rows are never committed, so the tables have no statistics; the planner took each for one row and joined invoice lines, invoices and orders with nested loops over whole indexes, which grows with the cube of the data. The fixture now runs `ANALYZE` in the test's own transaction after seeding (it sees the uncommitted rows, and its statistics roll back with the test); the check takes under 2 s. Real data is analysed by autovacuum, so `make perf` and production were never affected.
 - Local dev only: a long-running Next.js dev server (Turbopack) can start serving the dynamic sibling for a page that sits next to an `[id]` route (e.g. `/manage/invoices/returns` shows an invoice-detail page and the API logs `GET /api/v1/invoices/returns/ 404`). Restart the web container (`docker compose -f infra/docker-compose.yml restart web`) before a long E2E run if pages look wrong. Production builds (CI, staging) aren't affected.
